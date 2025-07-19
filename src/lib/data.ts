@@ -28,6 +28,7 @@ export interface Task {
   difficulty: 'Kolay' | 'Orta' | 'Zor';
   notes?: string;
   photo?: string;
+  audioNoteUrl?: string;
 }
 
 export interface CalendarEvent {
