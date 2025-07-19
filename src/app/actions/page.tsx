@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, Video, Mic, Send, Trash2, Pause, Play, Check, Download } from 'lucide-react';
+import { Camera, Video, Mic, Send, Trash2, Pause, Play, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { transcribeAudio } from '@/ai/flows/speech-to-text-flow';
+import { analyzePhoto } from '@/ai/flows/photo-analysis-flow';
 import { Textarea } from '@/components/ui/textarea';
 
 type Mode = 'camera' | 'video' | 'audio';
@@ -28,6 +29,10 @@ export default function ActionsPage() {
 
   const [transcribing, setTranscribing] = useState(false);
   const [transcribedText, setTranscribedText] = useState("");
+  
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+
 
   const getPermissions = async () => {
     try {
@@ -62,6 +67,7 @@ export default function ActionsPage() {
     setPhoto(null);
     setAudioUrl(null);
     setTranscribedText("");
+    setAnalysisResult(null);
   };
 
   const takePhoto = () => {
@@ -74,8 +80,25 @@ export default function ActionsPage() {
       context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
       const dataUrl = canvas.toDataURL('image/png');
       setPhoto(dataUrl);
+      setAnalysisResult(null);
     }
   };
+  
+  const handleAnalyzePhoto = async () => {
+    if (!photo) return;
+    setAnalyzing(true);
+    setAnalysisResult(null);
+    try {
+      const result = await analyzePhoto(photo);
+      setAnalysisResult(result.analysis);
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast({ variant: "destructive", title: "Analiz Başarısız Oldu", description: "Lütfen tekrar deneyin." });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
 
   const startRecording = () => {
     if (stream) {
@@ -138,16 +161,31 @@ export default function ActionsPage() {
     switch (mode) {
       case 'camera':
         return (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-full max-w-md aspect-video rounded-lg overflow-hidden border bg-black relative">
-              <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+          <div className="flex flex-col items-center gap-4 w-full max-w-md">
+            <div className="w-full aspect-video rounded-lg overflow-hidden border bg-black relative">
+              <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline style={{ display: photo ? 'none' : 'block' }}/>
               {photo && <img src={photo} alt="Captured" className="absolute inset-0 w-full h-full object-cover"/>}
             </div>
             <canvas ref={canvasRef} className="hidden" />
             {photo ? (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setPhoto(null)}><Trash2 className="mr-2"/> Tekrar Çek</Button>
-                <Button><Send className="mr-2"/> Gönder</Button>
+              <div className="flex flex-col items-center gap-4 w-full">
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => { setPhoto(null); setAnalysisResult(null); }}>
+                        <Trash2 className="mr-2"/> Tekrar Çek
+                    </Button>
+                    <Button onClick={handleAnalyzePhoto} disabled={analyzing}>
+                      {analyzing ? <Loader2 className="mr-2 animate-spin"/> : <Sparkles className="mr-2"/>}
+                      {analyzing ? "Analiz Ediliyor..." : "Fotoğrafı Analiz Et"}
+                    </Button>
+                  </div>
+                   {analysisResult && (
+                    <Card className="w-full">
+                        <CardHeader><CardTitle>AI Analiz Sonucu</CardTitle></CardHeader>
+                        <CardContent>
+                            <p className="text-sm">{analysisResult}</p>
+                        </CardContent>
+                    </Card>
+                )}
               </div>
             ) : (
               <Button onClick={takePhoto} size="lg" className="rounded-full w-20 h-20">
@@ -179,6 +217,7 @@ export default function ActionsPage() {
                                 <Trash2 className="mr-2"/> Sil ve Yeniden Kaydet
                             </Button>
                             <Button onClick={handleTranscribe} disabled={transcribing}>
+                                {transcribing ? <Loader2 className="mr-2 animate-spin"/> : <Mic className="mr-2"/>}
                                 {transcribing ? "Çevriliyor..." : "Metne Çevir"}
                             </Button>
                         </div>
@@ -211,7 +250,7 @@ export default function ActionsPage() {
       <Card>
         <CardHeader>
           <div className="flex justify-center gap-2 border-b pb-4">
-            <Button variant={mode === 'camera' ? 'default' : 'outline'} onClick={() => handleModeChange('camera')}><Camera className="mr-2"/> Fotoğraf Çek</Button>
+            <Button variant={mode === 'camera' ? 'default' : 'outline'} onClick={() => handleModeChange('camera')}><Camera className="mr-2"/> Fotoğraf Çek & Analiz Et</Button>
             <Button variant={mode === 'video' ? 'default' : 'outline'} onClick={() => handleModeChange('video')}><Video className="mr-2"/> Video Kaydet</Button>
             <Button variant={mode === 'audio' ? 'default' : 'outline'} onClick={() => handleModeChange('audio')}><Mic className="mr-2"/> Ses Kaydet</Button>
           </div>
