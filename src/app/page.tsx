@@ -1,13 +1,15 @@
+
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, Sun } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { familyMembers, recentActivities } from "@/lib/data";
+import { familyMembers, weeklyPoints, recentActivities } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 
 const quickStats = [
   { title: 'Tamamlanan Görevler', value: '24', change: '+8', icon: CheckSquare, color: 'text-green-500', bgColor: 'bg-green-500/10' },
@@ -16,6 +18,20 @@ const quickStats = [
   { title: 'Alışveriş Tasarrufu', value: '₺245', change: '+₺67', icon: ShoppingCart, color: 'text-red-500', bgColor: 'bg-red-500/10' },
 ];
 
+const familyXpChartConfig = {
+  xp: { label: "XP", },
+  Ahmet: { label: "Ahmet", color: "hsl(var(--chart-1))" },
+  Zeynep: { label: "Zeynep", color: "hsl(var(--chart-2))" },
+  Elif: { label: "Elif", color: "hsl(var(--chart-3))" },
+  Murat: { label: "Murat", color: "hsl(var(--chart-4))" },
+} satisfies ChartConfig
+
+const weeklyProgressChartConfig = {
+  points: {
+    label: "Puan",
+    color: "hsl(var(--chart-1))",
+  },
+} satisfies ChartConfig
 
 export default function Home() {
   const [currentTime, setCurrentTime] = React.useState(new Date());
@@ -31,6 +47,8 @@ export default function Home() {
     if (hour < 18) return 'Tünaydın';
     return 'İyi Akşamlar';
   };
+  
+  const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
 
   return (
     <div className="space-y-8">
@@ -91,33 +109,92 @@ export default function Home() {
         </div>
       </section>
 
-      <section>
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>⚡ Son Aktiviteler</CardTitle>
-            <CardDescription>Ailede olup bitenler.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
-                   <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${activity.color}`}>
-                      <activity.icon className="h-5 w-5 text-white" />
-                   </div>
-                   <div className="flex-grow">
-                     <p className="font-semibold text-foreground">{activity.title}</p>
-                     <p className="text-sm text-muted-foreground">{activity.user} • {activity.time}</p>
-                   </div>
-                   <div className="flex items-center gap-1 rounded-full bg-yellow-400/20 px-2 py-1 text-xs font-bold text-yellow-600">
-                     <Star className="h-3 w-3 fill-current" />
-                     <span>+{activity.points}</span>
-                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+           <CardHeader>
+             <CardTitle>Haftalık İlerleme</CardTitle>
+             <CardDescription>Ailenin bu hafta kazandığı toplam XP puanları.</CardDescription>
+           </CardHeader>
+           <CardContent>
+             <ChartContainer config={weeklyProgressChartConfig} className="h-[250px] w-full">
+                <AreaChart
+                  accessibilityLayer
+                  data={weeklyPoints}
+                  margin={{
+                    left: -20,
+                    right: 10,
+                    top: 10,
+                    bottom: 0
+                  }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                  />
+                   <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                  <Tooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <defs>
+                    <linearGradient id="fillPoints" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-points)"
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-points)"
+                        stopOpacity={0.1}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    dataKey="points"
+                    type="natural"
+                    fill="url(#fillPoints)"
+                    stroke="var(--color-points)"
+                    stackId="a"
+                  />
+                </AreaChart>
+             </ChartContainer>
+           </CardContent>
+        </Card>
+        <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle>Aile XP Karşılaştırması</CardTitle>
+                <CardDescription>Aile üyelerinin toplam tecrübe puanları.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <ChartContainer config={familyXpChartConfig} className="h-[250px] w-full">
+                    <BarChart data={familyXpData} layout="vertical" margin={{ left: 10, right: 10 }}>
+                        <CartesianGrid horizontal={false} />
+                        <YAxis
+                            dataKey="name"
+                            type="category"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={10}
+                            width={60}
+                        />
+                        <XAxis dataKey="xp" type="number" hide />
+                        <Tooltip cursor={false} content={<ChartTooltipContent />} />
+                        <Bar dataKey="xp" radius={8}>
+                           {familyXpData.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={familyXpChartConfig[entry.name as keyof typeof familyXpChartConfig]?.color} />
+                           ))}
+                        </Bar>
+                    </BarChart>
+                </ChartContainer>
+            </CardContent>
         </Card>
       </section>
     </div>
   );
 }
+
+    

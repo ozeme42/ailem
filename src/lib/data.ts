@@ -88,10 +88,10 @@ export const mediaItems: MediaItem[] = [
 ];
 
 export const familyMembers: FamilyMember[] = [
-  { id: 1, name: 'Ahmet', role: 'Baba', avatar: 'https://placehold.co/64x64.png', completedTasks: 18, color: '#3B82F6', level: 5, xp: 1250, streak: 7, badges: ['🏆', '⚡', '🎯'], mood: 'happy', status: 'online' },
-  { id: 2, name: 'Zeynep', role: 'Anne', avatar: 'https://placehold.co/64x64.png', completedTasks: 22, color: '#EC4899', level: 6, xp: 1580, streak: 12, badges: ['👑', '💎', '🌟', '🔥'], mood: 'excited', status: 'online' },
-  { id: 3, name: 'Elif', role: 'Kız Çocuk', avatar: 'https://placehold.co/64x64.png', completedTasks: 14, color: '#8B5CF6', level: 4, xp: 890, streak: 5, badges: ['📚', '🎨', '⭐'], mood: 'focused', status: 'away' },
-  { id: 4, name: 'Murat', role: 'Erkek Çocuk', avatar: 'https://placehold.co/64x64.png', completedTasks: 10, color: '#F59E0B', level: 3, xp: 650, streak: 3, badges: ['🎵', '🏃‍♂️'], mood: 'playful', status: 'online' },
+  { id: 1, name: 'Ahmet', role: 'Baba', avatar: 'https://placehold.co/64x64.png', completedTasks: 18, color: '#3B82F6', level: 5, xp: 4250, streak: 7, badges: ['🏆', '⚡', '🎯'], mood: 'happy', status: 'online' },
+  { id: 2, name: 'Zeynep', role: 'Anne', avatar: 'https://placehold.co/64x64.png', completedTasks: 22, color: '#EC4899', level: 6, xp: 5580, streak: 12, badges: ['👑', '💎', '🌟', '🔥'], mood: 'excited', status: 'online' },
+  { id: 3, name: 'Elif', role: 'Kız Çocuk', avatar: 'https://placehold.co/64x64.png', completedTasks: 14, color: '#8B5CF6', level: 4, xp: 3890, streak: 5, badges: ['📚', '🎨', '⭐'], mood: 'focused', status: 'away' },
+  { id: 4, name: 'Murat', role: 'Erkek Çocuk', avatar: 'https://placehold.co/64x64.png', completedTasks: 10, color: '#F59E0B', level: 3, xp: 2650, streak: 3, badges: ['🎵', '🏃‍♂️'], mood: 'playful', status: 'online' },
 ];
 
 export const tasks: Task[] = [
@@ -166,6 +166,15 @@ export const weeklyPoints = [
     { name: 'Cum', points: 550 },
     { name: 'Cmt', points: 900 },
     { name: 'Paz', points: 600 },
+];
+
+export const monthlyReadingStats = [
+  { month: 'Ocak', books: 5, pages: 1200 },
+  { month: 'Şubat', books: 7, pages: 1500 },
+  { month: 'Mart', books: 6, pages: 1300 },
+  { month: 'Nisan', books: 8, pages: 1800 },
+  { month: 'Mayıs', books: 7, pages: 1600 },
+  { month: 'Haziran', books: 9, pages: 2100 },
 ];
 
 export interface Student {

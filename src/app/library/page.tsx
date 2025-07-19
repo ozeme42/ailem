@@ -4,7 +4,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { Book, Film, Gamepad2, Heart, Mic, PlusCircle, Search, Star } from "lucide-react";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, Bar, XAxis, YAxis, CartesianGrid, ComposedChart, Line } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -13,16 +13,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MediaItem, mediaItems, MediaType } from "@/lib/data";
+import { MediaItem, mediaItems, MediaType, monthlyReadingStats } from "@/lib/data";
+import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 const genreData = [
   { name: 'Fantastik', value: 400, fill: "hsl(var(--chart-1))" },
   { name: 'Dram', value: 300, fill: "hsl(var(--chart-2))" },
+  { name: 'Klasik', value: 280, fill: "hsl(var(--chart-4))" },
   { name: 'Felsefe', value: 200, fill: "hsl(var(--chart-3))" },
-  { name: 'Distopya', value: 200, fill: "hsl(var(--chart-4))" },
-  { name: 'Simülasyon', value: 100, fill: "hsl(var(--chart-5))" },
-  { name: 'Bilim Kurgu', value: 150, fill: "hsl(var(--chart-1))" },
-  { name: 'RPG', value: 120, fill: "hsl(var(--chart-2))" },
+  { name: 'Bilim Kurgu', value: 180, fill: "hsl(var(--chart-5))" },
 ];
 
 const mediaTypeIcons: { [key in MediaType]: React.ElementType } = {
@@ -31,6 +30,18 @@ const mediaTypeIcons: { [key in MediaType]: React.ElementType } = {
     "Sesli Kitap": Mic,
     "Oyun": Gamepad2,
 }
+
+const readingChartConfig = {
+  books: {
+    label: "Kitap Sayısı",
+    color: "hsl(var(--chart-2))",
+  },
+  pages: {
+    label: "Sayfa Sayısı",
+    color: "hsl(var(--chart-4))",
+  },
+} satisfies ChartConfig;
+
 
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = React.useState<MediaType | "all">("all");
@@ -44,15 +55,6 @@ export default function LibraryPage() {
     return tabFilter && searchFilter;
   });
 
-  const mostCommonGenre = genreData.reduce((prev, current) => (prev.value > current.value) ? prev : current).name
-  const highestRated = [...mediaItems].sort((a,b) => b.rating - a.rating)[0];
-  const mostCommonType = mediaItems.reduce((acc, item) => {
-      acc[item.type] = (acc[item.type] || 0) + 1;
-      return acc;
-  }, {} as Record<MediaType, number>);
-
-  const topType = Object.entries(mostCommonType).sort((a,b) => b[1] - a[1])[0][0] as MediaType;
-
   return (
     <>
       <PageHeader title="Aile Kütüphanesi 📚">
@@ -62,69 +64,56 @@ export default function LibraryPage() {
         </Button>
       </PageHeader>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Medya</CardTitle>
-            <Book className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mediaItems.length} Öğe</div>
-            <p className="text-xs text-muted-foreground">Kitaplar, filmler ve daha fazlası</p>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Sevilen Tür</CardTitle>
-            <Heart className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mostCommonGenre}</div>
-            <p className="text-xs text-muted-foreground">Tüm zamanlar</p>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Yüksek Puanlı</CardTitle>
-            <Star className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold truncate">{highestRated.title}</div>
-            <p className="text-xs text-muted-foreground">{highestRated.rating.toFixed(1)} Ortalama Puan</p>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">En Çok Tüketilen</CardTitle>
-                <Book className="h-4 w-4 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{topType}</div>
-                <p className="text-xs text-muted-foreground">Medya türü</p>
-            </CardContent>
-        </Card>
-      </div>
-
-       <Card className="mb-8">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 mb-8">
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Türlere Göre Dağılım</CardTitle>
-            <CardDescription>Kütüphanedeki medyaların türlere göre dağılımı.</CardDescription>
+            <CardTitle>Aylık Okuma İstatistikleri</CardTitle>
+            <CardDescription>Son 6 aydaki okuma performansı.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ChartContainer config={readingChartConfig} className="h-[250px] w-full">
+              <ComposedChart data={monthlyReadingStats}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis yAxisId="left" orientation="left" stroke="#888888" fontSize={12} tickLine={false} axisLine={false}/>
+                <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} tickLine={false} axisLine={false}/>
+                <Tooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Bar dataKey="books" yAxisId="left" fill="var(--color-books)" radius={[4, 4, 0, 0]} />
+                <Line type="monotone" dataKey="pages" yAxisId="right" stroke="var(--color-pages)" strokeWidth={2} dot={{ r: 4 }} />
+              </ComposedChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Kitap Türleri Dağılımı</CardTitle>
+            <CardDescription>Kütüphanedeki kitapların türlere göre dağılımı.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
+            <ChartContainer config={{}} className="h-[250px] w-full">
                  <PieChart>
-                    <Pie data={genreData} cx="50%" cy="50%" labelLine={false} outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        {genreData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                    <Tooltip content={<ChartTooltipContent hideLabel />} />
+                    <Pie 
+                      data={genreData} 
+                      dataKey="value" 
+                      nameKey="name" 
+                      cx="50%" 
+                      cy="50%" 
+                      outerRadius={100} 
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                        {genreData.map((entry) => (
+                            <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                         ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)"}} />
-                    <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }}/>
                 </PieChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
-
+      </div>
+      
       <div>
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-foreground">Medya Kütüphanesi</h2>
