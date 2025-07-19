@@ -13,7 +13,8 @@ import { TaskItem } from "@/components/task-item";
 import { tasks, familyMembers } from "@/lib/data";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { NewTaskForm } from "@/components/new-task-form";
 
 export default function TasksPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -35,10 +36,23 @@ export default function TasksPage() {
   return (
     <>
       <PageHeader title="Görev Yönetimi 📝">
-        <Button className="bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Görev Ekle
-        </Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Yeni Görev Ekle
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Yeni Görev Oluştur</DialogTitle>
+              <DialogDescription>
+                Yeni bir görev ekleyerek ailenizin düzenine katkıda bulunun.
+              </DialogDescription>
+            </DialogHeader>
+            <NewTaskForm familyMembers={familyMembers} />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
