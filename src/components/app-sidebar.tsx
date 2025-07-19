@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, Camera, GraduationCap, ShoppingCart } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
@@ -17,7 +17,6 @@ export function AppSidebar() {
     { href: "/library", label: "Kütüphane", icon: Library },
     { href: "/education", label: "Eğitim", icon: GraduationCap },
     { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
-    { href: "/actions", label: "Hızlı İşlemler", icon: Camera },
   ];
 
   return (
