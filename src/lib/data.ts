@@ -98,6 +98,24 @@ export interface Assignment {
   priority: 'Yüksek' | 'Orta' | 'Düşük';
 }
 
+export interface ShoppingItem {
+  id: number;
+  name: string;
+  quantity: string;
+  price: number;
+  completed: boolean;
+}
+
+export interface ShoppingList {
+  id: number;
+  title: string;
+  items: ShoppingItem[];
+  category: 'Market' | 'Ev Eşyaları' | 'Diğer';
+  totalBudget: number;
+  assigneeId: number;
+  dueDate: string;
+}
+
 export const students: Student[] = [
   { id: 3, name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
   { id: 4, name: 'Murat', grade: '8. Sınıf', avatar: '👦' },
@@ -158,6 +176,51 @@ export const mediaItems: MediaItem[] = [
     { id: 6, type: 'Oyun', title: 'Stardew Valley', author: 'ConcernedApe', coverImage: 'https://placehold.co/300x450.png', rating: 5, platform: 'PC/Konsol', description: 'Büyükbabanızın eski çiftliğini devralıp yeni bir hayata başlayın.', genre: 'Simülasyon' },
     { id: 7, type: 'Film', title: 'Inception', author: 'Christopher Nolan', coverImage: 'https://placehold.co/300x450.png', rating: 5, duration: '2s 28dk', description: 'Başkalarının rüyalarına girerek fikir çalan bir hırsızın hikayesi.', genre: 'Bilim Kurgu'},
     { id: 8, type: 'Oyun', title: 'The Witcher 3: Wild Hunt', author: 'CD Projekt Red', coverImage: 'https://placehold.co/300x450.png', rating: 5, platform: 'PC/Konsol', description: 'Canavar avcısı Geralt of Rivia\'nın maceralarını konu alan bir rol yapma oyunu.', genre: 'RPG'},
+];
+
+export const shoppingLists: ShoppingList[] = [
+  {
+    id: 1,
+    title: 'Haftalık Market Alışverişi',
+    items: [
+      { id: 1, name: 'Süt', quantity: '2 litre', price: 55.50, completed: false },
+      { id: 2, name: 'Ekmek', quantity: '3 adet', price: 22.50, completed: true },
+      { id: 3, name: 'Yumurta', quantity: '1 düzine', price: 45.00, completed: false },
+      { id: 4, name: 'Domates', quantity: '1 kg', price: 32.00, completed: false },
+      { id: 5, name: 'Peynir', quantity: '500 gr', price: 120.00, completed: false },
+    ],
+    category: 'Market',
+    totalBudget: 400.00,
+    assigneeId: 1,
+    dueDate: 'Bugün',
+  },
+  {
+    id: 2,
+    title: 'Ev Temizlik Malzemeleri',
+    items: [
+      { id: 6, name: 'Bulaşık Deterjanı', quantity: '1 adet', price: 75.00, completed: false },
+      { id: 7, name: 'Yumuşatıcı', quantity: '1 adet', price: 88.00, completed: false },
+      { id: 8, name: 'Tuvalet Kağıdı', quantity: '1 paket (32 rulo)', price: 165.00, completed: true },
+      { id: 9, name: 'Çöp Torbası', quantity: '1 paket', price: 40.00, completed: false },
+    ],
+    category: 'Ev Eşyaları',
+    totalBudget: 400.00,
+    assigneeId: 2,
+    dueDate: 'Yarın',
+  },
+    {
+    id: 3,
+    title: 'Okul Kırtasiye İhtiyaçları',
+    items: [
+      { id: 10, name: 'Defter', quantity: '5 adet', price: 125.00, completed: true },
+      { id: 11, name: 'Kalem', quantity: '1 kutu', price: 60.00, completed: true },
+      { id: 12, name: 'Silgi', quantity: '3 adet', price: 25.00, completed: false },
+    ],
+    category: 'Diğer',
+    totalBudget: 250.00,
+    assigneeId: 3,
+    dueDate: 'Bu Hafta',
+  },
 ];
 
 export const recentActivities = [
