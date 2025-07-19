@@ -91,9 +91,9 @@ export default function YemekPlanlamaPage() {
       
       <Card>
           <CardHeader>
-             <div className="flex justify-between items-center">
+             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <CardTitle>Tarif Kütüphanesi</CardTitle>
-                 <div className="w-full md:w-1/3 relative">
+                 <div className="w-full sm:w-auto md:w-1/3 relative">
                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                       placeholder="Tarif veya malzeme ara..." 

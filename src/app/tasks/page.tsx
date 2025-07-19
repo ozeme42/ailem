@@ -57,7 +57,7 @@ export default function TasksPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 

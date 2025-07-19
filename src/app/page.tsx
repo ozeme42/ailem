@@ -53,7 +53,7 @@ export default function Home() {
   return (
     <div className="space-y-8">
       <header className="rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start justify-between">
             <div>
                 <h1 className="text-3xl font-bold">{getGreeting()}, Aile! 👋</h1>
                 <p className="mt-1 opacity-90">
@@ -65,7 +65,7 @@ export default function Home() {
                     <span className="opacity-70">İstanbul</span>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-4 sm:mt-0">
                  <button className="relative rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
                     <Bell className="h-6 w-6" />
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-purple-500">3</Badge>

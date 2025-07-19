@@ -64,7 +64,7 @@ export default function LibraryPage() {
         </Button>
       </PageHeader>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 mb-8">
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Aylık Okuma İstatistikleri</CardTitle>
@@ -115,9 +115,9 @@ export default function LibraryPage() {
       </div>
       
       <div>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <h2 className="text-2xl font-semibold text-foreground">Medya Kütüphanesi</h2>
-             <div className="w-full md:w-1/3 relative">
+             <div className="w-full sm:w-auto md:w-1/3 relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Kütüphanede ara..." 
@@ -156,7 +156,7 @@ export default function LibraryPage() {
                                     </div>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[625px]">
-                                    <div className="grid gap-8 sm:grid-cols-2">
+                                    <div className="grid gap-8 grid-cols-1 sm:grid-cols-2">
                                         <div>
                                             <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md aspect-[2/3]" data-ai-hint="book cover" />
                                         </div>
