@@ -3,7 +3,9 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { PlusCircle, Search, Clock, Soup, Salad, Wheat, Star } from "lucide-react";
+import { PlusCircle, Search, Clock, Soup, Salad, Wheat, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addDays, startOfWeek } from "date-fns";
+import { tr } from "date-fns/locale";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -21,9 +23,16 @@ const categoryIcons = {
   "Atıştırmalık": <Wheat className="h-4 w-4 mr-2" />,
 };
 
+const mealTypes = ["Kahvaltı", "Öğle Yemeği", "Akşam Yemeği"];
+
 export default function YemekPlanlamaPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("Hepsi");
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+
+  const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
+
 
   const filteredRecipes = recipes.filter(recipe => {
     const matchesCategory = activeTab === "Hepsi" || recipe.category === activeTab;
@@ -40,8 +49,47 @@ export default function YemekPlanlamaPage() {
           Yeni Tarif Ekle
         </Button>
       </PageHeader>
+
+       <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Haftalık Yemek Planı</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, -7))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, 7))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <CardDescription>
+            Bu haftanın menüsünü planlayın. Tarifleri aşağıdan sürükleyip bırakın.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-7 gap-2">
+            {weekDays.map(day => (
+              <Card key={day.toString()} className="flex flex-col gap-2 p-2 bg-muted/40">
+                <div className="font-semibold text-center text-sm capitalize">
+                  {format(day, 'EEE', { locale: tr })}
+                  <p className="text-xs text-muted-foreground">{format(day, 'd')}</p>
+                </div>
+                <div className="space-y-2 flex-grow">
+                  {mealTypes.map(meal => (
+                    <div key={meal} className="h-20 bg-background/50 rounded-md flex justify-center items-center border-dashed border-2 border-muted-foreground/20">
+                      <span className="text-xs text-muted-foreground">{meal}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
       
-      <Card className="mb-8">
+      <Card>
           <CardHeader>
              <div className="flex justify-between items-center">
                 <CardTitle>Tarif Kütüphanesi</CardTitle>
@@ -128,4 +176,3 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
-
