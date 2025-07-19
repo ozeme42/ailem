@@ -14,17 +14,10 @@ import { tasks, familyMembers } from "@/lib/data";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { transcribeAudio } from "@/ai/flows/speech-to-text-flow";
 
 export default function TasksPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
-  const { toast } = useToast();
   
-  const [isRecording, setIsRecording] = React.useState(false);
-  const [isTranscribing, setIsTranscribing] = React.useState(false);
-  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
-  const audioChunksRef = React.useRef<Blob[]>([]);
-
   const getAssignee = (assigneeId: number) => {
     return familyMembers.find((m) => m.id === assigneeId)!;
   };
@@ -39,62 +32,6 @@ export default function TasksPage() {
   const todoTasks = filteredTasks.filter((task) => !task.completed);
   const completedTasks = filteredTasks.filter((task) => task.completed);
   
-  const handleMicClick = async () => {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorderRef.current.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        
-        if (audioBlob.size === 0) return;
-
-        setIsTranscribing(true);
-        try {
-          const reader = new FileReader();
-          reader.readAsDataURL(audioBlob);
-          reader.onloadend = async () => {
-            const base64Audio = reader.result as string;
-            const result = await transcribeAudio(base64Audio);
-            if (result.text && result.text !== "Metin anlaşılamadı.") {
-                setSearchTerm(result.text);
-            } else {
-                 toast({ variant: "destructive", title: "Ses Anlaşılamadı", description: "Lütfen tekrar deneyin." });
-            }
-          };
-        } catch (error) {
-          console.error("Transcription error:", error);
-          toast({ variant: "destructive", title: "Metne Çevirme Başarısız Oldu", description: "Lütfen tekrar deneyin." });
-        } finally {
-          setIsTranscribing(false);
-        }
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Mic error:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Mikrofon Erişimi Gerekli',
-        description: 'Sesle arama için mikrofon izni vermelisiniz.',
-      });
-    }
-  };
-
-
   return (
     <>
       <PageHeader title="Görev Yönetimi 📝">
@@ -110,14 +47,13 @@ export default function TasksPage() {
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder={isRecording ? "Dinleniyor..." : "Görev, sorumlu veya kategori ara..."}
+                placeholder={"Görev, sorumlu veya kategori ara..."}
                 className="pl-10 pr-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                disabled={isRecording || isTranscribing}
               />
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7" onClick={handleMicClick} disabled={isTranscribing}>
-                {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Mic className={`h-4 w-4 ${isRecording ? 'text-red-500' : ''}`}/>}
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7">
+                <Mic className={`h-4 w-4`}/>
               </Button>
             </div>
              <DropdownMenu>
@@ -182,7 +118,7 @@ export default function TasksPage() {
                 {leaderboard.map((member, index) => (
                     <li key={member.id} className="flex items-center gap-3">
                       <span className="font-bold text-lg w-6">{index + 1}.</span>
-                      <Image src={member.avatar} alt={member.name} width={40} height={40} className="rounded-full" />
+                      <Image src={member.avatar} alt={member.name} width={40} height={40} className="rounded-full" data-ai-hint="people" />
                       <div className="flex-grow">
                         <p className="font-semibold">{member.name}</p>
                         <div className="flex items-center text-sm text-yellow-500">

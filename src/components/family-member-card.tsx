@@ -36,9 +36,7 @@ export function FamilyMemberCard({ member }: FamilyMemberCardProps) {
         <div className={`p-4 text-white bg-gradient-to-br ${gradient}`}>
             <div className="flex justify-between items-start mb-2">
                  <div className="relative">
-                    <div className="w-16 h-16 text-4xl rounded-full bg-white/20 flex items-center justify-center border-2 border-white/50">
-                        {member.avatar}
-                    </div>
+                    <Image src={member.avatar} alt={member.name} width={64} height={64} className="w-16 h-16 rounded-full border-2 border-white/50" data-ai-hint="person" />
                     <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 ${member.status === 'online' ? 'bg-green-400' : 'bg-gray-400'} border-card`}/>
                  </div>
                  <div className="text-3xl">{moodEmojis[member.mood]}</div>
