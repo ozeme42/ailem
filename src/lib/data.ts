@@ -49,6 +49,31 @@ export interface CalendarEvent {
     attendees: number[];
 }
 
+export type MediaType = "Kitap" | "Film" | "Sesli Kitap" | "Oyun";
+
+export interface MediaItem {
+  id: number;
+  title: string;
+  author: string; // Yazar, Yönetmen, Geliştirici vb.
+  coverImage: string;
+  type: MediaType;
+  genre: string;
+  rating: number;
+  description: string;
+  pages?: number;
+  duration?: string;
+  platform?: string;
+}
+
+export const mediaItems: MediaItem[] = [
+  { id: 1, title: 'Küçük Prens', author: 'Antoine de Saint-Exupéry', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Fantastik', rating: 4.8, description: "Bir çocuğun gözünden yetişkinlerin dünyasına bir bakış.", pages: 112 },
+  { id: 2, title: 'Yüzüklerin Efendisi', author: 'Peter Jackson', coverImage: 'https://placehold.co/300x450.png', type: 'Film', genre: 'Fantastik', rating: 4.9, description: "Orta Dünya'yı kurtarmak için verilen epik bir mücadele.", duration: "2s 58dk" },
+  { id: 3, title: '1984', author: 'George Orwell', coverImage: 'https://placehold.co/300x450.png', type: 'Sesli Kitap', genre: 'Distopya', rating: 4.7, description: "Totaliter bir rejim altında geçen distopik bir roman.", duration: "11s 22dk" },
+  { id: 4, title: 'The Witcher 3', author: 'CD Projekt Red', coverImage: 'https://placehold.co/300x450.png', type: 'Oyun', genre: 'RPG', rating: 4.9, description: "Geralt of Rivia'nın maceralarını konu alan bir rol yapma oyunu.", platform: "PC, PS5, Xbox" },
+  { id: 5, title: 'Simyacı', author: 'Paulo Coelho', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Felsefe', rating: 4.6, description: "Hayallerinin peşinden giden bir çobanın hikayesi.", pages: 188 },
+  { id: 6, title: 'Interstellar', author: 'Christopher Nolan', coverImage: 'https://placehold.co/300x450.png', type: 'Film', genre: 'Bilim Kurgu', rating: 4.8, description: "İnsanlığın kurtuluşu için uzayda yeni bir yuva arayışı.", duration: "2s 49dk" },
+];
+
 export const familyMembers: FamilyMember[] = [
   { id: 1, name: 'Ahmet', role: 'Baba', avatar: 'https://placehold.co/64x64.png', completedTasks: 18, color: '#3B82F6', level: 5, xp: 1250, streak: 7, badges: ['🏆', '⚡', '🎯'], mood: 'happy', status: 'online' },
   { id: 2, name: 'Zeynep', role: 'Anne', avatar: 'https://placehold.co/64x64.png', completedTasks: 22, color: '#EC4899', level: 6, xp: 1580, streak: 12, badges: ['👑', '💎', '🌟', '🔥'], mood: 'excited', status: 'online' },
@@ -130,32 +155,6 @@ export const weeklyPoints = [
     { name: 'Paz', points: 600 },
 ];
 
-export type MediaType = "Kitap" | "Film" | "Sesli Kitap" | "Oyun";
-
-export interface MediaItem {
-  id: number;
-  title: string;
-  author: string; // or director/developer
-  coverImage: string;
-  type: MediaType;
-  genre: string;
-  rating: number;
-  description: string;
-  status: 'Okunuyor' | 'İzleniyor' | 'Oynanıyor' | 'Tamamlandı' | 'İstek Listesi';
-  // Type-specific fields
-  pages?: number;
-  duration?: string;
-  platform?: string;
-}
-
-export const mediaItems: MediaItem[] = [
-  { id: 1, title: "Yüzüklerin Efendisi", author: "J.R.R. Tolkien", coverImage: "https://placehold.co/300x450.png", type: "Kitap", genre: "Fantastik", rating: 4.9, description: "Orta Dünya'da geçen epik bir macera.", status: 'Tamamlandı' },
-  { id: 2, title: "The Matrix", author: "Wachowski Kardeşler", coverImage: "https://placehold.co/300x450.png", type: "Film", genre: "Bilim Kurgu", rating: 4.8, description: "Gerçekliğin sorgulandığı bir siber dünya.", status: 'Tamamlandı', duration: '2s 16dk' },
-  { id: 3, title: "The Witcher 3", author: "CD Projekt Red", coverImage: "https://placehold.co/300x450.png", type: "Oyun", genre: "RPG", rating: 4.9, description: "Geralt of Rivia'nın maceraları.", status: 'Oynanıyor', platform: 'PC' },
-  { id: 4, title: "Dune", author: "Frank Herbert", coverImage: "https://placehold.co/300x450.png", type: "Sesli Kitap", genre: "Bilim Kurgu", rating: 4.7, description: "Arrakis gezegenindeki politik entrikalar.", status: 'Okunuyor', duration: '21s 5dk' },
-  { id: 5, title: "1984", author: "George Orwell", coverImage: "https://placehold.co/300x450.png", type: "Kitap", genre: "Distopya", rating: 4.8, description: "Totaliter bir rejim altında yaşam.", status: 'İstek Listesi' },
-];
-
 export interface Student {
   id: number;
   name: string;
@@ -189,6 +188,53 @@ export interface Assignment {
   studentId: number;
 }
 
+export interface ShoppingItem {
+    id: number;
+    name: string;
+    quantity: string;
+    price: number;
+    completed: boolean;
+}
+
+export interface ShoppingList {
+    id: number;
+    title: string;
+    items: ShoppingItem[];
+    category: string;
+    totalBudget: number;
+    assigneeId: number;
+    dueDate: string;
+}
+
+export const shoppingLists: ShoppingList[] = [
+    { 
+        id: 1, 
+        title: "Haftalık Market Alışverişi",
+        items: [
+            { id: 1, name: 'Süt', quantity: '2 litre', price: 65.50, completed: false },
+            { id: 2, name: 'Ekmek', quantity: '3 adet', price: 30.00, completed: true },
+            { id: 3, name: 'Yumurta', quantity: '1 düzine', price: 75.00, completed: false },
+            { id: 4, name: 'Domates', quantity: '1 kg', price: 42.00, completed: false },
+        ],
+        category: "Market",
+        totalBudget: 300,
+        assigneeId: 2,
+        dueDate: "Bugün"
+    },
+    { 
+        id: 2, 
+        title: "Ev Temizlik Malzemeleri",
+        items: [
+            { id: 5, name: 'Deterjan', quantity: '1 adet', price: 145.00, completed: false },
+            { id: 6, name: 'Yumuşatıcı', quantity: '1 adet', price: 88.00, completed: false },
+            { id: 7, name: 'Tuvalet Kağıdı', quantity: '1 paket', price: 165.00, completed: false },
+        ],
+        category: "Ev Eşyaları",
+        totalBudget: 450,
+        assigneeId: 1,
+        dueDate: "Yarın"
+    },
+];
 
 export const students: Student[] = [
   { id: 3, name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
@@ -239,54 +285,5 @@ export const assignments: Assignment[] = [
     dueDate: '14 Ocak 2025',
     status: 'Tamamlandı',
     studentId: 4,
-  },
-];
-
-
-export interface ShoppingItem {
-  id: number;
-  name: string;
-  quantity: string;
-  price: number;
-  completed: boolean;
-}
-
-export interface ShoppingList {
-  id: number;
-  title: string;
-  items: ShoppingItem[];
-  category: string;
-  totalBudget: number;
-  assigneeId: number;
-  dueDate: string;
-}
-
-export const shoppingLists: ShoppingList[] = [
-  {
-    id: 1,
-    title: 'Haftalık Market Alışverişi',
-    items: [
-      { id: 1, name: 'Süt', quantity: '2 litre', price: 55.50, completed: false },
-      { id: 2, name: 'Ekmek', quantity: '3 adet', price: 45.00, completed: true },
-      { id: 3, name: 'Yumurta', quantity: '1 düzine', price: 75.00, completed: false },
-      { id: 4, name: 'Domates', quantity: '1 kg', price: 60.00, completed: false },
-    ],
-    category: 'Market',
-    totalBudget: 450.00,
-    assigneeId: 1,
-    dueDate: 'Bugün',
-  },
-  {
-    id: 2,
-    title: 'Ev Temizlik Malzemeleri',
-    items: [
-      { id: 5, name: 'Çamaşır Deterjanı', quantity: '1 adet', price: 145.00, completed: false },
-      { id: 6, name: 'Yumuşatıcı', quantity: '1 adet', price: 88.00, completed: false },
-      { id: 7, name: 'Kağıt Havlu', quantity: '1 paket', price: 165.00, completed: true },
-    ],
-    category: 'Ev İhtiyaçları',
-    totalBudget: 500.00,
-    assigneeId: 2,
-    dueDate: 'Yarın',
   },
 ];
