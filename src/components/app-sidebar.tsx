@@ -22,7 +22,7 @@ export function AppSidebar() {
   ];
 
   return (
-    <Sidebar>
+    <Sidebar className="hidden md:block">
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">

@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Toaster } from "@/components/ui/toaster";
+import { MobileNavbar } from '@/components/mobile-navbar';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -23,11 +24,12 @@ export default function RootLayout({
         <SidebarProvider>
           <AppSidebar />
           <SidebarInset>
-            <main className="p-4 sm:p-6 lg:p-8">
+            <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
               {children}
             </main>
           </SidebarInset>
         </SidebarProvider>
+        <MobileNavbar />
         <Toaster />
       </body>
     </html>
