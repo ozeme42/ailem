@@ -50,18 +50,18 @@ export interface CalendarEvent {
 
 export type MediaType = 'Kitap' | 'Film' | 'Sesli Kitap' | 'Oyun';
 
-export interface Media {
+export interface MediaItem {
     id: number;
     type: MediaType;
     title: string;
     author: string; // or director, developer etc.
     coverImage: string;
     rating: number;
+    description: string;
+    genre: string;
     pages?: number; // for books
     duration?: string; // for movies/audiobooks
     platform?: string; // for games
-    description: string;
-    genre: string;
 }
 
 export const familyMembers: FamilyMember[] = [
@@ -89,13 +89,15 @@ export const calendarEvents: CalendarEvent[] = [
     { id: 5, title: 'Zeynep\'in Doğum Günü Yemeği', date: '2024-08-05', startTime: '19:30', category: 'Doğum Günü', description: 'Zeynep\'in doğum gününü dışarıda kutluyoruz!', location: 'Favori Restoran', priority: 'Yüksek' },
 ];
 
-export const mediaItems: Media[] = [
+export const mediaItems: MediaItem[] = [
     { id: 1, type: 'Kitap', title: 'Küçük Prens', author: 'Antoine de Saint-Exupéry', coverImage: 'https://placehold.co/300x450.png', rating: 5, pages: 112, description: 'Bir pilotun Sahra Çölü\'ne düşmesi ve orada küçük bir prensle tanışmasını konu alır.', genre: 'Fantastik' },
     { id: 2, type: 'Kitap', title: 'Şeker Portakalı', author: 'José Mauro de Vasconcelos', coverImage: 'https://placehold.co/300x450.png', rating: 5, pages: 200, description: 'Yoksul bir ailenin çocuğu olan Zezé\'nin hayal gücü ve hüzünlü hikayesi.', genre: 'Dram' },
     { id: 3, type: 'Film', title: 'Yüzüklerin Efendisi: Yüzük Kardeşliği', author: 'Peter Jackson', coverImage: 'https://placehold.co/300x450.png', rating: 5, duration: '2s 58dk', description: 'Genç bir hobbit olan Frodo Baggins\'in Tek Yüzük\'ü yok etmek için çıktığı macera.', genre: 'Fantastik' },
     { id: 4, type: 'Sesli Kitap', title: 'Martı Jonathan Livingston', author: 'Richard Bach', coverImage: 'https://placehold.co/300x450.png', rating: 4, duration: '1s 30dk', description: 'Sıradan bir martı olmaktan fazlasını isteyen Jonathan\'ın hikayesi.', genre: 'Felsefe' },
     { id: 5, type: 'Kitap', title: '1984', author: 'George Orwell', coverImage: 'https://placehold.co/300x450.png', rating: 5, pages: 328, description: 'Distopik bir gelecekte totaliter bir rejimin altında yaşayan insanların hikayesi.', genre: 'Distopya' },
     { id: 6, type: 'Oyun', title: 'Stardew Valley', author: 'ConcernedApe', coverImage: 'https://placehold.co/300x450.png', rating: 5, platform: 'PC/Konsol', description: 'Büyükbabanızın eski çiftliğini devralıp yeni bir hayata başlayın.', genre: 'Simülasyon' },
+    { id: 7, type: 'Film', title: 'Inception', author: 'Christopher Nolan', coverImage: 'https://placehold.co/300x450.png', rating: 5, duration: '2s 28dk', description: 'Başkalarının rüyalarına girerek fikir çalan bir hırsızın hikayesi.', genre: 'Bilim Kurgu'},
+    { id: 8, type: 'Oyun', title: 'The Witcher 3: Wild Hunt', author: 'CD Projekt Red', coverImage: 'https://placehold.co/300x450.png', rating: 5, platform: 'PC/Konsol', description: 'Canavar avcısı Geralt of Rivia\'nın maceralarını konu alan bir rol yapma oyunu.', genre: 'RPG'},
 ];
 
 export const recentActivities = [
