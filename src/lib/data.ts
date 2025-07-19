@@ -37,10 +37,10 @@ export interface Book {
 }
 
 export const familyMembers: FamilyMember[] = [
-  { id: 1, name: 'Ahmet', role: 'Baba', avatar: 'https://placehold.co/96x96/3B82F6/FFFFFF', badges: ['Görev Ustası', 'Takım Oyuncusu'] },
-  { id: 2, name: 'Zeynep', role: 'Anne', avatar: 'https://placehold.co/96x96/EC4899/FFFFFF', badges: ['Haftanın Yıldızı', 'Kitap Kurdu'] },
-  { id: 3, name: 'Elif', role: 'Çocuk', avatar: 'https://placehold.co/96x96/10B981/FFFFFF', badges: ['Kitap Kurdu'] },
-  { id: 4, name: 'Mustafa', role: 'Bebek', avatar: 'https://placehold.co/96x96/F59E0B/FFFFFF', badges: [] },
+  { id: 1, name: 'Ahmet', role: 'Baba', avatar: 'https://placehold.co/96x96.png', badges: ['Görev Ustası', 'Takım Oyuncusu'] },
+  { id: 2, name: 'Zeynep', role: 'Anne', avatar: 'https://placehold.co/96x96.png', badges: ['Haftanın Yıldızı', 'Kitap Kurdu'] },
+  { id: 3, name: 'Elif', role: 'Çocuk', avatar: 'https://placehold.co/96x96.png', badges: ['Kitap Kurdu'] },
+  { id: 4, name: 'Mustafa', role: 'Bebek', avatar: 'https://placehold.co/96x96.png', badges: [] },
 ];
 
 export const tasks: Task[] = [
@@ -62,19 +62,19 @@ export const calendarEvents: CalendarEvent[] = [
 ];
 
 export const books: Book[] = [
-    { id: 1, title: 'Küçük Prens', author: 'Antoine de Saint-Exupéry', coverImage: 'https://placehold.co/300x450/3B82F6/FFFFFF', rating: 5, pages: 112, description: 'Bir pilotun Sahra Çölü\'ne düşmesi ve orada küçük bir prensle tanışmasını konu alır.' },
-    { id: 2, title: 'Şeker Portakalı', author: 'José Mauro de Vasconcelos', coverImage: 'https://placehold.co/300x450/10B981/FFFFFF', rating: 5, pages: 200, description: 'Yoksul bir ailenin çocuğu olan Zezé\'nin hayal gücü ve hüzünlü hikayesi.' },
-    { id: 3, title: 'Harry Potter ve Felsefe Taşı', author: 'J.K. Rowling', coverImage: 'https://placehold.co/300x450/8B5CF6/FFFFFF', rating: 5, pages: 250, description: 'Genç bir büyücünün Hogwarts\'taki maceralarının başlangıcı.' },
-    { id: 4, title: 'Martı Jonathan Livingston', author: 'Richard Bach', coverImage: 'https://placehold.co/300x450/F59E0B/FFFFFF', rating: 4, pages: 144, description: 'Sıradan bir martı olmaktan fazlasını isteyen Jonathan\'ın hikayesi.' },
-    { id: 5, title: '1984', author: 'George Orwell', coverImage: 'https://placehold.co/300x450/EF4444/FFFFFF', rating: 5, pages: 328, description: 'Distopik bir gelecekte totaliter bir rejimin altında yaşayan insanların hikayesi.' },
-    { id: 6, title: 'Simyacı', author: 'Paulo Coelho', coverImage: 'https://placehold.co/300x450/6366F1/FFFFFF', rating: 4, pages: 188, description: 'Endülüslü çoban Santiago\'nun kişisel menkıbesini arayışını konu alan felsefi bir roman.' },
+    { id: 1, title: 'Küçük Prens', author: 'Antoine de Saint-Exupéry', coverImage: 'https://placehold.co/300x450.png', rating: 5, pages: 112, description: 'Bir pilotun Sahra Çölü\'ne düşmesi ve orada küçük bir prensle tanışmasını konu alır.' },
+    { id: 2, title: 'Şeker Portakalı', author: 'José Mauro de Vasconcelos', coverImage: 'https://placehold.co/300x450.png', rating: 5, pages: 200, description: 'Yoksul bir ailenin çocuğu olan Zezé\'nin hayal gücü ve hüzünlü hikayesi.' },
+    { id: 3, title: 'Harry Potter ve Felsefe Taşı', author: 'J.K. Rowling', coverImage: 'https://placehold.co/300x450.png', rating: 5, pages: 250, description: 'Genç bir büyücünün Hogwarts\'taki maceralarının başlangıcı.' },
+    { id: 4, title: 'Martı Jonathan Livingston', author: 'Richard Bach', coverImage: 'https://placehold.co/300x450.png', rating: 4, pages: 144, description: 'Sıradan bir martı olmaktan fazlasını isteyen Jonathan\'ın hikayesi.' },
+    { id: 5, title: '1984', author: 'George Orwell', coverImage: 'https://placehold.co/300x450.png', rating: 5, pages: 328, description: 'Distopik bir gelecekte totaliter bir rejimin altında yaşayan insanların hikayesi.' },
+    { id: 6, title: 'Simyacı', author: 'Paulo Coelho', coverImage: 'https://placehold.co/300x450.png', rating: 4, pages: 188, description: 'Endülüslü çoban Santiago\'nun kişisel menkıbesini arayışını konu alan felsefi bir roman.' },
 ];
 
 export const recentActivities = [
-    { id: 1, user: 'Zeynep', userAvatar: 'https://placehold.co/40x40/EC4899/FFFFFF', description: '"Alışveriş listesi hazırla" görevini tamamladı.', time: '15 dakika önce' },
-    { id: 2, user: 'Elif', userAvatar: 'https://placehold.co/40x40/10B981/FFFFFF', description: '"Şeker Portakalı" kitabını okumaya başladı.', time: '1 saat önce' },
-    { id: 3, user: 'Ahmet', userAvatar: 'https://placehold.co/40x40/3B82F6/FFFFFF', description: '"Garajı düzenle" görevini ekledi.', time: '3 saat önce' },
-    { id: 4, user: 'Elif', userAvatar: 'https://placehold.co/40x40/10B981/FFFFFF', description: '"Çiçekleri sula" görevini tamamladı.', time: 'Dün' },
+    { id: 1, user: 'Zeynep', userAvatar: 'https://placehold.co/40x40.png', description: '"Alışveriş listesi hazırla" görevini tamamladı.', time: '15 dakika önce' },
+    { id: 2, user: 'Elif', userAvatar: 'https://placehold.co/40x40.png', description: '"Şeker Portakalı" kitabını okumaya başladı.', time: '1 saat önce' },
+    { id: 3, user: 'Ahmet', userAvatar: 'https://placehold.co/40x40.png', description: '"Garajı düzenle" görevini ekledi.', time: '3 saat önce' },
+    { id: 4, user: 'Elif', userAvatar: 'https://placehold.co/40x40.png', description: '"Çiçekleri sula" görevini tamamladı.', time: 'Dün' },
 ];
 
 export const weeklyPoints = [
