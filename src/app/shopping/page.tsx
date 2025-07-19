@@ -37,6 +37,7 @@ export default function ShoppingPage() {
       const { currentTotal } = calculateListTotals(list);
       return sum + currentTotal;
   }, 0);
+  const budgetUsagePercentage = overallBudget > 0 ? (overallSpent / overallBudget) * 100 : 0;
 
 
   return (
@@ -108,11 +109,11 @@ export default function ShoppingPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tasarruf Oranı</CardTitle>
-             <div className="text-2xl font-bold text-green-600">%{(((overallBudget - overallSpent) / overallBudget) * 100).toFixed(0)}</div>
+            <CardTitle className="text-sm font-medium">Bütçe Kullanımı</CardTitle>
+             <div className="text-2xl font-bold text-green-600">%{budgetUsagePercentage.toFixed(0)}</div>
           </CardHeader>
           <CardContent>
-             <Progress value={((overallSpent / overallBudget) * 100)} className="h-2"/>
+             <Progress value={budgetUsagePercentage} className="h-2"/>
              <p className="text-xs text-muted-foreground mt-2">Bütçenin kullanılma durumu</p>
           </CardContent>
         </Card>
@@ -121,8 +122,8 @@ export default function ShoppingPage() {
       <div className="space-y-4">
         {shoppingLists.map(list => {
           const { currentTotal, completedCount } = calculateListTotals(list);
-          const budgetProgress = (currentTotal / list.totalBudget) * 100;
-          const completionProgress = (completedCount / list.items.length) * 100;
+          const budgetProgress = list.totalBudget > 0 ? (currentTotal / list.totalBudget) * 100 : 0;
+          const completionProgress = list.items.length > 0 ? (completedCount / list.items.length) * 100 : 0;
           const assignee = getAssignee(list.assigneeId);
 
           return (
@@ -142,7 +143,8 @@ export default function ShoppingPage() {
                                 <Badge variant="outline">{list.category}</Badge>
                                 <span>•</span>
                                 <Avatar className="h-6 w-6">
-                                  <AvatarFallback>{assignee.avatar}</AvatarFallback>
+                                  <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                  <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <span>{assignee.name}</span>
                                 <span>•</span>

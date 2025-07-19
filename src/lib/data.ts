@@ -292,13 +292,25 @@ export const shoppingLists: ShoppingList[] = [
     title: 'Ev Temizlik Malzemeleri',
     category: 'Temizlik',
     items: [
-      { id: 5, name: 'Bulaşık Deterjanı', quantity: '1 adet', price: 145.00, completed: false },
+      { id: 5, name: 'Bulaşık Deterjanı', quantity: '1 adet', price: 145.00, completed: true },
       { id: 6, name: 'Çamaşır Suyu', quantity: '1 adet', price: 98.00, completed: false },
       { id: 7, name: 'Yüzey Temizleyici', quantity: '1 paket', price: 115.00, completed: false },
     ],
     totalBudget: 400.00,
     assigneeId: 1,
     dueDate: 'Yarın',
+  },
+   {
+    id: 3,
+    title: 'Kırtasiye İhtiyaçları',
+    category: 'Okul',
+    items: [
+      { id: 8, name: 'Defter', quantity: '5 adet', price: 250.00, completed: false },
+      { id: 9, name: 'Kalem', quantity: '1 kutu', price: 120.00, completed: true },
+    ],
+    totalBudget: 500.00,
+    assigneeId: 3,
+    dueDate: 'Bu Hafta',
   },
 ];
 
