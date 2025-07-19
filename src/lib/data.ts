@@ -188,54 +188,6 @@ export interface Assignment {
   studentId: number;
 }
 
-export interface ShoppingItem {
-    id: number;
-    name: string;
-    quantity: string;
-    price: number;
-    completed: boolean;
-}
-
-export interface ShoppingList {
-    id: number;
-    title: string;
-    items: ShoppingItem[];
-    category: string;
-    totalBudget: number;
-    assigneeId: number;
-    dueDate: string;
-}
-
-export const shoppingLists: ShoppingList[] = [
-    { 
-        id: 1, 
-        title: "Haftalık Market Alışverişi",
-        items: [
-            { id: 1, name: 'Süt', quantity: '2 litre', price: 65.50, completed: false },
-            { id: 2, name: 'Ekmek', quantity: '3 adet', price: 30.00, completed: true },
-            { id: 3, name: 'Yumurta', quantity: '1 düzine', price: 75.00, completed: false },
-            { id: 4, name: 'Domates', quantity: '1 kg', price: 42.00, completed: false },
-        ],
-        category: "Market",
-        totalBudget: 300,
-        assigneeId: 2,
-        dueDate: "Bugün"
-    },
-    { 
-        id: 2, 
-        title: "Ev Temizlik Malzemeleri",
-        items: [
-            { id: 5, name: 'Deterjan', quantity: '1 adet', price: 145.00, completed: false },
-            { id: 6, name: 'Yumuşatıcı', quantity: '1 adet', price: 88.00, completed: false },
-            { id: 7, name: 'Tuvalet Kağıdı', quantity: '1 paket', price: 165.00, completed: false },
-        ],
-        category: "Ev Eşyaları",
-        totalBudget: 450,
-        assigneeId: 1,
-        dueDate: "Yarın"
-    },
-];
-
 export const students: Student[] = [
   { id: 3, name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
   { id: 4, name: 'Murat', grade: '8. Sınıf', avatar: '👦' },
