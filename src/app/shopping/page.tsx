@@ -11,6 +11,9 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function ShoppingPage() {
   const [openLists, setOpenLists] = React.useState<number[]>(shoppingLists.map(l => l.id));
@@ -39,10 +42,37 @@ export default function ShoppingPage() {
   return (
     <>
       <PageHeader title="Alışveriş Yönetimi 🛒">
-        <Button className="bg-gradient-to-r from-green-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Liste Oluştur
-        </Button>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-green-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Yeni Liste Oluştur
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Yeni Alışveriş Listesi</DialogTitle>
+                    <DialogDescription>
+                        Yeni bir alışveriş listesi oluşturarak ihtiyaçlarınızı takip edin.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                            Liste Adı
+                        </Label>
+                        <Input id="name" defaultValue="Haftalık Market" className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="budget" className="text-right">
+                            Bütçe
+                        </Label>
+                        <Input id="budget" type="number" defaultValue="500" className="col-span-3" />
+                    </div>
+                </div>
+                <Button type="submit">Listeyi Oluştur</Button>
+            </DialogContent>
+        </Dialog>
       </PageHeader>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
