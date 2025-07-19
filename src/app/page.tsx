@@ -2,149 +2,122 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { BarChart, BookOpen, CheckCircle, Cloud, Star, Users, Bell, Sun } from "lucide-react";
-import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, Sun } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PageHeader } from "@/components/page-header";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { familyMembers, recentActivities, weeklyPoints, tasks } from "@/lib/data";
+import { familyMembers, recentActivities } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
-export default function Home() {
+const quickStats = [
+  { title: 'Tamamlanan Görevler', value: '24', change: '+8', icon: CheckSquare, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+  { title: 'Yaklaşan Etkinlikler', value: '7', change: '+2', icon: Calendar, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+  { title: 'Okunan Kitaplar', value: '12', change: '+3', icon: BookOpen, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+  { title: 'Alışveriş Tasarrufu', value: '₺245', change: '+₺67', icon: ShoppingCart, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+];
 
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.completed).length;
-  const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const totalPoints = weeklyPoints.reduce((sum, day) => sum + day.points, 0);
+
+export default function Home() {
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+   React.useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Günaydın';
+    if (hour < 18) return 'Tünaydın';
+    return 'İyi Akşamlar';
+  };
 
   return (
-    <>
-      <PageHeader title="Akıllı Dashboard 🏡">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <Sun className="text-yellow-400" />
-            <span>24°C, Güneşli</span>
-            <span className="text-muted-foreground">İstanbul</span>
-          </div>
-          <div className="relative">
-            <Bell className="text-muted-foreground"/>
-            <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0 bg-red-500 text-white">3</Badge>
-          </div>
+    <div className="space-y-8">
+      <header className="rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg">
+        <div className="flex items-start justify-between">
+            <div>
+                <h1 className="text-3xl font-bold">{getGreeting()}, Aile! 👋</h1>
+                <p className="mt-1 opacity-90">
+                    {currentTime.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </p>
+                 <div className="mt-2 flex items-center gap-2 text-sm bg-white/20 px-3 py-1 rounded-full w-fit">
+                    <Sun className="h-4 w-4 text-yellow-300" />
+                    <span>24°C, Güneşli</span>
+                    <span className="opacity-70">İstanbul</span>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+                 <button className="relative rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
+                    <Bell className="h-6 w-6" />
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-purple-500">3</Badge>
+                </button>
+                 <button className="rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
+                    <Settings className="h-6 w-6" />
+                </button>
+            </div>
         </div>
-      </PageHeader>
+      </header>
       
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-foreground">Aile Üyeleri</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section>
+        <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {quickStats.map((stat, index) => (
+              <Card key={index} className={`overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 ${stat.bgColor}`}>
+                <CardContent className="p-4">
+                   <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner`}>
+                      <stat.icon size={24} className={stat.color} />
+                   </div>
+                   <div className="text-center">
+                     <p className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</p>
+                     <p className="text-sm font-semibold text-foreground">{stat.title}</p>
+                     <div className={`mt-2 flex items-center justify-center text-xs font-medium ${stat.color}`}>
+                        <TrendingUp size={14} className="mr-1"/>
+                        <span>{stat.change}</span>
+                     </div>
+                   </div>
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold text-foreground mb-4">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {familyMembers.map((member) => (
             <FamilyMemberCard key={member.id} member={member} />
           ))}
         </div>
       </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-foreground">Haftalık İstatistikler</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tamamlanan Görevler</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{completedTasks}/{totalTasks}</div>
-              <p className="text-xs text-muted-foreground">%{completionPercentage} tamamlandı</p>
-            </CardContent>
-          </Card>
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Kazanılan Puanlar</CardTitle>
-              <Star className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Tüm aile toplamı</p>
-            </CardContent>
-          </Card>
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Okunan Medya</CardTitle>
-              <BookOpen className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5</div>
-              <p className="text-xs text-muted-foreground">+2 geçen haftadan</p>
-            </CardContent>
-          </Card>
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aktif Üye</CardTitle>
-              <Users className="h-4 w-4 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">4/4</div>
-              <p className="text-xs text-muted-foreground">Herkes bu hafta aktifti!</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2">
+      <section>
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart className="mr-2" /> Haftalık Puan Dağılımı
-            </CardTitle>
-             <CardDescription>Bu hafta aile üyelerinin kazandığı XP puanları.</CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsBarChart data={weeklyPoints}>
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "var(--radius)",
-                    color: "hsl(var(--card-foreground))"
-                  }}
-                  cursor={{ fill: "hsl(var(--muted))" }}
-                />
-                <Bar dataKey="points" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </RechartsBarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Son Aktiviteler</CardTitle>
-             <CardDescription>Ailede olup bitenler.</CardDescription>
+            <CardTitle>⚡ Son Aktiviteler</CardTitle>
+            <CardDescription>Ailede olup bitenler.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <Image
-                      src={activity.userAvatar}
-                      alt={activity.user}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-foreground">{activity.description}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
+                <div key={activity.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
+                   <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${activity.color}`}>
+                      <activity.icon className="h-5 w-5 text-white" />
+                   </div>
+                   <div className="flex-grow">
+                     <p className="font-semibold text-foreground">{activity.title}</p>
+                     <p className="text-sm text-muted-foreground">{activity.user} • {activity.time}</p>
+                   </div>
+                   <div className="flex items-center gap-1 rounded-full bg-yellow-400/20 px-2 py-1 text-xs font-bold text-yellow-600">
+                     <Star className="h-3 w-3 fill-current" />
+                     <span>+{activity.points}</span>
+                   </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }

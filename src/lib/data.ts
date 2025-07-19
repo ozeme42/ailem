@@ -1,13 +1,18 @@
+import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
+
 export interface FamilyMember {
   id: number;
   name: string;
-  role: 'Baba' | 'Anne' | 'Çocuk' | 'Bebek';
+  role: 'Baba' | 'Anne' | 'Kız Çocuk' | 'Erkek Çocuk' | 'Bebek';
   avatar: string;
-  badges: string[];
-  xp: number;
+  completedTasks: number;
+  color: string;
   level: number;
-  mood: 'Mutlu' | 'Normal' | 'Yorgun';
-  online: boolean;
+  xp: number;
+  streak: number;
+  badges: string[];
+  mood: 'happy' | 'excited' | 'focused' | 'playful' | 'tired' | 'stressed';
+  status: 'online' | 'away' | 'offline';
 }
 
 export interface Subtask {
@@ -60,10 +65,10 @@ export interface Media {
 }
 
 export const familyMembers: FamilyMember[] = [
-  { id: 1, name: 'Ahmet', role: 'Baba', avatar: 'https://placehold.co/96x96.png', badges: ['Görev Ustası', 'Takım Oyuncusu'], xp: 2580, level: 12, mood: 'Normal', online: true },
-  { id: 2, name: 'Zeynep', role: 'Anne', avatar: 'https://placehold.co/96x96.png', badges: ['Haftanın Yıldızı', 'Kitap Kurdu'], xp: 3120, level: 15, mood: 'Mutlu', online: false },
-  { id: 3, name: 'Elif', role: 'Çocuk', avatar: 'https://placehold.co/96x96.png', badges: ['Kitap Kurdu', 'Sanatçı Ruh'], xp: 1750, level: 8, mood: 'Mutlu', online: true },
-  { id: 4, name: 'Mustafa', role: 'Bebek', avatar: 'https://placehold.co/96x96.png', badges: [], xp: 100, level: 1, mood: 'Mutlu', online: true },
+  { id: 1, name: 'Ahmet', role: 'Baba', avatar: '👨', completedTasks: 18, color: '#3B82F6', level: 5, xp: 1250, streak: 7, badges: ['🏆', '⚡', '🎯'], mood: 'happy', status: 'online' },
+  { id: 2, name: 'Zeynep', role: 'Anne', avatar: '👩', completedTasks: 22, color: '#EC4899', level: 6, xp: 1580, streak: 12, badges: ['👑', '💎', '🌟', '🔥'], mood: 'excited', status: 'online' },
+  { id: 3, name: 'Elif', role: 'Kız Çocuk', avatar: '👧', completedTasks: 14, color: '#8B5CF6', level: 4, xp: 890, streak: 5, badges: ['📚', '🎨', '⭐'], mood: 'focused', status: 'away' },
+  { id: 4, name: 'Murat', role: 'Erkek Çocuk', avatar: '👦', completedTasks: 10, color: '#F59E0B', level: 3, xp: 650, streak: 3, badges: ['🎵', '🏃‍♂️'], mood: 'playful', status: 'online' },
 ];
 
 export const tasks: Task[] = [
@@ -94,10 +99,10 @@ export const mediaItems: Media[] = [
 ];
 
 export const recentActivities = [
-    { id: 1, user: 'Zeynep', userAvatar: 'https://placehold.co/40x40.png', description: '"Haftalık alışverişi yap" görevini tamamladı.', time: '15 dakika önce' },
-    { id: 2, user: 'Elif', userAvatar: 'https://placehold.co/40x40.png', description: '"Şeker Portakalı" kitabını bitirdi ve 5 yıldız verdi.', time: '1 saat önce' },
-    { id: 3, user: 'Ahmet', userAvatar: 'https://placehold.co/40x40.png', description: '"Garajı düzenle ve temizle" görevini ekledi.', time: '3 saat önce' },
-    { id: 4, user: 'Elif', userAvatar: 'https://placehold.co/40x40.png', description: '"Bahçedeki çiçekleri sula" görevini tamamladı.', time: 'Dün' },
+    { id: 1, user: 'Elif', title: 'Matematik ödevi tamamlandı', time: '5 dakika önce', icon: GraduationCap, color: 'from-purple-500 to-indigo-500', points: 25 },
+    { id: 2, user: 'Zeynep', title: 'Haftalık alışveriş tamamlandı', time: '1 saat önce', icon: ShoppingCart, color: 'from-green-500 to-emerald-500', points: 30 },
+    { id: 3, user: 'Murat', title: '"Küçük Prens" kitabını okudu', time: '3 saat önce', icon: BookOpen, color: 'from-yellow-500 to-amber-500', points: 50 },
+    { id: 4, user: 'Ahmet', title: 'Doktor randevusu eklendi', time: '5 saat önce', icon: Calendar, color: 'from-blue-500 to-sky-500', points: 10 },
 ];
 
 export const weeklyPoints = [
