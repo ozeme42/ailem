@@ -20,7 +20,7 @@ interface TaskItemProps {
 
 export function TaskItem({ task, assignee }: TaskItemProps) {
   const [isCompleted, setIsCompleted] = React.useState(task.completed);
-  const [subtasks, setSubtasks] = React.useState<Subtask[]>(task.subtasks);
+  const [subtasks, setSubtasks] = React.useState<Subtask[]>(task.subtasks || []);
   const { toast } = useToast();
 
   const handleCompletion = () => {
@@ -110,7 +110,7 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
             />
             <span className="text-sm font-medium hidden md:inline">{assignee.name}</span>
           </div>
-          {(task.subtasks.length > 0) && (
+          {(task.subtasks && task.subtasks.length > 0) && (
             <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                     <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
@@ -118,7 +118,7 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
             </CollapsibleTrigger>
           )}
         </CardContent>
-        {(task.subtasks.length > 0) && (
+        {(task.subtasks && task.subtasks.length > 0) && (
             <CollapsibleContent>
                  <div className="px-4 pb-4 ml-14 border-t pt-4 mt-2 space-y-4">
                     {subtasks.length > 0 && (
