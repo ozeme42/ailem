@@ -64,6 +64,66 @@ export interface MediaItem {
     platform?: string; // for games
 }
 
+export interface Student {
+  id: number;
+  name: string;
+  grade: string;
+  avatar: string;
+}
+
+export interface Subject {
+  id: number;
+  name: string;
+  color: string;
+  grade: number;
+}
+
+export interface Exam {
+  id: number;
+  subject: string;
+  date: string;
+  time: string;
+  topics: string[];
+  studentId: number;
+  priority: 'Yüksek' | 'Orta' | 'Düşük';
+}
+
+export interface Assignment {
+  id: number;
+  title: string;
+  subject: string;
+  dueDate: string;
+  status: 'Tamamlandı' | 'Bekliyor';
+  studentId: number;
+  priority: 'Yüksek' | 'Orta' | 'Düşük';
+}
+
+export const students: Student[] = [
+  { id: 3, name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
+  { id: 4, name: 'Murat', grade: '8. Sınıf', avatar: '👦' },
+];
+
+export const subjects: Subject[] = [
+  { id: 1, name: 'Matematik', color: '#3B82F6', grade: 85 },
+  { id: 2, name: 'Türkçe', color: '#10B981', grade: 92 },
+  { id: 3, name: 'Fen Bilimleri', color: '#F59E0B', grade: 78 },
+  { id: 4, name: 'Sosyal Bilgiler', color: '#8B5CF6', grade: 88 },
+  { id: 5, name: 'İngilizce', color: '#EF4444', grade: 95 },
+];
+
+export const upcomingExams: Exam[] = [
+  { id: 1, subject: 'Matematik', date: '2025-01-15', time: '10:00', topics: ['Kesirler', 'Ondalık Sayılar', 'Yüzdeler'], studentId: 3, priority: 'Yüksek' },
+  { id: 2, subject: 'Fen Bilimleri', date: '2025-01-22', time: '11:00', topics: ['Güneş Sistemi', 'Hücre'], studentId: 3, priority: 'Orta' },
+  { id: 3, subject: 'Türkçe', date: '2025-01-18', time: '14:00', topics: ['Yazım Kuralları', 'Noktalama İşaretleri'], studentId: 4, priority: 'Orta' },
+];
+
+export const assignments: Assignment[] = [
+  { id: 1, title: 'Matematik Ödev Kitabı (Sayfa 50-55)', subject: 'Matematik', dueDate: 'Yarın', status: 'Bekliyor', studentId: 3, priority: 'Yüksek' },
+  { id: 2, title: 'Türkçe Kompozisyon: "Hayalimdeki Dünya"', subject: 'Türkçe', dueDate: 'Dün', status: 'Tamamlandı', studentId: 4, priority: 'Orta' },
+  { id: 3, title: 'Fen Bilimleri Projesi: Hücre Modeli', subject: 'Fen Bilimleri', dueDate: '2 Gün Sonra', status: 'Bekliyor', studentId: 3, priority: 'Yüksek' },
+];
+
+
 export const familyMembers: FamilyMember[] = [
   { id: 1, name: 'Ahmet', role: 'Baba', avatar: '👨', completedTasks: 18, color: '#3B82F6', level: 5, xp: 1250, streak: 7, badges: ['🏆', '⚡', '🎯'], mood: 'happy', status: 'online' },
   { id: 2, name: 'Zeynep', role: 'Anne', avatar: '👩', completedTasks: 22, color: '#EC4899', level: 6, xp: 1580, streak: 12, badges: ['👑', '💎', '🌟', '🔥'], mood: 'excited', status: 'online' },
