@@ -13,7 +13,7 @@ export function PageHeader({ title, children }: PageHeaderProps) {
         <SidebarTrigger className="md:hidden"/>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
       </div>
-      <div>{children}</div>
+      <div className="flex items-center gap-4">{children}</div>
     </header>
   );
 }

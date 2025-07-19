@@ -1,7 +1,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import type { FamilyMember } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { Star } from "lucide-react";
@@ -47,7 +47,7 @@ export function FamilyMemberCard({ member }: FamilyMemberCardProps) {
             alt={member.name}
             width={96}
             height={96}
-            className="rounded-full mx-auto border-4 border-background shadow-md"
+            className="rounded-full mx-auto border-4 border-card shadow-md"
             data-ai-hint={`${member.role.toLowerCase()} portrait`}
           />
            <div className="absolute bottom-0 right-10 text-2xl bg-card rounded-full p-1 shadow-md">{moodEmojis[member.mood]}</div>
@@ -58,12 +58,12 @@ export function FamilyMemberCard({ member }: FamilyMemberCardProps) {
         <div className="mt-4">
             <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
                 <span>Seviye {member.level}</span>
-                <span className="flex items-center gap-1 font-semibold"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400"/> {member.xp} XP</span>
+                <span className="flex items-center gap-1 font-semibold"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400"/> {member.xp.toLocaleString()} XP</span>
             </div>
             <Progress value={(member.xp % 1000) / 10} className="h-2" />
         </div>
 
-        <div className="mt-4 flex flex-wrap justify-center gap-2 h-12">
+        <div className="mt-4 flex flex-wrap justify-center gap-2 h-12 items-start">
           {member.badges.map((badge, index) => (
             <Badge key={index} variant="outline" className={`text-xs ${badgeColors[badge] || ''}`}>
               {badge}

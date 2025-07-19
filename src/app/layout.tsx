@@ -18,14 +18,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} font-body antialiased`}>
+    <html lang="tr" className="dark">
+      <body className={`${inter.variable} font-sans antialiased`}>
         <SidebarProvider>
           <AppSidebar />
           <SidebarInset>
-            <div className="p-4 sm:p-6 lg:p-8">
+            <main className="p-4 sm:p-6 lg:p-8">
               {children}
-            </div>
+            </main>
           </SidebarInset>
         </SidebarProvider>
         <Toaster />

@@ -56,7 +56,7 @@ export default function CalendarPage() {
         </Button>
       </PageHeader>
 
-      <Card className="shadow-md">
+      <Card className="shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold capitalize">
@@ -89,7 +89,7 @@ export default function CalendarPage() {
                        return (
                        <Dialog key={event.id}>
                         <DialogTrigger asChild>
-                           <div className={`p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.text} ${colors.darkBg}`}>
+                           <div className={`p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity bg-primary/10 text-primary-foreground`}>
                             <p className="text-xs font-semibold truncate">{event.title}</p>
                           </div>
                         </DialogTrigger>
@@ -163,7 +163,7 @@ export default function CalendarPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                       <Badge variant="outline" className={`${colors.border} ${colors.text} ${colors.bg} ${colors.darkBg}`}>{event.category}</Badge>
+                       <Badge variant="secondary">{event.category}</Badge>
                     </CardContent>
                   </Card>
                 </div>

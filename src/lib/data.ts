@@ -35,7 +35,7 @@ export interface CalendarEvent {
   title: string;
   date: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   category: 'Okul' | 'Spor' | 'Aile' | 'Doğum Günü' | 'Diğer';
   description: string;
   location: string;
@@ -80,7 +80,7 @@ export const calendarEvents: CalendarEvent[] = [
     { id: 2, title: 'Veli Toplantısı', date: '2024-07-30', startTime: '18:00', endTime: '19:00', category: 'Okul', description: 'Elif\'in okuldaki veli toplantısı.', location: 'İlkokul', priority: 'Yüksek' },
     { id: 3, title: 'Ahmet\'in Halı Saha Maçı', date: '2024-07-31', startTime: '21:00', endTime: '22:00', category: 'Spor', description: 'Arkadaşlarla haftalık maç.', location: 'Spor Kompleksi', priority: 'Orta' },
     { id: 4, title: 'Aile Sinema Gecesi', date: '2024-08-02', startTime: '20:00', endTime: '22:00', category: 'Aile', description: 'Evde patlamış mısır ve film keyfi.', location: 'Ev', priority: 'Orta' },
-    { id: 5, title: 'Zeynep\'in Doğum Günü Yemeği', date: '2024-08-05', startTime: '19:30', endTime: '', category: 'Doğum Günü', description: 'Zeynep\'in doğum gününü dışarıda kutluyoruz!', location: 'Favori Restoran', priority: 'Yüksek' },
+    { id: 5, title: 'Zeynep\'in Doğum Günü Yemeği', date: '2024-08-05', startTime: '19:30', category: 'Doğum Günü', description: 'Zeynep\'in doğum gününü dışarıda kutluyoruz!', location: 'Favori Restoran', priority: 'Yüksek' },
 ];
 
 export const mediaItems: Media[] = [
@@ -100,11 +100,11 @@ export const recentActivities = [
 ];
 
 export const weeklyPoints = [
-    { name: 'Pzt', points: 30 },
-    { name: 'Sal', points: 45 },
-    { name: 'Çar', points: 20 },
-    { name: 'Per', points: 70 },
-    { name: 'Cum', points: 55 },
-    { name: 'Cmt', points: 90 },
-    { name: 'Paz', points: 60 },
+    { name: 'Pzt', points: 300 },
+    { name: 'Sal', points: 450 },
+    { name: 'Çar', points: 200 },
+    { name: 'Per', points: 700 },
+    { name: 'Cum', points: 550 },
+    { name: 'Cmt', points: 900 },
+    { name: 'Paz', points: 600 },
 ];

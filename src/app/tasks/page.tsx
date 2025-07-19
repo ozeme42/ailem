@@ -46,7 +46,7 @@ export default function TasksPage() {
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Görev ara..." 
+                placeholder="Görev, sorumlu veya kategori ara..." 
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -63,14 +63,15 @@ export default function TasksPage() {
                   <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>Kategori</DropdownMenuLabel>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Kategoriye Göre</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem>Ev İşleri</DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem>Okul</DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem>Aile</DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem>Kişisel</DropdownMenuCheckboxItem>
-                <DropdownMenuLabel>Zorluk</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Zorluğa Göre</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                  <DropdownMenuCheckboxItem>Kolay</DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem>Orta</DropdownMenuCheckboxItem>
@@ -84,7 +85,7 @@ export default function TasksPage() {
               <TabsTrigger value="todo">Yapılacaklar ({todoTasks.length})</TabsTrigger>
               <TabsTrigger value="completed">Tamamlananlar ({completedTasks.length})</TabsTrigger>
             </TabsList>
-            <TabsContent value="todo" className="mt-4 space-y-4">
+            <TabsContent value="todo" className="mt-4 space-y-3">
               {todoTasks.length > 0 ? (
                 todoTasks.map((task) => (
                   <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
@@ -93,7 +94,7 @@ export default function TasksPage() {
                 <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Bekleyen görev yok. Harika!</CardContent></Card>
               )}
             </TabsContent>
-            <TabsContent value="completed" className="mt-4 space-y-4">
+            <TabsContent value="completed" className="mt-4 space-y-3">
                {completedTasks.length > 0 ? (
                 completedTasks.map((task) => (
                   <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
@@ -121,7 +122,7 @@ export default function TasksPage() {
                         <p className="font-semibold">{member.name}</p>
                         <div className="flex items-center text-sm text-yellow-500">
                           <Star className="w-4 h-4 mr-1 fill-current" />
-                          <span>{member.xp} XP</span>
+                          <span>{member.xp.toLocaleString()} XP</span>
                         </div>
                       </div>
                       <Badge variant="secondary">Lvl {member.level}</Badge>
@@ -136,10 +137,10 @@ export default function TasksPage() {
                <CardDescription>Görevlerin kategorilere göre dağılımı.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                <div className="flex justify-between items-center text-sm"><span className="text-blue-500">● Ev İşleri</span> <Badge variant="outline">{tasks.filter(t => t.category === "Ev İşleri").length}</Badge></div>
-                <div className="flex justify-between items-center text-sm"><span className="text-green-500">● Okul</span> <Badge variant="outline">{tasks.filter(t => t.category === "Okul").length}</Badge></div>
-                <div className="flex justify-between items-center text-sm"><span className="text-purple-500">● Aile</span> <Badge variant="outline">{tasks.filter(t => t.category === "Aile").length}</Badge></div>
-                <div className="flex justify-between items-center text-sm"><span className="text-orange-500">● Kişisel</span> <Badge variant="outline">{tasks.filter(t => t.category === "Kişisel").length}</Badge></div>
+                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Ev İşleri</span> <Badge variant="outline">{tasks.filter(t => t.category === "Ev İşleri").length}</Badge></div>
+                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span> Okul</span> <Badge variant="outline">{tasks.filter(t => t.category === "Okul").length}</Badge></div>
+                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Aile</span> <Badge variant="outline">{tasks.filter(t => t.category === "Aile").length}</Badge></div>
+                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Kişisel</span> <Badge variant="outline">{tasks.filter(t => t.category === "Kişisel").length}</Badge></div>
             </CardContent>
           </Card>
         </aside>

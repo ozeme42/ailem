@@ -8,10 +8,10 @@ import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, T
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { mediaItems, MediaType } from "@/lib/data";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 const genreData = [
@@ -99,8 +99,8 @@ export default function LibraryPage() {
                             <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)"}} />
-                    <Legend/>
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)"}} />
+                    <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }}/>
                 </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -109,7 +109,7 @@ export default function LibraryPage() {
       <div>
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-foreground">Medya Kütüphanesi</h2>
-             <div className="w-1/3 relative">
+             <div className="w-full md:w-1/3 relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Kütüphanede ara..." className="pl-10"/>
              </div>
@@ -123,59 +123,60 @@ export default function LibraryPage() {
                 <TabsTrigger value="Sesli Kitap"><Mic className="mr-2 h-4 w-4"/>Sesli Kitaplar</TabsTrigger>
                 <TabsTrigger value="Oyun"><Gamepad2 className="mr-2 h-4 w-4"/>Oyunlar</TabsTrigger>
             </TabsList>
-        </Tabs>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mt-6">
-            {filteredMedia.map(item => {
-                const Icon = mediaTypeIcons[item.type];
-                return (
-                <Dialog key={item.id}>
-                    <DialogTrigger asChild>
-                        <div className="cursor-pointer group">
-                            <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
-                                <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover" data-ai-hint="book cover" />
-                                <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full">
-                                    <Icon className="h-4 w-4" />
+            <TabsContent value={activeTab}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mt-6">
+                    {filteredMedia.map(item => {
+                        const Icon = mediaTypeIcons[item.type];
+                        return (
+                        <Dialog key={item.id}>
+                            <DialogTrigger asChild>
+                                <div className="cursor-pointer group">
+                                    <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
+                                        <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
+                                        <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full">
+                                            <Icon className="h-4 w-4" />
+                                        </div>
+                                    </Card>
+                                    <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{item.title}</p>
+                                    <p className="text-xs text-muted-foreground">{item.author}</p>
                                 </div>
-                            </Card>
-                            <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{item.title}</p>
-                            <p className="text-xs text-muted-foreground">{item.author}</p>
-                        </div>
-                    </DialogTrigger>
-                     <DialogContent className="sm:max-w-[625px]">
-                        <div className="grid gap-8 sm:grid-cols-2">
-                            <div>
-                                <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md" data-ai-hint="book cover" />
-                            </div>
-                            <div className="flex flex-col">
-                                <DialogHeader>
-                                    <Badge variant="secondary" className="w-fit mb-2">{item.type}</Badge>
-                                    <DialogTitle className="text-3xl font-bold">{item.title}</DialogTitle>
-                                    <DialogDescription className="text-lg">{item.author}</DialogDescription>
-                                </DialogHeader>
-                                <div className="flex items-center gap-2 my-4">
-                                    <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < item.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />)}
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[625px]">
+                                <div className="grid gap-8 sm:grid-cols-2">
+                                    <div>
+                                        <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md aspect-[2/3]" data-ai-hint="book cover" />
                                     </div>
-                                    <span className="text-sm text-muted-foreground">({item.rating}.0)</span>
+                                    <div className="flex flex-col">
+                                        <DialogHeader>
+                                            <Badge variant="secondary" className="w-fit mb-2">{item.type}</Badge>
+                                            <DialogTitle className="text-3xl font-bold">{item.title}</DialogTitle>
+                                            <DialogDescription className="text-lg">{item.author}</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="flex items-center gap-2 my-4">
+                                            <div className="flex items-center">
+                                                {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < item.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />)}
+                                            </div>
+                                            <span className="text-sm text-muted-foreground">({item.rating}.0)</span>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground flex-grow">{item.description}</p>
+                                        <div className="text-sm text-muted-foreground mt-4 space-y-1">
+                                            <p><strong>Tür:</strong> {item.genre}</p>
+                                            {item.pages && <p><strong>Sayfa Sayısı:</strong> {item.pages}</p>}
+                                            {item.duration && <p><strong>Süre:</strong> {item.duration}</p>}
+                                            {item.platform && <p><strong>Platform:</strong> {item.platform}</p>}
+                                        </div>
+                                        <DialogFooter className="mt-6">
+                                            <Button variant="outline" size="icon"><Heart/></Button>
+                                            <Button className="w-full">Okundu Olarak İşaretle</Button>
+                                        </DialogFooter>
+                                    </div>
                                 </div>
-                                <p className="text-sm text-muted-foreground flex-grow">{item.description}</p>
-                                <div className="text-sm text-muted-foreground mt-4 space-y-1">
-                                    <p><strong>Tür:</strong> {item.genre}</p>
-                                    {item.pages && <p><strong>Sayfa Sayısı:</strong> {item.pages}</p>}
-                                    {item.duration && <p><strong>Süre:</strong> {item.duration}</p>}
-                                    {item.platform && <p><strong>Platform:</strong> {item.platform}</p>}
-                                </div>
-                                <div className="mt-6 flex gap-2">
-                                    <Button className="w-full">Okundu Olarak İşaretle</Button>
-                                    <Button variant="outline" size="icon"><Heart/></Button>
-                                </div>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            )})}
-        </div>
+                            </DialogContent>
+                        </Dialog>
+                    )})}
+                </div>
+            </TabsContent>
+        </Tabs>
       </div>
     </>
   );

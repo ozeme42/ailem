@@ -16,7 +16,7 @@ export default function Home() {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.completed).length;
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
+  const totalPoints = weeklyPoints.reduce((sum, day) => sum + day.points, 0);
 
   return (
     <>
@@ -62,7 +62,7 @@ export default function Home() {
               <Star className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+2,453</div>
+              <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">Tüm aile toplamı</p>
             </CardContent>
           </Card>
@@ -100,13 +100,14 @@ export default function Home() {
           <CardContent className="pl-2">
             <ResponsiveContainer width="100%" height={300}>
               <RechartsBarChart data={weeklyPoints}>
-                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(var(--background))",
+                    background: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
-                    borderRadius: "var(--radius)"
+                    borderRadius: "var(--radius)",
+                    color: "hsl(var(--card-foreground))"
                   }}
                   cursor={{ fill: "hsl(var(--muted))" }}
                 />
