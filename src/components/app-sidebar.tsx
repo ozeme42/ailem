@@ -12,6 +12,11 @@ export function AppSidebar() {
   const menuItems = [
     { href: "/", label: "Ana Sayfa", icon: Home },
     { href: "/tasks", label: "Görevler", icon: ListTodo },
+    { href: "/calendar", label: "Takvim", icon: CalendarDays },
+    { href: "/library", label: "Kütüphane", icon: Library },
+    { href: "/education", label: "Eğitim", icon: GraduationCap },
+    { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
+    { href: "/actions", label: "Hızlı İşlemler", icon: Camera },
   ];
 
   return (
