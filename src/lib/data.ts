@@ -24,6 +24,7 @@ export interface CalendarEvent {
   endTime: string;
   category: 'Okul' | 'Spor' | 'Aile' | 'Doğum Günü' | 'Diğer';
   description: string;
+  location: string;
 }
 
 export interface Book {
@@ -54,11 +55,11 @@ export const tasks: Task[] = [
 ];
 
 export const calendarEvents: CalendarEvent[] = [
-    { id: 1, title: 'Elif\'in Piyano Dersi', date: '2024-07-29', startTime: '16:00', endTime: '17:00', category: 'Okul', description: 'Müzik okulunda piyano dersi.' },
-    { id: 2, title: 'Veli Toplantısı', date: '2024-07-30', startTime: '18:00', endTime: '19:00', category: 'Okul', description: 'Elif\'in okuldaki veli toplantısı.' },
-    { id: 3, title: 'Ahmet\'in Halı Saha Maçı', date: '2024-07-31', startTime: '21:00', endTime: '22:00', category: 'Spor', description: 'Arkadaşlarla haftalık maç.' },
-    { id: 4, title: 'Aile Sinema Gecesi', date: '2024-08-02', startTime: '20:00', endTime: '22:00', category: 'Aile', description: 'Evde patlamış mısır ve film keyfi.' },
-    { id: 5, title: 'Zeynep\'in Doğum Günü', date: '2024-08-05', startTime: 'Tüm gün', endTime: '', category: 'Doğum Günü', description: 'Zeynep\'in doğum gününü kutluyoruz!' },
+    { id: 1, title: 'Elif\'in Piyano Dersi', date: '2024-07-29', startTime: '16:00', endTime: '17:00', category: 'Okul', description: 'Müzik okulunda piyano dersi.', location: 'Müzik Okulu' },
+    { id: 2, title: 'Veli Toplantısı', date: '2024-07-30', startTime: '18:00', endTime: '19:00', category: 'Okul', description: 'Elif\'in okuldaki veli toplantısı.', location: 'İlkokul' },
+    { id: 3, title: 'Ahmet\'in Halı Saha Maçı', date: '2024-07-31', startTime: '21:00', endTime: '22:00', category: 'Spor', description: 'Arkadaşlarla haftalık maç.', location: 'Spor Kompleksi' },
+    { id: 4, title: 'Aile Sinema Gecesi', date: '2024-08-02', startTime: '20:00', endTime: '22:00', category: 'Aile', description: 'Evde patlamış mısır ve film keyfi.', location: 'Ev' },
+    { id: 5, title: 'Zeynep\'in Doğum Günü', date: '2024-08-05', startTime: 'Tüm gün', endTime: '', category: 'Doğum Günü', description: 'Zeynep\'in doğum gününü kutluyoruz!', location: 'Aile Arasında' },
 ];
 
 export const books: Book[] = [

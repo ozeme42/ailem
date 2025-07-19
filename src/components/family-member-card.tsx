@@ -17,10 +17,10 @@ const badgeColors: { [key: string]: string } = {
 
 export function FamilyMemberCard({ member }: FamilyMemberCardProps) {
   const gradientClasses: { [key: string]: string } = {
-    Baba: "from-blue-400 to-indigo-500",
-    Anne: "from-pink-400 to-purple-500",
+    Baba: "from-blue-500 to-indigo-600",
+    Anne: "from-pink-500 to-purple-600",
     Çocuk: "from-teal-400 to-cyan-500",
-    Bebek: "from-yellow-300 to-orange-400",
+    Bebek: "from-yellow-400 to-orange-500",
   };
   
   return (
@@ -33,7 +33,7 @@ export function FamilyMemberCard({ member }: FamilyMemberCardProps) {
             alt={member.name}
             width={96}
             height={96}
-            className="rounded-full mx-auto border-4 border-card shadow-md"
+            className="rounded-full mx-auto border-4 border-background shadow-md"
             data-ai-hint={`${member.role.toLowerCase()} portrait`}
           />
         </div>

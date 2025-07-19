@@ -36,7 +36,7 @@ export default function TasksPage() {
   return (
     <>
       <PageHeader title="Görev Yönetimi 📝">
-        <Button className="bg-gradient-to-r from-blue-500 to-green-500 text-white">
+        <Button className="bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg hover:shadow-xl transition-shadow">
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Görev Ekle
         </Button>
@@ -60,22 +60,28 @@ export default function TasksPage() {
               <TabsTrigger value="completed">Tamamlananlar ({completedTasks.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="todo" className="mt-4">
-              {todoTasks.map((task) => (
-                <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
-              ))}
-              {todoTasks.length === 0 && <p className="text-muted-foreground text-center py-8">Bekleyen görev yok. Harika!</p>}
+              {todoTasks.length > 0 ? (
+                todoTasks.map((task) => (
+                  <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
+                ))
+              ) : (
+                <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Bekleyen görev yok. Harika!</CardContent></Card>
+              )}
             </TabsContent>
             <TabsContent value="completed" className="mt-4">
-              {completedTasks.map((task) => (
-                <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
-              ))}
-               {completedTasks.length === 0 && <p className="text-muted-foreground text-center py-8">Henüz tamamlanan görev yok.</p>}
+               {completedTasks.length > 0 ? (
+                completedTasks.map((task) => (
+                  <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
+                ))
+               ) : (
+                <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>
+               )}
             </TabsContent>
           </Tabs>
         </div>
 
         <aside className="space-y-6">
-          <Card>
+          <Card className="shadow-md">
             <CardHeader>
               <CardTitle>Liderlik Tablosu 🏆</CardTitle>
             </CardHeader>
@@ -103,7 +109,7 @@ export default function TasksPage() {
               </ul>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="shadow-md">
             <CardHeader>
               <CardTitle>Kategori Dağılımı</CardTitle>
             </CardHeader>

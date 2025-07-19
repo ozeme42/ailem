@@ -14,7 +14,15 @@ import { Badge } from "@/components/ui/badge";
 import { calendarEvents } from "@/lib/data";
 import type { CalendarEvent } from "@/lib/data";
 
-const categoryColors: { [key: string]: string } = {
+const categoryColors: { [key: string]: { bg: string, border: string, text: string, darkBg: string } } = {
+  Okul:       { bg: 'bg-blue-100',   border: 'border-blue-500',   text: 'text-blue-800',   darkBg: 'dark:bg-blue-900/50' },
+  Spor:       { bg: 'bg-green-100',  border: 'border-green-500',  text: 'text-green-800',  darkBg: 'dark:bg-green-900/50' },
+  Aile:       { bg: 'bg-purple-100', border: 'border-purple-500', text: 'text-purple-800', darkBg: 'dark:bg-purple-900/50' },
+  "Doğum Günü": { bg: 'bg-pink-100',   border: 'border-pink-500',   text: 'text-pink-800',   darkBg: 'dark:bg-pink-900/50' },
+  Diğer:      { bg: 'bg-gray-100',   border: 'border-gray-500',   text: 'text-gray-800',   darkBg: 'dark:bg-gray-900/50' },
+};
+
+const categoryBadgeColors: { [key: string]: string } = {
   Okul: "bg-blue-500",
   Spor: "bg-green-500",
   Aile: "bg-purple-500",
@@ -22,11 +30,12 @@ const categoryColors: { [key: string]: string } = {
   Diğer: "bg-gray-500",
 };
 
+
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = React.useState(new Date());
-  const weekStarDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
 
-  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStarDate, i));
+  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
 
   const upcomingEvents = calendarEvents
     .filter(event => new Date(event.date) >= new Date())
@@ -35,13 +44,13 @@ export default function CalendarPage() {
   return (
     <>
       <PageHeader title="Aile Takvimi 🗓️">
-        <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+        <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg hover:shadow-xl transition-shadow">
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Etkinlik Ekle
         </Button>
       </PageHeader>
 
-      <Card>
+      <Card className="shadow-md">
         <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold capitalize">
@@ -61,24 +70,26 @@ export default function CalendarPage() {
         <CardContent>
           <div className="grid grid-cols-7 border-t border-l">
             {weekDays.map(day => (
-              <div key={day.toString()} className="h-40 border-b border-r p-2 flex flex-col">
-                <span className={`font-semibold ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'text-blue-600' : 'text-foreground'}`}>
+              <div key={day.toString()} className="h-48 border-b border-r p-2 flex flex-col">
+                <span className={`font-semibold ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'text-primary' : 'text-foreground'}`}>
                   {format(day, 'd')}
                 </span>
                 <span className="text-xs text-muted-foreground capitalize">{format(day, 'EEE', { locale: tr })}</span>
                 <div className="mt-1 space-y-1 overflow-y-auto">
                    {calendarEvents
                     .filter(event => format(new Date(event.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-                    .map(event => (
+                    .map(event => {
+                       const colors = categoryColors[event.category] || categoryColors.Diğer;
+                       return (
                        <Dialog key={event.id}>
                         <DialogTrigger asChild>
-                           <div className={`p-1 text-white text-xs rounded-md cursor-pointer hover:opacity-80 ${categoryColors[event.category]}`}>
-                            {event.title}
+                           <div className={`p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.text} ${colors.darkBg}`}>
+                            <p className="text-xs font-semibold truncate">{event.title}</p>
                           </div>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <Badge className={`w-fit ${categoryColors[event.category]}`}>{event.category}</Badge>
+                                <Badge className={`w-fit ${categoryBadgeColors[event.category]}`}>{event.category}</Badge>
                                 <DialogTitle className="text-2xl pt-2">{event.title}</DialogTitle>
                                 <DialogDescription>
                                     {format(new Date(event.date), 'd MMMM yyyy, EEEE', { locale: tr })}
@@ -86,12 +97,12 @@ export default function CalendarPage() {
                             </DialogHeader>
                             <div className="space-y-2">
                                 <p className="flex items-center gap-2"><Clock className="w-4 h-4 text-muted-foreground"/> {event.startTime} {event.endTime && `- ${event.endTime}`}</p>
-                                <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-muted-foreground"/> Yer bilgisi eklenecek</p>
+                                <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-muted-foreground"/> {event.location}</p>
                                 <p>{event.description}</p>
                             </div>
                         </DialogContent>
                        </Dialog>
-                    ))}
+                    )})}
                 </div>
               </div>
             ))}
@@ -101,23 +112,25 @@ export default function CalendarPage() {
 
       <section className="mt-12">
         <h2 className="text-2xl font-semibold mb-4 text-foreground">Yaklaşan Etkinlikler</h2>
-        <Carousel opts={{ align: "start", loop: true }} className="w-full">
+        <Carousel opts={{ align: "start" }} className="w-full">
           <CarouselContent>
-            {upcomingEvents.map((event) => (
+            {upcomingEvents.map((event) => {
+              const colors = categoryColors[event.category] || categoryColors.Diğer;
+              return (
               <CarouselItem key={event.id} className="md:basis-1/2 lg:basis-1/3">
                 <div className="p-1">
-                  <Card className={`border-l-4 ${'border-'+categoryColors[event.category]?.replace('bg-','')}`}>
+                  <Card className={`border-l-4 shadow-sm hover:shadow-lg transition-shadow ${colors.border}`}>
                     <CardHeader>
                       <CardTitle>{event.title}</CardTitle>
                       <CardDescription>{format(new Date(event.date), 'd MMMM, EEEE', { locale: tr })} - {event.startTime}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <Badge variant="outline" className={`${categoryColors[event.category].replace('bg-', 'border-')} ${categoryColors[event.category].replace('bg-','text-')}/80 ${categoryColors[event.category]}/10`}>{event.category}</Badge>
+                       <Badge variant="outline" className={`${colors.border} ${colors.text} ${colors.bg} ${colors.darkBg}`}>{event.category}</Badge>
                     </CardContent>
                   </Card>
                 </div>
               </CarouselItem>
-            ))}
+            )})}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />

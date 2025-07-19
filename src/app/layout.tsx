@@ -8,8 +8,8 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Ailem App',
-  description: 'Aile Yaşam Asistanı',
+  title: 'Ailem - Yaşam Asistanı',
+  description: 'Modern ve renkli aile yaşam asistanınız.',
 };
 
 export default function RootLayout({

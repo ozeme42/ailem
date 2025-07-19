@@ -2,20 +2,19 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { BarChart, Book, Clock, Heart, PlusCircle, Star } from "lucide-react";
-import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell } from "recharts";
+import { Book, Clock, Heart, PlusCircle, Star } from "lucide-react";
+import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell, Legend } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { books, familyMembers } from "@/lib/data";
+import { books } from "@/lib/data";
 
 const readingStats = [
-  { name: 'Ahmet', books: 5 },
-  { name: 'Zeynep', books: 8 },
-  { name: 'Elif', books: 12 },
+  { name: 'Ahmet', books: 5, fill: "hsl(var(--chart-1))" },
+  { name: 'Zeynep', books: 8, fill: "hsl(var(--chart-2))" },
+  { name: 'Elif', books: 12, fill: "hsl(var(--chart-3))" },
 ];
 
 const genreData = [
@@ -24,54 +23,54 @@ const genreData = [
   { name: 'Klasik', value: 300 },
   { name: 'Distopya', value: 200 },
 ];
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
 
 
 export default function LibraryPage() {
   return (
     <>
       <PageHeader title="Aile Kütüphanesi 📚">
-        <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+        <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg hover:shadow-xl transition-shadow">
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Kitap Ekle
         </Button>
       </PageHeader>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Toplam Okunan</CardTitle>
-            <Book className="h-4 w-4 text-muted-foreground" />
+            <Book className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">25 Kitap</div>
             <p className="text-xs text-muted-foreground">Aile toplamı</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Bu Ay</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+4 Kitap</div>
             <p className="text-xs text-muted-foreground">Geçen aya göre +1</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Favori Tür</CardTitle>
-            <Heart className="h-4 w-4 text-muted-foreground" />
+            <Heart className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Macera</div>
             <p className="text-xs text-muted-foreground">Tüm zamanlar</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Okuma Lideri</CardTitle>
-                <Star className="h-4 w-4 text-muted-foreground" />
+                <Star className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">Elif</div>
@@ -81,7 +80,7 @@ export default function LibraryPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 shadow-md">
           <CardHeader>
             <CardTitle>Aylık Okuma Performansı</CardTitle>
             <CardDescription>Aile üyelerinin bu ay okuduğu kitap sayısı.</CardDescription>
@@ -95,12 +94,16 @@ export default function LibraryPage() {
                     contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)"}}
                     cursor={{ fill: "hsl(var(--muted))" }}
                 />
-                <Bar dataKey="books" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="books" radius={[4, 4, 0, 0]}>
+                    {readingStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                </Bar>
               </RechartsBarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle>Okunan Türler</CardTitle>
             <CardDescription>Okunan kitapların türlere göre dağılımı.</CardDescription>
@@ -114,6 +117,7 @@ export default function LibraryPage() {
                         ))}
                     </Pie>
                     <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)"}} />
+                    <Legend/>
                 </PieChart>
             </ResponsiveContainer>
           </CardContent>

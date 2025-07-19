@@ -30,17 +30,21 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
     }
   };
 
-  const badgeColor = isCompleted ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400' : 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400';
+  const badgeColor = isCompleted 
+    ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 border border-green-500/30' 
+    : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-500/30';
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 1, height: 'auto' }}
-        animate={{ opacity: 1, height: 'auto' }}
-        exit={{ opacity: 0, height: 0 }}
+        layout
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
         transition={{ duration: 0.3 }}
+        className="mb-4"
       >
-        <Card className={`mb-4 transition-all duration-300 ${isCompleted ? 'bg-muted/50' : 'bg-card hover:shadow-md'}`}>
+        <Card className={`transition-all duration-300 ${isCompleted ? 'bg-muted/50 border-dashed' : 'bg-card hover:shadow-md'}`}>
           <CardContent className="p-4 flex items-center gap-4">
             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
             <Checkbox
@@ -52,22 +56,22 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
             <div className="flex-grow">
               <label
                 htmlFor={`task-${task.id}`}
-                className={`font-medium transition-colors ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                className={`font-medium transition-colors cursor-pointer ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}
               >
                 {task.title}
               </label>
               <p className="text-xs text-muted-foreground">{task.dueDate}</p>
             </div>
-            <Badge className={`flex items-center gap-1 ${badgeColor}`}>
-              <Star className="h-3 w-3" />
-              <span>{task.points}</span>
+            <Badge variant="outline" className={`flex items-center gap-1.5 py-1 px-2.5 text-sm ${badgeColor}`}>
+              <Star className="h-3.5 w-3.5" />
+              <span className="font-bold">{task.points}</span>
             </Badge>
             <div className="flex items-center gap-2">
               <Image
                 src={assignee.avatar}
                 alt={assignee.name}
-                width={28}
-                height={28}
+                width={32}
+                height={32}
                 className="rounded-full"
               />
               <span className="text-sm font-medium hidden md:inline">{assignee.name}</span>

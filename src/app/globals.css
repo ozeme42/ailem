@@ -14,24 +14,24 @@ body {
     --card-foreground: 224 71% 4%;
     --popover: 210 100% 100%;
     --popover-foreground: 224 71% 4%;
-    --primary: 217 91% 60%;
+    --primary: 217 91% 60%; /* Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 255 91% 66%;
+    --accent: 38 92% 50%; /* Orange */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 10 89% 60%;
-    --chart-3: 160 84% 39%;
-    --chart-4: 255 91% 66%;
-    --chart-5: 45 93% 47%;
+    --chart-1: 217 91% 60%; /* Blue */
+    --chart-2: 142 71% 45%; /* Green */
+    --chart-3: 38 92% 50%; /* Orange */
+    --chart-4: 262 83% 58%; /* Purple */
+    --chart-5: 340 82% 52%; /* Pink */
     --radius: 0.5rem;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 224 71% 4%;
@@ -49,24 +49,24 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
+    --primary: 217 91% 60%; /* Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 217 20% 21%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217 20% 21%;
     --muted-foreground: 217 10% 65%;
-    --accent: 255 91% 66%;
+    --accent: 38 92% 50%; /* Orange */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 217 20% 21%;
     --input: 217 20% 21%;
     --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 10 89% 60%;
-    --chart-3: 160 84% 39%;
-    --chart-4: 255 91% 66%;
-    --chart-5: 45 93% 47%;
+    --chart-1: 217 91% 60%; /* Blue */
+    --chart-2: 142 71% 45%; /* Green */
+    --chart-3: 38 92% 50%; /* Orange */
+    --chart-4: 262 83% 58%; /* Purple */
+    --chart-5: 340 82% 52%; /* Pink */
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217 91% 60%;
