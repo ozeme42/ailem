@@ -2,118 +2,101 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Book, Clock, Heart, PlusCircle, Star } from "lucide-react";
+import { Book, Clock, Heart, PlusCircle, Star, Search, Film, Gamepad2, Mic, Filter } from "lucide-react";
 import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell, Legend } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { books } from "@/lib/data";
-
-const readingStats = [
-  { name: 'Ahmet', books: 5, fill: "hsl(var(--chart-1))" },
-  { name: 'Zeynep', books: 8, fill: "hsl(var(--chart-2))" },
-  { name: 'Elif', books: 12, fill: "hsl(var(--chart-3))" },
-];
+import { mediaItems, MediaType } from "@/lib/data";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 const genreData = [
-  { name: 'Macera', value: 400 },
-  { name: 'Fantastik', value: 300 },
-  { name: 'Klasik', value: 300 },
-  { name: 'Distopya', value: 200 },
+  { name: 'Fantastik', value: 400, fill: "hsl(var(--chart-1))" },
+  { name: 'Dram', value: 300, fill: "hsl(var(--chart-2))" },
+  { name: 'Felsefe', value: 300, fill: "hsl(var(--chart-3))" },
+  { name: 'Distopya', value: 200, fill: "hsl(var(--chart-4))" },
+  { name: 'Simülasyon', value: 100, fill: "hsl(var(--chart-5))" },
 ];
-const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
 
+const mediaTypeIcons: { [key in MediaType]: React.ElementType } = {
+    "Kitap": Book,
+    "Film": Film,
+    "Sesli Kitap": Mic,
+    "Oyun": Gamepad2,
+}
 
 export default function LibraryPage() {
+  const [activeTab, setActiveTab] = React.useState<MediaType | "all">("all");
+  
+  const filteredMedia = activeTab === "all" ? mediaItems : mediaItems.filter(item => item.type === activeTab);
+
   return (
     <>
       <PageHeader title="Aile Kütüphanesi 📚">
         <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg hover:shadow-xl transition-shadow">
           <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Kitap Ekle
+          Yeni Medya Ekle
         </Button>
       </PageHeader>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Okunan</CardTitle>
+            <CardTitle className="text-sm font-medium">Toplam Medya</CardTitle>
             <Book className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">25 Kitap</div>
-            <p className="text-xs text-muted-foreground">Aile toplamı</p>
+            <div className="text-2xl font-bold">{mediaItems.length} Öğe</div>
+            <p className="text-xs text-muted-foreground">Kitaplar, filmler ve daha fazlası</p>
           </CardContent>
         </Card>
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bu Ay</CardTitle>
-            <Clock className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+4 Kitap</div>
-            <p className="text-xs text-muted-foreground">Geçen aya göre +1</p>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Favori Tür</CardTitle>
+            <CardTitle className="text-sm font-medium">En Sevilen Tür</CardTitle>
             <Heart className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Macera</div>
+            <div className="text-2xl font-bold">Fantastik</div>
             <p className="text-xs text-muted-foreground">Tüm zamanlar</p>
           </CardContent>
         </Card>
         <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En Yüksek Puanlı</CardTitle>
+            <Star className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold truncate">Yüzüklerin Efendisi</div>
+            <p className="text-xs text-muted-foreground">5.0 Ortalama Puan</p>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Okuma Lideri</CardTitle>
-                <Star className="h-4 w-4 text-yellow-500" />
+                <CardTitle className="text-sm font-medium">En Çok Tüketilen</CardTitle>
+                <Book className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">Elif</div>
-                <p className="text-xs text-muted-foreground">12 kitap ile</p>
+                <div className="text-2xl font-bold">Kitap</div>
+                <p className="text-xs text-muted-foreground">Medya türü</p>
             </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <Card className="lg:col-span-2 shadow-md">
+       <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Aylık Okuma Performansı</CardTitle>
-            <CardDescription>Aile üyelerinin bu ay okuduğu kitap sayısı.</CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsBarChart data={readingStats}>
-                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
-                    contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)"}}
-                    cursor={{ fill: "hsl(var(--muted))" }}
-                />
-                <Bar dataKey="books" radius={[4, 4, 0, 0]}>
-                    {readingStats.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                </Bar>
-              </RechartsBarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle>Okunan Türler</CardTitle>
-            <CardDescription>Okunan kitapların türlere göre dağılımı.</CardDescription>
+            <CardTitle>Türlere Göre Dağılım</CardTitle>
+            <CardDescription>Kütüphanedeki medyaların türlere göre dağılımı.</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
                  <PieChart>
-                    <Pie data={genreData} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value">
+                    <Pie data={genreData} cx="50%" cy="50%" labelLine={false} outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                         {genreData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                     </Pie>
                     <Tooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)"}} />
@@ -122,41 +105,66 @@ export default function LibraryPage() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
 
       <div>
-        <h2 className="text-2xl font-semibold mb-4 text-foreground">Kitaplık</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {books.map(book => (
-                <Dialog key={book.id}>
+        <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold text-foreground">Medya Kütüphanesi</h2>
+             <div className="w-1/3 relative">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Kütüphanede ara..." className="pl-10"/>
+             </div>
+        </div>
+        
+        <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as MediaType | "all")}>
+            <TabsList>
+                <TabsTrigger value="all">Hepsi</TabsTrigger>
+                <TabsTrigger value="Kitap"><Book className="mr-2 h-4 w-4"/>Kitaplar</TabsTrigger>
+                <TabsTrigger value="Film"><Film className="mr-2 h-4 w-4"/>Filmler</TabsTrigger>
+                <TabsTrigger value="Sesli Kitap"><Mic className="mr-2 h-4 w-4"/>Sesli Kitaplar</TabsTrigger>
+                <TabsTrigger value="Oyun"><Gamepad2 className="mr-2 h-4 w-4"/>Oyunlar</TabsTrigger>
+            </TabsList>
+        </Tabs>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mt-6">
+            {filteredMedia.map(item => {
+                const Icon = mediaTypeIcons[item.type];
+                return (
+                <Dialog key={item.id}>
                     <DialogTrigger asChild>
                         <div className="cursor-pointer group">
-                            <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
-                                <Image src={book.coverImage} alt={book.title} width={300} height={450} className="w-full h-auto object-cover" data-ai-hint="book cover" />
+                            <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
+                                <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover" data-ai-hint="book cover" />
+                                <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full">
+                                    <Icon className="h-4 w-4" />
+                                </div>
                             </Card>
-                            <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
-                            <p className="text-xs text-muted-foreground">{book.author}</p>
+                            <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{item.title}</p>
+                            <p className="text-xs text-muted-foreground">{item.author}</p>
                         </div>
                     </DialogTrigger>
                      <DialogContent className="sm:max-w-[625px]">
                         <div className="grid gap-8 sm:grid-cols-2">
                             <div>
-                                <Image src={book.coverImage} alt={book.title} width={300} height={450} className="w-full h-auto object-cover rounded-md" data-ai-hint="book cover" />
+                                <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md" data-ai-hint="book cover" />
                             </div>
                             <div className="flex flex-col">
                                 <DialogHeader>
-                                    <DialogTitle className="text-3xl font-bold">{book.title}</DialogTitle>
-                                    <DialogDescription className="text-lg">{book.author}</DialogDescription>
+                                    <Badge variant="secondary" className="w-fit mb-2">{item.type}</Badge>
+                                    <DialogTitle className="text-3xl font-bold">{item.title}</DialogTitle>
+                                    <DialogDescription className="text-lg">{item.author}</DialogDescription>
                                 </DialogHeader>
                                 <div className="flex items-center gap-2 my-4">
                                     <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < book.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />)}
+                                        {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < item.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />)}
                                     </div>
-                                    <span className="text-sm text-muted-foreground">({book.rating}.0)</span>
+                                    <span className="text-sm text-muted-foreground">({item.rating}.0)</span>
                                 </div>
-                                <p className="text-sm text-muted-foreground flex-grow">{book.description}</p>
-                                <div className="text-sm text-muted-foreground mt-4">
-                                    <p>{book.pages} sayfa</p>
+                                <p className="text-sm text-muted-foreground flex-grow">{item.description}</p>
+                                <div className="text-sm text-muted-foreground mt-4 space-y-1">
+                                    <p><strong>Tür:</strong> {item.genre}</p>
+                                    {item.pages && <p><strong>Sayfa Sayısı:</strong> {item.pages}</p>}
+                                    {item.duration && <p><strong>Süre:</strong> {item.duration}</p>}
+                                    {item.platform && <p><strong>Platform:</strong> {item.platform}</p>}
                                 </div>
                                 <div className="mt-6 flex gap-2">
                                     <Button className="w-full">Okundu Olarak İşaretle</Button>
@@ -166,7 +174,7 @@ export default function LibraryPage() {
                         </div>
                     </DialogContent>
                 </Dialog>
-            ))}
+            )})}
         </div>
       </div>
     </>

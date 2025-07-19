@@ -2,18 +2,37 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { BarChart, BookOpen, CheckCircle, Star, Users } from "lucide-react";
+import { BarChart, BookOpen, CheckCircle, Cloud, Star, Users, Bell, Sun } from "lucide-react";
 import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { familyMembers, recentActivities, weeklyPoints } from "@/lib/data";
+import { familyMembers, recentActivities, weeklyPoints, tasks } from "@/lib/data";
+import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => t.completed).length;
+  const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+
   return (
     <>
-      <PageHeader title="Ana Sayfa 🏡" />
+      <PageHeader title="Akıllı Dashboard 🏡">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Sun className="text-yellow-400" />
+            <span>24°C, Güneşli</span>
+            <span className="text-muted-foreground">İstanbul</span>
+          </div>
+          <div className="relative">
+            <Bell className="text-muted-foreground"/>
+            <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0 bg-red-500 text-white">3</Badge>
+          </div>
+        </div>
+      </PageHeader>
       
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-4 text-foreground">Aile Üyeleri</h2>
@@ -33,8 +52,8 @@ export default function Home() {
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">128</div>
-              <p className="text-xs text-muted-foreground">+20.1% geçen haftadan</p>
+              <div className="text-2xl font-bold">{completedTasks}/{totalTasks}</div>
+              <p className="text-xs text-muted-foreground">%{completionPercentage} tamamlandı</p>
             </CardContent>
           </Card>
           <Card className="hover:shadow-lg transition-shadow">
@@ -49,7 +68,7 @@ export default function Home() {
           </Card>
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Okunan Kitaplar</CardTitle>
+              <CardTitle className="text-sm font-medium">Okunan Medya</CardTitle>
               <BookOpen className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
@@ -76,6 +95,7 @@ export default function Home() {
             <CardTitle className="flex items-center">
               <BarChart className="mr-2" /> Haftalık Puan Dağılımı
             </CardTitle>
+             <CardDescription>Bu hafta aile üyelerinin kazandığı XP puanları.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <ResponsiveContainer width="100%" height={300}>
@@ -99,6 +119,7 @@ export default function Home() {
         <Card>
           <CardHeader>
             <CardTitle>Son Aktiviteler</CardTitle>
+             <CardDescription>Ailede olup bitenler.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

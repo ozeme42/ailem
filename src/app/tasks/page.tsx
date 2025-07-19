@@ -2,15 +2,17 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { PlusCircle, Search, Star } from "lucide-react";
+import { PlusCircle, Search, Star, Mic, Filter, ChevronDown } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
 import { tasks, familyMembers } from "@/lib/data";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 export default function TasksPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -19,11 +21,7 @@ export default function TasksPage() {
     return familyMembers.find((m) => m.id === assigneeId)!;
   };
   
-  const leaderboard = [...familyMembers].sort((a,b) => {
-    const pointsA = tasks.filter(t => t.assigneeId === a.id && t.completed).reduce((sum, t) => sum + t.points, 0);
-    const pointsB = tasks.filter(t => t.assigneeId === b.id && t.completed).reduce((sum, t) => sum + t.points, 0);
-    return pointsB - pointsA;
-  });
+  const leaderboard = [...familyMembers].sort((a,b) => b.xp - a.xp);
 
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,14 +42,41 @@ export default function TasksPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Görev veya kişi ara..." 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex gap-2 mb-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Görev ara..." 
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7">
+                <Mic className="h-4 w-4"/>
+              </Button>
+            </div>
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="shrink-0">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filtrele
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Kategori</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem>Ev İşleri</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Okul</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Aile</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Kişisel</DropdownMenuCheckboxItem>
+                <DropdownMenuLabel>Zorluk</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                 <DropdownMenuCheckboxItem>Kolay</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Orta</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Zor</DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <Tabs defaultValue="todo">
@@ -59,7 +84,7 @@ export default function TasksPage() {
               <TabsTrigger value="todo">Yapılacaklar ({todoTasks.length})</TabsTrigger>
               <TabsTrigger value="completed">Tamamlananlar ({completedTasks.length})</TabsTrigger>
             </TabsList>
-            <TabsContent value="todo" className="mt-4">
+            <TabsContent value="todo" className="mt-4 space-y-4">
               {todoTasks.length > 0 ? (
                 todoTasks.map((task) => (
                   <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
@@ -68,7 +93,7 @@ export default function TasksPage() {
                 <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Bekleyen görev yok. Harika!</CardContent></Card>
               )}
             </TabsContent>
-            <TabsContent value="completed" className="mt-4">
+            <TabsContent value="completed" className="mt-4 space-y-4">
                {completedTasks.length > 0 ? (
                 completedTasks.map((task) => (
                   <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
@@ -84,15 +109,11 @@ export default function TasksPage() {
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle>Liderlik Tablosu 🏆</CardTitle>
+              <CardDescription>En çok XP kazanan üyeler.</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-4">
-                {leaderboard.map((member, index) => {
-                  const totalPoints = tasks
-                    .filter(t => t.assigneeId === member.id && t.completed)
-                    .reduce((sum, t) => sum + t.points, 0);
-                  
-                  return (
+                {leaderboard.map((member, index) => (
                     <li key={member.id} className="flex items-center gap-3">
                       <span className="font-bold text-lg w-6">{index + 1}.</span>
                       <Image src={member.avatar} alt={member.name} width={40} height={40} className="rounded-full" />
@@ -100,24 +121,25 @@ export default function TasksPage() {
                         <p className="font-semibold">{member.name}</p>
                         <div className="flex items-center text-sm text-yellow-500">
                           <Star className="w-4 h-4 mr-1 fill-current" />
-                          <span>{totalPoints} Puan</span>
+                          <span>{member.xp} XP</span>
                         </div>
                       </div>
+                      <Badge variant="secondary">Lvl {member.level}</Badge>
                     </li>
-                  );
-                })}
+                  ))}
               </ul>
             </CardContent>
           </Card>
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle>Kategori Dağılımı</CardTitle>
+               <CardDescription>Görevlerin kategorilere göre dağılımı.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                <div className="flex justify-between items-center text-sm"><span className="text-blue-500">●</span> Ev İşleri <span className="font-semibold">{tasks.filter(t => t.category === "Ev İşleri").length}</span></div>
-                <div className="flex justify-between items-center text-sm"><span className="text-green-500">●</span> Okul <span className="font-semibold">{tasks.filter(t => t.category === "Okul").length}</span></div>
-                <div className="flex justify-between items-center text-sm"><span className="text-purple-500">●</span> Aile <span className="font-semibold">{tasks.filter(t => t.category === "Aile").length}</span></div>
-                <div className="flex justify-between items-center text-sm"><span className="text-orange-500">●</span> Kişisel <span className="font-semibold">{tasks.filter(t => t.category === "Kişisel").length}</span></div>
+                <div className="flex justify-between items-center text-sm"><span className="text-blue-500">● Ev İşleri</span> <Badge variant="outline">{tasks.filter(t => t.category === "Ev İşleri").length}</Badge></div>
+                <div className="flex justify-between items-center text-sm"><span className="text-green-500">● Okul</span> <Badge variant="outline">{tasks.filter(t => t.category === "Okul").length}</Badge></div>
+                <div className="flex justify-between items-center text-sm"><span className="text-purple-500">● Aile</span> <Badge variant="outline">{tasks.filter(t => t.category === "Aile").length}</Badge></div>
+                <div className="flex justify-between items-center text-sm"><span className="text-orange-500">● Kişisel</span> <Badge variant="outline">{tasks.filter(t => t.category === "Kişisel").length}</Badge></div>
             </CardContent>
           </Card>
         </aside>

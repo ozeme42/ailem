@@ -3,16 +3,16 @@
 import * as React from "react";
 import { addDays, format, startOfWeek } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Clock, MapPin, PlusCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, MapPin, PlusCircle, Users, AlertCircle } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { calendarEvents } from "@/lib/data";
-import type { CalendarEvent } from "@/lib/data";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const categoryColors: { [key: string]: { bg: string, border: string, text: string, darkBg: string } } = {
   Okul:       { bg: 'bg-blue-100',   border: 'border-blue-500',   text: 'text-blue-800',   darkBg: 'dark:bg-blue-900/50' },
@@ -29,6 +29,12 @@ const categoryBadgeColors: { [key: string]: string } = {
   "Doğum Günü": "bg-pink-500",
   Diğer: "bg-gray-500",
 };
+
+const priorityBadgeColors: { [key: string]: string } = {
+  Yüksek: "border-red-500 text-red-500",
+  Orta: "border-yellow-500 text-yellow-500",
+  Düşük: "border-green-500 text-green-500",
+}
 
 
 export default function CalendarPage() {
@@ -89,17 +95,44 @@ export default function CalendarPage() {
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <Badge className={`w-fit ${categoryBadgeColors[event.category]}`}>{event.category}</Badge>
+                                <div className="flex justify-between items-start">
+                                    <Badge className={`w-fit ${categoryBadgeColors[event.category]}`}>{event.category}</Badge>
+                                    <Badge variant="outline" className={priorityBadgeColors[event.priority]}>
+                                      <AlertCircle className="w-3 h-3 mr-1" />
+                                      {event.priority}
+                                    </Badge>
+                                </div>
                                 <DialogTitle className="text-2xl pt-2">{event.title}</DialogTitle>
                                 <DialogDescription>
                                     {format(new Date(event.date), 'd MMMM yyyy, EEEE', { locale: tr })}
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-2">
+                            <div className="space-y-4 py-4">
                                 <p className="flex items-center gap-2"><Clock className="w-4 h-4 text-muted-foreground"/> {event.startTime} {event.endTime && `- ${event.endTime}`}</p>
                                 <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-muted-foreground"/> {event.location}</p>
                                 <p>{event.description}</p>
+                                <div>
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><Users className="w-4 h-4 text-muted-foreground" /> Katılımcılar</h4>
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src="https://placehold.co/40x40.png" />
+                                            <AvatarFallback>AH</AvatarFallback>
+                                        </Avatar>
+                                         <Avatar className="h-8 w-8">
+                                            <AvatarImage src="https://placehold.co/40x40.png" />
+                                            <AvatarFallback>ZE</AvatarFallback>
+                                        </Avatar>
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src="https://placehold.co/40x40.png" />
+                                            <AvatarFallback>EL</AvatarFallback>
+                                        </Avatar>
+                                    </div>
+                                </div>
                             </div>
+                             <DialogFooter>
+                                <Button variant="outline">Düzenle</Button>
+                                <Button>Katıl</Button>
+                            </DialogFooter>
                         </DialogContent>
                        </Dialog>
                     )})}
@@ -114,15 +147,20 @@ export default function CalendarPage() {
         <h2 className="text-2xl font-semibold mb-4 text-foreground">Yaklaşan Etkinlikler</h2>
         <Carousel opts={{ align: "start" }} className="w-full">
           <CarouselContent>
-            {upcomingEvents.map((event) => {
+            {upcomingEvents.length > 0 ? upcomingEvents.map((event) => {
               const colors = categoryColors[event.category] || categoryColors.Diğer;
               return (
               <CarouselItem key={event.id} className="md:basis-1/2 lg:basis-1/3">
                 <div className="p-1">
                   <Card className={`border-l-4 shadow-sm hover:shadow-lg transition-shadow ${colors.border}`}>
                     <CardHeader>
-                      <CardTitle>{event.title}</CardTitle>
-                      <CardDescription>{format(new Date(event.date), 'd MMMM, EEEE', { locale: tr })} - {event.startTime}</CardDescription>
+                      <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>{event.title}</CardTitle>
+                            <CardDescription>{format(new Date(event.date), 'd MMMM, EEEE', { locale: tr })} - {event.startTime}</CardDescription>
+                        </div>
+                        <Badge variant="outline" className={priorityBadgeColors[event.priority]}>{event.priority}</Badge>
+                      </div>
                     </CardHeader>
                     <CardContent>
                        <Badge variant="outline" className={`${colors.border} ${colors.text} ${colors.bg} ${colors.darkBg}`}>{event.category}</Badge>
@@ -130,7 +168,7 @@ export default function CalendarPage() {
                   </Card>
                 </div>
               </CarouselItem>
-            )})}
+            )}) : <p className="text-muted-foreground pl-4">Yaklaşan etkinlik bulunmuyor.</p>}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />
