@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, Video, Mic, Send, Trash2, Pause, Play, Loader2, Sparkles } from 'lucide-react';
+import { Camera, Video, Mic, Send, Trash2, Pause, Play, Loader2, Sparkles, VideoIcon, CircleDot } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/page-header';
@@ -20,19 +20,24 @@ export default function ActionsPage() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
-  
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  const [transcribing, setTranscribing] = useState(false);
-  const [transcribedText, setTranscribedText] = useState("");
-  
+  // Photo state
+  const [photo, setPhoto] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
 
+  // Audio state
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcribedText, setTranscribedText] = useState("");
+
+  // Video state
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoChunks, setVideoChunks] = useState<Blob[]>([]);
 
   const getPermissions = async () => {
     try {
@@ -62,14 +67,27 @@ export default function ActionsPage() {
     };
   }, []);
 
-  const handleModeChange = (newMode: Mode) => {
-    setMode(newMode);
+  const resetState = () => {
     setPhoto(null);
-    setAudioUrl(null);
-    setTranscribedText("");
     setAnalysisResult(null);
+    setAudioUrl(null);
+    setAudioChunks([]);
+    setTranscribedText("");
+    setVideoUrl(null);
+    setVideoChunks([]);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecordingAudio(false);
+    setIsRecordingVideo(false);
   };
-
+  
+  const handleModeChange = (newMode: Mode) => {
+    resetState();
+    setMode(newMode);
+  };
+  
+  // Photo Logic
   const takePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
@@ -99,52 +117,78 @@ export default function ActionsPage() {
     }
   };
 
-
-  const startRecording = () => {
+  // Audio Logic
+  const startAudioRecording = () => {
     if (stream) {
-      setIsRecording(true);
+      setIsRecordingAudio(true);
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.ondataavailable = (event) => {
-        setAudioChunks((prev) => [...prev, event.data]);
-      };
+      mediaRecorder.ondataavailable = (event) => setAudioChunks((prev) => [...prev, event.data]);
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
+        setIsRecordingAudio(false);
       };
       mediaRecorder.start();
     }
   };
 
-  const stopRecording = () => {
+  const stopAudioRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
     }
   };
   
   const handleTranscribe = async () => {
-      if (!audioUrl) return;
-      setTranscribing(true);
-      setTranscribedText("");
-      try {
-          const audioBlob = await fetch(audioUrl).then(r => r.blob());
-          const reader = new FileReader();
-          reader.readAsDataURL(audioBlob);
-          reader.onloadend = async () => {
-              const base64Audio = reader.result as string;
-              const result = await transcribeAudio(base64Audio);
-              setTranscribedText(result.text);
-          };
-      } catch (error) {
-          console.error("Transcription error:", error);
-          toast({ variant: "destructive", title: "Metne Çevirme Başarısız Oldu", description: "Lütfen tekrar deneyin." });
-      } finally {
-          setTranscribing(false);
-      }
+    if (!audioUrl) return;
+    setTranscribing(true);
+    setTranscribedText("");
+    try {
+      const audioBlob = await fetch(audioUrl).then(r => r.blob());
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        const base64Audio = reader.result as string;
+        const result = await transcribeAudio(base64Audio);
+        setTranscribedText(result.text);
+      };
+    } catch (error) {
+      console.error("Transcription error:", error);
+      toast({ variant: "destructive", title: "Metne Çevirme Başarısız Oldu", description: "Lütfen tekrar deneyin." });
+    } finally {
+      setTranscribing(false);
+    }
   };
 
+  // Video Logic
+  const startVideoRecording = () => {
+    if (stream) {
+      setIsRecordingVideo(true);
+      setVideoChunks([]);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setVideoChunks((prev) => [...prev, event.data]);
+        }
+      };
+      mediaRecorder.onstop = () => {
+        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(videoBlob);
+        setVideoUrl(url);
+        setIsRecordingVideo(false);
+      };
+      mediaRecorder.start();
+    }
+  };
+  
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+  
 
   const renderContent = () => {
     if (!hasPermission) {
@@ -170,7 +214,7 @@ export default function ActionsPage() {
             {photo ? (
               <div className="flex flex-col items-center gap-4 w-full">
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => { setPhoto(null); setAnalysisResult(null); }}>
+                    <Button variant="outline" onClick={() => resetState()}>
                         <Trash2 className="mr-2"/> Tekrar Çek
                     </Button>
                     <Button onClick={handleAnalyzePhoto} disabled={analyzing}>
@@ -195,15 +239,27 @@ export default function ActionsPage() {
           </div>
         );
       case 'video':
-         return (
-          <div className="flex flex-col items-center gap-4">
-             <div className="w-full max-w-md aspect-video rounded-lg overflow-hidden border bg-black">
-                <video ref={videoRef} className="w-full h-full" autoPlay muted playsInline />
+        return (
+          <div className="flex flex-col items-center gap-4 w-full max-w-md">
+            <div className="w-full aspect-video rounded-lg overflow-hidden border bg-black">
+              {videoUrl ? (
+                <video src={videoUrl} className="w-full h-full" controls autoPlay loop />
+              ) : (
+                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+              )}
             </div>
-            <Button size="lg" className="rounded-full w-20 h-20 bg-red-500 hover:bg-red-600">
-                <Video size={32}/>
-            </Button>
-             <p className="text-muted-foreground text-sm">Video kaydı yakında...</p>
+            {videoUrl ? (
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => resetState()}>
+                        <Trash2 className="mr-2"/> Sil ve Yeniden Kaydet
+                    </Button>
+                    <Button><Send className="mr-2"/> Gönder</Button>
+                </div>
+            ) : (
+                 <Button onClick={isRecordingVideo ? stopVideoRecording : startVideoRecording} size="lg" className={`rounded-full w-20 h-20 transition-colors ${isRecordingVideo ? 'bg-red-500 hover:bg-red-600' : 'bg-primary'}`}>
+                    {isRecordingVideo ? <CircleDot size={32} className="animate-pulse" /> : <VideoIcon size={32}/>}
+                </Button>
+            )}
           </div>
         );
       case 'audio':
@@ -213,7 +269,7 @@ export default function ActionsPage() {
                     <div className="w-full space-y-4">
                         <audio src={audioUrl} controls className="w-full"/>
                         <div className="flex gap-2">
-                             <Button variant="outline" onClick={() => { setAudioUrl(null); setAudioChunks([]); setTranscribedText(""); }}>
+                             <Button variant="outline" onClick={() => resetState()}>
                                 <Trash2 className="mr-2"/> Sil ve Yeniden Kaydet
                             </Button>
                             <Button onClick={handleTranscribe} disabled={transcribing}>
@@ -232,10 +288,10 @@ export default function ActionsPage() {
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-4">
-                        <div className="text-5xl font-bold text-primary animate-pulse">{isRecording ? "KAYDEDİLİYOR" : "HAZIR"}</div>
+                        <div className="text-5xl font-bold text-primary animate-pulse">{isRecordingAudio ? "KAYDEDİLİYOR" : "HAZIR"}</div>
                         <p className="text-muted-foreground">Sesli not kaydetmek için butona basın.</p>
-                        <Button onClick={isRecording ? stopRecording : startRecording} size="lg" className="rounded-full w-20 h-20 bg-blue-500 hover:bg-blue-600">
-                           {isRecording ? <Pause size={32} /> : <Mic size={32}/>}
+                        <Button onClick={isRecordingAudio ? stopAudioRecording : startAudioRecording} size="lg" className="rounded-full w-20 h-20 bg-blue-500 hover:bg-blue-600">
+                           {isRecordingAudio ? <Pause size={32} /> : <Mic size={32}/>}
                         </Button>
                     </div>
                 )}
