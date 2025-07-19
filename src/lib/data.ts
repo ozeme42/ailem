@@ -239,3 +239,52 @@ export const assignments: Assignment[] = [
     studentId: 4,
   },
 ];
+
+export interface ShoppingList {
+  id: number;
+  title: string;
+  category: string;
+  items: ShoppingItem[];
+  totalBudget: number;
+  assigneeId: number;
+  dueDate: string;
+}
+
+export interface ShoppingItem {
+  id: number;
+  name: string;
+  quantity: string;
+  price: number;
+  completed: boolean;
+}
+
+
+export const shoppingLists: ShoppingList[] = [
+  {
+    id: 1,
+    title: 'Haftalık Market Alışverişi',
+    category: 'Market',
+    items: [
+      { id: 1, name: 'Süt', quantity: '2 litre', price: 65.50, completed: true },
+      { id: 2, name: 'Ekmek', quantity: '3 adet', price: 45.00, completed: true },
+      { id: 3, name: 'Yumurta', quantity: '1 düzine', price: 85.00, completed: false },
+      { id: 4, name: 'Domates', quantity: '1 kg', price: 52.00, completed: false },
+    ],
+    totalBudget: 450.00,
+    assigneeId: 2,
+    dueDate: 'Bugün',
+  },
+  {
+    id: 2,
+    title: 'Ev Temizlik Malzemeleri',
+    category: 'Temizlik',
+    items: [
+      { id: 5, name: 'Bulaşık Deterjanı', quantity: '1 adet', price: 145.00, completed: false },
+      { id: 6, name: 'Çamaşır Suyu', quantity: '1 adet', price: 98.00, completed: false },
+      { id: 7, name: 'Yüzey Temizleyici', quantity: '1 paket', price: 115.00, completed: false },
+    ],
+    totalBudget: 400.00,
+    assigneeId: 1,
+    dueDate: 'Yarın',
+  },
+];
