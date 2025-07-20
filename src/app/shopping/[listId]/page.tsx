@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 
 const newItemSchema = z.object({
@@ -123,6 +125,10 @@ export default function ShoppingListDetailPage() {
             </div>
         );
     }
+    
+    const pendingItems = list.items?.filter(item => !item.completed) || [];
+    const completedItems = list.items?.filter(item => item.completed) || [];
+
 
     return (
         <div>
@@ -157,33 +163,76 @@ export default function ShoppingListDetailPage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardContent className="p-4 pt-4">
-                     <div className="space-y-2">
-                        {list.items?.length > 0 ? list.items.map((item) => (
-                            <div key={item.id} className={`group flex items-center justify-between p-3 rounded-md transition-colors ${item.completed ? 'bg-muted/50' : 'hover:bg-muted/30'}`}>
-                                <div className="flex items-center gap-3 flex-grow">
-                                    <Checkbox
-                                        id={`item-${list.id}-${item.id}`}
-                                        checked={item.completed}
-                                        onCheckedChange={() => handleItemToggle(item.id)}
-                                        className="h-5 w-5"
-                                    />
-                                    <div>
-                                        <label htmlFor={`item-${list.id}-${item.id}`} className={`font-medium cursor-pointer ${item.completed ? 'line-through text-muted-foreground' : ''}`}>{item.name}</label>
-                                        <p className="text-xs text-muted-foreground">{item.quantity}</p>
+            <Tabs defaultValue="pending">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="pending">
+                        Alınacaklar
+                        <Badge variant="secondary" className="ml-2">{pendingItems.length}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="completed">
+                        Alınanlar
+                        <Badge variant="secondary" className="ml-2">{completedItems.length}</Badge>
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent value="pending">
+                    <Card>
+                        <CardContent className="p-4 pt-4">
+                            <div className="space-y-2">
+                                {pendingItems.length > 0 ? pendingItems.map((item) => (
+                                    <div key={item.id} className={`group flex items-center justify-between p-3 rounded-md transition-colors hover:bg-muted/50`}>
+                                        <div className="flex items-center gap-3 flex-grow">
+                                            <Checkbox
+                                                id={`item-${list.id}-${item.id}`}
+                                                checked={item.completed}
+                                                onCheckedChange={() => handleItemToggle(item.id)}
+                                                className="h-5 w-5"
+                                            />
+                                            <div>
+                                                <label htmlFor={`item-${list.id}-${item.id}`} className={`font-medium cursor-pointer`}>{item.name}</label>
+                                                <p className="text-xs text-muted-foreground">{item.quantity}</p>
+                                            </div>
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteItem(item.id)}>
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
                                     </div>
-                                </div>
-                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteItem(item.id)}>
-                                    <Trash2 className="h-4 w-4"/>
-                                </Button>
+                                )) : (
+                                    <p className="text-center text-muted-foreground py-8">Alınacak ürün kalmadı. Harika!</p>
+                                )}
                             </div>
-                        )) : (
-                            <p className="text-center text-muted-foreground py-8">Bu listede henüz ürün yok.</p>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="completed">
+                    <Card>
+                        <CardContent className="p-4 pt-4">
+                            <div className="space-y-2">
+                                {completedItems.length > 0 ? completedItems.map((item) => (
+                                    <div key={item.id} className={`group flex items-center justify-between p-3 rounded-md transition-colors bg-muted/50`}>
+                                        <div className="flex items-center gap-3 flex-grow">
+                                            <Checkbox
+                                                id={`item-${list.id}-${item.id}`}
+                                                checked={item.completed}
+                                                onCheckedChange={() => handleItemToggle(item.id)}
+                                                className="h-5 w-5"
+                                            />
+                                            <div>
+                                                <label htmlFor={`item-${list.id}-${item.id}`} className={`font-medium cursor-pointer line-through text-muted-foreground`}>{item.name}</label>
+                                                <p className="text-xs text-muted-foreground">{item.quantity}</p>
+                                            </div>
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteItem(item.id)}>
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
+                                    </div>
+                                )) : (
+                                    <p className="text-center text-muted-foreground py-8">Henüz tamamlanan ürün yok.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
