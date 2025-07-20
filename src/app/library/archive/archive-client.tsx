@@ -357,9 +357,28 @@ export default function ArchiveClient() {
     }
   }, []);
   
-  const handleSelectSearchResult = (book: Partial<Book>) => {
+  const handleSelectSearchResult = async (book: Partial<Book>) => {
     setIsSearchDialogOpen(false);
-    handleOpenAddDialog(book);
+    toast({ title: "Görsel Aktarılıyor...", description: "Kapak fotoğrafı kendi depolama alanınıza kaydediliyor." });
+
+    let finalImageUrl = book.image;
+    if (book.image) {
+        try {
+            const destinationPath = `book-covers/${(book.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
+            const migrationResult = await migrateImage({ sourceUrl: book.image, destinationPath });
+
+            if (migrationResult.success && migrationResult.newUrl) {
+                finalImageUrl = migrationResult.newUrl;
+                 toast({ title: "✅ Görsel Aktarıldı", description: "Kapak fotoğrafı başarıyla kaydedildi." });
+            } else {
+                throw new Error(migrationResult.error || "Bilinmeyen bir görsel taşıma hatası.");
+            }
+        } catch (e: any) {
+            toast({ title: "⚠️ Görsel Aktarılamadı", description: `Orijinal URL kullanılacak. Hata: ${e.message}`, variant: 'destructive' });
+        }
+    }
+    
+    handleOpenAddDialog({ ...book, image: finalImageUrl });
   };
   
   const handleBulkImport = async (importedBooks: Partial<Book>[]) => {
