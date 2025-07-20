@@ -29,8 +29,6 @@ type NewListFormData = z.infer<typeof newListSchema>;
 
 const newItemSchema = z.object({
     name: z.string().min(1, "Ürün adı boş olamaz."),
-    quantity: z.string().optional(),
-    price: z.coerce.number().min(0).optional(),
 });
 type NewItemFormData = z.infer<typeof newItemSchema>;
 
@@ -49,7 +47,7 @@ export default function ShoppingPage() {
 
   const newItemForm = useForm<NewItemFormData>({
     resolver: zodResolver(newItemSchema),
-    defaultValues: { name: "", quantity: "", price: 0 }
+    defaultValues: { name: "" }
   });
 
   React.useEffect(() => {
@@ -112,17 +110,15 @@ export default function ShoppingPage() {
     const newItem: ShoppingItem = {
         id: Date.now().toString(),
         name: data.name,
-        quantity: data.quantity || "1 adet",
-        price: data.price || 0,
+        quantity: "1 adet",
+        price: 0,
         completed: false,
     };
 
     const newItems = [...list.items, newItem];
     try {
         await updateShoppingList(list.id, { items: newItems });
-        toast({ title: "Ürün Eklendi", description: `${data.name} listeye eklendi.`});
         newItemForm.reset();
-        setOpenNewItemForms(prev => prev.filter(id => id !== listId));
     } catch (e) {
         toast({ title: "Hata", description: "Ürün eklenemedi.", variant: 'destructive'});
     }
@@ -199,7 +195,6 @@ export default function ShoppingPage() {
             const { completedCount, totalCost, completedCost } = calculateListTotals(list);
             const completionProgress = list.items.length > 0 ? (completedCount / list.items.length) * 100 : 0;
             const isOpen = openLists.includes(list.id);
-            const isNewItemFormOpen = openNewItemForms.includes(list.id);
 
             return (
                 <Collapsible
@@ -257,28 +252,25 @@ export default function ShoppingPage() {
                                 <p className="text-center text-muted-foreground py-4">Bu listede henüz ürün yok.</p>
                             )}
                             </div>
-                             <Collapsible
-                                open={isNewItemFormOpen}
-                                onOpenChange={() => setOpenNewItemForms(prev => prev.includes(list.id) ? prev.filter(id => id !== list.id) : [...prev, list.id])}
-                                className="mt-4"
-                            >
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="ghost" className="w-full">
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Yeni Ürün Ekle
-                                    </Button>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <Form {...newItemForm}>
-                                        <form onSubmit={newItemForm.handleSubmit(data => handleAddItemToList(list.id, data))} className="grid grid-cols-1 sm:grid-cols-6 gap-2 pt-4">
-                                            <FormField control={newItemForm.control} name="name" render={({ field }) => (<FormItem className="sm:col-span-3"><FormControl><Input placeholder="Ürün Adı" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                            <FormField control={newItemForm.control} name="quantity" render={({ field }) => (<FormItem className="sm:col-span-1"><FormControl><Input placeholder="Miktar" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                            <FormField control={newItemForm.control} name="price" render={({ field }) => (<FormItem className="sm:col-span-1"><FormControl><Input type="number" step="0.01" placeholder="Fiyat" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                            <Button type="submit" className="sm:col-span-1">Ekle</Button>
-                                        </form>
-                                    </Form>
-                                </CollapsibleContent>
-                             </Collapsible>
+                            <div className="mt-4 pt-4 border-t">
+                                <Form {...newItemForm}>
+                                    <form onSubmit={newItemForm.handleSubmit(data => handleAddItemToList(list.id, data))} className="flex items-start gap-2">
+                                        <FormField
+                                            control={newItemForm.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem className="flex-grow">
+                                                    <FormControl>
+                                                        <Input placeholder="Yeni ürün ekle..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button type="submit" variant="secondary">Ekle</Button>
+                                    </form>
+                                </Form>
+                            </div>
                         </CardContent>
                     </CollapsibleContent>
                 </Card>
