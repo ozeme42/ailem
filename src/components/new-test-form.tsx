@@ -46,8 +46,14 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    shouldUnregister: false, // Keep field values when tab changes
     defaultValues: {
       questionCount: 20,
+      title: "",
+      subject: "",
+      bankId: "",
+      topicId: "",
+      examId: "",
     },
   });
 
@@ -72,7 +78,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
         if (bank && topic) {
              newTest = {
                 title: `${bank.name} - ${topic.name}`,
-                subject: bank.subjects[0].name, // simplified
+                subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders", // find subject name
                 studentId: Number(values.studentId),
                 questionCount: topic.questionCount,
                 assignedDate: format(new Date(), 'dd MMMM yyyy'),
@@ -100,7 +106,15 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
     
     if (newTest) {
       onAssign(newTest);
-      form.reset();
+      form.reset({
+        questionCount: 20,
+        title: "",
+        subject: "",
+        bankId: "",
+        topicId: "",
+        examId: "",
+        studentId: values.studentId
+      });
     }
   }
   
