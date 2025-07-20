@@ -2,18 +2,24 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, GraduationCap, TrendingUp, BookOpen, Calendar as CalendarIcon, Clock, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { PlusCircle, BookOpen, Check, Clock, TrendingUp, AlertCircle, Award } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { students, subjects, upcomingExams, assignments } from "@/lib/data";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { NewTestForm } from "@/components/new-test-form";
+import { students, tests } from "@/lib/data";
 
 export default function EducationPage() {
   const [selectedStudent, setSelectedStudent] = React.useState(students[0]);
+
+  const studentTests = tests.filter(t => t.studentId === selectedStudent.id);
+  const assignedTests = studentTests.filter(t => t.status === 'Atandı');
+  const completedTests = studentTests.filter(t => t.status !== 'Atandı');
   
   const getPriorityBadgeClasses = (priority: 'Yüksek' | 'Orta' | 'Düşük') => {
     switch (priority) {
@@ -24,13 +30,35 @@ export default function EducationPage() {
     }
   };
 
+  const getStatusBadgeClasses = (status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi') => {
+     switch (status) {
+      case 'Atandı': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400';
+      case 'Çözüldü': return 'bg-blue-500/20 text-blue-600 dark:text-blue-400';
+      case 'Değerlendirildi': return 'bg-green-500/20 text-green-600 dark:text-green-400';
+      default: return 'bg-gray-500/20 text-gray-600 dark:text-gray-400';
+    }
+  }
+
   return (
     <>
-      <PageHeader title="Eğitim Takibi 🎓">
-        <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Kayıt Ekle
-        </Button>
+      <PageHeader title="Eğitim & Sınav 🎓">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Yeni Ödev Ata
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Yeni Test Ödevi Ata</DialogTitle>
+              <DialogDescription>
+                Öğrenciye yeni bir test veya deneme sınavı atayın.
+              </DialogDescription>
+            </DialogHeader>
+            <NewTestForm students={students} />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
 
       <div className="flex gap-4 mb-8 overflow-x-auto pb-4">
@@ -50,121 +78,74 @@ export default function EducationPage() {
         ))}
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
-          <TabsTrigger value="exams">Yaklaşan Sınavlar</TabsTrigger>
-          <TabsTrigger value="assignments">Ödevler</TabsTrigger>
+      <Tabs defaultValue="assignments" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="assignments">Ödevler ({assignedTests.length})</TabsTrigger>
+          <TabsTrigger value="results">Sonuçlar ({completedTests.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="overview">
-           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Genel Not Ortalaması</CardTitle>
-                <GraduationCap className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">85.5</div>
-                <p className="text-xs text-muted-foreground">Tüm dersler</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Aylık Gelişim</CardTitle>
-                <TrendingUp className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-500">+5.2 puan</div>
-                <p className="text-xs text-muted-foreground">Geçen aya göre</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Yaklaşan Sınav</CardTitle>
-                <CalendarIcon className="h-4 w-4 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">Matematik</div>
-                <p className="text-xs text-muted-foreground">3 gün içinde</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Bekleyen Ödev</CardTitle>
-                <Clock className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1 Ödev</div>
-                <p className="text-xs text-muted-foreground">Bugün teslim</p>
-              </CardContent>
-            </Card>
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Ders Notları</CardTitle>
-              <CardDescription>{selectedStudent.name} için ders bazında not ortalamaları.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {subjects.map((subject) => (
-                <div key={subject.id}>
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="font-semibold">{subject.name}</p>
-                    <p className="text-sm font-bold" style={{ color: subject.color }}>{subject.grade}</p>
-                  </div>
-                  <Progress value={subject.grade} indicatorClassName="bg-[var(--subject-color)]" style={{ '--subject-color': subject.color } as React.CSSProperties} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="exams">
-          <Card>
-             <CardHeader>
-              <CardTitle>Yaklaşan Sınavlar</CardTitle>
-              <CardDescription>{selectedStudent.name} için planlanmış sınavlar.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               {upcomingExams.filter(e => e.studentId === selectedStudent.id).map(exam => (
-                 <Card key={exam.id} className="p-4">
-                   <div className="flex justify-between items-start">
-                     <div>
-                       <h4 className="font-bold">{exam.subject}</h4>
-                       <p className="text-sm text-muted-foreground">{exam.date} - {exam.time}</p>
-                     </div>
-                     <Badge variant="outline" className={getPriorityBadgeClasses(exam.priority)}>
-                       <AlertCircle className="w-3 h-3 mr-1"/>
-                       {exam.priority}
-                     </Badge>
-                   </div>
-                   <div className="mt-2">
-                     <p className="text-xs font-semibold">Konular:</p>
-                     <p className="text-xs text-muted-foreground">{exam.topics.join(', ')}</p>
-                   </div>
-                 </Card>
-               ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
         <TabsContent value="assignments">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ödev Takibi</CardTitle>
-              <CardDescription>{selectedStudent.name} için tüm ödevler.</CardDescription>
+           <Card>
+             <CardHeader>
+              <CardTitle>Atanmış Testler</CardTitle>
+              <CardDescription>{selectedStudent.name} için tamamlanması gereken testler.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {assignments.filter(a => a.studentId === selectedStudent.id).map(assignment => (
-                <Card key={assignment.id} className="p-4">
-                   <div className="flex justify-between items-center">
-                     <div>
-                       <h4 className="font-bold">{assignment.title}</h4>
-                       <p className="text-sm text-muted-foreground">{assignment.subject} • Teslim: {assignment.dueDate}</p>
+               {assignedTests.length > 0 ? assignedTests.map(test => (
+                 <Card key={test.id} className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                   <div className="flex-grow">
+                     <h4 className="font-bold">{test.title}</h4>
+                     <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                        <span className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> {test.subject}</span>
+                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {test.questionCount} Soru</span>
                      </div>
-                      <Badge className={assignment.status === 'Tamamlandı' ? 'bg-green-600' : 'bg-yellow-600'}>
-                        {assignment.status}
+                     <p className="text-xs text-muted-foreground mt-2">Son Teslim: {test.dueDate}</p>
+                   </div>
+                   <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
+                    <Button className="w-full">Teste Başla</Button>
+                   </Link>
+                 </Card>
+               )) : <p className="text-muted-foreground text-center py-8">Atanmış yeni test bulunmuyor.</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="results">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tamamlanan Test Sonuçları</CardTitle>
+              <CardDescription>{selectedStudent.name} için tamamlanmış testlerin sonuçları.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {completedTests.length > 0 ? completedTests.map(test => (
+                <Card key={test.id} className="p-4">
+                   <div className="flex justify-between items-start mb-4">
+                     <div>
+                       <h4 className="font-bold">{test.title}</h4>
+                       <p className="text-sm text-muted-foreground">{test.subject}</p>
+                     </div>
+                      <Badge className={getStatusBadgeClasses(test.status)}>
+                        {test.status}
                       </Badge>
                    </div>
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                      <div className="bg-muted/50 p-3 rounded-lg">
+                        <p className="text-2xl font-bold">{test.score}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Puan</p>
+                      </div>
+                      <div className="bg-green-500/10 p-3 rounded-lg">
+                        <p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p>
+                        <p className="text-sm font-medium text-green-700">Doğru</p>
+                      </div>
+                       <div className="bg-red-500/10 p-3 rounded-lg">
+                        <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
+                        <p className="text-sm font-medium text-red-700">Yanlış</p>
+                      </div>
+                       <div className="bg-gray-500/10 p-3 rounded-lg">
+                        <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
+                        <p className="text-sm font-medium text-gray-700">Boş</p>
+                      </div>
+                   </div>
                 </Card>
-              ))}
+              )) : <p className="text-muted-foreground text-center py-8">Henüz tamamlanmış bir test yok.</p>}
             </CardContent>
           </Card>
         </TabsContent>

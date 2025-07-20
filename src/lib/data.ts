@@ -187,23 +187,19 @@ export interface Subject {
   grade: number;
 }
 
-export interface Exam {
-  id: number;
-  subject: string;
-  date: string;
-  time: string;
-  topics: string[];
-  studentId: number;
-  priority: 'Yüksek' | 'Orta' | 'Düşük';
-}
-
-export interface Assignment {
+export interface Test {
   id: number;
   title: string;
   subject: string;
-  dueDate: string;
-  status: 'Tamamlandı' | 'Beklemede';
   studentId: number;
+  questionCount: number;
+  assignedDate: string;
+  dueDate: string;
+  status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi';
+  score?: number;
+  correctAnswers?: number;
+  incorrectAnswers?: number;
+  emptyAnswers?: number;
 }
 
 export const students: Student[] = [
@@ -218,45 +214,57 @@ export const subjects: Subject[] = [
   { id: 4, name: 'Sosyal Bilgiler', color: '#8B5CF6', grade: 88 },
 ];
 
-export const upcomingExams: Exam[] = [
+export const tests: Test[] = [
   {
     id: 1,
+    title: 'Matematik Deneme Sınavı 1',
     subject: 'Matematik',
-    date: '15 Ocak 2025',
-    time: '10:00',
-    topics: ['Kesirler', 'Ondalık Sayılar'],
     studentId: 3,
-    priority: 'Yüksek',
+    questionCount: 20,
+    assignedDate: '10 Temmuz 2024',
+    dueDate: '17 Temmuz 2024',
+    status: 'Atandı',
   },
   {
     id: 2,
+    title: 'Türkçe Yazım Kuralları Testi',
     subject: 'Türkçe',
-    date: '18 Ocak 2025',
-    time: '14:00',
-    topics: ['Yazım Kuralları', 'Noktalama İşaretleri'],
+    studentId: 3,
+    questionCount: 15,
+    assignedDate: '08 Temmuz 2024',
+    dueDate: '15 Temmuz 2024',
+    status: 'Değerlendirildi',
+    score: 86.6,
+    correctAnswers: 13,
+    incorrectAnswers: 2,
+    emptyAnswers: 0,
+  },
+  {
+    id: 3,
+    title: 'Fen Bilimleri Ünite 1 Tekrar',
+    subject: 'Fen Bilimleri',
     studentId: 4,
-    priority: 'Orta',
+    questionCount: 25,
+    assignedDate: '11 Temmuz 2024',
+    dueDate: '18 Temmuz 2024',
+    status: 'Atandı',
+  },
+   {
+    id: 4,
+    title: 'Sosyal Bilgiler Tarih Testi',
+    subject: 'Sosyal Bilgiler',
+    studentId: 4,
+    questionCount: 20,
+    assignedDate: '05 Temmuz 2024',
+    dueDate: '12 Temmuz 2024',
+    status: 'Değerlendirildi',
+    score: 75,
+    correctAnswers: 15,
+    incorrectAnswers: 4,
+    emptyAnswers: 1,
   },
 ];
 
-export const assignments: Assignment[] = [
-  {
-    id: 1,
-    title: 'Fen Bilimleri Projesi',
-    subject: 'Fen Bilimleri',
-    dueDate: '12 Ocak 2025',
-    status: 'Beklemede',
-    studentId: 3,
-  },
-  {
-    id: 2,
-    title: 'Tarih Sunumu',
-    subject: 'Sosyal Bilgiler',
-    dueDate: '14 Ocak 2025',
-    status: 'Tamamlandı',
-    studentId: 4,
-  },
-];
 
 export interface ShoppingList {
   id: number;
