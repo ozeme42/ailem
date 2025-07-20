@@ -40,12 +40,14 @@ export default function ShoppingPage() {
   React.useEffect(() => {
     const unsubscribe = onShoppingListsUpdate((lists) => {
         setShoppingLists(lists);
+        // Automatically open the first list if none are open
         if (openLists.length === 0 && lists.length > 0) {
-            setOpenLists(lists.map(l => l.id));
+            const listIds = lists.map(l => l.id);
+            setOpenLists(listIds);
         }
     });
     return () => unsubscribe();
-  }, [openLists.length]);
+  }, []); // Removed openLists.length to prevent re-triggering
 
   const toggleList = (id: string) => {
     setOpenLists(prev => prev.includes(id) ? prev.filter(listId => listId !== id) : [...prev, id]);
@@ -53,15 +55,14 @@ export default function ShoppingPage() {
   
   const calculateListTotals = (list: ShoppingList) => {
     const completedCount = list.items.filter(i => i.completed).length;
-    const totalCost = list.items.reduce((sum, item) => sum + item.price, 0);
-    const completedCost = list.items.filter(i => i.completed).reduce((sum, item) => sum + item.price, 0);
-    return { completedCount, totalCost, completedCost };
+    const totalCost = list.items.reduce((sum, item) => sum + (item.price || 0), 0);
+    return { completedCount, totalCost };
   }
 
-  const handleItemToggle = async (list: ShoppingList, itemId: number) => {
-    const newItems = list.items.map(item => 
-        item.id === itemId ? { ...item, completed: !item.completed } : item
-    );
+  const handleItemToggle = async (list: ShoppingList, itemIndex: number) => {
+    // Create a deep copy to avoid direct state mutation
+    const newItems = JSON.parse(JSON.stringify(list.items));
+    newItems[itemIndex].completed = !newItems[itemIndex].completed;
     try {
         await updateShoppingList(list.id, { items: newItems });
     } catch (e) {
@@ -76,7 +77,8 @@ export default function ShoppingPage() {
           items: []
       }
       try {
-          await addShoppingList(newList);
+          const newListId = await addShoppingList(newList);
+          setOpenLists(prev => [...prev, newListId]); // Open the new list
           toast({ title: "Liste Oluşturuldu", description: `${data.title} başarıyla eklendi.`});
           setIsNewListDialogOpen(false);
           form.reset();
@@ -86,7 +88,7 @@ export default function ShoppingPage() {
   }
   
   const totalSpendThisMonth = shoppingLists.reduce((total, list) => {
-      return total + list.items.filter(i => i.completed).reduce((sum, i) => sum + i.price, 0);
+      return total + list.items.filter(i => i.completed).reduce((sum, i) => sum + (i.price || 0), 0);
   }, 0);
 
 
@@ -100,7 +102,7 @@ export default function ShoppingPage() {
                   Yeni Liste Oluştur
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Yeni Alışveriş Listesi</DialogTitle>
                     <DialogDescription>
@@ -113,7 +115,7 @@ export default function ShoppingPage() {
                             Liste Adı
                         </Label>
                         <Input id="name" {...form.register("title")} placeholder="Haftalık Market" className="col-span-3" />
-                         {form.formState.errors.title && <p className="col-span-4 text-sm text-destructive">{form.formState.errors.title.message}</p>}
+                         {form.formState.errors.title && <p className="col-span-4 text-sm text-destructive text-right">{form.formState.errors.title.message}</p>}
                     </div>
                     <Button type="submit">Listeyi Oluştur</Button>
                 </form>
@@ -145,73 +147,82 @@ export default function ShoppingPage() {
       </div>
 
       <div className="space-y-4">
-        {shoppingLists.map(list => {
-          const { completedCount, totalCost } = calculateListTotals(list);
-          const completionProgress = list.items.length > 0 ? (completedCount / list.items.length) * 100 : 0;
+        {shoppingLists.length > 0 ? (
+            shoppingLists.map(list => {
+            const { completedCount, totalCost } = calculateListTotals(list);
+            const completionProgress = list.items.length > 0 ? (completedCount / list.items.length) * 100 : 0;
 
-          return (
-            <Collapsible
-              key={list.id}
-              open={openLists.includes(list.id)}
-              onOpenChange={() => toggleList(list.id)}
-              className="w-full"
-            >
-              <Card>
-                <CardHeader>
-                   <CollapsibleTrigger asChild>
-                       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 cursor-pointer">
-                         <div className="flex-grow">
-                            <CardTitle>{list.title}</CardTitle>
-                         </div>
-                         <div className="flex items-center gap-4 w-full sm:w-auto mt-2 sm:mt-0">
-                            <div className="flex items-center text-green-600 font-semibold">
-                                <DollarSign size={16} />
-                                <span>{totalCost.toFixed(2)}</span>
+            return (
+                <Collapsible
+                key={list.id}
+                open={openLists.includes(list.id)}
+                onOpenChange={() => toggleList(list.id)}
+                className="w-full"
+                >
+                <Card>
+                    <CardHeader>
+                    <CollapsibleTrigger asChild>
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 cursor-pointer">
+                            <div className="flex-grow">
+                                <CardTitle>{list.title}</CardTitle>
                             </div>
-                            <Button variant="ghost" size="icon" className="shrink-0">
-                               <ChevronDown className={`h-4 w-4 transition-transform ${openLists.includes(list.id) ? 'rotate-180' : ''}`} />
-                            </Button>
-                         </div>
-                       </div>
-                   </CollapsibleTrigger>
-                </CardHeader>
-                <CardContent>
-                    <div className="mb-4">
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>Tamamlanma: {completedCount}/{list.items.length}</span>
-                      </div>
-                      <Progress value={completionProgress} indicatorClassName="bg-green-500" />
-                    </div>
-                  <CollapsibleContent>
-                    <div className="space-y-2 border-t pt-4">
-                      {list.items.length > 0 ? list.items.map(item => (
-                        <div key={item.id} className={`flex items-center justify-between p-2 rounded-md ${item.completed ? 'bg-muted/50' : ''}`}>
-                          <div className="flex items-center gap-3">
-                            <Checkbox 
-                                id={`item-${item.id}`} 
-                                checked={item.completed} 
-                                onCheckedChange={() => handleItemToggle(list, item.id)}
-                            />
-                            <div>
-                               <label htmlFor={`item-${item.id}`} className={`font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>{item.name}</label>
-                               <p className="text-xs text-muted-foreground">{item.quantity}</p>
+                            <div className="flex items-center gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                                <div className="flex items-center text-green-600 font-semibold">
+                                    <DollarSign size={16} />
+                                    <span>{totalCost.toFixed(2)}</span>
+                                </div>
+                                <Button variant="ghost" size="icon" className="shrink-0">
+                                <ChevronDown className={`h-4 w-4 transition-transform ${openLists.includes(list.id) ? 'rotate-180' : ''}`} />
+                                </Button>
                             </div>
-                          </div>
-                          <p className={`font-semibold ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                            ₺{item.price.toFixed(2)}
-                          </p>
                         </div>
-                      )) : (
-                          <p className="text-center text-muted-foreground py-4">Bu listede henüz ürün yok.</p>
-                      )}
-                    </div>
-                  </CollapsibleContent>
+                    </CollapsibleTrigger>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="mb-4">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                            <span>Tamamlanma: {completedCount}/{list.items.length}</span>
+                        </div>
+                        <Progress value={completionProgress} indicatorClassName="bg-green-500" />
+                        </div>
+                    <CollapsibleContent>
+                        <div className="space-y-2 border-t pt-4">
+                        {list.items.length > 0 ? list.items.map((item, index) => (
+                            <div key={`${list.id}-item-${index}`} className={`flex items-center justify-between p-2 rounded-md ${item.completed ? 'bg-muted/50' : ''}`}>
+                            <div className="flex items-center gap-3">
+                                <Checkbox 
+                                    id={`item-${list.id}-${index}`}
+                                    checked={item.completed} 
+                                    onCheckedChange={() => handleItemToggle(list, index)}
+                                />
+                                <div>
+                                <label htmlFor={`item-${list.id}-${index}`} className={`font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>{item.name}</label>
+                                <p className="text-xs text-muted-foreground">{item.quantity}</p>
+                                </div>
+                            </div>
+                            <p className={`font-semibold ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                ₺{(item.price || 0).toFixed(2)}
+                            </p>
+                            </div>
+                        )) : (
+                            <p className="text-center text-muted-foreground py-4">Bu listede henüz ürün yok.</p>
+                        )}
+                        </div>
+                    </CollapsibleContent>
+                    </CardContent>
+                </Card>
+                </Collapsible>
+            )
+            })
+        ) : (
+            <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                    Henüz alışveriş listesi yok. Yeni bir tane oluşturun!
                 </CardContent>
-              </Card>
-            </Collapsible>
-          )
-        })}
+            </Card>
+        )}
       </div>
     </>
   );
 }
+
