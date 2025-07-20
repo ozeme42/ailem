@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A flow for searching books using the Google Books API.
+ * @fileOverview A flow for searching books using the Open Library API.
  * - searchBooks - Searches for books based on a query.
  * - BookSearchInput - The input type for the searchBooks function.
  * - BookSearchOutput - The return type for the searchBooks function.
@@ -8,7 +8,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GEMINI_API_KEY } from '@/lib/config';
 
 const BookSearchInputSchema = z.string().describe('The search query for books (e.g., title, author, ISBN).');
 export type BookSearchInput = z.infer<typeof BookSearchInputSchema>;
@@ -28,27 +27,21 @@ const BookSearchOutputSchema = z.object({
 });
 export type BookSearchOutput = z.infer<typeof BookSearchOutputSchema>;
 
-const googleBooksApiTool = ai.defineTool(
+const openLibraryApiTool = ai.defineTool(
     {
-      name: 'googleBooksApi',
-      description: 'Search for books using the Google Books API.',
+      name: 'openLibraryApi',
+      description: 'Search for books using the Open Library API.',
       inputSchema: z.object({ query: z.string() }),
       outputSchema: z.unknown(), // Let the flow handle parsing
     },
     async ({ query }) => {
-        const apiKey = GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error('Google API key is not configured.');
-        }
-        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
-        query
-      )}&key=${apiKey}&maxResults=10`;
+        const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=10&fields=title,author_name,number_of_pages_median,cover_i,subject`;
       
         const response = await fetch(url);
         if (!response.ok) {
             const errorBody = await response.text();
-            console.error('Google Books API Error:', errorBody);
-            throw new Error(`Google Books API request failed with status ${response.status}`);
+            console.error('Open Library API Error:', errorBody);
+            throw new Error(`Open Library API request failed with status ${response.status}`);
         }
         return await response.json();
     }
@@ -63,34 +56,29 @@ export const searchBooksFlow = ai.defineFlow(
     },
     async (query) => {
         try {
-            const apiResult = (await googleBooksApiTool({ query })) as any;
+            const apiResult = (await openLibraryApiTool({ query })) as any;
             
             if (apiResult.error) {
-                 if (apiResult.error.message.includes('API key not valid')) {
-                    return { success: false, error: 'API key not valid. Please check your Google API key.' };
-                }
-                 if (apiResult.error.message.includes('API has not been used')) {
-                    return { success: false, error: 'The Google Books API is not enabled for your project. Please enable it in the Google Cloud console.' };
-                }
-                 if (apiResult.error.message.toLowerCase().includes('blocked')) {
-                    return { success: false, error: 'Request was blocked. This may be due to geographical restrictions or other API policies.'};
-                }
                 return { success: false, error: apiResult.error.message || 'An unknown API error occurred.' };
             }
 
-            if (!apiResult.items || apiResult.items.length === 0) {
+            if (!apiResult.docs || apiResult.docs.length === 0) {
                 return { success: true, books: [] };
             }
 
-            const books = apiResult.items.map((item: any) => {
-                const volumeInfo = item.volumeInfo;
-                // Prefer HTTPS for images
-                const imageUrl = volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail;
+            const books = apiResult.docs.map((item: any) => {
+                const imageUrl = item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg` : undefined;
+                const isForChildren = (item.subject || []).some((s: string) => 
+                    s.toLowerCase().includes('juvenile') || 
+                    s.toLowerCase().includes('children')
+                );
+
                 return {
-                    title: volumeInfo.title,
-                    author: volumeInfo.authors ? volumeInfo.authors.join(', ') : undefined,
-                    pageCount: volumeInfo.pageCount,
-                    image: imageUrl ? imageUrl.replace(/^http:/, 'https:') : undefined,
+                    title: item.title,
+                    author: item.author_name ? item.author_name.join(', ') : undefined,
+                    pageCount: item.number_of_pages_median,
+                    image: imageUrl,
+                    isForChildren: isForChildren,
                 };
             }).filter((book: any) => book.title); // Ensure book has a title
 
