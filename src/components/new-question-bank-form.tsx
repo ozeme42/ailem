@@ -15,13 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Card } from "./ui/card";
 import { AnswerKeyForm } from "./answer-key-form";
 import type { QuestionBank } from "@/lib/data";
+import { Switch } from "./ui/switch";
+import { cn } from "@/lib/utils";
 
 type AnswerKey = { [key: number]: string };
 
 const topicSchema = z.object({
   id: z.number(),
   name: z.string().min(3, "Konu adı en az 3 karakter olmalı."),
-  questionCount: z.coerce.number().min(1, "En az 1 soru olmalı."),
+  questionCount: z.coerce.number().min(1, "En az 1 soru olmalı.").default(1),
+  hasAnswerKey: z.boolean().default(false),
   answerKey: z.record(z.string()).optional(),
 });
 
@@ -39,10 +42,11 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type NewQuestionBankFormProps = {
-    onSubmit: (data: Omit<QuestionBank, 'id'>) => void;
+    onSubmit: (data: Omit<QuestionBank, 'id'>, id?: number) => void;
+    initialData?: QuestionBank | null;
 }
 
-export function NewQuestionBankForm({ onSubmit }: NewQuestionBankFormProps) {
+export function NewQuestionBankForm({ onSubmit, initialData }: NewQuestionBankFormProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,13 +55,48 @@ export function NewQuestionBankForm({ onSubmit }: NewQuestionBankFormProps) {
     },
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+        // Ensure topics have the `hasAnswerKey` field when loading initial data
+        const subjectsWithKeyFlag = initialData.subjects.map(subject => ({
+            ...subject,
+            topics: subject.topics.map(topic => ({
+                ...topic,
+                questionCount: topic.questionCount || 1, // Default value
+                hasAnswerKey: !!topic.answerKey && Object.keys(topic.answerKey).length > 0
+            }))
+        }));
+        form.reset({
+            name: initialData.name,
+            subjects: subjectsWithKeyFlag
+        });
+    } else {
+        form.reset({
+            name: "",
+            subjects: [],
+        });
+    }
+}, [initialData, form]);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "subjects",
   });
 
   function handleFormSubmit(values: FormData) {
-    onSubmit(values);
+     // Clean up answer keys if hasAnswerKey is false
+    const cleanedSubjects = values.subjects.map(subject => ({
+        ...subject,
+        topics: subject.topics.map(topic => {
+            const { hasAnswerKey, ...restOfTopic } = topic;
+            if (!hasAnswerKey) {
+                restOfTopic.answerKey = {};
+            }
+            return restOfTopic;
+        })
+    }));
+
+    onSubmit({ ...values, subjects: cleanedSubjects }, initialData?.id);
   }
 
   return (
@@ -116,7 +155,7 @@ export function NewQuestionBankForm({ onSubmit }: NewQuestionBankFormProps) {
                     <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
-              <SubjectTopics control={form.control} subjectIndex={subjectIndex} />
+              <SubjectTopics control={form.control} subjectIndex={subjectIndex} form={form} />
             </Card>
           ))}
            <Button
@@ -130,14 +169,14 @@ export function NewQuestionBankForm({ onSubmit }: NewQuestionBankFormProps) {
           </Button>
         </div>
 
-        <Button type="submit">Soru Bankasını Kaydet</Button>
+        <Button type="submit">{initialData ? "Değişiklikleri Kaydet" : "Soru Bankasını Kaydet"}</Button>
       </form>
     </Form>
   );
 }
 
 
-function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: number }) {
+function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectIndex: number, form: any }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: `subjects.${subjectIndex}.topics`,
@@ -147,9 +186,13 @@ function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: 
     <div className="mt-4 pl-2 border-l-2">
       <FormLabel className="text-sm">Konular</FormLabel>
        <div className="space-y-2 mt-2">
-            {fields.map((topicField, topicIndex) => (
-              <div key={topicField.id} className="flex items-center gap-2 p-2 border rounded-md">
-                 <div className="flex-grow space-y-2">
+            {fields.map((topicField, topicIndex) => {
+              const hasAnswerKeyPath = `subjects.${subjectIndex}.topics.${topicIndex}.hasAnswerKey`;
+              const hasAnswerKey = form.watch(hasAnswerKeyPath);
+
+              return (
+              <div key={topicField.id} className="flex items-center gap-2 p-3 border rounded-md">
+                 <div className="flex-grow space-y-3">
                     <FormField
                     control={control}
                     name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
@@ -176,8 +219,23 @@ function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: 
                         </FormItem>
                     )}
                     />
+                    <FormField
+                        control={control}
+                        name={hasAnswerKeyPath}
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2">
+                                <FormLabel className="text-xs">Cevap Anahtarı</FormLabel>
+                                <FormControl>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
                  </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 self-start">
                      <Controller
                         control={control}
                         name={`subjects.${subjectIndex}.topics.${topicIndex}`}
@@ -185,6 +243,7 @@ function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: 
                             <AnswerKeyDialog
                                 topic={field.value}
                                 onSave={(newKey) => field.onChange({ ...field.value, answerKey: newKey })}
+                                isVisible={hasAnswerKey}
                             />
                         )}
                     />
@@ -193,14 +252,14 @@ function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: 
                     </Button>
                 </div>
               </div>
-            ))}
+            )})}
        </div>
        <Button
             type="button"
             variant="ghost"
             size="sm"
             className="mt-2"
-            onClick={() => append({ id: Date.now(), name: "", questionCount: 20, answerKey: {} })}
+            onClick={() => append({ id: Date.now(), name: "", questionCount: 20, hasAnswerKey: false, answerKey: {} })}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Konu Ekle
@@ -210,13 +269,13 @@ function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: 
 }
 
 
-function AnswerKeyDialog({ topic, onSave }: { topic: any, onSave: (key: AnswerKey) => void }) {
+function AnswerKeyDialog({ topic, onSave, isVisible }: { topic: any, onSave: (key: AnswerKey) => void, isVisible: boolean }) {
     const [isOpen, setIsOpen] = React.useState(false);
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="icon">
+                <Button type="button" variant="outline" size="icon" className={cn(!isVisible && "invisible")}>
                     <Key className="h-4 w-4" />
                 </Button>
             </DialogTrigger>

@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2 } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { NewTestForm } from "@/components/new-test-form";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
-import { students, tests as initialTests, questionBanks as initialQuestionBanks, practiceExams as initialPracticeExams, examProgress, QuestionBank, Test } from "@/lib/data";
+import { students, tests as initialTests, questionBanks as initialQuestionBanks, practiceExams as initialPracticeExams, examProgress, QuestionBank, Test, PracticeExam } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function EducationPage() {
   const { toast } = useToast();
@@ -25,50 +26,98 @@ export default function EducationPage() {
   
   // Use state for tests, questionBanks, etc. to make them interactive
   const [tests, setTests] = React.useState<Test[]>([]);
-  const [questionBanks, setQuestionBanks] = React.useState(initialQuestionBanks);
-  const [practiceExams, setPracticeExams] = React.useState(initialPracticeExams);
+  const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
+  const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
+
+  // States for managing modals
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
+  const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
+  const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
+  const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
+  const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
+
+
+  const loadDataFromLocalStorage = () => {
+    const storedTests = localStorage.getItem('tests');
+    setTests(storedTests ? JSON.parse(storedTests) : initialTests);
+
+    const storedBanks = localStorage.getItem('questionBanks');
+    setQuestionBanks(storedBanks ? JSON.parse(storedBanks) : initialQuestionBanks);
+    
+    const storedExams = localStorage.getItem('practiceExams');
+    setPracticeExams(storedExams ? JSON.parse(storedExams) : initialPracticeExams);
+  }
 
   React.useEffect(() => {
-    // In a real app, you'd fetch this data. We'll use localStorage for persistence.
-    const storedTests = localStorage.getItem('tests');
-    if (storedTests) {
-      setTests(JSON.parse(storedTests));
-    } else {
-      setTests(initialTests);
-    }
-    const storedBanks = localStorage.getItem('questionBanks');
-    if(storedBanks) setQuestionBanks(JSON.parse(storedBanks));
-
-    const storedExams = localStorage.getItem('practiceExams');
-    if(storedExams) setPracticeExams(JSON.parse(storedExams));
+    loadDataFromLocalStorage();
   }, []);
 
-  const handleCreateAssignment = (newTest: Omit<Test, 'id'>) => {
+  const handleCreateAssignment = (newTest: Omit<Test, 'id' | 'status'>) => {
     setTests(prevTests => {
-        const updatedTests = [...prevTests, { ...newTest, id: Date.now() }];
+        const testWithStatus: Test = { ...newTest, id: Date.now(), status: 'Atandı' };
+        const updatedTests = [...prevTests, testWithStatus];
         localStorage.setItem('tests', JSON.stringify(updatedTests));
         toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
         return updatedTests;
     });
+    setIsAssignDialogOpen(false);
   };
 
-  const handleCreateBank = (newBank: Omit<QuestionBank, 'id'>) => {
-    setQuestionBanks(prev => {
-      const updated = [...prev, { ...newBank, id: Date.now() }];
-      localStorage.setItem('questionBanks', JSON.stringify(updated));
-      toast({ title: "✅ Soru Bankası Oluşturuldu", description: "Yeni soru bankası başarıyla kaydedildi." });
-      return updated;
-    });
+  const saveQuestionBanks = (banks: QuestionBank[]) => {
+    setQuestionBanks(banks);
+    localStorage.setItem('questionBanks', JSON.stringify(banks));
+  }
+
+  const handleBankSubmit = (bankData: Omit<QuestionBank, 'id'>, id?: number) => {
+    let updatedBanks;
+    if (id) {
+        // Update
+        updatedBanks = questionBanks.map(b => b.id === id ? { ...b, ...bankData } : b);
+        toast({ title: "✅ Soru Bankası Güncellendi", description: `${bankData.name} başarıyla güncellendi.` });
+    } else {
+        // Create
+        const newBank = { ...bankData, id: Date.now() };
+        updatedBanks = [...questionBanks, newBank];
+        toast({ title: "✅ Soru Bankası Oluşturuldu", description: "Yeni soru bankası başarıyla kaydedildi." });
+    }
+    saveQuestionBanks(updatedBanks);
+    setEditingBank(null);
+    setIsBankDialogOpen(false);
   };
 
-   const handleCreateExam = (newExam: Omit<PracticeExam, 'id'>) => {
-    setPracticeExams(prev => {
-      const updated = [...prev, { ...newExam, id: Date.now() }];
-      localStorage.setItem('practiceExams', JSON.stringify(updated));
-      toast({ title: "✅ Deneme Sınavı Oluşturuldu", description: "Yeni deneme sınavı başarıyla kaydedildi." });
-      return updated;
-    });
+  const handleDeleteBank = (bankId: number) => {
+    const updatedBanks = questionBanks.filter(b => b.id !== bankId);
+    saveQuestionBanks(updatedBanks);
+    toast({ title: "🗑️ Soru Bankası Silindi", variant: "destructive" });
+  }
+
+  const savePracticeExams = (exams: PracticeExam[]) => {
+      setPracticeExams(exams);
+      localStorage.setItem('practiceExams', JSON.stringify(exams));
+  }
+
+  const handleExamSubmit = (examData: Omit<PracticeExam, 'id'>, id?: number) => {
+    let updatedExams;
+    if (id) {
+        // Update
+        updatedExams = practiceExams.map(e => e.id === id ? { ...e, ...examData } : e);
+        toast({ title: "✅ Deneme Sınavı Güncellendi", description: `${examData.name} başarıyla güncellendi.` });
+    } else {
+        // Create
+        const newExam = { ...examData, id: Date.now() };
+        updatedExams = [...practiceExams, newExam];
+        toast({ title: "✅ Deneme Sınavı Oluşturuldu", description: "Yeni deneme sınavı başarıyla kaydedildi." });
+    }
+    savePracticeExams(updatedExams);
+    setEditingExam(null);
+    setIsExamDialogOpen(false);
   };
+
+  const handleDeleteExam = (examId: number) => {
+      const updatedExams = practiceExams.filter(e => e.id !== examId);
+      savePracticeExams(updatedExams);
+      toast({ title: "🗑️ Deneme Sınavı Silindi", variant: "destructive" });
+  }
 
 
   const studentTests = tests.filter(t => t.studentId === selectedStudent.id);
@@ -92,7 +141,7 @@ export default function EducationPage() {
   return (
     <>
       <PageHeader title="Eğitim & Sınav 🎓">
-        <Dialog>
+        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -244,24 +293,28 @@ export default function EducationPage() {
                         {test.status}
                       </Badge>
                    </div>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-2xl font-bold">{test.score?.toFixed(1) ?? '-'}</p>
-                        <p className="text-sm font-medium text-muted-foreground">Puan</p>
-                      </div>
-                      <div className="bg-green-500/10 p-3 rounded-lg">
-                        <p className="text-2xl font-bold text-green-600">{test.correctAnswers ?? '-'}</p>
-                        <p className="text-sm font-medium text-green-700">Doğru</p>
-                      </div>
-                       <div className="bg-red-500/10 p-3 rounded-lg">
-                        <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers ?? '-'}</p>
-                        <p className="text-sm font-medium text-red-700">Yanlış</p>
-                      </div>
-                       <div className="bg-gray-500/10 p-3 rounded-lg">
-                        <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers ?? '-'}</p>
-                        <p className="text-sm font-medium text-gray-700">Boş</p>
-                      </div>
-                   </div>
+                   {test.status === 'Değerlendirildi' ? (
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-2xl font-bold">{test.score?.toFixed(1) ?? '-'}</p>
+                            <p className="text-sm font-medium text-muted-foreground">Puan</p>
+                          </div>
+                          <div className="bg-green-500/10 p-3 rounded-lg">
+                            <p className="text-2xl font-bold text-green-600">{test.correctAnswers ?? '-'}</p>
+                            <p className="text-sm font-medium text-green-700">Doğru</p>
+                          </div>
+                           <div className="bg-red-500/10 p-3 rounded-lg">
+                            <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers ?? '-'}</p>
+                            <p className="text-sm font-medium text-red-700">Yanlış</p>
+                          </div>
+                           <div className="bg-gray-500/10 p-3 rounded-lg">
+                            <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers ?? '-'}</p>
+                            <p className="text-sm font-medium text-gray-700">Boş</p>
+                          </div>
+                       </div>
+                   ) : (
+                       <p className="text-muted-foreground text-center text-sm py-4">Bu test henüz değerlendirilmedi veya cevap anahtarı mevcut değil.</p>
+                   )}
                 </Card>
               )) : <p className="text-muted-foreground text-center py-8">Henüz tamamlanmış bir test yok.</p>}
             </CardContent>
@@ -282,18 +335,23 @@ export default function EducationPage() {
                                 <CardTitle>Soru Bankası Havuzu</CardTitle>
                                 <CardDescription>Oluşturulan ve yönetilen soru bankaları.</CardDescription>
                             </div>
-                             <Dialog>
+                             <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button><PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle</Button>
+                                    <Button onClick={() => { setEditingBank(null); setIsBankDialogOpen(true); }}>
+                                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle
+                                    </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-2xl">
                                     <DialogHeader>
-                                        <DialogTitle>Yeni Soru Bankası Oluştur</DialogTitle>
+                                        <DialogTitle>{editingBank ? "Soru Bankasını Düzenle" : "Yeni Soru Bankası Oluştur"}</DialogTitle>
                                         <DialogDescription>
-                                            Yeni bir soru bankası oluşturun. Dersleri ve konuları ekleyebilirsiniz.
+                                            {editingBank ? "Mevcut soru bankasını güncelleyin." : "Yeni bir soru bankası oluşturun. Dersleri ve konuları ekleyebilirsiniz."}
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <NewQuestionBankForm onSubmit={handleCreateBank} />
+                                    <NewQuestionBankForm 
+                                        onSubmit={(data, id) => handleBankSubmit(data, id)} 
+                                        initialData={editingBank}
+                                    />
                                 </DialogContent>
                              </Dialog>
                         </CardHeader>
@@ -302,7 +360,28 @@ export default function EducationPage() {
                                 <Card key={bank.id} className="p-4">
                                     <div className="flex justify-between items-start">
                                         <h4 className="font-bold text-lg">{bank.name}</h4>
-                                        <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="icon" onClick={() => { setEditingBank(bank); setIsBankDialogOpen(true); }}>
+                                                <Edit className="w-4 h-4"/>
+                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Silmek istediğinize emin misiniz?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Bu işlem geri alınamaz. "{bank.name}" soru bankası kalıcı olarak silinecektir.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteBank(bank.id)}>Sil</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
                                     </div>
                                     <div className="mt-2 space-y-2">
                                         {bank.subjects.map(subject => (
@@ -328,18 +407,23 @@ export default function EducationPage() {
                                 <CardTitle>Deneme Sınavı Havuzu</CardTitle>
                                 <CardDescription>Oluşturulan ve yönetilen deneme sınavları.</CardDescription>
                             </div>
-                             <Dialog>
+                             <Dialog open={isExamDialogOpen} onOpenChange={setIsExamDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button><PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle</Button>
+                                    <Button onClick={() => { setEditingExam(null); setIsExamDialogOpen(true);}}>
+                                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle
+                                    </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-lg">
                                     <DialogHeader>
-                                        <DialogTitle>Yeni Deneme Sınavı Oluştur</DialogTitle>
+                                        <DialogTitle>{editingExam ? "Deneme Sınavını Düzenle" : "Yeni Deneme Sınavı Oluştur"}</DialogTitle>
                                         <DialogDescription>
-                                           Yeni bir deneme sınavı oluşturun. Dersleri ve soru sayılarını ekleyebilirsiniz.
+                                           {editingExam ? "Mevcut deneme sınavını güncelleyin." : "Yeni bir deneme sınavı oluşturun. Dersleri ve soru sayılarını ekleyebilirsiniz."}
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <NewPracticeExamForm onSubmit={handleCreateExam}/>
+                                    <NewPracticeExamForm 
+                                        onSubmit={(data, id) => handleExamSubmit(data, id)}
+                                        initialData={editingExam}
+                                    />
                                 </DialogContent>
                              </Dialog>
                         </CardHeader>
@@ -348,7 +432,28 @@ export default function EducationPage() {
                                 <Card key={exam.id} className="p-4">
                                      <div className="flex justify-between items-start">
                                         <h4 className="font-bold text-lg">{exam.name}</h4>
-                                        <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="icon" onClick={() => { setEditingExam(exam); setIsExamDialogOpen(true); }}>
+                                                <Edit className="w-4 h-4"/>
+                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Silmek istediğinize emin misiniz?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Bu işlem geri alınamaz. "{exam.name}" deneme sınavı kalıcı olarak silinecektir.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Sil</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
                                     </div>
                                     <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
                                         {exam.subjects.map(subject => (

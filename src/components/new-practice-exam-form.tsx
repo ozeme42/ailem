@@ -14,6 +14,7 @@ import { Key, PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import type { PracticeExam } from "@/lib/data";
 import { AnswerKeyForm } from "./answer-key-form";
+import { Switch } from "./ui/switch";
 
 const subjectSchema = z.object({
   id: z.number(),
@@ -26,24 +27,45 @@ type AnswerKey = { [key: number]: string };
 const formSchema = z.object({
   name: z.string().min(5, { message: "Deneme adı en az 5 karakter olmalıdır." }),
   subjects: z.array(subjectSchema).min(1, "En az bir ders eklemelisiniz."),
+  hasAnswerKey: z.boolean().default(false),
   answerKey: z.record(z.string()).optional(),
 });
 
+type FormData = z.infer<typeof formSchema>;
+
 type NewPracticeExamFormProps = {
-    onSubmit: (data: Omit<PracticeExam, 'id'>) => void;
+    onSubmit: (data: Omit<PracticeExam, 'id'>, id?: number) => void;
+    initialData?: PracticeExam | null;
 }
 
-export function NewPracticeExamForm({ onSubmit }: NewPracticeExamFormProps) {
+export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFormProps) {
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       subjects: [{ id: 1, name: "Matematik", questionCount: 20 }],
+      hasAnswerKey: false,
       answerKey: {},
     },
   });
+
+  React.useEffect(() => {
+      if (initialData) {
+          form.reset({
+              ...initialData,
+              hasAnswerKey: !!initialData.answerKey && Object.keys(initialData.answerKey).length > 0,
+          });
+      } else {
+          form.reset({
+              name: "",
+              subjects: [{ id: 1, name: "Matematik", questionCount: 20 }],
+              hasAnswerKey: false,
+              answerKey: {},
+          });
+      }
+  }, [initialData, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -51,10 +73,15 @@ export function NewPracticeExamForm({ onSubmit }: NewPracticeExamFormProps) {
   });
   
   const subjectsValue = form.watch('subjects');
-  const totalQuestions = subjectsValue.reduce((acc, s) => acc + s.questionCount, 0);
+  const hasAnswerKey = form.watch('hasAnswerKey');
+  const totalQuestions = subjectsValue.reduce((acc, s) => acc + (s.questionCount || 0), 0);
 
-  function handleFormSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit(values);
+  function handleFormSubmit(values: FormData) {
+     if (!values.hasAnswerKey) {
+        values.answerKey = {};
+    }
+    const { hasAnswerKey, ...rest } = values;
+    onSubmit(rest, initialData?.id);
   }
 
   return (
@@ -131,34 +158,55 @@ export function NewPracticeExamForm({ onSubmit }: NewPracticeExamFormProps) {
             Ders Ekle
           </Button>
         </div>
+        
+        <FormField
+            control={form.control}
+            name="hasAnswerKey"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                        <FormLabel>Cevap Anahtarı Ekle</FormLabel>
+                        <FormMessage />
+                    </div>
+                    <FormControl>
+                        <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        />
+                    </FormControl>
+                </FormItem>
+            )}
+        />
 
-        <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
-          <DialogTrigger asChild>
-            <Button type="button" variant="secondary">
-                <Key className="mr-2 h-4 w-4"/>
-                Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {totalQuestions})
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Cevap Anahtarı</DialogTitle>
-                    <DialogDescription>
-                        {form.getValues('name')} için cevapları girin. Toplam {totalQuestions} soru.
-                    </DialogDescription>
-                </DialogHeader>
-                <AnswerKeyForm
-                    totalQuestions={totalQuestions}
-                    answerKey={form.getValues('answerKey') || {}}
-                    onSave={(newKey) => {
-                        form.setValue('answerKey', newKey);
-                        setIsAnswerKeyDialogOpen(false);
-                    }}
-                />
-          </DialogContent>
-        </Dialog>
+        {hasAnswerKey && (
+          <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="secondary" disabled={totalQuestions === 0}>
+                  <Key className="mr-2 h-4 w-4"/>
+                  Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {totalQuestions})
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                      <DialogTitle>Cevap Anahtarı</DialogTitle>
+                      <DialogDescription>
+                          {form.getValues('name')} için cevapları girin. Toplam {totalQuestions} soru.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <AnswerKeyForm
+                      totalQuestions={totalQuestions}
+                      answerKey={form.getValues('answerKey') || {}}
+                      onSave={(newKey) => {
+                          form.setValue('answerKey', newKey);
+                          setIsAnswerKeyDialogOpen(false);
+                      }}
+                  />
+            </DialogContent>
+          </Dialog>
+        )}
 
 
-        <Button type="submit">Deneme Sınavını Kaydet</Button>
+        <Button type="submit">{initialData ? "Değişiklikleri Kaydet" : "Deneme Sınavını Kaydet"}</Button>
       </form>
     </Form>
   );

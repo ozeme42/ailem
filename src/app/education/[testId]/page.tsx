@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { tests, questionBanks, practiceExams } from "@/lib/data";
+import { tests, questionBanks, practiceExams, Test as TestType, PracticeExam, QuestionBank } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -20,33 +20,42 @@ export default function OpticalFormPage() {
     const params = useParams();
     const { toast } = useToast();
     const testId = Number(params.testId);
-    const test = tests.find(t => t.id === testId);
+
+    const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
 
     const [answers, setAnswers] = React.useState<Answers>({});
-    const [timeLeft, setTimeLeft] = React.useState( (test?.questionCount || 0) * 1.5 * 60); // Dakikayı saniyeye çevir
+    const [timeLeft, setTimeLeft] = React.useState(0);
 
     React.useEffect(() => {
-        if (test) {
-            const initialAnswers: Answers = {};
-            for (let i = 1; i <= test.questionCount; i++) {
-                initialAnswers[i] = null;
-            }
-            setAnswers(initialAnswers);
+        const storedTests = JSON.parse(localStorage.getItem('tests') || '[]');
+        const currentTest = storedTests.find((t: TestType) => t.id === testId);
+        setTest(currentTest);
+        if (currentTest) {
+             setTimeLeft(currentTest.questionCount * 1.5 * 60);
+             const initialAnswers: Answers = {};
+             for (let i = 1; i <= currentTest.questionCount; i++) {
+                 initialAnswers[i] = null;
+             }
+             setAnswers(initialAnswers);
         }
-    }, [test]);
+    }, [testId]);
+
 
     React.useEffect(() => {
-        if (timeLeft <= 0) {
+        if (timeLeft <= 0 && test) {
             handleSubmit();
             return;
         };
+
+        if (!test) return;
 
         const timer = setInterval(() => {
             setTimeLeft(prevTime => prevTime - 1);
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeLeft, test]);
 
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -55,6 +64,14 @@ export default function OpticalFormPage() {
         return `${h}:${m}:${s}`;
     }
 
+
+    if (test === undefined) {
+        return (
+             <div className="flex flex-col items-center justify-center h-screen bg-background">
+                <p>Test yükleniyor...</p>
+            </div>
+        )
+    }
 
     if (!test) {
         return (
@@ -77,57 +94,72 @@ export default function OpticalFormPage() {
     };
     
     const handleSubmit = () => {
-        // In a real app, you'd send this to a server. Here, we'll use localStorage.
         try {
-            const storedTests = JSON.parse(localStorage.getItem('tests') || JSON.stringify(tests));
+            const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
             const testIndex = storedTests.findIndex((t: any) => t.id === test.id);
             
             if (testIndex > -1) {
                 const currentTest = storedTests[testIndex];
                 currentTest.studentAnswers = answers;
-                
-                // Automatic grading logic would go here.
-                // For demonstration, we'll find the source and its answer key.
-                let answerKey: { [key: number]: string } = {};
+
+                let answerKey: { [key: number]: string } | undefined = undefined;
 
                 if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
-                    const bank = questionBanks.find(b => b.id === currentTest.sourceId);
+                    const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
+                    const bank = storedBanks.find(b => b.id === currentTest.sourceId);
                     const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id === currentTest.topicId);
-                    answerKey = topic?.answerKey || {};
+                    answerKey = topic?.answerKey;
                 } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
-                    const exam = practiceExams.find(e => e.id === currentTest.sourceId);
-                    // This is simplified. A real exam would have keys per subject.
-                    answerKey = exam?.answerKey || {};
+                    const storedExams: PracticeExam[] = JSON.parse(localStorage.getItem('practiceExams') || '[]');
+                    const exam = storedExams.find(e => e.id === currentTest.sourceId);
+                    answerKey = exam?.answerKey;
                 }
-                
-                let correct = 0;
-                let incorrect = 0;
-                let empty = 0;
 
-                for (let i = 1; i <= currentTest.questionCount; i++) {
-                    if (!answers[i]) {
-                        empty++;
-                    } else if (answers[i] === answerKey[i]) {
-                        correct++;
-                    } else {
-                        incorrect++;
+                // If there's an answer key, grade the test. Otherwise, just mark as solved.
+                if (answerKey && Object.keys(answerKey).length > 0) {
+                    let correct = 0;
+                    let incorrect = 0;
+                    let empty = 0;
+
+                    for (let i = 1; i <= currentTest.questionCount; i++) {
+                        if (!answers[i]) {
+                            empty++;
+                        } else if (answers[i] === (answerKey as any)[i]) {
+                            correct++;
+                        } else {
+                            incorrect++;
+                        }
                     }
+                    
+                    currentTest.status = 'Değerlendirildi';
+                    currentTest.correctAnswers = correct;
+                    currentTest.incorrectAnswers = incorrect;
+                    currentTest.emptyAnswers = empty;
+                    currentTest.score = (correct / currentTest.questionCount) * 100;
+                } else {
+                    currentTest.status = 'Çözüldü';
+                    // No grading information if no answer key
+                    currentTest.correctAnswers = undefined;
+                    currentTest.incorrectAnswers = undefined;
+                    currentTest.emptyAnswers = undefined;
+                    currentTest.score = undefined;
                 }
-                
-                currentTest.status = 'Değerlendirildi';
-                currentTest.correctAnswers = correct;
-                currentTest.incorrectAnswers = incorrect;
-                currentTest.emptyAnswers = empty;
-                currentTest.score = (correct / currentTest.questionCount) * 100;
                 
                 storedTests[testIndex] = currentTest;
                 localStorage.setItem('tests', JSON.stringify(storedTests));
+                 toast({
+                    title: "✅ Test Tamamlandı!",
+                    description: answerKey ? "Cevapların başarıyla kaydedildi ve testin değerlendirildi." : "Cevapların başarıyla kaydedildi.",
+                });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "❌ Hata!",
+                    description: "Test veritabanında bulunamadı.",
+                });
             }
 
-            toast({
-                title: "✅ Test Tamamlandı!",
-                description: "Cevapların başarıyla kaydedildi ve testin değerlendirildi.",
-            });
+           
             router.push('/education');
 
         } catch (error) {
@@ -210,7 +242,7 @@ export default function OpticalFormPage() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Testi bitirdikten sonra cevaplarını değiştiremezsin. Boş bıraktığın sorular yanlış sayılacaktır.
+                                    Testi bitirdikten sonra cevaplarını değiştiremezsin. Değerlendirme anında yapılacak.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
