@@ -34,19 +34,29 @@ const weeklyProgressChartConfig = {
 } satisfies ChartConfig
 
 export default function Home() {
-  const [currentTime, setCurrentTime] = React.useState(new Date());
+  const [greeting, setGreeting] = React.useState('');
+  const [formattedDate, setFormattedDate] = React.useState('');
 
    React.useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    const updateDateTime = () => {
+      const currentTime = new Date();
+      const hour = currentTime.getHours();
+
+      if (hour < 12) {
+        setGreeting('Günaydın');
+      } else if (hour < 18) {
+        setGreeting('Tünaydın');
+      } else {
+        setGreeting('İyi Akşamlar');
+      }
+
+      setFormattedDate(currentTime.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }));
+    };
+
+    updateDateTime();
+    const timer = setInterval(updateDateTime, 60000);
     return () => clearInterval(timer);
   }, []);
-
-  const getGreeting = () => {
-    const hour = currentTime.getHours();
-    if (hour < 12) return 'Günaydın';
-    if (hour < 18) return 'Tünaydın';
-    return 'İyi Akşamlar';
-  };
   
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
 
@@ -55,9 +65,9 @@ export default function Home() {
       <header className="rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg">
         <div className="flex flex-col sm:flex-row items-start justify-between">
             <div>
-                <h1 className="text-3xl font-bold">{getGreeting()}, Aile! 👋</h1>
+                <h1 className="text-3xl font-bold">{greeting ? `${greeting}, Aile! 👋` : 'Yükleniyor...'}</h1>
                 <p className="mt-1 opacity-90">
-                    {currentTime.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    {formattedDate || '...'}
                 </p>
                  <div className="mt-2 flex items-center gap-2 text-sm bg-white/20 px-3 py-1 rounded-full w-fit">
                     <Sun className="h-4 w-4 text-yellow-300" />
@@ -196,5 +206,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
