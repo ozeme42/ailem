@@ -112,6 +112,7 @@ export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void)
 };
 export const addShoppingList = (data: Omit<ShoppingList, 'id'>) => addDocument<ShoppingList>('shoppingLists', data);
 export const updateShoppingList = (id: string, data: Partial<ShoppingList>) => updateDocument<ShoppingList>('shoppingLists', id, data);
+export const deleteShoppingList = (id: string) => deleteDocument('shoppingLists', id);
 
 
 // Education
