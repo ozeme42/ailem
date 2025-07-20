@@ -46,15 +46,13 @@ export default function EducationPage() {
         const storedBanks = localStorage.getItem('questionBanks');
         const storedExams = localStorage.getItem('practiceExams');
         
-        setTests(storedTests ? JSON.parse(storedTests) : initialTests);
-        setQuestionBanks(storedBanks ? JSON.parse(storedBanks) : initialQuestionBanks);
-        setPracticeExams(storedExams ? JSON.parse(storedExams) : initialPracticeExams);
+        if (storedTests) setTests(JSON.parse(storedTests));
+        if (storedBanks) setQuestionBanks(JSON.parse(storedBanks));
+        if (storedExams) setPracticeExams(JSON.parse(storedExams));
+        
     } catch (error) {
         console.error("Failed to load data from localStorage", error);
-        // Set to initials if localStorage fails, don't toast here.
-        setTests(initialTests);
-        setQuestionBanks(initialQuestionBanks);
-        setPracticeExams(initialPracticeExams);
+        // Do not toast here as it's a background process
     }
   }, []);
 
@@ -62,8 +60,12 @@ export default function EducationPage() {
     setTests(prevTests => {
         const testWithStatus: Test = { ...newTest, id: Date.now(), status: 'Atandı' };
         const updatedTests = [...prevTests, testWithStatus];
-        localStorage.setItem('tests', JSON.stringify(updatedTests));
-        toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
+        try {
+            localStorage.setItem('tests', JSON.stringify(updatedTests));
+            toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
+        } catch (error) {
+             toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
+        }
         return updatedTests;
     });
     setIsAssignDialogOpen(false);
@@ -84,16 +86,24 @@ export default function EducationPage() {
               }
               return t;
           });
-          localStorage.setItem('tests', JSON.stringify(updatedTests));
-          toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
+          try {
+            localStorage.setItem('tests', JSON.stringify(updatedTests));
+            toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
+          } catch(error) {
+            toast({ title: "❌ Kaydetme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive'});
+          }
           return updatedTests;
       });
       setGradingTest(null);
   }
 
   const saveQuestionBanks = (banks: QuestionBank[]) => {
-    setQuestionBanks(banks);
-    localStorage.setItem('questionBanks', JSON.stringify(banks));
+    try {
+        setQuestionBanks(banks);
+        localStorage.setItem('questionBanks', JSON.stringify(banks));
+    } catch (error) {
+        toast({ title: "❌ Kaydetme Hatası", description: "Soru bankası kaydedilirken bir hata oluştu.", variant: 'destructive'});
+    }
   }
 
   const handleBankSubmit = (bankData: Omit<QuestionBank, 'id'>, id?: number) => {
@@ -120,8 +130,12 @@ export default function EducationPage() {
   }
 
   const savePracticeExams = (exams: PracticeExam[]) => {
-      setPracticeExams(exams);
-      localStorage.setItem('practiceExams', JSON.stringify(exams));
+      try {
+        setPracticeExams(exams);
+        localStorage.setItem('practiceExams', JSON.stringify(exams));
+      } catch (error) {
+         toast({ title: "❌ Kaydetme Hatası", description: "Deneme sınavı kaydedilirken bir hata oluştu.", variant: 'destructive'});
+      }
   }
 
   const handleExamSubmit = (examData: Omit<PracticeExam, 'id'>, id?: number) => {

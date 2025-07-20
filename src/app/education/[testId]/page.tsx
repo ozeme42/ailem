@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, HelpCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,7 @@ export default function OpticalFormPage() {
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     const [timeLeft, setTimeLeft] = React.useState(0);
+    const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<number>>(new Set());
 
     React.useEffect(() => {
         const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
@@ -38,15 +39,15 @@ export default function OpticalFormPage() {
              const type = currentTest.gradingType || 'manual';
 
              if(type === 'auto') {
-                const initialAnswers: McqAnswers = {};
+                const initialAnswers: McqAnswers = currentTest.studentAnswers || {};
                 for (let i = 1; i <= currentTest.questionCount; i++) {
-                    initialAnswers[i] = null;
+                    if(!initialAnswers[i]) initialAnswers[i] = null;
                 }
                 setMcqAnswers(initialAnswers);
              } else if (type === 'manual-text') {
-                const initialAnswers: TextAnswers = {};
+                const initialAnswers: TextAnswers = currentTest.studentTextAnswers || {};
                  for (let i = 1; i <= currentTest.questionCount; i++) {
-                    initialAnswers[i] = "";
+                    if(!initialAnswers[i]) initialAnswers[i] = "";
                 }
                 setTextAnswers(initialAnswers);
              }
@@ -108,8 +109,37 @@ export default function OpticalFormPage() {
 
     const handleTextAnswerChange = (questionNumber: number, value: string) => {
         setTextAnswers(prev => ({ ...prev, [questionNumber]: value }));
+        setDirtyTextAnswers(prev => new Set(prev.add(questionNumber)));
     };
     
+    const handleSaveSingleAnswer = (questionNumber: number) => {
+        try {
+            const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
+            const testIndex = storedTests.findIndex((t: any) => t.id === test.id);
+            if(testIndex > -1) {
+                const updatedAnswers = { ...storedTests[testIndex].studentTextAnswers, [questionNumber]: textAnswers[questionNumber] };
+                storedTests[testIndex].studentTextAnswers = updatedAnswers;
+                localStorage.setItem('tests', JSON.stringify(storedTests));
+                toast({
+                    title: `✅ ${questionNumber}. Soru Kaydedildi!`,
+                    description: "Cevabın başarıyla kaydedildi.",
+                });
+                setDirtyTextAnswers(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(questionNumber);
+                    return newSet;
+                });
+            }
+        } catch (error) {
+             toast({
+                variant: "destructive",
+                title: "❌ Kaydetme Hatası!",
+                description: "Cevabın kaydedilirken bir sorun oluştu.",
+            });
+        }
+    };
+
+
     const handleSubmit = () => {
         try {
             const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
@@ -236,12 +266,23 @@ export default function OpticalFormPage() {
                                                 ))}
                                             </RadioGroup>
                                         ) : test.gradingType === 'manual-text' ? (
-                                            <Input
-                                                placeholder="Cevabınızı buraya yazın..."
-                                                value={textAnswers[questionNumber] || ""}
-                                                onChange={(e) => handleTextAnswerChange(questionNumber, e.target.value)}
-                                                className="flex-grow"
-                                            />
+                                           <div className="flex-grow flex items-center gap-2">
+                                                <Input
+                                                    placeholder="Cevabınızı buraya yazın..."
+                                                    value={textAnswers[questionNumber] || ""}
+                                                    onChange={(e) => handleTextAnswerChange(questionNumber, e.target.value)}
+                                                    className="flex-grow"
+                                                />
+                                                <Button 
+                                                    size="icon" 
+                                                    variant="ghost"
+                                                    onClick={() => handleSaveSingleAnswer(questionNumber)}
+                                                    disabled={!dirtyTextAnswers.has(questionNumber)}
+                                                    aria-label="Cevabı Kaydet"
+                                                >
+                                                    <Save className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         ) : (
                                             <p className="text-sm text-muted-foreground flex-grow">Bu soru için cevap girişi gerekmiyor.</p>
                                         )}
