@@ -58,7 +58,7 @@ export default function EducationPage() {
 
   const handleCreateAssignment = (newTest: Omit<Test, 'id' | 'status'>) => {
     setTests(prevTests => {
-        const testWithStatus: Test = { ...newTest, id: Date.now(), status: 'Atandı' };
+        const testWithStatus: Test = { ...newTest, id: Date.now().toString(), status: 'Atandı' };
         const updatedTests = [...prevTests, testWithStatus];
         try {
             localStorage.setItem('tests', JSON.stringify(updatedTests));
@@ -71,7 +71,7 @@ export default function EducationPage() {
     setIsAssignDialogOpen(false);
   };
   
-  const handleManualGrade = (testId: number, gradeData: ManualGradeData) => {
+  const handleManualGrade = (testId: string, gradeData: ManualGradeData) => {
       setTests(prevTests => {
           const updatedTests = prevTests.map(t => {
               if (t.id === testId) {
@@ -106,7 +106,7 @@ export default function EducationPage() {
     }
   }
 
-  const handleBankSubmit = (bankData: Omit<QuestionBank, 'id'>, id?: number) => {
+  const handleBankSubmit = (bankData: Omit<QuestionBank, 'id'>, id?: string) => {
     let updatedBanks;
     if (id) {
         // Update
@@ -114,7 +114,7 @@ export default function EducationPage() {
         toast({ title: "✅ Soru Bankası Güncellendi", description: `${bankData.name} başarıyla güncellendi.` });
     } else {
         // Create
-        const newBank = { ...bankData, id: Date.now() };
+        const newBank = { ...bankData, id: Date.now().toString() };
         updatedBanks = [...questionBanks, newBank];
         toast({ title: "✅ Soru Bankası Oluşturuldu", description: "Yeni soru bankası başarıyla kaydedildi." });
     }
@@ -123,7 +123,7 @@ export default function EducationPage() {
     setIsBankDialogOpen(false);
   };
 
-  const handleDeleteBank = (bankId: number) => {
+  const handleDeleteBank = (bankId: string) => {
     const updatedBanks = questionBanks.filter(b => b.id !== bankId);
     saveQuestionBanks(updatedBanks);
     toast({ title: "🗑️ Soru Bankası Silindi", variant: "destructive" });
@@ -138,7 +138,7 @@ export default function EducationPage() {
       }
   }
 
-  const handleExamSubmit = (examData: Omit<PracticeExam, 'id'>, id?: number) => {
+  const handleExamSubmit = (examData: Omit<PracticeExam, 'id'>, id?: string) => {
     let updatedExams;
     if (id) {
         // Update
@@ -146,7 +146,7 @@ export default function EducationPage() {
         toast({ title: "✅ Deneme Sınavı Güncellendi", description: `${examData.name} başarıyla güncellendi.` });
     } else {
         // Create
-        const newExam = { ...examData, id: Date.now() };
+        const newExam = { ...examData, id: Date.now().toString() };
         updatedExams = [...practiceExams, newExam];
         toast({ title: "✅ Deneme Sınavı Oluşturuldu", description: "Yeni deneme sınavı başarıyla kaydedildi." });
     }
@@ -155,7 +155,7 @@ export default function EducationPage() {
     setIsExamDialogOpen(false);
   };
 
-  const handleDeleteExam = (examId: number) => {
+  const handleDeleteExam = (examId: string) => {
       const updatedExams = practiceExams.filter(e => e.id !== examId);
       savePracticeExams(updatedExams);
       toast({ title: "🗑️ Deneme Sınavı Silindi", variant: "destructive" });
@@ -539,5 +539,7 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
 
     

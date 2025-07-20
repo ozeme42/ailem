@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, QuestionBank, PracticeExam, Test, AnswerKey } from "@/lib/data";
+import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
@@ -100,8 +100,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                 dueDate: dueDate,
                 sourceType: 'bank',
                 sourceId: bank.id,
-                topicId: topic.id,
-                gradingType: topic.answerKey && Object.keys(topic.answerKey).length > 0 ? 'auto' : 'manual'
+                topicId: topic.id.toString(),
+                gradingType: topic.gradingType
             }
         }
     } else if (activeTab === 'exam' && values.examId) {
@@ -116,7 +116,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                 dueDate: dueDate,
                 sourceType: 'exam',
                 sourceId: exam.id,
-                gradingType: exam.answerKey && Object.keys(exam.answerKey).length > 0 ? 'auto' : 'manual'
+                gradingType: exam.gradingType
             }
         }
     }

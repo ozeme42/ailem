@@ -54,7 +54,7 @@ export interface Book {
   tags: string[];
   rating: number;
   description: string;
-  pages?: number;
+  pageCount?: number;
   isForChildren?: boolean;
 }
 
@@ -121,6 +121,7 @@ export interface Student {
 
 export type AnswerKey = { [key: number]: string };
 export type TextAnswerKey = { [key: number]: string };
+export type GradingType = 'auto' | 'manual-text' | 'manual';
 
 export interface Test {
   id: string;
@@ -132,7 +133,7 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi';
   sourceType: 'quick' | 'bank' | 'exam';
-  gradingType?: 'auto' | 'manual-text' | 'manual';
+  gradingType?: GradingType;
   sourceId?: string;
   topicId?: string;
   score?: number;
@@ -148,6 +149,7 @@ export interface Topic {
     id: number;
     name: string;
     questionCount: number;
+    gradingType: GradingType;
     answerKey?: AnswerKey;
 }
 export interface SubjectInBank {
@@ -170,6 +172,7 @@ export interface PracticeExam {
     id: string;
     name: string;
     subjects: SubjectInExam[];
+    gradingType: GradingType;
     answerKey?: AnswerKey;
 }
 
@@ -251,8 +254,8 @@ export const recipes: Recipe[] = [
 
 // Initial data for Firestore (if needed for a setup script)
 export const initialBooks: Omit<Book, 'id'>[] = [
-    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pages: 208, isForChildren: false },
-    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pages: 96, isForChildren: true },
+    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false },
+    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
 ];
 
 export const initialTasks: Omit<Task, 'id'>[] = [
@@ -292,8 +295,8 @@ export const initialQuestionBanks: Omit<QuestionBank, 'id'>[] = [
                 id: 1,
                 name: "Matematik",
                 topics: [
-                    { id: 1, name: "Doğal Sayılar", questionCount: 20, answerKey: {1: 'A', 2: 'B'} },
-                    { id: 2, name: "Kesirler", questionCount: 20, answerKey: {} },
+                    { id: 1, name: "Doğal Sayılar", questionCount: 20, gradingType: 'auto', answerKey: {1: 'A', 2: 'B'} },
+                    { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text', answerKey: {} },
                 ]
             }
         ]
@@ -303,6 +306,7 @@ export const initialQuestionBanks: Omit<QuestionBank, 'id'>[] = [
 export const initialPracticeExams: Omit<PracticeExam, 'id'>[] = [
      {
         name: "LGS Deneme Sınavı 1",
+        gradingType: 'auto',
         subjects: [
             { id: 1, name: "Matematik", questionCount: 20 },
             { id: 2, name: "Türkçe", questionCount: 20 },
@@ -325,3 +329,5 @@ export const initialTests: Omit<Test, 'id' | 'status'>[] = [
         gradingType: 'auto',
     }
 ]
+
+    

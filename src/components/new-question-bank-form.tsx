@@ -14,8 +14,8 @@ import { Key, PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card } from "./ui/card";
 import { AnswerKeyForm } from "./answer-key-form";
-import type { QuestionBank } from "@/lib/data";
-import { Switch } from "./ui/switch";
+import type { QuestionBank, GradingType } from "@/lib/data";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
 
 type AnswerKey = { [key: number]: string };
@@ -24,7 +24,7 @@ const topicSchema = z.object({
   id: z.number(),
   name: z.string().min(3, "Konu adı en az 3 karakter olmalı."),
   questionCount: z.coerce.number().min(1, "En az 1 soru olmalı.").default(1),
-  hasAnswerKey: z.boolean().default(false),
+  gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual"),
   answerKey: z.record(z.string()).optional(),
 });
 
@@ -42,7 +42,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type NewQuestionBankFormProps = {
-    onSubmit: (data: Omit<QuestionBank, 'id'>, id?: number) => void;
+    onSubmit: (data: Omit<QuestionBank, 'id'>, id?: string) => void;
     initialData?: QuestionBank | null;
 }
 
@@ -57,18 +57,9 @@ export function NewQuestionBankForm({ onSubmit, initialData }: NewQuestionBankFo
 
   React.useEffect(() => {
     if (initialData) {
-        // Ensure topics have the `hasAnswerKey` field when loading initial data
-        const subjectsWithKeyFlag = initialData.subjects.map(subject => ({
-            ...subject,
-            topics: subject.topics.map(topic => ({
-                ...topic,
-                questionCount: topic.questionCount || 1, // Default value
-                hasAnswerKey: !!topic.answerKey && Object.keys(topic.answerKey).length > 0
-            }))
-        }));
         form.reset({
             name: initialData.name,
-            subjects: subjectsWithKeyFlag
+            subjects: initialData.subjects
         });
     } else {
         form.reset({
@@ -84,12 +75,11 @@ export function NewQuestionBankForm({ onSubmit, initialData }: NewQuestionBankFo
   });
 
   function handleFormSubmit(values: FormData) {
-     // Clean up answer keys if hasAnswerKey is false
     const cleanedSubjects = values.subjects.map(subject => ({
         ...subject,
         topics: subject.topics.map(topic => {
-            const { hasAnswerKey, ...restOfTopic } = topic;
-            if (!hasAnswerKey) {
+            const { ...restOfTopic } = topic;
+            if (topic.gradingType !== 'auto') {
                 restOfTopic.answerKey = {};
             }
             return restOfTopic;
@@ -187,11 +177,11 @@ function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectI
       <FormLabel className="text-sm">Konular</FormLabel>
        <div className="space-y-2 mt-2">
             {fields.map((topicField, topicIndex) => {
-              const hasAnswerKeyPath = `subjects.${subjectIndex}.topics.${topicIndex}.hasAnswerKey`;
-              const hasAnswerKey = form.watch(hasAnswerKeyPath);
+              const gradingTypePath = `subjects.${subjectIndex}.topics.${topicIndex}.gradingType`;
+              const gradingType = form.watch(gradingTypePath);
 
               return (
-              <div key={topicField.id} className="flex items-center gap-2 p-3 border rounded-md">
+              <div key={topicField.id} className="flex items-start gap-2 p-3 border rounded-md">
                  <div className="flex-grow space-y-3">
                     <FormField
                     control={control}
@@ -219,23 +209,38 @@ function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectI
                         </FormItem>
                     )}
                     />
-                    <FormField
-                        control={control}
-                        name={hasAnswerKeyPath}
+                     <FormField
+                        control={form.control}
+                        name={gradingTypePath}
                         render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2">
-                                <FormLabel className="text-xs">Cevap Anahtarı</FormLabel>
-                                <FormControl>
-                                    <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
+                            <FormItem className="space-y-2">
+                            <FormLabel className="text-xs">Değerlendirme Tipi</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex flex-row space-x-2"
+                                >
+                                <FormItem className="flex items-center space-x-1.5 space-y-0">
+                                    <FormControl><RadioGroupItem value="auto" /></FormControl>
+                                    <FormLabel className="font-normal text-xs">Oto</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-1.5 space-y-0">
+                                    <FormControl><RadioGroupItem value="manual-text" /></FormControl>
+                                    <FormLabel className="font-normal text-xs">Yazılı</FormLabel>
+                                </FormItem>
+                                    <FormItem className="flex items-center space-x-1.5 space-y-0">
+                                    <FormControl><RadioGroupItem value="manual" /></FormControl>
+                                    <FormLabel className="font-normal text-xs">Cevapsız</FormLabel>
+                                </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
                             </FormItem>
                         )}
-                    />
+                        />
                  </div>
-                <div className="flex flex-col gap-2 self-start">
+                <div className="flex flex-col gap-2 self-center">
                      <Controller
                         control={control}
                         name={`subjects.${subjectIndex}.topics.${topicIndex}`}
@@ -243,7 +248,7 @@ function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectI
                             <AnswerKeyDialog
                                 topic={field.value}
                                 onSave={(newKey) => field.onChange({ ...field.value, answerKey: newKey })}
-                                isVisible={hasAnswerKey}
+                                isVisible={gradingType === 'auto'}
                             />
                         )}
                     />
@@ -259,7 +264,7 @@ function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectI
             variant="ghost"
             size="sm"
             className="mt-2"
-            onClick={() => append({ id: Date.now(), name: "", questionCount: 20, hasAnswerKey: false, answerKey: {} })}
+            onClick={() => append({ id: Date.now(), name: "", questionCount: 20, gradingType: 'manual', answerKey: {} })}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Konu Ekle
@@ -298,5 +303,7 @@ function AnswerKeyDialog({ topic, onSave, isVisible }: { topic: any, onSave: (ke
         </Dialog>
     );
 }
+
+    
 
     

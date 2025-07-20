@@ -12,9 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Key, PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import type { PracticeExam } from "@/lib/data";
+import type { PracticeExam, GradingType } from "@/lib/data";
 import { AnswerKeyForm } from "./answer-key-form";
-import { Switch } from "./ui/switch";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 const subjectSchema = z.object({
   id: z.number(),
@@ -27,14 +27,14 @@ type AnswerKey = { [key: number]: string };
 const formSchema = z.object({
   name: z.string().min(5, { message: "Deneme adı en az 5 karakter olmalıdır." }),
   subjects: z.array(subjectSchema).min(1, "En az bir ders eklemelisiniz."),
-  hasAnswerKey: z.boolean().default(false),
+  gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual"),
   answerKey: z.record(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 type NewPracticeExamFormProps = {
-    onSubmit: (data: Omit<PracticeExam, 'id'>, id?: number) => void;
+    onSubmit: (data: Omit<PracticeExam, 'id'>, id?: string) => void;
     initialData?: PracticeExam | null;
 }
 
@@ -46,7 +46,7 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
     defaultValues: {
       name: "",
       subjects: [{ id: 1, name: "Matematik", questionCount: 20 }],
-      hasAnswerKey: false,
+      gradingType: "manual",
       answerKey: {},
     },
   });
@@ -56,14 +56,14 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
           form.reset({
               name: initialData.name,
               subjects: initialData.subjects,
-              hasAnswerKey: !!initialData.answerKey && Object.keys(initialData.answerKey).length > 0,
+              gradingType: initialData.gradingType || 'manual',
               answerKey: initialData.answerKey || {}
           });
       } else {
           form.reset({
               name: "",
               subjects: [{ id: 1, name: "Matematik", questionCount: 20 }],
-              hasAnswerKey: false,
+              gradingType: "manual",
               answerKey: {},
           });
       }
@@ -75,15 +75,14 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
   });
   
   const subjectsValue = form.watch('subjects');
-  const hasAnswerKey = form.watch('hasAnswerKey');
+  const gradingType = form.watch('gradingType');
   const totalQuestions = subjectsValue.reduce((acc, s) => acc + (s.questionCount || 0), 0);
 
   function handleFormSubmit(values: FormData) {
-     if (!values.hasAnswerKey) {
+     if (values.gradingType !== 'auto') {
         values.answerKey = {};
     }
-    const { hasAnswerKey, ...rest } = values;
-    onSubmit(rest, initialData?.id);
+    onSubmit(values, initialData?.id);
   }
 
   return (
@@ -161,26 +160,50 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
           </Button>
         </div>
         
-        <FormField
+         <FormField
             control={form.control}
-            name="hasAnswerKey"
+            name="gradingType"
             render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                        <FormLabel>Cevap Anahtarı Ekle</FormLabel>
-                        <FormMessage />
-                    </div>
-                    <FormControl>
-                        <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        />
-                    </FormControl>
+                <FormItem className="space-y-3">
+                <FormLabel>Değerlendirme Tipi</FormLabel>
+                <FormControl>
+                    <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                    >
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                        <RadioGroupItem value="auto" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                        Otomatik Kontrol (Çoktan Seçmeli)
+                        </FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                        <RadioGroupItem value="manual-text" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                        Manuel Kontrol (Açık Uçlu)
+                        </FormLabel>
+                    </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                        <RadioGroupItem value="manual" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                        Cevap Gerekmiyor (Manuel Kontrol)
+                        </FormLabel>
+                    </FormItem>
+                    </RadioGroup>
+                </FormControl>
+                <FormMessage />
                 </FormItem>
             )}
         />
 
-        {hasAnswerKey && (
+        {gradingType === 'auto' && (
           <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
             <DialogTrigger asChild>
               <Button type="button" variant="secondary" disabled={totalQuestions === 0}>
@@ -213,5 +236,7 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
     </Form>
   );
 }
+
+    
 
     
