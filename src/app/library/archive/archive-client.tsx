@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit } from 'lucide-react';
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -34,7 +34,7 @@ const bookFormSchema = z.object({
     z.coerce.number().min(1, "Sayfa sayısı pozitif bir sayı olmalı.").optional()
   ),
   isForChildren: z.boolean().default(false),
-  image: z.string().url().optional().or(z.literal('')),
+  image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
 });
 type BookFormData = z.infer<typeof bookFormSchema>;
 
@@ -106,6 +106,7 @@ export default function ArchiveClient() {
         type: 'Kitap',
         rating: 0,
         description: '',
+        genre: ''
       };
       setBooks(prev => [...prev, newBook]);
       toast({ title: "Kitap Eklendi" });
@@ -160,6 +161,7 @@ export default function ArchiveClient() {
         type: 'Kitap',
         rating: 0,
         description: '',
+        genre: ''
     }));
     setBooks(prev => [...prev, ...newBooks]);
     toast({ title: `${newBooks.length} kitap başarıyla eklendi.` });
@@ -292,7 +294,7 @@ function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[],
                 </div>
                  <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button size="icon" className="h-8 w-8" onClick={() => onAddToLibrary(book)}><PlusCircle className="h-4 w-4"/></Button>
-                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Search className="h-4 w-4"/></Button>
+                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button size="icon" variant="destructive" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
@@ -341,7 +343,8 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
     "title": "Yerdeniz Büyücüsü",
     "author": "Ursula K. Le Guin",
     "pageCount": 208,
-    "isForChildren": false
+    "isForChildren": false,
+    "image": "https://images.example.com/yerdeniz.jpg"
   },
   {
     "title": "Küçük Prens",
