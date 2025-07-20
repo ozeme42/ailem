@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for migrating an image from a URL or uploading a Data URI to Firebase Storage.
@@ -13,10 +14,18 @@ import admin from '@/lib/firebaseAdmin';
 
 const MigrateImageInputSchema = z.object({
   sourceUrl: z.string().url('A valid URL of the image to migrate.').optional(),
-  imageDataUri: z.string().startsWith('data:image', 'Must be a valid image data URI.').optional(),
+  imageDataUri: z.string().optional(),
   destinationPath: z.string().describe('The destination path in Firebase Storage (e.g., "book-covers/image.jpg").'),
 }).refine(data => data.sourceUrl || data.imageDataUri, {
     message: 'Either sourceUrl or imageDataUri must be provided.',
+}).refine(data => {
+    if (data.imageDataUri) {
+        return data.imageDataUri.startsWith('data:image');
+    }
+    return true;
+}, {
+    message: 'imageDataUri must be a valid image data URI.',
+    path: ['imageDataUri'],
 });
 export type MigrateImageInput = z.infer<typeof MigrateImageInputSchema>;
 
