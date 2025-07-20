@@ -40,28 +40,23 @@ export default function EducationPage() {
 
 
   React.useEffect(() => {
+    // This effect runs only once on component mount
     try {
         const storedTests = localStorage.getItem('tests');
-        setTests(storedTests ? JSON.parse(storedTests) : initialTests);
-
         const storedBanks = localStorage.getItem('questionBanks');
-        setQuestionBanks(storedBanks ? JSON.parse(storedBanks) : initialQuestionBanks);
-        
         const storedExams = localStorage.getItem('practiceExams');
+        
+        setTests(storedTests ? JSON.parse(storedTests) : initialTests);
+        setQuestionBanks(storedBanks ? JSON.parse(storedBanks) : initialQuestionBanks);
         setPracticeExams(storedExams ? JSON.parse(storedExams) : initialPracticeExams);
     } catch (error) {
         console.error("Failed to load data from localStorage", error);
-        toast({
-            variant: "destructive",
-            title: "Veri Yükleme Hatası",
-            description: "Lokal veriler yüklenirken bir sorun oluştu."
-        });
-        // Set to initials if localStorage fails
+        // Set to initials if localStorage fails, don't toast here.
         setTests(initialTests);
         setQuestionBanks(initialQuestionBanks);
         setPracticeExams(initialPracticeExams);
     }
-  }, [toast]);
+  }, []);
 
   const handleCreateAssignment = (newTest: Omit<Test, 'id' | 'status'>) => {
     setTests(prevTests => {
@@ -530,3 +525,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
