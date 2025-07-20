@@ -119,7 +119,7 @@ export default function YemekPlanlamaPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-2">
+           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-2">
             {weekDays.map(day => {
               const dayKey = format(day, 'yyyy-MM-dd');
               const plannedMeals = mealPlan[dayKey] || {};
@@ -136,9 +136,8 @@ export default function YemekPlanlamaPage() {
                     return (
                     <div key={meal} className="relative group">
                        {plannedRecipe ? (
-                           <Card className="h-24 bg-card rounded-md flex flex-col justify-center items-center p-1 text-center shadow-sm overflow-hidden">
-                               <Image src={plannedRecipe.image} alt={plannedRecipe.title} width={100} height={60} className="w-full h-12 object-cover" />
-                               <p className="text-xs font-semibold mt-1 truncate w-full px-1">{plannedRecipe.title}</p>
+                           <Card className="h-16 bg-card rounded-md flex flex-col justify-center items-center p-2 text-center shadow-sm overflow-hidden">
+                               <p className="text-xs font-semibold leading-tight">{plannedRecipe.title}</p>
                                <button 
                                 onClick={() => handleRemoveRecipe(day, meal)}
                                 className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -148,7 +147,7 @@ export default function YemekPlanlamaPage() {
                        ) : (
                         <div 
                           onClick={() => handleOpenRecipeSelector(day, meal)}
-                          className="h-24 bg-background/50 rounded-md flex flex-col justify-center items-center p-2 border-dashed border-2 border-muted-foreground/20 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                          className="h-16 bg-background/50 rounded-md flex flex-col justify-center items-center p-2 border-dashed border-2 border-muted-foreground/20 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                           <PlusCircle className="h-5 w-5 text-muted-foreground/50 mb-1" />
                           <span className="text-xs text-muted-foreground">{meal} Ekle</span>
                         </div>
