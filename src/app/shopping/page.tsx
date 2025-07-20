@@ -20,12 +20,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { onShoppingListsUpdate, addShoppingList, updateShoppingList } from "@/lib/dataService";
 import { useToast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const newListSchema = z.object({
     title: z.string().min(3, "Liste adı en az 3 karakter olmalıdır."),
-    category: z.string({ required_error: "Lütfen bir kategori seçin." }),
 });
 
 type NewListFormData = z.infer<typeof newListSchema>;
@@ -38,7 +36,7 @@ export default function ShoppingPage() {
   const [isNewListDialogOpen, setIsNewListDialogOpen] = React.useState(false);
   const form = useForm<NewListFormData>({
     resolver: zodResolver(newListSchema),
-    defaultValues: { title: "", category: "Market" }
+    defaultValues: { title: "" }
   });
 
   React.useEffect(() => {
@@ -81,7 +79,7 @@ export default function ShoppingPage() {
       const randomAssignee = familyMembers[Math.floor(Math.random() * familyMembers.length)];
       const newList: Omit<ShoppingList, 'id'> = {
           title: data.title,
-          category: data.category,
+          category: "Market", // Default category
           assigneeId: randomAssignee.id,
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
           items: []
@@ -122,29 +120,6 @@ export default function ShoppingPage() {
                         <Input id="name" {...form.register("title")} placeholder="Haftalık Market" className="col-span-3" />
                          {form.formState.errors.title && <p className="col-span-4 text-sm text-destructive">{form.formState.errors.title.message}</p>}
                     </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="category" className="text-right">
-                            Kategori
-                        </Label>
-                        <Controller
-                            control={form.control}
-                            name="category"
-                            render={({ field }) => (
-                               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Bir kategori seçin" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Market">Market</SelectItem>
-                                        <SelectItem value="Ev Eşyası">Ev Eşyası</SelectItem>
-                                        <SelectItem value="Kırtasiye">Kırtasiye</SelectItem>
-                                        <SelectItem value="Diğer">Diğer</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                         {form.formState.errors.category && <p className="col-span-4 text-sm text-destructive">{form.formState.errors.category.message}</p>}
-                    </div>
                     <Button type="submit">Listeyi Oluştur</Button>
                 </form>
             </DialogContent>
@@ -184,8 +159,6 @@ export default function ShoppingPage() {
                          <div className="flex-grow">
                             <CardTitle>{list.title}</CardTitle>
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
-                                <Badge variant="outline">{list.category}</Badge>
-                                <span className="hidden sm:inline">•</span>
                                 <div className="flex items-center gap-1">
                                     <Avatar className="h-6 w-6">
                                       <AvatarImage src={assignee.avatar} alt={assignee.name} />
@@ -245,5 +218,3 @@ export default function ShoppingPage() {
     </>
   );
 }
-
-    
