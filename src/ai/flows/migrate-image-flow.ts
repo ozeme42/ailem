@@ -48,7 +48,6 @@ export const migrateImageFlow = ai.defineFlow(
       let contentType: string;
 
       if (sourceUrl) {
-          // 1. Download the image from the source URL using axios
           const response = await axios.get(sourceUrl, { responseType: 'arraybuffer' });
           if (response.status !== 200) {
             throw new Error(`Failed to download image from ${sourceUrl}. Status: ${response.statusText}`);
@@ -56,7 +55,6 @@ export const migrateImageFlow = ai.defineFlow(
           imageBuffer = Buffer.from(response.data);
           contentType = response.headers['content-type'] || 'image/jpeg';
       } else if (imageDataUri) {
-          // 1. Decode the Base64 Data URI
           const parts = imageDataUri.split(',');
           const mimeTypePart = parts[0].match(/:(.*?);/);
           if (!mimeTypePart || !parts[1]) {
@@ -68,7 +66,6 @@ export const migrateImageFlow = ai.defineFlow(
         throw new Error('No image source provided.');
       }
 
-      // 2. Upload the image to Firebase Storage
       const bucket = admin.storage().bucket();
       const file = bucket.file(destinationPath);
       
@@ -78,7 +75,6 @@ export const migrateImageFlow = ai.defineFlow(
         },
       });
       
-      // Make the file public and get the URL
       await file.makePublic();
       const publicUrl = file.publicUrl();
 
@@ -86,7 +82,11 @@ export const migrateImageFlow = ai.defineFlow(
 
     } catch (e: any) {
       console.error("Image migration failed:", e);
-      return { success: false, error: e.message || 'An unexpected error occurred during image migration.' };
+      // Check for specific authentication/permission errors
+      if (e.code === 'storage/unauthorized' || (e.message && e.message.includes('Could not refresh access token'))) {
+         return { success: false, error: 'Görsel yükleme yetkisi alınamadı. Lütfen Firebase IAM ayarlarınızı kontrol edin (örn: Storage Admin rolü).' };
+      }
+      return { success: false, error: e.message || 'Görsel taşınırken beklenmedik bir sunucu hatası oluştu.' };
     }
   }
 );
