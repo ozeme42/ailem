@@ -6,12 +6,12 @@ import Image from 'next/image';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Book, familyMembers, mediaItems } from '@/lib/data';
+import { Book, familyMembers } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +38,14 @@ const bookFormSchema = z.object({
 });
 type BookFormData = z.infer<typeof bookFormSchema>;
 
-const bulkAddJsonSchema = z.array(bookFormSchema).min(1, "En az bir kitap eklemelisiniz.");
+const bulkAddJsonSchema = z.array(z.object({
+  title: z.string().min(2, "Kitap adı en az 2 karakter olmalıdır."),
+  author: z.string().optional(),
+  pageCount: z.coerce.number().min(1).optional(),
+  isForChildren: z.boolean().default(false),
+  image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
+})).min(1, "En az bir kitap eklemelisiniz.");
+
 
 // BOOK FORM COMPONENT
 const BookForm = () => {
@@ -69,7 +76,7 @@ const BookForm = () => {
 
 // ARCHIVE CLIENT COMPONENT
 export default function ArchiveClient() {
-  const [books, setBooks] = useState<Book[]>(mediaItems);
+  const [books, setBooks] = useState<Book[]>([]);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
@@ -82,6 +89,26 @@ export default function ArchiveClient() {
 
   const { toast } = useToast();
   const formMethods = useForm<BookFormData>({ resolver: zodResolver(bookFormSchema) });
+
+  React.useEffect(() => {
+    try {
+        const storedMedia = localStorage.getItem('mediaItems');
+        if (storedMedia) {
+            setBooks(JSON.parse(storedMedia));
+        }
+    } catch (error) {
+        console.error("Failed to load media from localStorage", error);
+    }
+  }, []);
+
+  const updateBooks = (updatedBooks: Book[]) => {
+    setBooks(updatedBooks);
+    try {
+        localStorage.setItem('mediaItems', JSON.stringify(updatedBooks));
+    } catch (error) {
+        toast({ title: "❌ Kaydetme Hatası", description: "Değişiklikler kaydedilirken bir hata oluştu.", variant: 'destructive'});
+    }
+  };
 
   const handleOpenAddDialog = useCallback((initialData: Partial<Book> | null = null) => {
     setEditingBook(initialData && 'id' in initialData ? initialData as Book : null);
@@ -97,7 +124,7 @@ export default function ArchiveClient() {
 
   const handleAddOrUpdateBook = (formData: BookFormData) => {
     if (editingBook) {
-      setBooks(prev => prev.map(b => b.id === editingBook.id ? { ...b, ...formData } : b));
+      updateBooks(books.map(b => b.id === editingBook.id ? { ...b, ...formData } : b));
       toast({ title: "Kitap Güncellendi" });
     } else {
       const newBook: Book = {
@@ -108,20 +135,18 @@ export default function ArchiveClient() {
         description: '',
         genre: ''
       };
-      setBooks(prev => [...prev, newBook]);
+      updateBooks([...books, newBook]);
       toast({ title: "Kitap Eklendi" });
     }
     setIsAddBookDialogOpen(false);
   };
 
   const handleDeleteBook = (bookId: number) => {
-    setBooks(prev => prev.filter(b => b.id !== bookId));
+    updateBooks(books.filter(b => b.id !== bookId));
     toast({ title: "Kitap Silindi", variant: 'destructive' });
   };
   
   const handleAddToMyLibrary = (book: Book) => {
-      // In a real app, this would update the specific user's library.
-      // For now, we'll just show a toast.
       const member = familyMembers[Math.floor(Math.random() * familyMembers.length)];
       toast({
           title: `"${book.title}"`,
@@ -163,7 +188,7 @@ export default function ArchiveClient() {
         description: '',
         genre: ''
     }));
-    setBooks(prev => [...prev, ...newBooks]);
+    updateBooks([...books, ...newBooks]);
     toast({ title: `${newBooks.length} kitap başarıyla eklendi.` });
     setIsBulkJsonDialogOpen(false);
   };
@@ -278,35 +303,44 @@ function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[],
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       {shelves.map(([shelfName, shelfBooks]) => (
         <div key={shelfName}>
-          <h3 className="text-xl font-bold mb-4">{shelfName} ({shelfBooks.length})</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
-            {shelfBooks.map(book => (
-              <div key={book.id} className="group relative">
-                <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
-                   <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
-                </Card>
-                <div className="mt-2 text-center">
-                    <p className="font-semibold text-sm truncate" title={book.title}>{book.title}</p>
-                    <p className="text-xs text-muted-foreground">{book.author}</p>
-                </div>
-                 <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button size="icon" className="h-8 w-8" onClick={() => onAddToLibrary(book)}><PlusCircle className="h-4 w-4"/></Button>
-                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="destructive" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Kitabı Sil</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(book.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                 </div>
+          <h3 className="text-xl font-bold mb-4 px-2">{shelfName} ({shelfBooks.length})</h3>
+          <div className="bg-stone-200 dark:bg-stone-900/50 p-4 rounded-lg shadow-inner">
+            <div className="overflow-x-auto pb-4">
+              <div className="flex flex-row gap-x-4 w-max">
+                {shelfBooks.map(book => (
+                  <div key={book.id} className="group relative w-36 flex flex-col">
+                    <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 flex-grow flex flex-col">
+                      <div className="relative aspect-[2/3] w-full">
+                        <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} fill sizes="144px" className="object-cover" data-ai-hint="book cover" />
+                      </div>
+                       <CardFooter className="p-2 mt-auto bg-card/80 backdrop-blur-sm">
+                        <div className="text-center w-full">
+                          <p className="font-semibold text-xs truncate" title={book.title}>{book.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                        </div>
+                      </CardFooter>
+                    </Card>
+                     <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Button size="icon" className="h-8 w-8" onClick={() => onAddToLibrary(book)}><PlusCircle className="h-4 w-4"/></Button>
+                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button size="icon" variant="destructive" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Kitabı Sil</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(book.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                     </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="h-4 bg-stone-800/80 rounded-b-md shadow-[0_-2px_5px_rgba(0,0,0,0.2)_inset] border-t-2 border-stone-900/50" />
           </div>
         </div>
       ))}
@@ -344,7 +378,7 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
     "author": "Ursula K. Le Guin",
     "pageCount": 208,
     "isForChildren": false,
-    "image": "https://images.example.com/yerdeniz.jpg"
+    "image": "https://covers.openlibrary.org/b/id/10472775-L.jpg"
   },
   {
     "title": "Küçük Prens",
@@ -381,4 +415,3 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
-
