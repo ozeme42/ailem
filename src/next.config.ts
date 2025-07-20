@@ -22,9 +22,17 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
-  serverExternalPackages: ['framer-motion'],
+  experimental: {
+    serverComponentsExternalPackages: ['framer-motion'],
+  },
 };
 
 export default nextConfig;
