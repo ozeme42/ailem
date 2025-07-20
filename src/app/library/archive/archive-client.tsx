@@ -23,7 +23,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -35,7 +38,7 @@ const bookFormSchema = z.object({
   ),
   isForChildren: z.boolean().default(false),
   image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 type BookFormData = z.infer<typeof bookFormSchema>;
 
@@ -50,8 +53,74 @@ const bulkAddJsonSchema = z.array(z.object({
 
 
 // BOOK FORM COMPONENT
-const BookForm = () => {
-  const { control } = useFormContext<BookFormData>();
+const BookForm = ({ existingTags }: { existingTags: string[] }) => {
+  const { control, getValues, setValue } = useFormContext<BookFormData>();
+  const [newShelfMain, setNewShelfMain] = useState('');
+  const [newShelfSub, setNewShelfSub] = useState('');
+  
+  const handleAddShelf = () => {
+    const main = newShelfMain.trim();
+    const sub = newShelfSub.trim();
+    if (!main) return;
+
+    const newTag = sub ? `${main}/${sub}` : main;
+    
+    const currentTagsValue = getValues('tags') || [];
+    if (!currentTagsValue.includes(newTag)) {
+        setValue('tags', [...currentTagsValue, newTag], { shouldValidate: true });
+    }
+    setNewShelfMain('');
+    setNewShelfSub('');
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    const currentTagsValue = getValues('tags') || [];
+    setValue('tags', currentTagsValue.filter(tag => tag !== tagToRemove), { shouldValidate: true });
+  };
+  
+  const handleToggleTag = (tag: string) => {
+    const currentTagsValue = getValues('tags') || [];
+    const newTags = currentTagsValue.includes(tag)
+        ? currentTagsValue.filter((t) => t !== tag)
+        : [...currentTagsValue, tag];
+    setValue('tags', newTags, { shouldValidate: true });
+  };
+  
+  const handleUseShelfAsTemplate = (shelfName: string) => {
+    setNewShelfMain(shelfName);
+    setNewShelfSub('');
+  };
+
+  const hierarchicalShelves = useMemo(() => {
+    const shelves: Record<string, string[]> = {};
+    const mainShelves: string[] = [];
+
+    existingTags.forEach(tag => {
+      const parts = tag.split('/');
+      const main = parts[0];
+      if (!shelves[main]) {
+        shelves[main] = [];
+        mainShelves.push(main);
+      }
+      if (parts.length > 1) {
+        const sub = parts.slice(1).join('/');
+        if (!shelves[main].includes(sub)) {
+          shelves[main].push(sub);
+        }
+      }
+    });
+
+    mainShelves.sort((a,b) => a.localeCompare(b, 'tr'));
+    Object.values(shelves).forEach(subs => subs.sort((a,b) => a.localeCompare(b, 'tr')));
+    
+    const sortedShelves: Record<string, string[]> = {};
+    mainShelves.forEach(main => {
+        sortedShelves[main] = shelves[main];
+    });
+
+    return sortedShelves;
+  }, [existingTags]);
+
   return (
     <div className="space-y-4">
       <FormField control={control} name="title" render={({ field }) => (
@@ -66,9 +135,106 @@ const BookForm = () => {
        <FormField control={control} name="image" render={({ field }) => (
         <FormItem><FormLabel>Kapak Resmi URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
       )} />
-      <FormField control={control} name="tags" render={({ field }) => (
-        <FormItem><FormLabel>Raflar (Virgülle ayırın)</FormLabel><FormControl><Input placeholder="Fantastik, Klasik, Felsefe..." {...field} /></FormControl><FormMessage /></FormItem>
-      )} />
+
+       <FormField
+          control={control}
+          name="tags"
+          render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Raflar</FormLabel>
+                  <Card className="p-4 bg-muted/50">
+                      <CardTitle className="text-base mb-2">Yeni Raf Ekle</CardTitle>
+                      <div className="space-y-2">
+                          <Input
+                              placeholder="Ana Raf Adı (örn: Yazarlar)"
+                              value={newShelfMain}
+                              onChange={(e) => setNewShelfMain(e.target.value)}
+                          />
+                          <Input
+                              placeholder="Alt Raf Adı (opsiyonel, örn: Dostoyevski)"
+                              value={newShelfSub}
+                              onChange={(e) => setNewShelfSub(e.target.value)}
+                          />
+                          <Button type="button" size="sm" onClick={handleAddShelf}>
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Raf Ekle
+                          </Button>
+                      </div>
+                  </Card>
+
+                  <div className="pt-2">
+                      <FormLabel className="text-xs text-muted-foreground">Seçili Raflar</FormLabel>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5 min-h-[26px]">
+                          {(field.value || []).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="gap-1.5 py-1 px-2.5">
+                              {tag}
+                              <button type="button" aria-label={`${tag} rafını kaldır`} onClick={() => removeTag(tag)}>
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                          </Badge>
+                          ))}
+                      </div>
+                  </div>
+
+                  {Object.keys(hierarchicalShelves).length > 0 && (
+                      <div className="pt-4 space-y-2">
+                          <FormLabel className="text-xs text-muted-foreground">Mevcut Raflar</FormLabel>
+                          <ScrollArea className="h-48 rounded-md border p-2">
+                              <div className="space-y-2">
+                                  {Object.entries(hierarchicalShelves).map(([main, subs]) => (
+                                      <div key={main}>
+                                          <div className="flex items-center gap-1">
+                                            <Badge
+                                                variant={(field.value || []).includes(main) ? 'default' : 'outline'}
+                                                onClick={() => handleToggleTag(main)}
+                                                className="cursor-pointer text-sm flex-grow justify-start text-left"
+                                            >
+                                                {main}
+                                            </Badge>
+                                             <TooltipProvider>
+                                                  <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                          <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              className="h-6 w-6 shrink-0"
+                                                              onClick={() => handleUseShelfAsTemplate(main)}
+                                                          >
+                                                              <PlusCircle className="mr-2 h-4 w-4" />
+                                                          </Button>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent>
+                                                          <p>Bu rafa alt raf ekle</p>
+                                                      </TooltipContent>
+                                                  </Tooltip>
+                                              </TooltipProvider>
+                                          </div>
+                                          {(subs as string[]).length > 0 && (
+                                              <div className="flex flex-wrap gap-1.5 mt-2 ml-4 pl-2 border-l">
+                                                  {(subs as string[]).map(sub => (
+                                                      <Badge
+                                                          key={sub}
+                                                          variant={(field.value || []).includes(`${main}/${sub}`) ? 'default' : 'outline'}
+                                                          onClick={() => handleToggleTag(`${main}/${sub}`)}
+                                                          className="cursor-pointer text-xs"
+                                                      >
+                                                          {sub}
+                                                      </Badge>
+                                                  ))}
+                                              </div>
+                                          )}
+                                      </div>
+                                  ))}
+                              </div>
+                          </ScrollArea>
+                      </div>
+                  )}
+                  <FormMessage />
+              </FormItem>
+          )}
+      />
+
       <FormField control={control} name="isForChildren" render={({ field }) => (
         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
           <div className="space-y-0.5"><FormLabel>Çocuk Kitabı</FormLabel></div>
@@ -106,6 +272,14 @@ export default function ArchiveClient() {
     }
   }, []);
 
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    books.forEach(book => {
+      (book.tags || []).forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort((a,b) => a.localeCompare(b, 'tr'));
+  }, [books]);
+
   const updateBooks = (updatedBooks: Book[]) => {
     setBooks(updatedBooks);
     try {
@@ -123,18 +297,14 @@ export default function ArchiveClient() {
         pageCount: initialData?.pageCount,
         image: initialData?.image || '',
         isForChildren: initialData?.isForChildren || false,
-        tags: initialData?.tags?.join(', ') || '',
+        tags: initialData?.tags || [],
     });
     setIsAddBookDialogOpen(true);
   }, [formMethods]);
 
   const handleAddOrUpdateBook = (formData: BookFormData) => {
-    const bookData = {
-        ...formData,
-        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-    };
     if (editingBook) {
-      updateBooks(books.map(b => b.id === editingBook.id ? { ...editingBook, ...bookData } : b));
+      updateBooks(books.map(b => b.id === editingBook.id ? { ...editingBook, ...formData } : b));
       toast({ title: "Kitap Güncellendi" });
     } else {
       const newBook: Book = {
@@ -142,7 +312,7 @@ export default function ArchiveClient() {
         type: 'Kitap',
         rating: 0,
         description: '',
-        ...bookData,
+        ...formData,
       };
       updateBooks([...books, newBook]);
       toast({ title: "Kitap Eklendi" });
@@ -240,7 +410,7 @@ export default function ArchiveClient() {
           </DialogHeader>
           <FormProvider {...formMethods}>
             <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} id="book-form">
-              <BookForm />
+              <BookForm existingTags={allTags} />
             </form>
           </FormProvider>
           <DialogFooter>
