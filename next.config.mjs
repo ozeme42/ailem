@@ -35,9 +35,7 @@ const nextConfig = {
       }
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['framer-motion'],
-  },
+  serverExternalPackages: ['framer-motion'],
 };
 
-module.exports = nextConfig;
+export default nextConfig;
