@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed } from "lucide-react";
-import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -15,7 +15,15 @@ export function AppSidebar() {
     { href: "/tasks", label: "Görevler", icon: ListTodo },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },
-    { href: "/library", label: "Kütüphane", icon: Library },
+    { 
+      href: "/library", 
+      label: "Kütüphane", 
+      icon: Library,
+      subItems: [
+          { href: "/library", label: "Kitaplığım" },
+          { href: "/library/archive", label: "Kitaplığımız" },
+      ]
+    },
     { href: "/education", label: "Eğitim", icon: GraduationCap },
     { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
   ];
@@ -36,18 +44,31 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} legacyBehavior={false} passHref>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.href}
-                  tooltip={item.label}
-                >
-                  <span>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </span>
-                </SidebarMenuButton>
-              </Link>
+                <Link href={item.href} legacyBehavior={false} passHref>
+                    <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(item.href) && (!item.subItems || pathname === item.href)}
+                    tooltip={item.label}
+                    >
+                    <span>
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </span>
+                    </SidebarMenuButton>
+                </Link>
+                {item.subItems && (
+                     <SidebarMenuSub>
+                        {item.subItems.map(subItem => (
+                             <SidebarMenuSubItem key={subItem.href}>
+                                <Link href={subItem.href} legacyBehavior={false} passHref>
+                                    <SidebarMenuSubButton isActive={pathname === subItem.href}>
+                                        {subItem.label}
+                                    </SidebarMenuSubButton>
+                                </Link>
+                             </SidebarMenuSubItem>
+                        ))}
+                     </SidebarMenuSub>
+                )}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

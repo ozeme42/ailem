@@ -50,16 +50,17 @@ export interface CalendarEvent {
     attendees: number[];
 }
 
-export interface MediaItem {
+export interface Book {
   id: number;
   title: string;
   author: string; 
-  coverImage: string;
+  image: string;
   type: "Kitap";
   genre: string;
   rating: number;
   description: string;
   pages?: number;
+  isForChildren?: boolean;
 }
 
 export interface Recipe {
@@ -74,13 +75,15 @@ export interface Recipe {
 }
 
 
-export const mediaItems: MediaItem[] = [
-  { id: 1, title: 'Küçük Prens', author: 'Antoine de Saint-Exupéry', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Fantastik', rating: 4.8, description: "Bir çocuğun gözünden yetişkinlerin dünyasına bir bakış.", pages: 112 },
-  { id: 2, title: '1984', author: 'George Orwell', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Distopya', rating: 4.7, description: "Totaliter bir rejim altında geçen distopik bir roman.", pages: 328 },
-  { id: 3, title: 'Simyacı', author: 'Paulo Coelho', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Felsefe', rating: 4.6, description: "Hayallerinin peşinden giden bir çobanın hikayesi.", pages: 188 },
-  { id: 4, title: 'Sapiens: İnsan Türünün Kısa Bir Tarihi', author: 'Yuval Noah Harari', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Tarih', rating: 4.9, description: "İnsan türünün tarih öncesi çağlardan günümüze evrimini anlatır.", pages: 443 },
-  { id: 5, title: 'Dune', author: 'Frank Herbert', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Bilim Kurgu', rating: 4.8, description: "Uzak bir gelecekte geçen epik bir bilim kurgu destanı.", pages: 412 },
-  { id: 6, title: 'Suç ve Ceza', author: 'Fyodor Dostoyevski', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Klasik', rating: 4.8, description: "Bir öğrencinin ahlaki mücadelesini konu alan psikolojik bir roman.", pages: 671 },
+export const mediaItems: Book[] = [
+  { id: 1, title: 'Küçük Prens', author: 'Antoine de Saint-Exupéry', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Çocuk Klasikleri', rating: 4.8, description: "Bir çocuğun gözünden yetişkinlerin dünyasına bir bakış.", pages: 112, isForChildren: true },
+  { id: 2, title: '1984', author: 'George Orwell', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Distopya', rating: 4.7, description: "Totaliter bir rejim altında geçen distopik bir roman.", pages: 328, isForChildren: false },
+  { id: 3, title: 'Simyacı', author: 'Paulo Coelho', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Felsefe', rating: 4.6, description: "Hayallerinin peşinden giden bir çobanın hikayesi.", pages: 188, isForChildren: false },
+  { id: 4, title: 'Sapiens: İnsan Türünün Kısa Bir Tarihi', author: 'Yuval Noah Harari', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Tarih', rating: 4.9, description: "İnsan türünün tarih öncesi çağlardan günümüze evrimini anlatır.", pages: 443, isForChildren: false },
+  { id: 5, title: 'Dune', author: 'Frank Herbert', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Bilim Kurgu', rating: 4.8, description: "Uzak bir gelecekte geçen epik bir bilim kurgu destanı.", pages: 412, isForChildren: false },
+  { id: 6, title: 'Suç ve Ceza', author: 'Fyodor Dostoyevski', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Klasik', rating: 4.8, description: "Bir öğrencinin ahlaki mücadelesini konu alan psikolojik bir roman.", pages: 671, isForChildren: false },
+  { id: 7, title: 'Harry Potter ve Felsefe Taşı', author: 'J.K. Rowling', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Fantastik', rating: 4.9, description: 'Genç bir büyücünün maceraları.', pages: 223, isForChildren: true },
+  { id: 8, title: 'Momo', author: 'Michael Ende', image: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Çocuk Klasikleri', rating: 4.8, description: 'Zaman hırsızlarına karşı savaşan küçük bir kızın hikayesi.', pages: 304, isForChildren: true },
 ];
 
 export const familyMembers: FamilyMember[] = [
