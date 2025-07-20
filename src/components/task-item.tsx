@@ -11,7 +11,8 @@ import type { Task, FamilyMember, Subtask } from "@/lib/data";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "./ui/progress";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { updateTask } from "@/lib/dataService";
+
 
 interface TaskItemProps {
   task: Task;
@@ -23,38 +24,47 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
   const [subtasks, setSubtasks] = React.useState<Subtask[]>(task.subtasks || []);
   const { toast } = useToast();
 
-  const handleCompletion = () => {
+  const handleCompletion = async () => {
     const newCompletionState = !isCompleted;
-    setIsCompleted(newCompletionState);
-    if (newCompletionState) {
-      toast({
-        title: "🎉 Görev Tamamlandı!",
-        description: `Harika iş, ${assignee.name}! ${task.points} XP kazandın.`,
-      });
-      // Mark all subtasks as completed
-      setSubtasks(subtasks.map(st => ({ ...st, completed: true })));
+    try {
+        await updateTask(task.id, { completed: newCompletionState });
+        setIsCompleted(newCompletionState); // Optimistic update
+        if (newCompletionState) {
+          toast({
+            title: "🎉 Görev Tamamlandı!",
+            description: `Harika iş, ${assignee.name}! ${task.points} XP kazandın.`,
+          });
+          // Optimistically update subtasks UI
+          setSubtasks(subtasks.map(st => ({ ...st, completed: true })));
+        }
+    } catch (error) {
+        toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
     }
   };
 
-  const handleSubtaskToggle = (subtaskId: string) => {
+  const handleSubtaskToggle = async (subtaskId: string) => {
     const newSubtasks = subtasks.map(st =>
       st.id === subtaskId ? { ...st, completed: !st.completed } : st
     );
-    setSubtasks(newSubtasks);
 
-    // Check if all subtasks are completed to complete the main task
-    if (newSubtasks.every(st => st.completed)) {
-        if (!isCompleted) {
+    try {
+        await updateTask(task.id, { subtasks: newSubtasks });
+        setSubtasks(newSubtasks); // Optimistic update
+
+        const allSubtasksCompleted = newSubtasks.every(st => st.completed);
+        if (allSubtasksCompleted && !isCompleted) {
+            await updateTask(task.id, { completed: true });
             setIsCompleted(true);
             toast({
                 title: "🎉 Görev Tamamlandı!",
                 description: `Harika iş, ${assignee.name}! ${task.points} XP kazandın.`,
             });
-        }
-    } else {
-        if (isCompleted) {
+        } else if (!allSubtasksCompleted && isCompleted) {
+             await updateTask(task.id, { completed: false });
             setIsCompleted(false);
         }
+    } catch (error) {
+        toast({ title: "Hata", description: "Alt görev güncellenirken bir sorun oluştu.", variant: "destructive"});
     }
   };
 
@@ -67,6 +77,13 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
     Orta: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
     Zor: 'border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-400',
   }
+
+  // Update local state if task prop changes (due to real-time updates)
+  React.useEffect(() => {
+    setIsCompleted(task.completed);
+    setSubtasks(task.subtasks || []);
+  }, [task]);
+
 
   return (
     <Collapsible>
@@ -100,15 +117,19 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
             <span className="font-bold">{task.points}</span>
           </Badge>
           <div className="flex items-center gap-2 shrink-0">
-            <Image
-              src={assignee.avatar}
-              alt={assignee.name}
-              width={32}
-              height={32}
-              className="rounded-full"
-              data-ai-hint="person"
-            />
-            <span className="text-sm font-medium hidden md:inline">{assignee.name}</span>
+            {assignee && (
+                <>
+                <Image
+                  src={assignee.avatar}
+                  alt={assignee.name}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                  data-ai-hint="person"
+                />
+                <span className="text-sm font-medium hidden md:inline">{assignee.name}</span>
+                </>
+            )}
           </div>
           {(task.subtasks && task.subtasks.length > 0) && (
             <CollapsibleTrigger asChild>

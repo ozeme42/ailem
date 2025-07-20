@@ -11,7 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { calendarEvents } from "@/lib/data";
+import { CalendarEvent } from "@/lib/data";
+import { onCalendarEventsUpdate } from "@/lib/dataService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const categoryColors: { [key: string]: { bg: string, border: string, text: string, darkBg: string } } = {
@@ -39,7 +40,13 @@ const priorityBadgeColors: { [key: string]: string } = {
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+
+  React.useEffect(() => {
+    const unsubscribe = onCalendarEventsUpdate(setCalendarEvents);
+    return () => unsubscribe();
+  }, []);
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
 

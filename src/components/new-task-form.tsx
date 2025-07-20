@@ -16,35 +16,66 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { FamilyMember } from "@/lib/data";
+import type { FamilyMember, Task } from "@/lib/data";
+import { addTask } from "@/lib/dataService";
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Başlık en az 3 karakter olmalıdır." }),
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   difficulty: z.enum(["Kolay", "Orta", "Zor"], { required_error: "Lütfen bir zorluk seviyesi seçin." }),
   dueDate: z.date({ required_error: "Lütfen bir bitiş tarihi seçin." }),
+  category: z.enum(['Ev İşleri', 'Okul', 'Kişisel', 'Aile'], { required_error: "Lütfen bir kategori seçin." }),
 });
 
 type NewTaskFormProps = {
   familyMembers: FamilyMember[];
+  onTaskCreated: () => void;
 };
 
-export function NewTaskForm({ familyMembers }: NewTaskFormProps) {
+export function NewTaskForm({ familyMembers, onTaskCreated }: NewTaskFormProps) {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      difficulty: "Orta",
+      category: "Ev İşleri",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "✅ Görev Başarıyla Oluşturuldu!",
-      description: `"${values.title}" görevi başarıyla eklendi.`,
-    });
-    // Here you would typically call an API to save the task
+  const difficultyPoints = {
+    "Kolay": 10,
+    "Orta": 25,
+    "Zor": 50,
+  }
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+        const newTask: Omit<Task, 'id'> = {
+            title: values.title,
+            assigneeId: Number(values.assigneeId),
+            difficulty: values.difficulty,
+            dueDate: format(values.dueDate, "yyyy-MM-dd"),
+            category: values.category,
+            points: difficultyPoints[values.difficulty],
+            completed: false,
+            subtasks: []
+        };
+        await addTask(newTask);
+
+        toast({
+            title: "✅ Görev Başarıyla Oluşturuldu!",
+            description: `"${values.title}" görevi başarıyla eklendi.`,
+        });
+        form.reset();
+        onTaskCreated();
+    } catch (error) {
+        toast({
+            title: "❌ Hata",
+            description: "Görev oluşturulurken bir sorun oluştu.",
+            variant: "destructive",
+        });
+    }
   }
 
   return (
@@ -63,6 +94,29 @@ export function NewTaskForm({ familyMembers }: NewTaskFormProps) {
             </FormItem>
           )}
         />
+        <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kategori</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Bir kategori seçin" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Ev İşleri">Ev İşleri</SelectItem>
+                    <SelectItem value="Okul">Okul</SelectItem>
+                    <SelectItem value="Kişisel">Kişisel</SelectItem>
+                    <SelectItem value="Aile">Aile</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}

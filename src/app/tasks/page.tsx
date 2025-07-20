@@ -10,14 +10,22 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
-import { tasks, familyMembers } from "@/lib/data";
+import { familyMembers, Task } from "@/lib/data";
+import { onTasksUpdate } from "@/lib/dataService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTaskForm } from "@/components/new-task-form";
 
 export default function TasksPage() {
+  const [tasks, setTasks] = React.useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const unsubscribe = onTasksUpdate(setTasks);
+    return () => unsubscribe();
+  }, []);
   
   const getAssignee = (assigneeId: number) => {
     return familyMembers.find((m) => m.id === assigneeId)!;
@@ -27,7 +35,7 @@ export default function TasksPage() {
 
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getAssignee(task.assigneeId).name.toLowerCase().includes(searchTerm.toLowerCase())
+    (getAssignee(task.assigneeId) && getAssignee(task.assigneeId).name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const todoTasks = filteredTasks.filter((task) => !task.completed);
@@ -36,7 +44,7 @@ export default function TasksPage() {
   return (
     <>
       <PageHeader title="Görev Yönetimi 📝">
-        <Dialog>
+        <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg hover:shadow-xl transition-shadow">
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -50,7 +58,10 @@ export default function TasksPage() {
                 Yeni bir görev ekleyerek ailenizin düzenine katkıda bulunun.
               </DialogDescription>
             </DialogHeader>
-            <NewTaskForm familyMembers={familyMembers} />
+            <NewTaskForm 
+                familyMembers={familyMembers}
+                onTaskCreated={() => setIsNewTaskDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       </PageHeader>
