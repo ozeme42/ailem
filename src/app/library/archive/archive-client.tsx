@@ -351,7 +351,11 @@ export default function ArchiveClient() {
              }
         }
         
-        const bookData = { ...formData, image: finalImageUrl };
+        const bookData: any = { ...formData, image: finalImageUrl };
+
+        if (bookData.pageCount === undefined) {
+            delete bookData.pageCount;
+        }
 
         const newTags = new Set([...allTags, ...(bookData.tags || [])]);
         await updateTags(Array.from(newTags));
