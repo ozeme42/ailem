@@ -252,11 +252,12 @@ const BookForm = ({ existingTags }: { existingTags: string[] }) => {
 // ARCHIVE CLIENT COMPONENT
 export default function ArchiveClient() {
   const [books, setBooks] = useState<Book[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
-  const [editingShelf, setEditingShelf] = useState<string | null>(null);
+  const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Partial<Book>[]>([]);
@@ -266,34 +267,56 @@ export default function ArchiveClient() {
   const { toast } = useToast();
   const formMethods = useForm<BookFormData>({ resolver: zodResolver(bookFormSchema) });
   const shelfFormMethods = useForm<ShelfFormData>({ resolver: zodResolver(shelfFormSchema) });
-
+  
   React.useEffect(() => {
     try {
         const storedMedia = localStorage.getItem('mediaItems');
+        const storedTags = localStorage.getItem('libraryTags');
         if (storedMedia) {
             setBooks(JSON.parse(storedMedia));
         }
+        const initialTags = new Set<string>();
+        if (storedMedia) {
+            JSON.parse(storedMedia).forEach((book: Book) => {
+                (book.tags || []).forEach(tag => initialTags.add(tag));
+            });
+        }
+        if (storedTags) {
+             JSON.parse(storedTags).forEach((tag: string) => initialTags.add(tag));
+        }
+        setAllTags(Array.from(initialTags).sort((a,b) => a.localeCompare(b, 'tr')));
+
     } catch (error) {
         console.error("Failed to load media from localStorage", error);
     }
   }, []);
 
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    books.forEach(book => {
-      (book.tags || []).forEach(tag => tags.add(tag));
-    });
-    return Array.from(tags).sort((a,b) => a.localeCompare(b, 'tr'));
-  }, [books]);
-
   const updateBooks = (updatedBooks: Book[]) => {
     setBooks(updatedBooks);
     try {
         localStorage.setItem('mediaItems', JSON.stringify(updatedBooks));
+        // Recalculate tags from books after update
+        const newTags = new Set<string>();
+        updatedBooks.forEach(book => {
+          (book.tags || []).forEach(tag => newTags.add(tag));
+        });
+        // Keep existing tags that might be empty
+        allTags.forEach(tag => newTags.add(tag));
+        const sortedTags = Array.from(newTags).sort((a, b) => a.localeCompare(b, 'tr'));
+        setAllTags(sortedTags);
+        localStorage.setItem('libraryTags', JSON.stringify(sortedTags));
+
     } catch (error) {
         toast({ title: "❌ Kaydetme Hatası", description: "Değişiklikler kaydedilirken bir hata oluştu.", variant: 'destructive'});
     }
   };
+  
+  const updateTags = (updatedTags: string[]) => {
+      const sortedTags = updatedTags.sort((a, b) => a.localeCompare(b, 'tr'));
+      setAllTags(sortedTags);
+      localStorage.setItem('libraryTags', JSON.stringify(sortedTags));
+  }
+
 
   const handleOpenAddDialog = useCallback((initialData: Partial<Book> | null = null) => {
     setEditingBook(initialData && 'id' in initialData ? initialData as Book : null);
@@ -370,34 +393,43 @@ export default function ArchiveClient() {
         type: 'Kitap',
         rating: 0,
         description: '',
-        tags: [],
+        isForChildren: false,
         ...book,
+        tags: book.tags || [],
     }));
     updateBooks([...books, ...newBooks]);
     toast({ title: `${newBooks.length} kitap başarıyla eklendi.` });
     setIsBulkJsonDialogOpen(false);
   };
+  
+  const handleOpenShelfDialog = (shelfName: string | null) => {
+      const isNew = shelfName === null;
+      shelfFormMethods.reset({ name: isNew ? '' : shelfName });
+      setEditingShelf({ originalName: shelfName || '', isNew });
+  }
 
-  const handleEditShelf = (shelfName: string) => {
-    shelfFormMethods.reset({ name: shelfName });
-    setEditingShelf(shelfName);
-  };
+  const handleShelfFormSubmit = (data: ShelfFormData) => {
+      if (!editingShelf) return;
+      const newShelfName = data.name.trim();
 
-  const handleUpdateShelf = (data: ShelfFormData) => {
-    if (!editingShelf) return;
-    const newShelfName = data.name.trim();
-    if (newShelfName === editingShelf) {
-        setEditingShelf(null);
-        return;
-    }
+      if (allTags.includes(newShelfName) && newShelfName !== editingShelf.originalName) {
+          toast({ title: "Hata", description: "Bu raf adı zaten mevcut.", variant: "destructive" });
+          return;
+      }
+      
+      if (editingShelf.isNew) { // Add new shelf
+          updateTags([...allTags, newShelfName]);
+          toast({ title: "Raf Eklendi", description: `"${newShelfName}" rafı başarıyla oluşturuldu.` });
+      } else { // Update existing shelf
+          const updatedBooks = books.map(book => {
+              const newTags = (book.tags || []).map(tag => tag === editingShelf.originalName ? newShelfName : tag);
+              return { ...book, tags: newTags };
+          });
+          updateBooks(updatedBooks); // This will also update tags
+          toast({ title: "Raf Güncellendi", description: `"${editingShelf.originalName}" rafının adı "${newShelfName}" olarak değiştirildi.` });
+      }
 
-    const updatedBooks = books.map(book => {
-        const newTags = (book.tags || []).map(tag => tag === editingShelf ? newShelfName : tag);
-        return { ...book, tags: newTags };
-    });
-    updateBooks(updatedBooks);
-    toast({ title: "Raf Güncellendi", description: `"${editingShelf}" rafının adı "${newShelfName}" olarak değiştirildi.` });
-    setEditingShelf(null);
+      setEditingShelf(null);
   };
 
   const handleDeleteShelf = (shelfName: string) => {
@@ -406,7 +438,8 @@ export default function ArchiveClient() {
         return { ...book, tags: newTags };
     });
     updateBooks(updatedBooks);
-    toast({ title: "Raf Silindi", description: `"${shelfName}" rafı tüm kitaplardan kaldırıldı.`, variant: 'destructive'});
+    updateTags(allTags.filter(tag => tag !== shelfName));
+    toast({ title: "Raf Silindi", description: `"${shelfName}" rafı ve etiketleri tüm kitaplardan kaldırıldı.`, variant: 'destructive'});
   };
 
   const { adultBooks, childrenBooks } = useMemo(() => {
@@ -440,9 +473,14 @@ export default function ArchiveClient() {
         </TabsContent>
         <TabsContent value="management" className="mt-6">
            <Card>
-                <CardHeader>
-                    <CardTitle>Rafları Yönet</CardTitle>
-                    <CardDescription>Mevcut tüm rafları buradan düzenleyebilir veya silebilirsiniz.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Rafları Yönet</CardTitle>
+                        <CardDescription>Mevcut tüm rafları buradan düzenleyebilir veya silebilirsiniz.</CardDescription>
+                    </div>
+                     <Button onClick={() => handleOpenShelfDialog(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni Raf Ekle
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     <ScrollArea className="h-96">
@@ -451,7 +489,7 @@ export default function ArchiveClient() {
                                 <div key={tag} className="flex items-center justify-between p-3 border rounded-lg">
                                     <p className="font-medium">{tag}</p>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEditShelf(tag)}>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenShelfDialog(tag)}>
                                             <Edit className="w-4 h-4"/>
                                         </Button>
                                         <AlertDialog>
@@ -464,7 +502,7 @@ export default function ArchiveClient() {
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Rafı Sil</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        "{tag}" rafını silmek istediğinizden emin misiniz? Bu işlem, bu etiketi tüm kitaplardan kaldıracaktır. Bu işlem geri alınamaz.
+                                                        "{tag}" rafını silmek istediğinizden emin misiniz? Bu işlem, bu etiketi tüm kitaplardan kaldıracak ve raf kalıcı olarak silinecektir. Bu işlem geri alınamaz.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
@@ -544,13 +582,16 @@ export default function ArchiveClient() {
         <Dialog open={!!editingShelf} onOpenChange={(open) => !open && setEditingShelf(null)}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Rafı Düzenle</DialogTitle>
+                    <DialogTitle>{editingShelf?.isNew ? "Yeni Raf Ekle" : "Rafı Düzenle"}</DialogTitle>
                     <DialogDescription>
-                        Rafın adını güncelleyin. Bu değişiklik bu rafa sahip tüm kitaplara yansıtılacaktır.
+                         {editingShelf?.isNew 
+                            ? "Kütüphanenize yeni bir raf ekleyin."
+                            : "Rafın adını güncelleyin. Bu değişiklik bu rafa sahip tüm kitaplara yansıtılacaktır."
+                        }
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...shelfFormMethods}>
-                    <form onSubmit={shelfFormMethods.handleSubmit(handleUpdateShelf)} id="shelf-form" className="space-y-4">
+                    <form onSubmit={shelfFormMethods.handleSubmit(handleShelfFormSubmit)} id="shelf-form" className="space-y-4">
                         <FormField
                             control={shelfFormMethods.control}
                             name="name"
@@ -558,7 +599,7 @@ export default function ArchiveClient() {
                                 <FormItem>
                                     <FormLabel>Raf Adı</FormLabel>
                                     <FormControl>
-                                        <Input {...field} />
+                                        <Input {...field} placeholder="örn: Fantastik/Yüzüklerin Efendisi Serisi"/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -712,3 +753,5 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
