@@ -23,7 +23,7 @@ const categoryIcons = {
   "Atıştırmalık": <Wheat className="h-4 w-4 mr-2" />,
 };
 
-const mealTypes = ["Kahvaltı", "Öğle Yemeği", "Akşam Yemeği"];
+const mealTypes = ["Kahvaltı", "Akşam Yemeği"];
 
 export default function YemekPlanlamaPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -52,9 +52,14 @@ export default function YemekPlanlamaPage() {
 
        <Card className="mb-8">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Haftalık Yemek Planı</CardTitle>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex-grow">
+              <CardTitle>Haftalık Yemek Planı</CardTitle>
+              <CardDescription>
+                {format(weekStartDate, 'd MMMM', { locale: tr })} - {format(addDays(weekStartDate, 6), 'd MMMM yyyy', { locale: tr })}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-center">
               <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, -7))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -64,12 +69,9 @@ export default function YemekPlanlamaPage() {
               </Button>
             </div>
           </div>
-          <CardDescription>
-            Bu haftanın menüsünü planlayın. Tarifleri aşağıdan sürükleyip bırakın.
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
             {weekDays.map(day => (
               <Card key={day.toString()} className="flex flex-col gap-2 p-2 bg-muted/40">
                 <div className="font-semibold text-center text-sm capitalize">
@@ -78,8 +80,9 @@ export default function YemekPlanlamaPage() {
                 </div>
                 <div className="space-y-2 flex-grow">
                   {mealTypes.map(meal => (
-                    <div key={meal} className="h-20 bg-background/50 rounded-md flex justify-center items-center border-dashed border-2 border-muted-foreground/20">
+                    <div key={meal} className="h-24 bg-background/50 rounded-md flex flex-col justify-center items-center p-2 border-dashed border-2 border-muted-foreground/20 text-center">
                       <span className="text-xs text-muted-foreground">{meal}</span>
+                      {/* Placeholder for a dropped recipe */}
                     </div>
                   ))}
                 </div>
