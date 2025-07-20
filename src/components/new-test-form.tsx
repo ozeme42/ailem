@@ -25,7 +25,7 @@ const formSchema = z.object({
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
-  gradingType: z.enum(["auto", "manual"]).default("manual"),
+  gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual-text"),
   answerKey: z.record(z.string()).optional(),
 
   // Bank
@@ -59,7 +59,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
       questionCount: 20,
       title: "",
       subject: "",
-      gradingType: "manual",
+      gradingType: "manual-text",
       answerKey: {},
       bankId: "",
       topicId: "",
@@ -127,7 +127,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
         questionCount: 20,
         title: "",
         subject: "",
-        gradingType: "manual",
+        gradingType: "manual-text",
         answerKey: {},
         bankId: "",
         topicId: "",
@@ -247,10 +247,18 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                                 </FormItem>
                                 <FormItem className="flex items-center space-x-3 space-y-0">
                                     <FormControl>
-                                    <RadioGroupItem value="manual" />
+                                    <RadioGroupItem value="manual-text" />
                                     </FormControl>
                                     <FormLabel className="font-normal">
                                     Manuel Kontrol (Açık Uçlu)
+                                    </FormLabel>
+                                </FormItem>
+                                 <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="manual" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                    Cevap Gerekmiyor (Manuel Kontrol)
                                     </FormLabel>
                                 </FormItem>
                                 </RadioGroup>

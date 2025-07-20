@@ -193,7 +193,7 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi';
   sourceType: 'quick' | 'bank' | 'exam';
-  gradingType?: 'auto' | 'manual';
+  gradingType?: 'auto' | 'manual-text' | 'manual';
   sourceId?: number;
   topicId?: number;
   score?: number;
@@ -312,17 +312,29 @@ export const tests: Test[] = [
     title: 'İngilizce Kelime Testi',
     subject: 'İngilizce',
     studentId: 3,
-    questionCount: 30,
+    questionCount: 3,
     assignedDate: '09 Temmuz 2024',
     dueDate: '16 Temmuz 2024',
     status: 'Çözüldü',
     sourceType: 'quick',
-    gradingType: 'manual',
+    gradingType: 'manual-text',
     studentTextAnswers: {
         '1': 'Apple',
         '2': 'Book',
         '3': 'House'
     }
+  },
+  {
+    id: 6,
+    title: 'Coğrafya Yazılısı',
+    subject: 'Sosyal Bilgiler',
+    studentId: 4,
+    questionCount: 10,
+    assignedDate: '10 Temmuz 2024',
+    dueDate: '11 Temmuz 2024',
+    status: 'Çözüldü',
+    sourceType: 'quick',
+    gradingType: 'manual',
   },
 ];
 

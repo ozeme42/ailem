@@ -24,7 +24,6 @@ export default function OpticalFormPage() {
     const testId = Number(params.testId);
 
     const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
-    const [gradingType, setGradingType] = React.useState<'auto' | 'manual'>('manual');
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     const [timeLeft, setTimeLeft] = React.useState(0);
@@ -37,7 +36,6 @@ export default function OpticalFormPage() {
         if (currentTest) {
              setTimeLeft(currentTest.questionCount * 1.5 * 60);
              const type = currentTest.gradingType || 'manual';
-             setGradingType(type);
 
              if(type === 'auto') {
                 const initialAnswers: McqAnswers = {};
@@ -45,7 +43,7 @@ export default function OpticalFormPage() {
                     initialAnswers[i] = null;
                 }
                 setMcqAnswers(initialAnswers);
-             } else {
+             } else if (type === 'manual-text') {
                 const initialAnswers: TextAnswers = {};
                  for (let i = 1; i <= currentTest.questionCount; i++) {
                     initialAnswers[i] = "";
@@ -120,7 +118,7 @@ export default function OpticalFormPage() {
             if (testIndex > -1) {
                 const currentTest = storedTests[testIndex];
 
-                if(gradingType === 'auto') {
+                if(currentTest.gradingType === 'auto') {
                     currentTest.studentAnswers = mcqAnswers;
                     let answerKey: { [key: number]: string } | undefined = undefined;
                     
@@ -158,12 +156,14 @@ export default function OpticalFormPage() {
                         currentTest.emptyAnswers = empty;
                         currentTest.score = (correct / currentTest.questionCount) * 100;
                     } else {
-                         // Should not happen if gradingType is auto, but as a fallback
+                         // Fallback for auto grading without answer key, should be rare
                         currentTest.status = 'Çözüldü';
                     }
                     
-                } else { // Manual grading
-                    currentTest.studentTextAnswers = textAnswers;
+                } else { // Manual grading (text or no-answer)
+                    if (currentTest.gradingType === 'manual-text') {
+                        currentTest.studentTextAnswers = textAnswers;
+                    }
                     currentTest.status = 'Çözüldü';
                     currentTest.correctAnswers = undefined;
                     currentTest.incorrectAnswers = undefined;
@@ -175,7 +175,7 @@ export default function OpticalFormPage() {
                 localStorage.setItem('tests', JSON.stringify(storedTests));
                  toast({
                     title: "✅ Test Tamamlandı!",
-                    description: gradingType === 'auto' ? "Cevapların başarıyla kaydedildi ve testin değerlendirildi." : "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
+                    description: currentTest.gradingType === 'auto' ? "Cevapların başarıyla kaydedildi ve testin değerlendirildi." : "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
                 });
             } else {
                  toast({
@@ -197,10 +197,11 @@ export default function OpticalFormPage() {
         }
     }
 
-    const answeredQuestions = gradingType === 'auto'
+    const answeredQuestions = test.gradingType === 'auto'
         ? Object.values(mcqAnswers).filter(a => a !== null).length
-        : Object.values(textAnswers).filter(a => a.trim() !== "").length;
+        : (test.gradingType === 'manual-text' ? Object.values(textAnswers).filter(a => a.trim() !== "").length : 0);
 
+    const isInteractive = test.gradingType === 'auto' || test.gradingType === 'manual-text';
 
     return (
         <div className="container mx-auto py-8">
@@ -221,7 +222,7 @@ export default function OpticalFormPage() {
                                 {Array.from({ length: test.questionCount }, (_, i) => i + 1).map(questionNumber => (
                                     <div key={questionNumber} className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
                                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{questionNumber}</div>
-                                        {gradingType === 'auto' ? (
+                                        {test.gradingType === 'auto' ? (
                                             <RadioGroup 
                                                 defaultValue={mcqAnswers[questionNumber] || ""}
                                                 onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
@@ -234,13 +235,15 @@ export default function OpticalFormPage() {
                                                     </div>
                                                 ))}
                                             </RadioGroup>
-                                        ) : (
+                                        ) : test.gradingType === 'manual-text' ? (
                                             <Input
                                                 placeholder="Cevabınızı buraya yazın..."
                                                 value={textAnswers[questionNumber] || ""}
                                                 onChange={(e) => handleTextAnswerChange(questionNumber, e.target.value)}
                                                 className="flex-grow"
                                             />
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground flex-grow">Bu soru için cevap girişi gerekmiyor.</p>
                                         )}
                                     </div>
                                 ))}
@@ -262,15 +265,17 @@ export default function OpticalFormPage() {
                              </p>
                            </div>
                            
-                            <div className="text-center">
-                                <p className="text-muted-foreground">
-                                    {gradingType === 'auto' ? 'İşaretlenen Soru' : 'Cevaplanan Soru'}
+                           {isInteractive && (
+                                <div className="text-center">
+                                    <p className="text-muted-foreground">
+                                        {test.gradingType === 'auto' ? 'İşaretlenen Soru' : 'Cevaplanan Soru'}
+                                    </p>
+                                    <p className="text-4xl font-bold text-foreground">
+                                    <CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>
+                                    {answeredQuestions} / {test.questionCount}
                                 </p>
-                                <p className="text-4xl font-bold text-foreground">
-                                <CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>
-                                {answeredQuestions} / {test.questionCount}
-                            </p>
-                            </div>
+                                </div>
+                           )}
                            
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
