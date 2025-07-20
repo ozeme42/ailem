@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval } from 'date-fns';
+import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1 } from "lucide-react";
 
@@ -37,15 +37,21 @@ export default function CalendarPage() {
   const getEventsForDay = (day: Date) => {
     return calendarEvents.filter(event => {
       const eventStartDate = new Date(event.startDate);
-      const eventEndDate = event.endDate ? new Date(event.endDate) : eventStartDate;
-      
+      // Adjust for timezone differences by creating dates in UTC context for comparisons
+      const eventStartDay = new Date(eventStartDate.getUTCFullYear(), eventStartDate.getUTCMonth(), eventStartDate.getUTCDate());
+
+      if (isAfter(eventStartDay, day)) {
+          return false; // Event hasn't started yet
+      }
+
       switch (event.recurrence) {
         case 'one-time':
-          return isWithinInterval(day, { start: eventStartDate, end: eventEndDate });
+          const eventEndDate = event.endDate ? new Date(new Date(event.endDate).setUTCHours(23, 59, 59, 999)) : eventStartDay;
+          return isWithinInterval(day, { start: eventStartDay, end: eventEndDate });
         case 'monthly':
-          return eventStartDate.getDate() === day.getDate() && day >= eventStartDate;
+          return eventStartDay.getDate() === day.getDate();
         case 'yearly':
-          return eventStartDate.getDate() === day.getDate() && eventStartDate.getMonth() === day.getMonth() && day >= eventStartDate;
+          return eventStartDay.getDate() === day.getDate() && eventStartDay.getMonth() === day.getMonth();
         default:
           return false;
       }
@@ -142,7 +148,7 @@ export default function CalendarPage() {
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
-                                <p className="capitalize">Tekrarlanma: {event.recurrence}</p>
+                                <p className="capitalize">Tekrarlanma: {event.recurrence === 'one-time' ? 'Tek Seferlik' : (event.recurrence === 'monthly' ? 'Aylık' : 'Yıllık')}</p>
                             </div>
                              <DialogFooter>
                                 <Button variant="outline">Düzenle</Button>
