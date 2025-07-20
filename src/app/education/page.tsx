@@ -16,6 +16,7 @@ import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { students, tests, questionBanks, practiceExams, examProgress, QuestionBank } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 export default function EducationPage() {
   const [selectedStudent, setSelectedStudent] = React.useState(students[0]);
@@ -82,11 +83,11 @@ export default function EducationPage() {
       </div>
 
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className={cn("grid w-full mb-6", selectedStudent ? "grid-cols-4" : "grid-cols-3")}>
           <TabsTrigger value="assignments">Aktif Ödevler ({assignedTests.length})</TabsTrigger>
           <TabsTrigger value="progress">Genel Başarı</TabsTrigger>
           <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
-          <TabsTrigger value="management">İçerik Yönetimi</TabsTrigger>
+          {selectedStudent && <TabsTrigger value="management">İçerik Yönetimi</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="assignments">
@@ -216,6 +217,7 @@ export default function EducationPage() {
           </Card>
         </TabsContent>
         
+        {selectedStudent && (
         <TabsContent value="management">
             <Tabs defaultValue="questionBanks" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
@@ -309,8 +311,10 @@ export default function EducationPage() {
                 </TabsContent>
             </Tabs>
         </TabsContent>
-
+        )}
       </Tabs>
     </>
   );
 }
+
+    
