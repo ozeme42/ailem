@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ export default function OpticalFormPage() {
     const testId = Number(params.testId);
 
     const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
+    const [hasAnswerKey, setHasAnswerKey] = React.useState<boolean>(false);
 
     const [answers, setAnswers] = React.useState<Answers>({});
     const [timeLeft, setTimeLeft] = React.useState(0);
@@ -30,6 +31,7 @@ export default function OpticalFormPage() {
         const storedTests = JSON.parse(localStorage.getItem('tests') || '[]');
         const currentTest = storedTests.find((t: TestType) => t.id === testId);
         setTest(currentTest);
+
         if (currentTest) {
              setTimeLeft(currentTest.questionCount * 1.5 * 60);
              const initialAnswers: Answers = {};
@@ -37,6 +39,24 @@ export default function OpticalFormPage() {
                  initialAnswers[i] = null;
              }
              setAnswers(initialAnswers);
+             
+             // Check for answer key
+             let keyExists = false;
+             if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
+                const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
+                const bank = storedBanks.find(b => b.id === currentTest.sourceId);
+                const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id === currentTest.topicId);
+                if (topic?.answerKey && Object.keys(topic.answerKey).length > 0) {
+                    keyExists = true;
+                }
+            } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
+                const storedExams: PracticeExam[] = JSON.parse(localStorage.getItem('practiceExams') || '[]');
+                const exam = storedExams.find(e => e.id === currentTest.sourceId);
+                if (exam?.answerKey && Object.keys(exam.answerKey).length > 0) {
+                    keyExists = true;
+                }
+            }
+            setHasAnswerKey(keyExists);
         }
     }, [testId]);
 
@@ -188,24 +208,34 @@ export default function OpticalFormPage() {
                         <CardHeader>
                             <CardTitle className="text-2xl">{test.title}</CardTitle>
                             <CardDescription>{test.subject} - {test.questionCount} Soru</CardDescription>
+                            {!hasAnswerKey && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg mt-2">
+                                    <HelpCircle className="w-5 h-5"/>
+                                    Bu test için cevap girişi gerekli değildir. "Testi Bitir" butonuna basarak tamamlayabilirsiniz.
+                                </div>
+                            )}
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-6">
-                                {Object.keys(answers).map(questionNumber => (
+                                {Array.from({ length: test.questionCount }, (_, i) => i + 1).map(questionNumber => (
                                     <div key={questionNumber} className="flex items-center gap-4 sm:gap-8 p-3 rounded-lg border">
                                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">{questionNumber}</div>
-                                        <RadioGroup 
-                                            defaultValue={answers[Number(questionNumber)] || ""}
-                                            onValueChange={(value) => handleAnswerChange(Number(questionNumber), value)}
-                                            className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
-                                        >
-                                            {['A', 'B', 'C'].map(option => (
-                                                <div key={option} className="flex items-center space-x-2">
-                                                    <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} />
-                                                    <Label htmlFor={`q${questionNumber}-${option}`}>{option}</Label>
-                                                </div>
-                                            ))}
-                                        </RadioGroup>
+                                        {hasAnswerKey ? (
+                                            <RadioGroup 
+                                                defaultValue={answers[questionNumber] || ""}
+                                                onValueChange={(value) => handleAnswerChange(questionNumber, value)}
+                                                className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
+                                            >
+                                                {['A', 'B', 'C'].map(option => (
+                                                    <div key={option} className="flex items-center space-x-2">
+                                                        <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} />
+                                                        <Label htmlFor={`q${questionNumber}-${option}`}>{option}</Label>
+                                                    </div>
+                                                ))}
+                                            </RadioGroup>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">Cevap girişi gerekmiyor.</p>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -225,13 +255,15 @@ export default function OpticalFormPage() {
                                 {formatTime(timeLeft)}
                              </p>
                            </div>
-                            <div className="text-center">
-                             <p className="text-muted-foreground">İşaretlenen Soru</p>
-                             <p className="text-4xl font-bold text-foreground">
-                                <CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>
-                                {answeredQuestions} / {test.questionCount}
-                            </p>
-                           </div>
+                           {hasAnswerKey && (
+                                <div className="text-center">
+                                 <p className="text-muted-foreground">İşaretlenen Soru</p>
+                                 <p className="text-4xl font-bold text-foreground">
+                                    <CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>
+                                    {answeredQuestions} / {test.questionCount}
+                                </p>
+                               </div>
+                           )}
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button className="w-full" size="lg" disabled={timeLeft <= 0}>
@@ -242,7 +274,7 @@ export default function OpticalFormPage() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Testi bitirdikten sonra cevaplarını değiştiremezsin. Değerlendirme anında yapılacak.
+                                    Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
