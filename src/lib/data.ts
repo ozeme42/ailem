@@ -207,7 +207,7 @@ export interface ShoppingList {
   title: string;
   category: string;
   items: ShoppingItem[];
-  totalBudget: number;
+  totalBudget?: number;
   assigneeId: number;
   dueDate: string;
 }

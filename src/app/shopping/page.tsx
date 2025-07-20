@@ -25,8 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const newListSchema = z.object({
     title: z.string().min(3, "Liste adı en az 3 karakter olmalıdır."),
-    budget: z.coerce.number().min(0, "Bütçe pozitif bir değer olmalıdır."),
-    assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
+    category: z.string({ required_error: "Lütfen bir kategori seçin." }),
 });
 
 type NewListFormData = z.infer<typeof newListSchema>;
@@ -39,7 +38,7 @@ export default function ShoppingPage() {
   const [isNewListDialogOpen, setIsNewListDialogOpen] = React.useState(false);
   const form = useForm<NewListFormData>({
     resolver: zodResolver(newListSchema),
-    defaultValues: { title: "", budget: 0 }
+    defaultValues: { title: "", category: "Market" }
   });
 
   React.useEffect(() => {
@@ -62,18 +61,10 @@ export default function ShoppingPage() {
   };
 
   const calculateListTotals = (list: ShoppingList) => {
-    const currentTotal = list.items.filter(i => i.completed).reduce((sum, item) => sum + (item.price || 0), 0);
     const completedCount = list.items.filter(i => i.completed).length;
-    return { currentTotal, completedCount };
+    return { completedCount };
   }
 
-  const overallBudget = shoppingLists.reduce((sum, list) => sum + list.totalBudget, 0);
-  const overallSpent = shoppingLists.reduce((sum, list) => {
-      const { currentTotal } = calculateListTotals(list);
-      return sum + currentTotal;
-  }, 0);
-  const budgetUsagePercentage = overallBudget > 0 ? (overallSpent / overallBudget) * 100 : 0;
-  
   const handleItemToggle = async (list: ShoppingList, itemId: number) => {
     const newItems = list.items.map(item => 
         item.id === itemId ? { ...item, completed: !item.completed } : item
@@ -86,11 +77,12 @@ export default function ShoppingPage() {
   }
 
   const handleCreateList = async (data: NewListFormData) => {
+      // Assign to a random family member for now
+      const randomAssignee = familyMembers[Math.floor(Math.random() * familyMembers.length)];
       const newList: Omit<ShoppingList, 'id'> = {
           title: data.title,
-          totalBudget: data.budget,
-          assigneeId: Number(data.assigneeId),
-          category: 'Market', // Default category
+          category: data.category,
+          assigneeId: randomAssignee.id,
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
           items: []
       }
@@ -130,34 +122,28 @@ export default function ShoppingPage() {
                         <Input id="name" {...form.register("title")} placeholder="Haftalık Market" className="col-span-3" />
                          {form.formState.errors.title && <p className="col-span-4 text-sm text-destructive">{form.formState.errors.title.message}</p>}
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="budget" className="text-right">
-                            Bütçe (₺)
-                        </Label>
-                        <Input id="budget" type="number" {...form.register("budget")} placeholder="500" className="col-span-3" />
-                        {form.formState.errors.budget && <p className="col-span-4 text-sm text-destructive">{form.formState.errors.budget.message}</p>}
-                    </div>
                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="assigneeId" className="text-right">
-                            Sorumlu
+                        <Label htmlFor="category" className="text-right">
+                            Kategori
                         </Label>
                         <Controller
                             control={form.control}
-                            name="assigneeId"
+                            name="category"
                             render={({ field }) => (
                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Birini seçin" />
+                                        <SelectValue placeholder="Bir kategori seçin" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {familyMembers.map(member => (
-                                            <SelectItem key={member.id} value={member.id.toString()}>{member.name}</SelectItem>
-                                        ))}
+                                        <SelectItem value="Market">Market</SelectItem>
+                                        <SelectItem value="Ev Eşyası">Ev Eşyası</SelectItem>
+                                        <SelectItem value="Kırtasiye">Kırtasiye</SelectItem>
+                                        <SelectItem value="Diğer">Diğer</SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
                         />
-                         {form.formState.errors.assigneeId && <p className="col-span-4 text-sm text-destructive">{form.formState.errors.assigneeId.message}</p>}
+                         {form.formState.errors.category && <p className="col-span-4 text-sm text-destructive">{form.formState.errors.category.message}</p>}
                     </div>
                     <Button type="submit">Listeyi Oluştur</Button>
                 </form>
@@ -176,42 +162,11 @@ export default function ShoppingPage() {
             <p className="text-xs text-muted-foreground">Tüm alışveriş listeleri</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Bütçe</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₺{overallBudget.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Tüm listeler için</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Harcama</CardTitle>
-            <TrendingUp className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₺{overallSpent.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Tamamlanan ürünler</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bütçe Kullanımı</CardTitle>
-             <div className="text-2xl font-bold text-green-600">%{budgetUsagePercentage.toFixed(0)}</div>
-          </CardHeader>
-          <CardContent>
-             <Progress value={budgetUsagePercentage} className="h-2"/>
-             <p className="text-xs text-muted-foreground mt-2">Bütçenin kullanılma durumu</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="space-y-4">
         {shoppingLists.map(list => {
-          const { currentTotal, completedCount } = calculateListTotals(list);
-          const budgetProgress = list.totalBudget > 0 ? (currentTotal / list.totalBudget) * 100 : 0;
+          const { completedCount } = calculateListTotals(list);
           const completionProgress = list.items.length > 0 ? (completedCount / list.items.length) * 100 : 0;
           const assignee = getAssignee(list.assigneeId);
 
@@ -243,10 +198,6 @@ export default function ShoppingPage() {
                             </div>
                          </div>
                          <div className="flex items-center gap-4 w-full sm:w-auto mt-2 sm:mt-0">
-                            <div className="text-right flex-grow">
-                                <p className="font-semibold text-green-600">₺{currentTotal.toFixed(2)}</p>
-                                <p className="text-xs text-muted-foreground">/ ₺{list.totalBudget.toFixed(2)}</p>
-                            </div>
                             <Button variant="ghost" size="icon" className="shrink-0">
                                <ChevronDown className={`h-4 w-4 transition-transform ${openLists.includes(list.id) ? 'rotate-180' : ''}`} />
                             </Button>
@@ -258,7 +209,6 @@ export default function ShoppingPage() {
                     <div className="mb-4">
                       <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>Tamamlanma: {completedCount}/{list.items.length}</span>
-                        <span>Bütçe Kullanımı: {budgetProgress.toFixed(0)}%</span>
                       </div>
                       <Progress value={completionProgress} indicatorClassName="bg-blue-500" />
                     </div>
