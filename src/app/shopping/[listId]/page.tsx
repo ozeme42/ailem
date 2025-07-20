@@ -4,14 +4,13 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { onSnapshot, doc } from "firebase/firestore";
-import { ArrowLeft, Check, Loader2, Sparkles, Trash2, X } from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { db } from "@/lib/firebase";
 import type { ShoppingList, ShoppingItem } from "@/lib/data";
-import { generateShoppingListItems } from "@/ai/flows/generate-shopping-list-flow";
 import { updateShoppingList } from "@/lib/dataService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,7 +24,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 
 
 const newItemSchema = z.object({
-    prompt: z.string().min(3, "En az 3 karakter girmelisiniz."),
+    name: z.string().min(1, "Ürün adı boş olamaz."),
 });
 type NewItemFormData = z.infer<typeof newItemSchema>;
 
@@ -38,11 +37,10 @@ export default function ShoppingListDetailPage() {
 
     const [list, setList] = React.useState<ShoppingList | null>(null);
     const [loading, setLoading] = React.useState(true);
-    const [isAiLoading, setIsAiLoading] = React.useState(false);
-
+    
     const newItemForm = useForm<NewItemFormData>({
         resolver: zodResolver(newItemSchema),
-        defaultValues: { prompt: "" },
+        defaultValues: { name: "" },
     });
 
     React.useEffect(() => {
@@ -53,15 +51,14 @@ export default function ShoppingListDetailPage() {
             if (docSnap.exists()) {
                 setList({ id: docSnap.id, ...docSnap.data() } as ShoppingList);
             } else {
-                // TODO: Handle not found case
-                console.log("No such document!");
+                toast({ title: "Hata", description: "Alışveriş listesi bulunamadı.", variant: 'destructive' });
                 setList(null);
             }
             setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [listId]);
+    }, [listId, toast]);
 
     const handleItemToggle = async (itemId: string) => {
         if (!list) return;
@@ -88,33 +85,23 @@ export default function ShoppingListDetailPage() {
         }
     };
     
-    const handleSmartAdd = async ({ prompt }: NewItemFormData) => {
+    const handleAddItem = async ({ name }: NewItemFormData) => {
         if (!list) return;
-        setIsAiLoading(true);
-        try {
-            const result = await generateShoppingListItems(prompt);
-            if (result && result.items) {
-                const newItems: ShoppingItem[] = result.items.map(item => ({
-                    id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-                    name: item.name,
-                    quantity: item.quantity || "1 adet",
-                    completed: false,
-                }));
+        
+        const newItem: ShoppingItem = {
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+            name: name,
+            quantity: "1 adet", // Default value
+            completed: false,
+        };
 
-                const updatedItems = [...list.items, ...newItems];
-                await updateShoppingList(list.id, { items: updatedItems });
-                
-                toast({
-                    title: `✅ ${newItems.length} ürün eklendi`,
-                    description: `"${prompt}" listeye başarıyla eklendi.`,
-                });
-                newItemForm.reset();
-            }
-        } catch(e) {
-            console.error(e);
-            toast({ title: "Yapay Zeka Hatası", description: "Ürünler ayrıştırılamadı. Lütfen tekrar deneyin.", variant: 'destructive' });
-        } finally {
-            setIsAiLoading(false);
+        const updatedItems = [...(list.items || []), newItem];
+        
+        try {
+            await updateShoppingList(list.id, { items: updatedItems });
+            newItemForm.reset();
+        } catch (e) {
+             toast({ title: "Hata", description: "Ürün eklenirken bir sorun oluştu.", variant: 'destructive' });
         }
     }
 
@@ -124,7 +111,17 @@ export default function ShoppingListDetailPage() {
     }
 
     if (!list) {
-        return <div>Liste bulunamadı.</div>;
+        return (
+            <div>
+                 <PageHeader title="Liste Bulunamadı">
+                    <Button variant="ghost" onClick={() => router.push('/shopping')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Tüm Listeler
+                    </Button>
+                </PageHeader>
+                <p>Aradığınız alışveriş listesi mevcut değil veya silinmiş olabilir.</p>
+            </div>
+        );
     }
 
     return (
@@ -139,25 +136,20 @@ export default function ShoppingListDetailPage() {
             <Card className="mb-6">
                 <CardContent className="p-4">
                      <Form {...newItemForm}>
-                        <form onSubmit={newItemForm.handleSubmit(handleSmartAdd)} className="flex items-start gap-2">
-                             <Sparkles className="h-10 w-10 text-purple-500 shrink-0" />
-                            <div className="flex-grow">
-                                 <FormField
-                                    control={newItemForm.control}
-                                    name="prompt"
-                                    render={({ field }) => (
-                                        <FormItem className="flex-grow">
-                                            <FormControl>
-                                                <Input placeholder="Akıllı ekleme: '2 kilo domates, 1 paket süt ve ekmek' yazmayı deneyin..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">Yapay zeka ile listeye hızlıca birden fazla ürün ekleyin.</p>
-                            </div>
-                            <Button type="submit" disabled={isAiLoading}>
-                                {isAiLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <form onSubmit={newItemForm.handleSubmit(handleAddItem)} className="flex items-start gap-2">
+                             <FormField
+                                control={newItemForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem className="flex-grow">
+                                        <FormControl>
+                                            <Input placeholder="Yeni bir ürün ekle..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit">
                                 Ekle
                             </Button>
                         </form>
@@ -203,7 +195,7 @@ function ShoppingListDetailSkeleton() {
                 <Skeleton className="h-10 w-48" />
                 <Skeleton className="h-10 w-32" />
             </div>
-             <Skeleton className="h-28 w-full" />
+             <Skeleton className="h-20 w-full" />
              <div className="space-y-3">
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
