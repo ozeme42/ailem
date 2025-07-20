@@ -66,7 +66,7 @@ export interface Book {
 export interface Recipe {
     id: number;
     title: string;
-    category: 'Kahvaltı' | 'Öğle Yemeği' | 'Akşam Yemeği' | 'Atıştırmalık';
+    category: 'Kahvaltı' | 'Akşam Yemeği' | 'Atıştırmalık';
     image: string;
     prepTime: string;
     rating: number;
@@ -464,16 +464,6 @@ export const recipes: Recipe[] = [
         rating: 4.9,
         ingredients: ["1 su bardağı kırmızı mercimek", "1 adet soğan", "1 adet havuç", "1 adet patates", "1 yemek kaşığı salça", "Nane, pul biber, tuz"],
         instructions: ["Tüm sebzeleri doğrayın.", "Mercimeği yıkayıp süzün.", "Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin.", "Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun.", "Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin.", "Baharatları ekleyip bir taşım daha kaynatın."]
-    },
-    {
-        id: 3,
-        title: "Izgara Tavuklu Salata",
-        category: 'Öğle Yemeği',
-        image: "https://placehold.co/400x250.png",
-        prepTime: "25 dk",
-        rating: 4.7,
-        ingredients: ["1 adet tavuk göğsü", "Karışık yeşillik", "1 adet salatalık", "1 adet domates", "Zeytinyağı, limon suyu, tuz"],
-        instructions: ["Tavuk göğsünü ızgarada pişirip dilimleyin.", "Yeşillikleri, doğranmış salatalığı ve domatesi karıştırın.", "Üzerine tavuk dilimlerini ekleyin.", "Zeytinyağı, limon suyu ve tuz ile hazırladığınız sosu gezdirip servis yapın."]
     },
      {
         id: 4,

@@ -16,9 +16,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { recipes, Recipe } from "@/lib/data";
 
-const categoryIcons = {
+const categoryIcons: { [key: string]: React.ReactElement } = {
   "Kahvaltı": <Soup className="h-4 w-4 mr-2" />,
-  "Öğle Yemeği": <Salad className="h-4 w-4 mr-2" />,
   "Akşam Yemeği": <Soup className="h-4 w-4 mr-2" />,
   "Atıştırmalık": <Wheat className="h-4 w-4 mr-2" />,
 };
@@ -71,7 +70,7 @@ export default function YemekPlanlamaPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-2">
             {weekDays.map(day => (
               <Card key={day.toString()} className="flex flex-col gap-2 p-2 bg-muted/40">
                 <div className="font-semibold text-center text-sm capitalize">
@@ -112,11 +111,11 @@ export default function YemekPlanlamaPage() {
           </CardHeader>
           <CardContent>
              <Tabs defaultValue="Hepsi" onValueChange={(value) => setActiveTab(value)}>
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-6">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6">
                     <TabsTrigger value="Hepsi">Hepsi</TabsTrigger>
                     {Object.keys(categoryIcons).map(category => (
                         <TabsTrigger key={category} value={category}>
-                            {React.cloneElement(categoryIcons[category as keyof typeof categoryIcons], { className: "mr-2 h-4 w-4"})}
+                            {React.cloneElement(categoryIcons[category], { className: "mr-2 h-4 w-4"})}
                             {category}
                         </TabsTrigger>
                     ))}
