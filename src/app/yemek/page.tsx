@@ -130,9 +130,9 @@ export default function YemekPlanlamaPage() {
                                           <Image src={recipe.image} alt={recipe.title} width={400} height={250} className="w-full h-40 object-cover" data-ai-hint="food meal" />
                                           <Badge className="absolute top-2 right-2 bg-black/50 text-white backdrop-blur-sm">{recipe.prepTime}</Badge>
                                       </div>
-                                      <CardHeader>
-                                          <CardTitle className="truncate group-hover:text-primary">{recipe.title}</CardTitle>
-                                          <CardDescription>{recipe.category}</CardDescription>
+                                      <CardHeader className="p-4">
+                                          <CardTitle className="truncate group-hover:text-primary text-base">{recipe.title}</CardTitle>
+                                          <CardDescription className="text-xs">{recipe.category}</CardDescription>
                                       </CardHeader>
                                     </Card>
                                 </DialogTrigger>

@@ -138,7 +138,7 @@ export default function LibraryPage() {
             </TabsList>
             <TabsContent value={activeTab} className="mt-6">
                  {filteredMedia.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
                         {filteredMedia.map(item => {
                             const Icon = mediaTypeIcons[item.type];
                             return (

@@ -136,27 +136,29 @@ export default function ShoppingPage() {
               <Card>
                 <CardHeader>
                    <CollapsibleTrigger asChild>
-                       <div className="flex justify-between items-center cursor-pointer">
-                         <div>
+                       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 cursor-pointer">
+                         <div className="flex-grow">
                             <CardTitle>{list.title}</CardTitle>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
                                 <Badge variant="outline">{list.category}</Badge>
-                                <span>•</span>
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                                  <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <span>{assignee.name}</span>
-                                <span>•</span>
+                                <span className="hidden sm:inline">•</span>
+                                <div className="flex items-center gap-1">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                      <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span>{assignee.name}</span>
+                                </div>
+                                <span className="hidden sm:inline">•</span>
                                 <span>Teslim: {list.dueDate}</span>
                             </div>
                          </div>
-                         <div className="flex items-center gap-4">
-                            <div className="text-right">
+                         <div className="flex items-center gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                            <div className="text-right flex-grow">
                                 <p className="font-semibold text-green-600">₺{currentTotal.toFixed(2)}</p>
                                 <p className="text-xs text-muted-foreground">/ ₺{list.totalBudget.toFixed(2)}</p>
                             </div>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="shrink-0">
                                <ChevronDown className={`h-4 w-4 transition-transform ${openLists.includes(list.id) ? 'rotate-180' : ''}`} />
                             </Button>
                          </div>
