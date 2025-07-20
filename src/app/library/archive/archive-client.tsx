@@ -51,6 +51,10 @@ const bulkAddJsonSchema = z.array(z.object({
   tags: z.array(z.string()).optional(),
 })).min(1, "En az bir kitap eklemelisiniz.");
 
+const shelfFormSchema = z.object({
+    name: z.string().min(1, "Raf adı boş olamaz."),
+});
+type ShelfFormData = z.infer<typeof shelfFormSchema>;
 
 // BOOK FORM COMPONENT
 const BookForm = ({ existingTags }: { existingTags: string[] }) => {
@@ -252,6 +256,7 @@ export default function ArchiveClient() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [editingShelf, setEditingShelf] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Partial<Book>[]>([]);
@@ -260,6 +265,7 @@ export default function ArchiveClient() {
 
   const { toast } = useToast();
   const formMethods = useForm<BookFormData>({ resolver: zodResolver(bookFormSchema) });
+  const shelfFormMethods = useForm<ShelfFormData>({ resolver: zodResolver(shelfFormSchema) });
 
   React.useEffect(() => {
     try {
@@ -372,6 +378,37 @@ export default function ArchiveClient() {
     setIsBulkJsonDialogOpen(false);
   };
 
+  const handleEditShelf = (shelfName: string) => {
+    shelfFormMethods.reset({ name: shelfName });
+    setEditingShelf(shelfName);
+  };
+
+  const handleUpdateShelf = (data: ShelfFormData) => {
+    if (!editingShelf) return;
+    const newShelfName = data.name.trim();
+    if (newShelfName === editingShelf) {
+        setEditingShelf(null);
+        return;
+    }
+
+    const updatedBooks = books.map(book => {
+        const newTags = (book.tags || []).map(tag => tag === editingShelf ? newShelfName : tag);
+        return { ...book, tags: newTags };
+    });
+    updateBooks(updatedBooks);
+    toast({ title: "Raf Güncellendi", description: `"${editingShelf}" rafının adı "${newShelfName}" olarak değiştirildi.` });
+    setEditingShelf(null);
+  };
+
+  const handleDeleteShelf = (shelfName: string) => {
+    const updatedBooks = books.map(book => {
+        const newTags = (book.tags || []).filter(tag => tag !== shelfName);
+        return { ...book, tags: newTags };
+    });
+    updateBooks(updatedBooks);
+    toast({ title: "Raf Silindi", description: `"${shelfName}" rafı tüm kitaplardan kaldırıldı.`, variant: 'destructive'});
+  };
+
   const { adultBooks, childrenBooks } = useMemo(() => {
     const adults: Book[] = [];
     const children: Book[] = [];
@@ -390,15 +427,59 @@ export default function ArchiveClient() {
       </PageHeader>
       
       <Tabs defaultValue="adults" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
+          <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
         <TabsContent value="adults" className="mt-6">
             <BookShelf books={adultBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
         <TabsContent value="children" className="mt-6">
             <BookShelf books={childrenBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
+        </TabsContent>
+        <TabsContent value="management" className="mt-6">
+           <Card>
+                <CardHeader>
+                    <CardTitle>Rafları Yönet</CardTitle>
+                    <CardDescription>Mevcut tüm rafları buradan düzenleyebilir veya silebilirsiniz.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea className="h-96">
+                        <div className="space-y-2 pr-4">
+                            {allTags.map(tag => (
+                                <div key={tag} className="flex items-center justify-between p-3 border rounded-lg">
+                                    <p className="font-medium">{tag}</p>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => handleEditShelf(tag)}>
+                                            <Edit className="w-4 h-4"/>
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                    <Trash2 className="w-4 h-4"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Rafı Sil</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        "{tag}" rafını silmek istediğinizden emin misiniz? Bu işlem, bu etiketi tüm kitaplardan kaldıracaktır. Bu işlem geri alınamaz.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteShelf(tag)}>Sil</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </CardContent>
+           </Card>
         </TabsContent>
       </Tabs>
 
@@ -458,6 +539,39 @@ export default function ArchiveClient() {
       
       {/* Bulk Add JSON Dialog */}
       <BulkAddJsonDialog open={isBulkJsonDialogOpen} onOpenChange={setIsBulkJsonDialogOpen} onImport={handleBulkImport} />
+
+      {/* Edit Shelf Dialog */}
+        <Dialog open={!!editingShelf} onOpenChange={(open) => !open && setEditingShelf(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Rafı Düzenle</DialogTitle>
+                    <DialogDescription>
+                        Rafın adını güncelleyin. Bu değişiklik bu rafa sahip tüm kitaplara yansıtılacaktır.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...shelfFormMethods}>
+                    <form onSubmit={shelfFormMethods.handleSubmit(handleUpdateShelf)} id="shelf-form" className="space-y-4">
+                        <FormField
+                            control={shelfFormMethods.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Raf Adı</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </form>
+                </Form>
+                 <DialogFooter>
+                    <Button variant="ghost" onClick={() => setEditingShelf(null)}>İptal</Button>
+                    <Button type="submit" form="shelf-form">Kaydet</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </>
   );
 }
