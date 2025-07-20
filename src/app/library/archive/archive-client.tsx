@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -169,7 +170,7 @@ export default function ArchiveClient() {
     const adults: Book[] = [];
     const children: Book[] = [];
     books.forEach(book => (book.isForChildren ? children.push(book) : adults.push(book)));
-    return { adultBooks, childrenBooks };
+    return { adultBooks: adults, childrenBooks: children };
   }, [books]);
 
   return (
