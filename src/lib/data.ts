@@ -181,6 +181,7 @@ export interface Student {
 }
 
 export type AnswerKey = { [key: number]: string };
+export type TextAnswerKey = { [key: number]: string };
 
 export interface Test {
   id: number;
@@ -192,6 +193,7 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi';
   sourceType: 'quick' | 'bank' | 'exam';
+  gradingType?: 'auto' | 'manual';
   sourceId?: number;
   topicId?: number;
   score?: number;
@@ -199,6 +201,7 @@ export interface Test {
   incorrectAnswers?: number;
   emptyAnswers?: number;
   studentAnswers?: AnswerKey;
+  studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
 }
 
@@ -258,6 +261,7 @@ export const tests: Test[] = [
     dueDate: '17 Temmuz 2024',
     status: 'Atandı',
     sourceType: 'quick',
+    gradingType: 'auto',
   },
   {
     id: 2,
@@ -269,6 +273,7 @@ export const tests: Test[] = [
     dueDate: '15 Temmuz 2024',
     status: 'Değerlendirildi',
     sourceType: 'quick',
+    gradingType: 'auto',
     score: 86.6,
     correctAnswers: 13,
     incorrectAnswers: 2,
@@ -284,6 +289,7 @@ export const tests: Test[] = [
     dueDate: '18 Temmuz 2024',
     status: 'Atandı',
     sourceType: 'quick',
+    gradingType: 'auto',
   },
    {
     id: 4,
@@ -295,6 +301,7 @@ export const tests: Test[] = [
     dueDate: '12 Temmuz 2024',
     status: 'Değerlendirildi',
     sourceType: 'quick',
+    gradingType: 'auto',
     score: 75,
     correctAnswers: 15,
     incorrectAnswers: 4,
@@ -309,7 +316,13 @@ export const tests: Test[] = [
     assignedDate: '09 Temmuz 2024',
     dueDate: '16 Temmuz 2024',
     status: 'Çözüldü',
-    sourceType: 'quick'
+    sourceType: 'quick',
+    gradingType: 'manual',
+    studentTextAnswers: {
+        '1': 'Apple',
+        '2': 'Book',
+        '3': 'House'
+    }
   },
 ];
 

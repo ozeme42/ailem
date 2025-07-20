@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { tests, questionBanks, practiceExams, Test as TestType, PracticeExam, QuestionBank } from "@/lib/data";
+import { Test as TestType, QuestionBank, PracticeExam } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -12,8 +12,10 @@ import { ArrowLeft, CheckCircle, Clock, FileQuestion, HelpCircle } from "lucide-
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
-type Answers = { [key: number]: string | null };
+type McqAnswers = { [key: number]: string | null };
+type TextAnswers = { [key: number]: string };
 
 export default function OpticalFormPage() {
     const router = useRouter();
@@ -22,45 +24,34 @@ export default function OpticalFormPage() {
     const testId = Number(params.testId);
 
     const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
-    const [hasAnswerKey, setHasAnswerKey] = React.useState<boolean>(false);
-
-    const [answers, setAnswers] = React.useState<Answers>({});
+    const [gradingType, setGradingType] = React.useState<'auto' | 'manual'>('manual');
+    const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
+    const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     const [timeLeft, setTimeLeft] = React.useState(0);
 
     React.useEffect(() => {
-        const storedTests = JSON.parse(localStorage.getItem('tests') || '[]');
+        const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
         const currentTest = storedTests.find((t: TestType) => t.id === testId);
         setTest(currentTest);
 
         if (currentTest) {
              setTimeLeft(currentTest.questionCount * 1.5 * 60);
-             const initialAnswers: Answers = {};
-             for (let i = 1; i <= currentTest.questionCount; i++) {
-                 initialAnswers[i] = null;
+             const type = currentTest.gradingType || 'manual';
+             setGradingType(type);
+
+             if(type === 'auto') {
+                const initialAnswers: McqAnswers = {};
+                for (let i = 1; i <= currentTest.questionCount; i++) {
+                    initialAnswers[i] = null;
+                }
+                setMcqAnswers(initialAnswers);
+             } else {
+                const initialAnswers: TextAnswers = {};
+                 for (let i = 1; i <= currentTest.questionCount; i++) {
+                    initialAnswers[i] = "";
+                }
+                setTextAnswers(initialAnswers);
              }
-             setAnswers(initialAnswers);
-             
-             // Check for answer key
-             let keyExists = false;
-             if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
-                const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
-                const bank = storedBanks.find(b => b.id === currentTest.sourceId);
-                const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id === currentTest.topicId);
-                if (topic?.answerKey && Object.keys(topic.answerKey).length > 0) {
-                    keyExists = true;
-                }
-            } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
-                const storedExams: PracticeExam[] = JSON.parse(localStorage.getItem('practiceExams') || '[]');
-                const exam = storedExams.find(e => e.id === currentTest.sourceId);
-                if (exam?.answerKey && Object.keys(exam.answerKey).length > 0) {
-                    keyExists = true;
-                }
-            } else if (currentTest.sourceType === 'quick') {
-                if (currentTest.answerKey && Object.keys(currentTest.answerKey).length > 0) {
-                    keyExists = true;
-                }
-            }
-            setHasAnswerKey(keyExists);
         }
     }, [testId]);
 
@@ -113,8 +104,12 @@ export default function OpticalFormPage() {
         )
     }
 
-    const handleAnswerChange = (questionNumber: number, value: string) => {
-        setAnswers(prev => ({ ...prev, [questionNumber]: value }));
+    const handleMcqAnswerChange = (questionNumber: number, value: string) => {
+        setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
+    };
+
+    const handleTextAnswerChange = (questionNumber: number, value: string) => {
+        setTextAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };
     
     const handleSubmit = () => {
@@ -124,11 +119,11 @@ export default function OpticalFormPage() {
             
             if (testIndex > -1) {
                 const currentTest = storedTests[testIndex];
-                currentTest.studentAnswers = answers;
 
-                let answerKey: { [key: number]: string } | undefined = undefined;
-                
-                if (hasAnswerKey) {
+                if(gradingType === 'auto') {
+                    currentTest.studentAnswers = mcqAnswers;
+                    let answerKey: { [key: number]: string } | undefined = undefined;
+                    
                     if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
                         const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
                         const bank = storedBanks.find(b => b.id === currentTest.sourceId);
@@ -141,33 +136,35 @@ export default function OpticalFormPage() {
                     } else if (currentTest.sourceType === 'quick') {
                         answerKey = currentTest.answerKey;
                     }
-                }
 
+                    if (answerKey && Object.keys(answerKey).length > 0) {
+                        let correct = 0;
+                        let incorrect = 0;
+                        let empty = 0;
 
-                // If there's an answer key, grade the test. Otherwise, just mark as solved.
-                if (answerKey && Object.keys(answerKey).length > 0) {
-                    let correct = 0;
-                    let incorrect = 0;
-                    let empty = 0;
-
-                    for (let i = 1; i <= currentTest.questionCount; i++) {
-                        if (!answers[i]) {
-                            empty++;
-                        } else if (answers[i] === (answerKey as any)[i]) {
-                            correct++;
-                        } else {
-                            incorrect++;
+                        for (let i = 1; i <= currentTest.questionCount; i++) {
+                            if (!mcqAnswers[i]) {
+                                empty++;
+                            } else if (mcqAnswers[i] === (answerKey as any)[i]) {
+                                correct++;
+                            } else {
+                                incorrect++;
+                            }
                         }
+                        
+                        currentTest.status = 'Değerlendirildi';
+                        currentTest.correctAnswers = correct;
+                        currentTest.incorrectAnswers = incorrect;
+                        currentTest.emptyAnswers = empty;
+                        currentTest.score = (correct / currentTest.questionCount) * 100;
+                    } else {
+                         // Should not happen if gradingType is auto, but as a fallback
+                        currentTest.status = 'Çözüldü';
                     }
                     
-                    currentTest.status = 'Değerlendirildi';
-                    currentTest.correctAnswers = correct;
-                    currentTest.incorrectAnswers = incorrect;
-                    currentTest.emptyAnswers = empty;
-                    currentTest.score = (correct / currentTest.questionCount) * 100;
-                } else {
+                } else { // Manual grading
+                    currentTest.studentTextAnswers = textAnswers;
                     currentTest.status = 'Çözüldü';
-                    // No grading information if no answer key
                     currentTest.correctAnswers = undefined;
                     currentTest.incorrectAnswers = undefined;
                     currentTest.emptyAnswers = undefined;
@@ -178,7 +175,7 @@ export default function OpticalFormPage() {
                 localStorage.setItem('tests', JSON.stringify(storedTests));
                  toast({
                     title: "✅ Test Tamamlandı!",
-                    description: answerKey ? "Cevapların başarıyla kaydedildi ve testin değerlendirildi." : "Cevapların başarıyla kaydedildi.",
+                    description: gradingType === 'auto' ? "Cevapların başarıyla kaydedildi ve testin değerlendirildi." : "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
                 });
             } else {
                  toast({
@@ -187,7 +184,6 @@ export default function OpticalFormPage() {
                     description: "Test veritabanında bulunamadı.",
                 });
             }
-
            
             router.push('/education');
 
@@ -201,8 +197,10 @@ export default function OpticalFormPage() {
         }
     }
 
+    const answeredQuestions = gradingType === 'auto'
+        ? Object.values(mcqAnswers).filter(a => a !== null).length
+        : Object.values(textAnswers).filter(a => a.trim() !== "").length;
 
-    const answeredQuestions = Object.values(answers).filter(a => a !== null).length;
 
     return (
         <div className="container mx-auto py-8">
@@ -217,22 +215,16 @@ export default function OpticalFormPage() {
                         <CardHeader>
                             <CardTitle className="text-2xl">{test.title}</CardTitle>
                             <CardDescription>{test.subject} - {test.questionCount} Soru</CardDescription>
-                            {!hasAnswerKey && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg mt-2">
-                                    <HelpCircle className="w-5 h-5"/>
-                                    Bu test için cevap girişi gerekli değildir. "Testi Bitir" butonuna basarak tamamlayabilirsiniz.
-                                </div>
-                            )}
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-6">
                                 {Array.from({ length: test.questionCount }, (_, i) => i + 1).map(questionNumber => (
-                                    <div key={questionNumber} className="flex items-center gap-4 sm:gap-8 p-3 rounded-lg border">
-                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">{questionNumber}</div>
-                                        {hasAnswerKey ? (
+                                    <div key={questionNumber} className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
+                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{questionNumber}</div>
+                                        {gradingType === 'auto' ? (
                                             <RadioGroup 
-                                                defaultValue={answers[questionNumber] || ""}
-                                                onValueChange={(value) => handleAnswerChange(questionNumber, value)}
+                                                defaultValue={mcqAnswers[questionNumber] || ""}
+                                                onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
                                                 className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
                                             >
                                                 {['A', 'B', 'C'].map(option => (
@@ -243,7 +235,12 @@ export default function OpticalFormPage() {
                                                 ))}
                                             </RadioGroup>
                                         ) : (
-                                            <p className="text-sm text-muted-foreground">Cevap girişi gerekmiyor.</p>
+                                            <Input
+                                                placeholder="Cevabınızı buraya yazın..."
+                                                value={textAnswers[questionNumber] || ""}
+                                                onChange={(e) => handleTextAnswerChange(questionNumber, e.target.value)}
+                                                className="flex-grow"
+                                            />
                                         )}
                                     </div>
                                 ))}
@@ -264,15 +261,17 @@ export default function OpticalFormPage() {
                                 {formatTime(timeLeft)}
                              </p>
                            </div>
-                           {hasAnswerKey && (
-                                <div className="text-center">
-                                 <p className="text-muted-foreground">İşaretlenen Soru</p>
-                                 <p className="text-4xl font-bold text-foreground">
-                                    <CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>
-                                    {answeredQuestions} / {test.questionCount}
+                           
+                            <div className="text-center">
+                                <p className="text-muted-foreground">
+                                    {gradingType === 'auto' ? 'İşaretlenen Soru' : 'Cevaplanan Soru'}
                                 </p>
-                               </div>
-                           )}
+                                <p className="text-4xl font-bold text-foreground">
+                                <CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>
+                                {answeredQuestions} / {test.questionCount}
+                            </p>
+                            </div>
+                           
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button className="w-full" size="lg" disabled={timeLeft <= 0}>
@@ -298,5 +297,4 @@ export default function OpticalFormPage() {
             </main>
         </div>
     )
-
 }

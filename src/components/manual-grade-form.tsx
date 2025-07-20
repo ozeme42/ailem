@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Test } from "@/lib/data";
+import { ScrollArea } from "./ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 export type ManualGradeData = {
     correct: number;
@@ -47,9 +49,30 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     onSave(values);
   }
 
+  const hasTextAnswers = test.studentTextAnswers && Object.keys(test.studentTextAnswers).length > 0;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {hasTextAnswers && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">Öğrenci Cevapları</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <ScrollArea className="h-48 pr-4">
+                        <div className="space-y-3">
+                        {Object.entries(test.studentTextAnswers!).map(([q, ans]) => (
+                            <div key={q} className="text-sm">
+                                <span className="font-semibold text-primary">{q}. Soru:</span>
+                                <p className="text-muted-foreground pl-2">{ans || "(Boş bırakılmış)"}</p>
+                            </div>
+                        ))}
+                        </div>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        )}
         <div className="grid grid-cols-3 gap-4">
             <FormField
             control={form.control}
@@ -99,6 +122,3 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     </Form>
   );
 }
-
-
-    

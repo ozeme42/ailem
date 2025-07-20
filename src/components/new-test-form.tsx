@@ -25,7 +25,7 @@ const formSchema = z.object({
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
-  gradingType: z.enum(["auto", "manual", "none"]).default("manual"),
+  gradingType: z.enum(["auto", "manual"]).default("manual"),
   answerKey: z.record(z.string()).optional(),
 
   // Bank
@@ -84,6 +84,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
             assignedDate: format(new Date(), 'dd MMMM yyyy'),
             dueDate: dueDate,
             sourceType: 'quick',
+            gradingType: values.gradingType,
             answerKey: values.gradingType === 'auto' ? values.answerKey : undefined,
         }
     } else if (activeTab === 'bank' && values.bankId && values.topicId) {
@@ -100,6 +101,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                 sourceType: 'bank',
                 sourceId: bank.id,
                 topicId: topic.id,
+                gradingType: topic.answerKey && Object.keys(topic.answerKey).length > 0 ? 'auto' : 'manual'
             }
         }
     } else if (activeTab === 'exam' && values.examId) {
@@ -114,14 +116,12 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                 dueDate: dueDate,
                 sourceType: 'exam',
                 sourceId: exam.id,
+                gradingType: exam.answerKey && Object.keys(exam.answerKey).length > 0 ? 'auto' : 'manual'
             }
         }
     }
     
     if (newTest) {
-      if (activeTab === 'quick' && values.gradingType === 'none') {
-        newTest.answerKey = undefined; // Ensure no answer key for "none"
-      }
       onAssign(newTest);
       form.reset({
         questionCount: 20,
@@ -242,7 +242,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                                     <RadioGroupItem value="auto" />
                                     </FormControl>
                                     <FormLabel className="font-normal">
-                                    Otomatik Kontrol (Cevap Anahtarlı)
+                                    Otomatik Kontrol (Çoktan Seçmeli)
                                     </FormLabel>
                                 </FormItem>
                                 <FormItem className="flex items-center space-x-3 space-y-0">
@@ -250,15 +250,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                                     <RadioGroupItem value="manual" />
                                     </FormControl>
                                     <FormLabel className="font-normal">
-                                    Manuel Kontrol (Cevapsız)
-                                    </FormLabel>
-                                </FormItem>
-                                 <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                    <RadioGroupItem value="none" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">
-                                     Cevap Gerekmiyor (Sadece tamamlama)
+                                    Manuel Kontrol (Açık Uçlu)
                                     </FormLabel>
                                 </FormItem>
                                 </RadioGroup>

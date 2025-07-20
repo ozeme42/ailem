@@ -530,5 +530,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
