@@ -39,7 +39,7 @@ export default function EducationPage() {
   const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
 
 
-  const loadDataFromLocalStorage = React.useCallback(() => {
+  React.useEffect(() => {
     try {
         const storedTests = localStorage.getItem('tests');
         setTests(storedTests ? JSON.parse(storedTests) : initialTests);
@@ -62,10 +62,6 @@ export default function EducationPage() {
         setPracticeExams(initialPracticeExams);
     }
   }, [toast]);
-
-  React.useEffect(() => {
-    loadDataFromLocalStorage();
-  }, [loadDataFromLocalStorage]);
 
   const handleCreateAssignment = (newTest: Omit<Test, 'id' | 'status'>) => {
     setTests(prevTests => {
@@ -534,3 +530,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
