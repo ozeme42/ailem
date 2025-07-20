@@ -39,15 +39,10 @@ export interface Task {
 
 export interface CalendarEvent {
     id: string;
-    date: string;
     title: string;
-    category: 'Okul' | 'Spor' | 'Aile' | 'Doğum Günü' | 'Diğer';
-    priority: 'Yüksek' | 'Orta' | 'Düşük';
-    startTime: string;
-    endTime?: string;
-    location: string;
-    description: string;
-    attendees: number[];
+    startDate: string; // ISO 8601 format
+    endDate?: string; // ISO 8601 format
+    recurrence: 'one-time' | 'monthly' | 'yearly';
 }
 
 export interface Book {
@@ -257,3 +252,83 @@ export const recipes: Recipe[] = [
         instructions: ["Meyveleri doğrayın.", "Yoğurdu bir kaseye alın, bal ile karıştırın.", "Üzerine meyveleri ve yulaf ezmesini ekleyerek servis yapın."]
     }
 ];
+
+// Initial data for Firestore (if needed for a setup script)
+export const initialBooks: Omit<Book, 'id'>[] = [
+    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pages: 208, isForChildren: false },
+    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pages: 96, isForChildren: true },
+];
+
+export const initialTasks: Omit<Task, 'id'>[] = [
+    { title: 'Odanı Topla', assigneeId: 3, points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
+    { title: 'Matematik Ödevi', assigneeId: 4, points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
+];
+
+export const initialShoppingLists: Omit<ShoppingList, 'id'>[] = [
+    {
+        title: 'Haftalık Market Alışverişi',
+        category: 'Market',
+        items: [
+            { id: 1, name: 'Süt', quantity: '2L', price: 15.75, completed: true },
+            { id: 2, name: 'Ekmek', quantity: '1 adet', price: 5.00, completed: true },
+            { id: 3, name: 'Yumurta', quantity: '10 adet', price: 25.50, completed: false },
+        ],
+        totalBudget: 250,
+        assigneeId: 2,
+        dueDate: '2024-08-10',
+    }
+]
+
+export const initialCalendarEvents: Omit<CalendarEvent, 'id'>[] = [
+    { title: 'Doktor Randevusu', startDate: '2024-08-20', recurrence: 'one-time' },
+    { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
+]
+
+export const initialMealPlan: MealPlan = {
+  "2024-08-12": {
+    "Kahvaltı": recipes[0],
+    "Akşam Yemeği": recipes[1],
+  },
+};
+
+export const initialQuestionBanks: Omit<QuestionBank, 'id'>[] = [
+    {
+        name: "5. Sınıf Matematik Soru Bankası",
+        subjects: [
+            {
+                id: 1,
+                name: "Matematik",
+                topics: [
+                    { id: 1, name: "Doğal Sayılar", questionCount: 20, answerKey: {1: 'A', 2: 'B'} },
+                    { id: 2, name: "Kesirler", questionCount: 20, answerKey: {} },
+                ]
+            }
+        ]
+    }
+];
+
+export const initialPracticeExams: Omit<PracticeExam, 'id'>[] = [
+     {
+        name: "LGS Deneme Sınavı 1",
+        subjects: [
+            { id: 1, name: "Matematik", questionCount: 20 },
+            { id: 2, name: "Türkçe", questionCount: 20 },
+            { id: 3, name: "Fen Bilimleri", questionCount: 20 },
+        ],
+        answerKey: {1: 'A', 2: 'C', 3: 'B'}
+    }
+];
+
+export const initialTests: Omit<Test, 'id' | 'status'>[] = [
+    {
+        title: "LGS Deneme Sınavı 1",
+        subject: "Deneme Sınavı",
+        studentId: 4,
+        questionCount: 60,
+        assignedDate: "01 Ağustos 2024",
+        dueDate: "15 Ağustos 2024",
+        sourceType: 'exam',
+        sourceId: '1',
+        gradingType: 'auto',
+    }
+]
