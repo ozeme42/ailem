@@ -22,6 +22,7 @@ export function AppSidebar() {
       subItems: [
           { href: "/library", label: "Kitaplığım" },
           { href: "/library/archive", label: "Kitaplığımız" },
+          { href: "/library/stats", label: "İstatistikler" },
       ]
     },
     { href: "/education", label: "Eğitim", icon: GraduationCap },
