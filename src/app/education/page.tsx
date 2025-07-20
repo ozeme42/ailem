@@ -51,12 +51,17 @@ export default function EducationPage() {
         setPracticeExams(storedExams ? JSON.parse(storedExams) : initialPracticeExams);
     } catch (error) {
         console.error("Failed to load data from localStorage", error);
+        toast({
+            variant: "destructive",
+            title: "Veri Yükleme Hatası",
+            description: "Lokal veriler yüklenirken bir sorun oluştu."
+        });
         // Set to initials if localStorage fails
         setTests(initialTests);
         setQuestionBanks(initialQuestionBanks);
         setPracticeExams(initialPracticeExams);
     }
-  }, []);
+  }, [toast]);
 
   React.useEffect(() => {
     loadDataFromLocalStorage();
@@ -388,7 +393,7 @@ export default function EducationPage() {
                                         </DialogDescription>
                                     </DialogHeader>
                                     <NewQuestionBankForm 
-                                        onSubmit={(data, id) => handleBankSubmit(data, id)} 
+                                        onSubmit={handleBankSubmit} 
                                         initialData={editingBank}
                                     />
                                 </DialogContent>
@@ -460,7 +465,7 @@ export default function EducationPage() {
                                         </DialogDescription>
                                     </DialogHeader>
                                     <NewPracticeExamForm 
-                                        onSubmit={(data, id) => handleExamSubmit(data, id)}
+                                        onSubmit={handleExamSubmit}
                                         initialData={editingExam}
                                     />
                                 </DialogContent>
@@ -529,7 +534,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
-
-    
