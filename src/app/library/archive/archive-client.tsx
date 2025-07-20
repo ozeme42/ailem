@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Book, familyMembers, mediaItems } from '@/lib/data';
