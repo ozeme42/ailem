@@ -8,7 +8,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { defineTool } from 'genkit/tool';
 import { GEMINI_API_KEY } from '@/lib/config';
 
 const BookSearchInputSchema = z.string().describe('The search query for books (e.g., title, author, ISBN).');
@@ -29,7 +28,7 @@ const BookSearchOutputSchema = z.object({
 });
 export type BookSearchOutput = z.infer<typeof BookSearchOutputSchema>;
 
-const googleBooksApiTool = defineTool(
+const googleBooksApiTool = ai.defineTool(
     {
       name: 'googleBooksApi',
       description: 'Search for books using the Google Books API.',
