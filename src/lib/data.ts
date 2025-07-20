@@ -299,6 +299,17 @@ export const tests: Test[] = [
     incorrectAnswers: 4,
     emptyAnswers: 1,
   },
+  {
+    id: 5,
+    title: 'İngilizce Kelime Testi',
+    subject: 'İngilizce',
+    studentId: 3,
+    questionCount: 30,
+    assignedDate: '09 Temmuz 2024',
+    dueDate: '16 Temmuz 2024',
+    status: 'Çözüldü',
+    sourceType: 'quick'
+  },
 ];
 
 export const questionBanks: QuestionBank[] = [
@@ -307,8 +318,8 @@ export const questionBanks: QuestionBank[] = [
         name: '5. Sınıf Matematik Soru Bankası',
         subjects: [
             { id: 1, name: 'Matematik', topics: [
-                { id: 1, name: 'Doğal Sayılar', questionCount: 10, answerKey: { 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'A', 6: 'B', 7: 'C', 8: 'D', 9: 'A', 10: 'B' } },
-                { id: 2, name: 'Kesirler', questionCount: 10, answerKey: { 1: 'C', 2: 'C', 3: 'A', 4: 'B', 5: 'D', 6: 'A', 7: 'B', 8: 'C', 9: 'D', 10: 'A' } },
+                { id: 1, name: 'Doğal Sayılar', questionCount: 10, answerKey: { '1': 'A', '2': 'B', '3': 'C', '4': 'A', '5': 'B', '6': 'C', '7': 'A', '8': 'B', '9': 'C', '10': 'A' } },
+                { id: 2, name: 'Kesirler', questionCount: 10, answerKey: { '1': 'C', '2': 'B', '3': 'A', '4': 'A', '5': 'D', '6': 'C', '7': 'B', '8': 'A', '9': 'D', '10': 'C' } },
             ]}
         ]
     }
@@ -323,8 +334,8 @@ export const practiceExams: PracticeExam[] = [
             { id: 2, name: 'Matematik', questionCount: 5 },
         ],
         answerKey: {
-            1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E',
-            6: 'A', 7: 'B', 8: 'C', 9: 'D', 10: 'E',
+            '1': 'A', '2': 'B', '3': 'C', '4': 'A', '5': 'B',
+            '6': 'C', '7': 'A', '8': 'B', '9': 'C', '10': 'A',
         }
     }
 ];
