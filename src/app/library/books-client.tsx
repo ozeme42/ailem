@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { MediaItem, mediaItems as initialMediaItems, monthlyReadingStats } from "@/lib/data";
+import { Book as BookType, mediaItems as initialMediaItems, monthlyReadingStats } from "@/lib/data";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { NewBookForm } from "@/components/new-book-form";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +40,7 @@ const readingChartConfig = {
 export default function BooksClient() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [mediaItems, setMediaItems] = React.useState<MediaItem[]>([]);
+  const [mediaItems, setMediaItems] = React.useState<BookType[]>([]);
   const [isNewBookDialogOpen, setIsNewBookDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -58,13 +58,13 @@ export default function BooksClient() {
     }
   }, []);
 
-  const handleAddBook = (newBookData: Omit<MediaItem, 'id' | 'type' | 'rating'>) => {
-    const newBook: MediaItem = {
+  const handleAddBook = (newBookData: Omit<BookType, 'id' | 'type' | 'rating'>) => {
+    const newBook: BookType = {
       ...newBookData,
       id: Date.now(),
       type: "Kitap",
       rating: 0, // New books start with 0 rating
-      coverImage: newBookData.coverImage || 'https://placehold.co/300x450.png',
+      image: newBookData.image || 'https://placehold.co/300x450.png',
     };
 
     setMediaItems(prevItems => {
@@ -84,7 +84,7 @@ export default function BooksClient() {
   const filteredMedia = mediaItems.filter(item => {
     const searchFilter = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.genre.toLowerCase().includes(searchTerm.toLowerCase());
+                         item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     return searchFilter;
   });
 
@@ -183,7 +183,7 @@ export default function BooksClient() {
                             <DialogTrigger asChild>
                                 <div className="cursor-pointer group">
                                     <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
-                                        <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
+                                        <Image src={item.image} alt={item.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
                                     </Card>
                                     <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{item.title}</p>
                                     <p className="text-xs text-muted-foreground">{item.author}</p>
@@ -192,7 +192,7 @@ export default function BooksClient() {
                             <DialogContent className="sm:max-w-[625px]">
                                 <div className="grid gap-8 grid-cols-1 sm:grid-cols-2">
                                     <div>
-                                        <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md aspect-[2/3]" data-ai-hint="book cover" />
+                                        <Image src={item.image} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md aspect-[2/3]" data-ai-hint="book cover" />
                                     </div>
                                     <div className="flex flex-col">
                                         <DialogHeader>
@@ -208,7 +208,7 @@ export default function BooksClient() {
                                         </div>
                                         <p className="text-sm text-muted-foreground flex-grow">{item.description}</p>
                                         <div className="text-sm text-muted-foreground mt-4 space-y-1">
-                                            <p><strong>Tür:</strong> {item.genre}</p>
+                                            <p><strong>Tür:</strong> {item.tags.join(', ')}</p>
                                             {item.pages && <p><strong>Sayfa Sayısı:</strong> {item.pages}</p>}
                                         </div>
                                         <DialogFooter className="mt-6 sm:justify-start">

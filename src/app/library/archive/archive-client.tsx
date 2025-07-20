@@ -35,6 +35,7 @@ const bookFormSchema = z.object({
   ),
   isForChildren: z.boolean().default(false),
   image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
+  tags: z.string().optional(),
 });
 type BookFormData = z.infer<typeof bookFormSchema>;
 
@@ -44,6 +45,7 @@ const bulkAddJsonSchema = z.array(z.object({
   pageCount: z.coerce.number().min(1).optional(),
   isForChildren: z.boolean().default(false),
   image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
+  tags: z.array(z.string()).optional(),
 })).min(1, "En az bir kitap eklemelisiniz.");
 
 
@@ -62,7 +64,10 @@ const BookForm = () => {
         <FormItem><FormLabel>Sayfa Sayısı</FormLabel><FormControl><Input type="number" placeholder="Toplam Sayfa" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
       )} />
        <FormField control={control} name="image" render={({ field }) => (
-        <FormItem><FormLabel>Kapak Resmi URL</FormLabel><FormControl><Input placeholder="https://" {...field} /></FormControl><FormMessage /></FormItem>
+        <FormItem><FormLabel>Kapak Resmi URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+      )} />
+      <FormField control={control} name="tags" render={({ field }) => (
+        <FormItem><FormLabel>Raflar (Virgülle ayırın)</FormLabel><FormControl><Input placeholder="Fantastik, Klasik, Felsefe..." {...field} /></FormControl><FormMessage /></FormItem>
       )} />
       <FormField control={control} name="isForChildren" render={({ field }) => (
         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -118,22 +123,26 @@ export default function ArchiveClient() {
         pageCount: initialData?.pageCount,
         image: initialData?.image || '',
         isForChildren: initialData?.isForChildren || false,
+        tags: initialData?.tags?.join(', ') || '',
     });
     setIsAddBookDialogOpen(true);
   }, [formMethods]);
 
   const handleAddOrUpdateBook = (formData: BookFormData) => {
+    const bookData = {
+        ...formData,
+        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+    };
     if (editingBook) {
-      updateBooks(books.map(b => b.id === editingBook.id ? { ...b, ...formData } : b));
+      updateBooks(books.map(b => b.id === editingBook.id ? { ...editingBook, ...bookData } : b));
       toast({ title: "Kitap Güncellendi" });
     } else {
       const newBook: Book = {
-        ...formData,
         id: Date.now(),
         type: 'Kitap',
         rating: 0,
         description: '',
-        genre: ''
+        ...bookData,
       };
       updateBooks([...books, newBook]);
       toast({ title: "Kitap Eklendi" });
@@ -181,12 +190,12 @@ export default function ArchiveClient() {
   
   const handleBulkImport = (importedBooks: Partial<Book>[]) => {
     const newBooks: Book[] = importedBooks.map((book, index) => ({
-        ...book,
         id: Date.now() + index,
         type: 'Kitap',
         rating: 0,
         description: '',
-        genre: ''
+        tags: [],
+        ...book,
     }));
     updateBooks([...books, ...newBooks]);
     toast({ title: `${newBooks.length} kitap başarıyla eklendi.` });
@@ -288,9 +297,11 @@ function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[],
   const shelves = useMemo(() => {
     const grouped: Record<string, Book[]> = {};
     books.forEach(book => {
-      const shelfName = book.genre || "Diğer";
-      if (!grouped[shelfName]) grouped[shelfName] = [];
-      grouped[shelfName].push(book);
+      const bookTags = book.tags && book.tags.length > 0 ? book.tags : ["Diğer"];
+      bookTags.forEach(tag => {
+        if (!grouped[tag]) grouped[tag] = [];
+        grouped[tag].push(book);
+      });
     });
     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
   }, [books]);
@@ -378,12 +389,14 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
     "author": "Ursula K. Le Guin",
     "pageCount": 208,
     "isForChildren": false,
-    "image": "https://covers.openlibrary.org/b/id/10472775-L.jpg"
+    "image": "https://covers.openlibrary.org/b/id/10472775-L.jpg",
+    "tags": ["Fantastik", "Macera"]
   },
   {
     "title": "Küçük Prens",
     "author": "Antoine de Saint-Exupéry",
-    "isForChildren": true
+    "isForChildren": true,
+    "tags": ["Çocuk Klasikleri", "Felsefe"]
   }
 ]`;
 
