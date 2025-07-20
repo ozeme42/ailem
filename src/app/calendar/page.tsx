@@ -3,7 +3,7 @@
 import * as React from "react";
 import { addDays, format, startOfWeek } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Clock, MapPin, PlusCircle, Users, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, MapPin, PlusCircle, Users, AlertCircle, Utensils, Soup } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CalendarEvent } from "@/lib/data";
-import { onCalendarEventsUpdate } from "@/lib/dataService";
+import { CalendarEvent, MealPlan } from "@/lib/data";
+import { onCalendarEventsUpdate, onMealPlanUpdate } from "@/lib/dataService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
 const categoryColors: { [key: string]: { bg: string, border: string, text: string, darkBg: string } } = {
   Okul:       { bg: 'bg-blue-100',   border: 'border-blue-500',   text: 'text-blue-800',   darkBg: 'dark:bg-blue-900/50' },
@@ -41,11 +42,16 @@ const priorityBadgeColors: { [key: string]: string } = {
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
+  const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
   const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
 
   React.useEffect(() => {
-    const unsubscribe = onCalendarEventsUpdate(setCalendarEvents);
-    return () => unsubscribe();
+    const unsubscribeEvents = onCalendarEventsUpdate(setCalendarEvents);
+    const unsubscribeMeals = onMealPlanUpdate(setMealPlan);
+    return () => {
+        unsubscribeEvents();
+        unsubscribeMeals();
+    };
   }, []);
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
@@ -82,17 +88,19 @@ export default function CalendarPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 border-t border-l">
-            {weekDays.map(day => (
-              <div key={day.toString()} className="h-48 border-b border-r p-2 flex flex-col">
+            {weekDays.map(day => {
+              const dayKey = format(day, 'yyyy-MM-dd');
+              const dayEvents = calendarEvents.filter(event => format(new Date(event.date), 'yyyy-MM-dd') === dayKey);
+              const dayMeals = mealPlan[dayKey] || {};
+
+              return (
+              <div key={day.toString()} className="h-64 border-b border-r p-2 flex flex-col">
                 <span className={`font-semibold ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'text-primary' : 'text-foreground'}`}>
                   {format(day, 'd')}
                 </span>
                 <span className="text-xs text-muted-foreground capitalize">{format(day, 'EEE', { locale: tr })}</span>
                 <div className="mt-1 space-y-1 overflow-y-auto">
-                   {calendarEvents
-                    .filter(event => format(new Date(event.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-                    .map(event => {
-                       const colors = categoryColors[event.category] || categoryColors.Diğer;
+                   {dayEvents.map(event => {
                        return (
                        <Dialog key={event.id}>
                         <DialogTrigger asChild>
@@ -135,6 +143,14 @@ export default function CalendarPage() {
                                         </Avatar>
                                     </div>
                                 </div>
+                                <Separator />
+                                <div>
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><Utensils className="w-4 h-4 text-muted-foreground" /> Günün Menüsü</h4>
+                                    <div className="space-y-2 text-sm text-muted-foreground">
+                                        <p><span className="font-medium text-foreground">Kahvaltı:</span> {dayMeals['Kahvaltı']?.title || 'Belirtilmemiş'}</p>
+                                        <p><span className="font-medium text-foreground">Akşam Yemeği:</span> {dayMeals['Akşam Yemeği']?.title || 'Belirtilmemiş'}</p>
+                                    </div>
+                                </div>
                             </div>
                              <DialogFooter>
                                 <Button variant="outline">Düzenle</Button>
@@ -143,9 +159,17 @@ export default function CalendarPage() {
                         </DialogContent>
                        </Dialog>
                     )})}
+
+                    {Object.entries(dayMeals).map(([mealType, recipe]) => recipe && (
+                        <div key={mealType} className="p-1.5 rounded-md bg-amber-500/10">
+                            <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 truncate flex items-center gap-1">
+                                <Soup className="w-3 h-3"/> {recipe.title}
+                            </p>
+                        </div>
+                    ))}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </CardContent>
       </Card>

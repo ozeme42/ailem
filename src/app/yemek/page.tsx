@@ -14,8 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { recipes, Recipe } from "@/lib/data";
+import { recipes, Recipe, MealPlan } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { onMealPlanUpdate, updateMealPlan } from "@/lib/dataService";
+
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
   "Kahvaltı": <Soup className="h-4 w-4 mr-2" />,
@@ -24,12 +26,6 @@ const categoryIcons: { [key: string]: React.ReactElement } = {
 };
 
 const mealTypes = ["Kahvaltı", "Akşam Yemeği"];
-
-type MealPlan = {
-  [day: string]: { // format 'yyyy-MM-dd'
-    [meal: string]: Recipe | null; // "Kahvaltı" | "Akşam Yemeği"
-  }
-}
 
 type MealSelection = {
   day: Date;
@@ -42,11 +38,14 @@ export default function YemekPlanlamaPage() {
   const [activeTab, setActiveTab] = React.useState("Hepsi");
   const [currentDate, setCurrentDate] = React.useState(new Date());
   
-  // In a real app, this would come from Firestore
   const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
   const [isRecipeSelectorOpen, setIsRecipeSelectorOpen] = React.useState(false);
   const [currentMealSelection, setCurrentMealSelection] = React.useState<MealSelection>(null);
 
+  React.useEffect(() => {
+    const unsubscribe = onMealPlanUpdate(setMealPlan);
+    return () => unsubscribe();
+  }, []);
 
   const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
@@ -67,26 +66,25 @@ export default function YemekPlanlamaPage() {
   const handleSelectRecipe = (recipe: Recipe) => {
     if (!currentMealSelection) return;
     const dayKey = format(currentMealSelection.day, 'yyyy-MM-dd');
-    setMealPlan(prev => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        [currentMealSelection.mealType]: recipe
-      }
-    }));
+    
+    const updatedDayPlan = {
+      ...(mealPlan[dayKey] || {}),
+      [currentMealSelection.mealType]: recipe,
+    };
+    
+    updateMealPlan(dayKey, updatedDayPlan);
+
     setIsRecipeSelectorOpen(false);
     setCurrentMealSelection(null);
   };
   
   const handleRemoveRecipe = (day: Date, mealType: string) => {
      const dayKey = format(day, 'yyyy-MM-dd');
-     setMealPlan(prev => {
-         const newPlan = { ...prev };
-         if (newPlan[dayKey]) {
-             newPlan[dayKey][mealType] = null;
-         }
-         return newPlan;
-     })
+     const updatedDayPlan = {
+        ...(mealPlan[dayKey] || {}),
+        [mealType]: null,
+    };
+     updateMealPlan(dayKey, updatedDayPlan);
   };
 
   return (

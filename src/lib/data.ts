@@ -74,6 +74,12 @@ export interface Recipe {
     instructions: string[];
 }
 
+export type MealPlan = {
+  [day: string]: { // format 'yyyy-MM-dd'
+    [meal: string]: Recipe | null; // "Kahvaltı" | "Akşam Yemeği"
+  }
+}
+
 // Static data that doesn't change often can remain here.
 // Data that will be managed by the user is now in Firestore.
 

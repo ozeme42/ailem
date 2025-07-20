@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot } from "firebase/firestore";
-import type { Book, Task, CalendarEvent, ShoppingList, Test, QuestionBank, PracticeExam } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, Test, QuestionBank, PracticeExam, MealPlan, Recipe } from './data';
 
 // Generic CRUD operations
 
@@ -84,6 +84,22 @@ export const onCalendarEventsUpdate = (callback: (events: CalendarEvent[]) => vo
         callback(events);
     });
 };
+
+// Meal Plan
+export const onMealPlanUpdate = (callback: (plan: MealPlan) => void) => {
+    return onSnapshot(collection(db, "mealPlan"), (snapshot) => {
+        const plan: MealPlan = {};
+        snapshot.forEach(doc => {
+            plan[doc.id] = doc.data() as { [meal: string]: Recipe | null };
+        });
+        callback(plan);
+    });
+};
+export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: Recipe | null }) => {
+    const docRef = doc(db, "mealPlan", dayKey);
+    await setDoc(docRef, dayPlan);
+}
+
 
 // Shopping Lists
 export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => {
