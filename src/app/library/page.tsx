@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { MediaItem, mediaItems, monthlyReadingStats } from "@/lib/data";
+import { MediaItem, mediaItems as initialMediaItems, monthlyReadingStats } from "@/lib/data";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { NewBookForm } from "@/components/new-book-form";
+import { useToast } from "@/hooks/use-toast";
 
 const genreData = [
   { name: 'Fantastik', value: 400, fill: "hsl(var(--chart-1))" },
@@ -36,9 +38,50 @@ const readingChartConfig = {
 
 
 export default function LibraryPage() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [mediaItems, setMediaItems] = React.useState<MediaItem[]>([]);
+  const [isNewBookDialogOpen, setIsNewBookDialogOpen] = React.useState(false);
 
-  const filteredMedia = (mediaItems as MediaItem[]).filter(item => {
+  React.useEffect(() => {
+    try {
+        const storedMedia = localStorage.getItem('mediaItems');
+        if (storedMedia) {
+            setMediaItems(JSON.parse(storedMedia));
+        } else {
+            setMediaItems(initialMediaItems);
+            localStorage.setItem('mediaItems', JSON.stringify(initialMediaItems));
+        }
+    } catch (error) {
+        console.error("Failed to load media from localStorage", error);
+        setMediaItems(initialMediaItems);
+    }
+  }, []);
+
+  const handleAddBook = (newBookData: Omit<MediaItem, 'id' | 'type' | 'rating'>) => {
+    const newBook: MediaItem = {
+      ...newBookData,
+      id: Date.now(),
+      type: "Kitap",
+      rating: 0, // New books start with 0 rating
+      coverImage: newBookData.coverImage || 'https://placehold.co/300x450.png',
+    };
+
+    setMediaItems(prevItems => {
+        const updatedItems = [...prevItems, newBook];
+        try {
+            localStorage.setItem('mediaItems', JSON.stringify(updatedItems));
+            toast({ title: "✅ Kitap Eklendi", description: `"${newBook.title}" kütüphaneye başarıyla eklendi.` });
+        } catch (error) {
+            toast({ title: "❌ Kaydetme Hatası", description: "Kitap kaydedilirken bir hata oluştu.", variant: 'destructive' });
+        }
+        return updatedItems;
+    });
+    setIsNewBookDialogOpen(false);
+  }
+
+
+  const filteredMedia = mediaItems.filter(item => {
     const searchFilter = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.genre.toLowerCase().includes(searchTerm.toLowerCase());
@@ -48,10 +91,23 @@ export default function LibraryPage() {
   return (
     <>
       <PageHeader title="Aile Kütüphanesi 📚">
-        <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Kitap Ekle
-        </Button>
+        <Dialog open={isNewBookDialogOpen} onOpenChange={setIsNewBookDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Yeni Kitap Ekle
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+             <DialogHeader>
+                <DialogTitle>Yeni Kitap Ekle</DialogTitle>
+                <DialogDescription>
+                    Kütüphaneye yeni bir kitap ekleyin.
+                </DialogDescription>
+            </DialogHeader>
+            <NewBookForm onSubmit={handleAddBook} />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">
@@ -173,3 +229,5 @@ export default function LibraryPage() {
     </>
   );
 }
+
+    
