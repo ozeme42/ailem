@@ -1,7 +1,7 @@
 'use server';
 /**
- * @fileOverview A flow for migrating an image from a URL to Firebase Storage.
- * - migrateImage - Downloads an image and uploads it to Firebase Storage.
+ * @fileOverview A flow for migrating an image from a URL or uploading a Data URI to Firebase Storage.
+ * - migrateImage - Downloads an image or decodes a data URI and uploads it to Firebase Storage.
  * - MigrateImageInput - The input type for the migrateImage function.
  * - MigrateImageOutput - The return type for the migrateImage function.
  */
@@ -12,8 +12,11 @@ import axios from 'axios';
 import admin from '@/lib/firebaseAdmin';
 
 const MigrateImageInputSchema = z.object({
-  sourceUrl: z.string().url('A valid URL of the image to migrate.'),
+  sourceUrl: z.string().url('A valid URL of the image to migrate.').optional(),
+  imageDataUri: z.string().startsWith('data:image', 'Must be a valid image data URI.').optional(),
   destinationPath: z.string().describe('The destination path in Firebase Storage (e.g., "book-covers/image.jpg").'),
+}).refine(data => data.sourceUrl || data.imageDataUri, {
+    message: 'Either sourceUrl or imageDataUri must be provided.',
 });
 export type MigrateImageInput = z.infer<typeof MigrateImageInputSchema>;
 
@@ -30,15 +33,31 @@ export const migrateImageFlow = ai.defineFlow(
     inputSchema: MigrateImageInputSchema,
     outputSchema: MigrateImageOutputSchema,
   },
-  async ({ sourceUrl, destinationPath }) => {
+  async ({ sourceUrl, imageDataUri, destinationPath }) => {
     try {
-      // 1. Download the image from the source URL using axios
-      const response = await axios.get(sourceUrl, { responseType: 'arraybuffer' });
-      if (response.status !== 200) {
-        throw new Error(`Failed to download image from ${sourceUrl}. Status: ${response.statusText}`);
+      let imageBuffer: Buffer;
+      let contentType: string;
+
+      if (sourceUrl) {
+          // 1. Download the image from the source URL using axios
+          const response = await axios.get(sourceUrl, { responseType: 'arraybuffer' });
+          if (response.status !== 200) {
+            throw new Error(`Failed to download image from ${sourceUrl}. Status: ${response.statusText}`);
+          }
+          imageBuffer = Buffer.from(response.data);
+          contentType = response.headers['content-type'] || 'image/jpeg';
+      } else if (imageDataUri) {
+          // 1. Decode the Base64 Data URI
+          const parts = imageDataUri.split(',');
+          const mimeTypePart = parts[0].match(/:(.*?);/);
+          if (!mimeTypePart || !parts[1]) {
+            throw new Error('Invalid Data URI format.');
+          }
+          contentType = mimeTypePart[1];
+          imageBuffer = Buffer.from(parts[1], 'base64');
+      } else {
+        throw new Error('No image source provided.');
       }
-      const imageBuffer = Buffer.from(response.data);
-      const contentType = response.headers['content-type'] || 'image/jpeg';
 
       // 2. Upload the image to Firebase Storage
       const bucket = admin.storage().bucket();

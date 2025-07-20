@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,7 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags } from '@/lib/dataService';
@@ -38,7 +38,7 @@ const bookFormSchema = z.object({
     z.coerce.number().min(1, "Sayfa sayısı pozitif bir sayı olmalı.").optional()
   ),
   isForChildren: z.boolean().default(false),
-  image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
+  image: z.string().optional(), // Can be existing URL or new data URI for upload
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
   rating: z.number().optional(),
@@ -61,10 +61,24 @@ type ShelfFormData = z.infer<typeof shelfFormSchema>;
 
 // BOOK FORM COMPONENT
 const BookForm = ({ existingTags }: { existingTags: string[] }) => {
-  const { control, getValues, setValue } = useFormContext<BookFormData>();
+  const { control, getValues, setValue, watch } = useFormContext<BookFormData>();
   const [newShelfMain, setNewShelfMain] = useState('');
   const [newShelfSub, setNewShelfSub] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const imageValue = watch('image');
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setValue('image', reader.result as string, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddShelf = () => {
     const main = newShelfMain.trim();
     const sub = newShelfSub.trim();
@@ -139,9 +153,31 @@ const BookForm = ({ existingTags }: { existingTags: string[] }) => {
       <FormField control={control} name="pageCount" render={({ field }) => (
         <FormItem><FormLabel>Sayfa Sayısı</FormLabel><FormControl><Input type="number" placeholder="Toplam Sayfa" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
       )} />
-       <FormField control={control} name="image" render={({ field }) => (
-        <FormItem><FormLabel>Kapak Resmi URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
-      )} />
+      
+      <FormItem>
+        <FormLabel>Kapak Resmi</FormLabel>
+        <FormControl>
+             <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+        </FormControl>
+        <Card 
+            className="aspect-video w-full border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+        >
+            {imageValue && imageValue.startsWith('data:image') ? (
+                <Image src={imageValue} alt="Kapak önizlemesi" width={150} height={225} className="max-h-full w-auto object-contain rounded-md" data-ai-hint="book cover"/>
+            ) : imageValue ? (
+                <Image src={imageValue} alt="Kapak" width={150} height={225} className="max-h-full w-auto object-contain rounded-md" data-ai-hint="book cover"/>
+            ) : (
+                <>
+                    <UploadCloud className="h-10 w-10"/>
+                    <p className="mt-2 text-sm">Resim Yükle</p>
+                    <p className="text-xs">Tıkla veya sürükle bırak</p>
+                </>
+            )}
+        </Card>
+        <FormMessage />
+      </FormItem>
+
 
        <FormField
           control={control}
@@ -261,6 +297,7 @@ export default function ArchiveClient() {
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Partial<Book>[]>([]);
@@ -297,26 +334,47 @@ export default function ArchiveClient() {
   }, [formMethods]);
 
   const handleAddOrUpdateBook = async (formData: BookFormData) => {
+    setIsSubmitting(true);
     try {
-        const newTags = new Set([...allTags, ...(formData.tags || [])]);
+        let finalImageUrl = formData.image;
+
+        // If image is a data URI, upload it first
+        if (formData.image && formData.image.startsWith('data:image')) {
+             toast({ title: "Görsel Yükleniyor...", description: "Kapak fotoğrafı depolama alanına kaydediliyor." });
+             const destinationPath = `book-covers/${(formData.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
+             const migrationResult = await migrateImage({ imageDataUri: formData.image, destinationPath });
+
+             if (migrationResult.success && migrationResult.newUrl) {
+                finalImageUrl = migrationResult.newUrl;
+             } else {
+                 throw new Error(migrationResult.error || 'Bilinmeyen bir görsel yükleme hatası.');
+             }
+        }
+        
+        const bookData = { ...formData, image: finalImageUrl };
+
+        const newTags = new Set([...allTags, ...(bookData.tags || [])]);
         await updateTags(Array.from(newTags));
         
         if (editingBook) {
-            await updateBook(editingBook.id, formData);
+            await updateBook(editingBook.id, bookData);
             toast({ title: "Kitap Güncellendi" });
         } else {
             const newBook: Omit<Book, 'id'> = {
                 type: 'Kitap',
                 rating: 0,
                 description: '',
-                ...formData,
+                ...bookData,
             };
             await addBook(newBook);
             toast({ title: "Kitap Eklendi" });
         }
         setIsAddBookDialogOpen(false);
-    } catch(e) {
-        toast({ title: "❌ Hata", description: "İşlem sırasında bir hata oluştu.", variant: 'destructive'});
+    } catch(e: any) {
+        console.error(e);
+        toast({ title: "❌ Hata", description: e.message || "İşlem sırasında bir hata oluştu.", variant: 'destructive'});
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -393,7 +451,7 @@ export default function ArchiveClient() {
 
         // Migrate image if a URL is provided
         if (book.image) {
-          const destinationPath = `book-covers/${book.title.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
+          const destinationPath = `book-covers/${(book.title || "untitled").replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
           const migrationResult = await migrateImage({ sourceUrl: book.image, destinationPath });
 
           if (migrationResult.success && migrationResult.newUrl) {
@@ -567,12 +625,19 @@ export default function ArchiveClient() {
           </DialogHeader>
           <FormProvider {...formMethods}>
             <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} id="book-form">
-              <BookForm existingTags={allTags} />
+              <ScrollArea className="max-h-[70vh] p-1">
+                <div className="pr-5">
+                    <BookForm existingTags={allTags} />
+                </div>
+              </ScrollArea>
             </form>
           </FormProvider>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsAddBookDialogOpen(false)}>İptal</Button>
-            <Button type="submit" form="book-form">{editingBook ? 'Kaydet' : 'Ekle'}</Button>
+          <DialogFooter className="pt-4 border-t">
+            <Button variant="ghost" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
+            <Button type="submit" form="book-form" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingBook ? 'Kaydet' : 'Ekle'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
