@@ -9,8 +9,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import axios from 'axios';
 import admin from '@/lib/firebaseAdmin';
+import fetch from 'node-fetch';
 
 const MigrateImageInputSchema = z.object({
   sourceUrl: z.string().url('A valid URL of the image to migrate.').optional(),
@@ -48,12 +48,13 @@ export const migrateImageFlow = ai.defineFlow(
       let contentType: string;
 
       if (sourceUrl) {
-          const response = await axios.get(sourceUrl, { responseType: 'arraybuffer' });
-          if (response.status !== 200) {
+          const response = await fetch(sourceUrl);
+          if (!response.ok) {
             throw new Error(`Failed to download image from ${sourceUrl}. Status: ${response.statusText}`);
           }
-          imageBuffer = Buffer.from(response.data);
-          contentType = response.headers['content-type'] || 'image/jpeg';
+          const arrayBuffer = await response.arrayBuffer();
+          imageBuffer = Buffer.from(arrayBuffer);
+          contentType = response.headers.get('content-type') || 'image/jpeg';
       } else if (imageDataUri) {
           const parts = imageDataUri.split(',');
           const mimeTypePart = parts[0].match(/:(.*?);/);
@@ -82,8 +83,7 @@ export const migrateImageFlow = ai.defineFlow(
 
     } catch (e: any) {
       console.error("Image migration failed:", e);
-      // Check for specific authentication/permission errors
-      if (e.code === 'storage/unauthorized' || (e.message && e.message.includes('Could not refresh access token'))) {
+      if (e.code === 'storage/unauthorized' || (e.message && (e.message.includes('Could not refresh access token') || e.message.includes('permission-denied')))) {
          return { success: false, error: 'Görsel yükleme yetkisi alınamadı. Lütfen Firebase IAM ayarlarınızı kontrol edin (örn: Storage Admin rolü).' };
       }
       return { success: false, error: e.message || 'Görsel taşınırken beklenmedik bir sunucu hatası oluştu.' };
