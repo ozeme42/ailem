@@ -48,7 +48,7 @@ export function FamilyMemberCard({ member }: FamilyMemberCardProps) {
             <div className="mt-4">
                 <div className="flex justify-between items-center text-xs font-semibold mb-1">
                     <span className="flex items-center gap-1"><Crown className="w-4 h-4 text-yellow-300" /> Lvl {member.level}</span>
-                    <span className="flex items-center gap-1">{member.xp.toLocaleString()} XP <Star className="w-3 h-3 text-yellow-300"/></span>
+                    <span className="flex items-center gap-1">{member.xp.toLocaleString('tr-TR')} XP <Star className="w-3 h-3 text-yellow-300"/></span>
                 </div>
                 <Progress value={(member.xp % 1000) / 10} className="h-2 bg-white/30" indicatorClassName="bg-white" />
             </div>
