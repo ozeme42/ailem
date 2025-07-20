@@ -1,14 +1,14 @@
 
 "use client";
 import * as React from "react";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, ShoppingCart, TrendingUp, DollarSign, ChevronDown, Trash2 } from "lucide-react";
+import { PlusCircle, ShoppingCart, ChevronDown } from "lucide-react";
 import type { ShoppingList, ShoppingItem } from "@/lib/data";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
@@ -38,7 +38,6 @@ export default function ShoppingPage() {
   const [shoppingLists, setShoppingLists] = React.useState<ShoppingList[]>([]);
   const [openLists, setOpenLists] = React.useState<string[]>([]);
   const [isNewListDialogOpen, setIsNewListDialogOpen] = React.useState(false);
-  const [openNewItemForms, setOpenNewItemForms] = React.useState<string[]>([]);
 
   const newListForm = useForm<NewListFormData>({
     resolver: zodResolver(newListSchema),
@@ -65,11 +64,9 @@ export default function ShoppingPage() {
     setOpenLists(prev => prev.includes(id) ? prev.filter(listId => listId !== id) : [...prev, id]);
   };
   
-  const calculateListTotals = (list: ShoppingList) => {
+  const calculateListProgress = (list: ShoppingList) => {
     const completedCount = list.items.filter(i => i.completed).length;
-    const totalCost = list.items.reduce((sum, item) => sum + (item.price || 0), 0);
-    const completedCost = list.items.filter(i => i.completed).reduce((sum, item) => sum + (item.price || 0), 0);
-    return { completedCount, totalCost, completedCost };
+    return completedCount;
   }
 
   const handleItemToggle = async (listId: string, itemId: string) => {
@@ -111,7 +108,6 @@ export default function ShoppingPage() {
         id: Date.now().toString(),
         name: data.name,
         quantity: "1 adet",
-        price: 0,
         completed: false,
     };
 
@@ -123,10 +119,6 @@ export default function ShoppingPage() {
         toast({ title: "Hata", description: "Ürün eklenemedi.", variant: 'destructive'});
     }
   }
-  
-  const totalSpendThisMonth = shoppingLists.reduce((total, list) => {
-      return total + list.items.filter(i => i.completed).reduce((sum, i) => sum + (i.price || 0), 0);
-  }, 0);
 
 
   return (
@@ -177,22 +169,12 @@ export default function ShoppingPage() {
             <p className="text-xs text-muted-foreground">Tüm alışveriş listeleri</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bu Ay Harcanan</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₺{totalSpendThisMonth.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Tamamlanan ürünlerin toplamı</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="space-y-4">
         {shoppingLists.length > 0 ? (
             shoppingLists.map(list => {
-            const { completedCount, totalCost, completedCost } = calculateListTotals(list);
+            const completedCount = calculateListProgress(list);
             const completionProgress = list.items.length > 0 ? (completedCount / list.items.length) * 100 : 0;
             const isOpen = openLists.includes(list.id);
 
@@ -211,10 +193,6 @@ export default function ShoppingPage() {
                                 <CardTitle>{list.title}</CardTitle>
                             </div>
                             <div className="flex items-center gap-4 w-full sm:w-auto mt-2 sm:mt-0">
-                                <div className="flex items-center text-green-600 font-semibold">
-                                    <DollarSign size={16} />
-                                    <span>{completedCost.toFixed(2)} / {totalCost.toFixed(2)}</span>
-                                </div>
                                 <Button variant="ghost" size="icon" className="shrink-0">
                                 <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                 </Button>
@@ -233,7 +211,7 @@ export default function ShoppingPage() {
                             <div className="space-y-2 border-t pt-4">
                             {list.items.length > 0 ? list.items.map((item) => (
                                 <div key={item.id} className={`flex items-center justify-between p-2 rounded-md ${item.completed ? 'bg-muted/50' : ''}`}>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-grow">
                                     <Checkbox 
                                         id={`item-${list.id}-${item.id}`}
                                         checked={item.completed} 
@@ -244,9 +222,6 @@ export default function ShoppingPage() {
                                     <p className="text-xs text-muted-foreground">{item.quantity}</p>
                                     </div>
                                 </div>
-                                <p className={`font-semibold ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                    ₺{(item.price || 0).toFixed(2)}
-                                </p>
                                 </div>
                             )) : (
                                 <p className="text-center text-muted-foreground py-4">Bu listede henüz ürün yok.</p>
