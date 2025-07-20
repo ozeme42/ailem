@@ -3,8 +3,8 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { PlusCircle, Search, Clock, Soup, Salad, Wheat, Star, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addDays, startOfWeek } from "date-fns";
+import { PlusCircle, Search, Clock, Soup, Salad, Wheat, Star, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
+import { format, addDays, startOfWeek, getISOWeek, getYear } from "date-fns";
 import { tr } from "date-fns/locale";
 
 import { PageHeader } from "@/components/page-header";
@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { recipes, Recipe } from "@/lib/data";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
   "Kahvaltı": <Soup className="h-4 w-4 mr-2" />,
@@ -24,10 +25,28 @@ const categoryIcons: { [key: string]: React.ReactElement } = {
 
 const mealTypes = ["Kahvaltı", "Akşam Yemeği"];
 
+type MealPlan = {
+  [day: string]: { // format 'yyyy-MM-dd'
+    [meal: string]: Recipe | null; // "Kahvaltı" | "Akşam Yemeği"
+  }
+}
+
+type MealSelection = {
+  day: Date;
+  mealType: string;
+} | null;
+
+
 export default function YemekPlanlamaPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("Hepsi");
   const [currentDate, setCurrentDate] = React.useState(new Date());
+  
+  // In a real app, this would come from Firestore
+  const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
+  const [isRecipeSelectorOpen, setIsRecipeSelectorOpen] = React.useState(false);
+  const [currentMealSelection, setCurrentMealSelection] = React.useState<MealSelection>(null);
+
 
   const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
@@ -39,6 +58,36 @@ export default function YemekPlanlamaPage() {
                           recipe.ingredients.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
+
+  const handleOpenRecipeSelector = (day: Date, mealType: string) => {
+    setCurrentMealSelection({ day, mealType });
+    setIsRecipeSelectorOpen(true);
+  };
+  
+  const handleSelectRecipe = (recipe: Recipe) => {
+    if (!currentMealSelection) return;
+    const dayKey = format(currentMealSelection.day, 'yyyy-MM-dd');
+    setMealPlan(prev => ({
+      ...prev,
+      [dayKey]: {
+        ...prev[dayKey],
+        [currentMealSelection.mealType]: recipe
+      }
+    }));
+    setIsRecipeSelectorOpen(false);
+    setCurrentMealSelection(null);
+  };
+  
+  const handleRemoveRecipe = (day: Date, mealType: string) => {
+     const dayKey = format(day, 'yyyy-MM-dd');
+     setMealPlan(prev => {
+         const newPlan = { ...prev };
+         if (newPlan[dayKey]) {
+             newPlan[dayKey][mealType] = null;
+         }
+         return newPlan;
+     })
+  };
 
   return (
     <>
@@ -71,22 +120,44 @@ export default function YemekPlanlamaPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-2">
-            {weekDays.map(day => (
+            {weekDays.map(day => {
+              const dayKey = format(day, 'yyyy-MM-dd');
+              const plannedMeals = mealPlan[dayKey] || {};
+
+              return (
               <Card key={day.toString()} className="flex flex-col gap-2 p-2 bg-muted/40">
                 <div className="font-semibold text-center text-sm capitalize">
                   {format(day, 'EEE', { locale: tr })}
                   <p className="text-xs text-muted-foreground">{format(day, 'd')}</p>
                 </div>
                 <div className="space-y-2 flex-grow">
-                  {mealTypes.map(meal => (
-                    <div key={meal} className="h-24 bg-background/50 rounded-md flex flex-col justify-center items-center p-2 border-dashed border-2 border-muted-foreground/20 text-center">
-                      <span className="text-xs text-muted-foreground">{meal}</span>
-                      {/* Placeholder for a dropped recipe */}
+                  {mealTypes.map(meal => {
+                    const plannedRecipe = plannedMeals[meal];
+                    return (
+                    <div key={meal} className="relative group">
+                       {plannedRecipe ? (
+                           <Card className="h-24 bg-card rounded-md flex flex-col justify-center items-center p-1 text-center shadow-sm overflow-hidden">
+                               <Image src={plannedRecipe.image} alt={plannedRecipe.title} width={100} height={60} className="w-full h-12 object-cover" />
+                               <p className="text-xs font-semibold mt-1 truncate w-full px-1">{plannedRecipe.title}</p>
+                               <button 
+                                onClick={() => handleRemoveRecipe(day, meal)}
+                                className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <XCircle className="h-4 w-4" />
+                               </button>
+                           </Card>
+                       ) : (
+                        <div 
+                          onClick={() => handleOpenRecipeSelector(day, meal)}
+                          className="h-24 bg-background/50 rounded-md flex flex-col justify-center items-center p-2 border-dashed border-2 border-muted-foreground/20 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                          <PlusCircle className="h-5 w-5 text-muted-foreground/50 mb-1" />
+                          <span className="text-xs text-muted-foreground">{meal} Ekle</span>
+                        </div>
+                       )}
                     </div>
-                  ))}
+                  )})}
                 </div>
               </Card>
-            ))}
+            )})}
           </div>
         </CardContent>
       </Card>
@@ -175,6 +246,39 @@ export default function YemekPlanlamaPage() {
             </Tabs>
           </CardContent>
       </Card>
+
+      {/* Recipe Selector Dialog */}
+      <Dialog open={isRecipeSelectorOpen} onOpenChange={setIsRecipeSelectorOpen}>
+          <DialogContent className="sm:max-w-3xl">
+              <DialogHeader>
+                  <DialogTitle>Tarif Seç</DialogTitle>
+                  <DialogDescription>
+                    {currentMealSelection && 
+                        `${format(currentMealSelection.day, 'd MMMM, EEEE', {locale: tr})} - ${currentMealSelection.mealType}`
+                    } için bir tarif seçin.
+                  </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="h-96 -mx-6 px-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                    {recipes.map(recipe => (
+                        <Card 
+                            key={recipe.id}
+                            className="overflow-hidden cursor-pointer group transition-all hover:shadow-lg hover:border-primary"
+                            onClick={() => handleSelectRecipe(recipe)}
+                        >
+                            <div className="relative">
+                                <Image src={recipe.image} alt={recipe.title} width={200} height={125} className="w-full h-24 object-cover" data-ai-hint="food meal" />
+                            </div>
+                            <CardHeader className="p-3">
+                                <CardTitle className="text-sm truncate group-hover:text-primary">{recipe.title}</CardTitle>
+                                <CardDescription className="text-xs">{recipe.category}</CardDescription>
+                            </CardHeader>
+                        </Card>
+                    ))}
+                </div>
+              </ScrollArea>
+          </DialogContent>
+      </Dialog>
     </>
   );
 }
