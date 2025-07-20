@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Check, Clock, TrendingUp, AlertCircle, Award } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, TrendingUp, FileText, BarChart3, Target } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,24 +11,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { NewTestForm } from "@/components/new-test-form";
-import { students, tests } from "@/lib/data";
+import { NewTestForm, AssignmentType } from "@/components/new-test-form";
+import { students, tests, questionBanks, practiceExams, examProgress, QuestionBank } from "@/lib/data";
+import { Progress } from "@/components/ui/progress";
 
 export default function EducationPage() {
   const [selectedStudent, setSelectedStudent] = React.useState(students[0]);
+  const [activeAssignmentType, setActiveAssignmentType] = React.useState<AssignmentType>("quick");
 
   const studentTests = tests.filter(t => t.studentId === selectedStudent.id);
   const assignedTests = studentTests.filter(t => t.status === 'Atandı');
   const completedTests = studentTests.filter(t => t.status !== 'Atandı');
-  
-  const getPriorityBadgeClasses = (priority: 'Yüksek' | 'Orta' | 'Düşük') => {
-    switch (priority) {
-      case 'Yüksek': return 'border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-400';
-      case 'Orta': return 'border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400';
-      case 'Düşük': return 'border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400';
-      default: return 'border-gray-500/50 bg-gray-500/10 text-gray-700 dark:text-gray-400';
-    }
-  };
 
   const getStatusBadgeClasses = (status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi') => {
      switch (status) {
@@ -37,6 +30,11 @@ export default function EducationPage() {
       case 'Değerlendirildi': return 'bg-green-500/20 text-green-600 dark:text-green-400';
       default: return 'bg-gray-500/20 text-gray-600 dark:text-gray-400';
     }
+  }
+  
+  const calculateProgress = (total: number, completed: number) => {
+    if (total === 0) return 0;
+    return (completed / total) * 100;
   }
 
   return (
@@ -49,14 +47,18 @@ export default function EducationPage() {
               Yeni Ödev Ata
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Yeni Test Ödevi Ata</DialogTitle>
+              <DialogTitle>Yeni Ödev Ata</DialogTitle>
               <DialogDescription>
-                Öğrenciye yeni bir test veya deneme sınavı atayın.
+                Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın.
               </DialogDescription>
             </DialogHeader>
-            <NewTestForm students={students} />
+            <NewTestForm 
+                students={students} 
+                questionBanks={questionBanks}
+                practiceExams={practiceExams}
+            />
           </DialogContent>
         </Dialog>
       </PageHeader>
@@ -79,9 +81,10 @@ export default function EducationPage() {
       </div>
 
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="assignments">Ödevler ({assignedTests.length})</TabsTrigger>
-          <TabsTrigger value="results">Sonuçlar ({completedTests.length})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="assignments">Aktif Ödevler ({assignedTests.length})</TabsTrigger>
+          <TabsTrigger value="progress">Genel Başarı</TabsTrigger>
+          <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="assignments">
            <Card>
@@ -107,6 +110,64 @@ export default function EducationPage() {
                )) : <p className="text-muted-foreground text-center py-8">Atanmış yeni test bulunmuyor.</p>}
             </CardContent>
           </Card>
+        </TabsContent>
+         <TabsContent value="progress">
+          <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Target className="text-blue-500"/> Soru Bankaları Başarısı</CardTitle>
+                  <CardDescription>{selectedStudent.name} için soru bankalarındaki genel ilerleme durumu.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {questionBanks.map(bank => {
+                        const progress = examProgress.questionBank[bank.id]?.[selectedStudent.id];
+                        if (!progress) return null;
+                        const totalQuestions = bank.subjects.reduce((acc, s) => acc + s.topics.reduce((tAcc, t) => tAcc + t.questionCount, 0), 0);
+                        const percentage = calculateProgress(totalQuestions, progress.questionsSolved);
+
+                        return (
+                            <Card key={bank.id} className="p-4">
+                                <h4 className="font-bold">{bank.name}</h4>
+                                <Progress value={percentage} className="my-2 h-2" />
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>İlerleme: {percentage.toFixed(0)}%</span>
+                                    <span>{progress.questionsSolved} / {totalQuestions} Soru</span>
+                                </div>
+                                <div className="mt-2 text-xs grid grid-cols-3 gap-2 text-center">
+                                    <Badge variant="outline" className="text-green-600 border-green-500/50">Doğru: {progress.correct}</Badge>
+                                    <Badge variant="outline" className="text-red-600 border-red-500/50">Yanlış: {progress.incorrect}</Badge>
+                                    <Badge variant="outline" className="text-gray-600 border-gray-500/50">Boş: {progress.empty}</Badge>
+                                </div>
+                            </Card>
+                        )
+                    })}
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><FileText className="text-purple-500"/> Deneme Sınavları Başarısı</CardTitle>
+                  <CardDescription>{selectedStudent.name} için deneme sınavlarındaki genel performans.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {practiceExams.map(exam => {
+                        const progress = examProgress.practiceExam[exam.id]?.[selectedStudent.id];
+                        if (!progress) return <p key={exam.id} className="text-sm text-muted-foreground">{exam.name} - Henüz çözülmedi.</p>;
+                        const totalQuestions = exam.subjects.reduce((acc, s) => acc + s.questionCount, 0);
+                         const percentage = calculateProgress(progress.correct, totalQuestions);
+                        return (
+                             <Card key={exam.id} className="p-4">
+                                <h4 className="font-bold">{exam.name}</h4>
+                                <div className="mt-2 text-xs grid grid-cols-3 gap-2 text-center">
+                                    <Badge variant="outline" className="text-green-600 border-green-500/50">Doğru: {progress.correct}</Badge>
+                                    <Badge variant="outline" className="text-red-600 border-red-500/50">Yanlış: {progress.incorrect}</Badge>
+                                    <Badge variant="outline" className="text-gray-600 border-gray-500/50">Boş: {progress.empty}</Badge>
+                                </div>
+                            </Card>
+                        )
+                    })}
+                </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         <TabsContent value="results">
           <Card>
@@ -153,3 +214,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    

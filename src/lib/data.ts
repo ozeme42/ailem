@@ -180,13 +180,6 @@ export interface Student {
   avatar: string;
 }
 
-export interface Subject {
-  id: number;
-  name: string;
-  color: string;
-  grade: number;
-}
-
 export interface Test {
   id: number;
   title: string;
@@ -202,16 +195,47 @@ export interface Test {
   emptyAnswers?: number;
 }
 
+export interface Topic {
+    id: number;
+    name: string;
+    questionCount: number;
+}
+export interface SubjectInBank {
+    id: number;
+    name: string;
+    topics: Topic[];
+}
+export interface QuestionBank {
+    id: number;
+    name: string;
+    subjects: SubjectInBank[];
+}
+
+export interface SubjectInExam {
+    id: number;
+    name: string;
+    questionCount: number;
+}
+export interface PracticeExam {
+    id: number;
+    name: string;
+    subjects: SubjectInExam[];
+}
+
+export interface ExamProgressStats {
+    questionsSolved: number;
+    correct: number;
+    incorrect: number;
+    empty: number;
+}
+export interface ExamProgress {
+    questionBank: { [bankId: number]: { [studentId: number]: ExamProgressStats } };
+    practiceExam: { [examId: number]: { [studentId: number]: ExamProgressStats } };
+}
+
 export const students: Student[] = [
   { id: 3, name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
   { id: 4, name: 'Murat', grade: '8. Sınıf', avatar: '👦' },
-];
-
-export const subjects: Subject[] = [
-  { id: 1, name: 'Matematik', color: '#3B82F6', grade: 85 },
-  { id: 2, name: 'Türkçe', color: '#10B981', grade: 92 },
-  { id: 3, name: 'Fen Bilimleri', color: '#F59E0B', grade: 78 },
-  { id: 4, name: 'Sosyal Bilgiler', color: '#8B5CF6', grade: 88 },
 ];
 
 export const tests: Test[] = [
@@ -264,6 +288,45 @@ export const tests: Test[] = [
     emptyAnswers: 1,
   },
 ];
+
+export const questionBanks: QuestionBank[] = [
+    {
+        id: 1,
+        name: '5. Sınıf Matematik Soru Bankası',
+        subjects: [
+            { id: 1, name: 'Matematik', topics: [
+                { id: 1, name: 'Doğal Sayılar', questionCount: 150 },
+                { id: 2, name: 'Kesirler', questionCount: 120 },
+                { id: 3, name: 'Geometri', questionCount: 180 },
+            ]}
+        ]
+    }
+];
+
+export const practiceExams: PracticeExam[] = [
+    {
+        id: 1,
+        name: 'LGS Deneme Sınavı 1',
+        subjects: [
+            { id: 1, name: 'Türkçe', questionCount: 20 },
+            { id: 2, name: 'Matematik', questionCount: 20 },
+            { id: 3, name: 'Fen Bilimleri', questionCount: 20 },
+        ]
+    }
+];
+
+export const examProgress: ExamProgress = {
+    questionBank: {
+        1: { 
+            3: { questionsSolved: 80, correct: 65, incorrect: 10, empty: 5 }
+        }
+    },
+    practiceExam: {
+        1: {
+            4: { questionsSolved: 60, correct: 45, incorrect: 12, empty: 3 }
+        }
+    }
+};
 
 
 export interface ShoppingList {
@@ -369,3 +432,5 @@ export const recipes: Recipe[] = [
         instructions: ["Meyveleri doğrayın.", "Yoğurdu bir kaseye alın, bal ile karıştırın.", "Üzerine meyveleri ve yulaf ezmesini ekleyerek servis yapın."]
     }
 ];
+
+    
