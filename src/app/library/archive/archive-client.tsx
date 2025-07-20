@@ -23,10 +23,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
+import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, getBooks } from '@/lib/dataService';
+import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags } from '@/lib/dataService';
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -362,32 +363,50 @@ export default function ArchiveClient() {
   };
   
   const handleBulkImport = async (importedBooks: Partial<Book>[]) => {
+    toast({ title: "İçe Aktarma Başlatıldı", description: "Kitaplar ve görseller aktarılıyor. Bu işlem biraz zaman alabilir." });
+    setIsBulkJsonDialogOpen(false);
+
     try {
-        const currentBooks = await getBooks();
-        const allCurrentTags = new Set(allTags);
-        
-        const newBooks = importedBooks.map((book) => {
-            (book.tags || []).forEach(tag => allCurrentTags.add(tag));
-            return {
-                type: 'Kitap',
-                rating: 0,
-                description: '',
-                isForChildren: false,
-                ...book,
-                tags: book.tags || [],
-            } as Omit<Book, 'id'>;
-        });
+      const allCurrentTags = new Set(allTags);
+      
+      for (const book of importedBooks) {
+        let finalImageUrl = book.image;
 
-        for (const book of newBooks) {
-            await addBook(book);
+        // Migrate image if a URL is provided
+        if (book.image) {
+          const destinationPath = `book-covers/${book.title.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
+          const migrationResult = await migrateImage({ sourceUrl: book.image, destinationPath });
+
+          if (migrationResult.success && migrationResult.newUrl) {
+            finalImageUrl = migrationResult.newUrl;
+          } else {
+            toast({ title: "⚠️ Görsel Aktarılamadı", description: `"${book.title}" kitabının görseli aktarılamadı. Orijinal URL kullanılacak. Hata: ${migrationResult.error}`, variant: 'destructive' });
+          }
         }
-        
-        await updateTags(Array.from(allCurrentTags));
 
-        toast({ title: `${newBooks.length} kitap başarıyla eklendi.` });
-        setIsBulkJsonDialogOpen(false);
+        // Add tags to the set
+        (book.tags || []).forEach(tag => allCurrentTags.add(tag));
+
+        // Create book data
+        const newBook: Omit<Book, 'id'> = {
+          type: 'Kitap',
+          rating: 0,
+          description: '',
+          isForChildren: false,
+          ...book,
+          image: finalImageUrl || 'https://placehold.co/300x450.png',
+          tags: book.tags || [],
+        };
+        
+        await addBook(newBook);
+      }
+
+      await updateTags(Array.from(allCurrentTags));
+
+      toast({ title: "✅ İçe Aktarma Tamamlandı", description: `${importedBooks.length} kitap başarıyla kütüphaneye eklendi.` });
+
     } catch (e) {
-        toast({ title: "❌ Hata", description: "Toplu ekleme sırasında bir hata oluştu.", variant: 'destructive'});
+      toast({ title: "❌ Toplu Ekleme Hatası", description: "Toplu ekleme sırasında bir hata oluştu.", variant: 'destructive' });
     }
   };
   
@@ -688,6 +707,7 @@ function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[],
 function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, onOpenChange: (open: boolean) => void, onImport: (books: Partial<Book>[]) => void }) {
     const [jsonInput, setJsonInput] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
 
     const handleImportClick = () => {
         setError(null);
@@ -701,7 +721,8 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
                  setError(`JSON verisi doğrulanamadı:\n${formattedErrors}`);
                  return;
             }
-            onImport(result.data);
+            setIsImporting(true);
+            onImport(result.data).finally(() => setIsImporting(false));
             setJsonInput('');
         } catch (e) {
             setError("Geçersiz JSON formatı. Lütfen veriyi kontrol edin.");
@@ -721,6 +742,7 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
     "title": "Küçük Prens",
     "author": "Antoine de Saint-Exupéry",
     "isForChildren": true,
+    "image": "https://covers.openlibrary.org/b/id/8303399-L.jpg",
     "tags": ["Çocuk Klasikleri", "Felsefe"]
   }
 ]`;
@@ -731,13 +753,13 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
                 <DialogHeader>
                     <DialogTitle>Toplu Kitap Ekle (JSON)</DialogTitle>
                     <DialogDescription>
-                        Kitap listenizi JSON formatında yapıştırarak topluca ekleyin. Görsel URL'leri eski veritabanınızdan doğrudan kullanılabilir.
+                        Kitap listenizi JSON formatında yapıştırarak topluca ekleyin. Görseller otomatik olarak kendi depolama alanınıza taşınacaktır.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                     <div>
                          <Label htmlFor="json-input" className="mb-2 block">JSON Verisi</Label>
-                         <Textarea id="json-input" value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} className="h-64 font-mono text-xs" />
+                         <Textarea id="json-input" value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} className="h-64 font-mono text-xs" disabled={isImporting} />
                          {error && <p className="text-sm font-medium text-destructive mt-2 whitespace-pre-wrap">{error}</p>}
                     </div>
                     <div>
@@ -748,12 +770,13 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-                    <Button onClick={handleImportClick}>İçeri Aktar</Button>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
+                    <Button onClick={handleImportClick} disabled={isImporting}>
+                        {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        İçeri Aktar
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
-
-    
