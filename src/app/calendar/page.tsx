@@ -11,18 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CalendarEvent, MealPlan } from "@/lib/data";
+import { CalendarEvent, MealPlan, familyMembers } from "@/lib/data";
 import { onCalendarEventsUpdate, onMealPlanUpdate } from "@/lib/dataService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-
-const categoryColors: { [key: string]: { bg: string, border: string, text: string, darkBg: string } } = {
-  Okul:       { bg: 'bg-blue-100',   border: 'border-blue-500',   text: 'text-blue-800',   darkBg: 'dark:bg-blue-900/50' },
-  Spor:       { bg: 'bg-green-100',  border: 'border-green-500',  text: 'text-green-800',  darkBg: 'dark:bg-green-900/50' },
-  Aile:       { bg: 'bg-purple-100', border: 'border-purple-500', text: 'text-purple-800', darkBg: 'dark:bg-purple-900/50' },
-  "Doğum Günü": { bg: 'bg-pink-100',   border: 'border-pink-500',   text: 'text-pink-800',   darkBg: 'dark:bg-pink-900/50' },
-  Diğer:      { bg: 'bg-gray-100',   border: 'border-gray-500',   text: 'text-gray-800',   darkBg: 'dark:bg-gray-900/50' },
-};
+import { NewEventForm } from "@/components/new-event-form";
+import { useToast } from "@/hooks/use-toast";
 
 const categoryBadgeColors: { [key: string]: string } = {
   Okul: "bg-blue-500",
@@ -43,6 +37,8 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
+  const [isNewEventDialogOpen, setIsNewEventDialogOpen] = React.useState(false);
+  const { toast } = useToast();
   const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
 
   React.useEffect(() => {
@@ -63,10 +59,32 @@ export default function CalendarPage() {
   return (
     <>
       <PageHeader title="Aile Takvimi 🗓️">
-        <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Etkinlik Ekle
-        </Button>
+        <Dialog open={isNewEventDialogOpen} onOpenChange={setIsNewEventDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Yeni Etkinlik Ekle
+            </Button>
+          </DialogTrigger>
+           <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Yeni Etkinlik Oluştur</DialogTitle>
+                <DialogDescription>
+                  Takvime yeni bir etkinlik ekleyerek ailenizin planını güncelleyin.
+                </DialogDescription>
+              </DialogHeader>
+              <NewEventForm
+                  familyMembers={familyMembers}
+                  onEventCreated={() => {
+                      setIsNewEventDialogOpen(false);
+                      toast({
+                          title: "✅ Etkinlik Oluşturuldu",
+                          description: "Yeni etkinlik takvime başarıyla eklendi.",
+                      });
+                  }}
+              />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
 
       <Card className="shadow-lg">
@@ -179,7 +197,7 @@ export default function CalendarPage() {
         <Carousel opts={{ align: "start" }} className="w-full">
           <CarouselContent>
             {upcomingEvents.length > 0 ? upcomingEvents.map((event) => {
-              const colors = categoryColors[event.category] || categoryColors.Diğer;
+              const colors = { border: 'border-gray-500' };
               return (
               <CarouselItem key={event.id} className="md:basis-1/2 lg:basis-1/3">
                 <div className="p-1">

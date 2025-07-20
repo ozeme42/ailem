@@ -84,6 +84,8 @@ export const onCalendarEventsUpdate = (callback: (events: CalendarEvent[]) => vo
         callback(events);
     });
 };
+export const addCalendarEvent = (data: Omit<CalendarEvent, 'id'>) => addDocument<CalendarEvent>('calendarEvents', data);
+
 
 // Meal Plan
 export const onMealPlanUpdate = (callback: (plan: MealPlan) => void) => {
