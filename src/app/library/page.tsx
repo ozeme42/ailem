@@ -1,12 +1,13 @@
 
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { mediaItems, familyMembers, Book } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, Calendar, CheckSquare, Target } from 'lucide-react';
+import { BookOpen, Calendar, CheckSquare, Target, Library } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
 
 export default function LibraryPage() {
   // This is a placeholder for the current user. In a real app, you'd get this from an auth context.
