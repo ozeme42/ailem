@@ -210,7 +210,7 @@ export interface ShoppingList {
 }
 
 export interface ShoppingItem {
-  id: number;
+  id: string;
   name: string;
   quantity: string;
   price: number;
@@ -266,9 +266,9 @@ export const initialShoppingLists: Omit<ShoppingList, 'id'>[] = [
         title: 'Haftalık Market Alışverişi',
         category: 'Market',
         items: [
-            { id: 1, name: 'Süt', quantity: '2L', price: 15.75, completed: true },
-            { id: 2, name: 'Ekmek', quantity: '1 adet', price: 5.00, completed: true },
-            { id: 3, name: 'Yumurta', quantity: '10 adet', price: 25.50, completed: false },
+            { id: '1', name: 'Süt', quantity: '2L', price: 15.75, completed: true },
+            { id: '2', name: 'Ekmek', quantity: '1 adet', price: 5.00, completed: true },
+            { id: '3', name: 'Yumurta', quantity: '10 adet', price: 25.50, completed: false },
         ],
     }
 ]
