@@ -54,8 +54,10 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
   React.useEffect(() => {
       if (initialData) {
           form.reset({
-              ...initialData,
+              name: initialData.name,
+              subjects: initialData.subjects,
               hasAnswerKey: !!initialData.answerKey && Object.keys(initialData.answerKey).length > 0,
+              answerKey: initialData.answerKey || {}
           });
       } else {
           form.reset({
@@ -211,3 +213,5 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
     </Form>
   );
 }
+
+    

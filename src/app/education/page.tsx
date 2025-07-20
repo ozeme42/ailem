@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 
 export default function EducationPage() {
   const { toast } = useToast();
@@ -35,17 +36,26 @@ export default function EducationPage() {
   const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
   const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
   const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
+  const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
 
 
   const loadDataFromLocalStorage = () => {
-    const storedTests = localStorage.getItem('tests');
-    setTests(storedTests ? JSON.parse(storedTests) : initialTests);
+    try {
+        const storedTests = localStorage.getItem('tests');
+        setTests(storedTests ? JSON.parse(storedTests) : initialTests);
 
-    const storedBanks = localStorage.getItem('questionBanks');
-    setQuestionBanks(storedBanks ? JSON.parse(storedBanks) : initialQuestionBanks);
-    
-    const storedExams = localStorage.getItem('practiceExams');
-    setPracticeExams(storedExams ? JSON.parse(storedExams) : initialPracticeExams);
+        const storedBanks = localStorage.getItem('questionBanks');
+        setQuestionBanks(storedBanks ? JSON.parse(storedBanks) : initialQuestionBanks);
+        
+        const storedExams = localStorage.getItem('practiceExams');
+        setPracticeExams(storedExams ? JSON.parse(storedExams) : initialPracticeExams);
+    } catch (error) {
+        console.error("Failed to load data from localStorage", error);
+        // Set to initials if localStorage fails
+        setTests(initialTests);
+        setQuestionBanks(initialQuestionBanks);
+        setPracticeExams(initialPracticeExams);
+    }
   }
 
   React.useEffect(() => {
@@ -62,6 +72,28 @@ export default function EducationPage() {
     });
     setIsAssignDialogOpen(false);
   };
+  
+  const handleManualGrade = (testId: number, gradeData: ManualGradeData) => {
+      setTests(prevTests => {
+          const updatedTests = prevTests.map(t => {
+              if (t.id === testId) {
+                  return {
+                      ...t,
+                      status: 'Değerlendirildi',
+                      correctAnswers: gradeData.correct,
+                      incorrectAnswers: gradeData.incorrect,
+                      emptyAnswers: gradeData.empty,
+                      score: (gradeData.correct / t.questionCount) * 100
+                  }
+              }
+              return t;
+          });
+          localStorage.setItem('tests', JSON.stringify(updatedTests));
+          toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
+          return updatedTests;
+      });
+      setGradingTest(null);
+  }
 
   const saveQuestionBanks = (banks: QuestionBank[]) => {
     setQuestionBanks(banks);
@@ -72,7 +104,7 @@ export default function EducationPage() {
     let updatedBanks;
     if (id) {
         // Update
-        updatedBanks = questionBanks.map(b => b.id === id ? { ...b, ...bankData } : b);
+        updatedBanks = questionBanks.map(b => b.id === id ? { ...b, ...bankData, id } : b);
         toast({ title: "✅ Soru Bankası Güncellendi", description: `${bankData.name} başarıyla güncellendi.` });
     } else {
         // Create
@@ -100,7 +132,7 @@ export default function EducationPage() {
     let updatedExams;
     if (id) {
         // Update
-        updatedExams = practiceExams.map(e => e.id === id ? { ...e, ...examData } : e);
+        updatedExams = practiceExams.map(e => e.id === id ? { ...e, ...examData, id } : e);
         toast({ title: "✅ Deneme Sınavı Güncellendi", description: `${examData.name} başarıyla güncellendi.` });
     } else {
         // Create
@@ -293,7 +325,7 @@ export default function EducationPage() {
                         {test.status}
                       </Badge>
                    </div>
-                   {test.status === 'Değerlendirildi' ? (
+                   {test.status === 'Değerlendirildi' && (
                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                           <div className="bg-muted/50 p-3 rounded-lg">
                             <p className="text-2xl font-bold">{test.score?.toFixed(1) ?? '-'}</p>
@@ -312,8 +344,15 @@ export default function EducationPage() {
                             <p className="text-sm font-medium text-gray-700">Boş</p>
                           </div>
                        </div>
-                   ) : (
-                       <p className="text-muted-foreground text-center text-sm py-4">Bu test henüz değerlendirilmedi veya cevap anahtarı mevcut değil.</p>
+                   )}
+                   {test.status === 'Çözüldü' && (
+                        <div className="flex flex-col items-center justify-center text-center text-sm py-4 bg-blue-500/5 rounded-lg">
+                           <p className="text-muted-foreground mb-3">Bu test öğrenci tarafından çözüldü, değerlendirme bekleniyor.</p>
+                           <Button onClick={() => setGradingTest(test)}>
+                               <CheckSquare className="mr-2 h-4 w-4"/>
+                               Sonuçları Gir
+                           </Button>
+                        </div>
                    )}
                 </Card>
               )) : <p className="text-muted-foreground text-center py-8">Henüz tamamlanmış bir test yok.</p>}
@@ -469,6 +508,26 @@ export default function EducationPage() {
         </TabsContent>
         )}
       </Tabs>
+      
+      <Dialog open={!!gradingTest} onOpenChange={(open) => !open && setGradingTest(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Manuel Değerlendirme</DialogTitle>
+                <DialogDescription>
+                    "{gradingTest?.title}" testinin sonuçlarını girin. Toplam {gradingTest?.questionCount} soru.
+                </DialogDescription>
+            </DialogHeader>
+            {gradingTest && (
+                <ManualGradeForm
+                    test={gradingTest}
+                    onSave={(data) => handleManualGrade(gradingTest.id, data)}
+                    onCancel={() => setGradingTest(null)}
+                />
+            )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
+    
