@@ -11,26 +11,10 @@ import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/u
 import { Book as BookType, monthlyReadingStats, familyMembers } from "@/lib/data";
 import { onBooksUpdate } from "@/lib/dataService";
 
-const genreData = [
-  { name: 'Fantastik', value: 4, fill: "hsl(var(--chart-1))" },
-  { name: 'Distopya', value: 1, fill: "hsl(var(--chart-2))" },
-  { name: 'Felsefe', value: 1, fill: "hsl(var(--chart-3))" },
-  { name: 'Tarih', value: 1, fill: "hsl(var(--chart-4))" },
-  { name: 'Bilim Kurgu', value: 1, fill: "hsl(var(--chart-5))" },
-  { name: 'Klasik', value: 2, fill: "hsl(var(--chart-1))" },
-  { name: 'Çocuk Klasikleri', value: 2, fill: "hsl(var(--chart-2))" },
-];
-
 const readingChartConfig = {
   books: { label: "Kitap Sayısı", color: "hsl(var(--chart-2))" },
   pages: { label: "Sayfa Sayısı", color: "hsl(var(--chart-4))" },
 } satisfies ChartConfig;
-
-const memberReadingData = familyMembers.map(member => ({
-  name: member.name,
-  booksRead: Math.floor(member.xp / 500), // Approximate books read based on XP
-  fill: member.color,
-}));
 
 const memberReadingConfig = {
   booksRead: { label: "Okunan Kitap" },
@@ -51,8 +35,48 @@ export default function LibraryStatsPage() {
 
     const totalBooks = books.length;
     const totalAuthors = new Set(books.map(b => b.author)).size;
-    const totalPages = books.reduce((sum, book) => sum + (book.pages || 0), 0);
-    const avgRating = totalBooks > 0 ? (books.reduce((sum, book) => sum + book.rating, 0) / totalBooks).toFixed(1) : 0;
+    const totalPages = books.reduce((sum, book) => sum + (book.pageCount || 0), 0);
+    const avgRating = totalBooks > 0 ? (books.reduce((sum, book) => sum + book.rating, 0) / books.filter(b => b.rating > 0).length).toFixed(1) : 0;
+    
+    const genreData = React.useMemo(() => {
+        if (books.length === 0) return [];
+        const tagCounts = new Map<string, number>();
+        books.forEach(book => {
+            (book.tags || []).forEach(tag => {
+                tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+            });
+        });
+        
+        const chartColors = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+        return Array.from(tagCounts.entries())
+            .map(([name, value], index) => ({
+                name,
+                value,
+                fill: chartColors[index % chartColors.length]
+            }))
+            .sort((a, b) => b.value - a.value);
+
+    }, [books]);
+    
+     const memberReadingData = React.useMemo(() => {
+        // This is a placeholder logic as we don't track who read which book.
+        // In a real app, you would have a 'readBy' field in your book data.
+        // For now, we'll assign books randomly to members for demonstration.
+        const booksPerMember: Record<string, number> = {};
+        familyMembers.forEach(m => booksPerMember[m.name] = 0);
+        
+        books.forEach((book, index) => {
+           const member = familyMembers[index % familyMembers.length];
+           booksPerMember[member.name]++;
+        });
+
+        return familyMembers.map(member => ({
+            name: member.name,
+            booksRead: booksPerMember[member.name] || 0,
+            fill: member.color,
+        }));
+    }, [books]);
+
 
   return (
     <>
@@ -128,25 +152,31 @@ export default function LibraryStatsPage() {
             <CardDescription>Kütüphanedeki kitapların türlere göre dağılımı.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-center">
-            <ChartContainer config={{}} className="h-[300px] w-full">
-              <PieChart>
-                <Tooltip content={<ChartTooltipContent hideLabel />} />
-                <Pie 
-                  data={genreData} 
-                  dataKey="value" 
-                  nameKey="name" 
-                  cx="50%" 
-                  cy="50%" 
-                  outerRadius={110} 
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {genreData.map((entry) => (
-                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ChartContainer>
+            {genreData.length > 0 ? (
+                <ChartContainer config={{}} className="h-[300px] w-full">
+                <PieChart>
+                    <Tooltip content={<ChartTooltipContent hideLabel />} />
+                    <Pie 
+                    data={genreData} 
+                    dataKey="value" 
+                    nameKey="name" 
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius={110} 
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                    {genreData.map((entry) => (
+                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                    ))}
+                    </Pie>
+                </PieChart>
+                </ChartContainer>
+            ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                    Grafiği gösterecek yeterli veri yok.
+                </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -183,3 +213,5 @@ export default function LibraryStatsPage() {
     </>
   );
 }
+
+    
