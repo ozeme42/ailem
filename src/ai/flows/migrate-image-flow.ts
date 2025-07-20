@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import fetch from 'node-fetch';
+import axios from 'axios';
 import admin from '@/lib/firebaseAdmin';
 
 const MigrateImageInputSchema = z.object({
@@ -32,13 +32,13 @@ export const migrateImageFlow = ai.defineFlow(
   },
   async ({ sourceUrl, destinationPath }) => {
     try {
-      // 1. Download the image from the source URL
-      const response = await fetch(sourceUrl);
-      if (!response.ok) {
+      // 1. Download the image from the source URL using axios
+      const response = await axios.get(sourceUrl, { responseType: 'arraybuffer' });
+      if (response.status !== 200) {
         throw new Error(`Failed to download image from ${sourceUrl}. Status: ${response.statusText}`);
       }
-      const imageBuffer = await response.buffer();
-      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const imageBuffer = Buffer.from(response.data);
+      const contentType = response.headers['content-type'] || 'image/jpeg';
 
       // 2. Upload the image to Firebase Storage
       const bucket = admin.storage().bucket();
