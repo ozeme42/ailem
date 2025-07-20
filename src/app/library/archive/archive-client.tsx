@@ -730,7 +730,9 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Toplu Kitap Ekle (JSON)</DialogTitle>
-                    <DialogDescription>Kitap listenizi JSON formatında yapıştırarak topluca ekleyin.</DialogDescription>
+                    <DialogDescription>
+                        Kitap listenizi JSON formatında yapıştırarak topluca ekleyin. Görsel URL'leri eski veritabanınızdan doğrudan kullanılabilir.
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                     <div>
@@ -753,3 +755,5 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
