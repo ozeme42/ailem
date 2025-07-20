@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, TrendingUp, FileText, BarChart3, Target } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, TrendingUp, FileText, BarChart3, Target, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTestForm, AssignmentType } from "@/components/new-test-form";
+import { NewQuestionBankForm } from "@/components/new-question-bank-form";
+import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { students, tests, questionBanks, practiceExams, examProgress, QuestionBank } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 
 export default function EducationPage() {
   const [selectedStudent, setSelectedStudent] = React.useState(students[0]);
-  const [activeAssignmentType, setActiveAssignmentType] = React.useState<AssignmentType>("quick");
 
   const studentTests = tests.filter(t => t.studentId === selectedStudent.id);
   const assignedTests = studentTests.filter(t => t.status === 'Atandı');
@@ -81,11 +82,13 @@ export default function EducationPage() {
       </div>
 
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="assignments">Aktif Ödevler ({assignedTests.length})</TabsTrigger>
           <TabsTrigger value="progress">Genel Başarı</TabsTrigger>
           <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
+          <TabsTrigger value="management">İçerik Yönetimi</TabsTrigger>
         </TabsList>
+
         <TabsContent value="assignments">
            <Card>
              <CardHeader>
@@ -111,7 +114,8 @@ export default function EducationPage() {
             </CardContent>
           </Card>
         </TabsContent>
-         <TabsContent value="progress">
+        
+        <TabsContent value="progress">
           <div className="space-y-6">
             <Card>
                 <CardHeader>
@@ -169,6 +173,7 @@ export default function EducationPage() {
             </Card>
           </div>
         </TabsContent>
+
         <TabsContent value="results">
           <Card>
             <CardHeader>
@@ -210,9 +215,102 @@ export default function EducationPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value="management">
+            <Tabs defaultValue="questionBanks" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="questionBanks">Soru Bankaları</TabsTrigger>
+                    <TabsTrigger value="practiceExams">Deneme Sınavları</TabsTrigger>
+                </TabsList>
+                <TabsContent value="questionBanks" className="mt-4">
+                     <Card>
+                        <CardHeader className="flex flex-row justify-between items-center">
+                            <div>
+                                <CardTitle>Soru Bankası Havuzu</CardTitle>
+                                <CardDescription>Oluşturulan ve yönetilen soru bankaları.</CardDescription>
+                            </div>
+                             <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button><PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle</Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-2xl">
+                                    <DialogHeader>
+                                        <DialogTitle>Yeni Soru Bankası Oluştur</DialogTitle>
+                                        <DialogDescription>
+                                            Yeni bir soru bankası oluşturun. Dersleri ve konuları ekleyebilirsiniz.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <NewQuestionBankForm />
+                                </DialogContent>
+                             </Dialog>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {questionBanks.map(bank => (
+                                <Card key={bank.id} className="p-4">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-bold text-lg">{bank.name}</h4>
+                                        <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                    </div>
+                                    <div className="mt-2 space-y-2">
+                                        {bank.subjects.map(subject => (
+                                             <div key={subject.id} className="text-sm">
+                                                <p className="font-semibold">{subject.name}</p>
+                                                <ul className="list-disc list-inside pl-4 text-muted-foreground">
+                                                    {subject.topics.map(topic => (
+                                                        <li key={topic.id}>{topic.name} ({topic.questionCount} soru)</li>
+                                                    ))}
+                                                </ul>
+                                             </div>
+                                        ))}
+                                    </div>
+                                </Card>
+                            ))}
+                        </CardContent>
+                     </Card>
+                </TabsContent>
+                 <TabsContent value="practiceExams" className="mt-4">
+                     <Card>
+                        <CardHeader className="flex flex-row justify-between items-center">
+                             <div>
+                                <CardTitle>Deneme Sınavı Havuzu</CardTitle>
+                                <CardDescription>Oluşturulan ve yönetilen deneme sınavları.</CardDescription>
+                            </div>
+                             <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button><PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle</Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-lg">
+                                    <DialogHeader>
+                                        <DialogTitle>Yeni Deneme Sınavı Oluştur</DialogTitle>
+                                        <DialogDescription>
+                                           Yeni bir deneme sınavı oluşturun. Dersleri ve soru sayılarını ekleyebilirsiniz.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <NewPracticeExamForm />
+                                </DialogContent>
+                             </Dialog>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                           {practiceExams.map(exam => (
+                                <Card key={exam.id} className="p-4">
+                                     <div className="flex justify-between items-start">
+                                        <h4 className="font-bold text-lg">{exam.name}</h4>
+                                        <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                    </div>
+                                    <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        {exam.subjects.map(subject => (
+                                            <Badge key={subject.id} variant="secondary">{subject.name}: {subject.questionCount} Soru</Badge>
+                                        ))}
+                                    </div>
+                                </Card>
+                            ))}
+                        </CardContent>
+                     </Card>
+                </TabsContent>
+            </Tabs>
+        </TabsContent>
+
       </Tabs>
     </>
   );
 }
-
-    
