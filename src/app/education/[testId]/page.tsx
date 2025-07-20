@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { tests } from "@/lib/data";
+import { tests, questionBanks, practiceExams } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -11,12 +11,14 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, CheckCircle, Clock, FileQuestion } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type Answers = { [key: number]: string | null };
 
 export default function OpticalFormPage() {
     const router = useRouter();
     const params = useParams();
+    const { toast } = useToast();
     const testId = Number(params.testId);
     const test = tests.find(t => t.id === testId);
 
@@ -34,7 +36,10 @@ export default function OpticalFormPage() {
     }, [test]);
 
     React.useEffect(() => {
-        if (timeLeft <= 0) return;
+        if (timeLeft <= 0) {
+            handleSubmit();
+            return;
+        };
 
         const timer = setInterval(() => {
             setTimeLeft(prevTime => prevTime - 1);
@@ -70,6 +75,71 @@ export default function OpticalFormPage() {
     const handleAnswerChange = (questionNumber: number, value: string) => {
         setAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };
+    
+    const handleSubmit = () => {
+        // In a real app, you'd send this to a server. Here, we'll use localStorage.
+        try {
+            const storedTests = JSON.parse(localStorage.getItem('tests') || JSON.stringify(tests));
+            const testIndex = storedTests.findIndex((t: any) => t.id === test.id);
+            
+            if (testIndex > -1) {
+                const currentTest = storedTests[testIndex];
+                currentTest.studentAnswers = answers;
+                
+                // Automatic grading logic would go here.
+                // For demonstration, we'll find the source and its answer key.
+                let answerKey: { [key: number]: string } = {};
+
+                if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
+                    const bank = questionBanks.find(b => b.id === currentTest.sourceId);
+                    const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id === currentTest.topicId);
+                    answerKey = topic?.answerKey || {};
+                } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
+                    const exam = practiceExams.find(e => e.id === currentTest.sourceId);
+                    // This is simplified. A real exam would have keys per subject.
+                    answerKey = exam?.answerKey || {};
+                }
+                
+                let correct = 0;
+                let incorrect = 0;
+                let empty = 0;
+
+                for (let i = 1; i <= currentTest.questionCount; i++) {
+                    if (!answers[i]) {
+                        empty++;
+                    } else if (answers[i] === answerKey[i]) {
+                        correct++;
+                    } else {
+                        incorrect++;
+                    }
+                }
+                
+                currentTest.status = 'Değerlendirildi';
+                currentTest.correctAnswers = correct;
+                currentTest.incorrectAnswers = incorrect;
+                currentTest.emptyAnswers = empty;
+                currentTest.score = (correct / currentTest.questionCount) * 100;
+                
+                storedTests[testIndex] = currentTest;
+                localStorage.setItem('tests', JSON.stringify(storedTests));
+            }
+
+            toast({
+                title: "✅ Test Tamamlandı!",
+                description: "Cevapların başarıyla kaydedildi ve testin değerlendirildi.",
+            });
+            router.push('/education');
+
+        } catch (error) {
+            console.error("Error saving test results:", error);
+            toast({
+                variant: "destructive",
+                title: "❌ Hata!",
+                description: "Test sonuçları kaydedilirken bir sorun oluştu.",
+            });
+        }
+    }
+
 
     const answeredQuestions = Object.values(answers).filter(a => a !== null).length;
 
@@ -145,7 +215,7 @@ export default function OpticalFormPage() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => router.push('/education')}>Onayla ve Bitir</AlertDialogAction>
+                                <AlertDialogAction onClick={handleSubmit}>Onayla ve Bitir</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                             </AlertDialog>

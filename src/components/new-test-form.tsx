@@ -5,32 +5,31 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import type { Student, QuestionBank, PracticeExam } from "@/lib/data";
+import type { Student, QuestionBank, PracticeExam, Test } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
-const quickTestSchema = z.object({
-  title: z.string().min(5, { message: "Başlık en az 5 karakter olmalıdır." }),
+const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  subject: z.string({ required_error: "Lütfen bir ders seçin." }),
-  questionCount: z.coerce.number().min(1, "En az 1 soru olmalı.").max(100, "En fazla 100 soru olabilir."),
+  
+  // Quick Test
+  title: z.string().optional(),
+  subject: z.string().optional(),
+  questionCount: z.coerce.number().optional(),
+
+  // Bank
+  bankId: z.string().optional(),
+  topicId: z.string().optional(),
+
+  // Exam
+  examId: z.string().optional(),
 });
 
-const questionBankSchema = z.object({
-  studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  bankId: z.string({ required_error: "Lütfen bir soru bankası seçin." }),
-  topicId: z.string({ required_error: "Lütfen bir konu seçin." }),
-});
-
-const practiceExamSchema = z.object({
-    studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-    examId: z.string({ required_error: "Lütfen bir deneme sınavı seçin." }),
-});
 
 export type AssignmentType = "quick" | "bank" | "exam";
 
@@ -38,32 +37,71 @@ type NewTestFormProps = {
   students: Student[];
   questionBanks: QuestionBank[];
   practiceExams: PracticeExam[];
+  onAssign: (test: Omit<Test, 'id' | 'status'>) => void;
 };
 
-export function NewTestForm({ students, questionBanks, practiceExams }: NewTestFormProps) {
-  const { toast } = useToast();
+export function NewTestForm({ students, questionBanks, practiceExams, onAssign }: NewTestFormProps) {
   const [activeTab, setActiveTab] = React.useState<AssignmentType>("quick");
   const [selectedBankId, setSelectedBankId] = React.useState<string | null>(null);
 
-  const form = useForm({
-    resolver: zodResolver(
-      activeTab === 'quick' ? quickTestSchema : 
-      activeTab === 'bank' ? questionBankSchema : 
-      practiceExamSchema
-    ),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
       questionCount: 20,
     },
   });
 
-  function onSubmit(values: any) {
-    console.log({assignmentType: activeTab, values});
-    toast({
-      title: "✅ Ödev Başarıyla Atandı!",
-      description: `Ödev başarıyla oluşturuldu ve öğrenciye atandı.`,
-    });
-    // Here you would typically call an API to save the assignment
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    const dueDate = format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy'); // 1 week from now
+    
+    let newTest: Omit<Test, 'id' | 'status'> | null = null;
+    
+    if (activeTab === 'quick' && values.title && values.subject && values.questionCount) {
+        newTest = {
+            title: values.title,
+            subject: values.subject,
+            studentId: Number(values.studentId),
+            questionCount: values.questionCount,
+            assignedDate: format(new Date(), 'dd MMMM yyyy'),
+            dueDate: dueDate,
+            sourceType: 'quick'
+        }
+    } else if (activeTab === 'bank' && values.bankId && values.topicId) {
+        const bank = questionBanks.find(b => b.id.toString() === values.bankId);
+        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === values.topicId);
+        if (bank && topic) {
+             newTest = {
+                title: `${bank.name} - ${topic.name}`,
+                subject: bank.subjects[0].name, // simplified
+                studentId: Number(values.studentId),
+                questionCount: topic.questionCount,
+                assignedDate: format(new Date(), 'dd MMMM yyyy'),
+                dueDate: dueDate,
+                sourceType: 'bank',
+                sourceId: bank.id,
+                topicId: topic.id,
+            }
+        }
+    } else if (activeTab === 'exam' && values.examId) {
+        const exam = practiceExams.find(e => e.id.toString() === values.examId);
+        if (exam) {
+            newTest = {
+                title: exam.name,
+                subject: "Deneme Sınavı",
+                studentId: Number(values.studentId),
+                questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
+                assignedDate: format(new Date(), 'dd MMMM yyyy'),
+                dueDate: dueDate,
+                sourceType: 'exam',
+                sourceId: exam.id,
+            }
+        }
+    }
+    
+    if (newTest) {
+      onAssign(newTest);
+      form.reset();
+    }
   }
   
   const selectedBank = questionBanks.find(b => b.id.toString() === selectedBankId);
@@ -163,7 +201,7 @@ export function NewTestForm({ students, questionBanks, practiceExams }: NewTestF
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Soru Bankası</FormLabel>
-                            <Select onValueChange={(value) => { field.onChange(value); setSelectedBankId(value); }} defaultValue={field.value}>
+                            <Select onValueChange={(value) => { field.onChange(value); setSelectedBankId(value); form.resetField('topicId'); }} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Soru bankası seçin" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 {questionBanks.map((bank) => (
@@ -208,7 +246,7 @@ export function NewTestForm({ students, questionBanks, practiceExams }: NewTestF
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Deneme Sınavı</FormLabel>
-                            <Select onValuechange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Deneme seçin" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 {practiceExams.map((exam) => (
@@ -231,5 +269,3 @@ export function NewTestForm({ students, questionBanks, practiceExams }: NewTestF
     </Tabs>
   );
 }
-
-    

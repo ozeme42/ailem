@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, TrendingUp, FileText, BarChart3, Target, Trash2 } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,65 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { NewTestForm, AssignmentType } from "@/components/new-test-form";
+import { NewTestForm } from "@/components/new-test-form";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
-import { students, tests, questionBanks, practiceExams, examProgress, QuestionBank } from "@/lib/data";
+import { students, tests as initialTests, questionBanks as initialQuestionBanks, practiceExams as initialPracticeExams, examProgress, QuestionBank, Test } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function EducationPage() {
+  const { toast } = useToast();
   const [selectedStudent, setSelectedStudent] = React.useState(students[0]);
+  
+  // Use state for tests, questionBanks, etc. to make them interactive
+  const [tests, setTests] = React.useState<Test[]>([]);
+  const [questionBanks, setQuestionBanks] = React.useState(initialQuestionBanks);
+  const [practiceExams, setPracticeExams] = React.useState(initialPracticeExams);
+
+  React.useEffect(() => {
+    // In a real app, you'd fetch this data. We'll use localStorage for persistence.
+    const storedTests = localStorage.getItem('tests');
+    if (storedTests) {
+      setTests(JSON.parse(storedTests));
+    } else {
+      setTests(initialTests);
+    }
+    const storedBanks = localStorage.getItem('questionBanks');
+    if(storedBanks) setQuestionBanks(JSON.parse(storedBanks));
+
+    const storedExams = localStorage.getItem('practiceExams');
+    if(storedExams) setPracticeExams(JSON.parse(storedExams));
+  }, []);
+
+  const handleCreateAssignment = (newTest: Omit<Test, 'id'>) => {
+    setTests(prevTests => {
+        const updatedTests = [...prevTests, { ...newTest, id: Date.now() }];
+        localStorage.setItem('tests', JSON.stringify(updatedTests));
+        toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
+        return updatedTests;
+    });
+  };
+
+  const handleCreateBank = (newBank: Omit<QuestionBank, 'id'>) => {
+    setQuestionBanks(prev => {
+      const updated = [...prev, { ...newBank, id: Date.now() }];
+      localStorage.setItem('questionBanks', JSON.stringify(updated));
+      toast({ title: "✅ Soru Bankası Oluşturuldu", description: "Yeni soru bankası başarıyla kaydedildi." });
+      return updated;
+    });
+  };
+
+   const handleCreateExam = (newExam: Omit<PracticeExam, 'id'>) => {
+    setPracticeExams(prev => {
+      const updated = [...prev, { ...newExam, id: Date.now() }];
+      localStorage.setItem('practiceExams', JSON.stringify(updated));
+      toast({ title: "✅ Deneme Sınavı Oluşturuldu", description: "Yeni deneme sınavı başarıyla kaydedildi." });
+      return updated;
+    });
+  };
+
 
   const studentTests = tests.filter(t => t.studentId === selectedStudent.id);
   const assignedTests = studentTests.filter(t => t.status === 'Atandı');
@@ -60,6 +110,7 @@ export default function EducationPage() {
                 students={students} 
                 questionBanks={questionBanks}
                 practiceExams={practiceExams}
+                onAssign={handleCreateAssignment}
             />
           </DialogContent>
         </Dialog>
@@ -195,19 +246,19 @@ export default function EducationPage() {
                    </div>
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                       <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-2xl font-bold">{test.score}</p>
+                        <p className="text-2xl font-bold">{test.score?.toFixed(1) ?? '-'}</p>
                         <p className="text-sm font-medium text-muted-foreground">Puan</p>
                       </div>
                       <div className="bg-green-500/10 p-3 rounded-lg">
-                        <p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p>
+                        <p className="text-2xl font-bold text-green-600">{test.correctAnswers ?? '-'}</p>
                         <p className="text-sm font-medium text-green-700">Doğru</p>
                       </div>
                        <div className="bg-red-500/10 p-3 rounded-lg">
-                        <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
+                        <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers ?? '-'}</p>
                         <p className="text-sm font-medium text-red-700">Yanlış</p>
                       </div>
                        <div className="bg-gray-500/10 p-3 rounded-lg">
-                        <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
+                        <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers ?? '-'}</p>
                         <p className="text-sm font-medium text-gray-700">Boş</p>
                       </div>
                    </div>
@@ -242,7 +293,7 @@ export default function EducationPage() {
                                             Yeni bir soru bankası oluşturun. Dersleri ve konuları ekleyebilirsiniz.
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <NewQuestionBankForm />
+                                    <NewQuestionBankForm onSubmit={handleCreateBank} />
                                 </DialogContent>
                              </Dialog>
                         </CardHeader>
@@ -288,7 +339,7 @@ export default function EducationPage() {
                                            Yeni bir deneme sınavı oluşturun. Dersleri ve soru sayılarını ekleyebilirsiniz.
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <NewPracticeExamForm />
+                                    <NewPracticeExamForm onSubmit={handleCreateExam}/>
                                 </DialogContent>
                              </Dialog>
                         </CardHeader>
@@ -316,5 +367,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    

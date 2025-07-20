@@ -9,27 +9,39 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Key, PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import type { PracticeExam } from "@/lib/data";
+import { AnswerKeyForm } from "./answer-key-form";
 
 const subjectSchema = z.object({
+  id: z.number(),
   name: z.string({ required_error: "Lütfen bir ders seçin." }),
   questionCount: z.coerce.number().min(1, "En az 1 soru olmalı."),
 });
 
+type AnswerKey = { [key: number]: string };
+
 const formSchema = z.object({
   name: z.string().min(5, { message: "Deneme adı en az 5 karakter olmalıdır." }),
   subjects: z.array(subjectSchema).min(1, "En az bir ders eklemelisiniz."),
+  answerKey: z.record(z.string()).optional(),
 });
 
-export function NewPracticeExamForm() {
-  const { toast } = useToast();
+type NewPracticeExamFormProps = {
+    onSubmit: (data: Omit<PracticeExam, 'id'>) => void;
+}
+
+export function NewPracticeExamForm({ onSubmit }: NewPracticeExamFormProps) {
+  const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      subjects: [{ name: "Matematik", questionCount: 20 }],
+      subjects: [{ id: 1, name: "Matematik", questionCount: 20 }],
+      answerKey: {},
     },
   });
 
@@ -37,19 +49,17 @@ export function NewPracticeExamForm() {
     control: form.control,
     name: "subjects",
   });
+  
+  const subjectsValue = form.watch('subjects');
+  const totalQuestions = subjectsValue.reduce((acc, s) => acc + s.questionCount, 0);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "✅ Deneme Sınavı Oluşturuldu!",
-      description: `"${values.name}" denemesi başarıyla kaydedildi.`,
-    });
-    // API call to save the practice exam
+  function handleFormSubmit(values: z.infer<typeof formSchema>) {
+    onSubmit(values);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6 py-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid gap-6 py-4">
         <FormField
           control={form.control}
           name="name"
@@ -115,12 +125,38 @@ export function NewPracticeExamForm() {
             variant="outline"
             size="sm"
             className="mt-4"
-            onClick={() => append({ name: "Türkçe", questionCount: 20 })}
+            onClick={() => append({ id: Date.now(), name: "Türkçe", questionCount: 20 })}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Ders Ekle
           </Button>
         </div>
+
+        <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
+          <DialogTrigger asChild>
+            <Button type="button" variant="secondary">
+                <Key className="mr-2 h-4 w-4"/>
+                Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {totalQuestions})
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Cevap Anahtarı</DialogTitle>
+                    <DialogDescription>
+                        {form.getValues('name')} için cevapları girin. Toplam {totalQuestions} soru.
+                    </DialogDescription>
+                </DialogHeader>
+                <AnswerKeyForm
+                    totalQuestions={totalQuestions}
+                    answerKey={form.getValues('answerKey') || {}}
+                    onSave={(newKey) => {
+                        form.setValue('answerKey', newKey);
+                        setIsAnswerKeyDialogOpen(false);
+                    }}
+                />
+          </DialogContent>
+        </Dialog>
+
 
         <Button type="submit">Deneme Sınavını Kaydet</Button>
       </form>

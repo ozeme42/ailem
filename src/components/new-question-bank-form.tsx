@@ -3,23 +3,30 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Key, PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card } from "./ui/card";
+import { AnswerKeyForm } from "./answer-key-form";
+import type { QuestionBank } from "@/lib/data";
+
+type AnswerKey = { [key: number]: string };
 
 const topicSchema = z.object({
+  id: z.number(),
   name: z.string().min(3, "Konu adı en az 3 karakter olmalı."),
   questionCount: z.coerce.number().min(1, "En az 1 soru olmalı."),
+  answerKey: z.record(z.string()).optional(),
 });
 
 const subjectSchema = z.object({
+  id: z.number(),
   name: z.string({ required_error: "Lütfen bir ders seçin." }),
   topics: z.array(topicSchema).min(1, "En az bir konu eklemelisiniz."),
 });
@@ -29,9 +36,14 @@ const formSchema = z.object({
   subjects: z.array(subjectSchema).min(1, "En az bir ders eklemelisiniz."),
 });
 
-export function NewQuestionBankForm() {
-  const { toast } = useToast();
-  const form = useForm<z.infer<typeof formSchema>>({
+type FormData = z.infer<typeof formSchema>;
+
+type NewQuestionBankFormProps = {
+    onSubmit: (data: Omit<QuestionBank, 'id'>) => void;
+}
+
+export function NewQuestionBankForm({ onSubmit }: NewQuestionBankFormProps) {
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -44,18 +56,13 @@ export function NewQuestionBankForm() {
     name: "subjects",
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "✅ Soru Bankası Oluşturuldu!",
-      description: `"${values.name}" soru bankası başarıyla kaydedildi.`,
-    });
-    // API call to save the question bank
+  function handleFormSubmit(values: FormData) {
+    onSubmit(values);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto px-2">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto px-2">
         <FormField
           control={form.control}
           name="name"
@@ -116,7 +123,7 @@ export function NewQuestionBankForm() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => append({ name: "Matematik", topics: [] })}
+            onClick={() => append({ id: Date.now(), name: "Matematik", topics: [] })}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Ders Ekle
@@ -141,34 +148,50 @@ function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: 
       <FormLabel className="text-sm">Konular</FormLabel>
        <div className="space-y-2 mt-2">
             {fields.map((topicField, topicIndex) => (
-              <div key={topicField.id} className="flex items-end gap-2">
-                <FormField
-                  control={control}
-                  name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
-                  render={({ field }) => (
-                    <FormItem className="flex-grow">
-                      <FormControl>
-                        <Input placeholder="Konu adı" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={control}
-                  name={`subjects.${subjectIndex}.topics.${topicIndex}.questionCount`}
-                  render={({ field }) => (
-                    <FormItem className="w-24">
-                      <FormControl>
-                        <Input type="number" placeholder="Soru" {...field} />
-                      </FormControl>
-                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="button" variant="ghost" size="icon" onClick={() => remove(topicIndex)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+              <div key={topicField.id} className="flex items-center gap-2 p-2 border rounded-md">
+                 <div className="flex-grow space-y-2">
+                    <FormField
+                    control={control}
+                    name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
+                    render={({ field }) => (
+                        <FormItem>
+                         <FormLabel className="text-xs">Konu Adı</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Konu adı" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={control}
+                    name={`subjects.${subjectIndex}.topics.${topicIndex}.questionCount`}
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="text-xs">Soru Sayısı</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="Soru" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                 </div>
+                <div className="flex flex-col gap-2">
+                     <Controller
+                        control={control}
+                        name={`subjects.${subjectIndex}.topics.${topicIndex}`}
+                        render={({ field }) => (
+                            <AnswerKeyDialog
+                                topic={field.value}
+                                onSave={(newKey) => field.onChange({ ...field.value, answerKey: newKey })}
+                            />
+                        )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(topicIndex)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
               </div>
             ))}
        </div>
@@ -177,11 +200,42 @@ function SubjectTopics({ control, subjectIndex }: { control: any, subjectIndex: 
             variant="ghost"
             size="sm"
             className="mt-2"
-            onClick={() => append({ name: "", questionCount: 20 })}
+            onClick={() => append({ id: Date.now(), name: "", questionCount: 20, answerKey: {} })}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Konu Ekle
         </Button>
     </div>
   );
+}
+
+
+function AnswerKeyDialog({ topic, onSave }: { topic: any, onSave: (key: AnswerKey) => void }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button type="button" variant="outline" size="icon">
+                    <Key className="h-4 w-4" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                 <DialogHeader>
+                    <DialogTitle>Cevap Anahtarı: {topic.name}</DialogTitle>
+                    <DialogDescription>
+                        Bu konu için cevapları girin. Toplam {topic.questionCount || 0} soru.
+                    </DialogDescription>
+                </DialogHeader>
+                <AnswerKeyForm
+                    totalQuestions={topic.questionCount || 0}
+                    answerKey={topic.answerKey || {}}
+                    onSave={(newKey) => {
+                        onSave(newKey);
+                        setIsOpen(false);
+                    }}
+                />
+            </DialogContent>
+        </Dialog>
+    );
 }

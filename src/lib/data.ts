@@ -180,6 +180,8 @@ export interface Student {
   avatar: string;
 }
 
+export type AnswerKey = { [key: number]: string };
+
 export interface Test {
   id: number;
   title: string;
@@ -189,16 +191,21 @@ export interface Test {
   assignedDate: string;
   dueDate: string;
   status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi';
+  sourceType: 'quick' | 'bank' | 'exam';
+  sourceId?: number;
+  topicId?: number;
   score?: number;
   correctAnswers?: number;
   incorrectAnswers?: number;
   emptyAnswers?: number;
+  studentAnswers?: AnswerKey;
 }
 
 export interface Topic {
     id: number;
     name: string;
     questionCount: number;
+    answerKey?: AnswerKey;
 }
 export interface SubjectInBank {
     id: number;
@@ -220,6 +227,7 @@ export interface PracticeExam {
     id: number;
     name: string;
     subjects: SubjectInExam[];
+    answerKey?: AnswerKey;
 }
 
 export interface ExamProgressStats {
@@ -248,6 +256,7 @@ export const tests: Test[] = [
     assignedDate: '10 Temmuz 2024',
     dueDate: '17 Temmuz 2024',
     status: 'Atandı',
+    sourceType: 'quick',
   },
   {
     id: 2,
@@ -258,6 +267,7 @@ export const tests: Test[] = [
     assignedDate: '08 Temmuz 2024',
     dueDate: '15 Temmuz 2024',
     status: 'Değerlendirildi',
+    sourceType: 'quick',
     score: 86.6,
     correctAnswers: 13,
     incorrectAnswers: 2,
@@ -272,6 +282,7 @@ export const tests: Test[] = [
     assignedDate: '11 Temmuz 2024',
     dueDate: '18 Temmuz 2024',
     status: 'Atandı',
+    sourceType: 'quick',
   },
    {
     id: 4,
@@ -282,6 +293,7 @@ export const tests: Test[] = [
     assignedDate: '05 Temmuz 2024',
     dueDate: '12 Temmuz 2024',
     status: 'Değerlendirildi',
+    sourceType: 'quick',
     score: 75,
     correctAnswers: 15,
     incorrectAnswers: 4,
@@ -295,9 +307,8 @@ export const questionBanks: QuestionBank[] = [
         name: '5. Sınıf Matematik Soru Bankası',
         subjects: [
             { id: 1, name: 'Matematik', topics: [
-                { id: 1, name: 'Doğal Sayılar', questionCount: 150 },
-                { id: 2, name: 'Kesirler', questionCount: 120 },
-                { id: 3, name: 'Geometri', questionCount: 180 },
+                { id: 1, name: 'Doğal Sayılar', questionCount: 10, answerKey: { 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'A', 6: 'B', 7: 'C', 8: 'D', 9: 'A', 10: 'B' } },
+                { id: 2, name: 'Kesirler', questionCount: 10, answerKey: { 1: 'C', 2: 'C', 3: 'A', 4: 'B', 5: 'D', 6: 'A', 7: 'B', 8: 'C', 9: 'D', 10: 'A' } },
             ]}
         ]
     }
@@ -308,10 +319,13 @@ export const practiceExams: PracticeExam[] = [
         id: 1,
         name: 'LGS Deneme Sınavı 1',
         subjects: [
-            { id: 1, name: 'Türkçe', questionCount: 20 },
-            { id: 2, name: 'Matematik', questionCount: 20 },
-            { id: 3, name: 'Fen Bilimleri', questionCount: 20 },
-        ]
+            { id: 1, name: 'Türkçe', questionCount: 5 },
+            { id: 2, name: 'Matematik', questionCount: 5 },
+        ],
+        answerKey: {
+            1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E',
+            6: 'A', 7: 'B', 8: 'C', 9: 'D', 10: 'E',
+        }
     }
 ];
 
@@ -432,5 +446,3 @@ export const recipes: Recipe[] = [
         instructions: ["Meyveleri doğrayın.", "Yoğurdu bir kaseye alın, bal ile karıştırın.", "Üzerine meyveleri ve yulaf ezmesini ekleyerek servis yapın."]
     }
 ];
-
-    
