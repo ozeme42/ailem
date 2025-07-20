@@ -11,8 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, QuestionBank, PracticeExam, Test } from "@/lib/data";
+import type { Student, QuestionBank, PracticeExam, Test, AnswerKey } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { AnswerKeyForm } from "./answer-key-form";
+import { Key } from "lucide-react";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
@@ -21,6 +25,8 @@ const formSchema = z.object({
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
+  gradingType: z.enum(["auto", "manual", "none"]).default("manual"),
+  answerKey: z.record(z.string()).optional(),
 
   // Bank
   bankId: z.string().optional(),
@@ -43,19 +49,26 @@ type NewTestFormProps = {
 export function NewTestForm({ students, questionBanks, practiceExams, onAssign }: NewTestFormProps) {
   const [activeTab, setActiveTab] = React.useState<AssignmentType>("quick");
   const [selectedBankId, setSelectedBankId] = React.useState<string | null>(null);
+  const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    shouldUnregister: false, // Keep field values when tab changes
+    shouldUnregister: false,
     defaultValues: {
       questionCount: 20,
       title: "",
       subject: "",
+      gradingType: "manual",
+      answerKey: {},
       bankId: "",
       topicId: "",
       examId: "",
     },
   });
+
+  const gradingType = form.watch("gradingType");
+  const questionCount = form.watch("questionCount") || 0;
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const dueDate = format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy'); // 1 week from now
@@ -70,7 +83,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
             questionCount: values.questionCount,
             assignedDate: format(new Date(), 'dd MMMM yyyy'),
             dueDate: dueDate,
-            sourceType: 'quick'
+            sourceType: 'quick',
+            answerKey: values.gradingType === 'auto' ? values.answerKey : undefined,
         }
     } else if (activeTab === 'bank' && values.bankId && values.topicId) {
         const bank = questionBanks.find(b => b.id.toString() === values.bankId);
@@ -105,11 +119,16 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
     }
     
     if (newTest) {
+      if (activeTab === 'quick' && values.gradingType === 'none') {
+        newTest.answerKey = undefined; // Ensure no answer key for "none"
+      }
       onAssign(newTest);
       form.reset({
         questionCount: 20,
         title: "",
         subject: "",
+        gradingType: "manual",
+        answerKey: {},
         bankId: "",
         topicId: "",
         examId: "",
@@ -206,6 +225,74 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                             )}
                             />
                     </div>
+                     <FormField
+                        control={form.control}
+                        name="gradingType"
+                        render={({ field }) => (
+                            <FormItem className="space-y-3">
+                            <FormLabel>Değerlendirme Tipi</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex flex-col space-y-1"
+                                >
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="auto" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                    Otomatik Kontrol (Cevap Anahtarlı)
+                                    </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="manual" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                    Manuel Kontrol (Cevapsız)
+                                    </FormLabel>
+                                </FormItem>
+                                 <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="none" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                     Cevap Gerekmiyor (Sadece tamamlama)
+                                    </FormLabel>
+                                </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    {gradingType === 'auto' && (
+                        <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
+                            <DialogTrigger asChild>
+                            <Button type="button" variant="secondary" disabled={questionCount === 0}>
+                                <Key className="mr-2 h-4 w-4"/>
+                                Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questionCount})
+                            </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle>Cevap Anahtarı</DialogTitle>
+                                    <DialogDescription>
+                                        {form.getValues('title')} için cevapları girin. Toplam {questionCount} soru.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <AnswerKeyForm
+                                    totalQuestions={questionCount}
+                                    answerKey={form.getValues('answerKey') || {}}
+                                    onSave={(newKey: AnswerKey) => {
+                                        form.setValue('answerKey', newKey);
+                                        setIsAnswerKeyDialogOpen(false);
+                                    }}
+                                />
+                            </DialogContent>
+                        </Dialog>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="bank" className="space-y-4 m-0">

@@ -199,6 +199,7 @@ export interface Test {
   incorrectAnswers?: number;
   emptyAnswers?: number;
   studentAnswers?: AnswerKey;
+  answerKey?: AnswerKey;
 }
 
 export interface Topic {
@@ -319,7 +320,7 @@ export const questionBanks: QuestionBank[] = [
         subjects: [
             { id: 1, name: 'Matematik', topics: [
                 { id: 1, name: 'Doğal Sayılar', questionCount: 10, answerKey: { '1': 'A', '2': 'B', '3': 'C', '4': 'A', '5': 'B', '6': 'C', '7': 'A', '8': 'B', '9': 'C', '10': 'A' } },
-                { id: 2, name: 'Kesirler', questionCount: 10, answerKey: { '1': 'C', '2': 'B', '3': 'A', '4': 'A', '5': 'D', '6': 'C', '7': 'B', '8': 'A', '9': 'D', '10': 'C' } },
+                { id: 2, name: 'Kesirler', questionCount: 10, answerKey: { '1': 'C', '2': 'B', '3': 'A', '4': 'A', '5': 'B', '6': 'C', '7': 'B', '8': 'A', '9': 'C', '10': 'C' } },
             ]}
         ]
     }

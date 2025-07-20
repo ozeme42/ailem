@@ -55,6 +55,10 @@ export default function OpticalFormPage() {
                 if (exam?.answerKey && Object.keys(exam.answerKey).length > 0) {
                     keyExists = true;
                 }
+            } else if (currentTest.sourceType === 'quick') {
+                if (currentTest.answerKey && Object.keys(currentTest.answerKey).length > 0) {
+                    keyExists = true;
+                }
             }
             setHasAnswerKey(keyExists);
         }
@@ -123,17 +127,22 @@ export default function OpticalFormPage() {
                 currentTest.studentAnswers = answers;
 
                 let answerKey: { [key: number]: string } | undefined = undefined;
-
-                if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
-                    const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
-                    const bank = storedBanks.find(b => b.id === currentTest.sourceId);
-                    const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id === currentTest.topicId);
-                    answerKey = topic?.answerKey;
-                } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
-                    const storedExams: PracticeExam[] = JSON.parse(localStorage.getItem('practiceExams') || '[]');
-                    const exam = storedExams.find(e => e.id === currentTest.sourceId);
-                    answerKey = exam?.answerKey;
+                
+                if (hasAnswerKey) {
+                    if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
+                        const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
+                        const bank = storedBanks.find(b => b.id === currentTest.sourceId);
+                        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id === currentTest.topicId);
+                        answerKey = topic?.answerKey;
+                    } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
+                        const storedExams: PracticeExam[] = JSON.parse(localStorage.getItem('practiceExams') || '[]');
+                        const exam = storedExams.find(e => e.id === currentTest.sourceId);
+                        answerKey = exam?.answerKey;
+                    } else if (currentTest.sourceType === 'quick') {
+                        answerKey = currentTest.answerKey;
+                    }
                 }
+
 
                 // If there's an answer key, grade the test. Otherwise, just mark as solved.
                 if (answerKey && Object.keys(answerKey).length > 0) {
