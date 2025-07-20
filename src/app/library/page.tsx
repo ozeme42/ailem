@@ -3,8 +3,8 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Book, Film, Gamepad2, Heart, Mic, PlusCircle, Search, Star } from "lucide-react";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, Bar, XAxis, YAxis, CartesianGrid, ComposedChart, Line } from "recharts";
+import { Book, Heart, PlusCircle, Search, Star } from "lucide-react";
+import { Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MediaItem, mediaItems, MediaType, monthlyReadingStats } from "@/lib/data";
+import { MediaItem, mediaItems, monthlyReadingStats } from "@/lib/data";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 const genreData = [
@@ -23,13 +22,6 @@ const genreData = [
   { name: 'Felsefe', value: 200, fill: "hsl(var(--chart-3))" },
   { name: 'Bilim Kurgu', value: 180, fill: "hsl(var(--chart-5))" },
 ];
-
-const mediaTypeIcons: { [key in MediaType]: React.ElementType } = {
-    "Kitap": Book,
-    "Film": Film,
-    "Sesli Kitap": Mic,
-    "Oyun": Gamepad2,
-}
 
 const readingChartConfig = {
   books: {
@@ -44,15 +36,13 @@ const readingChartConfig = {
 
 
 export default function LibraryPage() {
-  const [activeTab, setActiveTab] = React.useState<MediaType | "all">("all");
   const [searchTerm, setSearchTerm] = React.useState("");
 
   const filteredMedia = (mediaItems as MediaItem[]).filter(item => {
-    const tabFilter = activeTab === "all" || item.type === activeTab;
     const searchFilter = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.genre.toLowerCase().includes(searchTerm.toLowerCase());
-    return tabFilter && searchFilter;
+    return searchFilter;
   });
 
   return (
@@ -60,7 +50,7 @@ export default function LibraryPage() {
       <PageHeader title="Aile Kütüphanesi 📚">
         <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg hover:shadow-xl transition-shadow">
           <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Medya Ekle
+          Yeni Kitap Ekle
         </Button>
       </PageHeader>
 
@@ -116,7 +106,7 @@ export default function LibraryPage() {
       
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-            <h2 className="text-2xl font-semibold text-foreground">Medya Kütüphanesi</h2>
+            <h2 className="text-2xl font-semibold text-foreground">Kitap Listesi</h2>
              <div className="w-full sm:w-auto md:w-1/3 relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -128,72 +118,57 @@ export default function LibraryPage() {
              </div>
         </div>
         
-        <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as MediaType | "all")}>
-            <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full sm:w-auto">
-                <TabsTrigger value="all">Hepsi</TabsTrigger>
-                <TabsTrigger value="Kitap"><Book className="mr-2 h-4 w-4"/>Kitaplar</TabsTrigger>
-                <TabsTrigger value="Film"><Film className="mr-2 h-4 w-4"/>Filmler</TabsTrigger>
-                <TabsTrigger value="Sesli Kitap"><Mic className="mr-2 h-4 w-4"/>Sesli Kitaplar</TabsTrigger>
-                <TabsTrigger value="Oyun"><Gamepad2 className="mr-2 h-4 w-4"/>Oyunlar</TabsTrigger>
-            </TabsList>
-            <TabsContent value={activeTab} className="mt-6">
-                 {filteredMedia.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
-                        {filteredMedia.map(item => {
-                            const Icon = mediaTypeIcons[item.type];
-                            return (
-                            <Dialog key={item.id}>
-                                <DialogTrigger asChild>
-                                    <div className="cursor-pointer group">
-                                        <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
-                                            <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
-                                            <div className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full backdrop-blur-sm">
-                                                <Icon className="h-4 w-4" />
-                                            </div>
-                                        </Card>
-                                        <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{item.title}</p>
-                                        <p className="text-xs text-muted-foreground">{item.author}</p>
+        <div className="mt-6">
+             {filteredMedia.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
+                    {filteredMedia.map(item => {
+                        return (
+                        <Dialog key={item.id}>
+                            <DialogTrigger asChild>
+                                <div className="cursor-pointer group">
+                                    <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
+                                        <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
+                                    </Card>
+                                    <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{item.title}</p>
+                                    <p className="text-xs text-muted-foreground">{item.author}</p>
+                                </div>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[625px]">
+                                <div className="grid gap-8 grid-cols-1 sm:grid-cols-2">
+                                    <div>
+                                        <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md aspect-[2/3]" data-ai-hint="book cover" />
                                     </div>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[625px]">
-                                    <div className="grid gap-8 grid-cols-1 sm:grid-cols-2">
-                                        <div>
-                                            <Image src={item.coverImage} alt={item.title} width={300} height={450} className="w-full h-auto object-cover rounded-md aspect-[2/3]" data-ai-hint="book cover" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <DialogHeader>
-                                                <Badge variant="secondary" className="w-fit mb-2">{item.type}</Badge>
-                                                <DialogTitle className="text-3xl font-bold">{item.title}</DialogTitle>
-                                                <DialogDescription className="text-lg">{item.author}</DialogDescription>
-                                            </DialogHeader>
-                                            <div className="flex items-center gap-2 my-4">
-                                                <div className="flex items-center">
-                                                    {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < Math.floor(item.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />)}
-                                                </div>
-                                                <span className="text-sm text-muted-foreground">({item.rating.toFixed(1)})</span>
+                                    <div className="flex flex-col">
+                                        <DialogHeader>
+                                            <Badge variant="secondary" className="w-fit mb-2">Kitap</Badge>
+                                            <DialogTitle className="text-3xl font-bold">{item.title}</DialogTitle>
+                                            <DialogDescription className="text-lg">{item.author}</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="flex items-center gap-2 my-4">
+                                            <div className="flex items-center">
+                                                {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < Math.floor(item.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} />)}
                                             </div>
-                                            <p className="text-sm text-muted-foreground flex-grow">{item.description}</p>
-                                            <div className="text-sm text-muted-foreground mt-4 space-y-1">
-                                                <p><strong>Tür:</strong> {item.genre}</p>
-                                                {item.pages && <p><strong>Sayfa Sayısı:</strong> {item.pages}</p>}
-                                                {item.duration && <p><strong>Süre:</strong> {item.duration}</p>}
-                                                {item.platform && <p><strong>Platform:</strong> {item.platform}</p>}
-                                            </div>
-                                            <DialogFooter className="mt-6 sm:justify-start">
-                                                <Button variant="outline" size="icon" className="group"><Heart className="group-hover:fill-red-500 group-hover:text-red-500 transition-colors"/></Button>
-                                                <Button className="w-full sm:w-auto">Okundu Olarak İşaretle</Button>
-                                            </DialogFooter>
+                                            <span className="text-sm text-muted-foreground">({item.rating.toFixed(1)})</span>
                                         </div>
+                                        <p className="text-sm text-muted-foreground flex-grow">{item.description}</p>
+                                        <div className="text-sm text-muted-foreground mt-4 space-y-1">
+                                            <p><strong>Tür:</strong> {item.genre}</p>
+                                            {item.pages && <p><strong>Sayfa Sayısı:</strong> {item.pages}</p>}
+                                        </div>
+                                        <DialogFooter className="mt-6 sm:justify-start">
+                                            <Button variant="outline" size="icon" className="group"><Heart className="group-hover:fill-red-500 group-hover:text-red-500 transition-colors"/></Button>
+                                            <Button className="w-full sm:w-auto">Okundu Olarak İşaretle</Button>
+                                        </DialogFooter>
                                     </div>
-                                </DialogContent>
-                            </Dialog>
-                        )})}
-                    </div>
-                 ) : (
-                    <Card><CardContent className="p-8 text-center text-muted-foreground">Bu kategoride sonuç bulunamadı.</CardContent></Card>
-                )}
-            </TabsContent>
-        </Tabs>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    )})}
+                </div>
+             ) : (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">Bu kategoride sonuç bulunamadı.</CardContent></Card>
+            )}
+        </div>
       </div>
     </>
   );

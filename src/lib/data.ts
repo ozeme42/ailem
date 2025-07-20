@@ -50,20 +50,16 @@ export interface CalendarEvent {
     attendees: number[];
 }
 
-export type MediaType = "Kitap" | "Film" | "Sesli Kitap" | "Oyun";
-
 export interface MediaItem {
   id: number;
   title: string;
-  author: string; // Yazar, Yönetmen, Geliştirici vb.
+  author: string; 
   coverImage: string;
-  type: MediaType;
+  type: "Kitap";
   genre: string;
   rating: number;
   description: string;
   pages?: number;
-  duration?: string;
-  platform?: string;
 }
 
 export interface Recipe {
@@ -80,11 +76,11 @@ export interface Recipe {
 
 export const mediaItems: MediaItem[] = [
   { id: 1, title: 'Küçük Prens', author: 'Antoine de Saint-Exupéry', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Fantastik', rating: 4.8, description: "Bir çocuğun gözünden yetişkinlerin dünyasına bir bakış.", pages: 112 },
-  { id: 2, title: 'Yüzüklerin Efendisi', author: 'Peter Jackson', coverImage: 'https://placehold.co/300x450.png', type: 'Film', genre: 'Fantastik', rating: 4.9, description: "Orta Dünya'yı kurtarmak için verilen epik bir mücadele.", duration: "2s 58dk" },
-  { id: 3, title: '1984', author: 'George Orwell', coverImage: 'https://placehold.co/300x450.png', type: 'Sesli Kitap', genre: 'Distopya', rating: 4.7, description: "Totaliter bir rejim altında geçen distopik bir roman.", duration: "11s 22dk" },
-  { id: 4, title: 'The Witcher 3', author: 'CD Projekt Red', coverImage: 'https://placehold.co/300x450.png', type: 'Oyun', genre: 'RPG', rating: 4.9, description: "Geralt of Rivia'nın maceralarını konu alan bir rol yapma oyunu.", platform: "PC, PS5, Xbox" },
-  { id: 5, title: 'Simyacı', author: 'Paulo Coelho', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Felsefe', rating: 4.6, description: "Hayallerinin peşinden giden bir çobanın hikayesi.", pages: 188 },
-  { id: 6, title: 'Interstellar', author: 'Christopher Nolan', coverImage: 'https://placehold.co/300x450.png', type: 'Film', genre: 'Bilim Kurgu', rating: 4.8, description: "İnsanlığın kurtuluşu için uzayda yeni bir yuva arayışı.", duration: "2s 49dk" },
+  { id: 2, title: '1984', author: 'George Orwell', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Distopya', rating: 4.7, description: "Totaliter bir rejim altında geçen distopik bir roman.", pages: 328 },
+  { id: 3, title: 'Simyacı', author: 'Paulo Coelho', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Felsefe', rating: 4.6, description: "Hayallerinin peşinden giden bir çobanın hikayesi.", pages: 188 },
+  { id: 4, title: 'Sapiens: İnsan Türünün Kısa Bir Tarihi', author: 'Yuval Noah Harari', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Tarih', rating: 4.9, description: "İnsan türünün tarih öncesi çağlardan günümüze evrimini anlatır.", pages: 443 },
+  { id: 5, title: 'Dune', author: 'Frank Herbert', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Bilim Kurgu', rating: 4.8, description: "Uzak bir gelecekte geçen epik bir bilim kurgu destanı.", pages: 412 },
+  { id: 6, title: 'Suç ve Ceza', author: 'Fyodor Dostoyevski', coverImage: 'https://placehold.co/300x450.png', type: 'Kitap', genre: 'Klasik', rating: 4.8, description: "Bir öğrencinin ahlaki mücadelesini konu alan psikolojik bir roman.", pages: 671 },
 ];
 
 export const familyMembers: FamilyMember[] = [
