@@ -12,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Book as BookType, mediaItems as initialMediaItems, monthlyReadingStats } from "@/lib/data";
+import { Book as BookType, monthlyReadingStats } from "@/lib/data";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { NewBookForm } from "@/components/new-book-form";
 import { useToast } from "@/hooks/use-toast";
+import { addBook, onBooksUpdate } from "@/lib/dataService";
+
 
 const genreData = [
   { name: 'Fantastik', value: 400, fill: "hsl(var(--chart-1))" },
@@ -44,47 +46,31 @@ export default function BooksClient() {
   const [isNewBookDialogOpen, setIsNewBookDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    try {
-        const storedMedia = localStorage.getItem('mediaItems');
-        if (storedMedia) {
-            setMediaItems(JSON.parse(storedMedia));
-        } else {
-            setMediaItems(initialMediaItems);
-            localStorage.setItem('mediaItems', JSON.stringify(initialMediaItems));
-        }
-    } catch (error) {
-        console.error("Failed to load media from localStorage", error);
-        setMediaItems(initialMediaItems);
-    }
+    const unsubscribe = onBooksUpdate(setMediaItems);
+    return () => unsubscribe();
   }, []);
 
-  const handleAddBook = (newBookData: Omit<BookType, 'id' | 'type' | 'rating'>) => {
-    const newBook: BookType = {
-      ...newBookData,
-      id: Date.now(),
-      type: "Kitap",
-      rating: 0, // New books start with 0 rating
-      image: newBookData.image || 'https://placehold.co/300x450.png',
-    };
-
-    setMediaItems(prevItems => {
-        const updatedItems = [...prevItems, newBook];
-        try {
-            localStorage.setItem('mediaItems', JSON.stringify(updatedItems));
-            toast({ title: "✅ Kitap Eklendi", description: `"${newBook.title}" kütüphaneye başarıyla eklendi.` });
-        } catch (error) {
-            toast({ title: "❌ Kaydetme Hatası", description: "Kitap kaydedilirken bir hata oluştu.", variant: 'destructive' });
-        }
-        return updatedItems;
-    });
-    setIsNewBookDialogOpen(false);
+  const handleAddBook = async (newBookData: Omit<BookType, 'id' | 'type' | 'rating'>) => {
+    try {
+        const newBook: Omit<BookType, 'id'> = {
+            ...newBookData,
+            type: "Kitap",
+            rating: 0, // New books start with 0 rating
+            image: newBookData.image || 'https://placehold.co/300x450.png',
+        };
+        await addBook(newBook);
+        toast({ title: "✅ Kitap Eklendi", description: `"${newBook.title}" kütüphaneye başarıyla eklendi.` });
+        setIsNewBookDialogOpen(false);
+    } catch (error) {
+        toast({ title: "❌ Kaydetme Hatası", description: "Kitap kaydedilirken bir hata oluştu.", variant: 'destructive' });
+    }
   }
 
 
   const filteredMedia = mediaItems.filter(item => {
     const searchFilter = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         item.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (item.author && item.author.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (item.tags && item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
     return searchFilter;
   });
 

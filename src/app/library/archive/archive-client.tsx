@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,7 +26,7 @@ import { searchBooks } from '@/ai/flows/search-books-flow';
 import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
+import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, getBooks } from '@/lib/dataService';
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -39,6 +39,8 @@ const bookFormSchema = z.object({
   isForChildren: z.boolean().default(false),
   image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
   tags: z.array(z.string()).optional(),
+  description: z.string().optional(),
+  rating: z.number().optional(),
 });
 type BookFormData = z.infer<typeof bookFormSchema>;
 
@@ -268,55 +270,15 @@ export default function ArchiveClient() {
   const formMethods = useForm<BookFormData>({ resolver: zodResolver(bookFormSchema) });
   const shelfFormMethods = useForm<ShelfFormData>({ resolver: zodResolver(shelfFormSchema) });
   
-  React.useEffect(() => {
-    try {
-        const storedMedia = localStorage.getItem('mediaItems');
-        const storedTags = localStorage.getItem('libraryTags');
-        if (storedMedia) {
-            setBooks(JSON.parse(storedMedia));
-        }
-        const initialTags = new Set<string>();
-        if (storedMedia) {
-            JSON.parse(storedMedia).forEach((book: Book) => {
-                (book.tags || []).forEach(tag => initialTags.add(tag));
-            });
-        }
-        if (storedTags) {
-             JSON.parse(storedTags).forEach((tag: string) => initialTags.add(tag));
-        }
-        setAllTags(Array.from(initialTags).sort((a,b) => a.localeCompare(b, 'tr')));
+  useEffect(() => {
+    const unsubscribeBooks = onBooksUpdate(setBooks);
+    const unsubscribeTags = onTagsUpdate(setAllTags);
 
-    } catch (error) {
-        console.error("Failed to load media from localStorage", error);
-    }
+    return () => {
+        unsubscribeBooks();
+        unsubscribeTags();
+    };
   }, []);
-
-  const updateBooks = (updatedBooks: Book[]) => {
-    setBooks(updatedBooks);
-    try {
-        localStorage.setItem('mediaItems', JSON.stringify(updatedBooks));
-        // Recalculate tags from books after update
-        const newTags = new Set<string>();
-        updatedBooks.forEach(book => {
-          (book.tags || []).forEach(tag => newTags.add(tag));
-        });
-        // Keep existing tags that might be empty
-        allTags.forEach(tag => newTags.add(tag));
-        const sortedTags = Array.from(newTags).sort((a, b) => a.localeCompare(b, 'tr'));
-        setAllTags(sortedTags);
-        localStorage.setItem('libraryTags', JSON.stringify(sortedTags));
-
-    } catch (error) {
-        toast({ title: "❌ Kaydetme Hatası", description: "Değişiklikler kaydedilirken bir hata oluştu.", variant: 'destructive'});
-    }
-  };
-  
-  const updateTags = (updatedTags: string[]) => {
-      const sortedTags = updatedTags.sort((a, b) => a.localeCompare(b, 'tr'));
-      setAllTags(sortedTags);
-      localStorage.setItem('libraryTags', JSON.stringify(sortedTags));
-  }
-
 
   const handleOpenAddDialog = useCallback((initialData: Partial<Book> | null = null) => {
     setEditingBook(initialData && 'id' in initialData ? initialData as Book : null);
@@ -327,31 +289,43 @@ export default function ArchiveClient() {
         image: initialData?.image || '',
         isForChildren: initialData?.isForChildren || false,
         tags: initialData?.tags || [],
+        description: initialData?.description || '',
+        rating: initialData?.rating || 0
     });
     setIsAddBookDialogOpen(true);
   }, [formMethods]);
 
-  const handleAddOrUpdateBook = (formData: BookFormData) => {
-    if (editingBook) {
-      updateBooks(books.map(b => b.id === editingBook.id ? { ...editingBook, ...formData } : b));
-      toast({ title: "Kitap Güncellendi" });
-    } else {
-      const newBook: Book = {
-        id: Date.now(),
-        type: 'Kitap',
-        rating: 0,
-        description: '',
-        ...formData,
-      };
-      updateBooks([...books, newBook]);
-      toast({ title: "Kitap Eklendi" });
+  const handleAddOrUpdateBook = async (formData: BookFormData) => {
+    try {
+        const newTags = new Set([...allTags, ...(formData.tags || [])]);
+        await updateTags(Array.from(newTags));
+        
+        if (editingBook) {
+            await updateBook(editingBook.id, formData);
+            toast({ title: "Kitap Güncellendi" });
+        } else {
+            const newBook: Omit<Book, 'id'> = {
+                type: 'Kitap',
+                rating: 0,
+                description: '',
+                ...formData,
+            };
+            await addBook(newBook);
+            toast({ title: "Kitap Eklendi" });
+        }
+        setIsAddBookDialogOpen(false);
+    } catch(e) {
+        toast({ title: "❌ Hata", description: "İşlem sırasında bir hata oluştu.", variant: 'destructive'});
     }
-    setIsAddBookDialogOpen(false);
   };
 
-  const handleDeleteBook = (bookId: number) => {
-    updateBooks(books.filter(b => b.id !== bookId));
-    toast({ title: "Kitap Silindi", variant: 'destructive' });
+  const handleDeleteBook = async (bookId: string) => {
+    try {
+        await deleteBook(bookId);
+        toast({ title: "Kitap Silindi", variant: 'destructive' });
+    } catch(e) {
+        toast({ title: "❌ Hata", description: "Kitap silinirken bir hata oluştu.", variant: 'destructive'});
+    }
   };
   
   const handleAddToMyLibrary = (book: Book) => {
@@ -387,19 +361,34 @@ export default function ArchiveClient() {
     handleOpenAddDialog(book);
   };
   
-  const handleBulkImport = (importedBooks: Partial<Book>[]) => {
-    const newBooks: Book[] = importedBooks.map((book, index) => ({
-        id: Date.now() + index,
-        type: 'Kitap',
-        rating: 0,
-        description: '',
-        isForChildren: false,
-        ...book,
-        tags: book.tags || [],
-    }));
-    updateBooks([...books, ...newBooks]);
-    toast({ title: `${newBooks.length} kitap başarıyla eklendi.` });
-    setIsBulkJsonDialogOpen(false);
+  const handleBulkImport = async (importedBooks: Partial<Book>[]) => {
+    try {
+        const currentBooks = await getBooks();
+        const allCurrentTags = new Set(allTags);
+        
+        const newBooks = importedBooks.map((book) => {
+            (book.tags || []).forEach(tag => allCurrentTags.add(tag));
+            return {
+                type: 'Kitap',
+                rating: 0,
+                description: '',
+                isForChildren: false,
+                ...book,
+                tags: book.tags || [],
+            } as Omit<Book, 'id'>;
+        });
+
+        for (const book of newBooks) {
+            await addBook(book);
+        }
+        
+        await updateTags(Array.from(allCurrentTags));
+
+        toast({ title: `${newBooks.length} kitap başarıyla eklendi.` });
+        setIsBulkJsonDialogOpen(false);
+    } catch (e) {
+        toast({ title: "❌ Hata", description: "Toplu ekleme sırasında bir hata oluştu.", variant: 'destructive'});
+    }
   };
   
   const handleOpenShelfDialog = (shelfName: string | null) => {
@@ -408,7 +397,7 @@ export default function ArchiveClient() {
       setEditingShelf({ originalName: shelfName || '', isNew });
   }
 
-  const handleShelfFormSubmit = (data: ShelfFormData) => {
+  const handleShelfFormSubmit = async (data: ShelfFormData) => {
       if (!editingShelf) return;
       const newShelfName = data.name.trim();
 
@@ -417,29 +406,40 @@ export default function ArchiveClient() {
           return;
       }
       
-      if (editingShelf.isNew) { // Add new shelf
-          updateTags([...allTags, newShelfName]);
-          toast({ title: "Raf Eklendi", description: `"${newShelfName}" rafı başarıyla oluşturuldu.` });
-      } else { // Update existing shelf
-          const updatedBooks = books.map(book => {
-              const newTags = (book.tags || []).map(tag => tag === editingShelf.originalName ? newShelfName : tag);
-              return { ...book, tags: newTags };
-          });
-          updateBooks(updatedBooks); // This will also update tags
-          toast({ title: "Raf Güncellendi", description: `"${editingShelf.originalName}" rafının adı "${newShelfName}" olarak değiştirildi.` });
+      try {
+        if (editingShelf.isNew) { // Add new shelf
+            await updateTags([...allTags, newShelfName]);
+            toast({ title: "Raf Eklendi", description: `"${newShelfName}" rafı başarıyla oluşturuldu.` });
+        } else { // Update existing shelf
+            const booksToUpdate = books.filter(book => (book.tags || []).includes(editingShelf.originalName));
+            for(const book of booksToUpdate) {
+                const newTags = (book.tags || []).map(tag => tag === editingShelf.originalName ? newShelfName : tag);
+                await updateBook(book.id, { tags: newTags });
+            }
+            const newAllTags = allTags.map(tag => tag === editingShelf.originalName ? newShelfName : tag);
+            await updateTags(newAllTags);
+            toast({ title: "Raf Güncellendi", description: `"${editingShelf.originalName}" rafının adı "${newShelfName}" olarak değiştirildi.` });
+        }
+      } catch (e) {
+          toast({ title: "❌ Hata", description: "Raf güncellenirken bir hata oluştu.", variant: 'destructive'});
       }
+
 
       setEditingShelf(null);
   };
 
-  const handleDeleteShelf = (shelfName: string) => {
-    const updatedBooks = books.map(book => {
-        const newTags = (book.tags || []).filter(tag => tag !== shelfName);
-        return { ...book, tags: newTags };
-    });
-    updateBooks(updatedBooks);
-    updateTags(allTags.filter(tag => tag !== shelfName));
-    toast({ title: "Raf Silindi", description: `"${shelfName}" rafı ve etiketleri tüm kitaplardan kaldırıldı.`, variant: 'destructive'});
+  const handleDeleteShelf = async (shelfName: string) => {
+    try {
+        const booksToUpdate = books.filter(book => (book.tags || []).includes(shelfName));
+        for(const book of booksToUpdate) {
+            const newTags = (book.tags || []).filter(tag => tag !== shelfName);
+            await updateBook(book.id, { tags: newTags });
+        }
+        await updateTags(allTags.filter(tag => tag !== shelfName));
+        toast({ title: "Raf Silindi", description: `"${shelfName}" rafı ve etiketleri tüm kitaplardan kaldırıldı.`, variant: 'destructive'});
+    } catch(e) {
+        toast({ title: "❌ Hata", description: "Raf silinirken bir hata oluştu.", variant: 'destructive'});
+    }
   };
 
   const { adultBooks, childrenBooks } = useMemo(() => {
@@ -618,7 +618,7 @@ export default function ArchiveClient() {
 }
 
 // BOOKSHELF COMPONENT
-function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[], onAddToLibrary: (book: Book) => void, onEdit: (book: Book) => void, onDelete: (id: number) => void }) {
+function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[], onAddToLibrary: (book: Book) => void, onEdit: (book: Book) => void, onDelete: (id: string) => void }) {
   const shelves = useMemo(() => {
     const grouped: Record<string, Book[]> = {};
     books.forEach(book => {
@@ -753,5 +753,3 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
-
-    

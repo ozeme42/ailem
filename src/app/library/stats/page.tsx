@@ -8,7 +8,8 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Book, User, Library, Star } from "lucide-react";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { mediaItems, monthlyReadingStats, familyMembers } from "@/lib/data";
+import { Book as BookType, monthlyReadingStats, familyMembers } from "@/lib/data";
+import { onBooksUpdate } from "@/lib/dataService";
 
 const genreData = [
   { name: 'Fantastik', value: 4, fill: "hsl(var(--chart-1))" },
@@ -41,10 +42,17 @@ const memberReadingConfig = {
 
 
 export default function LibraryStatsPage() {
-    const totalBooks = mediaItems.length;
-    const totalAuthors = new Set(mediaItems.map(b => b.author)).size;
-    const totalPages = mediaItems.reduce((sum, book) => sum + (book.pages || 0), 0);
-    const avgRating = (mediaItems.reduce((sum, book) => sum + book.rating, 0) / totalBooks).toFixed(1);
+    const [books, setBooks] = React.useState<BookType[]>([]);
+
+    React.useEffect(() => {
+        const unsubscribe = onBooksUpdate(setBooks);
+        return () => unsubscribe();
+    }, []);
+
+    const totalBooks = books.length;
+    const totalAuthors = new Set(books.map(b => b.author)).size;
+    const totalPages = books.reduce((sum, book) => sum + (book.pages || 0), 0);
+    const avgRating = totalBooks > 0 ? (books.reduce((sum, book) => sum + book.rating, 0) / totalBooks).toFixed(1) : 0;
 
   return (
     <>

@@ -1,20 +1,32 @@
 
+"use client";
+
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { mediaItems, familyMembers, Book } from '@/lib/data';
+import { familyMembers, type Book } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, Calendar, CheckSquare, Target, Library } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
+import React from 'react';
+import { onBooksUpdate } from '@/lib/dataService';
+
 
 export default function LibraryPage() {
   // This is a placeholder for the current user. In a real app, you'd get this from an auth context.
   const currentUser = familyMembers[0]; 
+  const [allBooks, setAllBooks] = React.useState<Book[]>([]);
+
+  React.useEffect(() => {
+    const unsubscribe = onBooksUpdate(setAllBooks);
+    return () => unsubscribe();
+  }, []);
   
   // This is placeholder logic to assign some books to the current user.
-  const myBooks = mediaItems.slice(0, 5).map((book, i) => ({
+  // In a real app, this would come from a 'userBooks' collection in Firestore.
+  const myBooks = allBooks.slice(0, 5).map((book, i) => ({
       ...book,
       // Fake some progress
       progress: (i * 25) % 101
@@ -111,12 +123,18 @@ function BookCard({ book }: { book: Book & { progress: number } }) {
                 <CardDescription>{book.author}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-               {book.progress > 0 && (
+               {book.progress > 0 && book.progress < 100 && (
                    <div>
                        <Progress value={book.progress} />
                        <p className="text-xs text-muted-foreground mt-1">{book.progress}% tamamlandı</p>
                    </div>
                )}
+                {book.progress >= 100 && (
+                     <div className="text-sm font-medium text-green-600 flex items-center gap-2">
+                        <CheckSquare className="h-4 w-4" />
+                        <span>Tamamlandı</span>
+                    </div>
+                )}
             </CardContent>
         </Card>
     )
