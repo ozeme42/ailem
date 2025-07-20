@@ -1,7 +1,7 @@
 
 "use client";
 import * as React from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -9,12 +9,10 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, ShoppingCart, TrendingUp, DollarSign, ChevronDown } from "lucide-react";
-import { familyMembers, type ShoppingList, type ShoppingItem } from "@/lib/data";
+import type { ShoppingList, ShoppingItem } from "@/lib/data";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +40,6 @@ export default function ShoppingPage() {
   React.useEffect(() => {
     const unsubscribe = onShoppingListsUpdate((lists) => {
         setShoppingLists(lists);
-        // Keep newly created lists open
         if (openLists.length === 0 && lists.length > 0) {
             setOpenLists(lists.map(l => l.id));
         }
@@ -54,13 +51,11 @@ export default function ShoppingPage() {
     setOpenLists(prev => prev.includes(id) ? prev.filter(listId => listId !== id) : [...prev, id]);
   };
   
-  const getAssignee = (assigneeId: number) => {
-    return familyMembers.find((m) => m.id === assigneeId)!;
-  };
-
   const calculateListTotals = (list: ShoppingList) => {
     const completedCount = list.items.filter(i => i.completed).length;
-    return { completedCount };
+    const totalCost = list.items.reduce((sum, item) => sum + item.price, 0);
+    const completedCost = list.items.filter(i => i.completed).reduce((sum, item) => sum + item.price, 0);
+    return { completedCount, totalCost, completedCost };
   }
 
   const handleItemToggle = async (list: ShoppingList, itemId: number) => {
@@ -75,13 +70,9 @@ export default function ShoppingPage() {
   }
 
   const handleCreateList = async (data: NewListFormData) => {
-      // Assign to a random family member for now
-      const randomAssignee = familyMembers[Math.floor(Math.random() * familyMembers.length)];
       const newList: Omit<ShoppingList, 'id'> = {
           title: data.title,
           category: "Market", // Default category
-          assigneeId: randomAssignee.id,
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
           items: []
       }
       try {
@@ -93,6 +84,10 @@ export default function ShoppingPage() {
           toast({ title: "Hata", description: "Liste oluşturulamadı.", variant: 'destructive'});
       }
   }
+  
+  const totalSpendThisMonth = shoppingLists.reduce((total, list) => {
+      return total + list.items.filter(i => i.completed).reduce((sum, i) => sum + i.price, 0);
+  }, 0);
 
 
   return (
@@ -137,13 +132,22 @@ export default function ShoppingPage() {
             <p className="text-xs text-muted-foreground">Tüm alışveriş listeleri</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Bu Ay Harcanan</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₺{totalSpendThisMonth.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Tamamlanan ürünlerin toplamı</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="space-y-4">
         {shoppingLists.map(list => {
-          const { completedCount } = calculateListTotals(list);
+          const { completedCount, totalCost } = calculateListTotals(list);
           const completionProgress = list.items.length > 0 ? (completedCount / list.items.length) * 100 : 0;
-          const assignee = getAssignee(list.assigneeId);
 
           return (
             <Collapsible
@@ -158,19 +162,12 @@ export default function ShoppingPage() {
                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 cursor-pointer">
                          <div className="flex-grow">
                             <CardTitle>{list.title}</CardTitle>
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
-                                <div className="flex items-center gap-1">
-                                    <Avatar className="h-6 w-6">
-                                      <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                                      <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <span>{assignee.name}</span>
-                                </div>
-                                <span className="hidden sm:inline">•</span>
-                                <span>Teslim: {new Date(list.dueDate).toLocaleDateString('tr-TR')}</span>
-                            </div>
                          </div>
                          <div className="flex items-center gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                            <div className="flex items-center text-green-600 font-semibold">
+                                <DollarSign size={16} />
+                                <span>{totalCost.toFixed(2)}</span>
+                            </div>
                             <Button variant="ghost" size="icon" className="shrink-0">
                                <ChevronDown className={`h-4 w-4 transition-transform ${openLists.includes(list.id) ? 'rotate-180' : ''}`} />
                             </Button>
@@ -183,7 +180,7 @@ export default function ShoppingPage() {
                       <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>Tamamlanma: {completedCount}/{list.items.length}</span>
                       </div>
-                      <Progress value={completionProgress} indicatorClassName="bg-blue-500" />
+                      <Progress value={completionProgress} indicatorClassName="bg-green-500" />
                     </div>
                   <CollapsibleContent>
                     <div className="space-y-2 border-t pt-4">

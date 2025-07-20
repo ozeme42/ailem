@@ -207,9 +207,6 @@ export interface ShoppingList {
   title: string;
   category: string;
   items: ShoppingItem[];
-  totalBudget?: number;
-  assigneeId: number;
-  dueDate: string;
 }
 
 export interface ShoppingItem {
@@ -273,9 +270,6 @@ export const initialShoppingLists: Omit<ShoppingList, 'id'>[] = [
             { id: 2, name: 'Ekmek', quantity: '1 adet', price: 5.00, completed: true },
             { id: 3, name: 'Yumurta', quantity: '10 adet', price: 25.50, completed: false },
         ],
-        totalBudget: 250,
-        assigneeId: 2,
-        dueDate: '2024-08-10',
     }
 ]
 
