@@ -16,7 +16,7 @@ import { updateTask } from "@/lib/dataService";
 
 interface TaskItemProps {
   task: Task;
-  assignee: FamilyMember;
+  assignee?: FamilyMember;
 }
 
 export function TaskItem({ task, assignee }: TaskItemProps) {
@@ -28,14 +28,12 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
     const newCompletionState = !isCompleted;
     try {
         await updateTask(task.id, { completed: newCompletionState });
-        setIsCompleted(newCompletionState); // Optimistic update
+        // Optimistic update will be handled by onSnapshot
         if (newCompletionState) {
           toast({
             title: "🎉 Görev Tamamlandı!",
-            description: `Harika iş, ${assignee.name}! ${task.points} XP kazandın.`,
+            description: `Harika iş, ${assignee?.name || ''}! ${task.points} XP kazandın.`,
           });
-          // Optimistically update subtasks UI
-          setSubtasks(subtasks.map(st => ({ ...st, completed: true })));
         }
     } catch (error) {
         toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
@@ -49,24 +47,28 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
 
     try {
         await updateTask(task.id, { subtasks: newSubtasks });
-        setSubtasks(newSubtasks); // Optimistic update
 
         const allSubtasksCompleted = newSubtasks.every(st => st.completed);
-        if (allSubtasksCompleted && !isCompleted) {
+        if (allSubtasksCompleted && !task.completed) {
             await updateTask(task.id, { completed: true });
-            setIsCompleted(true);
             toast({
                 title: "🎉 Görev Tamamlandı!",
-                description: `Harika iş, ${assignee.name}! ${task.points} XP kazandın.`,
+                description: `Harika iş, ${assignee?.name || ''}! ${task.points} XP kazandın.`,
             });
-        } else if (!allSubtasksCompleted && isCompleted) {
+        } else if (!allSubtasksCompleted && task.completed) {
              await updateTask(task.id, { completed: false });
-            setIsCompleted(false);
         }
     } catch (error) {
         toast({ title: "Hata", description: "Alt görev güncellenirken bir sorun oluştu.", variant: "destructive"});
     }
   };
+  
+  // Update local state if task prop changes (due to real-time updates from onSnapshot)
+  React.useEffect(() => {
+    setIsCompleted(task.completed);
+    setSubtasks(task.subtasks || []);
+  }, [task]);
+
 
   const completedSubtasks = subtasks.filter(st => st.completed).length;
   const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : (isCompleted ? 100 : 0);
@@ -77,13 +79,6 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
     Orta: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
     Zor: 'border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-400',
   }
-
-  // Update local state if task prop changes (due to real-time updates)
-  React.useEffect(() => {
-    setIsCompleted(task.completed);
-    setSubtasks(task.subtasks || []);
-  }, [task]);
-
 
   return (
     <Collapsible>
@@ -124,7 +119,7 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
                   alt={assignee.name}
                   width={32}
                   height={32}
-                  className="rounded-full"
+                  className="rounded-full object-cover"
                   data-ai-hint="person"
                 />
                 <span className="text-sm font-medium hidden md:inline">{assignee.name}</span>

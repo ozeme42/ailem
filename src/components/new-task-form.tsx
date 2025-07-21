@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import type { FamilyMember, Task } from "@/lib/data";
 import { addTask } from "@/lib/dataService";
+import { useAuth } from "./auth-provider";
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Başlık en az 3 karakter olmalıdır." }),
@@ -34,6 +35,8 @@ type NewTaskFormProps = {
 
 export function NewTaskForm({ familyMembers, onTaskCreated }: NewTaskFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -50,10 +53,14 @@ export function NewTaskForm({ familyMembers, onTaskCreated }: NewTaskFormProps) 
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+        toast({ title: "Hata", description: "Görevi oluşturmak için giriş yapmalısınız.", variant: "destructive"});
+        return;
+    }
     try {
-        const newTask: Omit<Task, 'id'> = {
+        const newTask: Omit<Task, 'id' | 'familyId'> = {
             title: values.title,
-            assigneeId: Number(values.assigneeId),
+            assigneeId: values.assigneeId,
             difficulty: values.difficulty,
             dueDate: format(values.dueDate, "yyyy-MM-dd"),
             category: values.category,
@@ -61,7 +68,7 @@ export function NewTaskForm({ familyMembers, onTaskCreated }: NewTaskFormProps) 
             completed: false,
             subtasks: []
         };
-        await addTask(newTask);
+        await addTask(newTask, user.familyId);
 
         toast({
             title: "✅ Görev Başarıyla Oluşturuldu!",

@@ -1,8 +1,10 @@
+
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
 import { PlusCircle, Search, Star, Mic, Filter, ChevronDown, Loader2 } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -10,24 +12,32 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
-import { familyMembers, Task } from "@/lib/data";
-import { onTasksUpdate } from "@/lib/dataService";
+import { Task } from "@/lib/data";
+import { onTasksUpdate, addTask } from "@/lib/dataService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTaskForm } from "@/components/new-task-form";
 
 export default function TasksPage() {
+  const { user, familyMembers, loading: authLoading } = useAuth();
   const [tasks, setTasks] = React.useState<Task[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    const unsubscribe = onTasksUpdate(setTasks);
-    return () => unsubscribe();
-  }, []);
+    if (user?.familyId) {
+      setLoading(true);
+      const unsubscribe = onTasksUpdate(user.familyId, (updatedTasks) => {
+        setTasks(updatedTasks);
+        setLoading(false);
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
   
-  const getAssignee = (assigneeId: number) => {
+  const getAssignee = (assigneeId: string) => {
     return familyMembers.find((m) => m.id === assigneeId)!;
   };
   
@@ -143,7 +153,7 @@ export default function TasksPage() {
                 {leaderboard.map((member, index) => (
                     <li key={member.id} className="flex items-center gap-3">
                       <span className="font-bold text-lg w-6">{index + 1}.</span>
-                      <Image src={member.avatar} alt={member.name} width={40} height={40} className="rounded-full" data-ai-hint="people" />
+                      <Image src={member.avatar} alt={member.name} width={40} height={40} className="rounded-full object-cover" data-ai-hint="person" />
                       <div className="flex-grow">
                         <p className="font-semibold">{member.name}</p>
                         <div className="flex items-center text-sm text-yellow-500">

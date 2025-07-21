@@ -1,8 +1,15 @@
 
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
+export interface User {
+    uid: string;
+    email: string;
+    name: string;
+    familyId: string;
+}
+
 export interface FamilyMember {
-  id: number;
+  id: string; // Using string for ID now
   name: string;
   role: 'Baba' | 'Anne' | 'Kız Çocuk' | 'Erkek Çocuk' | 'Bebek';
   avatar: string;
@@ -24,8 +31,9 @@ export interface Subtask {
 
 export interface Task {
   id: string;
+  familyId: string; // To scope tasks to a family
   title: string;
-  assigneeId: number;
+  assigneeId: string; // Now refers to FamilyMember.id
   points: number;
   dueDate: string;
   completed: boolean;
@@ -39,6 +47,7 @@ export interface Task {
 
 export interface CalendarEvent {
     id: string;
+    familyId: string;
     title: string;
     startDate: string; // ISO 8601 format
     endDate?: string; // ISO 8601 format
@@ -47,6 +56,7 @@ export interface CalendarEvent {
 
 export interface Book {
   id: string;
+  familyId: string;
   title: string;
   author: string; 
   image: string;
@@ -78,14 +88,6 @@ export type MealPlan = {
 // Static data that doesn't change often can remain here.
 // Data that will be managed by the user is now in Firestore.
 
-export const familyMembers: FamilyMember[] = [
-  { id: 1, name: 'Ahmet', role: 'Baba', avatar: 'https://placehold.co/64x64.png', completedTasks: 18, color: '#3B82F6', level: 5, xp: 4250, streak: 7, badges: ['🏆', '⚡', '🎯'], mood: 'happy', status: 'online' },
-  { id: 2, name: 'Zeynep', role: 'Anne', avatar: 'https://placehold.co/64x64.png', completedTasks: 22, color: '#EC4899', level: 6, xp: 5580, streak: 12, badges: ['👑', '💎', '🌟', '🔥'], mood: 'excited', status: 'online' },
-  { id: 3, name: 'Elif', role: 'Kız Çocuk', avatar: 'https://placehold.co/64x64.png', completedTasks: 14, color: '#8B5CF6', level: 4, xp: 3890, streak: 5, badges: ['📚', '🎨', '⭐'], mood: 'focused', status: 'away' },
-  { id: 4, name: 'Murat', role: 'Erkek Çocuk', avatar: 'https://placehold.co/64x64.png', completedTasks: 10, color: '#F59E0B', level: 3, xp: 2650, streak: 3, badges: ['🎵', '🏃‍♂️'], mood: 'playful', status: 'online' },
-];
-
-
 export const recentActivities = [
     { id: 1, user: 'Elif', title: 'Matematik ödevi tamamlandı', time: '5 dakika önce', icon: GraduationCap, color: 'from-purple-500 to-indigo-500', points: 25 },
     { id: 2, user: 'Zeynep', title: 'Haftalık alışveriş tamamlandı', time: '1 saat önce', icon: ShoppingCart, color: 'from-green-500 to-emerald-500', points: 30 },
@@ -113,7 +115,7 @@ export const monthlyReadingStats = [
 ];
 
 export interface Student {
-  id: number;
+  id: string; // Changed to string to match FamilyMember.id
   name: string;
   grade: string;
   avatar: string;
@@ -125,9 +127,10 @@ export type GradingType = 'auto' | 'manual-text' | 'manual';
 
 export interface Test {
   id: string;
+  familyId: string;
   title: string;
   subject: string;
-  studentId: number;
+  studentId: string; // Changed to string to match FamilyMember.id
   questionCount: number;
   assignedDate: string;
   dueDate: string;
@@ -159,6 +162,7 @@ export interface SubjectInBank {
 }
 export interface QuestionBank {
     id: string;
+    familyId: string;
     name: string;
     subjects: SubjectInBank[];
 }
@@ -170,6 +174,7 @@ export interface SubjectInExam {
 }
 export interface PracticeExam {
     id: string;
+    familyId: string;
     name: string;
     subjects: SubjectInExam[];
     gradingType: GradingType;
@@ -183,24 +188,24 @@ export interface ExamProgressStats {
     empty: number;
 }
 export interface ExamProgress {
-    questionBank: { [bankId: string]: { [studentId: number]: ExamProgressStats } };
-    practiceExam: { [examId: string]: { [studentId: number]: ExamProgressStats } };
+    questionBank: { [bankId: string]: { [studentId: string]: ExamProgressStats } }; // studentId is string
+    practiceExam: { [examId: string]: { [studentId: string]: ExamProgressStats } }; // studentId is string
 }
 
 export const students: Student[] = [
-  { id: 3, name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
-  { id: 4, name: 'Murat', grade: '8. Sınıf', avatar: '👦' },
+  { id: "3", name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
+  { id: "4", name: 'Murat', grade: '8. Sınıf', avatar: '👦' },
 ];
 
 export const examProgress: ExamProgress = {
     questionBank: {
         "1": { 
-            3: { questionsSolved: 80, correct: 65, incorrect: 10, empty: 5 }
+            "3": { questionsSolved: 80, correct: 65, incorrect: 10, empty: 5 }
         }
     },
     practiceExam: {
         "1": {
-            4: { questionsSolved: 60, correct: 45, incorrect: 12, empty: 3 }
+            "4": { questionsSolved: 60, correct: 45, incorrect: 12, empty: 3 }
         }
     }
 };
@@ -213,6 +218,7 @@ export interface ShoppingItem {
 
 export interface ShoppingList {
   id: string;
+  familyId: string;
   name: string;
   icon: string;
   items: ShoppingItem[];
@@ -225,6 +231,7 @@ export interface ShoppingNoteItem {
 
 export interface ShoppingNoteList {
     id: string;
+    familyId: string;
     name: string;
     icon: string;
     items: ShoppingNoteItem[];
@@ -265,17 +272,17 @@ export const recipes: Recipe[] = [
 ];
 
 // Initial data for Firestore (if needed for a setup script)
-export const initialBooks: Omit<Book, 'id'>[] = [
+export const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
     { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false },
     { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
 ];
 
-export const initialTasks: Omit<Task, 'id'>[] = [
-    { title: 'Odanı Topla', assigneeId: 3, points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
-    { title: 'Matematik Ödevi', assigneeId: 4, points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
+export const initialTasks: Omit<Task, 'id' | 'familyId'>[] = [
+    { title: 'Odanı Topla', assigneeId: "3", points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
+    { title: 'Matematik Ödevi', assigneeId: "4", points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
 ];
 
-export const initialShoppingLists: Omit<ShoppingList, 'id'>[] = [
+export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
     {
         name: 'Haftalık Market Alışverişi',
         icon: 'ShoppingCart',
@@ -287,7 +294,7 @@ export const initialShoppingLists: Omit<ShoppingList, 'id'>[] = [
     }
 ]
 
-export const initialCalendarEvents: Omit<CalendarEvent, 'id'>[] = [
+export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
     { title: 'Doktor Randevusu', startDate: '2024-08-20', recurrence: 'one-time' },
     { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
 ]
@@ -299,7 +306,7 @@ export const initialMealPlan: MealPlan = {
   },
 };
 
-export const initialQuestionBanks: Omit<QuestionBank, 'id'>[] = [
+export const initialQuestionBanks: Omit<QuestionBank, 'id' | 'familyId'>[] = [
     {
         name: "5. Sınıf Matematik Soru Bankası",
         subjects: [
@@ -315,7 +322,7 @@ export const initialQuestionBanks: Omit<QuestionBank, 'id'>[] = [
     }
 ];
 
-export const initialPracticeExams: Omit<PracticeExam, 'id'>[] = [
+export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
      {
         name: "LGS Deneme Sınavı 1",
         gradingType: 'auto',
@@ -328,11 +335,11 @@ export const initialPracticeExams: Omit<PracticeExam, 'id'>[] = [
     }
 ];
 
-export const initialTests: Omit<Test, 'id' | 'status'>[] = [
+export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
     {
         title: "LGS Deneme Sınavı 1",
         subject: "Deneme Sınavı",
-        studentId: 4,
+        studentId: "4",
         questionCount: 60,
         assignedDate: "01 Ağustos 2024",
         dueDate: "15 Ağustos 2024",

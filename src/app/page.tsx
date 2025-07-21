@@ -2,14 +2,18 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, Sun } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, Sun, UserPlus } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-
+import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { familyMembers, weeklyPoints, recentActivities } from "@/lib/data";
+import { weeklyPoints, recentActivities } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { NewFamilyMemberForm } from "@/components/new-family-member-form";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const quickStats = [
   { title: 'Tamamlanan Görevler', value: '24', change: '+8', icon: CheckSquare, color: 'text-green-500', bgColor: 'bg-green-500/10' },
@@ -34,8 +38,11 @@ const weeklyProgressChartConfig = {
 } satisfies ChartConfig
 
 export default function Home() {
+  const { user, familyMembers, loading } = useAuth();
   const [greeting, setGreeting] = React.useState('');
   const [formattedDate, setFormattedDate] = React.useState('');
+  const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
+
 
    React.useEffect(() => {
     const updateDateTime = () => {
@@ -60,12 +67,27 @@ export default function Home() {
   
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
 
+  if (loading) {
+    return (
+        <div className="space-y-8">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-24 w-full" />
+             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+            </div>
+        </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <header className="rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg">
         <div className="flex flex-col sm:flex-row items-start justify-between">
             <div>
-                <h1 className="text-3xl font-bold">{greeting ? `${greeting}, Aile! 👋` : 'Yükleniyor...'}</h1>
+                <h1 className="text-3xl font-bold">{greeting ? `${greeting}, ${user?.name || 'Aile'}! 👋` : 'Yükleniyor...'}</h1>
                 <p className="mt-1 opacity-90">
                     {formattedDate || '...'}
                 </p>
@@ -111,7 +133,26 @@ export default function Home() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-foreground mb-4">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
+        <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
+            <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Üye Ekle
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Yeni Aile Üyesi Ekle</DialogTitle>
+                    <DialogDescription>
+                        Ailenize yeni bir üye (çocuk veya başka bir veli) ekleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                <NewFamilyMemberForm onMemberAdded={() => setIsMemberFormOpen(false)} />
+              </DialogContent>
+            </Dialog>
+        </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {familyMembers.map((member) => (
             <FamilyMemberCard key={member.id} member={member} />

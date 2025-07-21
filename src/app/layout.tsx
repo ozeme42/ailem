@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Inter } from 'next/font/google';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
 import { Toaster } from "@/components/ui/toaster";
-import { MobileNavbar } from '@/components/mobile-navbar';
+import { AuthProvider } from '@/components/auth-provider';
+import AppLayout from '@/components/app-layout';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -21,15 +20,11 @@ export default function RootLayout({
   return (
     <html lang="tr" className="dark">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 h-full">
-              {children}
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-        <MobileNavbar />
+        <AuthProvider>
+          <AppLayout>
+            {children}
+          </AppLayout>
+        </AuthProvider>
         <Toaster />
       </body>
     </html>
