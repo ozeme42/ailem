@@ -61,17 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setLoading(false);
             }
           } else {
-            // This can happen if the user is authenticated but their doc doesn't exist yet.
-            // Let's wait a moment and then sign out if it's still not there.
-            setTimeout(async () => {
-                const checkAgain = await getDoc(userDocRef);
-                if (!checkAgain.exists()) {
-                    await signOut(auth);
-                    setUser(null);
-                    setFamilyMembers([]);
-                    setLoading(false);
-                }
-            }, 2000);
+            // Document doesn't exist, which is an issue. Log out the user.
+            setUser(null); 
+            setLoading(false);
           }
         } catch (error) {
            console.error("Error fetching user data:", error);
