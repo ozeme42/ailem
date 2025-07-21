@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, setDoc, getDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot, collection, addDoc, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { FamilyMember, User } from '@/lib/data';
 import { useRouter } from 'next/navigation';
@@ -28,40 +28,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let familyUnsubscribe: Unsubscribe | null = null;
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // If there's an active family subscription, unsubscribe from it first
+      if (familyUnsubscribe) {
+        familyUnsubscribe();
+        familyUnsubscribe = null;
+      }
+      
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
+        try {
+          const userDocSnap = await getDoc(userDocRef);
 
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data() as User;
-          setUser(userData);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data() as User;
+            setUser(userData);
 
-          if (userData.familyId) {
-            const familyDocRef = doc(db, 'families', userData.familyId);
-            const unsubFamily = onSnapshot(familyDocRef, (doc) => {
-              if (doc.exists()) {
-                setFamilyMembers(doc.data().members || []);
-              }
-            });
-            return () => unsubFamily();
+            if (userData.familyId) {
+              const familyDocRef = doc(db, 'families', userData.familyId);
+              // Set up the new family listener
+              familyUnsubscribe = onSnapshot(familyDocRef, (doc) => {
+                if (doc.exists()) {
+                  setFamilyMembers(doc.data().members || []);
+                } else {
+                  setFamilyMembers([]);
+                }
+                 setLoading(false);
+              });
+            } else {
+              setFamilyMembers([]);
+              setLoading(false);
+            }
           } else {
-             setFamilyMembers([]);
-             setLoading(false);
-          }
-        } else {
+            // User record doesn't exist in Firestore, something is wrong, sign out.
             await signOut(auth);
             setUser(null);
+            setFamilyMembers([]);
+            setLoading(false);
+          }
+        } catch (error) {
+           console.error("Error fetching user data:", error);
+           setUser(null);
+           setFamilyMembers([]);
+           setLoading(false);
         }
-
       } else {
+        // No firebase user
         setUser(null);
         setFamilyMembers([]);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Cleanup function for the main auth effect
+    return () => {
+      authUnsubscribe();
+      if (familyUnsubscribe) {
+        familyUnsubscribe();
+      }
+    };
   }, [auth]);
 
   const login = async (email: string, pass: string) => {
@@ -88,10 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const firebaseUser = userCredential.user;
 
     // Create a new family document first
-    const familyDocRef = await addDoc(collection(db, 'families'), {
-        // We can initialize it with members or leave it empty and update later
-        members: []
-    });
+    const familyDocRef = await addDoc(collection(db, 'families'), {});
     
     // Create the first family member (the parent signing up)
     const newMember: FamilyMember = {
