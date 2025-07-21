@@ -24,7 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags } from '@/lib/dataService';
@@ -568,10 +568,10 @@ export default function ArchiveClient() {
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
         <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
-            <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
+            <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
         </TabsContent>
         <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
-            <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
+            <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
         </TabsContent>
         <TabsContent value="management" className="mt-6 flex-grow overflow-y-auto">
            <Card>
@@ -725,14 +725,16 @@ export default function ArchiveClient() {
 }
 
 // BookShelf COMPONENT
-function BookShelf({ books, onEdit, onDelete }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void }) {
+function BookShelf({ books, onEdit, onDelete, onAddToLibrary }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void, onAddToLibrary: (book: Book) => void }) {
   const shelves = useMemo(() => {
     const grouped: Record<string, Book[]> = {};
     books.forEach(book => {
       const bookTags = book.tags && book.tags.length > 0 ? book.tags : ["Diğer"];
       bookTags.forEach(tag => {
         if (!grouped[tag]) grouped[tag] = [];
-        grouped[tag].push(book);
+        if(!grouped[tag].some(b => b.id === book.id)) {
+            grouped[tag].push(book);
+        }
       });
     });
     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, 'tr'));
@@ -759,7 +761,7 @@ function BookShelf({ books, onEdit, onDelete }: { books: Book[], onEdit: (book: 
             <div className="overflow-x-auto pb-4 -mb-4">
                 <div className="flex flex-nowrap gap-4">
                     {shelfBooks.map(book => (
-                       <Card key={book.id} className="group relative w-64 shrink-0 overflow-hidden">
+                       <Card key={book.id} className="group relative w-40 sm:w-48 shrink-0 overflow-hidden flex flex-col">
                           <div className="relative">
                             <Image 
                               src={book.image || `https://placehold.co/300x450.png`} 
@@ -770,11 +772,17 @@ function BookShelf({ books, onEdit, onDelete }: { books: Book[], onEdit: (book: 
                               data-ai-hint="book cover" 
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                            <div className="absolute bottom-0 left-0 p-4 text-white">
-                                <p className="font-bold truncate" title={book.title}>{book.title}</p>
-                                <p className="text-sm text-white/80 truncate">{book.author}</p>
+                            <div className="absolute bottom-0 left-0 p-2 sm:p-3 text-white">
+                                <p className="font-bold text-sm truncate" title={book.title}>{book.title}</p>
+                                <p className="text-xs text-white/80 truncate">{book.author}</p>
                             </div>
                           </div>
+                           <CardContent className="p-2 flex-grow flex flex-col justify-end">
+                                <Button size="sm" variant="secondary" className="w-full text-xs" onClick={(e) => { e.stopPropagation(); onAddToLibrary(book);}}>
+                                    <BookPlus className="mr-1.5 h-3.5 w-3.5"/>
+                                    Kitaplığıma Ekle
+                                </Button>
+                           </CardContent>
                           <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>
                               <AlertDialog>
@@ -876,3 +884,5 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
