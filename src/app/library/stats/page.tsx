@@ -10,7 +10,7 @@ import { Book, User, Library, Star } from "lucide-react";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Book as BookType, monthlyReadingStats } from "@/lib/data";
 import { onBooksUpdate } from "@/lib/dataService";
-import { useAuth } from "@/components/auth-provider";
+import { useAuth } from "@/components/auth-provider';
 
 const readingChartConfig = {
   books: { label: "Kitap Sayısı", color: "hsl(var(--chart-2))" },
