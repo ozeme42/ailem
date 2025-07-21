@@ -565,13 +565,13 @@ export default function ArchiveClient() {
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
-        <TabsContent value="adults" className="flex-grow h-full overflow-y-auto mt-6">
+        <TabsContent value="adults" className="mt-6 flex-grow h-full overflow-y-auto">
             <BookShelf books={adultBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="children" className="flex-grow h-full overflow-y-auto mt-6">
+        <TabsContent value="children" className="mt-6 flex-grow h-full overflow-y-auto">
             <BookShelf books={childrenBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="management" className="flex-grow h-full overflow-y-auto mt-6">
+        <TabsContent value="management" className="mt-6 flex-grow h-full overflow-y-auto">
            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -737,10 +737,15 @@ function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[],
   }, [books]);
 
   if (books.length === 0) {
-     return <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/20">
+     return (
+      <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed bg-muted/20 p-8 text-center text-muted-foreground">
+        <div>
           <Library className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-md">Bu kategoride gösterilecek kitap yok.</p>
-      </div>;
+          <p className="mt-4 text-md font-medium">Bu kategoride gösterilecek kitap yok.</p>
+          <p className="text-sm">Yeni bir kitap ekleyerek başlayabilirsiniz.</p>
+        </div>
+      </div>
+     );
   }
 
   return (
