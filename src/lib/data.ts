@@ -205,19 +205,31 @@ export const examProgress: ExamProgress = {
     }
 };
 
-export interface ShoppingList {
-  id: string;
-  title: string;
-  category: string;
-  items: ShoppingItem[];
-}
-
 export interface ShoppingItem {
   id: string;
   name: string;
-  quantity: string;
-  completed: boolean;
+  isBought: boolean;
 }
+
+export interface ShoppingList {
+  id: string;
+  name: string;
+  icon: string;
+  items: ShoppingItem[];
+}
+
+export interface ShoppingNoteItem {
+    id: string;
+    text: string;
+}
+
+export interface ShoppingNoteList {
+    id: string;
+    name: string;
+    icon: string;
+    items: ShoppingNoteItem[];
+}
+
 
 export const recipes: Recipe[] = [
     {
@@ -265,12 +277,12 @@ export const initialTasks: Omit<Task, 'id'>[] = [
 
 export const initialShoppingLists: Omit<ShoppingList, 'id'>[] = [
     {
-        title: 'Haftalık Market Alışverişi',
-        category: 'Market',
+        name: 'Haftalık Market Alışverişi',
+        icon: 'ShoppingCart',
         items: [
-            { id: '1', name: 'Süt', quantity: '2L', completed: true },
-            { id: '2', name: 'Ekmek', quantity: '1 adet', completed: true },
-            { id: '3', name: 'Yumurta', quantity: '10 adet', completed: false },
+            { id: '1', name: 'Süt', isBought: true },
+            { id: '2', name: 'Ekmek', isBought: true },
+            { id: '3', name: 'Yumurta', isBought: false },
         ],
     }
 ]
@@ -329,5 +341,3 @@ export const initialTests: Omit<Test, 'id' | 'status'>[] = [
         gradingType: 'auto',
     }
 ]
-
-    

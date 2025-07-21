@@ -1,6 +1,6 @@
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot } from "firebase/firestore";
-import type { Book, Task, CalendarEvent, ShoppingList, Test, QuestionBank, PracticeExam, MealPlan, Recipe } from './data';
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem } from './data';
 
 // Generic CRUD operations
 
@@ -31,8 +31,6 @@ const updateDocument = async <T>(collectionName: string, id: string, data: Parti
 const deleteDocument = async (collectionName: string, id: string) => {
     await deleteDoc(doc(db, collectionName, id));
 };
-
-// Specific functions for the app data models
 
 // Books (mediaItems)
 export const getBooks = () => getCollection<Book>('mediaItems');
@@ -99,20 +97,94 @@ export const onMealPlanUpdate = (callback: (plan: MealPlan) => void) => {
 };
 export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: Recipe | null }) => {
     const docRef = doc(db, "mealPlan", dayKey);
-    await setDoc(docRef, dayPlan);
+    await setDoc(docRef, dayPlan, { merge: true });
 }
 
 
 // Shopping Lists
 export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => {
     return onSnapshot(collection(db, "shoppingLists"), (snapshot) => {
-        const lists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as ShoppingList));
+        const lists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShoppingList));
         callback(lists);
     });
 };
-export const addShoppingList = (data: Omit<ShoppingList, 'id'>) => addDocument<ShoppingList>('shoppingLists', data);
-export const updateShoppingList = (id: string, data: Partial<ShoppingList>) => updateDocument<ShoppingList>('shoppingLists', id, data);
+export const addShoppingList = (title: string, icon: string) => addDocument<ShoppingList>('shoppingLists', { name: title, icon: icon, items: [] });
+export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id'>>) => updateDocument<ShoppingList>('shoppingLists', id, data);
 export const deleteShoppingList = (id: string) => deleteDocument('shoppingLists', id);
+
+export const addShoppingListItemToList = async (listId: string, itemName: string) => {
+    const newItem: ShoppingItem = { id: Date.now().toString(), name: itemName, isBought: false };
+    await updateDoc(doc(db, "shoppingLists", listId), {
+        items: arrayUnion(newItem)
+    });
+};
+export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string) => {
+    const listRef = doc(db, "shoppingLists", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingList;
+        const newItems = list.items.map(item => item.id === itemId ? { ...item, isBought: !item.isBought } : item);
+        await updateDoc(listRef, { items: newItems });
+    }
+};
+export const deleteShoppingListItemFromList = async (listId: string, itemId: string) => {
+    const listRef = doc(db, "shoppingLists", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingList;
+        const itemToRemove = list.items.find(item => item.id === itemId);
+        if (itemToRemove) {
+            await updateDoc(listRef, { items: arrayRemove(itemToRemove) });
+        }
+    }
+};
+export const clearBoughtItemsFromList = async (listId: string) => {
+    const listRef = doc(db, "shoppingLists", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingList;
+        const newItems = list.items.filter(item => !item.isBought);
+        await updateDoc(listRef, { items: newItems });
+    }
+};
+
+
+// Shopping Note Lists
+export const onShoppingNoteListsUpdate = (callback: (lists: ShoppingNoteList[]) => void) => {
+    return onSnapshot(collection(db, "shoppingNoteLists"), (snapshot) => {
+        const lists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShoppingNoteList));
+        callback(lists);
+    });
+};
+export const addShoppingNoteList = (name: string, icon: string) => addDocument<ShoppingNoteList>('shoppingNoteLists', { name: name, icon: icon, items: [] });
+export const deleteShoppingNoteList = (id: string) => deleteDocument('shoppingNoteLists', id);
+
+export const addNoteItemToList = async (listId: string, text: string) => {
+    const newItem: ShoppingNoteItem = { id: Date.now().toString(), text: text };
+    await updateDoc(doc(db, "shoppingNoteLists", listId), {
+        items: arrayUnion(newItem)
+    });
+};
+export const deleteNoteItemFromList = async (listId: string, itemId: string) => {
+    const listRef = doc(db, "shoppingNoteLists", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingNoteList;
+        const itemToRemove = list.items.find(item => item.id === itemId);
+        if (itemToRemove) {
+            await updateDoc(listRef, { items: arrayRemove(itemToRemove) });
+        }
+    }
+};
+export const updateNoteItemInList = async (listId: string, itemId: string, newText: string) => {
+    const listRef = doc(db, "shoppingNoteLists", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingNoteList;
+        const newItems = list.items.map(item => item.id === itemId ? { ...item, text: newText } : item);
+        await updateDoc(listRef, { items: newItems });
+    }
+};
 
 
 // Education

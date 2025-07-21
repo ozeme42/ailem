@@ -65,8 +65,8 @@ export default function ShoppingListDetailPage() {
     const handleItemToggle = async (itemId: string) => {
         if (!list) return;
 
-        const newItems = list.items.map(item =>
-            item.id === itemId ? { ...item, completed: !item.completed } : item
+        const newItems = (list.items || []).map(item =>
+            item.id === itemId ? { ...item, isBought: !item.isBought } : item
         );
         try {
             await updateShoppingList(list.id, { items: newItems });
@@ -78,7 +78,7 @@ export default function ShoppingListDetailPage() {
     const handleDeleteItem = async (itemId: string) => {
         if (!list) return;
 
-        const newItems = list.items.filter(item => item.id !== itemId);
+        const newItems = (list.items || []).filter(item => item.id !== itemId);
         try {
             await updateShoppingList(list.id, { items: newItems });
             toast({ title: "Ürün Silindi", variant: 'destructive' });
@@ -93,8 +93,7 @@ export default function ShoppingListDetailPage() {
         const newItem: ShoppingItem = {
             id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
             name: name,
-            quantity: "1 adet", // Default value
-            completed: false,
+            isBought: false,
         };
 
         const updatedItems = [...(list.items || []), newItem];
@@ -126,13 +125,13 @@ export default function ShoppingListDetailPage() {
         );
     }
     
-    const pendingItems = list.items?.filter(item => !item.completed) || [];
-    const completedItems = list.items?.filter(item => item.completed) || [];
+    const pendingItems = list.items?.filter(item => !item.isBought) || [];
+    const completedItems = list.items?.filter(item => item.isBought) || [];
 
 
     return (
         <div>
-            <PageHeader title={list.title}>
+            <PageHeader title={'name' in list ? list.name : list.title}>
                  <Button variant="ghost" onClick={() => router.push('/shopping')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Tüm Listeler
@@ -183,13 +182,12 @@ export default function ShoppingListDetailPage() {
                                         <div className="flex items-center gap-3 flex-grow">
                                             <Checkbox
                                                 id={`item-${list.id}-${item.id}`}
-                                                checked={item.completed}
+                                                checked={item.isBought}
                                                 onCheckedChange={() => handleItemToggle(item.id)}
                                                 className="h-5 w-5"
                                             />
                                             <div>
                                                 <label htmlFor={`item-${list.id}-${item.id}`} className={`font-medium cursor-pointer`}>{item.name}</label>
-                                                <p className="text-xs text-muted-foreground">{item.quantity}</p>
                                             </div>
                                         </div>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteItem(item.id)}>
@@ -212,13 +210,12 @@ export default function ShoppingListDetailPage() {
                                         <div className="flex items-center gap-3 flex-grow">
                                             <Checkbox
                                                 id={`item-${list.id}-${item.id}`}
-                                                checked={item.completed}
+                                                checked={item.isBought}
                                                 onCheckedChange={() => handleItemToggle(item.id)}
                                                 className="h-5 w-5"
                                             />
                                             <div>
                                                 <label htmlFor={`item-${list.id}-${item.id}`} className={`font-medium cursor-pointer line-through text-muted-foreground`}>{item.name}</label>
-                                                <p className="text-xs text-muted-foreground">{item.quantity}</p>
                                             </div>
                                         </div>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteItem(item.id)}>

@@ -14,7 +14,7 @@ import {
     type ShoppingList
 } from "@/lib/data";
 import {
-    addShoppingList,
+    addShoppingList as createShoppingList, // Renamed to avoid conflict
     deleteShoppingList,
     onShoppingListsUpdate,
 } from "@/lib/dataService";
@@ -99,18 +99,13 @@ export default function ShoppingListClient() {
 
     const calculateListProgress = (list: ShoppingList) => {
         if (!list.items || list.items.length === 0) return 0;
-        const completedCount = list.items.filter((i) => i.completed).length;
+        const completedCount = list.items.filter((i) => i.isBought).length;
         return (completedCount / list.items.length) * 100;
     };
 
     const handleCreateList = async (data: NewListFormData) => {
-        const newList: Omit < ShoppingList, "id" > = {
-            title: data.title,
-            category: "Market", // Default category
-            items: [],
-        };
         try {
-            await addShoppingList(newList);
+            await createShoppingList(data.title, 'ShoppingCart');
             toast({
                 title: "Liste Oluşturuldu",
                 description: `${data.title} başarıyla eklendi.`
@@ -251,12 +246,12 @@ export default function ShoppingListClient() {
                             div className = "flex-grow" >
                             <
                             CardTitle > {
-                                list.title
+                                list.name
                             } < /CardTitle> <
                             div className = "flex items-center gap-2 text-xs text-muted-foreground mt-1" >
                             <
                             span > {
-                                list.items ? .filter((i) => i.completed).length || 0
+                                list.items ? .filter((i) => i.isBought).length || 0
                             }
                             / {
                                 list.items ? .length || 0
@@ -286,7 +281,7 @@ export default function ShoppingListClient() {
                             AlertDialogHeader >
                             <
                             AlertDialogTitle >
-                            "{list.title}"
+                            "{list.name}"
                             listesini silmek istediğinize emin misiniz ?
                             <
                             /AlertDialogTitle> <

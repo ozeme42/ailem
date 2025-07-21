@@ -4,21 +4,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2 } from "lucide-react";
-import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Calendar } from '@/components/ui/calendar';
-import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
@@ -26,8 +18,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
 
-import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingItemToList, toggleShoppingListItemStatus, deleteShoppingItem, clearBoughtItems, onShoppingNoteListsUpdate, addShoppingNoteList, deleteShoppingNoteList, addShoppingNoteItem, deleteShoppingNoteItem, updateShoppingNoteItem } from '@/lib/dataService'; // Assuming these functions exist and are adapted from useStudyData
+import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, deleteShoppingListItemFromList, clearBoughtItemsFromList, onShoppingNoteListsUpdate, addShoppingNoteList, deleteShoppingNoteList, addNoteItemToList, deleteNoteItemFromList, updateNoteItemInList } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType, type ShoppingNoteList, type ShoppingNoteItem } from '@/lib/data';
+import { defaultShoppingItems } from "@/lib/shopping-suggestions";
+
 
 const brightColors = [
     { id: 'blue-indigo', name: 'Mavi', gradient: 'from-blue-500 to-indigo-600' },
@@ -135,7 +129,7 @@ const ListCard = ({ list, colorClass, onClick }: { list: ShoppingList | Shopping
     const totalItems = items.length;
 
     const description = 'items' in list 
-        ? (list.items && 'isBought' in list.items[0] ? (pendingItems > 0 ? `${pendingItems} öğe kaldı` : (totalItems > 0 ? 'Tüm öğeler alındı' : 'Liste boş')) : `${totalItems} not`)
+        ? (pendingItems > 0 ? `${pendingItems} öğe kaldı` : (totalItems > 0 ? 'Tüm öğeler alındı' : 'Liste boş'))
         : `${totalItems} not`;
 
     return (
@@ -144,7 +138,7 @@ const ListCard = ({ list, colorClass, onClick }: { list: ShoppingList | Shopping
                 <Icon className="h-6 w-6" />
             </div>
             <div className="flex flex-col justify-center">
-                <p className="text-base font-medium leading-normal line-clamp-1">{list.title}</p>
+                <p className="text-base font-medium leading-normal line-clamp-1">{'name' in list ? list.name : list.title}</p>
                 <p className="text-white/80 text-sm font-normal leading-normal line-clamp-2">
                     {description}
                 </p>
@@ -211,6 +205,15 @@ export default function ShoppingPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
   
+  const [createListType, setCreateListType] = useState<'shopping' | 'note' | null>(null);
+  const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
+  const [selectedNoteList, setSelectedNoteList] = useState<ShoppingNoteList | null>(null);
+  const [selectedListColor, setSelectedListColor] = useState<string>('bg-gray-500');
+  const [newItemName, setNewItemName] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [editingNote, setEditingNote] = useState<ShoppingNoteItem | null>(null);
+  
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate(setShoppingLists);
     const unsubNotes = onShoppingNoteListsUpdate((notes) => {
@@ -223,14 +226,6 @@ export default function ShoppingPage() {
     }
   }, []);
 
-  const [createListType, setCreateListType] = useState<'shopping' | 'note' | null>(null);
-  const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
-  const [selectedNoteList, setSelectedNoteList] = useState<ShoppingNoteList | null>(null);
-  const [selectedListColor, setSelectedListColor] = useState<string>('bg-gray-500');
-  const [newItemName, setNewItemName] = useState('');
-  const [newNoteText, setNewNoteText] = useState('');
-  const [editingNote, setEditingNote] = useState<ShoppingNoteItem | null>(null);
-  
   useEffect(() => {
     if (selectedList && shoppingLists) {
       const updatedList = shoppingLists.find(l => l.id === selectedList.id);
@@ -252,14 +247,42 @@ export default function ShoppingPage() {
       }
     }
   }, [noteLists, selectedNoteList]);
+  
+  const historicalItems = useMemo(() => {
+    const items = new Set<string>();
+    (shoppingLists || []).forEach(list => {
+      (list.items || []).forEach(item => {
+        items.add(item.name);
+      });
+    });
+    return Array.from(items);
+  }, [shoppingLists]);
+
+  useEffect(() => {
+    if (newItemName.trim() === '') {
+      setSuggestions([]);
+      return;
+    }
+
+    const lowercasedQuery = newItemName.toLowerCase();
+    const filteredHistory = historicalItems
+      .filter(item => item.toLowerCase().includes(lowercasedQuery))
+      .slice(0, 5); // Limit history suggestions
+
+    const filteredDefaults = defaultShoppingItems
+      .filter(item => item.toLowerCase().includes(lowercasedQuery) && !filteredHistory.includes(item))
+      .slice(0, 5); // Limit default suggestions
+
+    setSuggestions([...filteredHistory, ...filteredDefaults]);
+  }, [newItemName, historicalItems]);
 
 
   const handleCreateList = async (data: CreateListFormData) => {
     if (createListType === 'shopping') {
-        await addShoppingList({ title: data.name, icon: data.icon, items: [] });
+        await addShoppingList(data.name, data.icon);
         toast({ title: "Alışveriş Listesi Oluşturuldu!" });
     } else if (createListType === 'note') {
-        await addShoppingNoteList({ title: data.name, icon: data.icon, items: [] });
+        await addShoppingNoteList(data.name, data.icon);
         toast({ title: "Not Defteri Oluşturuldu!" });
     }
     setCreateListType(null);
@@ -268,15 +291,23 @@ export default function ShoppingPage() {
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemName.trim() && selectedList) {
-      addShoppingItemToList(selectedList.id, newItemName.trim());
+      addShoppingListItemToList(selectedList.id, newItemName.trim());
       setNewItemName('');
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    if (selectedList) {
+      addShoppingListItemToList(selectedList.id, suggestion);
+      setNewItemName('');
+      setSuggestions([]);
     }
   };
   
   const handleAddNote = async (e: React.FormEvent) => {
       e.preventDefault();
       if (newNoteText.trim() && selectedNoteList) {
-          await addShoppingNoteItem(selectedNoteList.id, newNoteText.trim());
+          await addNoteItemToList(selectedNoteList.id, newNoteText.trim());
           setNewNoteText('');
           toast({ title: 'Not Eklendi' });
       }
@@ -284,14 +315,14 @@ export default function ShoppingPage() {
   
   const handleUpdateNoteSubmit = async (newText: string) => {
     if (editingNote && selectedNoteList) {
-      await updateShoppingNoteItem(selectedNoteList.id, editingNote.id, newText);
+      await updateNoteItemInList(selectedNoteList.id, editingNote.id, newText);
       setEditingNote(null);
       toast({ title: "Not Güncellendi" });
     }
   };
 
-  const pendingItems = useMemo(() => selectedList?.items.filter(item => !item.completed) || [], [selectedList]);
-  const boughtItems = useMemo(() => selectedList?.items.filter(item => item.completed) || [], [selectedList]);
+  const pendingItems = useMemo(() => selectedList?.items.filter(item => !item.isBought) || [], [selectedList]);
+  const boughtItems = useMemo(() => selectedList?.items.filter(item => item.isBought) || [], [selectedList]);
   
   const handleSelectList = (list: ShoppingList, color: string) => {
       setSelectedList(list);
@@ -324,7 +355,7 @@ export default function ShoppingPage() {
                 <Button variant="ghost" size="icon" onClick={() => setSelectedList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
                 <div className="flex items-center gap-3">
                     <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{selectedList.title}</h2>
+                    <h2 className="text-lg font-bold">{selectedList.name}</h2>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -332,7 +363,7 @@ export default function ShoppingPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>"{selectedList.title}" listesini sil?</AlertDialogTitle>
+                            <AlertDialogTitle>"{selectedList.name}" listesini sil?</AlertDialogTitle>
                             <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -346,6 +377,21 @@ export default function ShoppingPage() {
                 <form onSubmit={handleAddItem} className="flex gap-2 relative">
                     <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
                     <Button type="submit" className={cn(selectedListColor)}><Plus className="h-5 w-5" /></Button>
+
+                     {suggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-md shadow-lg">
+                           {suggestions.map((s, i) => (
+                               <button
+                                   key={i}
+                                   type="button"
+                                   onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
+                                   className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                               >
+                                   {s}
+                               </button>
+                           ))}
+                        </div>
+                    )}
                 </form>
                 <Tabs defaultValue="pending">
                     <TabsList className="grid w-full grid-cols-2">
@@ -355,22 +401,22 @@ export default function ShoppingPage() {
                     <TabsContent value="pending" className="mt-4 space-y-2">
                          {pendingItems.map(item => (
                             <div key={item.id} className={cn("flex items-center p-3 rounded-lg group text-white", selectedListColor)}>
-                                <Checkbox id={item.id} checked={item.completed} onCheckedChange={() => toggleShoppingListItemStatus(selectedList.id, item.id)} className="size-5 border-white data-[state=checked]:bg-white data-[state=checked]:text-black" />
+                                <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)} className="size-5 border-white data-[state=checked]:bg-white data-[state=checked]:text-black" />
                                 <Label htmlFor={item.id} className="ml-3 font-medium cursor-pointer">{item.name}</Label>
-                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingItem(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
                             </div>
                          ))}
                     </TabsContent>
                     <TabsContent value="bought" className="mt-4 space-y-2">
                          {boughtItems.map(item => (
                            <div key={item.id} className="flex items-center p-3 rounded-lg border bg-muted/50 group">
-                                <Checkbox id={item.id} checked={item.completed} onCheckedChange={() => toggleShoppingListItemStatus(selectedList.id, item.id)} className="size-5" />
+                                <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)} className="size-5" />
                                 <Label htmlFor={item.id} className="ml-3 font-medium cursor-pointer line-through text-muted-foreground">{item.name}</Label>
-                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingItem(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
                             </div>
                          ))}
                          {boughtItems.length > 0 && (
-                            <Button variant="outline" className="w-full mt-4" onClick={() => clearBoughtItems(selectedList.id)}>
+                            <Button variant="outline" className="w-full mt-4" onClick={() => clearBoughtItemsFromList(selectedList.id)}>
                                 Alınanları Temizle
                             </Button>
                          )}
@@ -389,7 +435,7 @@ export default function ShoppingPage() {
                 <Button variant="ghost" size="icon" onClick={() => setSelectedNoteList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
                 <div className="flex items-center gap-3">
                     <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{selectedNoteList.title}</h2>
+                    <h2 className="text-lg font-bold">{selectedNoteList.name}</h2>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -397,7 +443,7 @@ export default function ShoppingPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>"{selectedNoteList.title}" defterini sil?</AlertDialogTitle>
+                            <AlertDialogTitle>"{selectedNoteList.name}" defterini sil?</AlertDialogTitle>
                             <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -424,7 +470,7 @@ export default function ShoppingPage() {
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader><AlertDialogTitle>Notu Sil</AlertDialogTitle><AlertDialogDescription>Bu notu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingNoteItem(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </div>
@@ -476,7 +522,7 @@ export default function ShoppingPage() {
                             (shoppingLists || []).map((list, index) => {
                             const color = brightColors[index % brightColors.length];
                             return (
-                                <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectList(list, cn("bg-gradient-to-br", color.gradient))} />
+                                <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectList(list as ShoppingList, cn("bg-gradient-to-br", color.gradient))} />
                             )
                             })
                         ) : (
@@ -492,7 +538,7 @@ export default function ShoppingPage() {
                             (noteLists || []).map((list, index) => {
                                 const color = brightColors[(index + 3) % brightColors.length]; // Use different colors
                                 return (
-                                    <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectNoteList(list, cn("bg-gradient-to-br", color.gradient))} />
+                                    <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectNoteList(list as ShoppingNoteList, cn("bg-gradient-to-br", color.gradient))} />
                                 )
                             })
                         ) : (
@@ -509,7 +555,7 @@ export default function ShoppingPage() {
         <CreateListDialog isOpen={!!createListType} onOpenChange={() => setCreateListType(null)} onCreate={handleCreateList} listType={createListType || 'shopping'}/>
         <EditNoteDialog
           note={editingNote}
-          listName={selectedNoteList?.title || ''}
+          listName={selectedNoteList?.name || ''}
           isOpen={!!editingNote}
           onOpenChange={(open) => { if (!open) setEditingNote(null); }}
           onSubmit={handleUpdateNoteSubmit}
