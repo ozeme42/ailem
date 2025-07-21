@@ -61,10 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setLoading(false);
             }
           } else {
-            await signOut(auth);
-            setUser(null);
-            setFamilyMembers([]);
-            setLoading(false);
+            // This can happen if the user is authenticated but their doc doesn't exist yet.
+            // Let's wait a moment and then sign out if it's still not there.
+            setTimeout(async () => {
+                const checkAgain = await getDoc(userDocRef);
+                if (!checkAgain.exists()) {
+                    await signOut(auth);
+                    setUser(null);
+                    setFamilyMembers([]);
+                    setLoading(false);
+                }
+            }, 2000);
           }
         } catch (error) {
            console.error("Error fetching user data:", error);
@@ -111,13 +118,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const firebaseUser = userCredential.user;
 
+    if (!firebaseUser || !firebaseUser.uid) {
+        throw new Error("Firebase kullanıcısı oluşturulamadı.");
+    }
+
     const newMember: FamilyMember = {
         id: firebaseUser.uid,
         name,
         role,
         avatar: role === 'Baba' ? '/avatars/dad.png' : '/avatars/mom.png',
-        completedTasks: 0,
         color: role === 'Baba' ? '#3B82F6' : '#EC4899',
+        completedTasks: 0,
         level: 1,
         xp: 0,
         streak: 0,
@@ -126,23 +137,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: 'online',
     };
 
-    // Create a new family document with the first member
     const familyDocRef = await addDoc(collection(db, 'families'), {
         members: [newMember],
         defaultDataInitialized: false,
     });
     
-    // Create the user document with the new familyId
-    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    if (!familyDocRef.id) {
+        throw new Error("Aile belgesi oluşturulamadı.");
+    }
+
     const newUser: User = {
         uid: firebaseUser.uid,
         email: firebaseUser.email!,
         name,
         familyId: familyDocRef.id,
     };
+    
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
     await setDoc(userDocRef, newUser);
 
-    // Initialize default data for the new family, assigning first task to the new user
     await initializeDefaultData(familyDocRef.id, firebaseUser.uid);
   };
 
