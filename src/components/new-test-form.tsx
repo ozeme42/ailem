@@ -116,7 +116,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                 dueDate: dueDate,
                 sourceType: 'exam',
                 sourceId: exam.id,
-                gradingType: exam.gradingType
+                gradingType: exam.gradingType,
+                answerKey: exam.answerKey,
             }
         }
     }

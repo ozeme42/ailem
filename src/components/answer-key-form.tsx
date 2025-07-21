@@ -85,7 +85,7 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
                         defaultValue={field.value || ""}
                         className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
                       >
-                        {["A", "B", "C"].map((option) => (
+                        {["A", "B", "C", "D", "E"].map((option) => (
                           <FormItem
                             key={option}
                             className="flex items-center space-x-2"
@@ -111,3 +111,5 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
     </Form>
   );
 }
+
+    

@@ -21,7 +21,7 @@ export default function OpticalFormPage() {
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
-    const testId = Number(params.testId);
+    const testId = params.testId as string;
 
     const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
@@ -30,6 +30,7 @@ export default function OpticalFormPage() {
     const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<number>>(new Set());
 
     React.useEffect(() => {
+        if (!testId) return;
         const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
         const currentTest = storedTests.find((t: TestType) => t.id === testId);
         setTest(currentTest);
@@ -155,7 +156,7 @@ export default function OpticalFormPage() {
                     if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
                         const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
                         const bank = storedBanks.find(b => b.id === currentTest.sourceId);
-                        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id === currentTest.topicId);
+                        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === currentTest.topicId);
                         answerKey = topic?.answerKey;
                     } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
                         const storedExams: PracticeExam[] = JSON.parse(localStorage.getItem('practiceExams') || '[]');
@@ -258,7 +259,7 @@ export default function OpticalFormPage() {
                                                 onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
                                                 className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
                                             >
-                                                {['A', 'B', 'C'].map(option => (
+                                                {['A', 'B', 'C', 'D', 'E'].map(option => (
                                                     <div key={option} className="flex items-center space-x-2">
                                                         <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} />
                                                         <Label htmlFor={`q${questionNumber}-${option}`}>{option}</Label>
@@ -344,3 +345,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
