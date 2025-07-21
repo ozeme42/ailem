@@ -752,9 +752,9 @@ function BookShelf({ books, onAddToLibrary, onEdit, onDelete }: { books: Book[],
           <h3 className="text-xl font-bold mb-4 px-2">{shelfName} ({shelfBooks.length})</h3>
           <div className="bg-stone-200 dark:bg-stone-900/50 p-4 rounded-lg shadow-inner">
             <div className="overflow-x-auto pb-4">
-              <div className="flex flex-row gap-x-4 w-max">
+              <div className="flex flex-row gap-x-4">
                 {shelfBooks.map(book => (
-                  <div key={book.id} className="group relative w-36 flex flex-col">
+                  <div key={book.id} className="group relative w-36 flex-shrink-0 flex flex-col">
                     <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 flex-grow flex flex-col">
                       <div className="relative aspect-[2/3] w-full">
                         <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} fill sizes="144px" className="object-cover" data-ai-hint="book cover" />
