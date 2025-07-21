@@ -550,7 +550,7 @@ export default function ArchiveClient() {
   }, [books]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full gap-6">
       <PageHeader title="Kitaplığımız">
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsSearchDialogOpen(true)}><Search className="mr-2 h-4 w-4"/> Kitap Bul</Button>
@@ -559,66 +559,68 @@ export default function ArchiveClient() {
           </div>
       </PageHeader>
       
-      <Tabs defaultValue="adults" className="w-full flex-grow flex flex-col min-h-0">
+      <Tabs defaultValue="adults" className="w-full flex flex-col flex-grow min-h-0">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
-        <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
-            <BookShelf books={adultBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
-        </TabsContent>
-        <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
-            <BookShelf books={childrenBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
-        </TabsContent>
-        <TabsContent value="management" className="mt-6 flex-grow overflow-y-auto">
-           <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Rafları Yönet</CardTitle>
-                        <CardDescription>Mevcut tüm rafları buradan düzenleyebilir veya silebilirsiniz.</CardDescription>
-                    </div>
-                     <Button onClick={() => handleOpenShelfDialog(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni Raf Ekle
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <ScrollArea className="h-96">
-                        <div className="space-y-2 pr-4">
-                            {allTags.map(tag => (
-                                <div key={tag} className="flex items-center justify-between p-3 border rounded-lg">
-                                    <p className="font-medium">{tag}</p>
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenShelfDialog(tag)}>
-                                            <Edit className="w-4 h-4"/>
-                                        </Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                    <Trash2 className="w-4 h-4"/>
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Rafı Sil</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        "{tag}" rafını silmek istediğinizden emin misiniz? Bu işlem, bu etiketi tüm kitaplardan kaldıracak ve raf kalıcı olarak silinecektir. Bu işlem geri alınamaz.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteShelf(tag)}>Sil</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </CardContent>
-           </Card>
-        </TabsContent>
+        <div className="mt-6 flex-grow min-h-0 overflow-hidden pr-1">
+          <div className="h-full overflow-y-auto pr-4">
+              <TabsContent value="adults" className="m-0">
+                  <BookShelf books={adultBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
+              </TabsContent>
+              <TabsContent value="children" className="m-0">
+                  <BookShelf books={childrenBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
+              </TabsContent>
+              <TabsContent value="management" className="m-0">
+                 <Card>
+                      <CardHeader className="flex flex-row items-center justify-between">
+                          <div>
+                              <CardTitle>Rafları Yönet</CardTitle>
+                              <CardDescription>Mevcut tüm rafları buradan düzenleyebilir veya silebilirsiniz.</CardDescription>
+                          </div>
+                           <Button onClick={() => handleOpenShelfDialog(null)}>
+                              <PlusCircle className="mr-2 h-4 w-4"/> Yeni Raf Ekle
+                          </Button>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="space-y-2 pr-4">
+                              {allTags.map(tag => (
+                                  <div key={tag} className="flex items-center justify-between p-3 border rounded-lg">
+                                      <p className="font-medium">{tag}</p>
+                                      <div className="flex items-center gap-2">
+                                          <Button variant="ghost" size="icon" onClick={() => handleOpenShelfDialog(tag)}>
+                                              <Edit className="w-4 h-4"/>
+                                          </Button>
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                      <Trash2 className="w-4 h-4"/>
+                                                  </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                      <AlertDialogTitle>Rafı Sil</AlertDialogTitle>
+                                                      <AlertDialogDescription>
+                                                          "{tag}" rafını silmek istediğinizden emin misiniz? Bu işlem, bu etiketi tüm kitaplardan kaldıracak ve raf kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+                                                      </AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                      <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                      <AlertDialogAction onClick={() => handleDeleteShelf(tag)}>Sil</AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      </CardContent>
+                 </Card>
+              </TabsContent>
+            </div>
+        </div>
       </Tabs>
 
       {/* Add/Edit Book Dialog */}
