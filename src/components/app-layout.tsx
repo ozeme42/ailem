@@ -13,21 +13,27 @@ import { Skeleton } from './ui/skeleton';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, familyId, loading } = useAuth();
 
   const authRoutes = ['/login', '/signup'];
   const isAuthRoute = authRoutes.includes(pathname);
+  const isJoinFamilyRoute = pathname === '/join-family';
   
   React.useEffect(() => {
-    if (!loading && !user && !isAuthRoute) {
-      router.push('/login');
-    }
-    if (!loading && user && isAuthRoute) {
-      router.push('/');
-    }
-  }, [user, loading, isAuthRoute, router]);
+    if (loading) return;
 
-  if ((loading && !isAuthRoute) || (!user && !isAuthRoute)) {
+    if (!user && !isAuthRoute) {
+      router.push('/login');
+    } else if (user && isAuthRoute) {
+      router.push('/');
+    } else if (user && !familyId && !isJoinFamilyRoute) {
+      router.push('/join-family');
+    } else if (user && familyId && isJoinFamilyRoute) {
+       router.push('/');
+    }
+  }, [user, familyId, loading, isAuthRoute, isJoinFamilyRoute, router]);
+
+  if (loading || (!user && !isAuthRoute) || (user && !familyId && !isJoinFamilyRoute)) {
      return (
       <div className="flex h-screen w-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -38,7 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
      )
   }
 
-  if (isAuthRoute) {
+  if (isAuthRoute || isJoinFamilyRoute) {
     return <>{children}</>;
   }
 
