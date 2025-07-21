@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -10,14 +11,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
-
 import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, deleteShoppingListItemFromList, clearBoughtItemsFromList, onShoppingNoteListsUpdate, addShoppingNoteList, deleteShoppingNoteList, addNoteItemToList, deleteNoteItemFromList, updateNoteItemInList } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType, type ShoppingNoteList, type ShoppingNoteItem } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
@@ -355,7 +355,7 @@ export default function ShoppingPage() {
                 <Button variant="ghost" size="icon" onClick={() => setSelectedList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
                 <div className="flex items-center gap-3">
                     <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{selectedList.name}</h2>
+                    <h2 className="text-lg font-bold">{'name' in selectedList ? selectedList.name : selectedList.title}</h2>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -363,7 +363,7 @@ export default function ShoppingPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>"{selectedList.name}" listesini sil?</AlertDialogTitle>
+                            <AlertDialogTitleComponent>"{'name' in selectedList ? selectedList.name : selectedList.title}" listesini sil?</AlertDialogTitleComponent>
                             <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -435,7 +435,7 @@ export default function ShoppingPage() {
                 <Button variant="ghost" size="icon" onClick={() => setSelectedNoteList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
                 <div className="flex items-center gap-3">
                     <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{selectedNoteList.name}</h2>
+                    <h2 className="text-lg font-bold">{'name' in selectedNoteList ? selectedNoteList.name : selectedNoteList.title}</h2>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -443,7 +443,7 @@ export default function ShoppingPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>"{selectedNoteList.name}" defterini sil?</AlertDialogTitle>
+                            <AlertDialogTitleComponent>"{'name' in selectedNoteList ? selectedNoteList.name : selectedNoteList.title}" defterini sil?</AlertDialogTitleComponent>
                             <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -469,7 +469,7 @@ export default function ShoppingPage() {
                                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Notu Sil</AlertDialogTitle><AlertDialogDescription>Bu notu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu notu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                                         <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -563,3 +563,5 @@ export default function ShoppingPage() {
     </>
   );
 }
+
+    

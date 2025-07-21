@@ -1,8 +1,9 @@
+
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
-import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
+import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat } from "lucide-react";
 import { format, addDays, startOfWeek } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -278,3 +279,5 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
+    
