@@ -755,33 +755,39 @@ function BookShelf({ books, onEdit, onDelete }: { books: Book[], onEdit: (book: 
       {shelves.map(([shelfName, shelfBooks]) => (
         <div key={shelfName}>
           <h2 className="text-xl font-bold mb-4">{shelfName}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {shelfBooks.map(book => (
-              <div key={book.id} className="group relative">
-                <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full">
-                  <div className="relative aspect-[2/3] w-full">
-                    <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 14vw" className="object-cover" data-ai-hint="book cover" />
+               <Card key={book.id} className="group relative flex items-start gap-4 p-4 transition-all duration-300 hover:shadow-lg">
+                  <div className="relative w-20 shrink-0">
+                    <Image 
+                      src={book.image || `https://placehold.co/120x180.png`} 
+                      alt={book.title} 
+                      width={80} 
+                      height={120} 
+                      className="rounded-md object-cover aspect-[2/3] shadow-md"
+                      data-ai-hint="book cover" 
+                    />
                   </div>
-                  <CardFooter className="p-2 mt-auto bg-card/80 backdrop-blur-sm">
-                    <div className="text-center w-full">
-                      <p className="font-semibold text-xs truncate" title={book.title}>{book.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{book.author}</p>
-                    </div>
-                  </CardFooter>
-                </Card>
-                <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="destructive" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Kitabı Sil</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(book.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-              </div>
+                  <div className="flex flex-col flex-grow">
+                      <p className="font-semibold" title={book.title}>{book.title}</p>
+                      <p className="text-sm text-muted-foreground">{book.author}</p>
+                      {book.pageCount && (
+                        <p className="text-xs text-muted-foreground mt-2">{book.pageCount} sayfa</p>
+                      )}
+                  </div>
+                  <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <Button size="icon" variant="secondary" className="h-7 w-7" onClick={() => onEdit(book)}><Edit className="h-3.5 w-3.5"/></Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="destructive" className="h-7 w-7"><Trash2 className="h-3.5 w-3.5"/></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>Kitabı Sil</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(book.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                  </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -868,3 +874,5 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
