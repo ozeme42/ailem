@@ -5,7 +5,7 @@ export interface User {
     uid: string;
     email: string;
     name: string;
-    familyId: string;
+    familyId: string | null;
 }
 
 export interface FamilyMember {
