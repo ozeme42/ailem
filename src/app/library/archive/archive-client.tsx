@@ -24,7 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -300,7 +300,7 @@ export default function ArchiveClient() {
   const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [activeShelf, setActiveShelf] = useState<string | null>(null);
+  const [view, setView] = useState<'books' | 'management'>('books');
   const [activeTab, setActiveTab] = useState("adults");
 
   const [localSearchQuery, setLocalSearchQuery] = useState("");
@@ -569,6 +569,10 @@ export default function ArchiveClient() {
     <div className="flex flex-col h-full gap-6">
       <PageHeader title="Kitaplığımız">
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setView(view === 'books' ? 'management' : 'books')}>
+                <Settings className="mr-2 h-4 w-4"/>
+                {view === 'books' ? 'Raf Yönetimi' : 'Kitapları Gör'}
+            </Button>
             <Button onClick={() => handleOpenAddDialog()}>
               <PlusCircle className="mr-2 h-4 w-4"/> Yeni Kitap Ekle
             </Button>
@@ -590,32 +594,33 @@ export default function ArchiveClient() {
           </div>
       </PageHeader>
       
-      <Tabs defaultValue="adults" onValueChange={setActiveTab} className="flex flex-col flex-grow min-h-0">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
-          <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
-          <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
-        </TabsList>
-        
-        {activeTab !== 'management' && (
-          <div className="relative mt-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Mevcut kütüphanede ara (başlık, yazar, raf...)"
-              className="pl-10"
-              value={localSearchQuery}
-              onChange={(e) => setLocalSearchQuery(e.target.value)}
-            />
+      {view === 'books' ? (
+        <Tabs defaultValue="adults" onValueChange={setActiveTab} className="flex flex-col flex-grow min-h-0">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <TabsList className="grid w-full sm:w-auto grid-cols-2">
+              <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
+              <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
+            </TabsList>
+            <div className="relative w-full sm:flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Mevcut kütüphanede ara (başlık, yazar, raf...)"
+                className="pl-10"
+                value={localSearchQuery}
+                onChange={(e) => setLocalSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-        )}
 
-        <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
-            <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
-        </TabsContent>
-        <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
-            <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
-        </TabsContent>
-        <TabsContent value="management" className="mt-6 flex-grow overflow-y-auto">
+          <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
+              <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
+          </TabsContent>
+          <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
+              <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <div className="mt-6 flex-grow overflow-y-auto">
            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -660,8 +665,9 @@ export default function ArchiveClient() {
                     </div>
                 </CardContent>
            </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
+
 
       {/* Add/Edit Book Dialog */}
       <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
