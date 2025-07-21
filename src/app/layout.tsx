@@ -23,7 +23,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <SidebarProvider>
           <AppSidebar />
-          <SidebarInset className="overflow-x-hidden">
+          <SidebarInset>
             <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
               {children}
             </main>

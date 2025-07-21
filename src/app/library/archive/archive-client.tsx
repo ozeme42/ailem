@@ -760,7 +760,7 @@ function ShelfList({ books, onShelfSelect }: { books: Book[], onShelfSelect: (sh
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="space-y-4">
       {shelves.map(([shelfName, shelfBooks]) => (
         <Card key={shelfName} onClick={() => onShelfSelect(shelfName)} className="cursor-pointer hover:shadow-lg hover:border-primary transition-all group">
             <CardHeader className="flex flex-row items-center justify-between">
