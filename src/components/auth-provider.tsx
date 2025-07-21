@@ -3,10 +3,11 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, setDoc, getDoc, onSnapshot, collection, addDoc, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot, collection, addDoc, Unsubscribe, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { FamilyMember, User } from '@/lib/data';
 import { useRouter } from 'next/navigation';
+import { initializeDefaultData } from '@/lib/dataService';
 
 interface AuthContextType {
   user: User | null;
@@ -60,9 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setLoading(false);
             }
           } else {
-            // This case can happen if user exists in Auth but not in Firestore.
-            // For a robust app, you might want to create the Firestore doc here.
-            // For now, we'll treat it as a logged-out state.
             await signOut(auth);
             setUser(null);
             setFamilyMembers([]);
@@ -128,10 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: 'online',
     };
 
+    // Create a new family document
     const familyDocRef = await addDoc(collection(db, 'families'), {
-        members: [newMember]
+        members: [newMember],
+        defaultDataInitialized: false,
     });
-
+    
+    // Create the user document with the new familyId
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     const newUser: User = {
         uid: firebaseUser.uid,
@@ -139,8 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         familyId: familyDocRef.id,
     };
-    
     await setDoc(userDocRef, newUser);
+
+    // Initialize default data for the new family
+    await initializeDefaultData(familyDocRef.id);
   };
 
   const logout = async () => {

@@ -123,7 +123,7 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, listType }: {
 };
 
 const ListCard = ({ list, colorClass, onClick }: { list: ShoppingList | ShoppingNoteList; colorClass: string; onClick: () => void }) => {
-    const Icon = listIcons[(list as any).icon as keyof typeof listIcons] || ShoppingCart;
+    const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
     const items = 'items' in list ? list.items : [];
     const pendingItems = items.filter((item: any) => !(item.isBought || item.completed)).length;
     const totalItems = items.length;
@@ -138,7 +138,7 @@ const ListCard = ({ list, colorClass, onClick }: { list: ShoppingList | Shopping
                 <Icon className="h-6 w-6" />
             </div>
             <div className="flex flex-col justify-center">
-                <p className="text-base font-medium leading-normal line-clamp-1">{'name' in list ? list.name : list.title}</p>
+                <p className="text-base font-medium leading-normal line-clamp-1">{list.name}</p>
                 <p className="text-white/80 text-sm font-normal leading-normal line-clamp-2">
                     {description}
                 </p>
@@ -348,14 +348,14 @@ export default function ShoppingPage() {
   }
 
   if (selectedList) {
-     const Icon = listIcons[(selectedList as any).icon as keyof typeof listIcons] || ShoppingCart;
+     const Icon = listIcons[selectedList.icon as keyof typeof listIcons] || ShoppingCart;
      return (
         <div className="relative flex size-full min-h-screen flex-col bg-slate-50 dark:bg-background">
             <div className={cn("p-4 flex items-center justify-between text-white rounded-b-3xl shadow-lg", selectedListColor)}>
                 <Button variant="ghost" size="icon" onClick={() => setSelectedList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
                 <div className="flex items-center gap-3">
                     <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{'name' in selectedList ? selectedList.name : selectedList.title}</h2>
+                    <h2 className="text-lg font-bold">{selectedList.name}</h2>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -363,7 +363,7 @@ export default function ShoppingPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{'name' in selectedList ? selectedList.name : selectedList.title}" listesini sil?</AlertDialogTitleComponent>
+                            <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
                             <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -428,14 +428,14 @@ export default function ShoppingPage() {
   }
 
   if (selectedNoteList) {
-     const Icon = listIcons[(selectedNoteList as any).icon as keyof typeof listIcons] || Notebook;
+     const Icon = listIcons[selectedNoteList.icon as keyof typeof listIcons] || Notebook;
      return (
         <div className="relative flex size-full min-h-screen flex-col bg-slate-50 dark:bg-background">
             <div className={cn("p-4 flex items-center justify-between text-white rounded-b-3xl shadow-lg", selectedListColor)}>
                 <Button variant="ghost" size="icon" onClick={() => setSelectedNoteList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
                 <div className="flex items-center gap-3">
                     <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{'name' in selectedNoteList ? selectedNoteList.name : selectedNoteList.title}</h2>
+                    <h2 className="text-lg font-bold">{selectedNoteList.name}</h2>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -443,7 +443,7 @@ export default function ShoppingPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{'name' in selectedNoteList ? selectedNoteList.name : selectedNoteList.title}" defterini sil?</AlertDialogTitleComponent>
+                            <AlertDialogTitleComponent>"{selectedNoteList.name}" defterini sil?</AlertDialogTitleComponent>
                             <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -563,5 +563,3 @@ export default function ShoppingPage() {
     </>
   );
 }
-
-    

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { recipes, Recipe, MealPlan } from "@/lib/data";
+import { recipes as staticRecipes, Recipe, MealPlan } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { onMealPlanUpdate, updateMealPlan } from "@/lib/dataService";
 
@@ -34,6 +34,7 @@ type MealSelection = {
 
 
 export default function YemekPlanlamaPage() {
+  const [recipes, setRecipes] = React.useState<Recipe[]>(staticRecipes);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("Hepsi");
   const [currentDate, setCurrentDate] = React.useState(new Date());
@@ -279,5 +280,3 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
-
-    

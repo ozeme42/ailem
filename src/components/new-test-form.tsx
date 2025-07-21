@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType } from "@/lib/data";
+import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
@@ -40,10 +40,10 @@ const formSchema = z.object({
 export type AssignmentType = "quick" | "bank" | "exam";
 
 type NewTestFormProps = {
-  students: Student[];
+  students: FamilyMember[];
   questionBanks: QuestionBank[];
   practiceExams: PracticeExam[];
-  onAssign: (test: Omit<Test, 'id' | 'status'>) => void;
+  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId'>) => void;
 };
 
 export function NewTestForm({ students, questionBanks, practiceExams, onAssign }: NewTestFormProps) {
@@ -73,13 +73,13 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
   function onSubmit(values: z.infer<typeof formSchema>) {
     const dueDate = format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy'); // 1 week from now
     
-    let newTest: Omit<Test, 'id' | 'status'> | null = null;
+    let newTest: Omit<Test, 'id' | 'status' | 'familyId'> | null = null;
     
     if (activeTab === 'quick' && values.title && values.subject && values.questionCount) {
         newTest = {
             title: values.title,
             subject: values.subject,
-            studentId: Number(values.studentId),
+            studentId: values.studentId,
             questionCount: values.questionCount,
             assignedDate: format(new Date(), 'dd MMMM yyyy'),
             dueDate: dueDate,
@@ -94,7 +94,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
              newTest = {
                 title: `${bank.name} - ${topic.name}`,
                 subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders", // find subject name
-                studentId: Number(values.studentId),
+                studentId: values.studentId,
                 questionCount: topic.questionCount,
                 assignedDate: format(new Date(), 'dd MMMM yyyy'),
                 dueDate: dueDate,
@@ -110,7 +110,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
             newTest = {
                 title: exam.name,
                 subject: "Deneme Sınavı",
-                studentId: Number(values.studentId),
+                studentId: values.studentId,
                 questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
                 assignedDate: format(new Date(), 'dd MMMM yyyy'),
                 dueDate: dueDate,
@@ -371,5 +371,3 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
     </Tabs>
   );
 }
-
-    

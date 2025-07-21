@@ -14,23 +14,24 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { NewTestForm } from "@/components/new-test-form";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
-import { students, tests as initialTests, questionBanks as initialQuestionBanks, practiceExams as initialPracticeExams, examProgress, QuestionBank, Test, PracticeExam } from "@/lib/data";
+import { students, examProgress, QuestionBank, Test, PracticeExam } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, addTest, updateTest, addQuestionBank, updateQuestionBank, deleteQuestionBank, addPracticeExam, updatePracticeExam, deletePracticeExam } from "@/lib/dataService";
+import { useAuth } from "@/components/auth-provider";
 
 export default function EducationPage() {
   const { toast } = useToast();
-  const [selectedStudent, setSelectedStudent] = React.useState(students[0]);
+  const { familyMembers } = useAuth();
+  const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   
-  // Use state for tests, questionBanks, etc. to make them interactive
   const [tests, setTests] = React.useState<Test[]>([]);
   const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
 
-  // States for managing modals
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
   const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
   const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
@@ -38,131 +39,105 @@ export default function EducationPage() {
   const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
   const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
 
+  const studentMembers = React.useMemo(() => 
+    familyMembers.filter(m => m.role.includes('Çocuk')), 
+  [familyMembers]);
 
   React.useEffect(() => {
-    // This effect runs only once on component mount
-    try {
-        const storedTests = localStorage.getItem('tests');
-        const storedBanks = localStorage.getItem('questionBanks');
-        const storedExams = localStorage.getItem('practiceExams');
-        
-        if (storedTests) setTests(JSON.parse(storedTests));
-        if (storedBanks) setQuestionBanks(JSON.parse(storedBanks));
-        if (storedExams) setPracticeExams(JSON.parse(storedExams));
-        
-    } catch (error) {
-        console.error("Failed to load data from localStorage", error);
-        // Do not toast here as it's a background process
+    if (studentMembers.length > 0 && !selectedStudent) {
+      setSelectedStudent(studentMembers[0]);
+    }
+  }, [studentMembers, selectedStudent]);
+
+  React.useEffect(() => {
+    const unsubTests = onTestsUpdate(setTests);
+    const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
+    const unsubExams = onPracticeExamsUpdate(setPracticeExams);
+    
+    return () => {
+      unsubTests();
+      unsubBanks();
+      unsubExams();
     }
   }, []);
 
-  const handleCreateAssignment = (newTest: Omit<Test, 'id' | 'status'>) => {
-    setTests(prevTests => {
-        const testWithStatus: Test = { ...newTest, id: Date.now().toString(), status: 'Atandı' };
-        const updatedTests = [...prevTests, testWithStatus];
-        try {
-            localStorage.setItem('tests', JSON.stringify(updatedTests));
-            toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
-        } catch (error) {
-             toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
-        }
-        return updatedTests;
-    });
-    setIsAssignDialogOpen(false);
+  const handleCreateAssignment = async (newTest: Omit<Test, 'id' | 'status' | 'familyId'>) => {
+    try {
+        await addTest({ ...newTest, status: 'Atandı' });
+        toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
+        setIsAssignDialogOpen(false);
+    } catch (error) {
+         toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
+    }
   };
   
-  const handleManualGrade = (testId: string, gradeData: ManualGradeData) => {
-      setTests(prevTests => {
-          const updatedTests = prevTests.map(t => {
-              if (t.id === testId) {
-                  return {
-                      ...t,
-                      status: 'Değerlendirildi',
-                      correctAnswers: gradeData.correct,
-                      incorrectAnswers: gradeData.incorrect,
-                      emptyAnswers: gradeData.empty,
-                      score: (gradeData.correct / t.questionCount) * 100
-                  }
-              }
-              return t;
-          });
-          try {
-            localStorage.setItem('tests', JSON.stringify(updatedTests));
-            toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
-          } catch(error) {
-            toast({ title: "❌ Kaydetme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive'});
-          }
-          return updatedTests;
-      });
-      setGradingTest(null);
-  }
-
-  const saveQuestionBanks = (banks: QuestionBank[]) => {
-    try {
-        setQuestionBanks(banks);
-        localStorage.setItem('questionBanks', JSON.stringify(banks));
-    } catch (error) {
-        toast({ title: "❌ Kaydetme Hatası", description: "Soru bankası kaydedilirken bir hata oluştu.", variant: 'destructive'});
-    }
-  }
-
-  const handleBankSubmit = (bankData: Omit<QuestionBank, 'id'>, id?: string) => {
-    let updatedBanks;
-    if (id) {
-        // Update
-        updatedBanks = questionBanks.map(b => b.id === id ? { ...b, ...bankData, id } : b);
-        toast({ title: "✅ Soru Bankası Güncellendi", description: `${bankData.name} başarıyla güncellendi.` });
-    } else {
-        // Create
-        const newBank = { ...bankData, id: Date.now().toString() };
-        updatedBanks = [...questionBanks, newBank];
-        toast({ title: "✅ Soru Bankası Oluşturuldu", description: "Yeni soru bankası başarıyla kaydedildi." });
-    }
-    saveQuestionBanks(updatedBanks);
-    setEditingBank(null);
-    setIsBankDialogOpen(false);
-  };
-
-  const handleDeleteBank = (bankId: string) => {
-    const updatedBanks = questionBanks.filter(b => b.id !== bankId);
-    saveQuestionBanks(updatedBanks);
-    toast({ title: "🗑️ Soru Bankası Silindi", variant: "destructive" });
-  }
-
-  const savePracticeExams = (exams: PracticeExam[]) => {
+  const handleManualGrade = async (testId: string, gradeData: ManualGradeData) => {
       try {
-        setPracticeExams(exams);
-        localStorage.setItem('practiceExams', JSON.stringify(exams));
-      } catch (error) {
-         toast({ title: "❌ Kaydetme Hatası", description: "Deneme sınavı kaydedilirken bir hata oluştu.", variant: 'destructive'});
+        await updateTest(testId, {
+            status: 'Değerlendirildi',
+            correctAnswers: gradeData.correct,
+            incorrectAnswers: gradeData.incorrect,
+            emptyAnswers: gradeData.empty,
+            score: (gradeData.correct / (gradingTest?.questionCount || 1)) * 100
+        });
+        toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
+        setGradingTest(null);
+      } catch(error) {
+        toast({ title: "❌ Kaydetme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive'});
       }
   }
 
-  const handleExamSubmit = (examData: Omit<PracticeExam, 'id'>, id?: string) => {
-    let updatedExams;
-    if (id) {
-        // Update
-        updatedExams = practiceExams.map(e => e.id === id ? { ...e, ...examData, id } : e);
-        toast({ title: "✅ Deneme Sınavı Güncellendi", description: `${examData.name} başarıyla güncellendi.` });
-    } else {
-        // Create
-        const newExam = { ...examData, id: Date.now().toString() };
-        updatedExams = [...practiceExams, newExam];
-        toast({ title: "✅ Deneme Sınavı Oluşturuldu", description: "Yeni deneme sınavı başarıyla kaydedildi." });
+  const handleBankSubmit = async (bankData: Omit<QuestionBank, 'id' | 'familyId'>, id?: string) => {
+    try {
+        if (id) {
+            await updateQuestionBank(id, bankData);
+            toast({ title: "✅ Soru Bankası Güncellendi", description: `${bankData.name} başarıyla güncellendi.` });
+        } else {
+            await addQuestionBank(bankData);
+            toast({ title: "✅ Soru Bankası Oluşturuldu", description: "Yeni soru bankası başarıyla kaydedildi." });
+        }
+        setEditingBank(null);
+        setIsBankDialogOpen(false);
+    } catch (error) {
+         toast({ title: "❌ Kaydetme Hatası", description: "Soru bankası kaydedilirken bir hata oluştu.", variant: 'destructive'});
     }
-    savePracticeExams(updatedExams);
-    setEditingExam(null);
-    setIsExamDialogOpen(false);
   };
 
-  const handleDeleteExam = (examId: string) => {
-      const updatedExams = practiceExams.filter(e => e.id !== examId);
-      savePracticeExams(updatedExams);
-      toast({ title: "🗑️ Deneme Sınavı Silindi", variant: "destructive" });
+  const handleDeleteBank = async (bankId: string) => {
+    try {
+        await deleteQuestionBank(bankId);
+        toast({ title: "🗑️ Soru Bankası Silindi", variant: "destructive" });
+    } catch (error) {
+         toast({ title: "❌ Silme Hatası", description: "Soru bankası silinirken bir hata oluştu.", variant: 'destructive'});
+    }
   }
 
+  const handleExamSubmit = async (examData: Omit<PracticeExam, 'id' | 'familyId'>, id?: string) => {
+    try {
+        if (id) {
+            await updatePracticeExam(id, examData);
+            toast({ title: "✅ Deneme Sınavı Güncellendi", description: `${examData.name} başarıyla güncellendi.` });
+        } else {
+            await addPracticeExam(examData);
+            toast({ title: "✅ Deneme Sınavı Oluşturuldu", description: "Yeni deneme sınavı başarıyla kaydedildi." });
+        }
+        setEditingExam(null);
+        setIsExamDialogOpen(false);
+    } catch (error) {
+        toast({ title: "❌ Kaydetme Hatası", description: "Deneme sınavı kaydedilirken bir hata oluştu.", variant: 'destructive'});
+    }
+  };
 
-  const studentTests = tests.filter(t => t.studentId === selectedStudent.id);
+  const handleDeleteExam = async (examId: string) => {
+      try {
+        await deletePracticeExam(examId);
+        toast({ title: "🗑️ Deneme Sınavı Silindi", variant: "destructive" });
+      } catch (error) {
+        toast({ title: "❌ Silme Hatası", description: "Deneme sınavı silinirken bir hata oluştu.", variant: 'destructive'});
+      }
+  }
+
+  const studentTests = selectedStudent ? tests.filter(t => t.studentId === selectedStudent.id) : [];
   const assignedTests = studentTests.filter(t => t.status === 'Atandı');
   const completedTests = studentTests.filter(t => t.status !== 'Atandı');
 
@@ -198,7 +173,7 @@ export default function EducationPage() {
               </DialogDescription>
             </DialogHeader>
             <NewTestForm 
-                students={students} 
+                students={studentMembers} 
                 questionBanks={questionBanks}
                 practiceExams={practiceExams}
                 onAssign={handleCreateAssignment}
@@ -208,17 +183,16 @@ export default function EducationPage() {
       </PageHeader>
 
       <div className="flex gap-4 mb-8 overflow-x-auto pb-4">
-        {students.map((student) => (
+        {studentMembers.map((student) => (
           <Button
             key={student.id}
-            variant={selectedStudent.id === student.id ? "default" : "outline"}
-            className={`flex-shrink-0 h-auto p-4 flex items-center gap-3 transition-all duration-200 ${selectedStudent.id === student.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
+            variant={selectedStudent?.id === student.id ? "default" : "outline"}
+            className={`flex-shrink-0 h-auto p-4 flex items-center gap-3 transition-all duration-200 ${selectedStudent?.id === student.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
             onClick={() => setSelectedStudent(student)}
           >
-            <span className="text-4xl">{student.avatar}</span>
+            <span className="text-4xl">{student.avatar.startsWith('/') ? <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full" /> : student.avatar}</span>
             <div className="text-left">
               <p className="font-bold text-lg">{student.name}</p>
-              <p className={`text-sm ${selectedStudent.id === student.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{student.grade}</p>
             </div>
           </Button>
         ))}
@@ -229,14 +203,14 @@ export default function EducationPage() {
           <TabsTrigger value="assignments">Aktif Ödevler ({assignedTests.length})</TabsTrigger>
           <TabsTrigger value="progress">Genel Başarı</TabsTrigger>
           <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
-          {selectedStudent && <TabsTrigger value="management">İçerik Yönetimi</TabsTrigger>}
+          <TabsTrigger value="management">İçerik Yönetimi</TabsTrigger>
         </TabsList>
 
         <TabsContent value="assignments">
            <Card>
              <CardHeader>
               <CardTitle>Atanmış Testler</CardTitle>
-              <CardDescription>{selectedStudent.name} için tamamlanması gereken testler.</CardDescription>
+              <CardDescription>{selectedStudent?.name} için tamamlanması gereken testler.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                {assignedTests.length > 0 ? assignedTests.map(test => (
@@ -263,11 +237,11 @@ export default function EducationPage() {
             <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2"><Target className="text-blue-500"/> Soru Bankaları Başarısı</CardTitle>
-                  <CardDescription>{selectedStudent.name} için soru bankalarındaki genel ilerleme durumu.</CardDescription>
+                  <CardDescription>{selectedStudent?.name} için soru bankalarındaki genel ilerleme durumu.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {questionBanks.map(bank => {
-                        const progress = examProgress.questionBank[bank.id]?.[selectedStudent.id];
+                        const progress = examProgress.questionBank[bank.id]?.[selectedStudent?.id];
                         if (!progress) return null;
                         const totalQuestions = bank.subjects.reduce((acc, s) => acc + s.topics.reduce((tAcc, t) => tAcc + t.questionCount, 0), 0);
                         const percentage = calculateProgress(totalQuestions, progress.questionsSolved);
@@ -293,11 +267,11 @@ export default function EducationPage() {
              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2"><FileText className="text-purple-500"/> Deneme Sınavları Başarısı</CardTitle>
-                  <CardDescription>{selectedStudent.name} için deneme sınavlarındaki genel performans.</CardDescription>
+                  <CardDescription>{selectedStudent?.name} için deneme sınavlarındaki genel performans.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {practiceExams.map(exam => {
-                        const progress = examProgress.practiceExam[exam.id]?.[selectedStudent.id];
+                        const progress = examProgress.practiceExam[exam.id]?.[selectedStudent?.id];
                         if (!progress) return <p key={exam.id} className="text-sm text-muted-foreground">{exam.name} - Henüz çözülmedi.</p>;
                         const totalQuestions = exam.subjects.reduce((acc, s) => acc + s.questionCount, 0);
                          const percentage = calculateProgress(progress.correct, totalQuestions);
@@ -321,7 +295,7 @@ export default function EducationPage() {
           <Card>
             <CardHeader>
               <CardTitle>Tamamlanan Test Sonuçları</CardTitle>
-              <CardDescription>{selectedStudent.name} için tamamlanmış testlerin sonuçları.</CardDescription>
+              <CardDescription>{selectedStudent?.name} için tamamlanmış testlerin sonuçları.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {completedTests.length > 0 ? completedTests.map(test => (
@@ -370,7 +344,6 @@ export default function EducationPage() {
           </Card>
         </TabsContent>
         
-        {selectedStudent && (
         <TabsContent value="management">
             <Tabs defaultValue="questionBanks" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
@@ -516,7 +489,6 @@ export default function EducationPage() {
                 </TabsContent>
             </Tabs>
         </TabsContent>
-        )}
       </Tabs>
       
       <Dialog open={!!gradingTest} onOpenChange={(open) => !open && setGradingTest(null)}>
@@ -539,5 +511,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    

@@ -13,9 +13,13 @@ import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { onSnapshot } from "firebase/firestore";
+import { updateTest } from "@/lib/dataService";
 
-type McqAnswers = { [key: number]: string | null };
-type TextAnswers = { [key: number]: string };
+type McqAnswers = { [key: string]: string | null };
+type TextAnswers = { [key: string]: string };
 
 export default function OpticalFormPage() {
     const router = useRouter();
@@ -31,28 +35,37 @@ export default function OpticalFormPage() {
 
     React.useEffect(() => {
         if (!testId) return;
-        const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
-        const currentTest = storedTests.find((t: TestType) => t.id === testId);
-        setTest(currentTest);
+        const testDocRef = doc(db, 'tests', testId);
+        
+        const unsubscribe = onSnapshot(testDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
+                setTest(currentTest);
 
-        if (currentTest) {
-             setTimeLeft(currentTest.questionCount * 1.5 * 60);
-             const type = currentTest.gradingType || 'manual';
+                if (currentTest) {
+                     setTimeLeft(currentTest.questionCount * 1.5 * 60);
+                     const type = currentTest.gradingType || 'manual';
 
-             if(type === 'auto') {
-                const initialAnswers: McqAnswers = currentTest.studentAnswers || {};
-                for (let i = 1; i <= currentTest.questionCount; i++) {
-                    if(!initialAnswers[i]) initialAnswers[i] = null;
+                     if(type === 'auto') {
+                        const initialAnswers: McqAnswers = currentTest.studentAnswers || {};
+                        for (let i = 1; i <= currentTest.questionCount; i++) {
+                            if(!initialAnswers[i]) initialAnswers[i] = null;
+                        }
+                        setMcqAnswers(initialAnswers);
+                     } else if (type === 'manual-text') {
+                        const initialAnswers: TextAnswers = currentTest.studentTextAnswers || {};
+                         for (let i = 1; i <= currentTest.questionCount; i++) {
+                            if(!initialAnswers[i]) initialAnswers[i] = "";
+                        }
+                        setTextAnswers(initialAnswers);
+                     }
                 }
-                setMcqAnswers(initialAnswers);
-             } else if (type === 'manual-text') {
-                const initialAnswers: TextAnswers = currentTest.studentTextAnswers || {};
-                 for (let i = 1; i <= currentTest.questionCount; i++) {
-                    if(!initialAnswers[i]) initialAnswers[i] = "";
-                }
-                setTextAnswers(initialAnswers);
-             }
-        }
+            } else {
+                setTest(null);
+            }
+        });
+
+        return () => unsubscribe();
     }, [testId]);
 
 
@@ -113,24 +126,18 @@ export default function OpticalFormPage() {
         setDirtyTextAnswers(prev => new Set(prev.add(questionNumber)));
     };
     
-    const handleSaveSingleAnswer = (questionNumber: number) => {
+    const handleSaveSingleAnswer = async (questionNumber: number) => {
         try {
-            const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
-            const testIndex = storedTests.findIndex((t: any) => t.id === test.id);
-            if(testIndex > -1) {
-                const updatedAnswers = { ...storedTests[testIndex].studentTextAnswers, [questionNumber]: textAnswers[questionNumber] };
-                storedTests[testIndex].studentTextAnswers = updatedAnswers;
-                localStorage.setItem('tests', JSON.stringify(storedTests));
-                toast({
-                    title: `✅ ${questionNumber}. Soru Kaydedildi!`,
-                    description: "Cevabın başarıyla kaydedildi.",
-                });
-                setDirtyTextAnswers(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(questionNumber);
-                    return newSet;
-                });
-            }
+            await updateTest(test.id, { studentTextAnswers: textAnswers });
+            toast({
+                title: `✅ ${questionNumber}. Soru Kaydedildi!`,
+                description: "Cevabın başarıyla kaydedildi.",
+            });
+            setDirtyTextAnswers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(questionNumber);
+                return newSet;
+            });
         } catch (error) {
              toast({
                 variant: "destructive",
@@ -141,80 +148,74 @@ export default function OpticalFormPage() {
     };
 
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         try {
-            const storedTests: TestType[] = JSON.parse(localStorage.getItem('tests') || '[]');
-            const testIndex = storedTests.findIndex((t: any) => t.id === test.id);
+            let answerKey: { [key: string]: string } | undefined = undefined;
             
-            if (testIndex > -1) {
-                const currentTest = storedTests[testIndex];
+            if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
+                const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
+                if (bankDoc.exists()) {
+                    const bank = bankDoc.data() as QuestionBank;
+                    const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
+                    answerKey = topic?.answerKey;
+                }
+            } else if (test.sourceType === 'exam' && test.sourceId) {
+                const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
+                if (examDoc.exists()) {
+                    const exam = examDoc.data() as PracticeExam;
+                    answerKey = exam?.answerKey;
+                }
+            } else if (test.sourceType === 'quick') {
+                answerKey = test.answerKey;
+            }
 
-                if(currentTest.gradingType === 'auto') {
-                    currentTest.studentAnswers = mcqAnswers;
-                    let answerKey: { [key: number]: string } | undefined = undefined;
-                    
-                    if (currentTest.sourceType === 'bank' && currentTest.sourceId && currentTest.topicId) {
-                        const storedBanks: QuestionBank[] = JSON.parse(localStorage.getItem('questionBanks') || '[]');
-                        const bank = storedBanks.find(b => b.id === currentTest.sourceId);
-                        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === currentTest.topicId);
-                        answerKey = topic?.answerKey;
-                    } else if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
-                        const storedExams: PracticeExam[] = JSON.parse(localStorage.getItem('practiceExams') || '[]');
-                        const exam = storedExams.find(e => e.id === currentTest.sourceId);
-                        answerKey = exam?.answerKey;
-                    } else if (currentTest.sourceType === 'quick') {
-                        answerKey = currentTest.answerKey;
-                    }
+            const updatedData: Partial<TestType> = {};
+            let toastDescription = "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.";
 
-                    if (answerKey && Object.keys(answerKey).length > 0) {
-                        let correct = 0;
-                        let incorrect = 0;
-                        let empty = 0;
+            if(test.gradingType === 'auto') {
+                updatedData.studentAnswers = mcqAnswers;
+                if (answerKey && Object.keys(answerKey).length > 0) {
+                    let correct = 0;
+                    let incorrect = 0;
+                    let empty = 0;
 
-                        for (let i = 1; i <= currentTest.questionCount; i++) {
-                            if (!mcqAnswers[i]) {
-                                empty++;
-                            } else if (mcqAnswers[i] === (answerKey as any)[i]) {
-                                correct++;
-                            } else {
-                                incorrect++;
-                            }
+                    for (let i = 1; i <= test.questionCount; i++) {
+                        if (!mcqAnswers[i]) {
+                            empty++;
+                        } else if (mcqAnswers[i] === (answerKey as any)[i]) {
+                            correct++;
+                        } else {
+                            incorrect++;
                         }
-                        
-                        currentTest.status = 'Değerlendirildi';
-                        currentTest.correctAnswers = correct;
-                        currentTest.incorrectAnswers = incorrect;
-                        currentTest.emptyAnswers = empty;
-                        currentTest.score = (correct / currentTest.questionCount) * 100;
-                    } else {
-                         // Fallback for auto grading without answer key, should be rare
-                        currentTest.status = 'Çözüldü';
                     }
                     
-                } else { // Manual grading (text or no-answer)
-                    if (currentTest.gradingType === 'manual-text') {
-                        currentTest.studentTextAnswers = textAnswers;
-                    }
-                    currentTest.status = 'Çözüldü';
-                    currentTest.correctAnswers = undefined;
-                    currentTest.incorrectAnswers = undefined;
-                    currentTest.emptyAnswers = undefined;
-                    currentTest.score = undefined;
+                    updatedData.status = 'Değerlendirildi';
+                    updatedData.correctAnswers = correct;
+                    updatedData.incorrectAnswers = incorrect;
+                    updatedData.emptyAnswers = empty;
+                    updatedData.score = (correct / test.questionCount) * 100;
+                    toastDescription = "Cevapların başarıyla kaydedildi ve testin değerlendirildi.";
+                } else {
+                    updatedData.status = 'Çözüldü';
                 }
                 
-                storedTests[testIndex] = currentTest;
-                localStorage.setItem('tests', JSON.stringify(storedTests));
-                 toast({
-                    title: "✅ Test Tamamlandı!",
-                    description: currentTest.gradingType === 'auto' ? "Cevapların başarıyla kaydedildi ve testin değerlendirildi." : "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
-                });
-            } else {
-                 toast({
-                    variant: "destructive",
-                    title: "❌ Hata!",
-                    description: "Test veritabanında bulunamadı.",
-                });
+            } else { // Manual grading (text or no-answer)
+                if (test.gradingType === 'manual-text') {
+                    updatedData.studentTextAnswers = textAnswers;
+                }
+                updatedData.status = 'Çözüldü';
+                updatedData.correctAnswers = undefined;
+                updatedData.incorrectAnswers = undefined;
+                updatedData.emptyAnswers = undefined;
+                updatedData.score = undefined;
             }
+            
+            await updateTest(test.id, updatedData);
+            
+            toast({
+                title: "✅ Test Tamamlandı!",
+                description: toastDescription,
+            });
            
             router.push('/education');
 
@@ -345,5 +346,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    

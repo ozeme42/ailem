@@ -50,9 +50,9 @@ export default function BooksClient() {
     return () => unsubscribe();
   }, []);
 
-  const handleAddBook = async (newBookData: Omit<BookType, 'id' | 'type' | 'rating'>) => {
+  const handleAddBook = async (newBookData: Omit<BookType, 'id' | 'type' | 'rating' | 'familyId'>) => {
     try {
-        const newBook: Omit<BookType, 'id'> = {
+        const newBook: Omit<BookType, 'id' | 'familyId'> = {
             ...newBookData,
             type: "Kitap",
             rating: 0, // New books start with 0 rating
@@ -195,7 +195,7 @@ export default function BooksClient() {
                                         <p className="text-sm text-muted-foreground flex-grow">{item.description}</p>
                                         <div className="text-sm text-muted-foreground mt-4 space-y-1">
                                             <p><strong>Tür:</strong> {item.tags.join(', ')}</p>
-                                            {item.pages && <p><strong>Sayfa Sayısı:</strong> {item.pages}</p>}
+                                            {item.pageCount && <p><strong>Sayfa Sayısı:</strong> {item.pageCount}</p>}
                                         </div>
                                         <DialogFooter className="mt-6 sm:justify-start">
                                             <Button variant="outline" size="icon" className="group"><Heart className="group-hover:fill-red-500 group-hover:text-red-500 transition-colors"/></Button>

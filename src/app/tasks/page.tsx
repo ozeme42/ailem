@@ -27,25 +27,23 @@ export default function TasksPage() {
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    if (user?.familyId) {
-      setLoading(true);
-      const unsubscribe = onTasksUpdate(user.familyId, (updatedTasks) => {
-        setTasks(updatedTasks);
-        setLoading(false);
-      });
-      return () => unsubscribe();
-    }
-  }, [user]);
+    setLoading(true);
+    const unsubscribe = onTasksUpdate((updatedTasks) => {
+      setTasks(updatedTasks);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
   
   const getAssignee = (assigneeId: string) => {
-    return familyMembers.find((m) => m.id === assigneeId)!;
+    return familyMembers.find((m) => m.id === assigneeId);
   };
   
   const leaderboard = [...familyMembers].sort((a,b) => b.xp - a.xp);
 
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (getAssignee(task.assigneeId) && getAssignee(task.assigneeId).name.toLowerCase().includes(searchTerm.toLowerCase()))
+    (getAssignee(task.assigneeId) && getAssignee(task.assigneeId)!.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const todoTasks = filteredTasks.filter((task) => !task.completed);

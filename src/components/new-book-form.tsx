@@ -17,12 +17,12 @@ const formSchema = z.object({
   author: z.string().min(2, { message: "Yazar adı en az 2 karakter olmalıdır." }),
   tags: z.string().optional(),
   description: z.string().min(10, { message: "Açıklama en az 10 karakter olmalıdır." }),
-  pages: z.coerce.number().min(1, { message: "Sayfa sayısı en az 1 olmalıdır." }).optional(),
+  pageCount: z.coerce.number().min(1, { message: "Sayfa sayısı en az 1 olmalıdır." }).optional(),
   image: z.string().url({ message: "Lütfen geçerli bir URL girin." }).optional().or(z.literal('')),
 });
 
 type NewBookFormProps = {
-  onSubmit: (data: Omit<Book, 'id' | 'type' | 'rating'>) => void;
+  onSubmit: (data: Omit<Book, 'id' | 'type' | 'rating' | 'familyId'>) => void;
 };
 
 export function NewBookForm({ onSubmit }: NewBookFormProps) {
@@ -91,7 +91,7 @@ export function NewBookForm({ onSubmit }: NewBookFormProps) {
           />
           <FormField
             control={form.control}
-            name="pages"
+            name="pageCount"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Sayfa Sayısı</FormLabel>

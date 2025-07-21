@@ -10,23 +10,24 @@ import { Book, User, Library, Star } from "lucide-react";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Book as BookType, monthlyReadingStats, familyMembers } from "@/lib/data";
 import { onBooksUpdate } from "@/lib/dataService";
+import { useAuth } from "@/components/auth-provider";
 
 const readingChartConfig = {
   books: { label: "Kitap Sayısı", color: "hsl(var(--chart-2))" },
   pages: { label: "Sayfa Sayısı", color: "hsl(var(--chart-4))" },
 } satisfies ChartConfig;
 
-const memberReadingConfig = {
-  booksRead: { label: "Okunan Kitap" },
-  ...familyMembers.reduce((acc, member) => {
-    acc[member.name] = { label: member.name, color: member.color };
-    return acc;
-  }, {} as ChartConfig),
-} satisfies ChartConfig;
-
-
 export default function LibraryStatsPage() {
+    const { familyMembers } = useAuth();
     const [books, setBooks] = React.useState<BookType[]>([]);
+
+    const memberReadingConfig = {
+      booksRead: { label: "Okunan Kitap" },
+      ...familyMembers.reduce((acc, member) => {
+        acc[member.name] = { label: member.name, color: member.color };
+        return acc;
+      }, {} as ChartConfig),
+    } satisfies ChartConfig;
 
     React.useEffect(() => {
         const unsubscribe = onBooksUpdate(setBooks);
@@ -67,7 +68,7 @@ export default function LibraryStatsPage() {
         
         books.forEach((book, index) => {
            const member = familyMembers[index % familyMembers.length];
-           booksPerMember[member.name]++;
+           if(member) booksPerMember[member.name]++;
         });
 
         return familyMembers.map(member => ({
@@ -75,7 +76,7 @@ export default function LibraryStatsPage() {
             booksRead: booksPerMember[member.name] || 0,
             fill: member.color,
         }));
-    }, [books]);
+    }, [books, familyMembers]);
 
 
   return (
@@ -213,5 +214,3 @@ export default function LibraryStatsPage() {
     </>
   );
 }
-
-    

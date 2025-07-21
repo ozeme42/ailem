@@ -1,113 +1,139 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember } from './data';
+import { getAuth } from 'firebase/auth';
+
+const getCurrentFamilyId = (): string | null => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    // This is a simplified way to get familyId. In a real app, you might get this from a user profile document in Firestore.
+    // For now, we will rely on a custom claim or a user document fetch. This is a placeholder.
+    // A more robust solution is implemented in AuthProvider. This service will assume auth state is handled.
+    // As a fallback for services used outside of a user session context, this might need adjustment.
+    return null; // This will be improved once user profile is fully available.
+}
+
 
 // Generic CRUD operations
+// These need to be updated to use the familyId from the logged-in user.
 
-const getCollection = async <T>(collectionName: string, familyId: string): Promise<T[]> => {
-    const q = query(collection(db, collectionName), where("familyId", "==", familyId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+const onFamilyDataUpdate = <T>(collectionName: string, callback: (data: T[]) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, (user) => {
+        if (user) {
+            const userDocRef = doc(db, 'users', user.uid);
+            onSnapshot(userDocRef, (userDoc) => {
+                if (userDoc.exists()) {
+                    const familyId = userDoc.data().familyId;
+                    if (familyId) {
+                         const q = query(collection(db, collectionName), where("familyId", "==", familyId));
+                         return onSnapshot(q, (snapshot) => {
+                            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+                            callback(items);
+                        });
+                    }
+                }
+                callback([]);
+            });
+        } else {
+            callback([]);
+        }
+    });
 };
 
-const getDocument = async <T>(collectionName: string, id: string): Promise<T | null> => {
-    const docRef = doc(db, collectionName, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as T;
-    }
-    return null;
-};
-
-const addDocument = async <T>(collectionName: string, data: Omit<T, 'id'>, familyId: string) => {
-    const docRef = await addDoc(collection(db, collectionName), { ...data, familyId });
-    return docRef.id;
-};
-
-const updateDocument = async <T>(collectionName: string, id: string, data: Partial<Omit<T, 'id'>>) => {
-    const docRef = doc(db, collectionName, id);
-    await updateDoc(docRef, data);
-};
-
-const deleteDocument = async (collectionName: string, id: string) => {
-    await deleteDoc(doc(db, collectionName, id));
-};
 
 // Books (mediaItems)
-export const onBooksUpdate = (familyId: string, callback: (books: Book[]) => void) => {
-    const q = query(collection(db, "mediaItems"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const books = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
-        callback(books);
-    });
+export const onBooksUpdate = (callback: (books: Book[]) => void) => onFamilyDataUpdate<Book>('mediaItems', callback);
+export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'mediaItems'), { ...data, familyId });
 };
-export const addBook = (data: Omit<Book, 'id' | 'familyId'>, familyId: string) => addDocument<Book>('mediaItems', data, familyId);
-export const updateBook = (id: string, data: Partial<Omit<Book, 'id'>>) => updateDocument<Book>('mediaItems', id, data);
-export const deleteBook = (id: string) => deleteDocument('mediaItems', id);
+export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
+export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
+
 
 // Tags (Library Shelves are now per-family)
-export const onTagsUpdate = (familyId: string, callback: (tags: string[]) => void) => {
-    if (!familyId) return () => {};
-    const docRef = doc(db, "libraryManagement", familyId);
-    return onSnapshot(docRef, (doc) => {
-        callback(doc.exists() ? doc.data().allTags || [] : []);
+export const onTagsUpdate = (callback: (tags: string[]) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, (user) => {
+        if (user) {
+             const userDocRef = doc(db, 'users', user.uid);
+            onSnapshot(userDocRef, (userDoc) => {
+                 if (userDoc.exists()) {
+                    const familyId = userDoc.data().familyId;
+                    if (familyId) {
+                        const tagsDocRef = doc(db, 'libraryManagement', familyId);
+                        return onSnapshot(tagsDocRef, (doc) => {
+                           callback(doc.exists() ? doc.data().allTags || [] : []);
+                        });
+                    }
+                }
+                callback([]);
+            });
+        } else {
+            callback([]);
+        }
     });
 };
-export const updateTags = async (familyId: string, tags: string[]) => {
+export const updateTags = async (tags: string[]) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
     const docRef = doc(db, 'libraryManagement', familyId);
     await setDoc(docRef, { allTags: tags }, { merge: true });
 }
 
 // Tasks
-export const onTasksUpdate = (familyId: string, callback: (tasks: Task[]) => void) => {
-    const q = query(collection(db, "tasks"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Task));
-        callback(tasks);
-    });
+export const onTasksUpdate = (callback: (tasks: Task[]) => void) => onFamilyDataUpdate<Task>('tasks', callback);
+export const addTask = async (data: Omit<Task, 'id' | 'familyId'>) => {
+     const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'tasks'), { ...data, familyId });
 };
-export const addTask = (data: Omit<Task, 'id' | 'familyId'>, familyId: string) => addDocument<Task>('tasks', data, familyId);
-export const updateTask = (id: string, data: Partial<Task>) => updateDocument<Task>('tasks', id, data);
+export const updateTask = (id: string, data: Partial<Task>) => updateDoc(doc(db, 'tasks', id), data);
 
 // Calendar Events
-export const onCalendarEventsUpdate = (familyId: string, callback: (events: CalendarEvent[]) => void) => {
-    const q = query(collection(db, "calendarEvents"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as CalendarEvent));
-        callback(events);
-    });
+export const onCalendarEventsUpdate = (callback: (events: CalendarEvent[]) => void) => onFamilyDataUpdate<CalendarEvent>('calendarEvents', callback);
+export const addCalendarEvent = async (data: Omit<CalendarEvent, 'id' | 'familyId'>) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'calendarEvents'), { ...data, familyId });
 };
-export const addCalendarEvent = (data: Omit<CalendarEvent, 'id' | 'familyId'>, familyId: string) => addDocument<CalendarEvent>('calendarEvents', data, familyId);
 
 
 // Meal Plan
-export const onMealPlanUpdate = (familyId: string, callback: (plan: MealPlan) => void) => {
-    const q = query(collection(db, "mealPlan"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const plan: MealPlan = {};
-        snapshot.forEach(doc => {
-            plan[doc.id] = doc.data() as { [meal: string]: Recipe | null };
-        });
-        callback(plan);
+export const onMealPlanUpdate = (callback: (plan: MealPlan) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const familyId = (await getDoc(doc(db, 'users', user.uid))).data()?.familyId;
+            if (familyId) {
+                const q = query(collection(db, "mealPlan"), where("familyId", "==", familyId));
+                return onSnapshot(q, (snapshot) => {
+                    const plan: MealPlan = {};
+                    snapshot.forEach(doc => {
+                        const dayKey = doc.id.replace(`${familyId}_`, '');
+                        plan[dayKey] = doc.data() as { [meal: string]: Recipe | null };
+                    });
+                    callback(plan);
+                });
+            }
+        }
+        callback({});
     });
 };
-export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: Recipe | null }, familyId: string) => {
-    const docRef = doc(db, "mealPlan", `${familyId}_${dayKey}`); // Make doc ID unique per family
+
+export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: Recipe | null }) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const docRef = doc(db, "mealPlan", `${familyId}_${dayKey}`);
     await setDoc(docRef, { ...dayPlan, familyId }, { merge: true });
 }
 
 
 // Shopping Lists
-export const onShoppingListsUpdate = (familyId: string, callback: (lists: ShoppingList[]) => void) => {
-    const q = query(collection(db, "shoppingLists"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const lists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShoppingList));
-        callback(lists);
-    });
+export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback);
+export const addShoppingList = async (title: string, icon: string) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'shoppingLists'), { name: title, icon: icon, items: [], familyId });
 };
-export const addShoppingList = (title: string, icon: string, familyId: string) => addDocument<ShoppingList>('shoppingLists', { name: title, icon: icon, items: [] }, familyId);
-export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDocument<ShoppingList>('shoppingLists', id, data);
-export const deleteShoppingList = (id: string) => deleteDocument('shoppingLists', id);
+export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
+export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
 
 export const addShoppingListItemToList = async (listId: string, itemName: string) => {
     const newItem: ShoppingItem = { id: Date.now().toString(), name: itemName, isBought: false };
@@ -147,15 +173,12 @@ export const clearBoughtItemsFromList = async (listId: string) => {
 
 
 // Shopping Note Lists
-export const onShoppingNoteListsUpdate = (familyId: string, callback: (lists: ShoppingNoteList[]) => void) => {
-    const q = query(collection(db, "shoppingNoteLists"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const lists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShoppingNoteList));
-        callback(lists);
-    });
+export const onShoppingNoteListsUpdate = (callback: (lists: ShoppingNoteList[]) => void) => onFamilyDataUpdate<ShoppingNoteList>('shoppingNoteLists', callback);
+export const addShoppingNoteList = async (name: string, icon: string) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'shoppingNoteLists'), { name, icon, items: [], familyId });
 };
-export const addShoppingNoteList = (name: string, icon: string, familyId: string) => addDocument<ShoppingNoteList>('shoppingNoteLists', { name: name, icon: icon, items: [] }, familyId);
-export const deleteShoppingNoteList = (id: string) => deleteDocument('shoppingNoteLists', id);
+export const deleteShoppingNoteList = (id: string) => deleteDoc(doc(db, 'shoppingNoteLists', id));
 
 export const addNoteItemToList = async (listId: string, text: string) => {
     const newItem: ShoppingNoteItem = { id: Date.now().toString(), text: text };
@@ -186,36 +209,190 @@ export const updateNoteItemInList = async (listId: string, itemId: string, newTe
 
 
 // Education
-export const onTestsUpdate = (familyId: string, callback: (tests: Test[]) => void) => {
-    const q = query(collection(db, "tests"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const tests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Test));
-        callback(tests);
-    });
+export const onTestsUpdate = (callback: (tests: Test[]) => void) => onFamilyDataUpdate<Test>('tests', callback);
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'tests'), { ...data, familyId });
 };
-export const addTest = (data: Omit<Test, 'id' | 'familyId'>, familyId: string) => addDocument<Test>('tests', data, familyId);
-export const updateTest = (id: string, data: Partial<Omit<Test, 'id'>>) => updateDocument<Test>('tests', id, data);
+export const updateTest = (id: string, data: Partial<Omit<Test, 'id'>>) => updateDoc(doc(db, 'tests', id), data);
 
 
-export const onQuestionBanksUpdate = (familyId: string, callback: (banks: QuestionBank[]) => void) => {
-    const q = query(collection(db, "questionBanks"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const banks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as QuestionBank));
-        callback(banks);
-    });
+export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void) => onFamilyDataUpdate<QuestionBank>('questionBanks', callback);
+export const addQuestionBank = async (data: Omit<QuestionBank, 'id' | 'familyId'>) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'questionBanks'), { ...data, familyId });
 };
-export const addQuestionBank = (data: Omit<QuestionBank, 'id' | 'familyId'>, familyId: string) => addDocument<QuestionBank>('questionBanks', data, familyId);
-export const updateQuestionBank = (id: string, data: Partial<Omit<QuestionBank, 'id'>>) => updateDocument<QuestionBank>('questionBanks', id, data);
-export const deleteQuestionBank = (id: string) => deleteDocument('questionBanks', id);
+export const updateQuestionBank = (id: string, data: Partial<Omit<QuestionBank, 'id'>>) => updateDoc(doc(db, 'questionBanks', id), data);
+export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, 'questionBanks', id));
 
 
-export const onPracticeExamsUpdate = (familyId: string, callback: (exams: PracticeExam[]) => void) => {
-    const q = query(collection(db, "practiceExams"), where("familyId", "==", familyId));
-    return onSnapshot(q, (snapshot) => {
-        const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as PracticeExam));
-        callback(exams);
-    });
+export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback);
+export const addPracticeExam = async (data: Omit<PracticeExam, 'id'| 'familyId'>) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    return addDoc(collection(db, 'practiceExams'), { ...data, familyId });
 };
-export const addPracticeExam = (data: Omit<PracticeExam, 'id'| 'familyId'>, familyId: string) => addDocument<PracticeExam>('practiceExams', data, familyId);
-export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id'>>) => updateDocument<PracticeExam>('practiceExams', id, data);
-export const deletePracticeExam = (id: string) => deleteDocument('practiceExams', id);
+export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id'>>) => updateDoc(doc(db, 'practiceExams', id), data);
+export const deletePracticeExam = (id: string) => deleteDoc(doc(db, 'practiceExams', id));
+
+// This needs to be called from a client component that has access to the AuthContext
+export const initializeDefaultData = async (familyId: string) => {
+    const batch = writeBatch(db);
+
+    // Initial Books
+    initialBooks.forEach(book => {
+        const docRef = doc(collection(db, 'mediaItems'));
+        batch.set(docRef, { ...book, familyId });
+    });
+    
+    // Initial Tags for the family
+    const allTags = new Set<string>();
+    initialBooks.forEach(book => (book.tags || []).forEach(tag => allTags.add(tag)));
+    const tagsDocRef = doc(db, 'libraryManagement', familyId);
+    batch.set(tagsDocRef, { allTags: Array.from(allTags) });
+
+    // Initial Tasks
+    initialTasks.forEach(task => {
+        const docRef = doc(collection(db, 'tasks'));
+        batch.set(docRef, { ...task, familyId });
+    });
+
+    // Initial Shopping List
+    initialShoppingLists.forEach(list => {
+        const docRef = doc(collection(db, 'shoppingLists'));
+        batch.set(docRef, { ...list, familyId });
+    });
+    
+    // Initial Calendar Events
+    initialCalendarEvents.forEach(event => {
+        const docRef = doc(collection(db, 'calendarEvents'));
+        batch.set(docRef, { ...event, familyId });
+    });
+
+    // Initial Meal Plan
+    Object.entries(initialMealPlan).forEach(([dayKey, dayPlan]) => {
+        const docRef = doc(db, "mealPlan", `${familyId}_${dayKey}`);
+        batch.set(docRef, { ...dayPlan, familyId });
+    });
+
+    // Initial Education Content
+    initialQuestionBanks.forEach(bank => {
+        const docRef = doc(collection(db, 'questionBanks'));
+        batch.set(docRef, { ...bank, familyId });
+    });
+    initialPracticeExams.forEach(exam => {
+        const docRef = doc(collection(db, 'practiceExams'));
+        batch.set(docRef, { ...exam, familyId });
+    });
+    initialTests.forEach(test => {
+        const docRef = doc(collection(db, 'tests'));
+        batch.set(docRef, { ...test, familyId });
+    });
+    
+    // Check if default data has been initialized
+    const familyDataRef = doc(db, 'families', familyId);
+    batch.update(familyDataRef, { defaultDataInitialized: true });
+
+
+    await batch.commit();
+};
+
+// Helper data from data.ts
+export const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
+    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false },
+    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
+];
+
+export const initialTasks: Omit<Task, 'id' | 'familyId'>[] = [
+    { title: 'Odanı Topla', assigneeId: "3", points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
+    { title: 'Matematik Ödevi', assigneeId: "4", points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
+];
+
+export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
+    {
+        name: 'Haftalık Market Alışverişi',
+        icon: 'ShoppingCart',
+        items: [
+            { id: '1', name: 'Süt', isBought: true },
+            { id: '2', name: 'Ekmek', isBought: true },
+            { id: '3', name: 'Yumurta', isBought: false },
+        ],
+    }
+];
+
+export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
+    { title: 'Doktor Randevusu', startDate: '2024-08-20', recurrence: 'one-time' },
+    { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
+];
+
+export const initialRecipes: Recipe[] = [
+    {
+        id: 1,
+        title: "Menemen",
+        category: 'Kahvaltı',
+        image: "https://placehold.co/400x250.png",
+        prepTime: "20 dk",
+        rating: 4.8,
+        ingredients: ["3 adet domates", "2 adet sivri biber", "2 adet yumurta", "1 yemek kaşığı tereyağı", "Tuz, karabiber, pul biber"],
+        instructions: ["Biberleri ve domatesleri doğrayın.", "Tereyağını tavada eritin ve biberleri kavurun.", "Domatesleri ekleyip suyunu çekene kadar pişirin.", "Yumurtaları kırın ve karıştırarak pişirin.", "Baharatları ekleyip servis yapın."]
+    },
+    {
+        id: 2,
+        title: "Mercimek Çorbası",
+        category: 'Akşam Yemeği',
+        image: "https://placehold.co/400x250.png",
+        prepTime: "40 dk",
+        rating: 4.9,
+        ingredients: ["1 su bardağı kırmızı mercimek", "1 adet soğan", "1 adet havuç", "1 adet patates", "1 yemek kaşığı salça", "Nane, pul biber, tuz"],
+        instructions: ["Tüm sebzeleri doğrayın.", "Mercimeği yıkayıp süzün.", "Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin.", "Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun.", "Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin.", "Baharatları ekleyip bir taşım daha kaynatın."]
+    }
+];
+
+export const initialMealPlan: MealPlan = {
+  "2024-08-12": { // This key needs to be dynamic based on current week, but for initial data it's fine
+    "Kahvaltı": initialRecipes[0],
+    "Akşam Yemeği": initialRecipes[1],
+  },
+};
+
+export const initialQuestionBanks: Omit<QuestionBank, 'id' | 'familyId'>[] = [
+    {
+        name: "5. Sınıf Matematik Soru Bankası",
+        subjects: [
+            {
+                id: 1,
+                name: "Matematik",
+                topics: [
+                    { id: 1, name: "Doğal Sayılar", questionCount: 20, gradingType: 'auto', answerKey: {1: 'A', 2: 'B'} },
+                    { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text' },
+                ]
+            }
+        ]
+    }
+];
+
+export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
+     {
+        name: "LGS Deneme Sınavı 1",
+        gradingType: 'auto',
+        subjects: [
+            { id: 1, name: "Matematik", questionCount: 20 },
+            { id: 2, name: "Türkçe", questionCount: 20 },
+            { id: 3, name: "Fen Bilimleri", questionCount: 20 },
+        ],
+        answerKey: {1: 'A', 2: 'C', 3: 'B'}
+    }
+];
+
+export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
+    {
+        title: "LGS Deneme Sınavı 1",
+        subject: "Deneme Sınavı",
+        studentId: "4",
+        questionCount: 60,
+        assignedDate: "01 Ağustos 2024",
+        dueDate: "15 Ağustos 2024",
+        sourceType: 'exam',
+        sourceId: '1',
+        gradingType: 'auto',
+    }
+];

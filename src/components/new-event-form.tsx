@@ -47,7 +47,7 @@ export function NewEventForm({ onEventCreated }: NewEventFormProps) {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const newEvent: Omit<CalendarEvent, 'id'> = {
+    const newEvent: Omit<CalendarEvent, 'id' | 'familyId'> = {
         title: values.title,
         recurrence: values.recurrence,
         startDate: format(values.dateRange.from, "yyyy-MM-dd"),
@@ -143,4 +143,3 @@ export function NewEventForm({ onEventCreated }: NewEventFormProps) {
     </Form>
   );
 }
-

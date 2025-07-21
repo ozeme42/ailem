@@ -12,17 +12,17 @@ import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import React from 'react';
 import { onBooksUpdate } from '@/lib/dataService';
+import { useAuth } from '@/components/auth-provider';
 
 
 export default function LibraryPage() {
-  // This is a placeholder for the current user. In a real app, you'd get this from an auth context.
-  const currentUser = familyMembers[0]; 
+  const { user } = useAuth();
   const [allBooks, setAllBooks] = React.useState<Book[]>([]);
 
   React.useEffect(() => {
     const unsubscribe = onBooksUpdate(setAllBooks);
     return () => unsubscribe();
-  }, []);
+  }, [user]);
   
   // This is placeholder logic to assign some books to the current user.
   // In a real app, this would come from a 'userBooks' collection in Firestore.
@@ -42,9 +42,11 @@ export default function LibraryPage() {
       percentage: myBooks.length > 0 ? (finishedBooks.length / myBooks.length) * 100 : 0
   }
 
+  if (!user) return null;
+
   return (
     <>
-      <PageHeader title={`${currentUser.name}'in Kütüphanesi`}>
+      <PageHeader title={`${user.name}'in Kütüphanesi`}>
         <Link href="/library/archive">
             <Button variant="outline">
                 <Library className="mr-2 h-4 w-4" />

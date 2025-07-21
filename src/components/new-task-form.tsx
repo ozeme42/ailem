@@ -35,7 +35,6 @@ type NewTaskFormProps = {
 
 export function NewTaskForm({ familyMembers, onTaskCreated }: NewTaskFormProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,10 +52,6 @@ export function NewTaskForm({ familyMembers, onTaskCreated }: NewTaskFormProps) 
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-        toast({ title: "Hata", description: "Görevi oluşturmak için giriş yapmalısınız.", variant: "destructive"});
-        return;
-    }
     try {
         const newTask: Omit<Task, 'id' | 'familyId'> = {
             title: values.title,
@@ -68,7 +63,7 @@ export function NewTaskForm({ familyMembers, onTaskCreated }: NewTaskFormProps) 
             completed: false,
             subtasks: []
         };
-        await addTask(newTask, user.familyId);
+        await addTask(newTask);
 
         toast({
             title: "✅ Görev Başarıyla Oluşturuldu!",

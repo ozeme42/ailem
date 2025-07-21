@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Book, familyMembers } from '@/lib/data';
+import { familyMembers } from '@/lib/data';
+import { Book } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -29,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags } from '@/lib/dataService';
+import { useAuth } from '@/components/auth-provider';
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -291,6 +293,7 @@ const BookForm = ({ existingTags }: { existingTags: string[] }) => {
 
 // ARCHIVE CLIENT COMPONENT
 export default function ArchiveClient() {
+  const { user } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
@@ -321,7 +324,7 @@ export default function ArchiveClient() {
         unsubscribeBooks();
         unsubscribeTags();
     };
-  }, []);
+  }, [user]);
 
   const handleOpenAddDialog = useCallback((initialData: Partial<Book> | null = null) => {
     setEditingBook(initialData && 'id' in initialData ? initialData as Book : null);
@@ -369,7 +372,7 @@ export default function ArchiveClient() {
             await updateBook(editingBook.id, bookData);
             toast({ title: "Kitap Güncellendi" });
         } else {
-            const newBook: Omit<Book, 'id'> = {
+            const newBook: Omit<Book, 'id' | 'familyId'> = {
                 type: 'Kitap',
                 rating: 0,
                 description: '',
@@ -474,7 +477,7 @@ export default function ArchiveClient() {
         (book.tags || []).forEach(tag => allCurrentTags.add(tag));
 
         // Create book data
-        const newBook: Omit<Book, 'id'> = {
+        const newBook: Omit<Book, 'id' | 'familyId'> = {
           type: 'Kitap',
           rating: 0,
           description: '',
@@ -932,7 +935,3 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
-
-    
-
-    
