@@ -42,10 +42,11 @@ const nextConfig = {
   },
   serverExternalPackages: ['framer-motion'],
   experimental: {
-    allowedDevOrigins: [
-      "https://6000-firebase-studio-1752942593865.cluster-ombtxv25tbd6yrjpp3lukp6zhc.cloudworkstations.dev"
-    ]
-  }
+    // allowedDevOrigins has been moved outside of experimental as it's a top-level property
+  },
+  allowedDevOrigins: [
+    "https://6000-firebase-studio-1752942593865.cluster-ombtxv25tbd6yrjpp3lukp6zhc.cloudworkstations.dev"
+  ]
 };
 
 module.exports = nextConfig;
