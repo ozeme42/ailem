@@ -567,13 +567,13 @@ export default function ArchiveClient() {
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
-        <TabsContent value="adults" className="mt-6 flex-grow h-full overflow-y-auto">
-            <ShelfList books={adultBooks} onShelfSelect={setActiveShelf} />
+        <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
+            <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="children" className="mt-6 flex-grow h-full overflow-y-auto">
-            <ShelfList books={childrenBooks} onShelfSelect={setActiveShelf} />
+        <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
+            <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="management" className="mt-6 flex-grow h-full overflow-y-auto">
+        <TabsContent value="management" className="mt-6 flex-grow overflow-y-auto">
            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -720,21 +720,12 @@ export default function ArchiveClient() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-        
-        {/* Shelf Detail View Modal */}
-         <ShelfDetailView 
-            shelfName={activeShelf}
-            books={books}
-            onOpenChange={() => setActiveShelf(null)}
-            onEditBook={handleOpenAddDialog}
-            onDeleteBook={handleDeleteBook}
-         />
     </div>
   );
 }
 
-// SHELF LIST COMPONENT
-function ShelfList({ books, onShelfSelect }: { books: Book[], onShelfSelect: (shelf: string) => void }) {
+// BookShelf COMPONENT
+function BookShelf({ books, onEdit, onDelete }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void }) {
   const shelves = useMemo(() => {
     const grouped: Record<string, Book[]> = {};
     books.forEach(book => {
@@ -744,7 +735,7 @@ function ShelfList({ books, onShelfSelect }: { books: Book[], onShelfSelect: (sh
         grouped[tag].push(book);
       });
     });
-    return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
+    return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, 'tr'));
   }, [books]);
 
   if (books.length === 0) {
@@ -760,77 +751,45 @@ function ShelfList({ books, onShelfSelect }: { books: Book[], onShelfSelect: (sh
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {shelves.map(([shelfName, shelfBooks]) => (
-        <Card key={shelfName} onClick={() => onShelfSelect(shelfName)} className="cursor-pointer hover:shadow-lg hover:border-primary transition-all group">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="text-lg">{shelfName}</CardTitle>
-                    <CardDescription>{shelfBooks.length} kitap</CardDescription>
+        <div key={shelfName}>
+          <h2 className="text-xl font-bold mb-4">{shelfName}</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            {shelfBooks.map(book => (
+              <div key={book.id} className="group relative">
+                <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full">
+                  <div className="relative aspect-[2/3] w-full">
+                    <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 14vw" className="object-cover" data-ai-hint="book cover" />
+                  </div>
+                  <CardFooter className="p-2 mt-auto bg-card/80 backdrop-blur-sm">
+                    <div className="text-center w-full">
+                      <p className="font-semibold text-xs truncate" title={book.title}>{book.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                    </div>
+                  </CardFooter>
+                </Card>
+                <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="destructive" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Kitabı Sil</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(book.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors"/>
-            </CardHeader>
-        </Card>
+              </div>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
-// SHELF DETAIL VIEW (MODAL)
-function ShelfDetailView({ shelfName, books, onOpenChange, onEditBook, onDeleteBook }: { shelfName: string | null, books: Book[], onOpenChange: () => void, onEditBook: (book: Book) => void, onDeleteBook: (id: string) => void }) {
-    const shelfBooks = useMemo(() => {
-        if (!shelfName) return [];
-        return books.filter(book => (book.tags || []).includes(shelfName));
-    }, [shelfName, books]);
-    
-    return (
-        <Dialog open={!!shelfName} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl">{shelfName}</DialogTitle>
-                    <DialogDescription>{shelfBooks.length} kitap bulundu.</DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="flex-grow -mx-6 px-6">
-                    {shelfBooks.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                             {shelfBooks.map(book => (
-                              <div key={book.id} className="group relative">
-                                <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full">
-                                  <div className="relative aspect-[2/3] w-full">
-                                    <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 14vw" className="object-cover" data-ai-hint="book cover" />
-                                  </div>
-                                  <CardFooter className="p-2 mt-auto bg-card/80 backdrop-blur-sm">
-                                    <div className="text-center w-full">
-                                      <p className="font-semibold text-xs truncate" title={book.title}>{book.title}</p>
-                                      <p className="text-xs text-muted-foreground truncate">{book.author}</p>
-                                    </div>
-                                  </CardFooter>
-                                </Card>
-                                <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEditBook(book)}><Edit className="h-4 w-4"/></Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button size="icon" variant="destructive" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>Kitabı Sil</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteBook(book.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                    ) : (
-                         <div className="flex h-full items-center justify-center text-muted-foreground">
-                            Bu rafta kitap bulunmuyor.
-                        </div>
-                    )}
-                </ScrollArea>
-            </DialogContent>
-        </Dialog>
-    );
-}
 
 // BULK ADD JSON DIALOG
 function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, onOpenChange: (open: boolean) => void, onImport: (books: Partial<Book>[]) => void }) {
