@@ -565,13 +565,13 @@ export default function ArchiveClient() {
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
-        <TabsContent value="adults" className="flex-grow min-h-0 h-full overflow-y-auto mt-6">
+        <TabsContent value="adults" className="flex-grow h-full overflow-y-auto mt-6">
             <BookShelf books={adultBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="children" className="flex-grow min-h-0 h-full overflow-y-auto mt-6">
+        <TabsContent value="children" className="flex-grow h-full overflow-y-auto mt-6">
             <BookShelf books={childrenBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="management" className="flex-grow min-h-0 h-full overflow-y-auto mt-6">
+        <TabsContent value="management" className="flex-grow h-full overflow-y-auto mt-6">
            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -866,3 +866,5 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
