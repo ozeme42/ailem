@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { FamilyMember, User } from '@/lib/data';
 import { useRouter } from 'next/navigation';
@@ -36,18 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data() as User;
           setUser(userData);
-          // Now listen for family member updates
-          const familyDocRef = doc(db, 'families', userData.familyId);
-          const unsubFamily = onSnapshot(familyDocRef, (doc) => {
-            if (doc.exists()) {
-              setFamilyMembers(doc.data().members || []);
-            }
-          });
-          // Returning the family listener so it gets cleaned up
-          return () => unsubFamily();
+
+          if (userData.familyId) {
+            const familyDocRef = doc(db, 'families', userData.familyId);
+            const unsubFamily = onSnapshot(familyDocRef, (doc) => {
+              if (doc.exists()) {
+                setFamilyMembers(doc.data().members || []);
+              }
+            });
+            return () => unsubFamily();
+          } else {
+             setFamilyMembers([]);
+             setLoading(false);
+          }
         } else {
-            // This case might happen if user is created but doc writing fails.
-            // For now, we sign them out to be safe.
             await signOut(auth);
             setUser(null);
         }
@@ -85,8 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const firebaseUser = userCredential.user;
 
-    // Create a new family document
-    const familyDocRef = doc(collection(db, 'families'));
+    // Create a new family document first
+    const familyDocRef = await addDoc(collection(db, 'families'), {
+        // We can initialize it with members or leave it empty and update later
+        members: []
+    });
     
     // Create the first family member (the parent signing up)
     const newMember: FamilyMember = {
@@ -104,6 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: 'online',
     };
     
+    // Now update the new family document with the first member
+    await setDoc(familyDocRef, { members: [newMember] });
+
     // Create user document
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     const newUser: User = {
@@ -114,9 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     
     await setDoc(userDocRef, newUser);
-    await setDoc(familyDocRef, { members: [newMember] });
 
-    setUser(newUser);
+    // No need to set user here, onAuthStateChanged will handle it
   };
 
   const logout = async () => {
