@@ -5,11 +5,11 @@ import { PageHeader } from '@/components/page-header';
 
 export default function ArchivePage() {
   return (
-    <>
+    <div className="h-full">
       <Suspense fallback={<ArchiveSkeleton />}>
         <ArchiveClient />
       </Suspense>
-    </>
+    </div>
   );
 }
 

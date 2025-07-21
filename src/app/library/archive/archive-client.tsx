@@ -550,7 +550,7 @@ export default function ArchiveClient() {
   }, [books]);
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <PageHeader title="Kitaplığımız">
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsSearchDialogOpen(true)}><Search className="mr-2 h-4 w-4"/> Kitap Bul</Button>
@@ -559,19 +559,19 @@ export default function ArchiveClient() {
           </div>
       </PageHeader>
       
-      <Tabs defaultValue="adults" className="w-full">
+      <Tabs defaultValue="adults" className="w-full flex-grow flex flex-col min-h-0">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
-        <TabsContent value="adults" className="mt-6">
+        <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
             <BookShelf books={adultBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="children" className="mt-6">
+        <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
             <BookShelf books={childrenBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="management" className="mt-6">
+        <TabsContent value="management" className="mt-6 flex-grow overflow-y-auto">
            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -720,7 +720,7 @@ export default function ArchiveClient() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-    </>
+    </div>
   );
 }
 
