@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className="dark">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased overflow-x-hidden`}>
         <SidebarProvider>
           <AppSidebar />
           <SidebarInset>

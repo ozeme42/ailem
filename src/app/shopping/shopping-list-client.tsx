@@ -127,62 +127,64 @@ export default function ShoppingListClient() {
 
       <div className="space-y-4">
         {shoppingLists.length > 0 ? (
-            shoppingLists.map(list => {
-            const completionProgress = calculateListProgress(list);
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {shoppingLists.map(list => {
+                const completionProgress = calculateListProgress(list);
 
-            return (
-                <Card 
-                    key={list.id} 
-                    className="hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => router.push(`/shopping/${list.id}`)}
-                >
-                    <CardHeader className="p-4">
-                        <div className="flex justify-between items-start gap-2">
-                            <div className="flex-grow">
-                                <CardTitle>{list.title}</CardTitle>
-                                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                    <span>{list.items?.filter(i => i.completed).length || 0} / {list.items?.length || 0} Tamamlandı</span>
+                return (
+                    <Card 
+                        key={list.id} 
+                        className="hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => router.push(`/shopping/${list.id}`)}
+                    >
+                        <CardHeader className="p-4">
+                            <div className="flex justify-between items-start gap-2">
+                                <div className="flex-grow">
+                                    <CardTitle>{list.title}</CardTitle>
+                                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                        <span>{list.items?.filter(i => i.completed).length || 0} / {list.items?.length || 0} Tamamlandı</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
-                                        onClick={(e) => e.stopPropagation()} // Prevent card click
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>"{list.title}" listesini silmek istediğinize emin misiniz?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Bu işlem geri alınamaz. Liste kalıcı olarak silinecektir.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>İptal</AlertDialogCancel>
-                                        <AlertDialogAction 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteList(list.id);
-                                            }}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
+                                            onClick={(e) => e.stopPropagation()} // Prevent card click
                                         >
-                                            Sil
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                         <Progress value={completionProgress} className="h-2 w-full" indicatorClassName="bg-green-500" />
-                    </CardContent>
-                </Card>
-            )
-            })
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>"{list.title}" listesini silmek istediğinize emin misiniz?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Bu işlem geri alınamaz. Liste kalıcı olarak silinecektir.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>İptal</AlertDialogCancel>
+                                            <AlertDialogAction 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteList(list.id);
+                                                }}
+                                            >
+                                                Sil
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                             <Progress value={completionProgress} className="h-2 w-full" indicatorClassName="bg-green-500" />
+                        </CardContent>
+                    </Card>
+                )
+                })}
+            </div>
         ) : (
             <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
