@@ -60,6 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setLoading(false);
             }
           } else {
+            // This case can happen if user exists in Auth but not in Firestore.
+            // For a robust app, you might want to create the Firestore doc here.
+            // For now, we'll treat it as a logged-out state.
             await signOut(auth);
             setUser(null);
             setFamilyMembers([]);
@@ -111,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const firebaseUser = userCredential.user;
 
     const newMember: FamilyMember = {
-        id: firebaseUser.uid, // Use UID for parent's member ID as well for consistency
+        id: firebaseUser.uid,
         name,
         role,
         avatar: role === 'Baba' ? '/avatars/dad.png' : '/avatars/mom.png',
@@ -125,12 +128,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: 'online',
     };
 
-    // Create a new family document with the first member in a single operation
     const familyDocRef = await addDoc(collection(db, 'families'), {
         members: [newMember]
     });
 
-    // Create user document
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     const newUser: User = {
         uid: firebaseUser.uid,
