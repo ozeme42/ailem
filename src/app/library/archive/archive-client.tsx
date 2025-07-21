@@ -554,7 +554,7 @@ export default function ArchiveClient() {
   return (
     <div className="flex flex-col h-full gap-6">
       <PageHeader title="Kitaplığımız">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" onClick={() => setIsSearchDialogOpen(true)}><Search className="mr-2 h-4 w-4"/> Kitap Bul</Button>
             <Button onClick={() => handleOpenAddDialog()}><PlusCircle className="mr-2 h-4 w-4"/> Yeni Kitap Ekle</Button>
             <Button variant="outline" onClick={() => setIsBulkJsonDialogOpen(true)}><FilePlus className="mr-2 h-4 w-4"/> Toplu Ekle</Button>
@@ -758,19 +758,19 @@ function BookShelf({ books, onEdit, onDelete }: { books: Book[], onEdit: (book: 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {shelfBooks.map(book => (
                <Card key={book.id} className="group relative flex items-start gap-4 p-4 transition-all duration-300 hover:shadow-lg">
-                  <div className="relative w-20 shrink-0">
+                  <div className="relative w-16 shrink-0">
                     <Image 
                       src={book.image || `https://placehold.co/120x180.png`} 
                       alt={book.title} 
-                      width={80} 
-                      height={120} 
+                      width={64} 
+                      height={96} 
                       className="rounded-md object-cover aspect-[2/3] shadow-md"
                       data-ai-hint="book cover" 
                     />
                   </div>
-                  <div className="flex flex-col flex-grow">
-                      <p className="font-semibold" title={book.title}>{book.title}</p>
-                      <p className="text-sm text-muted-foreground">{book.author}</p>
+                  <div className="flex flex-col flex-grow min-w-0">
+                      <p className="font-semibold truncate" title={book.title}>{book.title}</p>
+                      <p className="text-sm text-muted-foreground truncate">{book.author}</p>
                       {book.pageCount && (
                         <p className="text-xs text-muted-foreground mt-2">{book.pageCount} sayfa</p>
                       )}
@@ -874,5 +874,7 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
 
     
