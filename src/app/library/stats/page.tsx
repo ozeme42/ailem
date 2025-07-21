@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Book, User, Library, Star } from "lucide-react";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { Book as BookType, monthlyReadingStats, familyMembers } from "@/lib/data";
+import { Book as BookType, monthlyReadingStats } from "@/lib/data";
 import { onBooksUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 

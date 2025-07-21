@@ -3,7 +3,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { familyMembers, type Book } from '@/lib/data';
+import { type Book } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, CheckSquare, Target, Library } from 'lucide-react';

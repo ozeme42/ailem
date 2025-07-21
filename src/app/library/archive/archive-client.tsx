@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { familyMembers } from '@/lib/data';
 import { Book } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -293,7 +292,7 @@ const BookForm = ({ existingTags }: { existingTags: string[] }) => {
 
 // ARCHIVE CLIENT COMPONENT
 export default function ArchiveClient() {
-  const { user } = useAuth();
+  const { user, familyMembers } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
@@ -400,6 +399,10 @@ export default function ArchiveClient() {
   };
   
   const handleAddToMyLibrary = (book: Book) => {
+      if (!familyMembers || familyMembers.length === 0) {
+          toast({ title: "Hata", description: "Kitap eklemek için aile üyesi bulunamadı.", variant: 'destructive' });
+          return;
+      }
       const member = familyMembers[Math.floor(Math.random() * familyMembers.length)];
       toast({
           title: `"${book.title}"`,
