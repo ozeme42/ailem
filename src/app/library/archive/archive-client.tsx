@@ -24,9 +24,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags } from '@/lib/dataService';
 
 // SCHEMAS & TYPES
@@ -300,7 +301,9 @@ export default function ArchiveClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [activeShelf, setActiveShelf] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("adults");
 
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Partial<Book>[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -547,26 +550,65 @@ export default function ArchiveClient() {
   const { adultBooks, childrenBooks } = useMemo(() => {
     const adults: Book[] = [];
     const children: Book[] = [];
-    books.forEach(book => (book.isForChildren ? children.push(book) : adults.push(book)));
+    
+    const sourceBooks = books.filter(book => {
+      if (!localSearchQuery) return true;
+      const q = localSearchQuery.toLowerCase();
+      return (
+        book.title.toLowerCase().includes(q) ||
+        (book.author && book.author.toLowerCase().includes(q)) ||
+        (book.tags && book.tags.some(tag => tag.toLowerCase().includes(q)))
+      );
+    });
+
+    sourceBooks.forEach(book => (book.isForChildren ? children.push(book) : adults.push(book)));
     return { adultBooks: adults, childrenBooks: children };
-  }, [books]);
+  }, [books, localSearchQuery]);
 
   return (
     <div className="flex flex-col h-full gap-6">
       <PageHeader title="Kitaplığımız">
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsSearchDialogOpen(true)}><Search className="mr-2 h-4 w-4"/> Kitap Bul</Button>
-            <Button onClick={() => handleOpenAddDialog()}><PlusCircle className="mr-2 h-4 w-4"/> Yeni Kitap Ekle</Button>
-            <Button variant="outline" onClick={() => setIsBulkJsonDialogOpen(true)}><FilePlus className="mr-2 h-4 w-4"/> Toplu Ekle</Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => handleOpenAddDialog()}>
+              <PlusCircle className="mr-2 h-4 w-4"/> Yeni Kitap Ekle
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                  <ChevronDown className="h-4 w-4"/>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsSearchDialogOpen(true)}>
+                  <Search className="mr-2 h-4 w-4"/> İnternette Ara
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsBulkJsonDialogOpen(true)}>
+                  <FilePlus className="mr-2 h-4 w-4"/> Toplu Ekle (JSON)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
       </PageHeader>
       
-      <Tabs defaultValue="adults" className="flex flex-col flex-grow min-h-0">
+      <Tabs defaultValue="adults" onValueChange={setActiveTab} className="flex flex-col flex-grow min-h-0">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
+        
+        {activeTab !== 'management' && (
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Mevcut kütüphanede ara (başlık, yazar, raf...)"
+              className="pl-10"
+              value={localSearchQuery}
+              onChange={(e) => setLocalSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
+
         <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
             <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
         </TabsContent>
@@ -884,5 +926,7 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
 
     
