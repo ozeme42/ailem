@@ -559,19 +559,19 @@ export default function ArchiveClient() {
           </div>
       </PageHeader>
       
-      <Tabs defaultValue="adults" className="w-full flex flex-col flex-grow min-h-0">
+      <Tabs defaultValue="adults" className="flex flex-col flex-grow min-h-0">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
           <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
           <TabsTrigger value="management">Raf Yönetimi</TabsTrigger>
         </TabsList>
-        <TabsContent value="adults" className="mt-6 flex-grow min-h-0 overflow-y-auto">
+        <TabsContent value="adults" className="flex-grow min-h-0 h-full overflow-y-auto mt-6">
             <BookShelf books={adultBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="children" className="mt-6 flex-grow min-h-0 overflow-y-auto">
+        <TabsContent value="children" className="flex-grow min-h-0 h-full overflow-y-auto mt-6">
             <BookShelf books={childrenBooks} onAddToLibrary={handleAddToMyLibrary} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} />
         </TabsContent>
-        <TabsContent value="management" className="mt-6 flex-grow min-h-0 overflow-y-auto">
+        <TabsContent value="management" className="flex-grow min-h-0 h-full overflow-y-auto mt-6">
            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -671,7 +671,7 @@ export default function ArchiveClient() {
                       <Image src={book.image || 'https://placehold.co/80x120.png'} alt={book.title || ''} width={40} height={60} className="object-cover rounded-sm shadow-md" data-ai-hint="book cover"/>
                       <div className="flex-grow">
                         <p className="font-semibold text-sm">{book.title}</p>
-                        <p className="text-xs text-muted-foreground">{book.author}</p>
+                        <p className="text-xs text-muted-foreground truncate">{book.author}</p>
                       </div>
                     </div>
                   ))}
@@ -866,3 +866,5 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
+    
