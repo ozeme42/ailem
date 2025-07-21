@@ -1,10 +1,9 @@
-
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
-import { PlusCircle, Search, Clock, Soup, Salad, Wheat, Star, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
-import { format, addDays, startOfWeek, getISOWeek, getYear } from "date-fns";
+import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
+import { format, addDays, startOfWeek } from "date-fns";
 import { tr } from "date-fns/locale";
 
 import { PageHeader } from "@/components/page-header";
