@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: 'online',
     };
 
-    // Create a new family document
+    // Create a new family document with the first member
     const familyDocRef = await addDoc(collection(db, 'families'), {
         members: [newMember],
         defaultDataInitialized: false,
@@ -142,8 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     await setDoc(userDocRef, newUser);
 
-    // Initialize default data for the new family
-    await initializeDefaultData(familyDocRef.id);
+    // Initialize default data for the new family, assigning first task to the new user
+    await initializeDefaultData(familyDocRef.id, firebaseUser.uid);
   };
 
   const logout = async () => {

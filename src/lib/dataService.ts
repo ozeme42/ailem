@@ -1,7 +1,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember } from './data';
-import { getAuth } from 'firebase/auth';
 
 const getCurrentFamilyId = (): string | null => {
     const auth = getAuth();
@@ -235,8 +235,109 @@ export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 
 export const deletePracticeExam = (id: string) => deleteDoc(doc(db, 'practiceExams', id));
 
 // This needs to be called from a client component that has access to the AuthContext
-export const initializeDefaultData = async (familyId: string) => {
+export const initializeDefaultData = async (familyId: string, userId: string) => {
     const batch = writeBatch(db);
+
+    // Helper data from data.ts
+    const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
+        { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false },
+        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
+    ];
+
+    const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId'>[] = [
+        { title: 'Odanı Topla', points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
+        { title: 'Matematik Ödevi', points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
+    ];
+
+    const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
+        {
+            name: 'Haftalık Market Alışverişi',
+            icon: 'ShoppingCart',
+            items: [
+                { id: '1', name: 'Süt', isBought: true },
+                { id: '2', name: 'Ekmek', isBought: true },
+                { id: '3', name: 'Yumurta', isBought: false },
+            ],
+        }
+    ];
+
+    const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
+        { title: 'Doktor Randevusu', startDate: '2024-08-20', recurrence: 'one-time' },
+        { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
+    ];
+
+    const initialRecipes: Recipe[] = [
+        {
+            id: 1,
+            title: "Menemen",
+            category: 'Kahvaltı',
+            image: "https://placehold.co/400x250.png",
+            prepTime: "20 dk",
+            rating: 4.8,
+            ingredients: ["3 adet domates", "2 adet sivri biber", "2 adet yumurta", "1 yemek kaşığı tereyağı", "Tuz, karabiber, pul biber"],
+            instructions: ["Biberleri ve domatesleri doğrayın.", "Tereyağını tavada eritin ve biberleri kavurun.", "Domatesleri ekleyip suyunu çekene kadar pişirin.", "Yumurtaları kırın ve karıştırarak pişirin.", "Baharatları ekleyip servis yapın."]
+        },
+        {
+            id: 2,
+            title: "Mercimek Çorbası",
+            category: 'Akşam Yemeği',
+            image: "https://placehold.co/400x250.png",
+            prepTime: "40 dk",
+            rating: 4.9,
+            ingredients: ["1 su bardağı kırmızı mercimek", "1 adet soğan", "1 adet havuç", "1 adet patates", "1 yemek kaşığı salça", "Nane, pul biber, tuz"],
+            instructions: ["Tüm sebzeleri doğrayın.", "Mercimeği yıkayıp süzün.", "Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin.", "Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun.", "Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin.", "Baharatları ekleyip bir taşım daha kaynatın."]
+        }
+    ];
+
+    const initialMealPlan: MealPlan = {
+      "2024-08-12": { // This key needs to be dynamic based on current week, but for initial data it's fine
+        "Kahvaltı": initialRecipes[0],
+        "Akşam Yemeği": initialRecipes[1],
+      },
+    };
+
+    const initialQuestionBanks: Omit<QuestionBank, 'id' | 'familyId'>[] = [
+        {
+            name: "5. Sınıf Matematik Soru Bankası",
+            subjects: [
+                {
+                    id: 1,
+                    name: "Matematik",
+                    topics: [
+                        { id: 1, name: "Doğal Sayılar", questionCount: 20, gradingType: 'auto', answerKey: {1: 'A', 2: 'B'} },
+                        { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text' },
+                    ]
+                }
+            ]
+        }
+    ];
+
+    const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
+         {
+            name: "LGS Deneme Sınavı 1",
+            gradingType: 'auto',
+            subjects: [
+                { id: 1, name: "Matematik", questionCount: 20 },
+                { id: 2, name: "Türkçe", questionCount: 20 },
+                { id: 3, name: "Fen Bilimleri", questionCount: 20 },
+            ],
+            answerKey: {1: 'A', 2: 'C', 3: 'B'}
+        }
+    ];
+
+    const initialTests: Omit<Test, 'id' | 'status' | 'familyId' | 'studentId'>[] = [
+        {
+            title: "LGS Deneme Sınavı 1",
+            subject: "Deneme Sınavı",
+            questionCount: 60,
+            assignedDate: "01 Ağustos 2024",
+            dueDate: "15 Ağustos 2024",
+            sourceType: 'exam',
+            sourceId: '1',
+            gradingType: 'auto',
+        }
+    ];
+
 
     // Initial Books
     initialBooks.forEach(book => {
@@ -250,10 +351,10 @@ export const initializeDefaultData = async (familyId: string) => {
     const tagsDocRef = doc(db, 'libraryManagement', familyId);
     batch.set(tagsDocRef, { allTags: Array.from(allTags) });
 
-    // Initial Tasks
+    // Initial Tasks - assign to the new user
     initialTasks.forEach(task => {
         const docRef = doc(collection(db, 'tasks'));
-        batch.set(docRef, { ...task, familyId });
+        batch.set(docRef, { ...task, familyId, assigneeId: userId });
     });
 
     // Initial Shopping List
@@ -283,9 +384,9 @@ export const initializeDefaultData = async (familyId: string) => {
         const docRef = doc(collection(db, 'practiceExams'));
         batch.set(docRef, { ...exam, familyId });
     });
-    initialTests.forEach(test => {
+     initialTests.forEach(test => {
         const docRef = doc(collection(db, 'tests'));
-        batch.set(docRef, { ...test, familyId });
+        batch.set(docRef, { ...test, familyId, studentId: userId, status: 'Atandı' });
     });
     
     // Check if default data has been initialized
@@ -295,104 +396,3 @@ export const initializeDefaultData = async (familyId: string) => {
 
     await batch.commit();
 };
-
-// Helper data from data.ts
-export const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
-    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false },
-    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
-];
-
-export const initialTasks: Omit<Task, 'id' | 'familyId'>[] = [
-    { title: 'Odanı Topla', assigneeId: "3", points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
-    { title: 'Matematik Ödevi', assigneeId: "4", points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
-];
-
-export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
-    {
-        name: 'Haftalık Market Alışverişi',
-        icon: 'ShoppingCart',
-        items: [
-            { id: '1', name: 'Süt', isBought: true },
-            { id: '2', name: 'Ekmek', isBought: true },
-            { id: '3', name: 'Yumurta', isBought: false },
-        ],
-    }
-];
-
-export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
-    { title: 'Doktor Randevusu', startDate: '2024-08-20', recurrence: 'one-time' },
-    { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
-];
-
-export const initialRecipes: Recipe[] = [
-    {
-        id: 1,
-        title: "Menemen",
-        category: 'Kahvaltı',
-        image: "https://placehold.co/400x250.png",
-        prepTime: "20 dk",
-        rating: 4.8,
-        ingredients: ["3 adet domates", "2 adet sivri biber", "2 adet yumurta", "1 yemek kaşığı tereyağı", "Tuz, karabiber, pul biber"],
-        instructions: ["Biberleri ve domatesleri doğrayın.", "Tereyağını tavada eritin ve biberleri kavurun.", "Domatesleri ekleyip suyunu çekene kadar pişirin.", "Yumurtaları kırın ve karıştırarak pişirin.", "Baharatları ekleyip servis yapın."]
-    },
-    {
-        id: 2,
-        title: "Mercimek Çorbası",
-        category: 'Akşam Yemeği',
-        image: "https://placehold.co/400x250.png",
-        prepTime: "40 dk",
-        rating: 4.9,
-        ingredients: ["1 su bardağı kırmızı mercimek", "1 adet soğan", "1 adet havuç", "1 adet patates", "1 yemek kaşığı salça", "Nane, pul biber, tuz"],
-        instructions: ["Tüm sebzeleri doğrayın.", "Mercimeği yıkayıp süzün.", "Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin.", "Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun.", "Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin.", "Baharatları ekleyip bir taşım daha kaynatın."]
-    }
-];
-
-export const initialMealPlan: MealPlan = {
-  "2024-08-12": { // This key needs to be dynamic based on current week, but for initial data it's fine
-    "Kahvaltı": initialRecipes[0],
-    "Akşam Yemeği": initialRecipes[1],
-  },
-};
-
-export const initialQuestionBanks: Omit<QuestionBank, 'id' | 'familyId'>[] = [
-    {
-        name: "5. Sınıf Matematik Soru Bankası",
-        subjects: [
-            {
-                id: 1,
-                name: "Matematik",
-                topics: [
-                    { id: 1, name: "Doğal Sayılar", questionCount: 20, gradingType: 'auto', answerKey: {1: 'A', 2: 'B'} },
-                    { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text' },
-                ]
-            }
-        ]
-    }
-];
-
-export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
-     {
-        name: "LGS Deneme Sınavı 1",
-        gradingType: 'auto',
-        subjects: [
-            { id: 1, name: "Matematik", questionCount: 20 },
-            { id: 2, name: "Türkçe", questionCount: 20 },
-            { id: 3, name: "Fen Bilimleri", questionCount: 20 },
-        ],
-        answerKey: {1: 'A', 2: 'C', 3: 'B'}
-    }
-];
-
-export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
-    {
-        title: "LGS Deneme Sınavı 1",
-        subject: "Deneme Sınavı",
-        studentId: "4",
-        questionCount: 60,
-        assignedDate: "01 Ağustos 2024",
-        dueDate: "15 Ağustos 2024",
-        sourceType: 'exam',
-        sourceId: '1',
-        gradingType: 'auto',
-    }
-];
