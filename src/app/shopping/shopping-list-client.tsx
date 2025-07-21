@@ -125,7 +125,7 @@ export default function ShoppingListClient() {
         </Card>
       </div>
 
-      <div className="space-y-4">
+      <div>
         {shoppingLists.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {shoppingLists.map(list => {
