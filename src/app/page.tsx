@@ -21,6 +21,7 @@ import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -134,10 +135,31 @@ export default function Home() {
               <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
           </div>
           <div className="flex items-center gap-2">
-              <button className="relative rounded-full p-2 transition-colors hover:bg-white/20">
-                  <Bell className="h-5 w-5" />
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">3</Badge>
-              </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="relative rounded-full p-2 transition-colors hover:bg-white/20">
+                    <Bell className="h-5 w-5" />
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">3</Badge>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Son Bildirimler</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {recentActivities.map((activity) => (
+                    <DropdownMenuItem key={activity.id} className="flex items-start gap-3 p-2">
+                         <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-white ${activity.color}`}>
+                            <activity.icon className="h-4 w-4" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium">
+                                {activity.user} <span className="text-muted-foreground font-normal">{activity.title}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">{activity.time}</p>
+                        </div>
+                    </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
               <button className="rounded-full p-2 transition-colors hover:bg-white/20">
                   <Settings className="h-5 w-5" />
               </button>
@@ -382,3 +404,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
