@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { QuestionBank, PracticeExam } from "@/lib/data";
@@ -25,6 +25,8 @@ import {
   updatePracticeExam,
   deletePracticeExam,
 } from "@/lib/dataService";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
@@ -74,6 +76,16 @@ export default function EducationManagementPage() {
         const newSubjects = [...new Set([...availableSubjects, subjectName])];
         await updateSubjects(newSubjects);
     };
+    
+    const openEditBankDialog = (bank: QuestionBank) => {
+        setEditingBank(bank);
+        setIsBankDialogOpen(true);
+    }
+    
+    const openEditExamDialog = (exam: PracticeExam) => {
+        setEditingExam(exam);
+        setIsExamDialogOpen(true);
+    }
 
     const handleBankSubmit = async (bankData: Omit<QuestionBank, 'id' | 'familyId'>, id?: string) => {
         try {
@@ -129,16 +141,20 @@ export default function EducationManagementPage() {
         const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[] } } = {};
         
         availableSubjects.forEach(s => {
-            categories[s] = { banks: [], exams: [] };
+            if (!categories[s]) categories[s] = { banks: [], exams: [] };
         });
-        categories['Genel Deneme Sınavları'] = { banks: [], exams: [] };
-        categories['Serbest Etkinlikler'] = { banks: [], exams: [] };
+        if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [] };
+        if (!categories['Serbest Etkinlikler']) categories['Serbest Etkinlikler'] = { banks: [], exams: [] };
 
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
                 if (categories[subject.name]) {
                     if (!categories[subject.name].banks.find(b => b.id === bank.id)) {
                         categories[subject.name].banks.push(bank);
+                    }
+                } else {
+                     if (!categories['Serbest Etkinlikler'].banks.find(b => b.id === bank.id)) {
+                        categories['Serbest Etkinlikler'].banks.push(bank);
                     }
                 }
             });
@@ -156,7 +172,7 @@ export default function EducationManagementPage() {
         <>
             <PageHeader title="İçerik Yönetimi">
                 <Link href="/education">
-                    <Button variant="outline"><ArrowLeft className="mr-2 h-4 w-4" /> Geri</Button>
+                    <Button variant="outline"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
                 </Link>
                 <Dialog>
                     <DialogTrigger asChild>
@@ -173,30 +189,81 @@ export default function EducationManagementPage() {
                     </DialogContent>
                 </Dialog>
             </PageHeader>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            
+            <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
                 {Object.entries(contentByCategory).map(([category, content]) => {
                     const Icon = categoryIcons[category] || BookCopy;
-                    const colorClass = categoryColors[category] || 'border-gray-500/80 text-gray-600';
                     const totalCount = content.banks.length + content.exams.length;
                     
-                    if (totalCount === 0 && category !== 'Genel Deneme Sınavları' && !availableSubjects.includes(category)) return null;
+                    if (totalCount === 0) return null;
 
                     return (
-                        <Card key={category} className={`group relative cursor-pointer hover:shadow-lg transition-shadow border-2 ${colorClass} bg-card`}>
-                            <CardHeader className="items-center text-center p-4">
-                                <Icon className="w-16 h-16 mb-2" />
-                                <CardTitle className="text-xl">{category}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0 text-center">
-                                <p className="text-muted-foreground">{totalCount} Adet Sınav</p>
-                            </CardContent>
+                        <Card key={category}>
+                             <AccordionItem value={category} className="border-b-0">
+                                <AccordionTrigger className="p-4 hover:no-underline">
+                                    <div className="flex items-center gap-3">
+                                        <Icon className="w-8 h-8" />
+                                        <div className="text-left">
+                                            <h3 className="text-lg font-semibold">{category}</h3>
+                                            <p className="text-sm text-muted-foreground">{totalCount} içerik bulundu</p>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-4 pt-0">
+                                    <div className="space-y-3">
+                                        {content.banks.map(bank => (
+                                            <Card key={bank.id} className="p-3">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-semibold">{bank.name}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {bank.subjects.length} Ders, {bank.subjects.reduce((acc, s) => acc + s.topics.length, 0)} Konu
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Button variant="ghost" size="icon" onClick={() => openEditBankDialog(bank)}><Edit className="w-4 h-4"/></Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader><AlertDialogTitle>Soru bankasını sil?</AlertDialogTitle><AlertDialogDescription>"{bank.name}" kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteBank(bank.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                         {content.exams.map(exam => (
+                                            <Card key={exam.id} className="p-3">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-semibold">{exam.name}</p>
+                                                         <p className="text-xs text-muted-foreground">
+                                                            {exam.subjects.length} Ders, {exam.subjects.reduce((acc, s) => acc + s.questionCount, 0)} Soru
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Button variant="ghost" size="icon" onClick={() => openEditExamDialog(exam)}><Edit className="w-4 h-4"/></Button>
+                                                         <AlertDialog>
+                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader><AlertDialogTitle>Deneme sınavını sil?</AlertDialogTitle><AlertDialogDescription>"{exam.name}" kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
                         </Card>
                     )
                 })}
-            </div>
+            </Accordion>
             
-            <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
+            <Dialog open={isBankDialogOpen} onOpenChange={(open) => { if(!open) setEditingBank(null); setIsBankDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingBank ? "Soru Bankasını Düzenle" : "Yeni Soru Bankası Oluştur"}</DialogTitle>
@@ -210,7 +277,7 @@ export default function EducationManagementPage() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isExamDialogOpen} onOpenChange={setIsExamDialogOpen}>
+            <Dialog open={isExamDialogOpen} onOpenChange={(open) => { if(!open) setEditingExam(null); setIsExamDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>{editingExam ? "Deneme Sınavını Düzenle" : "Yeni Deneme Sınavı Oluştur"}</DialogTitle>
@@ -225,6 +292,5 @@ export default function EducationManagementPage() {
             </Dialog>
         </>
     );
-}
 
     
