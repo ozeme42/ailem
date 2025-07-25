@@ -17,6 +17,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
 import { updateTest } from "@/lib/dataService";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
@@ -31,6 +33,7 @@ export default function OpticalFormPage() {
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     const [timeLeft, setTimeLeft] = React.useState(0);
+    const [totalTime, setTotalTime] = React.useState(0);
     const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<number>>(new Set());
     const [currentQuestion, setCurrentQuestion] = React.useState(1);
 
@@ -125,7 +128,9 @@ export default function OpticalFormPage() {
                 setTest(currentTest);
 
                 if (currentTest) {
-                     setTimeLeft(currentTest.questionCount * 90);
+                     const totalDuration = currentTest.questionCount * 90;
+                     setTotalTime(totalDuration);
+                     setTimeLeft(totalDuration);
                      const type = currentTest.gradingType || 'manual';
 
                      if(type === 'auto') {
@@ -236,6 +241,8 @@ export default function OpticalFormPage() {
     
     const questionNumber = currentQuestion;
 
+    const timePercentage = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0;
+
     return (
         <div className="container mx-auto py-8">
             <header className="mb-4">
@@ -244,16 +251,19 @@ export default function OpticalFormPage() {
                 </Button>
             </header>
             
-            <Card className="mb-8 bg-muted/30">
-                <CardContent className="p-4 flex justify-center items-center">
-                    <div className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground">KALAN SÜRE</p>
-                        <p className={`text-5xl font-bold tracking-tighter ${timeLeft < 300 ? 'text-destructive' : 'text-foreground'}`}>
-                            <Clock className="inline-block h-10 w-10 mr-2 align-text-bottom"/> 
-                            {formatTime(timeLeft)}
-                        </p>
-                    </div>
+            <Card className="mb-8 overflow-hidden">
+                <CardContent className="p-6 text-center bg-muted/30">
+                     <p className="text-sm font-medium text-muted-foreground">KALAN SÜRE</p>
+                    <p className={cn(`text-5xl font-bold tracking-tighter`, timeLeft < totalTime * 0.2 ? 'text-destructive' : 'text-foreground')}>
+                        <Clock className="inline-block h-10 w-10 mr-2 align-text-bottom"/> 
+                        {formatTime(timeLeft)}
+                    </p>
                 </CardContent>
+                <Progress 
+                    value={timePercentage} 
+                    className="h-2 rounded-t-none"
+                    indicatorClassName={cn(timeLeft < totalTime * 0.2 ? 'bg-destructive' : 'bg-green-500')}
+                />
             </Card>
 
             <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
