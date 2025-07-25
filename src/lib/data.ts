@@ -38,7 +38,7 @@ export interface Task {
   dueDate: string;
   completed: boolean;
   category: 'Ev İşleri' | 'Okul' | 'Kişisel' | 'Aile';
-  subtasks: Subtask[];
+  subtasks?: Subtask[];
   difficulty: 'Kolay' | 'Orta' | 'Zor';
   notes?: string;
   photo?: string;

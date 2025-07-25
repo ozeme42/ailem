@@ -23,7 +23,8 @@ export default function TasksPage() {
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = React.useState(false);
+  const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
+  const [editingTask, setEditingTask] = React.useState<Task | null>(null);
 
   React.useEffect(() => {
     setLoading(true);
@@ -33,6 +34,16 @@ export default function TasksPage() {
     });
     return () => unsubscribe();
   }, []);
+
+  const handleOpenEditTask = (task: Task) => {
+    setEditingTask(task);
+    setIsTaskFormOpen(true);
+  };
+
+  const handleOpenNewTask = () => {
+    setEditingTask(null);
+    setIsTaskFormOpen(true);
+  };
   
   const getAssignee = (assigneeId: string) => {
     return familyMembers.find((m) => m.id === assigneeId);
@@ -52,27 +63,27 @@ export default function TasksPage() {
     <>
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-xl shadow-lg mb-6">
         <h1 className="text-2xl font-bold">Görev Yönetimi 📝</h1>
-        <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Yeni Görev Ekle
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+        <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={handleOpenNewTask}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Yeni Görev Ekle
+        </Button>
+      </div>
+
+       <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Yeni Görev Oluştur</DialogTitle>
+              <DialogTitle>{editingTask ? 'Görevi Düzenle' : 'Yeni Görev Oluştur'}</DialogTitle>
               <DialogDescription>
-                Yeni bir görev ekleyerek ailenizin düzenine katkıda bulunun.
+                {editingTask ? 'Mevcut görevin ayrıntılarını güncelleyin.' : 'Yeni bir görev ekleyerek ailenizin düzenine katkıda bulunun.'}
               </DialogDescription>
             </DialogHeader>
             <NewTaskForm 
                 familyMembers={familyMembers}
-                onTaskCreated={() => setIsNewTaskDialogOpen(false)}
+                onTaskProcessed={() => setIsTaskFormOpen(false)}
+                taskToEdit={editingTask}
             />
           </DialogContent>
         </Dialog>
-      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
@@ -122,7 +133,7 @@ export default function TasksPage() {
             <TabsContent value="todo" className="mt-4 space-y-3">
               {todoTasks.length > 0 ? (
                 todoTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
+                  <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
                 ))
               ) : (
                 <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Bekleyen görev yok. Harika!</CardContent></Card>
@@ -131,7 +142,7 @@ export default function TasksPage() {
             <TabsContent value="completed" className="mt-4 space-y-3">
                {completedTasks.length > 0 ? (
                 completedTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} />
+                  <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
                 ))
                ) : (
                 <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>

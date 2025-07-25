@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Star, GripVertical, ChevronDown, Paperclip, Mic, Pause, Play, Trash2 } from "lucide-react";
+import { Star, GripVertical, ChevronDown, Paperclip, Mic, Pause, Play, Trash2, Edit } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -12,16 +12,18 @@ import type { Task, FamilyMember, Subtask } from "@/lib/data";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "./ui/progress";
 import { Button } from "./ui/button";
-import { updateTask, updateFamilyMemberInFamily, checkAndAwardBadges } from "@/lib/dataService";
+import { updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, deleteTask } from "@/lib/dataService";
 import { useAuth } from "./auth-provider";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 
 
 interface TaskItemProps {
   task: Task;
   assignee?: FamilyMember;
+  onEdit: (task: Task) => void;
 }
 
-export function TaskItem({ task, assignee }: TaskItemProps) {
+export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
   const { familyId } = useAuth();
   const [isCompleted, setIsCompleted] = React.useState(task.completed);
   const [subtasks, setSubtasks] = React.useState<Subtask[]>(task.subtasks || []);
@@ -129,7 +131,7 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
               {task.title}
             </label>
             <p className="text-xs text-muted-foreground">{task.dueDate}</p>
-             {subtasks.length > 0 && (
+             {(subtasks && subtasks.length > 0) && (
                 <div className="flex items-center gap-2 mt-1">
                     <Progress value={progress} className="h-1 w-24" />
                     <span className="text-xs text-muted-foreground">{completedSubtasks}/{subtasks.length}</span>
@@ -152,13 +154,31 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
             )}
             <span className="text-sm font-medium hidden md:inline">{assignee?.name}</span>
           </div>
-          {(task.subtasks && task.subtasks.length > 0) && (
-            <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
-                </Button>
-            </CollapsibleTrigger>
-          )}
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(task)}><Edit className="h-4 w-4"/></Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Görevi Sil</AlertDialogTitle>
+                        <AlertDialogDescription>"{task.title}" görevini kalıcı olarak silmek istediğinize emin misiniz?</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>İptal</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteTask(task.id)}>Sil</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            {(task.subtasks && task.subtasks.length > 0) && (
+                <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                    </Button>
+                </CollapsibleTrigger>
+            )}
+          </div>
         </CardContent>
         {(task.subtasks && task.subtasks.length > 0) && (
             <CollapsibleContent>
