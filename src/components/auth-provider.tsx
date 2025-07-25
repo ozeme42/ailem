@@ -6,8 +6,12 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWith
 import { doc, setDoc, getDoc, onSnapshot, collection, addDoc, Unsubscribe, query, where, writeBatch, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { FamilyMember, User } from '@/lib/data';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { initializeDefaultData, updateFamilyMemberInFamily } from '@/lib/dataService';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { MobileNavbar } from '@/components/mobile-navbar';
+import { Skeleton } from './ui/skeleton';
 
 interface AuthContextType {
   user: User | null;
@@ -32,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const auth = getAuth();
+  const pathname = usePathname();
 
   useEffect(() => {
     let familyUnsubscribe: Unsubscribe | null = null;
@@ -224,9 +229,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const value = { user, familyId, familyMembers, loading, signup, login, logout, addFamilyMember, createFamilyAndAddMember, joinFamilyWithId, updateFamilyMember };
+  const authContextValue = { user, familyId, familyMembers, loading, signup, login, logout, addFamilyMember, createFamilyAndAddMember, joinFamilyWithId, updateFamilyMember };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // App Layout Logic
+  const authRoutes = ['/login', '/signup'];
+  const isAuthRoute = authRoutes.includes(pathname);
+  const isJoinFamilyRoute = pathname === '/join-family';
+  
+  useEffect(() => {
+    if (loading) return;
+
+    if (!user && !isAuthRoute) {
+      router.push('/login');
+    } else if (user && isAuthRoute) {
+      router.push('/');
+    } else if (user && !familyId && !isJoinFamilyRoute) {
+      router.push('/join-family');
+    } else if (user && familyId && isJoinFamilyRoute) {
+       router.push('/');
+    }
+  }, [user, familyId, loading, isAuthRoute, isJoinFamilyRoute, router, pathname]);
+
+  if (loading || (!user && !isAuthRoute) || (user && !familyId && !isJoinFamilyRoute)) {
+     return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-2xl font-bold text-primary">Ailem</p>
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+     )
+  }
+
+  if (isAuthRoute || isJoinFamilyRoute) {
+    return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
+  }
+
+
+  return (
+    <AuthContext.Provider value={authContextValue}>
+        <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+                <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 h-full">
+                {children}
+                </main>
+            </SidebarInset>
+            <MobileNavbar />
+        </SidebarProvider>
+    </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => {
