@@ -47,13 +47,12 @@ export function FamilyMemberCard({ member, onEdit }: FamilyMemberCardProps) {
             </Button>
             <div className="flex justify-between items-start mb-2">
                  <div className="relative">
-                    {member.avatar && !member.avatar.startsWith('/') ? (
-                        <div className="w-16 h-16 rounded-full border-2 border-white/50 flex items-center justify-center bg-white/30 text-3xl font-bold">
-                            {member.avatar}
-                        </div>
-                    ) : (
-                         <Image src={member.avatar || '/default-avatar.png'} alt={member.name} width={64} height={64} className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" data-ai-hint="person" />
-                    )}
+                    <div 
+                        className="w-16 h-16 rounded-full border-2 border-white/50 flex items-center justify-center bg-white/30 text-3xl font-bold"
+                        style={{ backgroundColor: member.color, color: 'white' }}
+                    >
+                        {member.name.charAt(0).toUpperCase()}
+                    </div>
                     <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 ${member.status === 'online' ? 'bg-green-400' : 'bg-gray-400'} border-card`}/>
                  </div>
                  <div className="text-3xl">{moodEmojis[member.mood]}</div>

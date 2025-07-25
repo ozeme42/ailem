@@ -190,13 +190,12 @@ export default function EducationPage() {
             className={`flex-shrink-0 h-auto p-4 flex items-center gap-3 transition-all duration-200 ${selectedStudent?.id === student.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
             onClick={() => setSelectedStudent(student)}
           >
-            {student.avatar.startsWith('/') ? (
-              <Image src={student.avatar} alt={student.name} width={40} height={40} className="w-10 h-10 rounded-full" />
-            ) : (
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xl font-bold" style={{ backgroundColor: student.color, color: '#fff' }}>
-                    {student.avatar}
-                </div>
-            )}
+            <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold" 
+                style={{ backgroundColor: student.color, color: '#fff' }}
+            >
+                {student.name.charAt(0).toUpperCase()}
+            </div>
             <div className="text-left">
               <p className="font-bold text-lg">{student.name}</p>
             </div>
