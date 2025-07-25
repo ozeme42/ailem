@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, recentActivities, FamilyMember } from "@/lib/data";
+import { weeklyPoints, recentActivities, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate } from "@/lib/dataService";
+import { format, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
+import Link from "next/link";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const quickStats = [
   { title: 'Tamamlanan Görevler', value: '24', change: '+8', icon: CheckSquare, color: 'text-green-500', bgColor: 'bg-green-500/10' },
@@ -43,7 +47,36 @@ export default function Home() {
   const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
   const [editingMember, setEditingMember] = React.useState<FamilyMember | null>(null);
   
+  const [shoppingLists, setShoppingLists] = React.useState<ShoppingList[]>([]);
+  const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
+  const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
+
+  React.useEffect(() => {
+    const unsubShopping = onShoppingListsUpdate(setShoppingLists);
+    const unsubMeal = onMealPlanUpdate(setMealPlan);
+    const unsubCalendar = onCalendarEventsUpdate(setCalendarEvents);
+
+    return () => {
+      unsubShopping();
+      unsubMeal();
+      unsubCalendar();
+    };
+  }, []);
+
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
+  const totalShoppingItems = shoppingLists.reduce((acc, list) => acc + (list.items?.filter(item => !item.isBought).length || 0), 0);
+  const todaysMeal = mealPlan[format(new Date(), 'yyyy-MM-dd')]?.['Akşam Yemeği'] as Recipe | undefined;
+
+  const upcomingEvents = React.useMemo(() => {
+    const today = new Date();
+    const start = startOfMonth(today);
+    const end = endOfMonth(today);
+    return calendarEvents.filter(event => {
+       const eventDate = new Date(event.startDate);
+       return isWithinInterval(eventDate, { start, end });
+    }).length;
+  }, [calendarEvents]);
+
 
   if (loading) {
     return (
@@ -66,11 +99,10 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <header className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 text-white shadow-lg">
+      <header className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 text-white shadow-lg rounded-b-3xl">
         <div className="flex items-center justify-between">
-            <div>
-                <h1 className="text-xl font-bold">Özgürdere Ailesi</h1>
-            </div>
+            <SidebarTrigger className="md:hidden -ml-2 text-white hover:bg-white/20"/>
+            <h1 className="text-xl font-bold">Özgürdere Ailesi</h1>
             <div className="flex items-center gap-2">
                  <button className="relative rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
                     <Bell className="h-5 w-5" />
@@ -80,6 +112,23 @@ export default function Home() {
                     <Settings className="h-5 w-5" />
                 </button>
             </div>
+        </div>
+        <div className="mt-4 grid grid-cols-3 divide-x divide-white/20 rounded-lg bg-white/10 p-2 text-center">
+            <Link href="/shopping" className="flex flex-col items-center gap-1 p-2 rounded-l-md hover:bg-white/20">
+                <ShoppingCart className="h-5 w-5"/>
+                <span className="text-xs font-semibold">Alışveriş Listesi</span>
+                <Badge variant="secondary" className="mt-1">{totalShoppingItems} ürün</Badge>
+            </Link>
+            <Link href="/yemek" className="flex flex-col items-center gap-1 p-2 hover:bg-white/20">
+                <UtensilsCrossed className="h-5 w-5"/>
+                <span className="text-xs font-semibold">Günün Menüsü</span>
+                 <Badge variant="secondary" className="mt-1 truncate">{todaysMeal?.title || 'Belirsiz'}</Badge>
+            </Link>
+            <Link href="/calendar" className="flex flex-col items-center gap-1 p-2 rounded-r-md hover:bg-white/20">
+                <Calendar className="h-5 w-5"/>
+                <span className="text-xs font-semibold">Yaklaşan Etkinlikler</span>
+                <Badge variant="secondary" className="mt-1">{upcomingEvents} etkinlik</Badge>
+            </Link>
         </div>
       </header>
       
@@ -238,3 +287,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
