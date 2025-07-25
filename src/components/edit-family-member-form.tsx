@@ -50,7 +50,8 @@ export function EditFamilyMemberForm({ member, onMemberUpdated }: EditFamilyMemb
     try {
         await updateFamilyMember(member.id, {
             name: values.name,
-            role: values.role
+            role: values.role,
+            avatar: values.name.charAt(0).toUpperCase()
         });
         toast({ title: 'Üye Güncellendi!', description: `${values.name} bilgileri başarıyla güncellendi.` });
         onMemberUpdated();
