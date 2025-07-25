@@ -282,15 +282,26 @@ export default function OpticalFormPage() {
                              <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{questionNumber}</div>
                                 {test.gradingType === 'auto' ? (
-                                    <RadioGroup 
+                                    <RadioGroup
                                         value={mcqAnswers[questionNumber] || ""}
                                         onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
-                                        className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
+                                        className="flex flex-wrap gap-4"
                                     >
                                         {['A', 'B', 'C'].map(option => (
-                                            <div key={option} className="flex items-center space-x-2">
-                                                <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} />
-                                                <Label htmlFor={`q${questionNumber}-${option}`}>{option}</Label>
+                                            <div key={option}>
+                                                <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} className="sr-only" />
+                                                <Label
+                                                    htmlFor={`q${questionNumber}-${option}`}
+                                                    className={cn(
+                                                        "flex items-center justify-center w-16 h-16 text-2xl font-bold rounded-lg border-2 cursor-pointer transition-colors",
+                                                        "hover:bg-accent hover:text-accent-foreground",
+                                                        mcqAnswers[questionNumber] === option
+                                                            ? "bg-primary text-primary-foreground border-primary"
+                                                            : "bg-transparent border-input"
+                                                    )}
+                                                >
+                                                    {option}
+                                                </Label>
                                             </div>
                                         ))}
                                     </RadioGroup>
