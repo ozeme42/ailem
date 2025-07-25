@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,10 @@ export default function EducationPage() {
   }, [studentMembers, selectedStudent]);
 
   React.useEffect(() => {
-    const unsubTests = onTestsUpdate(setTests);
+    if (!selectedStudent) return;
+    const unsubTests = onTestsUpdate((allTests) => {
+        setTests(allTests.filter(t => t.studentId === selectedStudent.id));
+    });
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
     
@@ -54,7 +57,7 @@ export default function EducationPage() {
       unsubBanks();
       unsubExams();
     }
-  }, []);
+  }, [selectedStudent]);
   
 
   const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => {
@@ -109,9 +112,8 @@ export default function EducationPage() {
     setIsAssignDialogOpen(true);
   };
 
-  const studentTests = selectedStudent ? tests.filter(t => t.studentId === selectedStudent.id) : [];
-  const assignedTests = studentTests.filter(t => t.status === 'Atandı');
-  const completedTests = studentTests.filter(t => t.status !== 'Atandı');
+  const assignedTests = tests.filter(t => t.status === 'Atandı');
+  const completedTests = tests.filter(t => t.status !== 'Atandı');
 
   const getStatusBadgeClasses = (status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi') => {
      switch (status) {
@@ -122,10 +124,18 @@ export default function EducationPage() {
     }
   }
   
-  const calculateProgress = (total: number, completed: number) => {
-    if (total === 0) return 0;
-    return (completed / total) * 100;
-  }
+  const overallStats = React.useMemo(() => {
+    const evaluatedTests = completedTests.filter(t => t.status === 'Değerlendirildi');
+    const totalQuestions = evaluatedTests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
+    const totalCorrect = evaluatedTests.reduce((sum, test) => sum + (test.correctAnswers || 0), 0);
+    const successRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+
+    return {
+      testCount: evaluatedTests.length,
+      successRate: successRate,
+    }
+  }, [completedTests]);
+
 
   return (
     <>
@@ -176,11 +186,43 @@ export default function EducationPage() {
           </Button>
         ))}
       </div>
+      
+      {selectedStudent && (
+        <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="block mb-8 group">
+          <Card className="transition-all duration-300 group-hover:shadow-primary/20 group-hover:border-primary/50 group-hover:shadow-lg">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <BarChart3 className="text-primary"/>
+                  Genel Durum
+                </CardTitle>
+                <CardDescription>
+                  {selectedStudent.name} için genel başarı durumu özeti. Detaylar için tıklayın.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-2 gap-6 items-center">
+                    <div>
+                        <div className="text-4xl font-bold">{overallStats.testCount}</div>
+                        <p className="text-muted-foreground">Değerlendirilen Test</p>
+                    </div>
+                     <div>
+                        <div className="flex items-baseline gap-2">
+                           <span className="text-4xl font-bold">{overallStats.successRate.toFixed(1)}</span>
+                           <span className="text-xl text-muted-foreground">%</span>
+                        </div>
+                        <p className="text-muted-foreground">Genel Başarı Oranı</p>
+                        <Progress value={overallStats.successRate} className="mt-2 h-2" />
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
+
 
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className={cn("grid w-full mb-6", selectedStudent ? "grid-cols-3" : "grid-cols-2")}>
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="assignments">Aktif Ödevler ({assignedTests.length})</TabsTrigger>
-          <TabsTrigger value="progress">Genel Başarı</TabsTrigger>
           <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
         </TabsList>
 
@@ -234,65 +276,6 @@ export default function EducationPage() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="progress">
-          <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Target className="text-blue-500"/> Soru Bankaları Başarısı</CardTitle>
-                  <CardDescription>{selectedStudent?.name} için soru bankalarındaki genel ilerleme durumu.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {questionBanks.map(bank => {
-                        const progress = examProgress.questionBank[bank.id]?.[selectedStudent?.id];
-                        if (!progress) return null;
-                        const totalQuestions = bank.subjects.reduce((acc, s) => acc + s.topics.reduce((tAcc, t) => tAcc + t.questionCount, 0), 0);
-                        const percentage = calculateProgress(totalQuestions, progress.questionsSolved);
-
-                        return (
-                            <Card key={bank.id} className="p-4">
-                                <h4 className="font-bold">{bank.name}</h4>
-                                <Progress value={percentage} className="my-2 h-2" />
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>İlerleme: {percentage.toFixed(0)}%</span>
-                                    <span>{progress.questionsSolved} / {totalQuestions} Soru</span>
-                                </div>
-                                <div className="mt-2 text-xs grid grid-cols-3 gap-2 text-center">
-                                    <Badge variant="outline" className="text-green-600 border-green-500/50">Doğru: {progress.correct}</Badge>
-                                    <Badge variant="outline" className="text-red-600 border-red-500/50">Yanlış: {progress.incorrect}</Badge>
-                                    <Badge variant="outline" className="text-gray-600 border-gray-500/50">Boş: {progress.empty}</Badge>
-                                </div>
-                            </Card>
-                        )
-                    })}
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><FileText className="text-purple-500"/> Deneme Sınavları Başarısı</CardTitle>
-                  <CardDescription>{selectedStudent?.name} için deneme sınavlarındaki genel performans.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {practiceExams.map(exam => {
-                        const progress = examProgress.practiceExam[exam.id]?.[selectedStudent?.id];
-                        if (!progress) return <p key={exam.id} className="text-sm text-muted-foreground">{exam.name} - Henüz çözülmedi.</p>;
-                        const totalQuestions = exam.subjects.reduce((acc, s) => acc + s.questionCount, 0);
-                         const percentage = calculateProgress(progress.correct, totalQuestions);
-                        return (
-                             <Card key={exam.id} className="p-4">
-                                <h4 className="font-bold">{exam.name}</h4>
-                                <div className="mt-2 text-xs grid grid-cols-3 gap-2 text-center">
-                                    <Badge variant="outline" className="text-green-600 border-green-500/50">Doğru: {progress.correct}</Badge>
-                                    <Badge variant="outline" className="text-red-600 border-red-500/50">Yanlış: {progress.incorrect}</Badge>
-                                    <Badge variant="outline" className="text-gray-600 border-gray-500/50">Boş: {progress.empty}</Badge>
-                                </div>
-                            </Card>
-                        )
-                    })}
-                </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
         <TabsContent value="results">
           <Card>
             <CardHeader>
@@ -367,5 +350,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
