@@ -20,14 +20,26 @@ import { cn } from "@/lib/utils";
 
 
 const badgeDefinitions: { [key: string]: { name: string; description: string } } = {
+    // Görev Rozetleri
     '✨': { name: 'İlk Adım', description: 'İlk görevini tamamladın!' },
     '🔥': { name: 'Görev Ustası', description: '10 görev tamamladın!' },
-    '🚀': { name: 'Süper Kahraman', description: '25 görev tamamladın!' },
-    '🏆': { name: 'Efsane', description: '50 görev tamamladın!' },
-    '💪': { name: 'Güçlü', description: 'Zor bir görev tamamladın!' },
+    '🚀': { name: 'Süper Kahraman', description: '50 görev tamamladın!' },
+    '🏆': { name: 'Efsane', description: '100 görev tamamladın!' },
+    '💪': { name: 'Güçlü', description: 'Zor seviyede bir görev tamamladın!' },
+    '📅': { name: 'Azimli', description: '7 günlük görev serisi yakaladın!' },
+
+    // Eğitim Rozetleri
     '🎓': { name: 'Bilge', description: 'İlk sınavını tamamladın!' },
-    '🎯': { name: 'Tam İsabet', description: 'Bir sınavdan 90 üzeri puan aldın!' },
     '🧠': { name: 'Zeka Küpü', description: '10 sınav tamamladın!' },
+    '🦉': { name: 'Profesör', description: '25 sınav tamamladın!' },
+    '🎯': { name: 'Tam İsabet', description: 'Bir sınavdan 90 üzeri puan aldın!' },
+    '💯': { name: 'Mükemmeliyetçi', description: 'Bir sınavdan 100 tam puan aldın!' },
+
+    // Kitap Okuma Rozetleri
+    '📖': { name: 'Kitap Kurdu', description: 'İlk kitabını bitirdin!' },
+    '📚': { name: 'Koleksiyoner', description: '10 kitap bitirdin!' },
+    '🏛️': { name: 'Kütüphaneci', description: '25 kitap bitirdin!' },
+    ' marathon': { name: 'Maratoncu', description: '500 sayfadan uzun bir kitap bitirdin!' },
 };
 
 export default function ProfileClient() {

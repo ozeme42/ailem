@@ -137,6 +137,11 @@ export const updateUserBookStatus = async (familyId: string, memberId: string, b
             return book;
         });
         await updateDoc(libraryRef, { books: updatedBooks });
+        
+        if (newStatus === 'finished') {
+            const bookDetails = (await getDoc(doc(db, 'mediaItems', bookId))).data() as Book;
+            await checkAndAwardBadges(memberId, familyId, { type: 'book_finished', book: bookDetails });
+        }
     }
 };
 
@@ -617,7 +622,14 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     await batch.commit();
 };
 
-export const checkAndAwardBadges = async (memberId: string, familyId: string, triggerEvent: { type: 'task_completed', task?: Task } | { type: 'test_completed', test?: Test }) => {
+export const checkAndAwardBadges = async (
+    memberId: string, 
+    familyId: string, 
+    triggerEvent: 
+        | { type: 'task_completed', task?: Task } 
+        | { type: 'test_completed', test?: Test }
+        | { type: 'book_finished', book?: Book }
+) => {
     const familyRef = doc(db, "families", familyId);
     const familySnap = await getDoc(familyRef);
     if (!familySnap.exists()) return;
@@ -629,24 +641,12 @@ export const checkAndAwardBadges = async (memberId: string, familyId: string, tr
     const member: FamilyMember = family.members[memberIndex];
     const newBadges = new Set(member.badges || []);
 
-    // Badge Definitions
-    const badgeDefinitions = {
-        '✨': { name: 'İlk Adım', description: 'İlk görevini tamamladın!' },
-        '🔥': { name: 'Görev Ustası', description: '10 görev tamamladın!' },
-        '🚀': { name: 'Süper Kahraman', description: '25 görev tamamladın!' },
-        '🏆': { name: 'Efsane', description: '50 görev tamamladın!' },
-        '💪': { name: 'Güçlü', description: 'Zor bir görev tamamladın!' },
-        '🎓': { name: 'Bilge', description: 'İlk sınavını tamamladın!' },
-        '🎯': { name: 'Tam İsabet', description: 'Bir sınavdan 90 üzeri puan aldın!' },
-        '🧠': { name: 'Zeka Küpü', description: '10 sınav tamamladın!' },
-    };
-
     if (triggerEvent.type === 'task_completed') {
         const completedCount = member.completedTasks;
-        if (completedCount === 1) newBadges.add('✨');
-        if (completedCount === 10) newBadges.add('🔥');
-        if (completedCount === 25) newBadges.add('🚀');
-        if (completedCount === 50) newBadges.add('🏆');
+        if (completedCount >= 1) newBadges.add('✨');
+        if (completedCount >= 10) newBadges.add('🔥');
+        if (completedCount >= 50) newBadges.add('🚀');
+        if (completedCount >= 100) newBadges.add('🏆');
         if (triggerEvent.task?.difficulty === 'Zor') newBadges.add('💪');
     }
 
@@ -654,9 +654,22 @@ export const checkAndAwardBadges = async (memberId: string, familyId: string, tr
         const testCountSnapshot = await getDocs(query(collection(db, "tests"), where("studentId", "==", memberId), where("status", "==", "Değerlendirildi")));
         const completedTestCount = testCountSnapshot.size;
 
-        if (completedTestCount === 1) newBadges.add('🎓');
-        if (completedTestCount === 10) newBadges.add('🧠');
+        if (completedTestCount >= 1) newBadges.add('🎓');
+        if (completedTestCount >= 10) newBadges.add('🧠');
+        if (completedTestCount >= 25) newBadges.add('🦉');
         if ((triggerEvent.test?.score || 0) >= 90) newBadges.add('🎯');
+        if ((triggerEvent.test?.score || 0) === 100) newBadges.add('💯');
+    }
+    
+    if (triggerEvent.type === 'book_finished') {
+        const userLibQuery = await getDoc(doc(db, "userLibraries", `${familyId}_${memberId}`));
+        if (userLibQuery.exists()) {
+            const finishedBooksCount = userLibQuery.data().books.filter((b: UserLibraryBook) => b.status === 'finished').length;
+            if (finishedBooksCount >= 1) newBadges.add('📖');
+            if (finishedBooksCount >= 10) newBadges.add('📚');
+            if (finishedBooksCount >= 25) newBadges.add('🏛️');
+        }
+        if ((triggerEvent.book?.pageCount || 0) >= 500) newBadges.add(' marathon');
     }
 
     if (newBadges.size > (member.badges || []).length) {
