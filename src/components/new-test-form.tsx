@@ -43,12 +43,13 @@ type NewTestFormProps = {
   students: FamilyMember[];
   questionBanks: QuestionBank[];
   practiceExams: PracticeExam[];
-  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId'>) => void;
+  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => void;
+  initialData?: Test | null;
 };
 
-export function NewTestForm({ students, questionBanks, practiceExams, onAssign }: NewTestFormProps) {
-  const [activeTab, setActiveTab] = React.useState<AssignmentType>("quick");
-  const [selectedBankId, setSelectedBankId] = React.useState<string | null>(null);
+export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData }: NewTestFormProps) {
+  const [activeTab, setActiveTab] = React.useState<AssignmentType>(initialData?.sourceType || "quick");
+  const [selectedBankId, setSelectedBankId] = React.useState<string | null>(initialData?.sourceId || null);
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
 
 
@@ -56,16 +57,52 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
     resolver: zodResolver(formSchema),
     shouldUnregister: false,
     defaultValues: {
-      questionCount: 20,
-      title: "",
-      subject: "",
-      gradingType: "manual-text",
-      answerKey: {},
-      bankId: "",
-      topicId: "",
-      examId: "",
+      studentId: initialData?.studentId || "",
+      // Quick Test
+      title: initialData?.sourceType === 'quick' ? initialData.title : "",
+      subject: initialData?.sourceType === 'quick' ? initialData.subject : "",
+      questionCount: initialData?.sourceType === 'quick' ? initialData.questionCount : 20,
+      gradingType: initialData?.sourceType === 'quick' ? initialData.gradingType : "manual-text",
+      answerKey: initialData?.sourceType === 'quick' ? initialData.answerKey : {},
+      // Bank Test
+      bankId: initialData?.sourceType === 'bank' ? initialData.sourceId : "",
+      topicId: initialData?.sourceType === 'bank' ? initialData.topicId : "",
+      // Exam Test
+      examId: initialData?.sourceType === 'exam' ? initialData.sourceId : "",
     },
   });
+
+  React.useEffect(() => {
+    if (initialData) {
+      setActiveTab(initialData.sourceType);
+      setSelectedBankId(initialData.sourceId || null);
+      form.reset({
+        studentId: initialData.studentId,
+        title: initialData.sourceType === 'quick' ? initialData.title : "",
+        subject: initialData.sourceType === 'quick' ? initialData.subject : "",
+        questionCount: initialData.sourceType === 'quick' ? initialData.questionCount : 20,
+        gradingType: initialData.gradingType || "manual",
+        answerKey: initialData.answerKey || {},
+        bankId: initialData.sourceType === 'bank' ? initialData.sourceId : "",
+        topicId: initialData.sourceType === 'bank' ? initialData.topicId : "",
+        examId: initialData.sourceType === 'exam' ? initialData.sourceId : "",
+      });
+    } else {
+      setActiveTab('quick');
+      setSelectedBankId(null);
+      form.reset({
+          studentId: "",
+          questionCount: 20,
+          title: "",
+          subject: "",
+          gradingType: "manual-text",
+          answerKey: {},
+          bankId: "",
+          topicId: "",
+          examId: "",
+      });
+    }
+  }, [initialData, form]);
 
   const gradingType = form.watch("gradingType");
   const questionCount = form.watch("questionCount") || 0;
@@ -75,19 +112,21 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
     
     let newTest: Omit<Test, 'id' | 'status' | 'familyId'> | null = null;
     
-    if (activeTab === 'quick' && values.title && values.subject && values.questionCount) {
+    const currentActiveTab = initialData?.sourceType || activeTab;
+
+    if (currentActiveTab === 'quick' && values.title && values.subject && values.questionCount) {
         newTest = {
             title: values.title,
             subject: values.subject,
             studentId: values.studentId,
             questionCount: values.questionCount,
-            assignedDate: format(new Date(), 'dd MMMM yyyy'),
-            dueDate: dueDate,
+            assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy'),
+            dueDate: initialData?.dueDate || dueDate,
             sourceType: 'quick',
             gradingType: values.gradingType,
             answerKey: values.gradingType === 'auto' ? values.answerKey : undefined,
         }
-    } else if (activeTab === 'bank' && values.bankId && values.topicId) {
+    } else if (currentActiveTab === 'bank' && values.bankId && values.topicId) {
         const bank = questionBanks.find(b => b.id.toString() === values.bankId);
         const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === values.topicId);
         if (bank && topic) {
@@ -96,15 +135,15 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                 subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders", // find subject name
                 studentId: values.studentId,
                 questionCount: topic.questionCount,
-                assignedDate: format(new Date(), 'dd MMMM yyyy'),
-                dueDate: dueDate,
+                assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy'),
+                dueDate: initialData?.dueDate || dueDate,
                 sourceType: 'bank',
                 sourceId: bank.id,
                 topicId: topic.id.toString(),
                 gradingType: topic.gradingType
             }
         }
-    } else if (activeTab === 'exam' && values.examId) {
+    } else if (currentActiveTab === 'exam' && values.examId) {
         const exam = practiceExams.find(e => e.id.toString() === values.examId);
         if (exam) {
             newTest = {
@@ -112,8 +151,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                 subject: "Deneme Sınavı",
                 studentId: values.studentId,
                 questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
-                assignedDate: format(new Date(), 'dd MMMM yyyy'),
-                dueDate: dueDate,
+                assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy'),
+                dueDate: initialData?.dueDate || dueDate,
                 sourceType: 'exam',
                 sourceId: exam.id,
                 gradingType: exam.gradingType,
@@ -123,29 +162,18 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
     }
     
     if (newTest) {
-      onAssign(newTest);
-      form.reset({
-        questionCount: 20,
-        title: "",
-        subject: "",
-        gradingType: "manual-text",
-        answerKey: {},
-        bankId: "",
-        topicId: "",
-        examId: "",
-        studentId: values.studentId
-      });
+      onAssign(newTest, initialData?.id);
     }
   }
   
   const selectedBank = questionBanks.find(b => b.id.toString() === selectedBankId);
 
   return (
-    <Tabs defaultValue="quick" onValueChange={(value) => setActiveTab(value as AssignmentType)} className="w-full">
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AssignmentType)} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="quick">Hızlı Test</TabsTrigger>
-            <TabsTrigger value="bank">Soru Bankası</TabsTrigger>
-            <TabsTrigger value="exam">Deneme</TabsTrigger>
+            <TabsTrigger value="quick" disabled={!!initialData && initialData.sourceType !== 'quick'}>Hızlı Test</TabsTrigger>
+            <TabsTrigger value="bank" disabled={!!initialData && initialData.sourceType !== 'bank'}>Soru Bankası</TabsTrigger>
+            <TabsTrigger value="exam" disabled={!!initialData && initialData.sourceType !== 'exam'}>Deneme</TabsTrigger>
         </TabsList>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -155,7 +183,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Öğrenci</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Öğrenci seçin" />
@@ -194,7 +222,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Ders</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                     <SelectValue placeholder="Ders seçin" />
@@ -235,7 +263,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                             <FormControl>
                                 <RadioGroup
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                                 className="flex flex-col space-y-1"
                                 >
                                 <FormItem className="flex items-center space-x-3 space-y-0">
@@ -303,7 +331,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Soru Bankası</FormLabel>
-                            <Select onValueChange={(value) => { field.onChange(value); setSelectedBankId(value); form.resetField('topicId'); }} defaultValue={field.value}>
+                            <Select onValueChange={(value) => { field.onChange(value); setSelectedBankId(value); form.resetField('topicId'); }} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Soru bankası seçin" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 {questionBanks.map((bank) => (
@@ -322,7 +350,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Konu</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Konu seçin" /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     {selectedBank.subjects.map(subject => 
@@ -348,7 +376,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Deneme Sınavı</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Deneme seçin" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 {practiceExams.map((exam) => (
@@ -365,7 +393,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign }
                     </FormDescription>
                 </TabsContent>
                 
-                <Button type="submit" className="w-full">Ödevi Ata</Button>
+                <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>
             </form>
         </Form>
     </Tabs>

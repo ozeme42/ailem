@@ -38,6 +38,7 @@ export default function EducationPage() {
   const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
   const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
   const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
+  const [editingTest, setEditingTest] = React.useState<Test | null>(null);
   const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
 
   const studentMembers = React.useMemo(() => 
@@ -69,11 +70,17 @@ export default function EducationPage() {
     await updateSubjects(newSubjects);
   };
 
-  const handleCreateAssignment = async (newTest: Omit<Test, 'id' | 'status' | 'familyId'>) => {
+  const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => {
     try {
-        await addTest({ ...newTest, status: 'Atandı' });
-        toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
+        if (id) {
+            await updateTest(id, testData);
+            toast({ title: "✅ Ödev Güncellendi", description: "Ödev bilgileri başarıyla güncellendi." });
+        } else {
+            await addTest({ ...testData, status: 'Atandı' });
+            toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
+        }
         setIsAssignDialogOpen(false);
+        setEditingTest(null);
     } catch (error) {
          toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
     }
@@ -145,6 +152,16 @@ export default function EducationPage() {
         toast({ title: "❌ Silme Hatası", description: "Deneme sınavı silinirken bir hata oluştu.", variant: 'destructive'});
       }
   }
+  
+  const handleOpenEditTest = (test: Test) => {
+    setEditingTest(test);
+    setIsAssignDialogOpen(true);
+  };
+  
+  const handleOpenNewTest = () => {
+    setEditingTest(null);
+    setIsAssignDialogOpen(true);
+  };
 
   const studentTests = selectedStudent ? tests.filter(t => t.studentId === selectedStudent.id) : [];
   const assignedTests = studentTests.filter(t => t.status === 'Atandı');
@@ -169,23 +186,24 @@ export default function EducationPage() {
       <PageHeader title="Eğitim & Sınav 🎓">
         <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+            <Button onClick={handleOpenNewTest} className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
               <PlusCircle className="mr-2 h-4 w-4" />
               Yeni Ödev Ata
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Yeni Ödev Ata</DialogTitle>
+              <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
               <DialogDescription>
-                Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın.
+                {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
               </DialogDescription>
             </DialogHeader>
             <NewTestForm 
                 students={studentMembers} 
                 questionBanks={questionBanks}
                 practiceExams={practiceExams}
-                onAssign={handleCreateAssignment}
+                onAssign={handleAssignmentSubmit}
+                initialData={editingTest}
             />
           </DialogContent>
         </Dialog>
@@ -232,9 +250,14 @@ export default function EducationPage() {
                      </div>
                      <p className="text-xs text-muted-foreground mt-2">Son Teslim: {test.dueDate}</p>
                    </div>
-                   <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                    <Button className="w-full">Teste Başla</Button>
-                   </Link>
+                   <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => handleOpenEditTest(test)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
+                            <Button className="w-full">Teste Başla</Button>
+                        </Link>
+                   </div>
                  </Card>
                )) : <p className="text-muted-foreground text-center py-8">Atanmış yeni test bulunmuyor.</p>}
             </CardContent>
