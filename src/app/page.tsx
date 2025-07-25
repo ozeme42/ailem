@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, recentActivities, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture } from "date-fns";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate } from "@/lib/dataService";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -38,6 +40,12 @@ const weeklyProgressChartConfig = {
   },
 } satisfies ChartConfig
 
+const activityIcons = {
+    task: { icon: CheckSquare, color: 'from-green-500 to-emerald-500' },
+    book: { icon: BookOpen, color: 'from-yellow-500 to-amber-500' },
+    event: { icon: Calendar, color: 'from-blue-500 to-sky-500' },
+};
+
 export default function Home() {
   const { user, familyId, familyMembers, loading } = useAuth();
   const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
@@ -48,6 +56,7 @@ export default function Home() {
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
+  const [books, setBooks] = React.useState<Book[]>([]);
 
 
   React.useEffect(() => {
@@ -55,6 +64,7 @@ export default function Home() {
     const unsubMeal = onMealPlanUpdate(setMealPlan);
     const unsubCalendar = onCalendarEventsUpdate(setCalendarEvents);
     const unsubTasks = onTasksUpdate(setTasks);
+    const unsubBooks = onBooksUpdate(setBooks);
     let unsubLibraries = () => {};
     if (familyId) {
       unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
@@ -66,8 +76,59 @@ export default function Home() {
       unsubCalendar();
       unsubTasks();
       unsubLibraries();
+      unsubBooks();
     };
   }, [familyId]);
+
+  const recentActivities = React.useMemo(() => {
+    const activities: any[] = [];
+
+    // Completed Tasks
+    tasks.filter(t => t.completed).forEach(task => {
+        // NOTE: We don't have a `completedAt` timestamp. We'll use dueDate for sorting.
+        const member = familyMembers.find(m => m.id === task.assigneeId);
+        activities.push({
+            id: `task-${task.id}`,
+            user: member?.name || 'Bilinmeyen',
+            title: `'${task.title}' görevini tamamladı`,
+            date: parseISO(task.dueDate), // Using due date as a proxy for sorting
+            type: 'task',
+        });
+    });
+
+    // Finished Books
+    userLibraries.forEach(lib => {
+        const member = familyMembers.find(m => m.id === lib.memberId);
+        if (member) {
+            lib.books.filter(b => b.status === 'finished' && b.finishedAt).forEach(userBook => {
+                const bookInfo = books.find(b => b.id === userBook.bookId);
+                activities.push({
+                    id: `book-${lib.memberId}-${userBook.bookId}`,
+                    user: member.name,
+                    title: `'${bookInfo?.title || 'bir kitap'}' okumayı bitirdi`,
+                    date: parseISO(userBook.finishedAt!),
+                    type: 'book',
+                });
+            });
+        }
+    });
+
+    // Added Calendar Events
+    calendarEvents.forEach(event => {
+        activities.push({
+            id: `event-${event.id}`,
+            user: 'Sistem', // Or the user who added it, if tracked
+            title: `'${event.title}' etkinliği eklendi`,
+            date: parseISO(event.startDate),
+            type: 'event',
+        });
+    });
+
+    return activities
+        .sort((a, b) => compareDesc(a.date, b.date))
+        .slice(0, 5); // Get latest 5 activities
+
+  }, [tasks, userLibraries, calendarEvents, books, familyMembers]);
 
   const dailySummary = React.useMemo(() => {
     const completedTasksCount = tasks.filter(t => t.completed).length;
@@ -139,25 +200,30 @@ export default function Home() {
               <DropdownMenuTrigger asChild>
                 <button className="relative rounded-full p-2 transition-colors hover:bg-white/20">
                     <Bell className="h-5 w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">3</Badge>
+                    {recentActivities.length > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">{recentActivities.length}</Badge>}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>Son Bildirimler</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {recentActivities.map((activity) => (
-                    <DropdownMenuItem key={activity.id} className="flex items-start gap-3 p-2">
-                         <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-white ${activity.color}`}>
-                            <activity.icon className="h-4 w-4" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium">
-                                {activity.user} <span className="text-muted-foreground font-normal">{activity.title}</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground">{activity.time}</p>
-                        </div>
-                    </DropdownMenuItem>
-                ))}
+                {recentActivities.map((activity) => {
+                    const ActivityIcon = activityIcons[activity.type as keyof typeof activityIcons].icon || Star;
+                    const color = activityIcons[activity.type as keyof typeof activityIcons].color || 'from-gray-500 to-gray-600';
+                    return (
+                        <DropdownMenuItem key={activity.id} className="flex items-start gap-3 p-2">
+                             <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-white ${color}`}>
+                                <ActivityIcon className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">
+                                    <span className="font-bold">{activity.user}</span> <span className="text-muted-foreground font-normal">{activity.title}</span>
+                                </p>
+                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(activity.date, { addSuffix: true, locale: tr })}</p>
+                            </div>
+                        </DropdownMenuItem>
+                    );
+                })}
+                 {recentActivities.length === 0 && <p className="text-xs text-muted-foreground text-center p-4">Henüz yeni bir bildirim yok.</p>}
               </DropdownMenuContent>
             </DropdownMenu>
               <button className="rounded-full p-2 transition-colors hover:bg-white/20">
