@@ -389,61 +389,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow-lg">
-           <CardHeader>
-             <CardTitle>Haftalık İlerleme</CardTitle>
-             <CardDescription>Ailenin bu hafta kazandığı toplam XP puanları.</CardDescription>
-           </CardHeader>
-           <CardContent>
-             <ChartContainer config={weeklyProgressChartConfig} className="h-[250px] w-full">
-                <AreaChart
-                  accessibilityLayer
-                  data={weeklyPoints}
-                  margin={{
-                    left: -20,
-                    right: 10,
-                    top: 10,
-                    bottom: 0
-                  }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                  />
-                   <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-                  <Tooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <defs>
-                    <linearGradient id="fillPoints" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor="var(--color-points)"
-                        stopOpacity={0.8}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--color-points)"
-                        stopOpacity={0.1}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <Area
-                    dataKey="points"
-                    type="natural"
-                    fill="url(#fillPoints)"
-                    stroke="var(--color-points)"
-                    stackId="a"
-                  />
-                </AreaChart>
-             </ChartContainer>
-           </CardContent>
-        </Card>
+      <section className="grid grid-cols-1 lg:grid-cols-1 gap-8">
         <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle>Aile XP Karşılaştırması</CardTitle>
@@ -493,5 +439,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
