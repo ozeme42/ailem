@@ -147,7 +147,10 @@ export default function EducationPage() {
     }
   }, [completedTests]);
 
-  const parseAndFormatDate = (dateString: string) => {
+  const parseAndFormatDate = (dateString?: string) => {
+    if (!dateString) {
+        return { month: "Belirsiz", day: "??" };
+    }
     try {
       // Assuming dateString is "dd MMMM yyyy"
       const formatString = "dd MMMM yyyy";
@@ -397,5 +400,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
