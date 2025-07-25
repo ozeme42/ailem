@@ -51,6 +51,25 @@ export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
 export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
 
+// Family Members (within the family doc)
+export const updateFamilyMemberInFamily = async (familyId: string, memberId: string, memberData: Partial<FamilyMember>) => {
+    const familyRef = doc(db, "families", familyId);
+    const familySnap = await getDoc(familyRef);
+    if (familySnap.exists()) {
+        const family = familySnap.data();
+        const memberIndex = family.members.findIndex((m: FamilyMember) => m.id === memberId);
+        if (memberIndex > -1) {
+            const updatedMembers = [...family.members];
+            updatedMembers[memberIndex] = { ...updatedMembers[memberIndex], ...memberData };
+            await updateDoc(familyRef, { members: updatedMembers });
+        } else {
+            throw new Error("Member not found in family");
+        }
+    } else {
+        throw new Error("Family not found");
+    }
+}
+
 
 // Tags (Library Shelves are now per-family)
 export const onTagsUpdate = (callback: (tags: string[]) => void) => {

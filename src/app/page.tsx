@@ -2,17 +2,18 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, Sun, UserPlus } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, Sun, UserPlus, Edit } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, recentActivities } from "@/lib/data";
+import { weeklyPoints, recentActivities, FamilyMember } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
+import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const quickStats = [
@@ -42,6 +43,7 @@ export default function Home() {
   const [greeting, setGreeting] = React.useState('');
   const [formattedDate, setFormattedDate] = React.useState('');
   const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
+  const [editingMember, setEditingMember] = React.useState<FamilyMember | null>(null);
 
 
    React.useEffect(() => {
@@ -80,6 +82,10 @@ export default function Home() {
             </div>
         </div>
     );
+  }
+  
+  const handleEditMember = (member: FamilyMember) => {
+      setEditingMember(member);
   }
 
   return (
@@ -155,7 +161,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {familyMembers.map((member) => (
-            <FamilyMemberCard key={member.id} member={member} />
+            <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} />
           ))}
         </div>
       </section>
@@ -244,8 +250,23 @@ export default function Home() {
             </CardContent>
         </Card>
       </section>
+
+       <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Profili Düzenle</DialogTitle>
+                    <DialogDescription>
+                        {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                {editingMember && (
+                    <EditFamilyMemberForm 
+                        member={editingMember}
+                        onMemberUpdated={() => setEditingMember(null)}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
-
-    

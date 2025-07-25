@@ -4,10 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { FamilyMember } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
-import { Star, Flame, Crown, Zap } from "lucide-react";
+import { Star, Flame, Crown, Zap, Edit } from "lucide-react";
+import { Button } from "./ui/button";
 
 interface FamilyMemberCardProps {
   member: FamilyMember;
+  onEdit: () => void;
 }
 
 const moodEmojis: { [key: string]: string } = {
@@ -28,13 +30,21 @@ const gradientClasses: { [key: string]: string } = {
 };
 
 
-export function FamilyMemberCard({ member }: FamilyMemberCardProps) {
+export function FamilyMemberCard({ member, onEdit }: FamilyMemberCardProps) {
   const gradient = gradientClasses[member.role] || 'from-gray-400 to-gray-500';
   const avatarSrc = member.avatar || 'https://placehold.co/64x64.png';
 
   return (
-    <Card className="overflow-hidden border-0 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-        <div className={`p-4 text-white bg-gradient-to-br ${gradient}`}>
+    <Card className="group overflow-hidden border-0 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+        <div className={`relative p-4 text-white bg-gradient-to-br ${gradient}`}>
+             <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                onClick={onEdit}
+            >
+                <Edit className="h-4 w-4" />
+            </Button>
             <div className="flex justify-between items-start mb-2">
                  <div className="relative">
                     <Image src={avatarSrc} alt={member.name} width={64} height={64} className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" data-ai-hint="person" />

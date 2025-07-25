@@ -7,7 +7,7 @@ import { doc, setDoc, getDoc, onSnapshot, collection, addDoc, Unsubscribe, query
 import { db } from '@/lib/firebase';
 import type { FamilyMember, User } from '@/lib/data';
 import { useRouter } from 'next/navigation';
-import { initializeDefaultData } from '@/lib/dataService';
+import { initializeDefaultData, updateFamilyMemberInFamily } from '@/lib/dataService';
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
   addFamilyMember: (memberData: Omit<FamilyMember, 'id'>) => Promise<void>;
+  updateFamilyMember: (memberId: string, memberData: Partial<FamilyMember>) => Promise<void>;
   createFamilyAndAddMember: (memberName: string, memberRole: 'Anne' | 'Baba') => Promise<void>;
   joinFamilyWithId: (familyId: string, memberName: string, memberRole: 'Anne' | 'Baba' | 'Kız Çocuk' | 'Erkek Çocuk' | 'Bebek') => Promise<void>;
 }
@@ -110,6 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setDoc(familyDocRef, { members: updatedMembers }, { merge: true });
     }
   };
+  
+  const updateFamilyMember = async (memberId: string, memberData: Partial<FamilyMember>) => {
+      if (!familyId) throw new Error("Aile bilgisi bulunamadı.");
+      await updateFamilyMemberInFamily(familyId, memberId, memberData);
+  }
 
 
   const signup = async (email: string, pass: string, name: string, role: 'Anne' | 'Baba') => {
@@ -218,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const value = { user, familyId, familyMembers, loading, signup, login, logout, addFamilyMember, createFamilyAndAddMember, joinFamilyWithId };
+  const value = { user, familyId, familyMembers, loading, signup, login, logout, addFamilyMember, createFamilyAndAddMember, joinFamilyWithId, updateFamilyMember };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
