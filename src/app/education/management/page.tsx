@@ -292,5 +292,4 @@ export default function EducationManagementPage() {
             </Dialog>
         </>
     );
-
-    
+}
