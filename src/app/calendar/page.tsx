@@ -4,7 +4,7 @@
 import * as React from "react";
 import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CalendarEvent } from "@/lib/data";
-import { onCalendarEventsUpdate } from "@/lib/dataService";
+import { onCalendarEventsUpdate, deletePastCalendarEvents } from "@/lib/dataService";
 import { NewEventForm } from "@/components/new-event-form";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 export default function CalendarPage() {
@@ -93,6 +94,23 @@ export default function CalendarPage() {
         case 'yearly': return 'Yıllık';
         case 'one-time': return 'Tek Seferlik';
         default: return '';
+    }
+  };
+
+  const handleClearPastEvents = async () => {
+    try {
+        const count = await deletePastCalendarEvents();
+        toast({
+            title: "✅ Geçmiş Temizlendi",
+            description: `${count} geçmiş etkinlik takvimden silindi.`,
+        });
+    } catch (error) {
+        console.error("Failed to clear past events:", error);
+        toast({
+            title: "❌ Hata",
+            description: "Geçmiş etkinlikler silinirken bir sorun oluştu.",
+            variant: "destructive",
+        });
     }
   };
 
@@ -226,12 +244,38 @@ export default function CalendarPage() {
             </AccordionItem>
             <AccordionItem value="past">
               <AccordionTrigger>
-                 <div className="flex items-center gap-2">
-                    <History className="h-5 w-5 text-muted-foreground"/>
-                    <h3 className="text-lg font-medium">Geçmiş Etkinlikler ({pastEvents.length})</h3>
+                 <div className="flex items-center gap-2 justify-between w-full">
+                    <div className="flex items-center gap-2">
+                        <History className="h-5 w-5 text-muted-foreground"/>
+                        <h3 className="text-lg font-medium">Geçmiş Etkinlikler ({pastEvents.length})</h3>
+                    </div>
                  </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-2">
+                 {pastEvents.length > 0 && (
+                    <div className="flex justify-end mb-4">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Geçmişi Temizle
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tüm geçmiş etkinlikler kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleClearPastEvents}>Evet, Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                )}
                 {pastEvents.length > 0 ? (
                     pastEvents.map(event => (
                         <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center bg-muted/30">
@@ -256,4 +300,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-

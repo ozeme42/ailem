@@ -3,6 +3,7 @@ import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus } from './data';
+import { isPast, parseISO } from 'date-fns';
 
 const getCurrentFamilyId = (): string | null => {
     const auth = getAuth();
@@ -231,6 +232,37 @@ export const addCalendarEvent = async (data: Omit<CalendarEvent, 'id' | 'familyI
     }
     
     return addDoc(collection(db, 'calendarEvents'), eventData);
+};
+export const deletePastCalendarEvents = async () => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    if (!familyId) {
+        throw new Error("User not associated with a family.");
+    }
+
+    const q = query(collection(db, 'calendarEvents'), where("familyId", "==", familyId));
+    const querySnapshot = await getDocs(q);
+
+    const batch = writeBatch(db);
+    let deletedCount = 0;
+
+    querySnapshot.forEach((doc) => {
+        const event = doc.data() as CalendarEvent;
+        // For recurring events, we don't delete them, we just check if their last instance is in the past.
+        // For simplicity now, we only delete one-time past events.
+        if (event.recurrence === 'one-time') {
+            const eventEndDate = event.endDate ? parseISO(event.endDate) : parseISO(event.startDate);
+            if (isPast(eventEndDate)) {
+                batch.delete(doc.ref);
+                deletedCount++;
+            }
+        }
+    });
+
+    if (deletedCount > 0) {
+        await batch.commit();
+    }
+    
+    return deletedCount;
 };
 
 
