@@ -115,19 +115,19 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
           <div className="flex items-center gap-2 shrink-0">
             {assignee && (
                 <>
-                {assignee.avatar.startsWith('/') ? (
+                {assignee.avatar && !assignee.avatar.startsWith('/') ? (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold" style={{ backgroundColor: assignee.color, color: '#fff' }}>
+                        {assignee.avatar}
+                    </div>
+                ) : (
                     <Image
-                    src={assignee.avatar}
+                    src={assignee.avatar || '/default-avatar.png'}
                     alt={assignee.name}
                     width={32}
                     height={32}
                     className="rounded-full object-cover"
                     data-ai-hint="person"
                     />
-                ) : (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold" style={{ backgroundColor: assignee.color, color: '#fff' }}>
-                        {assignee.avatar}
-                    </div>
                 )}
                 <span className="text-sm font-medium hidden md:inline">{assignee.name}</span>
                 </>

@@ -145,6 +145,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await setDoc(userDocRef, newUser);
   };
 
+  const roleBasedColors: Record<string, string> = {
+      Baba: '#3B82F6',
+      Anne: '#EC4899',
+      'Kız Çocuk': '#8B5CF6',
+      'Erkek Çocuk': '#14B8A6',
+      Bebek: '#F59E0B',
+  };
+
   const createFamilyAndAddMember = async (memberName: string, memberRole: 'Anne' | 'Baba') => {
     if (!user) throw new Error("Giriş yapmış bir kullanıcı yok.");
 
@@ -153,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: memberName,
         role: memberRole,
         avatar: memberName.charAt(0).toUpperCase(),
-        color: memberRole === 'Baba' ? '#3B82F6' : '#EC4899',
+        color: roleBasedColors[memberRole] || '#6b7280',
         completedTasks: 0,
         level: 1,
         xp: 0,
@@ -211,13 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateDoc(userDocRef, { familyId: familyIdToJoin });
   };
   
-  const roleBasedColors: Record<string, string> = {
-      Baba: '#3B82F6',
-      Anne: '#EC4899',
-      'Kız Çocuk': '#8B5CF6',
-      'Erkek Çocuk': '#14B8A6',
-      Bebek: '#F59E0B',
-  };
 
   const logout = async () => {
     await signOut(auth);
