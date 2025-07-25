@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, BookCheck, BookX, Check, Percent, Sigma, Target, ThumbsDown, ThumbsUp, X } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ type SubjectStats = {
   successRate: number;
 };
 
-type TopicWithSubject = Topic & { subjectName: string };
+type TopicWithSubject = Topic & { subjectName: string; name: string; total: number; correct: number; successRate: number, subject: string };
 
 export default function StatsClient() {
   const searchParams = useSearchParams();
@@ -105,13 +105,13 @@ export default function StatsClient() {
     
     // Topic Analysis
     const allTopics = questionBanks.flatMap(qb => qb.subjects.flatMap(s => s.topics.map(t => ({...t, subjectName: s.name} as TopicWithSubject))));
-    const topicStatsMap = new Map<string, { total: number; correct: number; successRate: number, subject: string }>();
+    const topicStatsMap = new Map<string, { total: number; correct: number; successRate: number, subject: string, name: string }>();
 
     tests.filter(t => t.sourceType === 'bank').forEach(test => {
         const topic = allTopics.find(t => t.id.toString() === test.topicId);
         if(topic) {
             const topicKey = `${topic.subjectName} - ${topic.name}`;
-            const current = topicStatsMap.get(topicKey) || { total: 0, correct: 0, successRate: 0, subject: topic.subjectName };
+            const current = topicStatsMap.get(topicKey) || { total: 0, correct: 0, successRate: 0, subject: topic.subjectName, name: topic.name };
             current.total += test.questionCount;
             current.correct += test.correctAnswers || 0;
             topicStatsMap.set(topicKey, current);
@@ -235,8 +235,8 @@ export default function StatsClient() {
                     <div className="space-y-2">
                         {stats.strongTopics.map((topic, i) => (
                            <div key={i} className="p-2 rounded-md bg-green-500/10 text-sm">
-                             <p className="font-medium text-green-800">{topic.subject}</p>
-                             <p className="text-xs text-green-700">{topic.correct} / {topic.total} doğru</p>
+                             <p className="font-medium text-green-800">{topic.name}</p>
+                             <p className="text-xs text-green-700">{topic.subject} - {topic.correct} / {topic.total} doğru</p>
                            </div>
                         ))}
                          {stats.strongTopics.length === 0 && <p className="text-xs text-muted-foreground">Veri yetersiz.</p>}
@@ -247,8 +247,8 @@ export default function StatsClient() {
                      <div className="space-y-2">
                         {stats.weakTopics.map((topic, i) => (
                            <div key={i} className="p-2 rounded-md bg-red-500/10 text-sm">
-                             <p className="font-medium text-red-800">{topic.subject}</p>
-                             <p className="text-xs text-red-700">{topic.correct} / {topic.total} doğru</p>
+                             <p className="font-medium text-red-800">{topic.name}</p>
+                             <p className="text-xs text-red-700">{topic.subject} - {topic.correct} / {topic.total} doğru</p>
                            </div>
                         ))}
                         {stats.weakTopics.length === 0 && <p className="text-xs text-muted-foreground">Veri yetersiz.</p>}
@@ -293,3 +293,4 @@ export default function StatsClient() {
     </>
   );
 }
+    
