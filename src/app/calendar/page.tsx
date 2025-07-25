@@ -2,9 +2,9 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter } from 'date-fns';
+import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1 } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { onCalendarEventsUpdate } from "@/lib/dataService";
 import { NewEventForm } from "@/components/new-event-form";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 export default function CalendarPage() {
@@ -31,6 +32,23 @@ export default function CalendarPage() {
         unsubscribeEvents();
     };
   }, []);
+  
+  const { upcomingEvents, pastEvents } = React.useMemo(() => {
+    const eventsWithParsedDates = calendarEvents.map(e => ({
+      ...e,
+      parsedDate: parseISO(e.startDate)
+    }));
+
+    const upcoming = eventsWithParsedDates
+      .filter(e => isFuture(e.parsedDate) || isToday(e.parsedDate))
+      .sort((a, b) => compareAsc(a.parsedDate, b.parsedDate));
+
+    const past = eventsWithParsedDates
+      .filter(e => isPast(e.parsedDate) && !isToday(e.parsedDate))
+      .sort((a, b) => compareDesc(a.parsedDate, b.parsedDate));
+      
+    return { upcomingEvents: upcoming, pastEvents: past };
+  }, [calendarEvents]);
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
 
@@ -68,6 +86,15 @@ export default function CalendarPage() {
             return <Repeat1 className="w-3 h-3 text-muted-foreground" />;
     }
   }
+  
+  const getRecurrenceText = (recurrence: 'one-time' | 'monthly' | 'yearly') => {
+    switch (recurrence) {
+        case 'monthly': return 'Aylık';
+        case 'yearly': return 'Yıllık';
+        case 'one-time': return 'Tek Seferlik';
+        default: return '';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -149,7 +176,7 @@ export default function CalendarPage() {
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
-                                <p className="capitalize">Tekrarlanma: {event.recurrence === 'one-time' ? 'Tek Seferlik' : (event.recurrence === 'monthly' ? 'Aylık' : 'Yıllık')}</p>
+                                <p className="capitalize">Tekrarlanma: {getRecurrenceText(event.recurrence)}</p>
                             </div>
                              <DialogFooter>
                                 <Button variant="outline">Düzenle</Button>
@@ -163,6 +190,70 @@ export default function CalendarPage() {
           </div>
         </CardContent>
       </Card>
+      
+       <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Tüm Hatırlatıcılar</CardTitle>
+          <CardDescription>Yaklaşan ve geçmiş tüm etkinlikleriniz.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="multiple" defaultValue={['upcoming', 'past']} className="w-full">
+            <AccordionItem value="upcoming">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2">
+                    <ListChecks className="h-5 w-5 text-primary"/>
+                    <h3 className="text-lg font-medium">Yaklaşan Etkinlikler ({upcomingEvents.length})</h3>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2">
+                {upcomingEvents.length > 0 ? (
+                    upcomingEvents.map(event => (
+                        <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center">
+                            <div>
+                                <p className="font-semibold">{event.title}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
+                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
+                                </p>
+                            </div>
+                            <Badge variant="outline">{getRecurrenceText(event.recurrence)}</Badge>
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-muted-foreground text-sm p-3">Yaklaşan bir etkinlik yok.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="past">
+              <AccordionTrigger>
+                 <div className="flex items-center gap-2">
+                    <History className="h-5 w-5 text-muted-foreground"/>
+                    <h3 className="text-lg font-medium">Geçmiş Etkinlikler ({pastEvents.length})</h3>
+                 </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2">
+                {pastEvents.length > 0 ? (
+                    pastEvents.map(event => (
+                        <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center bg-muted/30">
+                            <div>
+                                <p className="font-semibold text-muted-foreground">{event.title}</p>
+                                <p className="text-sm text-muted-foreground/80">
+                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
+                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
+                                </p>
+                            </div>
+                            <Badge variant="secondary">{getRecurrenceText(event.recurrence)}</Badge>
+                        </div>
+                    ))
+                 ) : (
+                    <p className="text-muted-foreground text-sm p-3">Geçmiş bir etkinlik yok.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
