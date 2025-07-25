@@ -12,7 +12,7 @@ import type { Task, FamilyMember, Subtask } from "@/lib/data";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "./ui/progress";
 import { Button } from "./ui/button";
-import { updateTask, updateFamilyMemberInFamily } from "@/lib/dataService";
+import { updateTask, updateFamilyMemberInFamily, checkAndAwardBadges } from "@/lib/dataService";
 import { useAuth } from "./auth-provider";
 
 
@@ -45,6 +45,12 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
             completedTasks: (assignee.completedTasks || 0) + completedTasksChange,
             level: newLevel,
         });
+        
+        // Check for badges after state update
+        if (newCompletionState) {
+            await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
+        }
+
 
         if (newCompletionState) {
           toast({

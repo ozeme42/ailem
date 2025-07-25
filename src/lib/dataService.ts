@@ -1,4 +1,5 @@
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -614,4 +615,53 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 
 
     await batch.commit();
+};
+
+export const checkAndAwardBadges = async (memberId: string, familyId: string, triggerEvent: { type: 'task_completed', task?: Task } | { type: 'test_completed', test?: Test }) => {
+    const familyRef = doc(db, "families", familyId);
+    const familySnap = await getDoc(familyRef);
+    if (!familySnap.exists()) return;
+
+    const family = familySnap.data();
+    const memberIndex = family.members.findIndex((m: FamilyMember) => m.id === memberId);
+    if (memberIndex === -1) return;
+
+    const member: FamilyMember = family.members[memberIndex];
+    const newBadges = new Set(member.badges || []);
+
+    // Badge Definitions
+    const badgeDefinitions = {
+        '✨': { name: 'İlk Adım', description: 'İlk görevini tamamladın!' },
+        '🔥': { name: 'Görev Ustası', description: '10 görev tamamladın!' },
+        '🚀': { name: 'Süper Kahraman', description: '25 görev tamamladın!' },
+        '🏆': { name: 'Efsane', description: '50 görev tamamladın!' },
+        '💪': { name: 'Güçlü', description: 'Zor bir görev tamamladın!' },
+        '🎓': { name: 'Bilge', description: 'İlk sınavını tamamladın!' },
+        '🎯': { name: 'Tam İsabet', description: 'Bir sınavdan 90 üzeri puan aldın!' },
+        '🧠': { name: 'Zeka Küpü', description: '10 sınav tamamladın!' },
+    };
+
+    if (triggerEvent.type === 'task_completed') {
+        const completedCount = member.completedTasks;
+        if (completedCount === 1) newBadges.add('✨');
+        if (completedCount === 10) newBadges.add('🔥');
+        if (completedCount === 25) newBadges.add('🚀');
+        if (completedCount === 50) newBadges.add('🏆');
+        if (triggerEvent.task?.difficulty === 'Zor') newBadges.add('💪');
+    }
+
+    if (triggerEvent.type === 'test_completed') {
+        const testCountSnapshot = await getDocs(query(collection(db, "tests"), where("studentId", "==", memberId), where("status", "==", "Değerlendirildi")));
+        const completedTestCount = testCountSnapshot.size;
+
+        if (completedTestCount === 1) newBadges.add('🎓');
+        if (completedTestCount === 10) newBadges.add('🧠');
+        if ((triggerEvent.test?.score || 0) >= 90) newBadges.add('🎯');
+    }
+
+    if (newBadges.size > (member.badges || []).length) {
+        const updatedMembers = [...family.members];
+        updatedMembers[memberIndex] = { ...member, badges: Array.from(newBadges) };
+        await updateDoc(familyRef, { members: updatedMembers });
+    }
 };

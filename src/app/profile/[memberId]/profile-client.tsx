@@ -15,7 +15,19 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+
+const badgeDefinitions: { [key: string]: { name: string; description: string } } = {
+    '✨': { name: 'İlk Adım', description: 'İlk görevini tamamladın!' },
+    '🔥': { name: 'Görev Ustası', description: '10 görev tamamladın!' },
+    '🚀': { name: 'Süper Kahraman', description: '25 görev tamamladın!' },
+    '🏆': { name: 'Efsane', description: '50 görev tamamladın!' },
+    '💪': { name: 'Güçlü', description: 'Zor bir görev tamamladın!' },
+    '🎓': { name: 'Bilge', description: 'İlk sınavını tamamladın!' },
+    '🎯': { name: 'Tam İsabet', description: 'Bir sınavdan 90 üzeri puan aldın!' },
+    '🧠': { name: 'Zeka Küpü', description: '10 sınav tamamladın!' },
+};
 
 export default function ProfileClient() {
   const router = useRouter();
@@ -139,15 +151,25 @@ export default function ProfileClient() {
                 <CardDescription>Kazanılan başarılar ve rozetler.</CardDescription>
             </CardHeader>
             <CardContent>
-                 {member.badges.length > 0 ? (
+                <TooltipProvider>
+                 {member.badges && member.badges.length > 0 ? (
                     <div className="flex flex-wrap gap-4">
                         {member.badges.map((badge, index) => (
-                             <Badge key={index} className="text-2xl p-2">{badge}</Badge>
+                             <Tooltip key={index}>
+                                <TooltipTrigger>
+                                     <Badge className="text-2xl p-2">{badge}</Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="font-bold">{badgeDefinitions[badge]?.name || 'Bilinmeyen Rozet'}</p>
+                                    <p>{badgeDefinitions[badge]?.description}</p>
+                                </TooltipContent>
+                             </Tooltip>
                         ))}
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground">Henüz kazanılmış bir rozet yok.</p>
                 )}
+                </TooltipProvider>
             </CardContent>
       </Card>
       

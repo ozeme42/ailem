@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
-import { updateTest } from "@/lib/dataService";
+import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -106,6 +106,11 @@ export default function OpticalFormPage() {
             }
 
             await updateTest(test.id, updatedData);
+            // Check for badges
+            if(test.familyId && test.studentId) {
+                await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
+            }
+
             router.push('/education');
 
         } catch (error) {
@@ -366,5 +371,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    
