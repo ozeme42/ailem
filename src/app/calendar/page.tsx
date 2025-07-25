@@ -70,11 +70,12 @@ export default function CalendarPage() {
   }
 
   return (
-    <>
-      <PageHeader title="Hatırlatıcılar 🗓️">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl shadow-lg">
+        <h1 className="text-2xl font-bold">Hatırlatıcılar 🗓️</h1>
         <Dialog open={isNewEventDialogOpen} onOpenChange={setIsNewEventDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
               <PlusCircle className="mr-2 h-4 w-4" />
               Yeni Hatırlatıcı Ekle
             </Button>
@@ -97,7 +98,7 @@ export default function CalendarPage() {
               />
           </DialogContent>
         </Dialog>
-      </PageHeader>
+      </div>
 
       <Card className="shadow-lg">
         <CardHeader>
@@ -162,6 +163,6 @@ export default function CalendarPage() {
           </div>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 }
