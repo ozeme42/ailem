@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,7 @@ export default function OpticalFormPage() {
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     const [timeLeft, setTimeLeft] = React.useState(0);
     const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<number>>(new Set());
+    const [currentQuestion, setCurrentQuestion] = React.useState(1);
 
     const handleSubmit = React.useCallback(async () => {
         if (!test) return;
@@ -124,7 +125,7 @@ export default function OpticalFormPage() {
                 setTest(currentTest);
 
                 if (currentTest) {
-                     setTimeLeft(currentTest.questionCount * 1.5 * 60);
+                     setTimeLeft(currentTest.questionCount * 90);
                      const type = currentTest.gradingType || 'manual';
 
                      if(type === 'auto') {
@@ -232,6 +233,8 @@ export default function OpticalFormPage() {
         : (test.gradingType === 'manual-text' ? Object.values(textAnswers).filter(a => a.trim() !== "").length : 0);
 
     const isInteractive = test.gradingType === 'auto' || test.gradingType === 'manual-text';
+    
+    const questionNumber = currentQuestion;
 
     return (
         <div className="container mx-auto py-8">
@@ -245,50 +248,54 @@ export default function OpticalFormPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-2xl">{test.title}</CardTitle>
-                            <CardDescription>{test.subject} - {test.questionCount} Soru</CardDescription>
+                            <CardDescription>{test.subject} - Soru {currentQuestion} / {test.questionCount}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-6">
-                                {Array.from({ length: test.questionCount }, (_, i) => i + 1).map(questionNumber => (
-                                    <div key={questionNumber} className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
-                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{questionNumber}</div>
-                                        {test.gradingType === 'auto' ? (
-                                            <RadioGroup 
-                                                defaultValue={mcqAnswers[questionNumber] || ""}
-                                                onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
-                                                className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
-                                            >
-                                                {['A', 'B', 'C', 'D', 'E'].map(option => (
-                                                    <div key={option} className="flex items-center space-x-2">
-                                                        <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} />
-                                                        <Label htmlFor={`q${questionNumber}-${option}`}>{option}</Label>
-                                                    </div>
-                                                ))}
-                                            </RadioGroup>
-                                        ) : test.gradingType === 'manual-text' ? (
-                                           <div className="flex-grow flex items-center gap-2">
-                                                <Input
-                                                    placeholder="Cevabınızı buraya yazın..."
-                                                    value={textAnswers[questionNumber] || ""}
-                                                    onChange={(e) => handleTextAnswerChange(questionNumber, e.target.value)}
-                                                    className="flex-grow"
-                                                />
-                                                <Button 
-                                                    size="icon" 
-                                                    variant="ghost"
-                                                    onClick={() => handleSaveSingleAnswer(questionNumber)}
-                                                    disabled={!dirtyTextAnswers.has(questionNumber)}
-                                                    aria-label="Cevabı Kaydet"
-                                                >
-                                                    <Save className="h-4 w-4" />
-                                                </Button>
+                             <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{questionNumber}</div>
+                                {test.gradingType === 'auto' ? (
+                                    <RadioGroup 
+                                        value={mcqAnswers[questionNumber] || ""}
+                                        onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
+                                        className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
+                                    >
+                                        {['A', 'B', 'C', 'D', 'E'].map(option => (
+                                            <div key={option} className="flex items-center space-x-2">
+                                                <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} />
+                                                <Label htmlFor={`q${questionNumber}-${option}`}>{option}</Label>
                                             </div>
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground flex-grow">Bu soru için cevap girişi gerekmiyor.</p>
-                                        )}
+                                        ))}
+                                    </RadioGroup>
+                                ) : test.gradingType === 'manual-text' ? (
+                                   <div className="flex-grow flex items-center gap-2">
+                                        <Input
+                                            placeholder="Cevabınızı buraya yazın..."
+                                            value={textAnswers[questionNumber] || ""}
+                                            onChange={(e) => handleTextAnswerChange(questionNumber, e.target.value)}
+                                            className="flex-grow"
+                                        />
+                                        <Button 
+                                            size="icon" 
+                                            variant="ghost"
+                                            onClick={() => handleSaveSingleAnswer(questionNumber)}
+                                            disabled={!dirtyTextAnswers.has(questionNumber)}
+                                            aria-label="Cevabı Kaydet"
+                                        >
+                                            <Save className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                ))}
+                                ) : (
+                                    <p className="text-sm text-muted-foreground flex-grow">Bu soru için cevap girişi gerekmiyor.</p>
+                                )}
                             </div>
+                        </CardContent>
+                         <CardContent className="flex justify-between items-center pt-4">
+                            <Button variant="outline" onClick={() => setCurrentQuestion(q => q - 1)} disabled={currentQuestion === 1}>
+                                <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
+                            </Button>
+                             <Button onClick={() => setCurrentQuestion(q => q + 1)} disabled={currentQuestion === test.questionCount}>
+                                Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>
