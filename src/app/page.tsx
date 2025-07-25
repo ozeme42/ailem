@@ -40,39 +40,15 @@ const weeklyProgressChartConfig = {
 
 export default function Home() {
   const { user, familyMembers, loading } = useAuth();
-  const [greeting, setGreeting] = React.useState('');
-  const [formattedDate, setFormattedDate] = React.useState('');
   const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
   const [editingMember, setEditingMember] = React.useState<FamilyMember | null>(null);
-
-
-   React.useEffect(() => {
-    const updateDateTime = () => {
-      const currentTime = new Date();
-      const hour = currentTime.getHours();
-
-      if (hour < 12) {
-        setGreeting('Günaydın');
-      } else if (hour < 18) {
-        setGreeting('Tünaydın');
-      } else {
-        setGreeting('İyi Akşamlar');
-      }
-
-      setFormattedDate(currentTime.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }));
-    };
-
-    updateDateTime();
-    const timer = setInterval(updateDateTime, 60000);
-    return () => clearInterval(timer);
-  }, []);
   
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
 
   if (loading) {
     return (
         <div className="space-y-8">
-            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-20 w-full" />
             <Skeleton className="h-24 w-full" />
              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <Skeleton className="h-64 w-full" />
@@ -90,21 +66,18 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <header className="rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6 text-white shadow-lg">
-        <div className="flex flex-col sm:flex-row items-start justify-between">
+      <header className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 text-white shadow-lg">
+        <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold">{greeting ? `${greeting}, ${user?.name || 'Aile'}! 👋` : 'Yükleniyor...'}</h1>
-                <p className="mt-1 opacity-90">
-                    {formattedDate || '...'}
-                </p>
+                <h1 className="text-xl font-bold">Özgürdere Ailesi</h1>
             </div>
-            <div className="flex items-center gap-2 mt-4 sm:mt-0">
+            <div className="flex items-center gap-2">
                  <button className="relative rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
-                    <Bell className="h-6 w-6" />
+                    <Bell className="h-5 w-5" />
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-purple-500">3</Badge>
                 </button>
                  <button className="rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
-                    <Settings className="h-6 w-6" />
+                    <Settings className="h-5 w-5" />
                 </button>
             </div>
         </div>
