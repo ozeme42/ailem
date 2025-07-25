@@ -2,7 +2,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat } from "lucide-react";
 import { format, addDays, startOfWeek } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -17,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { recipes as staticRecipes, Recipe, MealPlan } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { onMealPlanUpdate, updateMealPlan } from "@/lib/dataService";
+import { cn } from "@/lib/utils";
 
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
@@ -135,14 +135,14 @@ export default function YemekPlanlamaPage() {
                     return (
                     <div key={meal} className="relative group">
                        {plannedRecipe ? (
-                           <Card className="h-16 bg-card rounded-md flex flex-col justify-center items-center p-2 text-center shadow-sm overflow-hidden">
+                           <div className={cn("h-16 rounded-md flex flex-col justify-center items-center p-2 text-center shadow-sm overflow-hidden text-white bg-gradient-to-br from-green-400 to-teal-500")}>
                                <p className="text-xs font-semibold leading-tight">{plannedRecipe.title}</p>
                                <button 
                                 onClick={() => handleRemoveRecipe(day, meal)}
                                 className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <XCircle className="h-4 w-4" />
                                </button>
-                           </Card>
+                           </div>
                        ) : (
                         <div 
                           onClick={() => handleOpenRecipeSelector(day, meal)}
@@ -276,4 +276,3 @@ export default function YemekPlanlamaPage() {
   );
 }
 
-    
