@@ -151,7 +151,13 @@ export default function TasksPage() {
                 {leaderboard.map((member, index) => (
                     <li key={member.id} className="flex items-center gap-3">
                       <span className="font-bold text-lg w-6">{index + 1}.</span>
-                      <Image src={member.avatar} alt={member.name} width={40} height={40} className="rounded-full object-cover" data-ai-hint="person" />
+                        {member.avatar.startsWith('/') ? (
+                            <Image src={member.avatar} alt={member.name} width={40} height={40} className="rounded-full object-cover" data-ai-hint="person" />
+                        ) : (
+                           <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xl font-bold" style={{ backgroundColor: member.color, color: '#fff' }}>
+                                {member.avatar}
+                            </div>
+                        )}
                       <div className="flex-grow">
                         <p className="font-semibold">{member.name}</p>
                         <div className="flex items-center text-sm text-yellow-500">

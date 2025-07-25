@@ -118,7 +118,13 @@ export default function LibraryPage() {
             className={`h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
             onClick={() => setSelectedMember(member)}
           >
-            <span className="text-2xl">{member.avatar.startsWith('/') ? <Image src={member.avatar} alt={member.name} width={24} height={24} className="w-6 h-6 rounded-full" /> : member.avatar}</span>
+             {member.avatar.startsWith('/') ? (
+                <Image src={member.avatar} alt={member.name} width={24} height={24} className="w-6 h-6 rounded-full" />
+             ) : (
+                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold" style={{ backgroundColor: member.color, color: '#fff' }}>
+                    {member.avatar}
+                </div>
+             )}
             <p className="font-bold text-sm">{member.name}</p>
           </Button>
         ))}

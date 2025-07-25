@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: user.uid,
         name: memberName,
         role: memberRole,
-        avatar: memberRole === 'Baba' ? '/avatars/dad.png' : '/avatars/mom.png',
+        avatar: memberName.charAt(0).toUpperCase(),
         color: memberRole === 'Baba' ? '#3B82F6' : '#EC4899',
         completedTasks: 0,
         level: 1,
@@ -192,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: user.uid,
         name: memberName,
         role: memberRole,
-        avatar: roleBasedAvatars[memberRole] || 'https://placehold.co/64x64.png',
+        avatar: memberName.charAt(0).toUpperCase(),
         color: roleBasedColors[memberRole] || '#6b7280',
         completedTasks: 0,
         level: 1,
@@ -211,14 +211,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateDoc(userDocRef, { familyId: familyIdToJoin });
   };
   
-  const roleBasedAvatars: Record<string, string> = {
-    Baba: '/avatars/dad.png',
-    Anne: '/avatars/mom.png',
-    'Erkek Çocuk': '/avatars/boy.png',
-    'Kız Çocuk': '/avatars/girl.png',
-    Bebek: '/avatars/baby.png',
-  };
-
   const roleBasedColors: Record<string, string> = {
       Baba: '#3B82F6',
       Anne: '#EC4899',

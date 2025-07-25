@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -114,14 +115,20 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
           <div className="flex items-center gap-2 shrink-0">
             {assignee && (
                 <>
-                <Image
-                  src={assignee.avatar}
-                  alt={assignee.name}
-                  width={32}
-                  height={32}
-                  className="rounded-full object-cover"
-                  data-ai-hint="person"
-                />
+                {assignee.avatar.startsWith('/') ? (
+                    <Image
+                    src={assignee.avatar}
+                    alt={assignee.name}
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
+                    data-ai-hint="person"
+                    />
+                ) : (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold" style={{ backgroundColor: assignee.color, color: '#fff' }}>
+                        {assignee.avatar}
+                    </div>
+                )}
                 <span className="text-sm font-medium hidden md:inline">{assignee.name}</span>
                 </>
             )}

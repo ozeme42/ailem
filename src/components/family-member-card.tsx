@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +33,7 @@ const gradientClasses: { [key: string]: string } = {
 
 export function FamilyMemberCard({ member, onEdit }: FamilyMemberCardProps) {
   const gradient = gradientClasses[member.role] || 'from-gray-400 to-gray-500';
-  const avatarSrc = member.avatar || 'https://placehold.co/64x64.png';
-
+  
   return (
     <Card className="group overflow-hidden border-0 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
         <div className={`relative p-4 text-white bg-gradient-to-br ${gradient}`}>
@@ -47,7 +47,13 @@ export function FamilyMemberCard({ member, onEdit }: FamilyMemberCardProps) {
             </Button>
             <div className="flex justify-between items-start mb-2">
                  <div className="relative">
-                    <Image src={avatarSrc} alt={member.name} width={64} height={64} className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" data-ai-hint="person" />
+                    {member.avatar.startsWith('/') ? (
+                         <Image src={member.avatar} alt={member.name} width={64} height={64} className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" data-ai-hint="person" />
+                    ) : (
+                        <div className="w-16 h-16 rounded-full border-2 border-white/50 flex items-center justify-center bg-white/30 text-3xl font-bold">
+                            {member.avatar}
+                        </div>
+                    )}
                     <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 ${member.status === 'online' ? 'bg-green-400' : 'bg-gray-400'} border-card`}/>
                  </div>
                  <div className="text-3xl">{moodEmojis[member.mood]}</div>

@@ -20,14 +20,6 @@ const formSchema = z.object({
   role: z.enum(['Anne', 'Baba', 'Kız Çocuk', 'Erkek Çocuk', 'Bebek'], { required_error: 'Lütfen bir rol seçin.' }),
 });
 
-const roleBasedAvatars: Record<string, string> = {
-    Baba: '/avatars/dad.png',
-    Anne: '/avatars/mom.png',
-    'Erkek Çocuk': '/avatars/boy.png',
-    'Kız Çocuk': '/avatars/girl.png',
-    Bebek: '/avatars/baby.png',
-}
-
 const roleBasedColors: Record<string, string> = {
     Baba: '#3B82F6',
     Anne: '#EC4899',
@@ -55,7 +47,7 @@ export function NewFamilyMemberForm({ onMemberAdded }: { onMemberAdded: () => vo
         const newMember: Omit<FamilyMember, 'id'> = {
             name: values.name,
             role: values.role,
-            avatar: roleBasedAvatars[values.role] || 'https://placehold.co/64x64.png',
+            avatar: values.name.charAt(0).toUpperCase(),
             color: roleBasedColors[values.role] || '#6b7280',
             completedTasks: 0,
             level: 1,
@@ -124,5 +116,3 @@ export function NewFamilyMemberForm({ onMemberAdded }: { onMemberAdded: () => vo
     </Form>
   );
 }
-
-    
