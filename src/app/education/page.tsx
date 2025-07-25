@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTestForm } from "@/components/new-test-form";
-import { NewQuestionBankForm } from "@/components/new-question-bank-form";
-import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { students, examProgress, QuestionBank, Test, PracticeExam } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, onSubjectsUpdate, updateSubjects, addTest, updateTest, deleteTest, addQuestionBank, updateQuestionBank, deleteQuestionBank, addPracticeExam, updatePracticeExam, deletePracticeExam } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 
 export default function EducationPage() {
@@ -31,13 +29,8 @@ export default function EducationPage() {
   const [tests, setTests] = React.useState<Test[]>([]);
   const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
-  const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
 
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
-  const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
-  const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
-  const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
-  const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
   const [editingTest, setEditingTest] = React.useState<Test | null>(null);
   const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
 
@@ -55,20 +48,14 @@ export default function EducationPage() {
     const unsubTests = onTestsUpdate(setTests);
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
-    const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
     
     return () => {
       unsubTests();
       unsubBanks();
       unsubExams();
-      unsubSubjects();
     }
   }, []);
   
-  const handleCreateSubject = async (subjectName: string) => {
-    const newSubjects = [...new Set([...availableSubjects, subjectName])];
-    await updateSubjects(newSubjects);
-  };
 
   const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => {
     try {
@@ -112,56 +99,6 @@ export default function EducationPage() {
       }
   }
 
-  const handleBankSubmit = async (bankData: Omit<QuestionBank, 'id' | 'familyId'>, id?: string) => {
-    try {
-        if (id) {
-            await updateQuestionBank(id, bankData);
-            toast({ title: "✅ Soru Bankası Güncellendi", description: `${bankData.name} başarıyla güncellendi.` });
-        } else {
-            await addQuestionBank(bankData);
-            toast({ title: "✅ Soru Bankası Oluşturuldu", description: "Yeni soru bankası başarıyla kaydedildi." });
-        }
-        setEditingBank(null);
-        setIsBankDialogOpen(false);
-    } catch (error) {
-         toast({ title: "❌ Kaydetme Hatası", description: "Soru bankası kaydedilirken bir hata oluştu.", variant: 'destructive'});
-    }
-  };
-
-  const handleDeleteBank = async (bankId: string) => {
-    try {
-        await deleteQuestionBank(bankId);
-        toast({ title: "🗑️ Soru Bankası Silindi", variant: "destructive" });
-    } catch (error) {
-         toast({ title: "❌ Silme Hatası", description: "Soru bankası silinirken bir hata oluştu.", variant: 'destructive'});
-    }
-  }
-
-  const handleExamSubmit = async (examData: Omit<PracticeExam, 'id' | 'familyId'>, id?: string) => {
-    try {
-        if (id) {
-            await updatePracticeExam(id, examData);
-            toast({ title: "✅ Deneme Sınavı Güncellendi", description: `${examData.name} başarıyla güncellendi.` });
-        } else {
-            await addPracticeExam(examData);
-            toast({ title: "✅ Deneme Sınavı Oluşturuldu", description: "Yeni deneme sınavı başarıyla kaydedildi." });
-        }
-        setEditingExam(null);
-        setIsExamDialogOpen(false);
-    } catch (error) {
-        toast({ title: "❌ Kaydetme Hatası", description: "Deneme sınavı kaydedilirken bir hata oluştu.", variant: 'destructive'});
-    }
-  };
-
-  const handleDeleteExam = async (examId: string) => {
-      try {
-        await deletePracticeExam(examId);
-        toast({ title: "🗑️ Deneme Sınavı Silindi", variant: "destructive" });
-      } catch (error) {
-        toast({ title: "❌ Silme Hatası", description: "Deneme sınavı silinirken bir hata oluştu.", variant: 'destructive'});
-      }
-  }
-  
   const handleOpenEditTest = (test: Test) => {
     setEditingTest(test);
     setIsAssignDialogOpen(true);
@@ -193,6 +130,12 @@ export default function EducationPage() {
   return (
     <>
       <PageHeader title="Eğitim & Sınav 🎓">
+         <Link href="/education/management">
+            <Button variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                İçerik Yönetimi
+            </Button>
+        </Link>
         <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleOpenNewTest} className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
@@ -235,11 +178,10 @@ export default function EducationPage() {
       </div>
 
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className={cn("grid w-full mb-6", selectedStudent ? "grid-cols-4" : "grid-cols-3")}>
+        <TabsList className={cn("grid w-full mb-6", selectedStudent ? "grid-cols-3" : "grid-cols-2")}>
           <TabsTrigger value="assignments">Aktif Ödevler ({assignedTests.length})</TabsTrigger>
           <TabsTrigger value="progress">Genel Başarı</TabsTrigger>
           <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
-          <TabsTrigger value="management">İçerik Yönetimi</TabsTrigger>
         </TabsList>
 
         <TabsContent value="assignments">
@@ -402,156 +344,6 @@ export default function EducationPage() {
               )) : <p className="text-muted-foreground text-center py-8">Henüz tamamlanmış bir test yok.</p>}
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        <TabsContent value="management">
-            <Tabs defaultValue="questionBanks" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="questionBanks">Soru Bankaları</TabsTrigger>
-                    <TabsTrigger value="practiceExams">Deneme Sınavları</TabsTrigger>
-                </TabsList>
-                <TabsContent value="questionBanks" className="mt-4">
-                     <Card>
-                        <CardHeader className="flex flex-row justify-between items-center">
-                            <div>
-                                <CardTitle>Soru Bankası Havuzu</CardTitle>
-                                <CardDescription>Oluşturulan ve yönetilen soru bankaları.</CardDescription>
-                            </div>
-                             <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button onClick={() => { setEditingBank(null); setIsBankDialogOpen(true); }}>
-                                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-2xl">
-                                    <DialogHeader>
-                                        <DialogTitle>{editingBank ? "Soru Bankasını Düzenle" : "Yeni Soru Bankası Oluştur"}</DialogTitle>
-                                        <DialogDescription>
-                                            {editingBank ? "Mevcut soru bankasını güncelleyin." : "Yeni bir soru bankası oluşturun. Dersleri ve konuları ekleyebilirsiniz."}
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <NewQuestionBankForm 
-                                        onSubmit={handleBankSubmit} 
-                                        initialData={editingBank}
-                                        availableSubjects={availableSubjects}
-                                        onSubjectCreated={handleCreateSubject}
-                                    />
-                                </DialogContent>
-                             </Dialog>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {questionBanks.map(bank => (
-                                <Card key={bank.id} className="p-4">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="font-bold text-lg">{bank.name}</h4>
-                                        <div className="flex items-center gap-1">
-                                            <Button variant="ghost" size="icon" onClick={() => { setEditingBank(bank); setIsBankDialogOpen(true); }}>
-                                                <Edit className="w-4 h-4"/>
-                                            </Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Silmek istediğinize emin misiniz?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Bu işlem geri alınamaz. "{bank.name}" soru bankası kalıcı olarak silinecektir.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteBank(bank.id)}>Sil</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 space-y-2">
-                                        {bank.subjects.map(subject => (
-                                             <div key={subject.id} className="text-sm">
-                                                <p className="font-semibold">{subject.name}</p>
-                                                <ul className="list-disc list-inside pl-4 text-muted-foreground">
-                                                    {subject.topics.map(topic => (
-                                                        <li key={topic.id}>{topic.name} ({topic.questionCount} soru)</li>
-                                                    ))}
-                                                </ul>
-                                             </div>
-                                        ))}
-                                    </div>
-                                </Card>
-                            ))}
-                        </CardContent>
-                     </Card>
-                </TabsContent>
-                 <TabsContent value="practiceExams" className="mt-4">
-                     <Card>
-                        <CardHeader className="flex flex-row justify-between items-center">
-                             <div>
-                                <CardTitle>Deneme Sınavı Havuzu</CardTitle>
-                                <CardDescription>Oluşturulan ve yönetilen deneme sınavları.</CardDescription>
-                            </div>
-                             <Dialog open={isExamDialogOpen} onOpenChange={setIsExamDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button onClick={() => { setEditingExam(null); setIsExamDialogOpen(true);}}>
-                                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni Ekle
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-lg">
-                                    <DialogHeader>
-                                        <DialogTitle>{editingExam ? "Deneme Sınavını Düzenle" : "Yeni Deneme Sınavı Oluştur"}</DialogTitle>
-                                        <DialogDescription>
-                                           {editingExam ? "Mevcut deneme sınavını güncelleyin." : "Yeni bir deneme sınavı oluşturun. Dersleri ve soru sayılarını ekleyebilirsiniz."}
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <NewPracticeExamForm 
-                                        onSubmit={handleExamSubmit}
-                                        initialData={editingExam}
-                                        availableSubjects={availableSubjects}
-                                        onSubjectCreated={handleCreateSubject}
-                                    />
-                                </DialogContent>
-                             </Dialog>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                           {practiceExams.map(exam => (
-                                <Card key={exam.id} className="p-4">
-                                     <div className="flex justify-between items-start">
-                                        <h4 className="font-bold text-lg">{exam.name}</h4>
-                                        <div className="flex items-center gap-1">
-                                            <Button variant="ghost" size="icon" onClick={() => { setEditingExam(exam); setIsExamDialogOpen(true); }}>
-                                                <Edit className="w-4 h-4"/>
-                                            </Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon"><Trash2 className="w-4 h-4 text-destructive"/></Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Silmek istediğinize emin misiniz?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Bu işlem geri alınamaz. "{exam.name}" deneme sınavı kalıcı olarak silinecektir.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Sil</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-                                        {exam.subjects.map(subject => (
-                                            <Badge key={subject.id} variant="secondary">{subject.name}: {subject.questionCount} Soru</Badge>
-                                        ))}
-                                    </div>
-                                </Card>
-                            ))}
-                        </CardContent>
-                     </Card>
-                </TabsContent>
-            </Tabs>
         </TabsContent>
       </Tabs>
       
