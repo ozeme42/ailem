@@ -37,7 +37,7 @@ export default function OpticalFormPage() {
         if (!test) return;
         try {
             let answerKey: { [key: string]: string } | undefined = undefined;
-            
+
             if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
                 const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
                 if (bankDoc.exists()) {
@@ -55,10 +55,10 @@ export default function OpticalFormPage() {
                 answerKey = test.answerKey;
             }
 
-            const updatedData: Partial<TestType> = {};
+            let updatedData: Partial<TestType> = {};
             let toastDescription = "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.";
 
-            if(test.gradingType === 'auto') {
+            if (test.gradingType === 'auto') {
                 updatedData.studentAnswers = mcqAnswers;
                 if (answerKey && Object.keys(answerKey).length > 0) {
                     let correct = 0;
@@ -74,7 +74,7 @@ export default function OpticalFormPage() {
                             incorrect++;
                         }
                     }
-                    
+
                     updatedData.status = 'Değerlendirildi';
                     updatedData.correctAnswers = correct;
                     updatedData.incorrectAnswers = incorrect;
@@ -84,25 +84,22 @@ export default function OpticalFormPage() {
                 } else {
                     updatedData.status = 'Çözüldü';
                 }
-                
             } else { // Manual grading (text or no-answer)
+                updatedData.status = 'Çözüldü';
                 if (test.gradingType === 'manual-text') {
                     updatedData.studentTextAnswers = textAnswers;
                 }
-                updatedData.status = 'Çözüldü';
-                updatedData.correctAnswers = undefined;
-                updatedData.incorrectAnswers = undefined;
-                updatedData.emptyAnswers = undefined;
-                updatedData.score = undefined;
+                // For manual grading, we only update the status and text answers.
+                // Score-related fields are intentionally left out to be populated during manual grading.
             }
-            
+
             await updateTest(test.id, updatedData);
-            
+
             toast({
                 title: "✅ Test Tamamlandı!",
                 description: toastDescription,
             });
-           
+
             router.push('/education');
 
         } catch (error) {
@@ -152,12 +149,12 @@ export default function OpticalFormPage() {
 
 
     React.useEffect(() => {
-        if (timeLeft <= 0 && test) {
+        if (!test || test.status !== 'Atandı') return;
+        
+        if (timeLeft <= 0) {
             handleSubmit();
             return;
         };
-
-        if (!test) return;
 
         const timer = setInterval(() => {
             setTimeLeft(prevTime => prevTime - 1);
@@ -321,7 +318,7 @@ export default function OpticalFormPage() {
                            
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button className="w-full" size="lg" disabled={timeLeft <= 0}>
+                                <Button className="w-full" size="lg" disabled={timeLeft <= 0 || test.status !== 'Atandı'}>
                                     Testi Bitir
                                 </Button>
                             </AlertDialogTrigger>
@@ -345,5 +342,7 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
 
     
