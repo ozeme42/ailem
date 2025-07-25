@@ -19,6 +19,7 @@ import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate } from 
 import { format, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageHeader } from "@/components/page-header";
 
 const quickStats = [
   { title: 'Tamamlanan Görevler', value: '24', change: '+8', icon: CheckSquare, color: 'text-green-500', bgColor: 'bg-green-500/10' },
@@ -99,39 +100,55 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <header className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 text-white shadow-lg rounded-b-3xl">
-        <div className="flex items-center justify-between">
-            <SidebarTrigger className="md:hidden -ml-2 text-white hover:bg-white/20"/>
-            <h1 className="text-xl font-bold">Özgürdere Ailesi</h1>
-            <div className="flex items-center gap-2">
-                 <button className="relative rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
+      <PageHeader title="Özgürdere Ailesi">
+         <div className="flex items-center gap-2">
+                 <button className="relative rounded-full bg-muted p-2 transition-colors hover:bg-muted/80">
                     <Bell className="h-5 w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-purple-500">3</Badge>
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">3</Badge>
                 </button>
-                 <button className="rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
+                 <button className="rounded-full bg-muted p-2 transition-colors hover:bg-muted/80">
                     <Settings className="h-5 w-5" />
                 </button>
             </div>
-        </div>
-        <div className="mt-4 grid grid-cols-3 divide-x divide-white/20 rounded-lg bg-white/10 p-2 text-center">
-            <Link href="/shopping" className="flex flex-col items-center gap-1 p-2 rounded-l-md hover:bg-white/20">
-                <ShoppingCart className="h-5 w-5"/>
-                <span className="text-xs font-semibold">Alışveriş Listesi</span>
-                <Badge variant="secondary" className="mt-1">{totalShoppingItems} ürün</Badge>
-            </Link>
-            <Link href="/yemek" className="flex flex-col items-center gap-1 p-2 hover:bg-white/20">
-                <UtensilsCrossed className="h-5 w-5"/>
-                <span className="text-xs font-semibold">Günün Menüsü</span>
-                 <Badge variant="secondary" className="mt-1 truncate">{todaysMeal?.title || 'Belirsiz'}</Badge>
-            </Link>
-            <Link href="/calendar" className="flex flex-col items-center gap-1 p-2 rounded-r-md hover:bg-white/20">
-                <Calendar className="h-5 w-5"/>
-                <span className="text-xs font-semibold">Yaklaşan Etkinlikler</span>
-                <Badge variant="secondary" className="mt-1">{upcomingEvents} etkinlik</Badge>
-            </Link>
-        </div>
-      </header>
+      </PageHeader>
       
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link href="/shopping" className="block">
+                <Card className="hover:bg-accent/50 hover:border-primary/50 transition-colors">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3"><ShoppingCart className="text-primary"/> Alışveriş Listesi</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-bold">{totalShoppingItems} ürün</p>
+                        <p className="text-sm text-muted-foreground">alınması gerekiyor.</p>
+                    </CardContent>
+                </Card>
+            </Link>
+            <Link href="/yemek" className="block">
+                <Card className="hover:bg-accent/50 hover:border-primary/50 transition-colors">
+                     <CardHeader>
+                        <CardTitle className="flex items-center gap-3"><UtensilsCrossed className="text-primary"/> Günün Menüsü</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-bold truncate">{todaysMeal?.title || 'Belirlenmedi'}</p>
+                        <p className="text-sm text-muted-foreground">akşam yemeği için planlandı.</p>
+                    </CardContent>
+                </Card>
+            </Link>
+            <Link href="/calendar" className="block">
+                <Card className="hover:bg-accent/50 hover:border-primary/50 transition-colors">
+                     <CardHeader>
+                        <CardTitle className="flex items-center gap-3"><Calendar className="text-primary"/> Yaklaşan Etkinlikler</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                       <p className="text-2xl font-bold">{upcomingEvents} etkinlik</p>
+                       <p className="text-sm text-muted-foreground">bu ay içerisinde mevcut.</p>
+                    </CardContent>
+                </Card>
+            </Link>
+        </div>
+
+
       <section>
         <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
