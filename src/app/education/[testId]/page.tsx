@@ -287,7 +287,7 @@ export default function OpticalFormPage() {
                                         onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
                                         className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
                                     >
-                                        {['A', 'B', 'C', 'D', 'E'].map(option => (
+                                        {['A', 'B', 'C'].map(option => (
                                             <div key={option} className="flex items-center space-x-2">
                                                 <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} />
                                                 <Label htmlFor={`q${questionNumber}-${option}`}>{option}</Label>
@@ -371,3 +371,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
