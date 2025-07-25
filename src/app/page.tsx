@@ -100,17 +100,21 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Özgürdere Ailesi">
-         <div className="flex items-center gap-2">
-                 <button className="relative rounded-full bg-muted p-2 transition-colors hover:bg-muted/80">
-                    <Bell className="h-5 w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">3</Badge>
-                </button>
-                 <button className="rounded-full bg-muted p-2 transition-colors hover:bg-muted/80">
-                    <Settings className="h-5 w-5" />
-                </button>
-            </div>
-      </PageHeader>
+      <header className="flex items-center justify-between gap-4 p-4 bg-gradient-to-br from-primary to-accent/80 text-primary-foreground rounded-xl shadow-lg">
+          <div className="flex items-center gap-4">
+              <SidebarTrigger className="md:hidden text-primary-foreground hover:bg-white/20 hover:text-primary-foreground" />
+              <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
+          </div>
+          <div className="flex items-center gap-2">
+              <button className="relative rounded-full p-2 transition-colors hover:bg-white/20">
+                  <Bell className="h-5 w-5" />
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">3</Badge>
+              </button>
+              <button className="rounded-full p-2 transition-colors hover:bg-white/20">
+                  <Settings className="h-5 w-5" />
+              </button>
+          </div>
+      </header>
       
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Link href="/shopping" className="block">
@@ -304,5 +308,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
