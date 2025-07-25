@@ -224,7 +224,7 @@ export default function CalendarPage() {
                 </div>
             </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           <div className={cn("grid border-t border-l", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
              {weekHeaderDays.map(day => (
                 <div key={day.toISOString()} className={cn("p-2 border-r border-b text-center font-semibold text-sm capitalize", viewMode === 'week' && 'hidden')}>
