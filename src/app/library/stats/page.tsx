@@ -215,7 +215,7 @@ export default function LibraryStatsPage() {
                     nameKey="name" 
                     cx="50%" 
                     cy="50%" 
-                    outerRadius={110} 
+                    outerRadius={100} 
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     >
@@ -271,4 +271,3 @@ export default function LibraryStatsPage() {
     </>
   );
 }
-
