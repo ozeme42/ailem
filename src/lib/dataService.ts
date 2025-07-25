@@ -52,6 +52,33 @@ export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
 export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
 
+// One-time migration function
+export const migrateOrphanBooks = async (familyId: string) => {
+    console.log("Checking for orphan books to migrate...");
+    const booksCollection = collection(db, 'mediaItems');
+    // Query for books where familyId does not exist. Firestore doesn't support "not equals" or "does not exist" queries directly.
+    // A common workaround is to query for `familyId < ''` and `familyId > ''` but that's cumbersome.
+    // The simplest way is to fetch all and filter client-side, but that's inefficient for large datasets.
+    // For this one-time migration, we'll fetch all and check.
+    const snapshot = await getDocs(booksCollection);
+    const orphanBooks = snapshot.docs.filter(doc => !doc.data().familyId);
+
+    if (orphanBooks.length > 0) {
+        console.log(`Found ${orphanBooks.length} orphan books. Migrating to family ${familyId}...`);
+        const batch = writeBatch(db);
+        orphanBooks.forEach(bookDoc => {
+            const docRef = doc(db, 'mediaItems', bookDoc.id);
+            batch.update(docRef, { familyId: familyId });
+        });
+        await batch.commit();
+        console.log("Orphan books migration completed.");
+        return true;
+    }
+    console.log("No orphan books found.");
+    return false;
+};
+
+
 // Family Members (within the family doc)
 export const updateFamilyMemberInFamily = async (familyId: string, memberId: string, memberData: Partial<FamilyMember>) => {
     const familyRef = doc(db, "families", familyId);

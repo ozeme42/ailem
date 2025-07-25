@@ -7,7 +7,7 @@ import { doc, setDoc, getDoc, onSnapshot, collection, addDoc, Unsubscribe, query
 import { db } from '@/lib/firebase';
 import type { FamilyMember, User } from '@/lib/data';
 import { usePathname, useRouter } from 'next/navigation';
-import { initializeDefaultData, updateFamilyMemberInFamily } from '@/lib/dataService';
+import { initializeDefaultData, updateFamilyMemberInFamily, migrateOrphanBooks } from '@/lib/dataService';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { MobileNavbar } from '@/components/mobile-navbar';
@@ -56,6 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setFamilyId(userData.familyId || null);
 
                 if (userData.familyId) {
+                    // Trigger one-time migration for orphan books
+                    migrateOrphanBooks(userData.familyId);
+
                     const familyDocRef = doc(db, 'families', userData.familyId);
                     familyUnsubscribe = onSnapshot(familyDocRef, (doc) => {
                         if (doc.exists()) {
