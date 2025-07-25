@@ -199,26 +199,30 @@ export default function CalendarPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold capitalize">
-              {format(currentDate, 'MMMM yyyy', { locale: tr })}
-            </h2>
-             <div className="flex items-center gap-2">
-                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
-                    <TabsList>
-                        <TabsTrigger value="month">Aylık</TabsTrigger>
-                        <TabsTrigger value="week">Haftalık</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-                <Button variant="outline" size="icon" onClick={handlePrev}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
-                <Button variant="outline" size="icon" onClick={handleNext}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-             </div>
-          </div>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex-grow">
+                    <h2 className="text-xl font-semibold capitalize">
+                        {format(currentDate, 'MMMM yyyy', { locale: tr })}
+                    </h2>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                    <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
+                        <TabsList>
+                            <TabsTrigger value="month">Aylık</TabsTrigger>
+                            <TabsTrigger value="week">Haftalık</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={handlePrev}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+                        <Button variant="outline" size="icon" onClick={handleNext}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                     </div>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           <div className={cn("grid border-t border-l", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
