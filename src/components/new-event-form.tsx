@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { format, addDays } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { CalendarEvent } from "@/lib/data";
-import { addCalendarEvent } from "@/lib/dataService";
+import { addCalendarEvent, updateCalendarEvent } from "@/lib/dataService";
 
 const formSchema = z.object({
   title: z.string().min(2, "Başlık en az 2 karakter olmalıdır."),
@@ -30,10 +30,11 @@ const formSchema = z.object({
 });
 
 type NewEventFormProps = {
-  onEventCreated: () => void;
+  onSave: () => void;
+  initialData?: CalendarEvent | null;
 };
 
-export function NewEventForm({ onEventCreated }: NewEventFormProps) {
+export function NewEventForm({ onSave, initialData }: NewEventFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -46,20 +47,47 @@ export function NewEventForm({ onEventCreated }: NewEventFormProps) {
     },
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset({
+        title: initialData.title,
+        recurrence: initialData.recurrence,
+        dateRange: {
+          from: parseISO(initialData.startDate),
+          to: initialData.endDate ? parseISO(initialData.endDate) : undefined
+        }
+      });
+    } else {
+      form.reset({
+        title: "",
+        recurrence: "one-time",
+        dateRange: { from: new Date(), to: undefined }
+      });
+    }
+  }, [initialData, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const newEvent: Omit<CalendarEvent, 'id' | 'familyId'> = {
+    const eventData: Partial<Omit<CalendarEvent, 'id' | 'familyId'>> = {
         title: values.title,
         recurrence: values.recurrence,
         startDate: format(values.dateRange.from, "yyyy-MM-dd"),
         endDate: values.dateRange.to ? format(values.dateRange.to, "yyyy-MM-dd") : undefined,
     };
     
+    if (!eventData.endDate) {
+      delete eventData.endDate;
+    }
+
     try {
-        await addCalendarEvent(newEvent);
+        if (initialData?.id) {
+            await updateCalendarEvent(initialData.id, eventData);
+        } else {
+            await addCalendarEvent(eventData as Omit<CalendarEvent, 'id' | 'familyId'>);
+        }
         form.reset();
-        onEventCreated();
+        onSave();
     } catch(e) {
-        console.error("Failed to add event: ", e);
+        console.error("Failed to save event: ", e);
     }
   }
 
@@ -138,7 +166,7 @@ export function NewEventForm({ onEventCreated }: NewEventFormProps) {
           )}
         />
         
-        <Button type="submit" className="w-full">Hatırlatıcıyı Oluştur</Button>
+        <Button type="submit" className="w-full">{initialData ? 'Değişiklikleri Kaydet' : 'Hatırlatıcıyı Oluştur'}</Button>
       </form>
     </Form>
   );

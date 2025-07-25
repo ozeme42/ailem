@@ -4,7 +4,7 @@
 import * as React from "react";
 import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History, Trash2, Edit } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CalendarEvent } from "@/lib/data";
-import { onCalendarEventsUpdate, deletePastCalendarEvents } from "@/lib/dataService";
+import { onCalendarEventsUpdate, deletePastCalendarEvents, deleteCalendarEvent } from "@/lib/dataService";
 import { NewEventForm } from "@/components/new-event-form";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,8 @@ const eventColors = [
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
-  const [isNewEventDialogOpen, setIsNewEventDialogOpen] = React.useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
+  const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | null>(null);
   const { toast } = useToast();
   const [viewMode, setViewMode] = React.useState<'month' | 'week'>('month');
 
@@ -70,7 +71,6 @@ export default function CalendarPage() {
       const monthEnd = endOfMonth(currentDate);
       const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
       const days = [];
-      let day = startDate;
       // Ensure we render 6 weeks to keep the layout consistent
       while (days.length < 42) {
           days.push(day);
@@ -127,17 +127,6 @@ export default function CalendarPage() {
     });
   };
   
-  const getRecurrenceIcon = (recurrence: 'one-time' | 'monthly' | 'yearly') => {
-    switch (recurrence) {
-        case 'monthly':
-        case 'yearly':
-            return <Repeat className="w-3 h-3 text-muted-foreground" />;
-        case 'one-time':
-        default:
-            return <Repeat1 className="w-3 h-3 text-muted-foreground" />;
-    }
-  }
-  
   const getRecurrenceText = (recurrence: 'one-time' | 'monthly' | 'yearly') => {
     switch (recurrence) {
         case 'monthly': return 'Aylık';
@@ -164,38 +153,65 @@ export default function CalendarPage() {
     }
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+      try {
+          await deleteCalendarEvent(eventId);
+          toast({
+              title: "🗑️ Hatırlatıcı Silindi",
+              description: "Etkinlik takvimden kaldırıldı.",
+              variant: "destructive"
+          });
+      } catch (error) {
+          toast({
+              title: "❌ Hata",
+              description: "Etkinlik silinirken bir sorun oluştu.",
+              variant: "destructive",
+          });
+      }
+  };
+  
+  const handleOpenEditDialog = (event: CalendarEvent) => {
+      setEditingEvent(event);
+      setIsFormDialogOpen(true);
+  }
+  
+  const handleOpenNewDialog = () => {
+      setEditingEvent(null);
+      setIsFormDialogOpen(true);
+  }
+
+
   const weekHeaderDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl shadow-lg">
-        <h1 className="text-2xl font-bold">Hatırlatıcılar 🗓️</h1>
-        <Dialog open={isNewEventDialogOpen} onOpenChange={setIsNewEventDialogOpen}>
-          <DialogTrigger asChild>
-             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+       <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+          <PageHeader title="Hatırlatıcılar 🗓️">
+            <Button onClick={handleOpenNewDialog}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Yeni Hatırlatıcı Ekle
             </Button>
-          </DialogTrigger>
+          </PageHeader>
            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Yeni Hatırlatıcı Oluştur</DialogTitle>
+                <DialogTitle>{editingEvent ? 'Hatırlatıcıyı Düzenle' : 'Yeni Hatırlatıcı Oluştur'}</DialogTitle>
                 <DialogDescription>
-                  Unutmak istemediğiniz önemli tarihleri ve olayları ekleyin.
+                  {editingEvent ? 'Mevcut etkinliğin ayrıntılarını güncelleyin.' : 'Unutmak istemediğiniz önemli tarihleri ve olayları ekleyin.'}
                 </DialogDescription>
               </DialogHeader>
               <NewEventForm
-                  onEventCreated={() => {
-                      setIsNewEventDialogOpen(false);
+                  onSave={() => {
+                      setIsFormDialogOpen(false);
+                      setEditingEvent(null);
                       toast({
-                          title: "✅ Hatırlatıcı Oluşturuldu",
-                          description: "Yeni hatırlatıcı takvime başarıyla eklendi.",
+                          title: `✅ ${editingEvent ? 'Güncellendi' : 'Oluşturuldu'}`,
+                          description: `Hatırlatıcı başarıyla ${editingEvent ? 'güncellendi' : 'eklendi'}.`,
                       });
                   }}
+                  initialData={editingEvent}
               />
           </DialogContent>
         </Dialog>
-      </div>
 
       <Card className="shadow-lg">
         <CardHeader>
@@ -269,7 +285,24 @@ export default function CalendarPage() {
                                        Tekrarlanma: {getRecurrenceText(event.recurrence)}
                                     </p>
                                 </div>
-                                <Badge variant="outline" className="capitalize">{event.recurrence === 'one-time' && event.endDate ? 'Süreli' : getRecurrenceText(event.recurrence)}</Badge>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
                             </div>
                         ))}
                       </div>
@@ -305,7 +338,25 @@ export default function CalendarPage() {
                                     {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
                                 </p>
                             </div>
-                            <Badge variant="outline">{getRecurrenceText(event.recurrence)}</Badge>
+                            <div className="flex items-center gap-1">
+                                <Badge variant="outline">{getRecurrenceText(event.recurrence)}</Badge>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                            <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                         </div>
                     ))
                 ) : (

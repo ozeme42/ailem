@@ -233,6 +233,17 @@ export const addCalendarEvent = async (data: Omit<CalendarEvent, 'id' | 'familyI
     
     return addDoc(collection(db, 'calendarEvents'), eventData);
 };
+export const updateCalendarEvent = async (id: string, data: Partial<Omit<CalendarEvent, 'id' | 'familyId'>>) => {
+    const eventRef = doc(db, 'calendarEvents', id);
+    // Create a new object to avoid modifying the original data object
+    const eventData = { ...data };
+    if (eventData.endDate === undefined) {
+        delete (eventData as any).endDate;
+    }
+    return updateDoc(eventRef, eventData);
+};
+export const deleteCalendarEvent = (id: string) => deleteDoc(doc(db, 'calendarEvents', id));
+
 export const deletePastCalendarEvents = async () => {
     const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
     if (!familyId) {
@@ -597,5 +608,3 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 
     await batch.commit();
 };
-
-    
