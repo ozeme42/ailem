@@ -5,14 +5,12 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus } from './data';
 import { isPast, parseISO } from 'date-fns';
 
-const getCurrentFamilyId = (): string | null => {
+const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
     const user = auth.currentUser;
-    // This is a simplified way to get familyId. In a real app, you might get this from a user profile document in Firestore.
-    // For now, we will rely on a custom claim or a user document fetch. This is a placeholder.
-    // A more robust solution is implemented in AuthProvider. This service will assume auth state is handled.
-    // As a fallback for services used outside of a user session context, this might need adjustment.
-    return null; // This will be improved once user profile is fully available.
+    if (!user) return null;
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    return userDoc.data()?.familyId || null;
 }
 
 
@@ -47,7 +45,8 @@ const onFamilyDataUpdate = <T>(collectionName: string, callback: (data: T[]) => 
 // Books (mediaItems)
 export const onBooksUpdate = (callback: (books: Book[]) => void) => onFamilyDataUpdate<Book>('mediaItems', callback);
 export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'mediaItems'), { ...data, familyId });
 };
 export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
@@ -206,7 +205,8 @@ export const onTagsUpdate = (callback: (tags: string[]) => void) => {
     });
 };
 export const updateTags = async (tags: string[]) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     const docRef = doc(db, 'familyManagement', familyId);
     await setDoc(docRef, { libraryTags: tags }, { merge: true });
 }
@@ -214,7 +214,8 @@ export const updateTags = async (tags: string[]) => {
 // Tasks
 export const onTasksUpdate = (callback: (tasks: Task[]) => void) => onFamilyDataUpdate<Task>('tasks', callback);
 export const addTask = async (data: Omit<Task, 'id' | 'familyId'>) => {
-     const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'tasks'), { ...data, familyId });
 };
 export const updateTask = (id: string, data: Partial<Task>) => updateDoc(doc(db, 'tasks', id), data);
@@ -222,7 +223,8 @@ export const updateTask = (id: string, data: Partial<Task>) => updateDoc(doc(db,
 // Calendar Events
 export const onCalendarEventsUpdate = (callback: (events: CalendarEvent[]) => void) => onFamilyDataUpdate<CalendarEvent>('calendarEvents', callback);
 export const addCalendarEvent = async (data: Omit<CalendarEvent, 'id' | 'familyId'>) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     // Create a new object to avoid modifying the original data object
     const eventData: { [key: string]: any } = { ...data, familyId };
 
@@ -245,10 +247,8 @@ export const updateCalendarEvent = async (id: string, data: Partial<Omit<Calenda
 export const deleteCalendarEvent = (id: string) => deleteDoc(doc(db, 'calendarEvents', id));
 
 export const deletePastCalendarEvents = async () => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
-    if (!familyId) {
-        throw new Error("User not associated with a family.");
-    }
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
 
     const q = query(collection(db, 'calendarEvents'), where("familyId", "==", familyId));
     const querySnapshot = await getDocs(q);
@@ -300,7 +300,8 @@ export const onMealPlanUpdate = (callback: (plan: MealPlan) => void) => {
 };
 
 export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: Recipe | null }) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     const docRef = doc(db, "mealPlan", `${familyId}_${dayKey}`);
     await setDoc(docRef, { ...dayPlan, familyId }, { merge: true });
 }
@@ -309,7 +310,8 @@ export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: 
 // Shopping Lists
 export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback);
 export const addShoppingList = async (title: string, icon: string) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'shoppingLists'), { name: title, icon: icon, items: [], familyId });
 };
 export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
@@ -355,7 +357,8 @@ export const clearBoughtItemsFromList = async (listId: string) => {
 // Shopping Note Lists
 export const onShoppingNoteListsUpdate = (callback: (lists: ShoppingNoteList[]) => void) => onFamilyDataUpdate<ShoppingNoteList>('shoppingNoteLists', callback);
 export const addShoppingNoteList = async (name: string, icon: string) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'shoppingNoteLists'), { name, icon, items: [], familyId });
 };
 export const deleteShoppingNoteList = (id: string) => deleteDoc(doc(db, 'shoppingNoteLists', id));
@@ -412,7 +415,8 @@ export const onSubjectsUpdate = (callback: (subjects: string[]) => void) => {
     });
 };
 export const updateSubjects = async (subjects: string[]) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     const docRef = doc(db, 'familyManagement', familyId);
     await setDoc(docRef, { educationSubjects: subjects }, { merge: true });
 };
@@ -420,7 +424,8 @@ export const updateSubjects = async (subjects: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void) => onFamilyDataUpdate<Test>('tests', callback);
 export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'tests'), { ...data, familyId });
 };
 export const updateTest = (id: string, data: Partial<Omit<Test, 'id'>>) => updateDoc(doc(db, 'tests', id), data);
@@ -429,7 +434,8 @@ export const deleteTest = (id: string) => deleteDoc(doc(db, "tests", id));
 
 export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void) => onFamilyDataUpdate<QuestionBank>('questionBanks', callback);
 export const addQuestionBank = async (data: Omit<QuestionBank, 'id' | 'familyId'>) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'questionBanks'), { ...data, familyId });
 };
 export const updateQuestionBank = (id: string, data: Partial<Omit<QuestionBank, 'id'>>) => updateDoc(doc(db, 'questionBanks', id), data);
@@ -438,7 +444,8 @@ export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, 'questionBan
 
 export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback);
 export const addPracticeExam = async (data: Omit<PracticeExam, 'id'| 'familyId'>) => {
-    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'practiceExams'), { ...data, familyId });
 };
 export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id'>>) => updateDoc(doc(db, 'practiceExams', id), data);

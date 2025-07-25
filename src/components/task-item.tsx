@@ -12,7 +12,8 @@ import type { Task, FamilyMember, Subtask } from "@/lib/data";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "./ui/progress";
 import { Button } from "./ui/button";
-import { updateTask } from "@/lib/dataService";
+import { updateTask, updateFamilyMemberInFamily } from "@/lib/dataService";
+import { useAuth } from "./auth-provider";
 
 
 interface TaskItemProps {
@@ -21,15 +22,30 @@ interface TaskItemProps {
 }
 
 export function TaskItem({ task, assignee }: TaskItemProps) {
+  const { familyId } = useAuth();
   const [isCompleted, setIsCompleted] = React.useState(task.completed);
   const [subtasks, setSubtasks] = React.useState<Subtask[]>(task.subtasks || []);
   const { toast } = useToast();
 
   const handleCompletion = async () => {
+    if (!familyId || !assignee) return;
+
     const newCompletionState = !isCompleted;
     try {
         await updateTask(task.id, { completed: newCompletionState });
-        // Optimistic update will be handled by onSnapshot
+        
+        const xpChange = newCompletionState ? task.points : -task.points;
+        const completedTasksChange = newCompletionState ? 1 : -1;
+        
+        const newXp = (assignee.xp || 0) + xpChange;
+        const newLevel = Math.floor(newXp / 1000) + 1;
+
+        await updateFamilyMemberInFamily(familyId, assignee.id, {
+            xp: newXp,
+            completedTasks: (assignee.completedTasks || 0) + completedTasksChange,
+            level: newLevel,
+        });
+
         if (newCompletionState) {
           toast({
             title: "🎉 Görev Tamamlandı!",
@@ -42,6 +58,8 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
   };
 
   const handleSubtaskToggle = async (subtaskId: string) => {
+    if (!familyId || !assignee) return;
+    
     const newSubtasks = subtasks.map(st =>
       st.id === subtaskId ? { ...st, completed: !st.completed } : st
     );
@@ -51,13 +69,18 @@ export function TaskItem({ task, assignee }: TaskItemProps) {
 
         const allSubtasksCompleted = newSubtasks.every(st => st.completed);
         if (allSubtasksCompleted && !task.completed) {
-            await updateTask(task.id, { completed: true });
-            toast({
-                title: "🎉 Görev Tamamlandı!",
-                description: `Harika iş, ${assignee?.name || ''}! ${task.points} XP kazandın.`,
-            });
+            handleCompletion(); // Call main completion handler to award points etc.
         } else if (!allSubtasksCompleted && task.completed) {
+             // If a subtask is un-checked, un-complete the main task
              await updateTask(task.id, { completed: false });
+             
+             // Revert points and task count
+             const newXp = (assignee.xp || 0) - task.points;
+             await updateFamilyMemberInFamily(familyId, assignee.id, {
+                xp: newXp < 0 ? 0 : newXp,
+                completedTasks: (assignee.completedTasks || 1) - 1,
+                level: Math.floor(newXp / 1000) + 1,
+            });
         }
     } catch (error) {
         toast({ title: "Hata", description: "Alt görev güncellenirken bir sorun oluştu.", variant: "destructive"});
