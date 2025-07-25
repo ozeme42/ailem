@@ -238,11 +238,24 @@ export default function OpticalFormPage() {
 
     return (
         <div className="container mx-auto py-8">
-            <header className="mb-8">
+            <header className="mb-4">
                 <Button variant="ghost" onClick={() => router.back()}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                 </Button>
             </header>
+            
+            <Card className="mb-8 bg-muted/30">
+                <CardContent className="p-4 flex justify-center items-center">
+                    <div className="text-center">
+                        <p className="text-sm font-medium text-muted-foreground">KALAN SÜRE</p>
+                        <p className={`text-5xl font-bold tracking-tighter ${timeLeft < 300 ? 'text-destructive' : 'text-foreground'}`}>
+                            <Clock className="inline-block h-10 w-10 mr-2 align-text-bottom"/> 
+                            {formatTime(timeLeft)}
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+
             <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                     <Card>
@@ -305,14 +318,6 @@ export default function OpticalFormPage() {
                             <CardTitle>Test Bilgisi</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                           <div className="text-center">
-                             <p className="text-muted-foreground">Kalan Süre</p>
-                             <p className={`text-4xl font-bold ${timeLeft < 300 ? 'text-destructive' : 'text-foreground'}`}>
-                                <Clock className="inline-block h-8 w-8 mr-2 align-text-bottom"/> 
-                                {formatTime(timeLeft)}
-                             </p>
-                           </div>
-                           
                            {isInteractive && (
                                 <div className="text-center">
                                     <p className="text-muted-foreground">
@@ -351,3 +356,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
