@@ -573,18 +573,19 @@ export default function ArchiveClient() {
 
   return (
     <div className="flex flex-col h-full gap-6">
-      <PageHeader title="Kitaplığımız">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl shadow-lg">
+        <h1 className="text-2xl font-bold">Kitaplığımız 📚</h1>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setView(view === 'books' ? 'management' : 'books')}>
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setView(view === 'books' ? 'management' : 'books')}>
                 <Settings className="mr-2 h-4 w-4"/>
                 {view === 'books' ? 'Raf Yönetimi' : 'Kitapları Gör'}
             </Button>
-            <Button onClick={() => handleOpenAddDialog()}>
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => handleOpenAddDialog()}>
               <PlusCircle className="mr-2 h-4 w-4"/> Yeni Kitap Ekle
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-10 w-10">
+                <Button variant="outline" size="icon" className="h-10 w-10 bg-white/20 text-white hover:bg-white/30 border-none">
                   <ChevronDown className="h-4 w-4"/>
                 </Button>
               </DropdownMenuTrigger>
@@ -598,7 +599,7 @@ export default function ArchiveClient() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-      </PageHeader>
+      </div>
       
       {view === 'books' ? (
         <Tabs defaultValue="adults" onValueChange={setActiveTab} className="flex flex-col flex-grow min-h-0">
