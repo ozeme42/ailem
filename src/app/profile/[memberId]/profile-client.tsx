@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 
 const badgeDefinitions: { [key: string]: { name: string; description: string } } = {
@@ -148,27 +149,29 @@ export default function ProfileClient() {
        <Card>
             <CardHeader>
                 <CardTitle>Rozetler</CardTitle>
-                <CardDescription>Kazanılan başarılar ve rozetler.</CardDescription>
+                <CardDescription>Kazanılan ve kazanılabilecek tüm başarılar.</CardDescription>
             </CardHeader>
             <CardContent>
                 <TooltipProvider>
-                 {member.badges && member.badges.length > 0 ? (
                     <div className="flex flex-wrap gap-4">
-                        {member.badges.map((badge, index) => (
-                             <Tooltip key={index}>
-                                <TooltipTrigger>
-                                     <Badge className="text-2xl p-2">{badge}</Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p className="font-bold">{badgeDefinitions[badge]?.name || 'Bilinmeyen Rozet'}</p>
-                                    <p>{badgeDefinitions[badge]?.description}</p>
-                                </TooltipContent>
-                             </Tooltip>
-                        ))}
+                        {Object.entries(badgeDefinitions).map(([emoji, def]) => {
+                            const isEarned = member.badges?.includes(emoji);
+                            return (
+                                <Tooltip key={emoji}>
+                                    <TooltipTrigger>
+                                        <Badge className={cn("text-2xl p-2 transition-all", !isEarned && "opacity-30 grayscale")}>
+                                            {emoji}
+                                        </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="font-bold">{def.name}</p>
+                                        <p>{def.description}</p>
+                                        {!isEarned && <p className="text-xs text-muted-foreground">(Henüz kazanılmadı)</p>}
+                                    </TooltipContent>
+                                </Tooltip>
+                            );
+                        })}
                     </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">Henüz kazanılmış bir rozet yok.</p>
-                )}
                 </TooltipProvider>
             </CardContent>
       </Card>
