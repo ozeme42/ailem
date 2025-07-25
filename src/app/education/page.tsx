@@ -21,7 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { format, parse } from 'date-fns';
+import { format, parseISO, parse } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 export default function EducationPage() {
@@ -149,12 +149,26 @@ export default function EducationPage() {
 
   const parseAndFormatDate = (dateString: string) => {
     try {
-        const parsedDate = parse(dateString, 'dd MMMM yyyy', new Date(), { locale: tr });
-        const month = format(parsedDate, 'MMMM', { locale: tr });
-        const day = format(parsedDate, 'dd');
-        return { month, day };
+      // Assuming dateString is "dd MMMM yyyy"
+      const formatString = "dd MMMM yyyy";
+      const parsedDate = parse(dateString, formatString, new Date(), { locale: tr });
+      
+      if (isNaN(parsedDate.getTime())) {
+          // If parsing fails, try ISO format as a fallback for older data
+          const isoParsed = parseISO(dateString);
+           if (isNaN(isoParsed.getTime())) {
+             return { month: "Bilinmiyor", day: "??" };
+           }
+           const month = format(isoParsed, 'MMMM', { locale: tr });
+           const day = format(isoParsed, 'dd');
+           return { month, day };
+      }
+
+      const month = format(parsedDate, 'MMMM', { locale: tr });
+      const day = format(parsedDate, 'dd');
+      return { month, day };
     } catch (e) {
-        return { month: "Bilinmiyor", day: "?? "};
+      return { month: "Bilinmiyor", day: "??" };
     }
   };
 
@@ -200,18 +214,16 @@ export default function EducationPage() {
           <Button
             key={student.id}
             variant={selectedStudent?.id === student.id ? "default" : "outline"}
-            className={`flex-shrink-0 h-auto p-4 flex items-center gap-3 transition-all duration-200 ${selectedStudent?.id === student.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
+            className={`flex-shrink-0 h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedStudent?.id === student.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
             onClick={() => setSelectedStudent(student)}
           >
             <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold" 
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" 
                 style={{ backgroundColor: student.color, color: '#fff' }}
             >
                 {student.name.charAt(0).toUpperCase()}
             </div>
-            <div className="text-left">
-              <p className="font-bold text-lg">{student.name}</p>
-            </div>
+            <p className="font-bold text-sm">{student.name}</p>
           </Button>
         ))}
       </div>
@@ -385,3 +397,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    

@@ -6,7 +6,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+import { CalendarIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -18,6 +21,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AnswerKeyForm } from "./answer-key-form";
 import { Key } from "lucide-react";
 import { Combobox } from "./ui/combobox";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar } from "./ui/calendar";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
@@ -35,6 +40,18 @@ const formSchema = z.object({
 
   // Exam
   examId: z.string().optional(),
+
+  // Dates
+  assignedDate: z.date().optional(),
+  dueDate: z.date().optional(),
+}).refine((data) => {
+    if (data.assignedDate && data.dueDate) {
+        return data.dueDate >= data.assignedDate;
+    }
+    return true;
+}, {
+    message: "Bitiş tarihi, başlangıç tarihinden önce olamaz.",
+    path: ["dueDate"],
 });
 
 
@@ -72,6 +89,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       topicId: initialData?.sourceType === 'bank' ? initialData.topicId : "",
       // Exam Test
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : "",
+      assignedDate: initialData?.assignedDate ? new Date(initialData.assignedDate) : undefined,
+      dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : undefined,
     },
   });
 
@@ -89,6 +108,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         bankId: initialData.sourceType === 'bank' ? initialData.sourceId : "",
         topicId: initialData.sourceType === 'bank' ? initialData.topicId : "",
         examId: initialData.sourceType === 'exam' ? initialData.sourceId : "",
+        assignedDate: initialData.assignedDate ? new Date(initialData.assignedDate) : undefined,
+        dueDate: initialData.dueDate ? new Date(initialData.dueDate) : undefined,
       });
     } else {
       setActiveTab('quick');
@@ -103,6 +124,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           bankId: "",
           topicId: "",
           examId: "",
+          assignedDate: undefined,
+          dueDate: undefined,
       });
     }
   }, [initialData, form]);
@@ -111,7 +134,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   const questionCount = form.watch("questionCount") || 0;
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const dueDate = format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy'); // 1 week from now
+    const assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
+    const dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr }); // 1 week from now
     
     let newTest: Omit<Test, 'id' | 'status' | 'familyId'> | null = null;
     
@@ -123,7 +147,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             subject: values.subject,
             studentId: values.studentId,
             questionCount: values.questionCount,
-            assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy'),
+            assignedDate: initialData?.assignedDate || assignedDate,
             dueDate: initialData?.dueDate || dueDate,
             sourceType: 'quick',
             gradingType: values.gradingType,
@@ -138,7 +162,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                 subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders", // find subject name
                 studentId: values.studentId,
                 questionCount: topic.questionCount,
-                assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy'),
+                assignedDate: initialData?.assignedDate || assignedDate,
                 dueDate: initialData?.dueDate || dueDate,
                 sourceType: 'bank',
                 sourceId: bank.id,
@@ -154,7 +178,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                 subject: "Deneme Sınavı",
                 studentId: values.studentId,
                 questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
-                assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy'),
+                assignedDate: initialData?.assignedDate || assignedDate,
                 dueDate: initialData?.dueDate || dueDate,
                 sourceType: 'exam',
                 sourceId: exam.id,
@@ -205,6 +229,54 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                     </FormItem>
                     )}
                 />
+                 <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="assignedDate"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                <FormLabel>Başlangıç Tarihi (Opsiyonel)</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                        {field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="dueDate"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                <FormLabel>Bitiş Tarihi (Opsiyonel)</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                        {field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => form.getValues('assignedDate') ? date < form.getValues('assignedDate')! : false} initialFocus/>
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                 <TabsContent value="quick" className="space-y-4 m-0">
                     <FormField
                     control={form.control}
@@ -398,3 +470,5 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
+
+    
