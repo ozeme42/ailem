@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, endOfMonth } from 'date-fns';
+import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History, Trash2 } from "lucide-react";
 
@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const eventColors = [
     { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" },
@@ -35,6 +37,7 @@ export default function CalendarPage() {
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const [isNewEventDialogOpen, setIsNewEventDialogOpen] = React.useState(false);
   const { toast } = useToast();
+  const [viewMode, setViewMode] = React.useState<'month' | 'week'>('month');
 
   React.useEffect(() => {
     const unsubscribeEvents = onCalendarEventsUpdate(setCalendarEvents);
@@ -61,20 +64,44 @@ export default function CalendarPage() {
   }, [calendarEvents]);
 
 
-  const monthDays = React.useMemo(() => {
+ const displayedDays = React.useMemo(() => {
+    if (viewMode === 'month') {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
-      const endDate = startOfWeek(monthEnd, { weekStartsOn: 1 });
-      
       const days = [];
       let day = startDate;
-      while (day <= addDays(endDate, 6)) {
+      // Ensure we render 6 weeks to keep the layout consistent
+      while (days.length < 42) {
           days.push(day);
           day = addDays(day, 1);
       }
       return days;
-  }, [currentDate]);
+    } else { // week view
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        days.push(addDays(weekStart, i));
+      }
+      return days;
+    }
+  }, [currentDate, viewMode]);
+
+  const handlePrev = () => {
+    if (viewMode === 'month') {
+        setCurrentDate(d => addMonths(d, -1));
+    } else {
+        setCurrentDate(d => addDays(d, -7));
+    }
+  };
+
+  const handleNext = () => {
+     if (viewMode === 'month') {
+        setCurrentDate(d => addMonths(d, 1));
+    } else {
+        setCurrentDate(d => addDays(d, -7));
+    }
+  };
 
   const getEventsForDay = (day: Date) => {
     return calendarEvents.filter(event => {
@@ -91,9 +118,9 @@ export default function CalendarPage() {
           const eventEndDate = event.endDate ? new Date(new Date(event.endDate).setUTCHours(23, 59, 59, 999)) : eventStartDay;
           return isWithinInterval(day, { start: eventStartDay, end: eventEndDate });
         case 'monthly':
-          return eventStartDay.getDate() === day.getDate();
+          return eventStartDay.getDate() === day.getDate() && day >= eventStartDay;
         case 'yearly':
-          return eventStartDay.getDate() === day.getDate() && eventStartDay.getMonth() === day.getMonth();
+          return eventStartDay.getDate() === day.getDate() && eventStartDay.getMonth() === day.getMonth() && day >= eventStartDay;
         default:
           return false;
       }
@@ -176,39 +203,48 @@ export default function CalendarPage() {
             <h2 className="text-xl font-semibold capitalize">
               {format(currentDate, 'MMMM yyyy', { locale: tr })}
             </h2>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, -35))}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
-              <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, 35))}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+             <div className="flex items-center gap-2">
+                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
+                    <TabsList>
+                        <TabsTrigger value="month">Aylık</TabsTrigger>
+                        <TabsTrigger value="week">Haftalık</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <Button variant="outline" size="icon" onClick={handlePrev}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+                <Button variant="outline" size="icon" onClick={handleNext}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 border-t border-l">
+          <div className={cn("grid border-t border-l", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
              {weekHeaderDays.map(day => (
-                <div key={day.toISOString()} className="p-2 border-r border-b text-center font-semibold text-sm capitalize">
+                <div key={day.toISOString()} className={cn("p-2 border-r border-b text-center font-semibold text-sm capitalize", viewMode === 'week' && 'hidden')}>
                     {format(day, 'EEE', { locale: tr })}
                 </div>
             ))}
-            {monthDays.map(day => {
+            {displayedDays.map(day => {
               const dayEvents = getEventsForDay(day);
 
               return (
-              <div key={day.toString()} className="h-32 sm:h-40 border-b border-r p-2 flex flex-col">
-                <span className={cn(`font-semibold`, isToday(day) ? 'text-primary' : 'text-foreground', !isSameMonth(day, currentDate) && 'text-muted-foreground/50')}>
-                  {format(day, 'd')}
-                </span>
-                <div className="mt-1 space-y-1 overflow-y-auto">
+              <div key={day.toString()} className={cn("border-b border-r p-2 flex", viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'h-24 flex-row gap-4')}>
+                <div className={cn(viewMode === 'week' && 'w-24 text-center border-r pr-4')}>
+                    <span className={cn(`font-semibold`, isToday(day) ? 'text-primary' : 'text-foreground', !isSameMonth(day, currentDate) && 'text-muted-foreground/50')}>
+                      {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM')}
+                    </span>
+                     {viewMode === 'week' && <span className="block text-xs capitalize">{format(day, 'EEE', {locale: tr})}</span>}
+                </div>
+                <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start')}>
                    {dayEvents.map((event, index) => {
                        const color = eventColors[index % eventColors.length];
                        return (
                        <Dialog key={event.id}>
                         <DialogTrigger asChild>
-                           <div className={cn('p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity', color.bg, color.text, color.border)}>
+                           <div className={cn('p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
                             <p className="text-xs font-semibold truncate">{event.title}</p>
                           </div>
                         </DialogTrigger>
