@@ -81,9 +81,9 @@ export const onTagsUpdate = (callback: (tags: string[]) => void) => {
                  if (userDoc.exists()) {
                     const familyId = userDoc.data().familyId;
                     if (familyId) {
-                        const tagsDocRef = doc(db, 'libraryManagement', familyId);
+                        const tagsDocRef = doc(db, 'familyManagement', familyId);
                         return onSnapshot(tagsDocRef, (doc) => {
-                           callback(doc.exists() ? doc.data().allTags || [] : []);
+                           callback(doc.exists() ? doc.data().libraryTags || [] : []);
                         });
                     }
                 }
@@ -96,8 +96,8 @@ export const onTagsUpdate = (callback: (tags: string[]) => void) => {
 };
 export const updateTags = async (tags: string[]) => {
     const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
-    const docRef = doc(db, 'libraryManagement', familyId);
-    await setDoc(docRef, { allTags: tags }, { merge: true });
+    const docRef = doc(db, 'familyManagement', familyId);
+    await setDoc(docRef, { libraryTags: tags }, { merge: true });
 }
 
 // Tasks
@@ -228,6 +228,35 @@ export const updateNoteItemInList = async (listId: string, itemId: string, newTe
 
 
 // Education
+export const onSubjectsUpdate = (callback: (subjects: string[]) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, (user) => {
+        if (user) {
+             const userDocRef = doc(db, 'users', user.uid);
+            onSnapshot(userDocRef, (userDoc) => {
+                 if (userDoc.exists()) {
+                    const familyId = userDoc.data().familyId;
+                    if (familyId) {
+                        const subjectsDocRef = doc(db, 'familyManagement', familyId);
+                        return onSnapshot(subjectsDocRef, (doc) => {
+                           callback(doc.exists() ? doc.data().educationSubjects || [] : []);
+                        });
+                    }
+                }
+                callback([]);
+            });
+        } else {
+            callback([]);
+        }
+    });
+};
+export const updateSubjects = async (subjects: string[]) => {
+    const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
+    const docRef = doc(db, 'familyManagement', familyId);
+    await setDoc(docRef, { educationSubjects: subjects }, { merge: true });
+};
+
+
 export const onTestsUpdate = (callback: (tests: Test[]) => void) => onFamilyDataUpdate<Test>('tests', callback);
 export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
     const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
@@ -364,11 +393,15 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
         batch.set(docRef, { ...book, familyId });
     });
     
-    // Initial Tags for the family
-    const allTags = new Set<string>();
-    initialBooks.forEach(book => (book.tags || []).forEach(tag => allTags.add(tag)));
-    const tagsDocRef = doc(db, 'libraryManagement', familyId);
-    batch.set(tagsDocRef, { allTags: Array.from(allTags) });
+    // Initial Family Management Doc
+    const allLibraryTags = new Set<string>();
+    initialBooks.forEach(book => (book.tags || []).forEach(tag => allLibraryTags.add(tag)));
+    const allEducationSubjects = new Set<string>(['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce']);
+    const mgmtDocRef = doc(db, 'familyManagement', familyId);
+    batch.set(mgmtDocRef, { 
+        libraryTags: Array.from(allLibraryTags),
+        educationSubjects: Array.from(allEducationSubjects)
+    });
 
     // Initial Tasks - assign to the new user
     initialTasks.forEach(task => {

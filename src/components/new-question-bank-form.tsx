@@ -11,12 +11,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Key, PlusCircle, Trash2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card } from "./ui/card";
 import { AnswerKeyForm } from "./answer-key-form";
-import type { QuestionBank, GradingType } from "@/lib/data";
+import type { QuestionBank } from "@/lib/data";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
+import { Combobox } from "./ui/combobox";
 
 type AnswerKey = { [key: number]: string };
 
@@ -30,7 +30,7 @@ const topicSchema = z.object({
 
 const subjectSchema = z.object({
   id: z.number(),
-  name: z.string({ required_error: "Lütfen bir ders seçin." }),
+  name: z.string({ required_error: "Lütfen bir ders seçin." }).min(1, "Ders adı boş olamaz."),
   topics: z.array(topicSchema).min(1, "En az bir konu eklemelisiniz."),
 });
 
@@ -44,9 +44,11 @@ type FormData = z.infer<typeof formSchema>;
 type NewQuestionBankFormProps = {
     onSubmit: (data: Omit<QuestionBank, 'id'>, id?: string) => void;
     initialData?: QuestionBank | null;
+    availableSubjects: string[];
+    onSubjectCreated: (subject: string) => void;
 }
 
-export function NewQuestionBankForm({ onSubmit, initialData }: NewQuestionBankFormProps) {
+export function NewQuestionBankForm({ onSubmit, initialData, availableSubjects, onSubjectCreated }: NewQuestionBankFormProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -88,6 +90,8 @@ export function NewQuestionBankForm({ onSubmit, initialData }: NewQuestionBankFo
 
     onSubmit({ ...values, subjects: cleanedSubjects }, initialData?.id);
   }
+  
+  const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
   return (
     <Form {...form}>
@@ -116,22 +120,17 @@ export function NewQuestionBankForm({ onSubmit, initialData }: NewQuestionBankFo
                     name={`subjects.${subjectIndex}.name`}
                     render={({ field }) => (
                         <FormItem className="flex-grow">
-                        <FormLabel>Ders</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Ders seçin" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            <SelectItem value="Matematik">Matematik</SelectItem>
-                            <SelectItem value="Türkçe">Türkçe</SelectItem>
-                            <SelectItem value="Fen Bilimleri">Fen Bilimleri</SelectItem>
-                            <SelectItem value="Sosyal Bilgiler">Sosyal Bilgiler</SelectItem>
-                            <SelectItem value="İngilizce">İngilizce</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
+                            <FormLabel>Ders</FormLabel>
+                             <Combobox
+                                options={subjectOptions}
+                                value={field.value}
+                                onChange={field.onChange}
+                                onCreate={onSubjectCreated}
+                                placeholder="Ders seç veya oluştur..."
+                                notfoundText="Ders bulunamadı."
+                                createText="Yeni ders oluştur:"
+                            />
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
@@ -303,7 +302,3 @@ function AnswerKeyDialog({ topic, onSave, isVisible }: { topic: any, onSave: (ke
         </Dialog>
     );
 }
-
-    
-
-    

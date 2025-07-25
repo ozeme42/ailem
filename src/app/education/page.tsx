@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, addTest, updateTest, addQuestionBank, updateQuestionBank, deleteQuestionBank, addPracticeExam, updatePracticeExam, deletePracticeExam } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, onSubjectsUpdate, updateSubjects, addTest, updateTest, addQuestionBank, updateQuestionBank, deleteQuestionBank, addPracticeExam, updatePracticeExam, deletePracticeExam } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 
 export default function EducationPage() {
@@ -31,6 +31,7 @@ export default function EducationPage() {
   const [tests, setTests] = React.useState<Test[]>([]);
   const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
+  const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
 
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
   const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
@@ -53,13 +54,20 @@ export default function EducationPage() {
     const unsubTests = onTestsUpdate(setTests);
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
+    const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
     
     return () => {
       unsubTests();
       unsubBanks();
       unsubExams();
+      unsubSubjects();
     }
   }, []);
+  
+  const handleCreateSubject = async (subjectName: string) => {
+    const newSubjects = [...new Set([...availableSubjects, subjectName])];
+    await updateSubjects(newSubjects);
+  };
 
   const handleCreateAssignment = async (newTest: Omit<Test, 'id' | 'status' | 'familyId'>) => {
     try {
@@ -373,6 +381,8 @@ export default function EducationPage() {
                                     <NewQuestionBankForm 
                                         onSubmit={handleBankSubmit} 
                                         initialData={editingBank}
+                                        availableSubjects={availableSubjects}
+                                        onSubjectCreated={handleCreateSubject}
                                     />
                                 </DialogContent>
                              </Dialog>
@@ -445,6 +455,8 @@ export default function EducationPage() {
                                     <NewPracticeExamForm 
                                         onSubmit={handleExamSubmit}
                                         initialData={editingExam}
+                                        availableSubjects={availableSubjects}
+                                        onSubjectCreated={handleCreateSubject}
                                     />
                                 </DialogContent>
                              </Dialog>

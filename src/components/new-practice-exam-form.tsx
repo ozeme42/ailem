@@ -11,14 +11,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Key, PlusCircle, Trash2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import type { PracticeExam, GradingType } from "@/lib/data";
 import { AnswerKeyForm } from "./answer-key-form";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Combobox } from "./ui/combobox";
 
 const subjectSchema = z.object({
   id: z.number(),
-  name: z.string({ required_error: "Lütfen bir ders seçin." }),
+  name: z.string({ required_error: "Lütfen bir ders seçin." }).min(1, "Ders adı boş olamaz."),
   questionCount: z.coerce.number().min(1, "En az 1 soru olmalı."),
 });
 
@@ -36,9 +36,11 @@ type FormData = z.infer<typeof formSchema>;
 type NewPracticeExamFormProps = {
     onSubmit: (data: Omit<PracticeExam, 'id'>, id?: string) => void;
     initialData?: PracticeExam | null;
+    availableSubjects: string[];
+    onSubjectCreated: (subject: string) => void;
 }
 
-export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFormProps) {
+export function NewPracticeExamForm({ onSubmit, initialData, availableSubjects, onSubjectCreated }: NewPracticeExamFormProps) {
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
   
   const form = useForm<FormData>({
@@ -84,6 +86,8 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
     }
     onSubmit(values, initialData?.id);
   }
+  
+  const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
   return (
     <Form {...form}>
@@ -112,20 +116,15 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
                   name={`subjects.${index}.name`}
                   render={({ field }) => (
                     <FormItem className="flex-grow">
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Ders seçin" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Matematik">Matematik</SelectItem>
-                          <SelectItem value="Türkçe">Türkçe</SelectItem>
-                          <SelectItem value="Fen Bilimleri">Fen Bilimleri</SelectItem>
-                          <SelectItem value="Sosyal Bilgiler">Sosyal Bilgiler</SelectItem>
-                          <SelectItem value="İngilizce">İngilizce</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        options={subjectOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCreate={onSubjectCreated}
+                        placeholder="Ders seç veya oluştur..."
+                        notfoundText="Ders bulunamadı."
+                        createText="Yeni ders oluştur:"
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -236,7 +235,3 @@ export function NewPracticeExamForm({ onSubmit, initialData }: NewPracticeExamFo
     </Form>
   );
 }
-
-    
-
-    
