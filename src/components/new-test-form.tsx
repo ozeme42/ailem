@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { AnswerKeyForm } from "./answer-key-form";
 import { Key } from "lucide-react";
+import { Combobox } from "./ui/combobox";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
@@ -45,9 +46,11 @@ type NewTestFormProps = {
   practiceExams: PracticeExam[];
   onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => void;
   initialData?: Test | null;
+  availableSubjects: string[];
+  onSubjectCreated: (subject: string) => void;
 };
 
-export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData }: NewTestFormProps) {
+export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated }: NewTestFormProps) {
   const [activeTab, setActiveTab] = React.useState<AssignmentType>(initialData?.sourceType || "quick");
   const [selectedBankId, setSelectedBankId] = React.useState<string | null>(initialData?.sourceId || null);
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
@@ -167,6 +170,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   }
   
   const selectedBank = questionBanks.find(b => b.id.toString() === selectedBankId);
+  const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AssignmentType)} className="w-full">
@@ -222,20 +226,15 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Ders</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Ders seçin" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Matematik">Matematik</SelectItem>
-                                    <SelectItem value="Türkçe">Türkçe</SelectItem>
-                                    <SelectItem value="Fen Bilimleri">Fen Bilimleri</SelectItem>
-                                    <SelectItem value="Sosyal Bilgiler">Sosyal Bilgiler</SelectItem>
-                                    <SelectItem value="İngilizce">İngilizce</SelectItem>
-                                </SelectContent>
-                                </Select>
+                                <Combobox
+                                    options={subjectOptions}
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    onCreate={onSubjectCreated}
+                                    placeholder="Ders seç..."
+                                    notfoundText="Ders bulunamadı."
+                                    createText="Yeni ders oluştur:"
+                                />
                                 <FormMessage />
                             </FormItem>
                             )}

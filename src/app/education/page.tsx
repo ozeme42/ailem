@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 
 export default function EducationPage() {
@@ -30,6 +30,7 @@ export default function EducationPage() {
   const [tests, setTests] = React.useState<Test[]>([]);
   const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
+  const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
 
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
   const [editingTest, setEditingTest] = React.useState<Test | null>(null);
@@ -52,14 +53,21 @@ export default function EducationPage() {
     });
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
+    const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
     
     return () => {
       unsubTests();
       unsubBanks();
       unsubExams();
+      unsubSubjects();
     }
   }, [selectedStudent]);
   
+  const handleCreateSubject = async (subjectName: string) => {
+    const newSubjects = [...new Set([...availableSubjects, subjectName])];
+    await updateSubjects(newSubjects);
+  };
+
 
   const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => {
     try {
@@ -167,6 +175,8 @@ export default function EducationPage() {
                 practiceExams={practiceExams}
                 onAssign={handleAssignmentSubmit}
                 initialData={editingTest}
+                availableSubjects={availableSubjects}
+                onSubjectCreated={handleCreateSubject}
             />
           </DialogContent>
         </Dialog>
