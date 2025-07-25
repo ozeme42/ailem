@@ -124,6 +124,9 @@ export interface Student {
 export type AnswerKey = { [key: number]: string };
 export type TextAnswerKey = { [key: number]: string };
 export type GradingType = 'auto' | 'manual-text' | 'manual';
+export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated';
+export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
+
 
 export interface Test {
   id: string;
@@ -146,6 +149,7 @@ export interface Test {
   studentAnswers?: AnswerKey;
   studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
+  studentTextAnswersEvaluation?: TextAnswerEvaluations;
 }
 
 export interface Topic {

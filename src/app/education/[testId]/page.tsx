@@ -36,30 +36,29 @@ export default function OpticalFormPage() {
     const handleSubmit = React.useCallback(async () => {
         if (!test) return;
         try {
-            let answerKey: { [key: string]: string } | undefined = undefined;
-
-            if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
-                const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
-                if (bankDoc.exists()) {
-                    const bank = bankDoc.data() as QuestionBank;
-                    const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-                    answerKey = topic?.answerKey;
-                }
-            } else if (test.sourceType === 'exam' && test.sourceId) {
-                const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
-                if (examDoc.exists()) {
-                    const exam = examDoc.data() as PracticeExam;
-                    answerKey = exam?.answerKey;
-                }
-            } else if (test.sourceType === 'quick') {
-                answerKey = test.answerKey;
-            }
-
             let updatedData: Partial<TestType> = {};
-            let toastDescription = "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.";
 
             if (test.gradingType === 'auto') {
                 updatedData.studentAnswers = mcqAnswers;
+                let answerKey: { [key: string]: string } | undefined = undefined;
+
+                if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
+                    const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
+                    if (bankDoc.exists()) {
+                        const bank = bankDoc.data() as QuestionBank;
+                        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
+                        answerKey = topic?.answerKey;
+                    }
+                } else if (test.sourceType === 'exam' && test.sourceId) {
+                    const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
+                    if (examDoc.exists()) {
+                        const exam = examDoc.data() as PracticeExam;
+                        answerKey = exam?.answerKey;
+                    }
+                } else if (test.sourceType === 'quick') {
+                    answerKey = test.answerKey;
+                }
+
                 if (answerKey && Object.keys(answerKey).length > 0) {
                     let correct = 0;
                     let incorrect = 0;
@@ -80,26 +79,29 @@ export default function OpticalFormPage() {
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
                     updatedData.score = (correct / test.questionCount) * 100;
-                    toastDescription = "Cevapların başarıyla kaydedildi ve testin değerlendirildi.";
+                    toast({
+                        title: "✅ Test Tamamlandı ve Değerlendirildi!",
+                        description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
+                    });
                 } else {
                     updatedData.status = 'Çözüldü';
+                    toast({
+                        title: "✅ Test Tamamlandı!",
+                        description: "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
+                    });
                 }
             } else { // Manual grading (text or no-answer)
                 updatedData.status = 'Çözüldü';
                 if (test.gradingType === 'manual-text') {
                     updatedData.studentTextAnswers = textAnswers;
                 }
-                // For manual grading, we only update the status and text answers.
-                // Score-related fields are intentionally left out to be populated during manual grading.
+                 toast({
+                    title: "✅ Test Tamamlandı!",
+                    description: "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
+                });
             }
 
             await updateTest(test.id, updatedData);
-
-            toast({
-                title: "✅ Test Tamamlandı!",
-                description: toastDescription,
-            });
-
             router.push('/education');
 
         } catch (error) {
@@ -342,7 +344,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    
-
-    

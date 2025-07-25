@@ -86,7 +86,8 @@ export default function EducationPage() {
             correctAnswers: gradeData.correct,
             incorrectAnswers: gradeData.incorrect,
             emptyAnswers: gradeData.empty,
-            score: (gradeData.correct / (gradingTest?.questionCount || 1)) * 100
+            score: (gradeData.correct / (gradingTest?.questionCount || 1)) * 100,
+            studentTextAnswersEvaluation: gradeData.evaluations,
         });
         toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
         setGradingTest(null);
@@ -504,7 +505,7 @@ export default function EducationPage() {
       </Tabs>
       
       <Dialog open={!!gradingTest} onOpenChange={(open) => !open && setGradingTest(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
             <DialogHeader>
                 <DialogTitle>Manuel Değerlendirme</DialogTitle>
                 <DialogDescription>
