@@ -68,9 +68,9 @@ export default function CalendarPage() {
  const displayedDays = React.useMemo(() => {
     if (viewMode === 'month') {
       const monthStart = startOfMonth(currentDate);
-      const monthEnd = endOfMonth(currentDate);
       const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
       const days = [];
+      let day = startDate;
       // Ensure we render 6 weeks to keep the layout consistent
       while (days.length < 42) {
           days.push(day);
