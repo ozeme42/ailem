@@ -14,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -164,27 +163,18 @@ export default function ProfileClient() {
                 <CardDescription>Kazanılan ve kazanılabilecek tüm başarılar.</CardDescription>
             </CardHeader>
             <CardContent>
-                <TooltipProvider>
-                    <div className="flex flex-wrap gap-4">
-                        {Object.entries(badgeDefinitions).map(([emoji, def]) => {
-                            const isEarned = member.badges?.includes(emoji);
-                            return (
-                                <Tooltip key={emoji}>
-                                    <TooltipTrigger>
-                                        <Badge className={cn("text-2xl p-2 transition-all", !isEarned && "opacity-30 grayscale")}>
-                                            {emoji}
-                                        </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p className="font-bold">{def.name}</p>
-                                        <p>{def.description}</p>
-                                        {!isEarned && <p className="text-xs text-muted-foreground">(Henüz kazanılmadı)</p>}
-                                    </TooltipContent>
-                                </Tooltip>
-                            );
-                        })}
-                    </div>
-                </TooltipProvider>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {Object.entries(badgeDefinitions).map(([emoji, def]) => {
+                        const isEarned = member.badges?.includes(emoji);
+                        return (
+                           <Card key={emoji} className={cn("text-center p-4 transition-all", !isEarned && "opacity-60 grayscale")}>
+                                <div className="text-4xl mb-2">{emoji}</div>
+                                <h3 className="font-semibold">{def.name}</h3>
+                                <p className="text-xs text-muted-foreground">{def.description}</p>
+                           </Card>
+                        );
+                    })}
+                </div>
             </CardContent>
       </Card>
       
