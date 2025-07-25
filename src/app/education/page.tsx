@@ -3,12 +3,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3 } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -21,6 +21,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
+import { format, parse } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 export default function EducationPage() {
   const { toast } = useToast();
@@ -145,6 +147,17 @@ export default function EducationPage() {
     }
   }, [completedTests]);
 
+  const parseAndFormatDate = (dateString: string) => {
+    try {
+        const parsedDate = parse(dateString, 'dd MMMM yyyy', new Date(), { locale: tr });
+        const month = format(parsedDate, 'MMMM', { locale: tr });
+        const day = format(parsedDate, 'dd');
+        return { month, day };
+    } catch (e) {
+        return { month: "Bilinmiyor", day: "?? "};
+    }
+  };
+
 
   return (
     <>
@@ -243,25 +256,90 @@ export default function EducationPage() {
         </TabsList>
 
         <TabsContent value="assignments">
-           <Card>
-             <CardHeader>
-              <CardTitle>Atanmış Testler</CardTitle>
-              <CardDescription>{selectedStudent?.name} için tamamlanması gereken testler.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               {assignedTests.length > 0 ? assignedTests.map(test => (
-                 <Card key={test.id} className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                   <div className="flex-grow">
-                     <h4 className="font-bold">{test.title}</h4>
-                     <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                        <span className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> {test.subject}</span>
-                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {test.questionCount} Soru</span>
-                     </div>
-                     <p className="text-xs text-muted-foreground mt-2">Son Teslim: {test.dueDate}</p>
-                   </div>
-                   <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => handleOpenEditTest(test)}>
-                          <Edit className="h-4 w-4" />
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+               {assignedTests.length > 0 ? assignedTests.map(test => {
+                  const startDate = parseAndFormatDate(test.assignedDate);
+                  const endDate = parseAndFormatDate(test.dueDate);
+                  return (
+                    <Card key={test.id} className="flex flex-col">
+                        <CardHeader>
+                            <CardDescription>{test.subject}</CardDescription>
+                            <CardTitle>{test.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow flex items-center gap-4">
+                            <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/50">
+                                <BookOpen className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs mt-1 text-muted-foreground">
+                                    {test.questionCount} Soru
+                                </span>
+                            </div>
+                            <div className="text-sm text-muted-foreground space-y-2 border-l pl-4">
+                                <p><span className="font-semibold text-foreground">Başlangıç:</span> {startDate.day} {startDate.month}</p>
+                                <p><span className="font-semibold text-foreground">Bitiş:</span> {endDate.day} {endDate.month}</p>
+                            </div>
+                            <div className="ml-auto text-center">
+                                <div className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-muted">
+                                    <Clock className="h-5 w-5 text-muted-foreground mr-1"/>
+                                    <span className="text-xl font-bold">{test.questionCount * 1.5}</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">DAKİKA</span>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Link href={`/education/${test.id}`} className="w-full">
+                                <Button className="w-full bg-cyan-500 hover:bg-cyan-600">Sınav Giriş Ekranına Git</Button>
+                            </Link>
+                        </CardFooter>
+                    </Card>
+               )}) : <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Atanmış yeni test bulunmuyor.</CardContent></Card>}
+            </div>
+        </TabsContent>
+        
+        <TabsContent value="results">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+              {completedTests.length > 0 ? completedTests.map(test => (
+                 <Card key={test.id} className="flex flex-col">
+                    <CardHeader>
+                        <Badge className={cn("w-fit", getStatusBadgeClasses(test.status))}>
+                            {test.status}
+                        </Badge>
+                        <CardTitle className="pt-2">{test.title}</CardTitle>
+                        <CardDescription>{test.subject}</CardDescription>
+                    </CardHeader>
+                   <CardContent className="flex-grow">
+                        {test.status === 'Değerlendirildi' && (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between p-2 rounded-md bg-purple-500/10">
+                                    <span className="font-semibold flex items-center gap-2"><Award className="text-purple-600"/> Puan</span>
+                                    <span className="font-bold text-purple-600">{test.score?.toFixed(1) ?? '-'}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-2 rounded-md bg-green-500/10">
+                                    <span className="font-semibold flex items-center gap-2"><CheckCircle className="text-green-600"/> Doğru</span>
+                                    <span className="font-bold text-green-600">{test.correctAnswers ?? '-'}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-2 rounded-md bg-red-500/10">
+                                    <span className="font-semibold flex items-center gap-2"><XCircle className="text-red-600"/> Yanlış</span>
+                                    <span className="font-bold text-red-600">{test.incorrectAnswers ?? '-'}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-2 rounded-md bg-gray-500/10">
+                                    <span className="font-semibold flex items-center gap-2"><MinusCircle className="text-gray-600"/> Boş</span>
+                                    <span className="font-bold text-gray-600">{test.emptyAnswers ?? '-'}</span>
+                                </div>
+                            </div>
+                        )}
+                        {test.status === 'Çözüldü' && (
+                            <div className="flex flex-col items-center justify-center text-center h-full p-4 bg-blue-500/5 rounded-lg">
+                               <p className="text-muted-foreground mb-3 text-sm">Bu test öğrenci tarafından çözüldü, değerlendirme bekleniyor.</p>
+                               <Button onClick={() => setGradingTest(test)} className="bg-pink-500 hover:bg-pink-600">
+                                   <CheckSquare className="mr-2 h-4 w-4"/>
+                                   Sonuçları Gir
+                               </Button>
+                            </div>
+                        )}
+                   </CardContent>
+                    <CardFooter className="flex gap-2">
+                         <Button variant="outline" className="w-full" onClick={() => handleOpenEditTest(test)}>
+                          <Edit className="mr-2 h-4 w-4" /> Düzenle
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -271,60 +349,8 @@ export default function EducationPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Ödevi Silmek İstediğinize Emin Misiniz?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Bu işlem geri alınamaz. "{test.title}" ödevi kalıcı olarak silinecektir.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>İptal</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                        <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                            <Button className="w-full">Teste Başla</Button>
-                        </Link>
-                   </div>
-                 </Card>
-               )) : <p className="text-muted-foreground text-center py-8">Atanmış yeni test bulunmuyor.</p>}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="results">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tamamlanan Test Sonuçları</CardTitle>
-              <CardDescription>{selectedStudent?.name} için tamamlanmış testlerin sonuçları.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {completedTests.length > 0 ? completedTests.map(test => (
-                <Card key={test.id} className="p-4">
-                   <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <h4 className="font-bold">{test.title}</h4>
-                       <p className="text-sm text-muted-foreground">{test.subject}</p>
-                     </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getStatusBadgeClasses(test.status)}>
-                            {test.status}
-                        </Badge>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleOpenEditTest(test)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="icon" className="h-8 w-8">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
                               <AlertDialogTitle>Testi Silmek İstediğinize Emin Misiniz?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Bu işlem geri alınamaz. "{test.title}" testi ve sonuçları kalıcı olarak silinecektir.
-                              </AlertDialogDescription>
+                              <AlertDialogDescription>Bu işlem geri alınamaz. "{test.title}" testi ve sonuçları kalıcı olarak silinecektir.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>İptal</AlertDialogCancel>
@@ -332,41 +358,10 @@ export default function EducationPage() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                      </div>
-                   </div>
-                   {test.status === 'Değerlendirildi' && (
-                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                          <div className="bg-muted/50 p-3 rounded-lg">
-                            <p className="text-2xl font-bold">{test.score?.toFixed(1) ?? '-'}</p>
-                            <p className="text-sm font-medium text-muted-foreground">Puan</p>
-                          </div>
-                          <div className="bg-green-500/10 p-3 rounded-lg">
-                            <p className="text-2xl font-bold text-green-600">{test.correctAnswers ?? '-'}</p>
-                            <p className="text-sm font-medium text-green-700">Doğru</p>
-                          </div>
-                           <div className="bg-red-500/10 p-3 rounded-lg">
-                            <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers ?? '-'}</p>
-                            <p className="text-sm font-medium text-red-700">Yanlış</p>
-                          </div>
-                           <div className="bg-gray-500/10 p-3 rounded-lg">
-                            <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers ?? '-'}</p>
-                            <p className="text-sm font-medium text-gray-700">Boş</p>
-                          </div>
-                       </div>
-                   )}
-                   {test.status === 'Çözüldü' && (
-                        <div className="flex flex-col items-center justify-center text-center text-sm py-4 bg-blue-500/5 rounded-lg">
-                           <p className="text-muted-foreground mb-3">Bu test öğrenci tarafından çözüldü, değerlendirme bekleniyor.</p>
-                           <Button onClick={() => setGradingTest(test)}>
-                               <CheckSquare className="mr-2 h-4 w-4"/>
-                               Sonuçları Gir
-                           </Button>
-                        </div>
-                   )}
+                    </CardFooter>
                 </Card>
-              )) : <p className="text-muted-foreground text-center py-8">Henüz tamamlanmış bir test yok.</p>}
-            </CardContent>
-          </Card>
+              )) : <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış bir test yok.</CardContent></Card>}
+            </div>
         </TabsContent>
       </Tabs>
       
