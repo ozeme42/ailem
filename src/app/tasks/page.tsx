@@ -6,7 +6,6 @@ import Image from "next/image";
 import { PlusCircle, Search, Star, Mic, Filter, ChevronDown, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,10 +50,11 @@ export default function TasksPage() {
   
   return (
     <>
-      <PageHeader title="Görev Yönetimi 📝">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-xl shadow-lg mb-6">
+        <h1 className="text-2xl font-bold">Görev Yönetimi 📝</h1>
         <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
               <PlusCircle className="mr-2 h-4 w-4" />
               Yeni Görev Ekle
             </Button>
@@ -72,7 +72,7 @@ export default function TasksPage() {
             />
           </DialogContent>
         </Dialog>
-      </PageHeader>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
