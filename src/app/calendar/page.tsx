@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture } from 'date-fns';
+import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, endOfMonth } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History, Trash2 } from "lucide-react";
 
@@ -19,13 +19,22 @@ import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
+const eventColors = [
+    { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" },
+    { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
+    { bg: "bg-purple-100", text: "text-purple-800", border: "border-purple-300" },
+    { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
+    { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
+    { bg: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-300" },
+    { bg: "bg-pink-100", text: "text-pink-800", border: "border-pink-300" },
+];
+
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const [isNewEventDialogOpen, setIsNewEventDialogOpen] = React.useState(false);
   const { toast } = useToast();
-  const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
 
   React.useEffect(() => {
     const unsubscribeEvents = onCalendarEventsUpdate(setCalendarEvents);
@@ -51,7 +60,21 @@ export default function CalendarPage() {
     return { upcomingEvents: upcoming, pastEvents: past };
   }, [calendarEvents]);
 
-  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
+
+  const monthDays = React.useMemo(() => {
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+      const endDate = startOfWeek(monthEnd, { weekStartsOn: 1 });
+      
+      const days = [];
+      let day = startDate;
+      while (day <= addDays(endDate, 6)) {
+          days.push(day);
+          day = addDays(day, 1);
+      }
+      return days;
+  }, [currentDate]);
 
   const getEventsForDay = (day: Date) => {
     return calendarEvents.filter(event => {
@@ -114,6 +137,8 @@ export default function CalendarPage() {
     }
   };
 
+  const weekHeaderDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl shadow-lg">
@@ -164,21 +189,26 @@ export default function CalendarPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 border-t border-l">
-            {weekDays.map(day => {
+             {weekHeaderDays.map(day => (
+                <div key={day.toISOString()} className="p-2 border-r border-b text-center font-semibold text-sm capitalize">
+                    {format(day, 'EEE', { locale: tr })}
+                </div>
+            ))}
+            {monthDays.map(day => {
               const dayEvents = getEventsForDay(day);
 
               return (
-              <div key={day.toString()} className="h-48 border-b border-r p-2 flex flex-col">
+              <div key={day.toString()} className="h-32 sm:h-40 border-b border-r p-2 flex flex-col">
                 <span className={cn(`font-semibold`, isToday(day) ? 'text-primary' : 'text-foreground', !isSameMonth(day, currentDate) && 'text-muted-foreground/50')}>
                   {format(day, 'd')}
                 </span>
-                <span className="text-xs text-muted-foreground capitalize">{format(day, 'EEE', { locale: tr })}</span>
                 <div className="mt-1 space-y-1 overflow-y-auto">
-                   {dayEvents.map(event => {
+                   {dayEvents.map((event, index) => {
+                       const color = eventColors[index % eventColors.length];
                        return (
                        <Dialog key={event.id}>
                         <DialogTrigger asChild>
-                           <div className={`p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity bg-primary/10 text-primary-foreground`}>
+                           <div className={cn('p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity', color.bg, color.text, color.border)}>
                             <p className="text-xs font-semibold truncate">{event.title}</p>
                           </div>
                         </DialogTrigger>
