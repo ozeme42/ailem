@@ -33,122 +33,8 @@ export default function OpticalFormPage() {
     const [timeLeft, setTimeLeft] = React.useState(0);
     const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<number>>(new Set());
 
-    React.useEffect(() => {
-        if (!testId) return;
-        const testDocRef = doc(db, 'tests', testId);
-        
-        const unsubscribe = onSnapshot(testDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
-                setTest(currentTest);
-
-                if (currentTest) {
-                     setTimeLeft(currentTest.questionCount * 1.5 * 60);
-                     const type = currentTest.gradingType || 'manual';
-
-                     if(type === 'auto') {
-                        const initialAnswers: McqAnswers = currentTest.studentAnswers || {};
-                        for (let i = 1; i <= currentTest.questionCount; i++) {
-                            if(!initialAnswers[i]) initialAnswers[i] = null;
-                        }
-                        setMcqAnswers(initialAnswers);
-                     } else if (type === 'manual-text') {
-                        const initialAnswers: TextAnswers = currentTest.studentTextAnswers || {};
-                         for (let i = 1; i <= currentTest.questionCount; i++) {
-                            if(!initialAnswers[i]) initialAnswers[i] = "";
-                        }
-                        setTextAnswers(initialAnswers);
-                     }
-                }
-            } else {
-                setTest(null);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [testId]);
-
-
-    React.useEffect(() => {
-        if (timeLeft <= 0 && test) {
-            handleSubmit();
-            return;
-        };
-
+    const handleSubmit = React.useCallback(async () => {
         if (!test) return;
-
-        const timer = setInterval(() => {
-            setTimeLeft(prevTime => prevTime - 1);
-        }, 1000);
-
-        return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timeLeft, test]);
-
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
-        const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        return `${h}:${m}:${s}`;
-    }
-
-
-    if (test === undefined) {
-        return (
-             <div className="flex flex-col items-center justify-center h-screen bg-background">
-                <p>Test yükleniyor...</p>
-            </div>
-        )
-    }
-
-    if (!test) {
-        return (
-             <div className="flex flex-col items-center justify-center h-screen bg-background">
-                <FileQuestion className="w-16 h-16 text-destructive mb-4" />
-                <h1 className="text-2xl font-bold mb-2">Test Bulunamadı</h1>
-                <p className="text-muted-foreground mb-6">Aradığınız test mevcut değil veya kaldırılmış olabilir.</p>
-                <Link href="/education">
-                    <Button>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Eğitim Sayfasına Geri Dön
-                    </Button>
-                </Link>
-            </div>
-        )
-    }
-
-    const handleMcqAnswerChange = (questionNumber: number, value: string) => {
-        setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
-    };
-
-    const handleTextAnswerChange = (questionNumber: number, value: string) => {
-        setTextAnswers(prev => ({ ...prev, [questionNumber]: value }));
-        setDirtyTextAnswers(prev => new Set(prev.add(questionNumber)));
-    };
-    
-    const handleSaveSingleAnswer = async (questionNumber: number) => {
-        try {
-            await updateTest(test.id, { studentTextAnswers: textAnswers });
-            toast({
-                title: `✅ ${questionNumber}. Soru Kaydedildi!`,
-                description: "Cevabın başarıyla kaydedildi.",
-            });
-            setDirtyTextAnswers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(questionNumber);
-                return newSet;
-            });
-        } catch (error) {
-             toast({
-                variant: "destructive",
-                title: "❌ Kaydetme Hatası!",
-                description: "Cevabın kaydedilirken bir sorun oluştu.",
-            });
-        }
-    };
-
-
-    const handleSubmit = async () => {
         try {
             let answerKey: { [key: string]: string } | undefined = undefined;
             
@@ -227,7 +113,120 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
+    }, [test, mcqAnswers, textAnswers, router, toast]);
+
+    React.useEffect(() => {
+        if (!testId) return;
+        const testDocRef = doc(db, 'tests', testId);
+        
+        const unsubscribe = onSnapshot(testDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
+                setTest(currentTest);
+
+                if (currentTest) {
+                     setTimeLeft(currentTest.questionCount * 1.5 * 60);
+                     const type = currentTest.gradingType || 'manual';
+
+                     if(type === 'auto') {
+                        const initialAnswers: McqAnswers = currentTest.studentAnswers || {};
+                        for (let i = 1; i <= currentTest.questionCount; i++) {
+                            if(!initialAnswers[i]) initialAnswers[i] = null;
+                        }
+                        setMcqAnswers(initialAnswers);
+                     } else if (type === 'manual-text') {
+                        const initialAnswers: TextAnswers = currentTest.studentTextAnswers || {};
+                         for (let i = 1; i <= currentTest.questionCount; i++) {
+                            if(!initialAnswers[i]) initialAnswers[i] = "";
+                        }
+                        setTextAnswers(initialAnswers);
+                     }
+                }
+            } else {
+                setTest(null);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [testId]);
+
+
+    React.useEffect(() => {
+        if (timeLeft <= 0 && test) {
+            handleSubmit();
+            return;
+        };
+
+        if (!test) return;
+
+        const timer = setInterval(() => {
+            setTimeLeft(prevTime => prevTime - 1);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [timeLeft, test, handleSubmit]);
+
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${s}`;
     }
+
+
+    if (test === undefined) {
+        return (
+             <div className="flex flex-col items-center justify-center h-screen bg-background">
+                <p>Test yükleniyor...</p>
+            </div>
+        )
+    }
+
+    if (!test) {
+        return (
+             <div className="flex flex-col items-center justify-center h-screen bg-background">
+                <FileQuestion className="w-16 h-16 text-destructive mb-4" />
+                <h1 className="text-2xl font-bold mb-2">Test Bulunamadı</h1>
+                <p className="text-muted-foreground mb-6">Aradığınız test mevcut değil veya kaldırılmış olabilir.</p>
+                <Link href="/education">
+                    <Button>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Eğitim Sayfasına Geri Dön
+                    </Button>
+                </Link>
+            </div>
+        )
+    }
+
+    const handleMcqAnswerChange = (questionNumber: number, value: string) => {
+        setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
+    };
+
+    const handleTextAnswerChange = (questionNumber: number, value: string) => {
+        setTextAnswers(prev => ({ ...prev, [questionNumber]: value }));
+        setDirtyTextAnswers(prev => new Set(prev.add(questionNumber)));
+    };
+    
+    const handleSaveSingleAnswer = async (questionNumber: number) => {
+        try {
+            await updateTest(test.id, { studentTextAnswers: textAnswers });
+            toast({
+                title: `✅ ${questionNumber}. Soru Kaydedildi!`,
+                description: "Cevabın başarıyla kaydedildi.",
+            });
+            setDirtyTextAnswers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(questionNumber);
+                return newSet;
+            });
+        } catch (error) {
+             toast({
+                variant: "destructive",
+                title: "❌ Kaydetme Hatası!",
+                description: "Cevabın kaydedilirken bir sorun oluştu.",
+            });
+        }
+    };
 
     const answeredQuestions = test.gradingType === 'auto'
         ? Object.values(mcqAnswers).filter(a => a !== null).length
@@ -346,3 +345,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
