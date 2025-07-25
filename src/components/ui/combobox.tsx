@@ -41,6 +41,7 @@ export function Combobox({
     createText = "Create"
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [inputValue, setInputValue] = React.useState("")
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -59,23 +60,27 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-          <CommandInput placeholder={placeholder} />
+          <CommandInput 
+            placeholder={placeholder} 
+            value={inputValue}
+            onValueChange={setInputValue}
+          />
           <CommandList>
             <CommandEmpty>
-                {onCreate ? (
+                {onCreate && inputValue ? (
                      <Button 
                         variant="ghost" 
                         className="w-full justify-start"
-                        onClick={(e) => {
-                            const inputValue = (e.currentTarget.closest('.cmdk-root')?.querySelector('.cmdk-input') as HTMLInputElement)?.value;
+                        onClick={() => {
                             if (inputValue) {
                                 onCreate(inputValue);
                                 onChange(inputValue);
+                                setInputValue("");
                                 setOpen(false);
                             }
                         }}
                      >
-                        {createText} "{ (typeof document !== 'undefined' && document.querySelector('.cmdk-input')) ? (document.querySelector('.cmdk-input') as HTMLInputElement).value : ''}"
+                        {createText} "{inputValue}"
                     </Button>
                 ) : notfoundText}
             </CommandEmpty>
@@ -86,6 +91,7 @@ export function Combobox({
                   value={option.value}
                   onSelect={(currentValue) => {
                     onChange(currentValue === value ? "" : currentValue)
+                    setInputValue("");
                     setOpen(false)
                   }}
                 >
@@ -99,7 +105,6 @@ export function Combobox({
                 </CommandItem>
               ))}
             </CommandGroup>
-             {onCreate && <CommandSeparator />}
           </CommandList>
         </Command>
       </PopoverContent>
