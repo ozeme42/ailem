@@ -91,7 +91,6 @@ export interface Recipe {
     id: number;
     title: string;
     category: 'Kahvaltı' | 'Akşam Yemeği' | 'Atıştırmalık';
-    image: string;
     prepTime: string;
     rating: number;
     ingredients: string[];
@@ -257,7 +256,6 @@ export const recipes: Recipe[] = [
         id: 1,
         title: "Menemen",
         category: 'Kahvaltı',
-        image: "https://placehold.co/400x250.png",
         prepTime: "20 dk",
         rating: 4.8,
         ingredients: ["3 adet domates", "2 adet sivri biber", "2 adet yumurta", "1 yemek kaşığı tereyağı", "Tuz, karabiber, pul biber"],
@@ -267,7 +265,6 @@ export const recipes: Recipe[] = [
         id: 2,
         title: "Mercimek Çorbası",
         category: 'Akşam Yemeği',
-        image: "https://placehold.co/400x250.png",
         prepTime: "40 dk",
         rating: 4.9,
         ingredients: ["1 su bardağı kırmızı mercimek", "1 adet soğan", "1 adet havuç", "1 adet patates", "1 yemek kaşığı salça", "Nane, pul biber, tuz"],
@@ -277,7 +274,6 @@ export const recipes: Recipe[] = [
         id: 4,
         title: "Meyveli Yoğurt",
         category: 'Atıştırmalık',
-        image: "https://placehold.co/400x250.png",
         prepTime: "5 dk",
         rating: 4.5,
         ingredients: ["1 kase yoğurt", "Mevsim meyveleri (çilek, muz, yaban mersini vb.)", "1 tatlı kaşığı bal", "Yulaf ezmesi"],
@@ -362,3 +358,5 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
         gradingType: 'auto',
     }
 ]
+
+    

@@ -198,7 +198,6 @@ export default function YemekPlanlamaPage() {
                                 <DialogTrigger asChild>
                                     <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1">
                                       <div className="relative">
-                                          <Image src={recipe.image} alt={recipe.title} width={400} height={250} className="w-full h-40 object-cover" data-ai-hint="food meal" />
                                           <Badge className="absolute top-2 right-2 bg-black/50 text-white backdrop-blur-sm">{recipe.prepTime}</Badge>
                                       </div>
                                       <CardHeader className="p-4">
@@ -222,7 +221,6 @@ export default function YemekPlanlamaPage() {
                                             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                                 {recipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
                                             </ul>
-                                             <Image src={recipe.image} alt={recipe.title} width={400} height={250} className="w-full h-auto rounded-lg object-cover" data-ai-hint="food meal" />
                                         </div>
                                         <div className="space-y-4">
                                             <h3 className="font-semibold text-xl border-b pb-2">Hazırlanışı</h3>
@@ -264,9 +262,6 @@ export default function YemekPlanlamaPage() {
                             className="overflow-hidden cursor-pointer group transition-all hover:shadow-lg hover:border-primary"
                             onClick={() => handleSelectRecipe(recipe)}
                         >
-                            <div className="relative">
-                                <Image src={recipe.image} alt={recipe.title} width={200} height={125} className="w-full h-24 object-cover" data-ai-hint="food meal" />
-                            </div>
                             <CardHeader className="p-3">
                                 <CardTitle className="text-sm truncate group-hover:text-primary">{recipe.title}</CardTitle>
                                 <CardDescription className="text-xs">{recipe.category}</CardDescription>
@@ -280,3 +275,5 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
+    
