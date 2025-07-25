@@ -7,7 +7,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Responsive
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, recentActivities, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe } from "@/lib/data";
+import { weeklyPoints, recentActivities, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc } from "date-fns";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate } from "@/lib/dataService";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
@@ -37,25 +37,49 @@ const weeklyProgressChartConfig = {
 } satisfies ChartConfig
 
 export default function Home() {
-  const { user, familyMembers, loading } = useAuth();
+  const { user, familyId, familyMembers, loading } = useAuth();
   const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
   const [editingMember, setEditingMember] = React.useState<FamilyMember | null>(null);
   
   const [shoppingLists, setShoppingLists] = React.useState<ShoppingList[]>([]);
   const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
+  const [tasks, setTasks] = React.useState<Task[]>([]);
+  const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
+
 
   React.useEffect(() => {
     const unsubShopping = onShoppingListsUpdate(setShoppingLists);
     const unsubMeal = onMealPlanUpdate(setMealPlan);
     const unsubCalendar = onCalendarEventsUpdate(setCalendarEvents);
+    const unsubTasks = onTasksUpdate(setTasks);
+    let unsubLibraries = () => {};
+    if (familyId) {
+      unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
+    }
 
     return () => {
       unsubShopping();
       unsubMeal();
       unsubCalendar();
+      unsubTasks();
+      unsubLibraries();
     };
-  }, []);
+  }, [familyId]);
+
+  const dailySummary = React.useMemo(() => {
+    const completedTasksCount = tasks.filter(t => t.completed).length;
+    const upcomingEventsCount = calendarEvents.filter(e => isFuture(parseISO(e.startDate))).length;
+    const finishedBooksCount = userLibraries.reduce((acc, lib) => {
+        return acc + lib.books.filter(b => b.status === 'finished').length;
+    }, 0);
+
+    return {
+        completedTasks: completedTasksCount,
+        upcomingEvents: upcomingEventsCount,
+        finishedBooks: finishedBooksCount
+    }
+  }, [tasks, calendarEvents, userLibraries])
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
   const todaysMeal = mealPlan[format(new Date(), 'yyyy-MM-dd')]?.['Akşam Yemeği'] as Recipe | undefined;
@@ -200,19 +224,15 @@ export default function Home() {
 
       <section>
         <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-green-500/10">
                 <CardContent className="p-4">
                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
                       <CheckSquare size={24} className="text-green-500" />
                    </div>
                    <div className="text-center">
-                     <p className="text-3xl font-extrabold text-green-500">24</p>
+                     <p className="text-3xl font-extrabold text-green-500">{dailySummary.completedTasks}</p>
                      <p className="text-sm font-semibold text-foreground">Tamamlanan Görevler</p>
-                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-green-500">
-                        <TrendingUp size={14} className="mr-1"/>
-                        <span>+8</span>
-                     </div>
                    </div>
                 </CardContent>
             </Card>
@@ -222,12 +242,8 @@ export default function Home() {
                       <Calendar size={24} className="text-blue-500" />
                    </div>
                    <div className="text-center">
-                     <p className="text-3xl font-extrabold text-blue-500">7</p>
+                     <p className="text-3xl font-extrabold text-blue-500">{dailySummary.upcomingEvents}</p>
                      <p className="text-sm font-semibold text-foreground">Yaklaşan Etkinlikler</p>
-                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-blue-500">
-                        <TrendingUp size={14} className="mr-1"/>
-                        <span>+2</span>
-                     </div>
                    </div>
                 </CardContent>
             </Card>
@@ -237,27 +253,8 @@ export default function Home() {
                       <BookOpen size={24} className="text-purple-500" />
                    </div>
                    <div className="text-center">
-                     <p className="text-3xl font-extrabold text-purple-500">12</p>
+                     <p className="text-3xl font-extrabold text-purple-500">{dailySummary.finishedBooks}</p>
                      <p className="text-sm font-semibold text-foreground">Okunan Kitaplar</p>
-                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-purple-500">
-                        <TrendingUp size={14} className="mr-1"/>
-                        <span>+3</span>
-                     </div>
-                   </div>
-                </CardContent>
-            </Card>
-             <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-red-500/10">
-                <CardContent className="p-4">
-                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
-                      <ShoppingCart size={24} className="text-red-500" />
-                   </div>
-                   <div className="text-center">
-                     <p className="text-3xl font-extrabold text-red-500">₺245</p>
-                     <p className="text-sm font-semibold text-foreground">Alışveriş Tasarrufu</p>
-                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-red-500">
-                        <TrendingUp size={14} className="mr-1"/>
-                        <span>+₺67</span>
-                     </div>
                    </div>
                 </CardContent>
             </Card>

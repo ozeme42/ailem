@@ -8,7 +8,7 @@ import { Book, User, Library, Star } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { Book as BookType, monthlyReadingStats } from "@/lib/data";
+import { Book as BookType, monthlyReadingStats, UserLibrary } from "@/lib/data";
 import { onBooksUpdate, onUserLibrariesUpdate } from "@/lib/dataService";
 import { useAuth } from '@/components/auth-provider';
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,15 @@ const readingChartConfig = {
 } satisfies ChartConfig;
 
 export default function LibraryStatsPage() {
-    const { familyMembers } = useAuth();
+    const { familyId, familyMembers } = useAuth();
     const [books, setBooks] = React.useState<BookType[]>([]);
-    const [userLibraries, setUserLibraries] = React.useState<any[]>([]);
+    const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
 
     const memberReadingConfig = React.useMemo(() => {
         const config: ChartConfig = { booksRead: { label: "Okunan Kitap" } };
         familyMembers.forEach(member => {
-            config[member.name] = { label: member.name, color: member.color };
+            const color = member.color || `hsl(${(Math.random() * 360).toFixed(0)}, 70%, 50%)`;
+            config[member.name] = { label: member.name, color: color };
         });
         return config;
     }, [familyMembers]);
@@ -34,20 +35,28 @@ export default function LibraryStatsPage() {
 
     React.useEffect(() => {
         const unsubscribeBooks = onBooksUpdate(setBooks);
-        const unsubscribeLibraries = onUserLibrariesUpdate(familyMembers[0]?.id.substring(0, familyMembers[0].id.indexOf('_')) || '', setUserLibraries);
+        let unsubscribeLibraries = () => {};
+        if (familyId) {
+            unsubscribeLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
+        }
 
         return () => {
           unsubscribeBooks();
-          if (unsubscribeLibraries) unsubscribeLibraries();
+          unsubscribeLibraries();
         };
-    }, [familyMembers]);
+    }, [familyId]);
 
-    const totalBooks = books.length;
-    const totalAuthors = new Set(books.map(b => b.author)).size;
-    const totalPages = books.reduce((sum, book) => sum + (book.pageCount || 0), 0);
-    const avgRating = totalBooks > 0 && books.filter(b => b.rating > 0).length > 0
-        ? (books.reduce((sum, book) => sum + book.rating, 0) / books.filter(b => b.rating > 0).length).toFixed(1)
-        : "0.0";
+    const stats = React.useMemo(() => {
+        const totalBooks = books.length;
+        const totalAuthors = new Set(books.map(b => b.author)).size;
+        const totalPages = books.reduce((sum, book) => sum + (book.pageCount || 0), 0);
+        const ratedBooks = books.filter(b => b.rating > 0);
+        const avgRating = ratedBooks.length > 0
+            ? (ratedBooks.reduce((sum, book) => sum + book.rating, 0) / ratedBooks.length).toFixed(1)
+            : "0.0";
+        
+        return { totalBooks, totalAuthors, totalPages, avgRating };
+    }, [books]);
     
     const genreData = React.useMemo(() => {
         if (books.length === 0) return [];
@@ -79,7 +88,7 @@ export default function LibraryStatsPage() {
             return {
                 name: member.name,
                 booksRead: finishedCount,
-                fill: member.color,
+                fill: member.color || `hsl(${(Math.random() * 360).toFixed(0)}, 70%, 50%)`,
             };
         });
     }, [userLibraries, familyMembers]);
@@ -98,7 +107,7 @@ export default function LibraryStatsPage() {
             <Library className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalBooks}</div>
+            <div className="text-2xl font-bold">{stats.totalBooks}</div>
             <p className="text-xs text-muted-foreground">Kütüphanedeki toplam eser sayısı</p>
           </CardContent>
         </Card>
@@ -108,7 +117,7 @@ export default function LibraryStatsPage() {
             <User className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalAuthors}</div>
+            <div className="text-2xl font-bold">{stats.totalAuthors}</div>
             <p className="text-xs text-muted-foreground">Farklı yazar sayısı</p>
           </CardContent>
         </Card>
@@ -118,8 +127,8 @@ export default function LibraryStatsPage() {
             <Star className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{avgRating} / 5.0</div>
-            <p className="text-xs text-muted-foreground">Tüm kitapların ortalaması</p>
+            <div className="text-2xl font-bold">{stats.avgRating} / 5.0</div>
+            <p className="text-xs text-muted-foreground">Puanlanan kitapların ortalaması</p>
           </CardContent>
         </Card>
          <Card>
@@ -128,7 +137,7 @@ export default function LibraryStatsPage() {
             <Book className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalPages.toLocaleString('tr-TR')}</div>
+            <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
              <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
           </CardContent>
         </Card>
