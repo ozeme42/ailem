@@ -20,6 +20,7 @@ import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAs
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
+import { cn } from "@/lib/utils";
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -144,81 +145,69 @@ export default function Home() {
       </header>
       
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <Card className="flex flex-col">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3"><ShoppingCart className="text-primary"/> Alışveriş Listesi</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-grow">
+             <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600">
+                <h3 className="flex items-center gap-3 text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
+                <div className="flex-grow my-4">
                     {shoppingSummary.totalPending > 0 ? (
                         <div className="space-y-2">
                             {shoppingSummary.itemsToShow.map(item => (
                                 <div key={item.id} className="flex items-center gap-2 text-sm">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
                                     <span>{item.name}</span>
                                 </div>
                             ))}
                             {shoppingSummary.totalPending > 3 && (
-                                <p className="text-xs text-muted-foreground pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
+                                <p className="text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
                             )}
                         </div>
                     ) : (
-                       <p className="text-sm text-muted-foreground">Alınacak ürün yok. Harika!</p>
+                       <p className="text-sm text-white/90">Alınacak ürün yok. Harika!</p>
                     )}
-                </CardContent>
-                <CardFooter>
-                    <Link href="/shopping" className="w-full">
-                       <Button variant="outline" className="w-full">Listeye Git</Button>
-                    </Link>
-                </CardFooter>
-            </Card>
-             <Card className="flex flex-col">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3"><UtensilsCrossed className="text-primary"/> Günün Menüsü</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-grow">
+                </div>
+                <Link href="/shopping" className="w-full mt-auto">
+                    <Button variant="outline" className="w-full bg-white/20 text-white hover:bg-white/30 border-none">Listeye Git</Button>
+                </Link>
+            </div>
+            <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600">
+                <h3 className="flex items-center gap-3 text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
+                <div className="flex-grow my-4">
                      {todaysMeal ? (
                          <>
-                            <p className="text-lg font-semibold truncate">{todaysMeal.title}</p>
-                            <p className="text-sm text-muted-foreground">Akşam yemeği için planlandı.</p>
+                            <p className="font-semibold truncate">{todaysMeal.title}</p>
+                            <p className="text-sm text-white/90">Akşam yemeği için planlandı.</p>
                          </>
                     ) : (
-                        <div className="text-center text-muted-foreground">
+                        <div className="text-white/90">
                             <p className="font-semibold">Bugün ne pişirsem?</p>
                             <p className="text-sm">Akşam yemeği için henüz bir plan yok.</p>
                         </div>
                     )}
-                </CardContent>
-                 <CardFooter>
-                    <Link href="/yemek" className="w-full">
-                       <Button variant="outline" className="w-full">
+                </div>
+                <Link href="/yemek" className="w-full mt-auto">
+                    <Button variant="outline" className="w-full bg-white/20 text-white hover:bg-white/30 border-none">
                         {todaysMeal ? 'Menüyü Görüntüle' : 'Yemek Planla'}
-                       </Button>
-                    </Link>
-                </CardFooter>
-            </Card>
-            <Card className="flex flex-col">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3"><Calendar className="text-primary"/> Yaklaşan Etkinlikler</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-grow">
+                    </Button>
+                </Link>
+            </div>
+            <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600">
+                <h3 className="flex items-center gap-3 text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
+                <div className="flex-grow my-4">
                     {calendarSummary.nextEvent ? (
                         <>
-                            <p className="text-lg font-semibold">{calendarSummary.nextEvent.title}</p>
-                            <p className="text-sm text-muted-foreground">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy')}</p>
+                            <p className="font-semibold">{calendarSummary.nextEvent.title}</p>
+                            <p className="text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy')}</p>
                              {calendarSummary.totalUpcoming > 1 && (
-                                <p className="text-xs text-muted-foreground pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
+                                <p className="text-xs text-white/80 pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
                             )}
                         </>
                     ) : (
-                        <p className="text-sm text-muted-foreground">Yaklaşan bir etkinlik bulunmuyor.</p>
+                        <p className="text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
                     )}
-                </CardContent>
-                 <CardFooter>
-                    <Link href="/calendar" className="w-full">
-                       <Button variant="outline" className="w-full">Takvime Git</Button>
-                    </Link>
-                </CardFooter>
-            </Card>
+                </div>
+                <Link href="/calendar" className="w-full mt-auto">
+                    <Button variant="outline" className="w-full bg-white/20 text-white hover:bg-white/30 border-none">Takvime Git</Button>
+                </Link>
+            </div>
         </div>
 
 
