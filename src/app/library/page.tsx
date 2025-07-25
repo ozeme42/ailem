@@ -45,15 +45,16 @@ export default function LibraryPage() {
   if (!user) return null;
 
   return (
-    <>
-      <PageHeader title={`${user.name}'in Kütüphanesi`}>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl shadow-lg mb-6">
+        <h1 className="text-2xl font-bold">{`${user.name}'in Kütüphanesi 📚`}</h1>
         <Link href="/library/archive">
-            <Button variant="outline">
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Library className="mr-2 h-4 w-4" />
                 Kitaplığımız'a Göz At
             </Button>
         </Link>
-      </PageHeader>
+      </div>
       
       <Card className="mb-8">
         <CardHeader>
@@ -110,7 +111,7 @@ export default function LibraryPage() {
           </div>
       )}
 
-    </>
+    </div>
   );
 }
 
