@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, Sun, UserPlus, Edit } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -97,11 +97,6 @@ export default function Home() {
                 <p className="mt-1 opacity-90">
                     {formattedDate || '...'}
                 </p>
-                 <div className="mt-2 flex items-center gap-2 text-sm bg-white/20 px-3 py-1 rounded-full w-fit">
-                    <Sun className="h-4 w-4 text-yellow-300" />
-                    <span>24°C, Güneşli</span>
-                    <span className="opacity-70">İstanbul</span>
-                </div>
             </div>
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
                  <button className="relative rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30">
