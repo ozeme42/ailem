@@ -134,21 +134,28 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   const questionCount = form.watch("questionCount") || 0;
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
-    const dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr }); // 1 week from now
+    let assignedDate, dueDate;
+    
+    if (initialData) { // Editing existing test
+      assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : initialData.assignedDate;
+      dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : initialData.dueDate;
+    } else { // Creating new test
+      assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
+      dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
+    }
     
     let newTest: Omit<Test, 'id' | 'status' | 'familyId'> | null = null;
     
     const currentActiveTab = initialData?.sourceType || activeTab;
 
-    if (currentActiveTab === 'quick' && values.title && values.subject && values.questionCount) {
+    if (currentActiveTab === 'quick') {
         newTest = {
-            title: values.title,
-            subject: values.subject,
+            title: values.title || "Hızlı Test",
+            subject: values.subject || "Genel",
             studentId: values.studentId,
-            questionCount: values.questionCount,
-            assignedDate: initialData?.assignedDate || assignedDate,
-            dueDate: initialData?.dueDate || dueDate,
+            questionCount: values.questionCount || 0,
+            assignedDate,
+            dueDate,
             sourceType: 'quick',
             gradingType: values.gradingType,
             answerKey: values.gradingType === 'auto' ? values.answerKey : undefined,
@@ -162,8 +169,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                 subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders", // find subject name
                 studentId: values.studentId,
                 questionCount: topic.questionCount,
-                assignedDate: initialData?.assignedDate || assignedDate,
-                dueDate: initialData?.dueDate || dueDate,
+                assignedDate,
+                dueDate,
                 sourceType: 'bank',
                 sourceId: bank.id,
                 topicId: topic.id.toString(),
@@ -178,8 +185,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                 subject: "Deneme Sınavı",
                 studentId: values.studentId,
                 questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
-                assignedDate: initialData?.assignedDate || assignedDate,
-                dueDate: initialData?.dueDate || dueDate,
+                assignedDate,
+                dueDate,
                 sourceType: 'exam',
                 sourceId: exam.id,
                 gradingType: exam.gradingType,
@@ -470,5 +477,3 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
-
-    
