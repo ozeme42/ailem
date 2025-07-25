@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -47,7 +47,7 @@ const activityIcons = {
 };
 
 export default function Home() {
-  const { user, familyId, familyMembers, loading } = useAuth();
+  const { user, familyId, familyMembers, loading, logout } = useAuth();
   const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
   const [editingMember, setEditingMember] = React.useState<FamilyMember | null>(null);
   
@@ -187,6 +187,13 @@ export default function Home() {
   const handleEditMember = (member: FamilyMember) => {
       setEditingMember(member);
   }
+  
+  const handleEditCurrentUser = () => {
+    const currentUserMember = familyMembers.find(m => m.id === user?.uid);
+    if (currentUserMember) {
+        setEditingMember(currentUserMember);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -226,9 +233,25 @@ export default function Home() {
                  {recentActivities.length === 0 && <p className="text-xs text-muted-foreground text-center p-4">Henüz yeni bir bildirim yok.</p>}
               </DropdownMenuContent>
             </DropdownMenu>
-              <button className="rounded-full p-2 transition-colors hover:bg-white/20">
-                  <Settings className="h-5 w-5" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button className="rounded-full p-2 transition-colors hover:bg-white/20">
+                        <Settings className="h-5 w-5" />
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Ayarlar</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={handleEditCurrentUser}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Profilimi Düzenle</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                     <DropdownMenuItem onSelect={logout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Çıkış Yap</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
           </div>
       </header>
       
