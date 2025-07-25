@@ -2,10 +2,10 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
 import { weeklyPoints, recentActivities, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
@@ -16,17 +16,10 @@ import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
-
-const quickStats = [
-  { title: 'Tamamlanan Görevler', value: '24', change: '+8', icon: CheckSquare, color: 'text-green-500', bgColor: 'bg-green-500/10' },
-  { title: 'Yaklaşan Etkinlikler', value: '7', change: '+2', icon: Calendar, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-  { title: 'Okunan Kitaplar', value: '12', change: '+3', icon: BookOpen, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
-  { title: 'Alışveriş Tasarrufu', value: '₺245', change: '+₺67', icon: ShoppingCart, color: 'text-red-500', bgColor: 'bg-red-500/10' },
-];
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -65,17 +58,27 @@ export default function Home() {
   }, []);
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
-  const totalShoppingItems = shoppingLists.reduce((acc, list) => acc + (list.items?.filter(item => !item.isBought).length || 0), 0);
   const todaysMeal = mealPlan[format(new Date(), 'yyyy-MM-dd')]?.['Akşam Yemeği'] as Recipe | undefined;
 
-  const upcomingEvents = React.useMemo(() => {
+  const shoppingSummary = React.useMemo(() => {
+    const allPendingItems = shoppingLists.flatMap(list => list.items?.filter(item => !item.isBought) || []);
+    return {
+        totalPending: allPendingItems.length,
+        itemsToShow: allPendingItems.slice(0, 3), // Show first 3 items
+    };
+  }, [shoppingLists]);
+
+  const calendarSummary = React.useMemo(() => {
     const today = new Date();
-    const start = startOfMonth(today);
-    const end = endOfMonth(today);
-    return calendarEvents.filter(event => {
-       const eventDate = new Date(event.startDate);
-       return isWithinInterval(eventDate, { start, end });
-    }).length;
+    const upcoming = calendarEvents
+        .map(event => ({ ...event, date: parseISO(event.startDate) }))
+        .filter(event => event.date >= today)
+        .sort((a, b) => compareAsc(a.date, b.date));
+    
+    return {
+        totalUpcoming: upcoming.length,
+        nextEvent: upcoming[0], // Show the very next event
+    };
   }, [calendarEvents]);
 
 
@@ -117,62 +120,147 @@ export default function Home() {
       </header>
       
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Link href="/shopping" className="block">
-                <Card className="hover:bg-accent/50 hover:border-primary/50 transition-colors">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-3"><ShoppingCart className="text-primary"/> Alışveriş Listesi</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{totalShoppingItems} ürün</p>
-                        <p className="text-sm text-muted-foreground">alınması gerekiyor.</p>
-                    </CardContent>
-                </Card>
-            </Link>
-            <Link href="/yemek" className="block">
-                <Card className="hover:bg-accent/50 hover:border-primary/50 transition-colors">
-                     <CardHeader>
-                        <CardTitle className="flex items-center gap-3"><UtensilsCrossed className="text-primary"/> Günün Menüsü</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold truncate">{todaysMeal?.title || 'Belirlenmedi'}</p>
-                        <p className="text-sm text-muted-foreground">akşam yemeği için planlandı.</p>
-                    </CardContent>
-                </Card>
-            </Link>
-            <Link href="/calendar" className="block">
-                <Card className="hover:bg-accent/50 hover:border-primary/50 transition-colors">
-                     <CardHeader>
-                        <CardTitle className="flex items-center gap-3"><Calendar className="text-primary"/> Yaklaşan Etkinlikler</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       <p className="text-2xl font-bold">{upcomingEvents} etkinlik</p>
-                       <p className="text-sm text-muted-foreground">bu ay içerisinde mevcut.</p>
-                    </CardContent>
-                </Card>
-            </Link>
+             <Card className="flex flex-col">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3"><ShoppingCart className="text-primary"/> Alışveriş Listesi</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                    {shoppingSummary.totalPending > 0 ? (
+                        <div className="space-y-2">
+                            {shoppingSummary.itemsToShow.map(item => (
+                                <div key={item.id} className="flex items-center gap-2 text-sm">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
+                                    <span>{item.name}</span>
+                                </div>
+                            ))}
+                            {shoppingSummary.totalPending > 3 && (
+                                <p className="text-xs text-muted-foreground pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
+                            )}
+                        </div>
+                    ) : (
+                       <p className="text-sm text-muted-foreground">Alınacak ürün yok. Harika!</p>
+                    )}
+                </CardContent>
+                <CardFooter>
+                    <Link href="/shopping" className="w-full">
+                       <Button variant="outline" className="w-full">Listeye Git</Button>
+                    </Link>
+                </CardFooter>
+            </Card>
+             <Card className="flex flex-col">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3"><UtensilsCrossed className="text-primary"/> Günün Menüsü</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                     {todaysMeal ? (
+                         <>
+                            <p className="text-lg font-semibold truncate">{todaysMeal.title}</p>
+                            <p className="text-sm text-muted-foreground">Akşam yemeği için planlandı.</p>
+                         </>
+                    ) : (
+                        <div className="text-center text-muted-foreground">
+                            <p className="font-semibold">Bugün ne pişirsem?</p>
+                            <p className="text-sm">Akşam yemeği için henüz bir plan yok.</p>
+                        </div>
+                    )}
+                </CardContent>
+                 <CardFooter>
+                    <Link href="/yemek" className="w-full">
+                       <Button variant="outline" className="w-full">
+                        {todaysMeal ? 'Menüyü Görüntüle' : 'Yemek Planla'}
+                       </Button>
+                    </Link>
+                </CardFooter>
+            </Card>
+            <Card className="flex flex-col">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3"><Calendar className="text-primary"/> Yaklaşan Etkinlikler</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                    {calendarSummary.nextEvent ? (
+                        <>
+                            <p className="text-lg font-semibold">{calendarSummary.nextEvent.title}</p>
+                            <p className="text-sm text-muted-foreground">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy')}</p>
+                             {calendarSummary.totalUpcoming > 1 && (
+                                <p className="text-xs text-muted-foreground pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
+                            )}
+                        </>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">Yaklaşan bir etkinlik bulunmuyor.</p>
+                    )}
+                </CardContent>
+                 <CardFooter>
+                    <Link href="/calendar" className="w-full">
+                       <Button variant="outline" className="w-full">Takvime Git</Button>
+                    </Link>
+                </CardFooter>
+            </Card>
         </div>
 
 
       <section>
         <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {quickStats.map((stat, index) => (
-              <Card key={index} className={`overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 ${stat.bgColor}`}>
+            <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-green-500/10">
                 <CardContent className="p-4">
-                   <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner`}>
-                      <stat.icon size={24} className={stat.color} />
+                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
+                      <CheckSquare size={24} className="text-green-500" />
                    </div>
                    <div className="text-center">
-                     <p className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</p>
-                     <p className="text-sm font-semibold text-foreground">{stat.title}</p>
-                     <div className={`mt-2 flex items-center justify-center text-xs font-medium ${stat.color}`}>
+                     <p className="text-3xl font-extrabold text-green-500">24</p>
+                     <p className="text-sm font-semibold text-foreground">Tamamlanan Görevler</p>
+                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-green-500">
                         <TrendingUp size={14} className="mr-1"/>
-                        <span>{stat.change}</span>
+                        <span>+8</span>
                      </div>
                    </div>
                 </CardContent>
-              </Card>
-            ))}
+            </Card>
+             <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-blue-500/10">
+                <CardContent className="p-4">
+                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
+                      <Calendar size={24} className="text-blue-500" />
+                   </div>
+                   <div className="text-center">
+                     <p className="text-3xl font-extrabold text-blue-500">7</p>
+                     <p className="text-sm font-semibold text-foreground">Yaklaşan Etkinlikler</p>
+                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-blue-500">
+                        <TrendingUp size={14} className="mr-1"/>
+                        <span>+2</span>
+                     </div>
+                   </div>
+                </CardContent>
+            </Card>
+             <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-purple-500/10">
+                <CardContent className="p-4">
+                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
+                      <BookOpen size={24} className="text-purple-500" />
+                   </div>
+                   <div className="text-center">
+                     <p className="text-3xl font-extrabold text-purple-500">12</p>
+                     <p className="text-sm font-semibold text-foreground">Okunan Kitaplar</p>
+                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-purple-500">
+                        <TrendingUp size={14} className="mr-1"/>
+                        <span>+3</span>
+                     </div>
+                   </div>
+                </CardContent>
+            </Card>
+             <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-red-500/10">
+                <CardContent className="p-4">
+                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
+                      <ShoppingCart size={24} className="text-red-500" />
+                   </div>
+                   <div className="text-center">
+                     <p className="text-3xl font-extrabold text-red-500">₺245</p>
+                     <p className="text-sm font-semibold text-foreground">Alışveriş Tasarrufu</p>
+                     <div className="mt-2 flex items-center justify-center text-xs font-medium text-red-500">
+                        <TrendingUp size={14} className="mr-1"/>
+                        <span>+₺67</span>
+                     </div>
+                   </div>
+                </CardContent>
+            </Card>
         </div>
       </section>
 
