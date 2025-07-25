@@ -24,9 +24,14 @@ import { Combobox } from "./ui/combobox";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 
+export type AssignmentType = "quick" | "bank" | "exam";
+
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
   
+  // Tab control - not submitted, just for validation logic
+  activeTab: z.enum(["quick", "bank", "exam"]),
+
   // Quick Test
   title: z.string().optional(),
   subject: z.string().optional(),
@@ -45,6 +50,23 @@ const formSchema = z.object({
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 }).refine((data) => {
+    if (data.activeTab === 'quick') {
+      return !!data.title && data.title.length >= 2;
+    }
+    return true;
+}, {
+    message: "Test başlığı en az 2 karakter olmalıdır.",
+    path: ["title"],
+})
+.refine((data) => {
+    if (data.activeTab === 'quick') {
+      return !!data.subject;
+    }
+    return true;
+}, {
+    message: "Lütfen bir ders seçin veya oluşturun.",
+    path: ["subject"],
+}).refine((data) => {
     if (data.assignedDate && data.dueDate) {
         return data.dueDate >= data.assignedDate;
     }
@@ -54,8 +76,6 @@ const formSchema = z.object({
     path: ["dueDate"],
 });
 
-
-export type AssignmentType = "quick" | "bank" | "exam";
 
 type NewTestFormProps = {
   students: FamilyMember[];
@@ -78,6 +98,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     shouldUnregister: false,
     defaultValues: {
       studentId: initialData?.studentId || "",
+      activeTab: initialData?.sourceType || 'quick',
       // Quick Test
       title: initialData?.sourceType === 'quick' ? initialData.title : "",
       subject: initialData?.sourceType === 'quick' ? initialData.subject : "",
@@ -93,13 +114,19 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : undefined,
     },
   });
+  
+  const handleTabChange = (value: AssignmentType) => {
+    setActiveTab(value);
+    form.setValue('activeTab', value);
+  };
 
   React.useEffect(() => {
     if (initialData) {
-      setActiveTab(initialData.sourceType);
+      handleTabChange(initialData.sourceType);
       setSelectedBankId(initialData.sourceId || null);
       form.reset({
         studentId: initialData.studentId,
+        activeTab: initialData.sourceType,
         title: initialData.sourceType === 'quick' ? initialData.title : "",
         subject: initialData.sourceType === 'quick' ? initialData.subject : "",
         questionCount: initialData.sourceType === 'quick' ? initialData.questionCount : 20,
@@ -112,10 +139,11 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         dueDate: initialData.dueDate ? new Date(initialData.dueDate) : undefined,
       });
     } else {
-      setActiveTab('quick');
+      handleTabChange('quick');
       setSelectedBankId(null);
       form.reset({
           studentId: "",
+          activeTab: 'quick',
           questionCount: 20,
           title: "",
           subject: "",
@@ -136,13 +164,9 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   function onSubmit(values: z.infer<typeof formSchema>) {
     let assignedDate, dueDate;
     
-    if (initialData) { // Editing existing test
-      assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : initialData.assignedDate;
-      dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : initialData.dueDate;
-    } else { // Creating new test
-      assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
-      dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
-    }
+    // Always set dates if not provided for new tests. Keep existing dates if editing.
+    assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
+    dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
     
     let newTest: Omit<Test, 'id' | 'status' | 'familyId'> | null = null;
     
@@ -150,8 +174,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
 
     if (currentActiveTab === 'quick') {
         newTest = {
-            title: values.title || "Hızlı Test",
-            subject: values.subject || "Genel",
+            title: values.title!, // refine ensures this is present
+            subject: values.subject!, // refine ensures this is present
             studentId: values.studentId,
             questionCount: values.questionCount || 0,
             assignedDate,
@@ -204,7 +228,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
   return (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AssignmentType)} className="w-full">
+    <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="quick" disabled={!!initialData && initialData.sourceType !== 'quick'}>Hızlı Test</TabsTrigger>
             <TabsTrigger value="bank" disabled={!!initialData && initialData.sourceType !== 'bank'}>Soru Bankası</TabsTrigger>
