@@ -66,7 +66,25 @@ export interface Book {
   description: string;
   pageCount?: number;
   isForChildren?: boolean;
+  readers?: string[]; // Array of member IDs who have this in their library
 }
+
+export type BookReadingStatus = 'to-read' | 'reading' | 'finished';
+
+export interface UserLibraryBook {
+    bookId: string;
+    status: BookReadingStatus;
+    progress?: number; // 0-100 for 'reading' status
+    addedAt: string; // ISO Date string
+}
+
+export interface UserLibrary {
+    id: string; // Composite key familyId_memberId
+    familyId: string;
+    memberId: string;
+    books: UserLibraryBook[];
+}
+
 
 export interface Recipe {
     id: number;

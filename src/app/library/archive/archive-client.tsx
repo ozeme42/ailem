@@ -24,11 +24,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags } from '@/lib/dataService';
+import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 
 // SCHEMAS & TYPES
@@ -292,7 +292,7 @@ const BookForm = ({ existingTags }: { existingTags: string[] }) => {
 
 // ARCHIVE CLIENT COMPONENT
 export default function ArchiveClient() {
-  const { user, familyMembers } = useAuth();
+  const { user, familyId, familyMembers } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
@@ -375,6 +375,7 @@ export default function ArchiveClient() {
                 type: 'Kitap',
                 rating: 0,
                 description: '',
+                readers: [],
                 ...bookData,
             };
             await addBook(newBook);
@@ -398,17 +399,20 @@ export default function ArchiveClient() {
     }
   };
   
-  const handleAddToMyLibrary = (book: Book) => {
-      if (!familyMembers || familyMembers.length === 0) {
-          toast({ title: "Hata", description: "Kitap eklemek için aile üyesi bulunamadı.", variant: 'destructive' });
-          return;
-      }
-      const member = familyMembers[Math.floor(Math.random() * familyMembers.length)];
-      toast({
-          title: `"${book.title}"`,
-          description: `${member.name} kullanıcısının kitaplığına eklendi.`
-      });
-  }
+  const handleAddToLibrary = async (bookId: string, memberId: string) => {
+    if (!familyId) return;
+    try {
+        await addBookToMemberLibrary(familyId, memberId, bookId);
+        const member = familyMembers.find(m => m.id === memberId);
+        const book = books.find(b => b.id === bookId);
+        toast({
+            title: `"${book?.title}"`,
+            description: `${member?.name} adlı üyenin kitaplığına eklendi.`
+        });
+    } catch (e) {
+        toast({ title: "Hata", description: "Kitap eklenirken bir sorun oluştu.", variant: 'destructive' });
+    }
+  };
 
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
@@ -485,6 +489,7 @@ export default function ArchiveClient() {
           rating: 0,
           description: '',
           isForChildren: false,
+          readers: [],
           ...book,
           image: finalImageUrl || 'https://placehold.co/300x450.png',
           tags: book.tags || [],
@@ -620,10 +625,10 @@ export default function ArchiveClient() {
           </div>
 
           <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
-              <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
+              <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
           </TabsContent>
           <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
-              <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToMyLibrary} />
+              <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
           </TabsContent>
         </Tabs>
       ) : (
@@ -780,7 +785,7 @@ export default function ArchiveClient() {
 }
 
 // BookShelf COMPONENT
-function BookShelf({ books, onEdit, onDelete, onAddToLibrary }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void, onAddToLibrary: (book: Book) => void }) {
+function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void, onAddToLibrary: (bookId: string, memberId: string) => void, familyMembers: any[] }) {
   const shelves = useMemo(() => {
     const grouped: Record<string, Book[]> = {};
     books.forEach(book => {
@@ -827,16 +832,29 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary }: { books: Book[],
                               data-ai-hint="book cover" 
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                            <div className="absolute bottom-0 left-0 p-2 sm:p-3 text-white">
+                             <div className="absolute bottom-0 left-0 p-2 sm:p-3 text-white">
                                 <p className="font-bold text-sm truncate" title={book.title}>{book.title}</p>
                                 <p className="text-xs text-white/80 truncate">{book.author}</p>
                             </div>
                           </div>
                            <CardContent className="p-2 flex-grow flex flex-col justify-end">
-                                <Button size="sm" variant="secondary" className="w-full text-xs" onClick={(e) => { e.stopPropagation(); onAddToLibrary(book);}}>
-                                    <BookPlus className="mr-1.5 h-3.5 w-3.5"/>
-                                    Kitaplığıma Ekle
-                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button size="sm" variant="secondary" className="w-full text-xs" onClick={(e) => e.stopPropagation()}>
+                                            <UserPlus className="mr-1.5 h-3.5 w-3.5"/>
+                                            Kitaplığa Ekle
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                        <DropdownMenuLabel>Kimin Kitaplığına Eklensin?</DropdownMenuLabel>
+                                        {familyMembers.map(member => (
+                                            <DropdownMenuItem key={member.id} onClick={() => onAddToLibrary(book.id, member.id)} disabled={(book.readers || []).includes(member.id)}>
+                                               {member.name}
+                                               {(book.readers || []).includes(member.id) && <span className="text-xs text-muted-foreground ml-auto">Ekli</span>}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                            </CardContent>
                           <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>

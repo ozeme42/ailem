@@ -2,7 +2,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus } from './data';
 
 const getCurrentFamilyId = (): string | null => {
     const auth = getAuth();
@@ -54,28 +54,103 @@ export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
 
 // One-time migration function
 export const migrateOrphanBooks = async (familyId: string) => {
-    console.log("Checking for orphan books to migrate...");
     const booksCollection = collection(db, 'mediaItems');
-    // Query for books where familyId does not exist. Firestore doesn't support "not equals" or "does not exist" queries directly.
-    // A common workaround is to query for `familyId < ''` and `familyId > ''` but that's cumbersome.
-    // The simplest way is to fetch all and filter client-side, but that's inefficient for large datasets.
-    // For this one-time migration, we'll fetch all and check.
     const snapshot = await getDocs(booksCollection);
-    const orphanBooks = snapshot.docs.filter(doc => !doc.data().familyId);
-
-    if (orphanBooks.length > 0) {
-        console.log(`Found ${orphanBooks.length} orphan books. Migrating to family ${familyId}...`);
+    
+    // This is a simplified migration. It checks the first book. If it has no familyId, it assumes a migration is needed.
+    // In a real-world scenario, you might want a more robust check.
+    if (snapshot.docs.length > 0 && !snapshot.docs[0].data().familyId) {
+        console.log(`Found orphan books. Migrating to family ${familyId}...`);
         const batch = writeBatch(db);
-        orphanBooks.forEach(bookDoc => {
-            const docRef = doc(db, 'mediaItems', bookDoc.id);
-            batch.update(docRef, { familyId: familyId });
+        snapshot.docs.forEach(bookDoc => {
+            if (!bookDoc.data().familyId) {
+                const docRef = doc(db, 'mediaItems', bookDoc.id);
+                batch.update(docRef, { familyId: familyId });
+            }
         });
         await batch.commit();
         console.log("Orphan books migration completed.");
         return true;
     }
-    console.log("No orphan books found.");
     return false;
+};
+
+// User Libraries
+export const onUserLibrariesUpdate = (familyId: string, callback: (libraries: UserLibrary[]) => void) => {
+    const q = query(collection(db, "userLibraries"), where("familyId", "==", familyId));
+    return onSnapshot(q, (snapshot) => {
+        const libraries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserLibrary));
+        callback(libraries);
+    });
+};
+
+
+export const addBookToMemberLibrary = async (familyId: string, memberId: string, bookId: string) => {
+    const libraryId = `${familyId}_${memberId}`;
+    const libraryRef = doc(db, 'userLibraries', libraryId);
+    const bookRef = doc(db, 'mediaItems', bookId);
+
+    const newBookEntry: UserLibraryBook = {
+        bookId: bookId,
+        status: 'to-read',
+        addedAt: new Date().toISOString(),
+    };
+
+    const librarySnap = await getDoc(libraryRef);
+    if (!librarySnap.exists()) {
+        await setDoc(libraryRef, {
+            familyId: familyId,
+            memberId: memberId,
+            books: [newBookEntry]
+        });
+    } else {
+        await updateDoc(libraryRef, {
+            books: arrayUnion(newBookEntry)
+        });
+    }
+    
+    // Also update the book to track who has it.
+    await updateDoc(bookRef, {
+        readers: arrayUnion(memberId)
+    });
+};
+
+export const updateUserBookStatus = async (familyId: string, memberId: string, bookId: string, newStatus: BookReadingStatus) => {
+    const libraryId = `${familyId}_${memberId}`;
+    const libraryRef = doc(db, 'userLibraries', libraryId);
+    const librarySnap = await getDoc(libraryRef);
+
+    if (librarySnap.exists()) {
+        const library = librarySnap.data() as UserLibrary;
+        const updatedBooks = library.books.map(book => {
+            if (book.bookId === bookId) {
+                return { ...book, status: newStatus };
+            }
+            return book;
+        });
+        await updateDoc(libraryRef, { books: updatedBooks });
+    }
+};
+
+export const removeBookFromMemberLibrary = async (familyId: string, memberId: string, bookId: string) => {
+    const libraryId = `${familyId}_${memberId}`;
+    const libraryRef = doc(db, 'userLibraries', libraryId);
+    const bookRef = doc(db, 'mediaItems', bookId);
+
+    const librarySnap = await getDoc(libraryRef);
+    if (librarySnap.exists()) {
+        const library = librarySnap.data() as UserLibrary;
+        const bookToRemove = library.books.find(b => b.bookId === bookId);
+        if (bookToRemove) {
+            await updateDoc(libraryRef, {
+                books: arrayRemove(bookToRemove)
+            });
+        }
+    }
+
+     await updateDoc(bookRef, {
+        readers: arrayRemove(memberId)
+    });
 };
 
 

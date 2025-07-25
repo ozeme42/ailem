@@ -1,53 +1,106 @@
 
 "use client";
 
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { type Book } from '@/lib/data';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Label } from '@/components/ui/label';
-import React from 'react';
-import { onBooksUpdate } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
+import { Book as BookType, UserLibrary, FamilyMember } from '@/lib/data';
+import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookFromMemberLibrary } from '@/lib/dataService';
 
+import { PageHeader } from '@/components/page-header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LibraryPage() {
-  const { user } = useAuth();
-  const [allBooks, setAllBooks] = React.useState<Book[]>([]);
+  const { familyId, familyMembers } = useAuth();
+  const [allBooks, setAllBooks] = useState<BookType[]>([]);
+  const [userLibraries, setUserLibraries] = useState<UserLibrary[]>([]);
+  const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
+  const { toast } = useToast();
 
-  React.useEffect(() => {
-    const unsubscribe = onBooksUpdate(setAllBooks);
-    return () => unsubscribe();
-  }, [user]);
+  useEffect(() => {
+    if (familyMembers.length > 0 && !selectedMember) {
+      setSelectedMember(familyMembers[0]);
+    }
+  }, [familyMembers, selectedMember]);
+
+  useEffect(() => {
+    const unsubscribeBooks = onBooksUpdate(setAllBooks);
+    let unsubscribeLibraries = () => {};
+    if (familyId) {
+      unsubscribeLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
+    }
+    return () => {
+      unsubscribeBooks();
+      unsubscribeLibraries();
+    };
+  }, [familyId]);
   
-  // This is placeholder logic to assign some books to the current user.
-  // In a real app, this would come from a 'userBooks' collection in Firestore.
-  const myBooks = allBooks.slice(0, 5).map((book, i) => ({
-      ...book,
-      // Fake some progress
-      progress: (i * 25) % 101
-  }));
-  const readingBooks = myBooks.filter(b => b.progress < 100 && b.progress > 0);
-  const toReadBooks = myBooks.filter(b => b.progress === 0);
-  const finishedBooks = myBooks.filter(b => b.progress >= 100);
+  const handleUpdateStatus = async (bookId: string, newStatus: 'reading' | 'finished') => {
+      if (!familyId || !selectedMember) return;
+      try {
+        await updateUserBookStatus(familyId, selectedMember.id, bookId, newStatus);
+        toast({ title: "Durum Güncellendi", description: "Kitabın okuma durumu değiştirildi." });
+      } catch (e) {
+        toast({ title: "Hata", description: "Durum güncellenirken bir sorun oluştu.", variant: "destructive" });
+      }
+  };
 
-  const stats = {
-      finished: finishedBooks.length,
-      total: myBooks.length,
-      reading: readingBooks.length,
-      percentage: myBooks.length > 0 ? (finishedBooks.length / myBooks.length) * 100 : 0
+  const handleRemoveFromLibrary = async (bookId: string) => {
+    if (!familyId || !selectedMember) return;
+    try {
+        await removeBookFromMemberLibrary(familyId, selectedMember.id, bookId);
+        toast({ title: "Kitap Kaldırıldı", description: "Kitap, kütüphanenizden çıkarıldı.", variant: "destructive" });
+    } catch(e) {
+        toast({ title: "Hata", description: "Kitap kaldırılırken bir sorun oluştu.", variant: "destructive" });
+    }
   }
 
-  if (!user) return null;
+  const { readingBooks, toReadBooks, finishedBooks, stats } = useMemo(() => {
+    if (!selectedMember) {
+        return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, percentage: 0 }};
+    }
+    
+    const memberLibrary = userLibraries.find(lib => lib.memberId === selectedMember.id);
+    if (!memberLibrary) {
+        return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, percentage: 0 }};
+    }
+
+    const myBookDetails: (BookType & { progress?: number })[] = [];
+    memberLibrary.books.forEach(libBook => {
+      const bookDetail = allBooks.find(b => b.id === libBook.bookId);
+      if (bookDetail) {
+        myBookDetails.push({ ...bookDetail, progress: libBook.status === 'reading' ? (libBook.progress || 50) : (libBook.status === 'finished' ? 100 : 0) });
+      }
+    });
+
+    const reading = myBookDetails.filter(b => b.progress > 0 && b.progress < 100);
+    const toRead = myBookDetails.filter(b => b.progress === 0);
+    const finished = myBookDetails.filter(b => b.progress >= 100);
+    
+    const statistics = {
+      finished: finished.length,
+      total: myBookDetails.length,
+      reading: reading.length,
+      percentage: myBookDetails.length > 0 ? (finished.length / myBookDetails.length) * 100 : 0
+    };
+
+    return { readingBooks: reading, toReadBooks: toRead, finishedBooks: finished, stats: statistics };
+
+  }, [selectedMember, userLibraries, allBooks]);
+
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl shadow-lg mb-6">
-        <h1 className="text-2xl font-bold">{`${user.name}'in Kütüphanesi 📚`}</h1>
+       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl shadow-lg mb-6">
+        <h1 className="text-2xl font-bold">{selectedMember ? `${selectedMember.name}'in Kütüphanesi` : 'Kütüphanem'} 📚</h1>
         <Link href="/library/archive">
             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Library className="mr-2 h-4 w-4" />
@@ -56,6 +109,21 @@ export default function LibraryPage() {
         </Link>
       </div>
       
+      <div className="flex items-center gap-4 border-b pb-4">
+        <p className="font-semibold text-sm">Kütüphanesini Gör:</p>
+         {familyMembers.map((member) => (
+          <Button
+            key={member.id}
+            variant={selectedMember?.id === member.id ? "default" : "outline"}
+            className={`h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
+            onClick={() => setSelectedMember(member)}
+          >
+            <span className="text-2xl">{member.avatar.startsWith('/') ? <Image src={member.avatar} alt={member.name} width={24} height={24} className="w-6 h-6 rounded-full" /> : member.avatar}</span>
+            <p className="font-bold text-sm">{member.name}</p>
+          </Button>
+        ))}
+      </div>
+
       <Card className="mb-8">
         <CardHeader>
             <CardTitle>Okuma İlerlemesi</CardTitle>
@@ -87,8 +155,8 @@ export default function LibraryPage() {
       {readingBooks.length > 0 && (
           <div className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {readingBooks.map(book => <BookCard key={book.id} book={book} />)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {readingBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
               </div>
           </div>
       )}
@@ -96,8 +164,8 @@ export default function LibraryPage() {
       {toReadBooks.length > 0 && (
           <div className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Sıradakiler</h2>
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {toReadBooks.map(book => <BookCard key={book.id} book={book} />)}
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
               </div>
           </div>
       )}
@@ -105,8 +173,8 @@ export default function LibraryPage() {
        {finishedBooks.length > 0 && (
           <div className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Bitirdiklerim</h2>
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {finishedBooks.map(book => <BookCard key={book.id} book={book} />)}
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {finishedBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
               </div>
           </div>
       )}
@@ -115,27 +183,57 @@ export default function LibraryPage() {
   );
 }
 
-function BookCard({ book }: { book: Book & { progress: number } }) {
+function BookCard({ book, onUpdateStatus, onRemove }: { book: BookType & { progress?: number }, onUpdateStatus: (bookId: string, status: 'reading' | 'finished') => void, onRemove: (bookId: string) => void }) {
     return (
         <Card className="overflow-hidden flex flex-col group">
             <div className="relative">
                 <Image src={book.image || `https://placehold.co/400x600.png`} alt={book.title} width={400} height={600} className="w-full h-auto object-cover aspect-[2/3] group-hover:scale-105 transition-transform" data-ai-hint="book cover"/>
+                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="secondary">
+                                Durumu Değiştir <ChevronDown className="ml-2 h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            {(book.progress || 0) < 100 && (
+                                <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'reading')}>
+                                    <BookUp className="mr-2 h-4 w-4"/> Okumaya Başla / Devam Et
+                                </DropdownMenuItem>
+                            )}
+                             {(book.progress || 0) < 100 && (
+                                <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished')}>
+                                    <BookCheck className="mr-2 h-4 w-4"/> Bitirildi Olarak İşaretle
+                                </DropdownMenuItem>
+                            )}
+                             <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
+                                <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
-             <CardHeader>
+             <CardHeader className="p-3">
                 <CardTitle className="truncate">{book.title}</CardTitle>
-                <CardDescription>{book.author}</CardDescription>
+                <CardDescription className="text-xs truncate">{book.author}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow">
-               {book.progress > 0 && book.progress < 100 && (
+            <CardContent className="p-3 pt-0 flex-grow">
+               {(book.progress || 0) > 0 && book.progress < 100 && (
                    <div>
                        <Progress value={book.progress} />
                        <p className="text-xs text-muted-foreground mt-1">{book.progress}% tamamlandı</p>
                    </div>
                )}
-                {book.progress >= 100 && (
+                {(book.progress || 0) >= 100 && (
                      <div className="text-sm font-medium text-green-600 flex items-center gap-2">
                         <CheckSquare className="h-4 w-4" />
                         <span>Tamamlandı</span>
+                    </div>
+                )}
+                 {(book.progress || 0) === 0 && (
+                     <div className="text-sm font-medium text-blue-600 flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        <span>Okunacak</span>
                     </div>
                 )}
             </CardContent>
