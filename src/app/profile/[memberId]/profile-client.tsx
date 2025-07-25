@@ -157,28 +157,7 @@ export default function ProfileClient() {
             </Card>
       </div>
 
-       <Card>
-            <CardHeader>
-                <CardTitle>Rozetler</CardTitle>
-                <CardDescription>Kazanılan ve kazanılabilecek tüm başarılar.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {Object.entries(badgeDefinitions).map(([emoji, def]) => {
-                        const isEarned = member.badges?.includes(emoji);
-                        return (
-                           <Card key={emoji} className={cn("text-center p-4 transition-all", !isEarned && "opacity-60 grayscale")}>
-                                <div className="text-4xl mb-2">{emoji}</div>
-                                <h3 className="font-semibold">{def.name}</h3>
-                                <p className="text-xs text-muted-foreground">{def.description}</p>
-                           </Card>
-                        );
-                    })}
-                </div>
-            </CardContent>
-      </Card>
-      
-      <div>
+       <div>
           <h3 className="text-xl font-bold mb-4">Görevleri</h3>
           <Tabs defaultValue="todo">
             <TabsList className="grid w-full grid-cols-2">
@@ -205,7 +184,27 @@ export default function ProfileClient() {
             </TabsContent>
           </Tabs>
       </div>
-      
+
+      <Card>
+            <CardHeader>
+                <CardTitle>Rozetler</CardTitle>
+                <CardDescription>Kazanılan ve kazanılabilecek tüm başarılar.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {Object.entries(badgeDefinitions).map(([emoji, def]) => {
+                        const isEarned = member.badges?.includes(emoji);
+                        return (
+                           <Card key={emoji} className={cn("text-center p-4 transition-all", !isEarned && "opacity-60 grayscale")}>
+                                <div className="text-4xl mb-2">{emoji}</div>
+                                <h3 className="font-semibold">{def.name}</h3>
+                                <p className="text-xs text-muted-foreground">{def.description}</p>
+                           </Card>
+                        );
+                    })}
+                </div>
+            </CardContent>
+      </Card>
     </div>
   );
 }
