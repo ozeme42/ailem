@@ -9,8 +9,9 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Book as BookType, monthlyReadingStats } from "@/lib/data";
-import { onBooksUpdate } from "@/lib/dataService";
+import { onBooksUpdate, onUserLibrariesUpdate } from "@/lib/dataService";
 import { useAuth } from '@/components/auth-provider';
+import { Button } from "@/components/ui/button";
 
 const readingChartConfig = {
   books: { label: "Kitap Sayısı", color: "hsl(var(--chart-2))" },
@@ -20,19 +21,26 @@ const readingChartConfig = {
 export default function LibraryStatsPage() {
     const { familyMembers } = useAuth();
     const [books, setBooks] = React.useState<BookType[]>([]);
+    const [userLibraries, setUserLibraries] = React.useState<any[]>([]);
 
-    const memberReadingConfig = React.useMemo(() => ({
-      booksRead: { label: "Okunan Kitap" },
-      ...familyMembers.reduce((acc, member) => {
-        acc[member.name] = { label: member.name, color: member.color };
-        return acc;
-      }, {} as ChartConfig),
-    }), [familyMembers]) satisfies ChartConfig;
+    const memberReadingConfig = React.useMemo(() => {
+        const config: ChartConfig = { booksRead: { label: "Okunan Kitap" } };
+        familyMembers.forEach(member => {
+            config[member.name] = { label: member.name, color: member.color };
+        });
+        return config;
+    }, [familyMembers]);
+
 
     React.useEffect(() => {
-        const unsubscribe = onBooksUpdate(setBooks);
-        return () => unsubscribe();
-    }, []);
+        const unsubscribeBooks = onBooksUpdate(setBooks);
+        const unsubscribeLibraries = onUserLibrariesUpdate(familyMembers[0]?.id.substring(0, familyMembers[0].id.indexOf('_')) || '', setUserLibraries);
+
+        return () => {
+          unsubscribeBooks();
+          if (unsubscribeLibraries) unsubscribeLibraries();
+        };
+    }, [familyMembers]);
 
     const totalBooks = books.length;
     const totalAuthors = new Set(books.map(b => b.author)).size;
@@ -63,30 +71,25 @@ export default function LibraryStatsPage() {
     }, [books]);
     
      const memberReadingData = React.useMemo(() => {
-        // This is a placeholder logic as we don't track who read which book.
-        // In a real app, you would have a 'readBy' field in your book data.
-        // For now, we'll assign books randomly to members for demonstration.
-        if (familyMembers.length === 0) return [];
-        
-        const booksPerMember: Record<string, number> = {};
-        familyMembers.forEach(m => booksPerMember[m.name] = 0);
-        
-        books.forEach((book, index) => {
-           const member = familyMembers[index % familyMembers.length];
-           if(member) booksPerMember[member.name]++;
-        });
+        if (familyMembers.length === 0 || userLibraries.length === 0) return [];
 
-        return familyMembers.map(member => ({
-            name: member.name,
-            booksRead: booksPerMember[member.name] || 0,
-            fill: member.color,
-        }));
-    }, [books, familyMembers]);
+        return familyMembers.map(member => {
+            const memberLib = userLibraries.find(lib => lib.memberId === member.id);
+            const finishedCount = memberLib ? memberLib.books.filter((b: any) => b.status === 'finished').length : 0;
+            return {
+                name: member.name,
+                booksRead: finishedCount,
+                fill: member.color,
+            };
+        });
+    }, [userLibraries, familyMembers]);
 
 
   return (
     <>
-      <PageHeader title="Kütüphane İstatistikleri 📈" />
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white rounded-xl shadow-lg mb-6">
+        <h1 className="text-2xl font-bold">Kütüphane İstatistikleri 📈</h1>
+      </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
@@ -190,7 +193,7 @@ export default function LibraryStatsPage() {
        <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle>En Çok Okuyanlar</CardTitle>
-                <CardDescription>Aile üyelerinin okuduğu kitap sayısı.</CardDescription>
+                <CardDescription>Aile üyelerinin bitirdiği kitap sayısı.</CardDescription>
             </CardHeader>
             <CardContent>
                 {memberReadingData.length > 0 ? (
@@ -207,8 +210,7 @@ export default function LibraryStatsPage() {
                         />
                         <XAxis dataKey="booksRead" type="number" hide />
                         <Tooltip cursor={false} content={<ChartTooltipContent />} />
-                        <Legend />
-                        <Bar dataKey="booksRead" name="Okunan Kitap" radius={8}>
+                        <Bar dataKey="booksRead" name="Bitirilen Kitap" radius={8}>
                            {memberReadingData.map((entry) => (
                              <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                            ))}
