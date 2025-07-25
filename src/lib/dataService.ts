@@ -128,6 +128,9 @@ export const updateUserBookStatus = async (familyId: string, memberId: string, b
                  if (newStatus === 'finished' && !book.finishedAt) {
                     updatedBook.finishedAt = new Date().toISOString();
                  }
+                 if (newStatus === 'reading' && book.status === 'to-read') {
+                    // Could also set a `startedAt` date here if needed
+                 }
                  return updatedBook;
             }
             return book;
@@ -219,7 +222,15 @@ export const updateTask = (id: string, data: Partial<Task>) => updateDoc(doc(db,
 export const onCalendarEventsUpdate = (callback: (events: CalendarEvent[]) => void) => onFamilyDataUpdate<CalendarEvent>('calendarEvents', callback);
 export const addCalendarEvent = async (data: Omit<CalendarEvent, 'id' | 'familyId'>) => {
     const familyId = (await getDoc(doc(db, 'users', getAuth().currentUser!.uid))).data()!.familyId;
-    return addDoc(collection(db, 'calendarEvents'), { ...data, familyId });
+    // Create a new object to avoid modifying the original data object
+    const eventData: { [key: string]: any } = { ...data, familyId };
+
+    // Remove endDate field if it is undefined, as Firestore doesn't allow it.
+    if (eventData.endDate === undefined) {
+        delete eventData.endDate;
+    }
+    
+    return addDoc(collection(db, 'calendarEvents'), eventData);
 };
 
 
@@ -427,7 +438,6 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
             id: 1,
             title: "Menemen",
             category: 'Kahvaltı',
-            image: "https://placehold.co/400x250.png",
             prepTime: "20 dk",
             rating: 4.8,
             ingredients: ["3 adet domates", "2 adet sivri biber", "2 adet yumurta", "1 yemek kaşığı tereyağı", "Tuz, karabiber, pul biber"],
@@ -437,7 +447,6 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
             id: 2,
             title: "Mercimek Çorbası",
             category: 'Akşam Yemeği',
-            image: "https://placehold.co/400x250.png",
             prepTime: "40 dk",
             rating: 4.9,
             ingredients: ["1 su bardağı kırmızı mercimek", "1 adet soğan", "1 adet havuç", "1 adet patates", "1 yemek kaşığı salça", "Nane, pul biber, tuz"],
@@ -558,4 +567,3 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 };
 
     
-
