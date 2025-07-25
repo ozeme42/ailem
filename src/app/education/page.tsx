@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, onSubjectsUpdate, updateSubjects, addTest, updateTest, addQuestionBank, updateQuestionBank, deleteQuestionBank, addPracticeExam, updatePracticeExam, deletePracticeExam } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, onSubjectsUpdate, updateSubjects, addTest, updateTest, deleteTest, addQuestionBank, updateQuestionBank, deleteQuestionBank, addPracticeExam, updatePracticeExam, deletePracticeExam } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 
 export default function EducationPage() {
@@ -86,6 +86,15 @@ export default function EducationPage() {
     }
   };
   
+  const handleDeleteTest = async (testId: string) => {
+    try {
+        await deleteTest(testId);
+        toast({ title: "🗑️ Ödev Silindi", variant: "destructive" });
+    } catch (error) {
+         toast({ title: "❌ Silme Hatası", description: "Ödev silinirken bir hata oluştu.", variant: 'destructive'});
+    }
+  };
+
   const handleManualGrade = async (testId: string, gradeData: ManualGradeData) => {
       try {
         await updateTest(testId, {
@@ -254,6 +263,25 @@ export default function EducationPage() {
                         <Button variant="outline" size="icon" onClick={() => handleOpenEditTest(test)}>
                           <Edit className="h-4 w-4" />
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Ödevi Silmek İstediğinize Emin Misiniz?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Bu işlem geri alınamaz. "{test.title}" ödevi kalıcı olarak silinecektir.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>İptal</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                         <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
                             <Button className="w-full">Teste Başla</Button>
                         </Link>
@@ -547,3 +575,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    

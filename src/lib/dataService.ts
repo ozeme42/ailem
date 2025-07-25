@@ -1,3 +1,4 @@
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -263,6 +264,7 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
     return addDoc(collection(db, 'tests'), { ...data, familyId });
 };
 export const updateTest = (id: string, data: Partial<Omit<Test, 'id'>>) => updateDoc(doc(db, 'tests', id), data);
+export const deleteTest = (id: string) => deleteDoc(doc(db, "tests", id));
 
 
 export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void) => onFamilyDataUpdate<QuestionBank>('questionBanks', callback);
@@ -448,3 +450,5 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 
     await batch.commit();
 };
+
+    
