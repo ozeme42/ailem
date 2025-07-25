@@ -76,6 +76,7 @@ export interface UserLibraryBook {
     status: BookReadingStatus;
     progress?: number; // 0-100 for 'reading' status
     addedAt: string; // ISO Date string
+    finishedAt?: string; // ISO Date string, set when status becomes 'finished'
 }
 
 export interface UserLibrary {
@@ -121,15 +122,6 @@ export const weeklyPoints = [
     { name: 'Cum', points: 550 },
     { name: 'Cmt', points: 900 },
     { name: 'Paz', points: 600 },
-];
-
-export const monthlyReadingStats = [
-  { month: 'Ocak', books: 5, pages: 1200 },
-  { month: 'Şubat', books: 7, pages: 1500 },
-  { month: 'Mart', books: 6, pages: 1300 },
-  { month: 'Nisan', books: 8, pages: 1800 },
-  { month: 'Mayıs', books: 7, pages: 1600 },
-  { month: 'Haziran', books: 9, pages: 2100 },
 ];
 
 export interface Student {

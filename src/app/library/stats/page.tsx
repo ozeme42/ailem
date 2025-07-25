@@ -12,10 +12,12 @@ import { Book as BookType, monthlyReadingStats, UserLibrary } from "@/lib/data";
 import { onBooksUpdate, onUserLibrariesUpdate } from "@/lib/dataService";
 import { useAuth } from '@/components/auth-provider';
 import { Button } from "@/components/ui/button";
+import { format, subMonths } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 const readingChartConfig = {
-  books: { label: "Kitap Sayısı", color: "hsl(var(--chart-2))" },
-  pages: { label: "Sayfa Sayısı", color: "hsl(var(--chart-4))" },
+  books: { label: "Okunan Kitap", color: "hsl(var(--chart-2))" },
+  pages: { label: "Okunan Sayfa", color: "hsl(var(--chart-4))" },
 } satisfies ChartConfig;
 
 export default function LibraryStatsPage() {
@@ -93,6 +95,40 @@ export default function LibraryStatsPage() {
         });
     }, [userLibraries, familyMembers]);
 
+    const monthlyStats = React.useMemo(() => {
+        const finishedBooks = userLibraries
+            .flatMap(lib => lib.books)
+            .filter(book => book.status === 'finished')
+            .map(book => {
+                const bookDetails = books.find(b => b.id === book.bookId);
+                return {
+                    ...book,
+                    pageCount: bookDetails?.pageCount || 0,
+                    // Use a finishedAt date if available, otherwise fallback to addedAt
+                    date: new Date(book.finishedAt || book.addedAt),
+                };
+            });
+
+        const statsByMonth: { [key: string]: { books: number, pages: number } } = {};
+        const now = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const monthDate = subMonths(now, i);
+            const monthKey = format(monthDate, 'MMM yy', { locale: tr });
+            statsByMonth[monthKey] = { books: 0, pages: 0 };
+        }
+
+        finishedBooks.forEach(book => {
+            const monthKey = format(book.date, 'MMM yy', { locale: tr });
+            if (statsByMonth[monthKey]) {
+                statsByMonth[monthKey].books += 1;
+                statsByMonth[monthKey].pages += book.pageCount;
+            }
+        });
+        
+        return Object.entries(statsByMonth).map(([month, data]) => ({ month, ...data }));
+    }, [userLibraries, books]);
+
 
   return (
     <>
@@ -151,16 +187,15 @@ export default function LibraryStatsPage() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={readingChartConfig} className="h-[300px] w-full">
-              <ComposedChart data={monthlyReadingStats}>
+              <BarChart data={monthlyStats} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                <YAxis yAxisId="left" orientation="left" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Legend />
-                <Bar dataKey="books" yAxisId="left" fill="var(--color-books)" radius={[4, 4, 0, 0]} />
-                <Line type="monotone" dataKey="pages" yAxisId="right" stroke="var(--color-pages)" strokeWidth={2} dot={{ r: 4 }} />
-              </ComposedChart>
+                <Bar dataKey="books" fill="var(--color-books)" radius={[4, 4, 0, 0]} name="Okunan Kitap"/>
+                <Bar dataKey="pages" fill="var(--color-pages)" radius={[4, 4, 0, 0]} name="Okunan Sayfa" />
+              </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
@@ -236,3 +271,4 @@ export default function LibraryStatsPage() {
     </>
   );
 }
+

@@ -124,7 +124,11 @@ export const updateUserBookStatus = async (familyId: string, memberId: string, b
         const library = librarySnap.data() as UserLibrary;
         const updatedBooks = library.books.map(book => {
             if (book.bookId === bookId) {
-                return { ...book, status: newStatus };
+                 const updatedBook = { ...book, status: newStatus };
+                 if (newStatus === 'finished' && !book.finishedAt) {
+                    updatedBook.finishedAt = new Date().toISOString();
+                 }
+                 return updatedBook;
             }
             return book;
         });
@@ -554,3 +558,4 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 };
 
     
+
