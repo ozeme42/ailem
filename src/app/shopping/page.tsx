@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2 } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, deleteShoppingListItemFromList, clearBoughtItemsFromList, onShoppingNoteListsUpdate, addShoppingNoteList, deleteShoppingNoteList, addNoteItemToList, deleteNoteItemFromList, updateNoteItemInList } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType, type ShoppingNoteList, type ShoppingNoteItem } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
+import { PageHeader } from '@/components/page-header';
 
 
 const brightColors = [
@@ -336,8 +337,8 @@ export default function ShoppingPage() {
   
   if (!isLoaded) {
     return (
-      <div className="space-y-6 p-4">
-        <Skeleton className="h-10 w-48" />
+      <div className="space-y-6">
+        <PageHeader title="Alışveriş & Notlar" />
         <Skeleton className="h-12 w-full" />
         <div className="space-y-4 mt-4">
           <Skeleton className="h-16 w-full" />
@@ -350,33 +351,34 @@ export default function ShoppingPage() {
   if (selectedList) {
      const Icon = listIcons[selectedList.icon as keyof typeof listIcons] || ShoppingCart;
      return (
-        <div className="relative flex size-full min-h-screen flex-col bg-slate-50 dark:bg-background">
-            <div className={cn("p-4 flex items-center justify-between text-white rounded-b-3xl shadow-lg", selectedListColor)}>
-                <Button variant="ghost" size="icon" onClick={() => setSelectedList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
-                <div className="flex items-center gap-3">
-                    <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{selectedList.name}</h2>
-                </div>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/20"><Trash2 className="h-5 w-5" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+        <div>
+          <PageHeader title={selectedList.name}>
+            <div className='flex items-center gap-2'>
+              <Button variant="ghost" onClick={() => setSelectedList(null)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Geri
+              </Button>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
+                          <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
             </div>
-            <div className="flex-grow p-4 space-y-4">
+          </PageHeader>
+            <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
                 <form onSubmit={handleAddItem} className="flex gap-2 relative">
                     <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
-                    <Button type="submit" className={cn(selectedListColor)}><Plus className="h-5 w-5" /></Button>
+                    <Button type="submit"><Plus className="h-5 w-5" /></Button>
 
                      {suggestions.length > 0 && (
                         <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-md shadow-lg">
@@ -400,10 +402,10 @@ export default function ShoppingPage() {
                     </TabsList>
                     <TabsContent value="pending" className="mt-4 space-y-2">
                          {pendingItems.map(item => (
-                            <div key={item.id} className={cn("flex items-center p-3 rounded-lg group text-white", selectedListColor)}>
-                                <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)} className="size-5 border-white data-[state=checked]:bg-white data-[state=checked]:text-black" />
+                            <div key={item.id} className="flex items-center p-3 rounded-lg group border bg-card">
+                                <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)} className="size-5" />
                                 <Label htmlFor={item.id} className="ml-3 font-medium cursor-pointer">{item.name}</Label>
-                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
                             </div>
                          ))}
                     </TabsContent>
@@ -430,136 +432,123 @@ export default function ShoppingPage() {
   if (selectedNoteList) {
      const Icon = listIcons[selectedNoteList.icon as keyof typeof listIcons] || Notebook;
      return (
-        <div className="relative flex size-full min-h-screen flex-col bg-slate-50 dark:bg-background">
-            <div className={cn("p-4 flex items-center justify-between text-white rounded-b-3xl shadow-lg", selectedListColor)}>
-                <Button variant="ghost" size="icon" onClick={() => setSelectedNoteList(null)} className="hover:bg-white/20"><ArrowLeft className="h-5 w-5" /></Button>
-                <div className="flex items-center gap-3">
-                    <Icon className="h-6 w-6" />
-                    <h2 className="text-lg font-bold">{selectedNoteList.name}</h2>
-                </div>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/20"><Trash2 className="h-5 w-5" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{selectedNoteList.name}" defterini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => { deleteShoppingNoteList(selectedNoteList.id); setSelectedNoteList(null); }}>Sil</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+        <div>
+          <PageHeader title={selectedNoteList.name}>
+            <div className='flex items-center gap-2'>
+              <Button variant="ghost" onClick={() => setSelectedNoteList(null)}><ArrowLeft className="h-5 w-5 mr-2" /> Geri</Button>
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitleComponent>"{selectedNoteList.name}" defterini sil?</AlertDialogTitleComponent>
+                          <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => { deleteShoppingNoteList(selectedNoteList.id); setSelectedNoteList(null); }}>Sil</AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
             </div>
-            <div className="flex-grow p-4 space-y-4">
-                 <form onSubmit={handleAddNote} className="flex items-start gap-2">
-                    <Textarea placeholder="Yeni not..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={1} className="flex-grow" />
-                    <Button type="submit" className={cn(selectedListColor)}>Ekle</Button>
-                </form>
-                 <div className="space-y-2">
-                    {(selectedNoteList.items || []).map(note => (
-                        <div key={note.id} className="p-3 bg-background border rounded-lg flex justify-between items-start gap-2 group">
-                            <p className="text-sm flex-grow whitespace-pre-wrap">{note.text}</p>
-                            <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNote(note)}><Edit className="h-4 w-4" /></Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu notu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    ))}
-                    {(selectedNoteList.items || []).length === 0 && (
-                        <p className="text-sm text-center text-muted-foreground pt-8">Bu defterde henüz not yok.</p>
-                    )}
-                </div>
-            </div>
+          </PageHeader>
+          <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
+              <form onSubmit={handleAddNote} className="flex items-start gap-2">
+                  <Textarea placeholder="Yeni not..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={1} className="flex-grow" />
+                  <Button type="submit">Ekle</Button>
+              </form>
+              <div className="space-y-2">
+                  {(selectedNoteList.items || []).map(note => (
+                      <div key={note.id} className="p-3 bg-card border rounded-lg flex justify-between items-start gap-2 group">
+                          <p className="text-sm flex-grow whitespace-pre-wrap">{note.text}</p>
+                          <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNote(note)}><Edit className="h-4 w-4" /></Button>
+                              <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                      <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu notu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                      <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                  </AlertDialogContent>
+                              </AlertDialog>
+                          </div>
+                      </div>
+                  ))}
+                  {(selectedNoteList.items || []).length === 0 && (
+                      <p className="text-sm text-center text-muted-foreground pt-8">Bu defterde henüz not yok.</p>
+                  )}
+              </div>
+          </div>
         </div>
      );
   }
 
   return (
     <>
-        <div className="relative flex size-full min-h-screen flex-col bg-slate-50 dark:bg-background overflow-x-hidden">
-            <Tabs defaultValue="lists" className="w-full h-full flex flex-col">
-                <div className="shrink-0">
-                    <div className={cn("flex items-center text-white p-4 pb-2 justify-between rounded-b-3xl shadow-lg", brightColors[0].gradient)}>
-                        <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pl-12">Alışveriş & Notlar</h2>
-                        <div className="flex w-12 items-center justify-end">
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20"><Plus className="size-6" /></Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px]">
-                                    <DialogHeader>
-                                      <DialogTitle>Yeni Oluştur</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                      <Button onClick={() => setCreateListType('shopping')}>Yeni Alışveriş Listesi</Button>
-                                      <Button onClick={() => setCreateListType('note')}>Yeni Not Defteri</Button>
-                                    </div>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
-                    </div>
-                    <div className="px-4 pt-2 bg-slate-50 dark:bg-background">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="lists">Alışveriş Listeleri</TabsTrigger>
-                            <TabsTrigger value="notes">Not Defterleri</TabsTrigger>
-                        </TabsList>
-                    </div>
-                </div>
-                <div className="flex-grow overflow-y-auto">
-                    <TabsContent value="lists" className="p-4 space-y-2">
-                         {(shoppingLists || []).length > 0 ? (
-                            (shoppingLists || []).map((list, index) => {
-                            const color = brightColors[index % brightColors.length];
-                            return (
-                                <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectList(list as ShoppingList, cn("bg-gradient-to-br", color.gradient))} />
-                            )
-                            })
-                        ) : (
-                            <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/20">
-                                <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                                <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
-                                <p className="text-sm text-muted-foreground">Başlamak için sağ üstteki '+' simgesine dokunun.</p>
-                            </div>
-                        )}
-                    </TabsContent>
-                     <TabsContent value="notes" className="p-4 space-y-2">
-                        {(noteLists || []).length > 0 ? (
-                            (noteLists || []).map((list, index) => {
-                                const color = brightColors[(index + 3) % brightColors.length]; // Use different colors
-                                return (
-                                    <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectNoteList(list as ShoppingNoteList, cn("bg-gradient-to-br", color.gradient))} />
-                                )
-                            })
-                        ) : (
-                            <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/20">
-                                <Notebook className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                                <p className="mt-4 text-md">Henüz not defteriniz yok.</p>
-                                <p className="text-sm text-muted-foreground">Başlamak için sağ üstteki '+' simgesine dokunun.</p>
-                            </div>
-                        )}
-                    </TabsContent>
-                </div>
-            </Tabs>
-        </div>
-        <CreateListDialog isOpen={!!createListType} onOpenChange={() => setCreateListType(null)} onCreate={handleCreateList} listType={createListType || 'shopping'}/>
-        <EditNoteDialog
-          note={editingNote}
-          listName={selectedNoteList?.name || ''}
-          isOpen={!!editingNote}
-          onOpenChange={(open) => { if (!open) setEditingNote(null); }}
-          onSubmit={handleUpdateNoteSubmit}
-        />
+      <PageHeader title="Alışveriş & Notlar">
+          <Dialog>
+              <DialogTrigger asChild>
+                  <Button><PlusCircle className="size-4 mr-2" /> Yeni Oluştur</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Yeni Oluştur</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <Button variant="outline" onClick={() => setCreateListType('shopping')}>Yeni Alışveriş Listesi</Button>
+                    <Button variant="outline" onClick={() => setCreateListType('note')}>Yeni Not Defteri</Button>
+                  </div>
+              </DialogContent>
+          </Dialog>
+      </PageHeader>
+      <Tabs defaultValue="lists" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="lists">Alışveriş Listeleri</TabsTrigger>
+              <TabsTrigger value="notes">Not Defterleri</TabsTrigger>
+          </TabsList>
+          <TabsContent value="lists" className="p-4 space-y-2 bg-muted/40 rounded-b-lg">
+                {(shoppingLists || []).length > 0 ? (
+                  (shoppingLists || []).map((list, index) => {
+                  const color = brightColors[index % brightColors.length];
+                  return (
+                      <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectList(list as ShoppingList, cn("bg-gradient-to-br", color.gradient))} />
+                  )
+                  })
+              ) : (
+                  <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
+                      <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                      <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
+                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Oluştur"a tıklayın.</p>
+                  </div>
+              )}
+          </TabsContent>
+            <TabsContent value="notes" className="p-4 space-y-2 bg-muted/40 rounded-b-lg">
+              {(noteLists || []).length > 0 ? (
+                  (noteLists || []).map((list, index) => {
+                      const color = brightColors[(index + 3) % brightColors.length]; // Use different colors
+                      return (
+                          <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectNoteList(list as ShoppingNoteList, cn("bg-gradient-to-br", color.gradient))} />
+                      )
+                  })
+              ) : (
+                  <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
+                      <Notebook className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                      <p className="mt-4 text-md">Henüz not defteriniz yok.</p>
+                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Oluştur"a tıklayın.</p>
+                  </div>
+              )}
+          </TabsContent>
+      </Tabs>
+      <CreateListDialog isOpen={!!createListType} onOpenChange={() => setCreateListType(null)} onCreate={handleCreateList} listType={createListType || 'shopping'}/>
+      <EditNoteDialog
+        note={editingNote}
+        listName={selectedNoteList?.name || ''}
+        isOpen={!!editingNote}
+        onOpenChange={(open) => { if (!open) setEditingNote(null); }}
+        onSubmit={handleUpdateNoteSubmit}
+      />
     </>
   );
 }
