@@ -235,45 +235,46 @@ export default function CalendarPage() {
               const dayEvents = getEventsForDay(day);
 
               return (
-              <div key={day.toString()} className={cn("border-b border-r p-2 flex", viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'h-24 flex-row gap-4')}>
-                <div className={cn(viewMode === 'week' && 'w-24 text-center border-r pr-4')}>
-                    <span className={cn(`font-semibold`, isToday(day) ? 'text-primary' : 'text-foreground', !isSameMonth(day, currentDate) && 'text-muted-foreground/50')}>
-                      {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM')}
-                    </span>
-                     {viewMode === 'week' && <span className="block text-xs capitalize">{format(day, 'EEE', {locale: tr})}</span>}
-                </div>
-                <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start')}>
-                   {dayEvents.map((event, index) => {
-                       const color = eventColors[index % eventColors.length];
-                       return (
-                       <Dialog key={event.id}>
-                        <DialogTrigger asChild>
-                           <div className={cn('p-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
-                            <p className="text-xs font-semibold truncate">{event.title}</p>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl pt-2 flex items-center gap-2">
-                                  {getRecurrenceIcon(event.recurrence)}
-                                  {event.title}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    {format(new Date(event.startDate), 'd MMMM yyyy, EEEE', { locale: tr })}
-                                    {event.endDate && ` - ${format(new Date(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <p className="capitalize">Tekrarlanma: {getRecurrenceText(event.recurrence)}</p>
+                <Dialog key={day.toString()}>
+                  <DialogTrigger asChild disabled={dayEvents.length === 0}>
+                     <div className={cn("border-b border-r p-2 flex", dayEvents.length > 0 && 'cursor-pointer hover:bg-muted/50', viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'h-24 flex-row gap-4')}>
+                        <div className={cn(viewMode === 'week' && 'w-24 text-center border-r pr-4')}>
+                            <span className={cn(`font-semibold`, isToday(day) ? 'text-primary' : 'text-foreground', !isSameMonth(day, currentDate) && 'text-muted-foreground/50')}>
+                              {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM')}
+                            </span>
+                             {viewMode === 'week' && <span className="block text-xs capitalize">{format(day, 'EEE', {locale: tr})}</span>}
+                        </div>
+                        <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start')}>
+                           {dayEvents.map((event, index) => {
+                               const color = eventColors[index % eventColors.length];
+                               return (
+                               <div key={event.id} className={cn('p-1.5 rounded-md', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
+                                <p className="text-xs font-semibold truncate">{event.title}</p>
+                              </div>
+                            )})}
+                        </div>
+                      </div>
+                  </DialogTrigger>
+                   <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{format(day, 'd MMMM yyyy, EEEE', { locale: tr })}</DialogTitle>
+                        <DialogDescription>Bu gündeki hatırlatıcılar.</DialogDescription>
+                      </DialogHeader>
+                       <div className="space-y-2 py-4">
+                        {dayEvents.map(event => (
+                            <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold">{event.title}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                       Tekrarlanma: {getRecurrenceText(event.recurrence)}
+                                    </p>
+                                </div>
+                                <Badge variant="outline" className="capitalize">{event.recurrence === 'one-time' && event.endDate ? 'Süreli' : getRecurrenceText(event.recurrence)}</Badge>
                             </div>
-                             <DialogFooter>
-                                <Button variant="outline">Düzenle</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                       </Dialog>
-                    )})}
-                </div>
-              </div>
+                        ))}
+                      </div>
+                  </DialogContent>
+                </Dialog>
             )})}
           </div>
         </CardContent>
