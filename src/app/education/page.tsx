@@ -290,9 +290,33 @@ export default function EducationPage() {
                        <h4 className="font-bold">{test.title}</h4>
                        <p className="text-sm text-muted-foreground">{test.subject}</p>
                      </div>
-                      <Badge className={getStatusBadgeClasses(test.status)}>
-                        {test.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusBadgeClasses(test.status)}>
+                            {test.status}
+                        </Badge>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleOpenEditTest(test)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon" className="h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Testi Silmek İstediğinize Emin Misiniz?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Bu işlem geri alınamaz. "{test.title}" testi ve sonuçları kalıcı olarak silinecektir.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>İptal</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                    </div>
                    {test.status === 'Değerlendirildi' && (
                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
