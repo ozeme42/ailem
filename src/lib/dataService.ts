@@ -225,6 +225,7 @@ export const addTask = async (data: Omit<Task, 'id' | 'familyId'>) => {
     return addDoc(collection(db, 'tasks'), { ...data, familyId });
 };
 export const updateTask = (id: string, data: Partial<Task>) => updateDoc(doc(db, 'tasks', id), data);
+export const deleteTask = (id: string) => deleteDoc(doc(db, "tasks", id));
 
 // Calendar Events
 export const onCalendarEventsUpdate = (callback: (events: CalendarEvent[]) => void) => onFamilyDataUpdate<CalendarEvent>('calendarEvents', callback);
