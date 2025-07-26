@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import admin from '@/lib/firebaseAdmin';
+import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 import fetch from 'node-fetch';
 
 const MigrateImageInputSchema = z.object({
@@ -44,6 +44,7 @@ export const migrateImageFlow = ai.defineFlow(
   },
   async ({ sourceUrl, imageDataUri, destinationPath }) => {
     try {
+      const admin = getFirebaseAdmin();
       let imageBuffer: Buffer;
       let contentType: string;
 
