@@ -259,7 +259,6 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
                             initialFocus
                         />
                         </PopoverContent>
@@ -340,7 +339,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                         <FormField control={form.control} name="totalOccurrences" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Tekrar Sayısı (Opsiyonel)</FormLabel>
-                                <FormControl><Input type="number" placeholder="Örn: 10" {...field} /></FormControl>
+                                <FormControl><Input type="number" placeholder="Örn: 10" {...field} value={field.value ?? ''} /></FormControl>
                             </FormItem>
                         )}/>
                     </div>
@@ -393,3 +392,5 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
     </Form>
   );
 }
+
+    
