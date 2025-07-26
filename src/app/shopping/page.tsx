@@ -149,51 +149,39 @@ const ListCard = ({ list, colorClass, onClick }: { list: ShoppingList | Shopping
 };
 
 
-const EditNoteDialog = ({ note, listName, isOpen, onOpenChange, onSubmit }: {
-  note: ShoppingNoteItem | null;
+const EditNoteDialog = ({ note, listName, onSave }: {
+  note: ShoppingNoteItem;
   listName: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (newText: string) => void;
+  onSave: (newText: string) => void;
 }) => {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(note.text);
 
-  useEffect(() => {
-    if (note) {
-      setText(note.text);
-    } else {
-      setText('');
-    }
-  }, [note]);
-  
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (text.trim()) {
-        onSubmit(text);
+        onSave(text);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Notu Düzenle</DialogTitle>
-          <DialogDescription>"{listName}" defterindeki notu güncelleyin.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSave} className="space-y-4 py-4">
-          <Textarea 
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={4} 
-            autoFocus
-          />
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+    <>
+      <DialogHeader>
+        <DialogTitle>Notu Düzenle</DialogTitle>
+        <DialogDescription>"{listName}" defterindeki notu güncelleyin.</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={handleSave} className="space-y-4 py-4">
+        <Textarea 
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={4} 
+          autoFocus
+        />
+        <DialogFooter>
+            <DialogTrigger asChild><Button type="button" variant="ghost">İptal</Button></DialogTrigger>
             <Button type="submit">Kaydet</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogFooter>
+      </form>
+    </>
   );
 };
 
@@ -212,7 +200,6 @@ export default function ShoppingPage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [newNoteText, setNewNoteText] = useState('');
   const [editingNote, setEditingNote] = useState<ShoppingNoteItem | null>(null);
-  const [isEditNoteDialogOpen, setIsEditNoteDialogOpen] = useState(false);
   
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate(setShoppingLists);
@@ -312,18 +299,12 @@ export default function ShoppingPage() {
           toast({ title: 'Not Eklendi' });
       }
   };
-  
-  const handleOpenEditDialog = (note: ShoppingNoteItem) => {
-    setEditingNote(note);
-    setIsEditNoteDialogOpen(true);
-  };
 
   const handleUpdateNoteSubmit = async (newText: string) => {
     if (editingNote && selectedNoteList) {
       await updateNoteItemInList(selectedNoteList.id, editingNote.id, newText);
-      setEditingNote(null);
-      setIsEditNoteDialogOpen(false);
       toast({ title: "Not Güncellendi" });
+      setEditingNote(null);
     }
   };
 
@@ -490,7 +471,22 @@ export default function ShoppingPage() {
                       <div key={note.id} className="p-3 bg-card border rounded-lg flex justify-between items-start gap-2 group">
                           <p className="text-sm flex-grow whitespace-pre-wrap">{note.text}</p>
                           <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditDialog(note)}><Edit className="h-4 w-4" /></Button>
+                              <Dialog onOpenChange={(open) => !open && setEditingNote(null)}>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNote(note)}>
+                                      <Edit className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                {editingNote?.id === note.id && (
+                                  <DialogContent>
+                                    <EditNoteDialog 
+                                        note={editingNote} 
+                                        listName={selectedNoteList.name}
+                                        onSave={handleUpdateNoteSubmit}
+                                    />
+                                  </DialogContent>
+                                )}
+                              </Dialog>
                               <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
@@ -571,18 +567,6 @@ export default function ShoppingPage() {
           </TabsContent>
       </Tabs>
       <CreateListDialog isOpen={!!createListType} onOpenChange={() => setCreateListType(null)} onCreate={handleCreateList} listType={createListType || 'shopping'}/>
-      <EditNoteDialog
-        note={editingNote}
-        listName={selectedNoteList?.name || ''}
-        isOpen={isEditNoteDialogOpen}
-        onOpenChange={(open) => {
-          setIsEditNoteDialogOpen(open);
-          if (!open) {
-            setEditingNote(null);
-          }
-        }}
-        onSubmit={handleUpdateNoteSubmit}
-      />
     </div>
   );
 }
