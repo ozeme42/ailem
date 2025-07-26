@@ -295,7 +295,7 @@ export default function Home() {
     <div className="space-y-8">
       <header className="flex items-center justify-between gap-4 p-4 bg-gradient-to-br from-primary to-accent/80 text-primary-foreground rounded-xl shadow-lg">
           <div className="flex items-center gap-4">
-              <SidebarTrigger className="md:hidden text-primary-foreground hover:bg-white/20 hover:text-primary-foreground" />
+              <SidebarTrigger className="text-primary-foreground hover:bg-white/20 hover:text-primary-foreground" />
               <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
           </div>
           <div className="flex items-center gap-2">
