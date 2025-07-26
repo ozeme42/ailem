@@ -347,7 +347,7 @@ export default function EducationPage() {
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">
-                            <Badge variant={test.status === 'Değerlendirildi' ? "default" : "secondary"}>{test.status}</Badge>
+                            <Badge variant={test.status === 'Değerlendirildi' ? "default" : (test.status === 'Çözüldü' ? "secondary" : "outline")}>{test.status}</Badge>
                             <h3 className="font-semibold text-lg">{test.title}</h3>
                             <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
                         </div>

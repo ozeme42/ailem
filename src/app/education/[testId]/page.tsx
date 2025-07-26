@@ -50,13 +50,16 @@ export default function OpticalFormPage() {
                 timerStatus: 'finished',
                 timeSpentSeconds: timeSpent
             };
+            
+            const gradingType = test.gradingType || 'manual';
 
-            // --- REFACTORED GRADING LOGIC ---
+            // --- REFACTORED AND CORRECTED GRADING LOGIC ---
             
             // 1. Manual Grading Flow (manual-text or manual)
-            if (test.gradingType !== 'auto') {
-                updatedData.status = 'Çözüldü'; // Set to 'Çözüldü' for manual grading
-                if (test.gradingType === 'manual-text') {
+            // If the test is NOT auto-graded, its status MUST become 'Çözüldü'
+            if (gradingType !== 'auto') {
+                updatedData.status = 'Çözüldü'; 
+                if (gradingType === 'manual-text') {
                     updatedData.studentTextAnswers = textAnswers;
                 }
                 toast({
@@ -65,6 +68,7 @@ export default function OpticalFormPage() {
                 });
 
             // 2. Auto Grading Flow (auto)
+            // This block ONLY runs if gradingType is 'auto'
             } else {
                 updatedData.studentAnswers = mcqAnswers;
                 let answerKey: { [key: string]: string } | undefined = undefined;
@@ -100,18 +104,24 @@ export default function OpticalFormPage() {
                             incorrect++;
                         }
                     }
-
-                    updatedData.status = 'Değerlendirildi'; // Set to 'Değerlendirildi' as it's auto-graded
+                    
+                    const score = (correct / test.questionCount) * 100;
+                    updatedData.status = 'Değerlendirildi';
                     updatedData.correctAnswers = correct;
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
-                    updatedData.score = (correct / test.questionCount) * 100;
+                    updatedData.score = score;
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı ve Değerlendirildi!",
                         description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
                     });
+
+                    // Award badges only after auto-grading is complete
+                    if (test.familyId && test.studentId) {
+                         await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
+                    }
                 } else {
-                    // Answer key not found, mark as solved for manual grading
+                    // Answer key not found for an 'auto' test, mark as 'Çözüldü' for manual check
                     updatedData.status = 'Çözüldü';
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
@@ -123,10 +133,6 @@ export default function OpticalFormPage() {
             // --- END OF REFACTORED LOGIC ---
 
             await updateTest(test.id, updatedData);
-            if (test.familyId && test.studentId && updatedData.status === 'Değerlendirildi') {
-                await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
-            }
-
             router.push('/education');
 
         } catch (error) {
