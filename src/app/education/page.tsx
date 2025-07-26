@@ -149,15 +149,13 @@ export default function EducationPage() {
 
   const parseAndFormatDate = (dateString?: string) => {
     if (!dateString) {
-        return { month: "Belirsiz", day: "??" };
+        return { month: "Bilinmiyor", day: "??" };
     }
     try {
-      // Assuming dateString is "dd MMMM yyyy"
       const formatString = "dd MMMM yyyy";
       const parsedDate = parse(dateString, formatString, new Date(), { locale: tr });
       
       if (isNaN(parsedDate.getTime())) {
-          // If parsing fails, try ISO format as a fallback for older data
           const isoParsed = parseISO(dateString);
            if (isNaN(isoParsed.getTime())) {
              return { month: "Bilinmiyor", day: "??" };
@@ -300,10 +298,32 @@ export default function EducationPage() {
                                 <span className="text-xs text-muted-foreground">DAKİKA</span>
                             </div>
                         </CardContent>
-                        <CardFooter>
+                        <CardFooter className="flex flex-col gap-2 items-stretch">
                             <Link href={`/education/${test.id}`} className="w-full">
                                 <Button className="w-full bg-cyan-500 hover:bg-cyan-600">Sınav Giriş Ekranına Git</Button>
                             </Link>
+                            <div className="flex gap-2">
+                                <Button variant="outline" className="w-full" onClick={() => handleOpenEditTest(test)}>
+                                  <Edit className="mr-2 h-4 w-4" /> Düzenle
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="icon">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Testi Silmek İstediğinize Emin Misiniz?</AlertDialogTitle>
+                                      <AlertDialogDescription>Bu işlem geri alınamaz. "{test.title}" testi kalıcı olarak silinecektir.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>İptal</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                         </CardFooter>
                     </Card>
                )}) : <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Atanmış yeni test bulunmuyor.</CardContent></Card>}
