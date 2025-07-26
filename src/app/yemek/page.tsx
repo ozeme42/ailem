@@ -62,8 +62,7 @@ export default function YemekPlanlamaPage() {
 
   const filteredRecipes = recipes.filter(recipe => {
     const matchesCategory = activeTab === "Hepsi" || recipe.category === activeTab;
-    const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          recipe.ingredients.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
   
@@ -198,7 +197,7 @@ export default function YemekPlanlamaPage() {
                  <div className="w-full sm:w-auto md:w-1/3 relative">
                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Tarif veya malzeme ara..." 
+                      placeholder="Tarif ara..." 
                       className="pl-10"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -228,38 +227,26 @@ export default function YemekPlanlamaPage() {
                            <Dialog key={recipe.id}>
                                 <DialogTrigger asChild>
                                     <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1">
-                                      <div className="relative">
-                                          <Badge className="absolute top-2 right-2 bg-black/50 text-white backdrop-blur-sm">{recipe.prepTime}</Badge>
-                                      </div>
                                       <CardHeader className="p-4">
                                           <CardTitle className="truncate group-hover:text-primary text-base">{recipe.title}</CardTitle>
                                           <CardDescription className="text-xs">{recipe.category}</CardDescription>
                                       </CardHeader>
                                     </Card>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-3xl">
+                                <DialogContent className="sm:max-w-md">
                                     <DialogHeader>
                                         <Badge variant="secondary" className="w-fit mb-2">{recipe.category}</Badge>
                                         <DialogTitle className="text-3xl font-bold">{recipe.title}</DialogTitle>
                                         <DialogDescription className="flex items-center gap-4 pt-2">
-                                            <span><Clock className="inline-block mr-1 h-4 w-4"/>{recipe.prepTime}</span>
                                             <span><Star className="inline-block mr-1 h-4 w-4 text-yellow-400 fill-yellow-400"/>{recipe.rating}/5</span>
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <div className="grid md:grid-cols-2 gap-8 mt-4 max-h-[60vh] overflow-y-auto pr-4">
-                                        <div className="space-y-4">
-                                            <h3 className="font-semibold text-xl border-b pb-2">Malzemeler</h3>
-                                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                                                {recipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
-                                            </ul>
-                                        </div>
-                                        <div className="space-y-4">
+                                    {recipe.instructions && (
+                                        <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-4">
                                             <h3 className="font-semibold text-xl border-b pb-2">Hazırlanışı</h3>
-                                            <ol className="list-decimal list-inside space-y-3">
-                                                {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
-                                            </ol>
+                                            <p className="whitespace-pre-wrap">{recipe.instructions}</p>
                                         </div>
-                                    </div>
+                                    )}
                                 </DialogContent>
                             </Dialog>
                         ))}

@@ -92,10 +92,8 @@ export interface Recipe {
     familyId: string;
     title: string;
     category: 'Kahvaltı' | 'Akşam Yemeği' | 'Atıştırmalık';
-    prepTime: string;
     rating: number;
-    ingredients: string[];
-    instructions: string[];
+    instructions?: string;
 }
 
 export type MealPlan = {
@@ -257,26 +255,20 @@ export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
     {
         title: "Menemen",
         category: 'Kahvaltı',
-        prepTime: "20 dk",
         rating: 4.8,
-        ingredients: ["3 adet domates", "2 adet sivri biber", "2 adet yumurta", "1 yemek kaşığı tereyağı", "Tuz, karabiber, pul biber"],
-        instructions: ["Biberleri ve domatesleri doğrayın.", "Tereyağını tavada eritin ve biberleri kavurun.", "Domatesleri ekleyip suyunu çekene kadar pişirin.", "Yumurtaları kırın ve karıştırarak pişirin.", "Baharatları ekleyip servis yapın."]
+        instructions: "Biberleri ve domatesleri doğrayın. Tereyağını tavada eritin ve biberleri kavurun. Domatesleri ekleyip suyunu çekene kadar pişirin. Yumurtaları kırın ve karıştırarak pişirin. Baharatları ekleyip servis yapın."
     },
     {
         title: "Mercimek Çorbası",
         category: 'Akşam Yemeği',
-        prepTime: "40 dk",
         rating: 4.9,
-        ingredients: ["1 su bardağı kırmızı mercimek", "1 adet soğan", "1 adet havuç", "1 adet patates", "1 yemek kaşığı salça", "Nane, pul biber, tuz"],
-        instructions: ["Tüm sebzeleri doğrayın.", "Mercimeği yıkayıp süzün.", "Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin.", "Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun.", "Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin.", "Baharatları ekleyip bir taşım daha kaynatın."]
+        instructions: "Tüm sebzeleri doğrayın. Mercimeği yıkayıp süzün. Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin. Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun. Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin. Baharatları ekleyip bir taşım daha kaynatın."
     },
      {
         title: "Meyveli Yoğurt",
         category: 'Atıştırmalık',
-        prepTime: "5 dk",
         rating: 4.5,
-        ingredients: ["1 kase yoğurt", "Mevsim meyveleri (çilek, muz, yaban mersini vb.)", "1 tatlı kaşığı bal", "Yulaf ezmesi"],
-        instructions: ["Meyveleri doğrayın.", "Yoğurdu bir kaseye alın, bal ile karıştırın.", "Üzerine meyveleri ve yulaf ezmesini ekleyerek servis yapın."]
+        instructions: "Meyveleri doğrayın. Yoğurdu bir kaseye alın, bal ile karıştırın. Üzerine meyveleri ve yulaf ezmesini ekleyerek servis yapın."
     }
 ];
 
