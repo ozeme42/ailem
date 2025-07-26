@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
@@ -36,6 +36,12 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
@@ -186,7 +192,57 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
     );
 }
 
-function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSubject }) {
+const newSubjectSchema = z.object({
+  name: z.string().min(2, "Ders adı en az 2 karakter olmalıdır."),
+});
+function NewSubjectDialog({ open, onOpenChange, onCreate }) {
+  const form = useForm({
+    resolver: zodResolver(newSubjectSchema),
+    defaultValues: { name: "" },
+  });
+
+  const onSubmit = (data) => {
+    onCreate(data.name);
+    form.reset();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Yeni Ders Ekle</DialogTitle>
+          <DialogDescription>Müfredata yeni bir ders ekleyin.</DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ders Adı</FormLabel>
+                  <FormControl>
+                    <Input placeholder="örn: Fizik" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+                <Button type="submit">Ekle</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSubject, onCreateSubject }) {
+    const [isNewSubjectDialogOpen, setIsNewSubjectDialogOpen] = React.useState(false);
 
     const topicsBySubject = React.useMemo(() => {
         const mapping: { [key: string]: any[] } = {};
@@ -213,6 +269,12 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
     };
 
     return (
+        <>
+        <div className="flex justify-end mb-4">
+            <Button onClick={() => setIsNewSubjectDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Yeni Ders Ekle
+            </Button>
+        </div>
          <Accordion type="multiple" className="w-full space-y-4">
             {subjects.map((subject) => {
                 const Icon = categoryIcons[subject] || BookCopy;
@@ -248,7 +310,7 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
                                             <p className="font-medium">{topic.name}</p>
                                             <p className="text-xs text-muted-foreground">{topic.bankName}</p>
                                         </div>
-                                        <Button variant="ghost" size="sm" onClick={() => handleEditTopic(topic.bankId)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleEditTopic(topic.bankId)}><Edit className="w-4 h-4 mr-2"/>Konuları Düzenle</Button>
                                     </div>
                                 ))}
                                 {topics.length === 0 && <p className="text-sm text-muted-foreground text-center p-4">Bu derse ait konu bulunamadı.</p>}
@@ -259,6 +321,8 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
                 );
             })}
          </Accordion>
+         <NewSubjectDialog open={isNewSubjectDialogOpen} onOpenChange={setIsNewSubjectDialogOpen} onCreate={onCreateSubject} />
+         </>
     );
 }
 
@@ -304,6 +368,10 @@ export default function EducationManagementPage() {
     }, [tests]);
 
     const handleCreateSubject = async (subjectName: string) => {
+        if (availableSubjects.map(s => s.toLowerCase()).includes(subjectName.toLowerCase())) {
+            toast({ variant: 'destructive', title: "Hata", description: "Bu ders zaten mevcut." });
+            return;
+        }
         const newSubjects = [...new Set([...availableSubjects, subjectName])];
         await updateSubjects(newSubjects);
         toast({ title: "Yeni Ders Oluşturuldu" });
@@ -511,6 +579,7 @@ export default function EducationManagementPage() {
                         questionBanks={questionBanks}
                         onOpenEditBank={openEditBankDialog}
                         onDeleteSubject={handleDeleteSubject}
+                        onCreateSubject={handleCreateSubject}
                     />
                 </TabsContent>
             </Tabs>

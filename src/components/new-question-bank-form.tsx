@@ -270,7 +270,7 @@ function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectI
        </div>
        <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             className="mt-2"
             onClick={() => append({ id: Date.now(), name: "", questionCount: 20, gradingType: 'manual', answerKey: {} })}
