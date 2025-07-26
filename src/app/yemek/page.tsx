@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat } from "lucide-react";
+import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2 } from "lucide-react";
 import { format, addDays, startOfWeek } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -111,6 +111,27 @@ export default function YemekPlanlamaPage() {
      updateMealPlan(dayKey, updatedDayPlan);
   };
 
+  const { mostEaten, recipeCounts } = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    Object.values(mealPlan).forEach(dayPlan => {
+      Object.values(dayPlan).forEach(recipe => {
+        if (recipe?.id) {
+          counts.set(recipe.id, (counts.get(recipe.id) || 0) + 1);
+        }
+      });
+    });
+
+    const sorted = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([id, count]) => {
+        const recipe = recipes.find(r => r.id === id);
+        return { ...recipe, count };
+      });
+
+    return { mostEaten: sorted, recipeCounts: counts };
+  }, [mealPlan, recipes]);
+
   return (
     <>
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl shadow-lg mb-6">
@@ -190,6 +211,33 @@ export default function YemekPlanlamaPage() {
         </CardContent>
       </Card>
       
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><BarChart2 className="text-primary"/> İstatistikler</CardTitle>
+          <CardDescription>Ailenin yemek tercihleri ve en popüler tarifler.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <h3 className="font-semibold mb-2 text-center">En Çok Yenenler</h3>
+            {mostEaten.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {mostEaten.map((recipe, index) => (
+                       recipe.id ? (
+                        <Card key={recipe.id} className="p-4 flex items-center gap-4">
+                             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted font-bold text-lg text-primary">{index + 1}</div>
+                             <div>
+                                 <p className="font-semibold">{recipe.title}</p>
+                                 <p className="text-sm text-muted-foreground">{recipe.count} kez pişirildi</p>
+                             </div>
+                        </Card>
+                       ) : null
+                    ))}
+                </div>
+            ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">İstatistik gösterecek kadar veri henüz yok.</p>
+            )}
+        </CardContent>
+      </Card>
+
       <Card>
           <CardHeader>
              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -228,7 +276,12 @@ export default function YemekPlanlamaPage() {
                                 <DialogTrigger asChild>
                                     <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1">
                                       <CardHeader className="p-4">
-                                          <CardTitle className="truncate group-hover:text-primary text-base">{recipe.title}</CardTitle>
+                                          <div className="flex justify-between items-start">
+                                            <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
+                                            {(recipeCounts.get(recipe.id) || 0) > 0 && (
+                                                <Badge variant="secondary">{recipeCounts.get(recipe.id)}</Badge>
+                                            )}
+                                          </div>
                                           <CardDescription className="text-xs">{recipe.category}</CardDescription>
                                       </CardHeader>
                                     </Card>
