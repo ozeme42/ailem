@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -25,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useTheme } from "next-themes";
+import Image from "next/image";
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -187,6 +188,11 @@ export default function Home() {
     };
   }, [calendarEvents]);
 
+  const latestBooks = React.useMemo(() => {
+      // Assuming the books array is roughly in creation order. Reverse and take 10.
+      return [...books].reverse().slice(0, 10);
+  }, [books]);
+
 
   if (loading) {
     return (
@@ -276,9 +282,9 @@ export default function Home() {
       </header>
       
         <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 md:grid-cols-2">
+             <div className="grid grid-cols-2">
                  <Link href="/shopping" className="group block">
-                    <div className="flex flex-col p-4 rounded-l-xl md:rounded-l-xl md:rounded-r-none rounded-r-none shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
+                    <div className="flex flex-col p-4 rounded-l-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
                             {shoppingSummary.totalPending > 0 ? (
@@ -302,7 +308,7 @@ export default function Home() {
                     </div>
                 </Link>
                 <Link href="/yemek" className="group block">
-                    <div className="flex flex-col p-4 rounded-r-xl md:rounded-r-xl md:rounded-l-none rounded-l-none shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
+                    <div className="flex flex-col p-4 rounded-r-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
                         <div className="space-y-1 md:space-y-2">
@@ -387,6 +393,46 @@ export default function Home() {
         </div>
       </section>
 
+      {latestBooks.length > 0 && (
+         <Card className="shadow-lg">
+             <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Yeni Eklenen Kitaplar</CardTitle>
+                        <CardDescription>Kütüphaneye son eklenenler.</CardDescription>
+                    </div>
+                    <Link href="/library/archive">
+                        <Button variant="ghost">Tümünü Gör <ArrowRight className="ml-2 h-4 w-4"/></Button>
+                    </Link>
+                </div>
+            </CardHeader>
+            <CardContent>
+                 <div className="relative">
+                    <div className="overflow-x-auto pb-4 -mb-4">
+                        <div className="flex flex-nowrap gap-4">
+                            {latestBooks.map(book => (
+                               <Link key={book.id} href="/library/archive" className="group block w-32 sm:w-36 shrink-0">
+                                  <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
+                                    <Image 
+                                      src={book.image || `https://placehold.co/300x450.png`} 
+                                      alt={book.title} 
+                                      width={300} 
+                                      height={450} 
+                                      className="w-full h-auto object-cover aspect-[2/3]"
+                                      data-ai-hint="book cover" 
+                                    />
+                                  </Card>
+                                  <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                               </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+         </Card>
+      )}
+
       <section>
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
@@ -465,3 +511,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
