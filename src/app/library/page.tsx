@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 
 export default function LibraryPage() {
@@ -118,7 +118,7 @@ export default function LibraryPage() {
   const currentProgress = {
       daily: { pages: 25, books: 0 },
       weekly: { pages: 150, books: 0 },
-      monthly: { pages: finishedBooks.length, bookGoal: monthlyGoal.books },
+      monthly: { books: finishedBooks.length, bookGoal: monthlyGoal.books },
   }
 
 
@@ -133,7 +133,7 @@ export default function LibraryPage() {
                   </CardTitle>
                   <CardDescription>
                       <Link href="/library/archive" className="text-white/80 hover:text-white underline">
-                          Tüm ailenin kitaplığına göz atmak için buraya tıklayın.
+                          Kitaplığımıza Göz At
                       </Link>
                   </CardDescription>
               </CardHeader>
