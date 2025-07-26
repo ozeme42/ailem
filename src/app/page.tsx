@@ -33,10 +33,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
-  Ahmet: { label: "Ahmet", color: "hsl(var(--chart-1))" },
-  Zeynep: { label: "Zeynep", color: "hsl(var(--chart-2))" },
-  Elif: { label: "Elif", color: "hsl(var(--chart-3))" },
-  Murat: { label: "Murat", color: "hsl(var(--chart-4))" },
 } satisfies ChartConfig
 
 const weeklyProgressChartConfig = {
@@ -417,35 +413,37 @@ export default function Home() {
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
                 </div>
             </Link>
-            <Card className="md:bg-gradient-to-r md:from-orange-400 md:to-rose-400 md:text-white rounded-xl shadow-lg transition-transform hover:-translate-y-1">
-                <CardHeader>
-                    <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="relative">
-                        <div className="-mx-6 px-6 overflow-x-auto pb-4 -mb-4">
-                            <div className="flex flex-nowrap gap-4">
-                                {latestBooks.map(book => (
-                                    <div key={book.id} onClick={() => setViewingBook(book)} className="group relative w-24 sm:w-32 shrink-0 cursor-pointer">
-                                        <Image 
-                                            src={book.image || `https://placehold.co/300x450.png`} 
-                                            alt={book.title} 
-                                            width={300} 
-                                            height={450} 
-                                            className="w-full h-auto object-cover aspect-[2/3] rounded-md shadow-lg transition-transform duration-300 group-hover:scale-105"
-                                            data-ai-hint="book cover" 
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
-                                        <div className="absolute bottom-0 left-0 p-2 text-white">
-                                            <p className="font-bold text-xs truncate" title={book.title}>{book.title}</p>
+            <Link href="/library/archive" className="group block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
+                <Card className="bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg h-full">
+                    <CardHeader>
+                        <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="relative">
+                            <div className="-mx-6 px-6 overflow-x-auto pb-4 -mb-4">
+                                <div className="flex flex-nowrap gap-4">
+                                    {latestBooks.map(book => (
+                                        <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="group/book relative w-24 sm:w-32 shrink-0 cursor-pointer">
+                                            <Image 
+                                                src={book.image || `https://placehold.co/300x450.png`} 
+                                                alt={book.title} 
+                                                width={300} 
+                                                height={450} 
+                                                className="w-full h-auto object-cover aspect-[2/3] rounded-md shadow-lg transition-transform duration-300 group-hover/book:scale-105"
+                                                data-ai-hint="book cover" 
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
+                                            <div className="absolute bottom-0 left-0 p-2 text-white">
+                                                <p className="font-bold text-xs truncate" title={book.title}>{book.title}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </Link>
         </div>
 
       <section>
