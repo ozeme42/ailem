@@ -8,11 +8,13 @@ import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, BookOpen, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { compareDesc } from 'date-fns';
+import { compareDesc, format, parse } from 'date-fns';
+import { tr } from 'date-fns/locale';
 import Link from 'next/link';
+import { cn } from "@/lib/utils";
 
 export default function CategoryDetailPage() {
   const router = useRouter();
@@ -51,21 +53,31 @@ export default function CategoryDetailPage() {
     
     return allTests
       .filter(test => getCategoryName(test) === categoryName)
-      .sort((a, b) => compareDesc(new Date(a.assignedDate), new Date(b.assignedDate)));
+      .sort((a, b) => {
+          try {
+              const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+              const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+              return compareDesc(dateA, dateB);
+          } catch(e) {
+              return 0;
+          }
+      });
   }, [allTests, categoryName]);
-
-  const getStatusBadge = (status: Test['status']) => {
-    switch (status) {
-      case 'Atandı':
-        return <Badge variant="secondary">Atandı</Badge>;
-      case 'Çözüldü':
-        return <Badge variant="outline" className="text-blue-600 border-blue-500/50">Çözüldü</Badge>;
-      case 'Değerlendirildi':
-        return <Badge className="bg-green-600 hover:bg-green-700">Değerlendirildi</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+  
+  const formatTestDate = (dateString: string) => {
+      try {
+        const date = parse(dateString, 'dd MMMM yyyy', new Date(), { locale: tr });
+        return {
+            day: format(date, 'd', { locale: tr }),
+            month: format(date, 'MMMM', { locale: tr }),
+            year: format(date, 'yyyy', { locale: tr }),
+            time: format(date, 'HH:mm'), // Assuming time is not in string, default to 00:00
+        }
+      } catch (e) {
+          return { day: '?', month: '?', year: '?', time: '?' };
+      }
   };
+
 
   if (loading) {
     return <div>Yükleniyor...</div>;
@@ -84,50 +96,71 @@ export default function CategoryDetailPage() {
       </PageHeader>
 
       {filteredTests.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTests.map((test) => (
-            <Card key={test.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{test.title}</CardTitle>
-                    {getStatusBadge(test.status)}
-                </div>
-                <CardDescription className="flex items-center gap-2 pt-1">
-                    <BookOpen className="h-4 w-4"/> {test.questionCount} Soru
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                 {test.status === 'Değerlendirildi' && (
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/50">
-                            <p className="font-bold text-green-700 dark:text-green-400">{test.correctAnswers}</p>
-                            <p className="text-xs">Doğru</p>
-                        </div>
-                        <div className="p-2 rounded-md bg-red-100 dark:bg-red-900/50">
-                            <p className="font-bold text-red-700 dark:text-red-400">{test.incorrectAnswers}</p>
-                            <p className="text-xs">Yanlış</p>
-                        </div>
-                         <div className="p-2 rounded-md bg-gray-100 dark:bg-gray-700/50">
-                            <p className="font-bold">{test.emptyAnswers}</p>
-                            <p className="text-xs">Boş</p>
-                        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredTests.map((test) => {
+            const isSolved = test.status !== 'Atandı';
+            const startDate = formatTestDate(test.assignedDate);
+            const endDate = formatTestDate(test.dueDate);
+            const duration = test.questionCount * 1.5; // Example duration
+
+            return (
+              <Card key={test.id} className="flex flex-col shadow-lg overflow-hidden">
+                <CardContent className="p-4 flex-grow grid grid-cols-[1fr_auto_auto] gap-4">
+                  
+                  {/* Left Section */}
+                  <div className="flex flex-col justify-between">
+                    <div>
+                        <p className="text-xs text-muted-foreground">{test.subject}</p>
+                        <h3 className="font-bold text-lg leading-tight">{test.title}</h3>
                     </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between items-center bg-muted/50 p-3">
-                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3"/>
-                    <span>Son Teslim: {test.dueDate}</span>
-                 </div>
-                <Link href={`/education/${test.id}`} passHref>
-                  <Button size="sm">
-                    {test.status === 'Atandı' ? 'Teste Başla' : 'Sonucu Gör'}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
+                    {isSolved ? (
+                         <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>
+                    ) : (
+                        <Box className="w-8 h-8 text-muted-foreground/70" />
+                    )}
+                  </div>
+                  
+                  {/* Middle Section */}
+                  <div className="flex flex-col justify-between items-center px-4 border-l border-r">
+                    <div className="text-center">
+                        <p className="text-xs text-muted-foreground">Başlangıç:</p>
+                        <p className="text-sm font-semibold">{startDate.day}</p>
+                        <p className="text-sm">{startDate.month}</p>
+                        <p className="text-xs">{startDate.year}</p>
+                    </div>
+                     <div className="text-center">
+                        <p className="text-xs text-muted-foreground">Bitiş:</p>
+                        <p className="text-sm font-semibold">{endDate.day}</p>
+                        <p className="text-sm">{endDate.month}</p>
+                        <p className="text-xs">{endDate.year}</p>
+                    </div>
+                  </div>
+
+                  {/* Right Section */}
+                  <div className="flex flex-col justify-center items-center text-center">
+                    <Clock className="w-8 h-8 text-primary/80 mb-2"/>
+                    <p className="text-2xl font-bold">{duration}</p>
+                    <p className="text-sm text-muted-foreground">DK</p>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-0">
+                  <Link href={`/education/${test.id}`} passHref className="w-full">
+                    <Button 
+                        size="lg" 
+                        className={cn(
+                            "w-full rounded-t-none h-12 text-base",
+                            isSolved 
+                                ? "bg-pink-600 hover:bg-pink-700"
+                                : "bg-cyan-500 hover:bg-cyan-600"
+                        )}
+                    >
+                      {isSolved ? 'Sonuçlarımı Göster' : 'Sınav Giriş Ekranına Git'}
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            )
+          })}
         </div>
       ) : (
         <Card>
@@ -139,4 +172,3 @@ export default function CategoryDetailPage() {
     </div>
   );
 }
-
