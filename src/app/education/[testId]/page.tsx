@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -34,13 +34,22 @@ export default function OpticalFormPage() {
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     const [timeLeft, setTimeLeft] = React.useState(0);
     const [totalTime, setTotalTime] = React.useState(0);
+    const [isPaused, setIsPaused] = React.useState(false);
     const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<number>>(new Set());
     const [currentQuestion, setCurrentQuestion] = React.useState(1);
 
-    const handleSubmit = React.useCallback(async () => {
+    const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
+
+        // Stop the timer and save final time
+        setIsPaused(true);
+        const timeSpent = (test.timeSpentSeconds || 0) + (totalTime - timeLeft);
+
         try {
-            let updatedData: Partial<TestType> = {};
+            let updatedData: Partial<TestType> = {
+                timerStatus: 'finished',
+                timeSpentSeconds: timeSpent
+            };
 
             if (test.gradingType === 'auto') {
                 updatedData.studentAnswers = mcqAnswers;
@@ -83,15 +92,15 @@ export default function OpticalFormPage() {
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
                     updatedData.score = (correct / test.questionCount) * 100;
-                    toast({
-                        title: "✅ Test Tamamlandı ve Değerlendirildi!",
+                     toast({
+                        title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı ve Değerlendirildi!",
                         description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
                     });
                 } else {
                     updatedData.status = 'Çözüldü';
                     toast({
-                        title: "✅ Test Tamamlandı!",
-                        description: "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
+                        title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
+                        description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
                     });
                 }
             } else { // Manual grading (text or no-answer)
@@ -100,13 +109,12 @@ export default function OpticalFormPage() {
                     updatedData.studentTextAnswers = textAnswers;
                 }
                  toast({
-                    title: "✅ Test Tamamlandı!",
-                    description: "Cevapların başarıyla kaydedildi. Testin yakında değerlendirilecek.",
+                    title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
+                    description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
                 });
             }
 
             await updateTest(test.id, updatedData);
-            // Check for badges
             if(test.familyId && test.studentId) {
                 await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
             }
@@ -121,7 +129,22 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
-    }, [test, mcqAnswers, textAnswers, router, toast]);
+    }, [test, mcqAnswers, textAnswers, router, toast, totalTime, timeLeft]);
+    
+    const handlePauseToggle = async () => {
+        if (!test) return;
+        const newIsPaused = !isPaused;
+        setIsPaused(newIsPaused);
+
+        let timeSpent = test.timeSpentSeconds || 0;
+        if (!newIsPaused) { // Resuming
+             await updateTest(test.id, { timerStatus: 'running' });
+        } else { // Pausing
+            timeSpent += (totalTime - timeLeft);
+            await updateTest(test.id, { timerStatus: 'paused', timeSpentSeconds: timeSpent });
+        }
+    };
+
 
     React.useEffect(() => {
         if (!testId) return;
@@ -134,10 +157,13 @@ export default function OpticalFormPage() {
 
                 if (currentTest) {
                      const totalDuration = currentTest.questionCount * 90;
+                     const timeAlreadySpent = currentTest.timeSpentSeconds || 0;
+                     
                      setTotalTime(totalDuration);
-                     setTimeLeft(totalDuration);
-                     const type = currentTest.gradingType || 'manual';
+                     setTimeLeft(totalDuration - timeAlreadySpent);
+                     setIsPaused(currentTest.timerStatus === 'paused');
 
+                     const type = currentTest.gradingType || 'manual';
                      if(type === 'auto') {
                         const initialAnswers: McqAnswers = currentTest.studentAnswers || {};
                         for (let i = 1; i <= currentTest.questionCount; i++) {
@@ -162,10 +188,10 @@ export default function OpticalFormPage() {
 
 
     React.useEffect(() => {
-        if (!test || test.status !== 'Atandı') return;
+        if (!test || test.status !== 'Atandı' || isPaused) return;
         
         if (timeLeft <= 0) {
-            handleSubmit();
+            handleSubmit(true);
             return;
         };
 
@@ -174,7 +200,7 @@ export default function OpticalFormPage() {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, test, handleSubmit]);
+    }, [timeLeft, test, handleSubmit, isPaused]);
 
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -257,12 +283,19 @@ export default function OpticalFormPage() {
             </header>
             
             <Card className="mb-8 overflow-hidden">
-                <CardContent className="p-6 text-center bg-muted/30">
-                     <p className="text-sm font-medium text-muted-foreground">KALAN SÜRE</p>
-                    <p className={cn(`text-5xl font-bold tracking-tighter`, timeLeft < totalTime * 0.2 ? 'text-destructive' : 'text-foreground')}>
-                        <Clock className="inline-block h-10 w-10 mr-2 align-text-bottom"/> 
-                        {formatTime(timeLeft)}
-                    </p>
+                <CardContent className="p-6 text-center bg-muted/30 flex items-center justify-center gap-4">
+                     <div>
+                        <p className="text-sm font-medium text-muted-foreground">KALAN SÜRE</p>
+                        <p className={cn(`text-5xl font-bold tracking-tighter`, timeLeft < totalTime * 0.2 ? 'text-destructive' : 'text-foreground')}>
+                            <Clock className="inline-block h-10 w-10 mr-2 align-text-bottom"/> 
+                            {formatTime(timeLeft)}
+                        </p>
+                    </div>
+                    {test.status === 'Atandı' && (
+                         <Button variant="outline" size="icon" className="w-14 h-14 rounded-full" onClick={handlePauseToggle}>
+                            {isPaused ? <Play className="h-6 w-6"/> : <Pause className="h-6 w-6"/>}
+                         </Button>
+                    )}
                 </CardContent>
                 <Progress 
                     value={timePercentage} 
@@ -371,7 +404,7 @@ export default function OpticalFormPage() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleSubmit}>Onayla ve Bitir</AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                             </AlertDialog>

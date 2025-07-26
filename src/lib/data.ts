@@ -169,6 +169,8 @@ export interface Test {
   studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
+  timeSpentSeconds?: number;
+  timerStatus?: 'running' | 'paused' | 'finished';
 }
 
 export interface Topic {
@@ -354,7 +356,5 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
         gradingType: 'auto',
     }
 ]
-
-    
 
     
