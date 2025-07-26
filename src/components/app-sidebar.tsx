@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
@@ -25,7 +25,16 @@ export function AppSidebar() {
           { href: "/library/stats", label: "İstatistikler" },
       ]
     },
-    { href: "/education", label: "Eğitim", icon: GraduationCap },
+    { 
+      href: "/education", 
+      label: "Eğitim", 
+      icon: GraduationCap,
+      subItems: [
+          { href: "/education", label: "Genel Bakış" },
+          { href: "/education/study", label: "Konu Anlatımı" },
+          { href: "/education/management", label: "Yönetim" },
+      ]
+    },
     { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
   ];
 

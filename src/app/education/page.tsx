@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
@@ -12,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, Test, PracticeExam } from "@/lib/data";
+import { QuestionBank, Test, PracticeExam, FamilyMember } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -62,7 +63,7 @@ export default function EducationPage() {
   const { familyMembers, familyId } = useAuth();
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   
-  const [tests, setTests] = React.useState<Test[]>([]);
+  const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
   const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
@@ -81,24 +82,7 @@ export default function EducationPage() {
   }, [studentMembers, selectedStudent]);
 
   React.useEffect(() => {
-    if (!selectedStudent) return;
-    
-    const unsubTests = onTestsUpdate((allTests) => {
-        const studentTests = allTests
-            .filter(t => t.studentId === selectedStudent.id)
-            .sort((a,b) => {
-                try {
-                    const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                    const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                    if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-                    return compareDesc(dateA, dateB);
-                } catch (e) {
-                    return 0;
-                }
-            });
-        setTests(studentTests);
-    });
-    
+    const unsubTests = onTestsUpdate(setAllTests);
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
     const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
@@ -109,7 +93,23 @@ export default function EducationPage() {
       unsubExams();
       unsubSubjects();
     }
-  }, [selectedStudent]);
+  }, []);
+  
+  const tests = React.useMemo(() => {
+    if (!selectedStudent) return [];
+    return allTests
+      .filter(t => t.studentId === selectedStudent.id)
+      .sort((a,b) => {
+          try {
+              const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+              const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+              if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+              return compareDesc(dateA, dateB);
+          } catch (e) {
+              return 0;
+          }
+      });
+  }, [selectedStudent, allTests]);
   
   const handleCreateSubject = async (subjectName: string) => {
     const newSubjects = [...new Set([...availableSubjects, subjectName])];
@@ -181,6 +181,12 @@ export default function EducationPage() {
   return (
     <>
       <PageHeader title="Eğitim & Sınav 🎓">
+        <Link href="/education/study">
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                <BookHeart className="mr-2 h-4 w-4" />
+                Konu Anlatımı
+            </Button>
+        </Link>
          <Link href="/education/mistake-pool">
             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <NotebookText className="mr-2 h-4 w-4" />
@@ -307,10 +313,7 @@ export default function EducationPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
-            tests.map(test => {
-                // Değerlendirme bekleyen testler burada gösterilmeyecek.
-                if (test.status === 'Değerlendirme Bekliyor') return null;
-
+            tests.filter(test => test.status !== 'Değerlendirme Bekliyor').map(test => {
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">

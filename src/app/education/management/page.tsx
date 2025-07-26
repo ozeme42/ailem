@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, PracticeExam, Test } from "@/lib/data";
+import { QuestionBank, PracticeExam, Test, StudyPlan } from "@/lib/data";
 import {
   onQuestionBanksUpdate,
   onPracticeExamsUpdate,
@@ -29,7 +30,11 @@ import {
   deleteTest,
   addTest,
   updateTest,
-  checkAndAwardBadges
+  checkAndAwardBadges,
+  onStudyPlansUpdate,
+  addStudyPlan,
+  updateStudyPlan,
+  deleteStudyPlan
 } from "@/lib/dataService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +46,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -54,6 +60,11 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Serbest Etkinlikler': Gamepad2,
     'Diğer': Library
 };
+
+const newStudyPlanSchema = z.object({
+  title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
+  description: z.string().optional(),
+});
 
 
 function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, onOpenEditExam, onOpenEditTest, onArchiveTest, onDeleteTest }) {
@@ -326,6 +337,129 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
     );
 }
 
+function StudyPlanManagement() {
+  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
+  const [editingPlan, setEditingPlan] = React.useState<StudyPlan | null>(null);
+  const [isPlanDialogOpen, setIsPlanDialogOpen] = React.useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof newStudyPlanSchema>>({
+    resolver: zodResolver(newStudyPlanSchema),
+  });
+
+  React.useEffect(() => {
+    const unsub = onStudyPlansUpdate(setStudyPlans);
+    return () => unsub();
+  }, []);
+  
+  const handleOpenDialog = (plan: StudyPlan | null) => {
+    setEditingPlan(plan);
+    form.reset(plan ? { title: plan.title, description: plan.description } : { title: '', description: '' });
+    setIsPlanDialogOpen(true);
+  };
+
+  const handlePlanSubmit = async (values: z.infer<typeof newStudyPlanSchema>) => {
+    try {
+      if (editingPlan) {
+        await updateStudyPlan(editingPlan.id, values);
+        toast({ title: 'Çalışma Planı Güncellendi' });
+      } else {
+        await addStudyPlan(values);
+        toast({ title: 'Çalışma Planı Oluşturuldu' });
+      }
+      setIsPlanDialogOpen(false);
+    } catch (error) {
+      toast({ title: 'Hata', variant: 'destructive' });
+    }
+  };
+  
+  const handleDeletePlan = async (planId: string) => {
+      try {
+          await deleteStudyPlan(planId);
+          toast({title: "Plan Silindi", variant: "destructive"});
+      } catch (error) {
+          toast({title: "Hata", variant: "destructive"});
+      }
+  }
+
+  return (
+    <>
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => handleOpenDialog(null)}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Yeni Çalışma Planı Ekle
+        </Button>
+      </div>
+       <div className="space-y-4">
+        {studyPlans.map(plan => (
+          <Card key={plan.id}>
+            <CardHeader className="flex flex-row justify-between items-start">
+              <div>
+                <CardTitle>{plan.title}</CardTitle>
+                <CardDescription>{plan.description}</CardDescription>
+              </div>
+              <div className="flex gap-1">
+                 <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(plan)}><Edit className="w-4 h-4"/></Button>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Planı sil?</AlertDialogTitle><AlertDialogDescription>"{plan.title}" planı kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardHeader>
+             <CardContent>
+                {/* TODO: Add assignments to the plan here */}
+                <p className="text-sm text-muted-foreground">Bu plana ait konu atamaları yakında burada görünecek.</p>
+            </CardContent>
+          </Card>
+        ))}
+        {studyPlans.length === 0 && (
+            <p className="text-center p-8 text-muted-foreground">Henüz çalışma planı oluşturulmadı.</p>
+        )}
+      </div>
+
+       <Dialog open={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingPlan ? 'Çalışma Planını Düzenle' : 'Yeni Çalışma Planı Oluştur'}</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handlePlanSubmit)} className="space-y-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plan Başlığı</FormLabel>
+                      <FormControl><Input placeholder="LGS Tekrar Kampı" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Açıklama (Opsiyonel)</FormLabel>
+                      <FormControl><Textarea placeholder="Bu planın amacını veya içeriğini açıklayın..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="button" variant="ghost" onClick={() => setIsPlanDialogOpen(false)}>İptal</Button>
+                  <Button type="submit">Kaydet</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+    </>
+  )
+}
+
 
 export default function EducationManagementPage() {
     const { toast } = useToast();
@@ -557,9 +691,10 @@ export default function EducationManagementPage() {
             )}
 
             <Tabs defaultValue="library" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="library">İçerik Kütüphanesi</TabsTrigger>
                     <TabsTrigger value="curriculum">Ders ve Konu Yönetimi</TabsTrigger>
+                    <TabsTrigger value="study-plans">Çalışma Planları</TabsTrigger>
                 </TabsList>
                 <TabsContent value="library" className="mt-4">
                     <ContentLibrary 
@@ -581,6 +716,9 @@ export default function EducationManagementPage() {
                         onDeleteSubject={handleDeleteSubject}
                         onCreateSubject={handleCreateSubject}
                     />
+                </TabsContent>
+                 <TabsContent value="study-plans" className="mt-4">
+                    <StudyPlanManagement />
                 </TabsContent>
             </Tabs>
             

@@ -222,6 +222,27 @@ export interface PracticeExam {
     answerKey?: AnswerKey;
 }
 
+export interface StudyPlan {
+  id: string;
+  familyId: string;
+  title: string;
+  description: string;
+}
+
+export interface StudyAssignment {
+    id: string;
+    studyPlanId: string;
+    studentId: string;
+    subject: string;
+    topic: string;
+    sources: string[];
+    startDate: string; // ISO String
+    dueDate: string; // ISO String
+    status: 'assigned' | 'completed';
+    completedAt?: string; // ISO String
+}
+
+
 export interface ExamProgressStats {
     questionsSolved: number;
     correct: number;

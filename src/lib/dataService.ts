@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -482,6 +482,27 @@ export const addPracticeExam = async (data: Omit<PracticeExam, 'id'| 'familyId'>
 export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id'>>) => updateDoc(doc(db, 'practiceExams', id), data);
 export const deletePracticeExam = (id: string) => deleteDoc(doc(db, 'practiceExams', id));
 
+// Study Plans
+export const onStudyPlansUpdate = (callback: (plans: StudyPlan[]) => void) => onFamilyDataUpdate<StudyPlan>('studyPlans', callback);
+export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'studyPlans'), { ...data, familyId });
+};
+export const updateStudyPlan = (id: string, data: Partial<Omit<StudyPlan, 'id'>>) => updateDoc(doc(db, 'studyPlans', id), data);
+export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, 'studyPlans', id));
+
+// Study Assignments
+export const onStudyAssignmentsUpdate = (callback: (assignments: StudyAssignment[]) => void) => onFamilyDataUpdate<StudyAssignment>('studyAssignments', callback);
+export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'studyAssignments'), { ...data, familyId });
+};
+export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id'>>) => updateDoc(doc(db, 'studyAssignments', id), data);
+export const deleteStudyAssignment = (id: string) => deleteDoc(doc(db, 'studyAssignments', id));
+
+
 // This needs to be called from a client component that has access to the AuthContext
 export const initializeDefaultData = async (familyId: string, userId: string) => {
     const batch = writeBatch(db);
@@ -575,6 +596,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
             sourceType: 'exam',
             sourceId: '1',
             gradingType: 'auto',
+            isArchived: false,
         }
     ];
 
