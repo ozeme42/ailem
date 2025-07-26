@@ -71,7 +71,7 @@ export default function CategoryDetailPage() {
             day: format(date, 'd', { locale: tr }),
             month: format(date, 'MMMM', { locale: tr }),
             year: format(date, 'yyyy', { locale: tr }),
-            time: format(date, 'HH:mm'), // Assuming time is not in string, default to 00:00
+            time: format(date, 'HH:mm'),
         }
       } catch (e) {
           return { day: '?', month: '?', year: '?', time: '?' };
@@ -101,13 +101,12 @@ export default function CategoryDetailPage() {
             const isSolved = test.status !== 'Atandı';
             const startDate = formatTestDate(test.assignedDate);
             const endDate = formatTestDate(test.dueDate);
-            const duration = test.questionCount * 1.5; // Example duration
+            const duration = test.questionCount * 1.5;
 
             return (
               <Card key={test.id} className="flex flex-col shadow-lg overflow-hidden">
                 <CardContent className="p-4 flex-grow grid grid-cols-[1fr_auto_auto] gap-4">
                   
-                  {/* Left Section */}
                   <div className="flex flex-col justify-between">
                     <div>
                         <p className="text-xs text-muted-foreground">{test.subject}</p>
@@ -120,7 +119,6 @@ export default function CategoryDetailPage() {
                     )}
                   </div>
                   
-                  {/* Middle Section */}
                   <div className="flex flex-col justify-between items-center px-4 border-l border-r">
                     <div className="text-center">
                         <p className="text-xs text-muted-foreground">Başlangıç:</p>
@@ -136,7 +134,6 @@ export default function CategoryDetailPage() {
                     </div>
                   </div>
 
-                  {/* Right Section */}
                   <div className="flex flex-col justify-center items-center text-center">
                     <Clock className="w-8 h-8 text-primary/80 mb-2"/>
                     <p className="text-2xl font-bold">{duration}</p>

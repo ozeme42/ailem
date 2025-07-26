@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -59,7 +59,7 @@ const categoryProgressColors: { [key: string]: string } = {
 
 export default function EducationPage() {
   const { toast } = useToast();
-  const { familyMembers } = useAuth();
+  const { familyMembers, familyId } = useAuth();
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   
   const [tests, setTests] = React.useState<Test[]>([]);
@@ -68,7 +68,9 @@ export default function EducationPage() {
   const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
 
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
+  const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
   const [editingTest, setEditingTest] = React.useState<Test | null>(null);
+  const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
 
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -85,7 +87,7 @@ export default function EducationPage() {
     const unsubTests = onTestsUpdate((allTests) => {
         const studentTests = allTests
             .filter(t => t.studentId === selectedStudent.id)
-            .sort((a,b) => compareDesc(new Date(a.assignedDate), new Date(b.assignedDate)));
+            .sort((a,b) => compareDesc(parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }), parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr })));
         setTests(studentTests);
     });
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
@@ -122,6 +124,34 @@ export default function EducationPage() {
     }
   };
 
+  const handleGradeSubmit = async (gradeData: ManualGradeData) => {
+    if (!gradingTest || !familyId) return;
+    try {
+        const score = gradingTest.questionCount > 0
+            ? (gradeData.correct / gradingTest.questionCount) * 100
+            : 0;
+
+        const updatedData: Partial<Test> = {
+            status: 'Değerlendirildi',
+            correctAnswers: gradeData.correct,
+            incorrectAnswers: gradeData.incorrect,
+            emptyAnswers: gradeData.empty,
+            score: score,
+            studentTextAnswersEvaluation: gradeData.evaluations,
+        };
+
+        await updateTest(gradingTest.id, updatedData);
+        await checkAndAwardBadges(gradingTest.studentId, familyId, { type: 'test_completed', test: { ...gradingTest, ...updatedData } });
+        
+        toast({ title: "✅ Test Değerlendirildi", description: `${gradingTest.title} için sonuçlar kaydedildi.` });
+        setIsGradeDialogOpen(false);
+        setGradingTest(null);
+    } catch (error) {
+        toast({ title: "❌ Değerlendirme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive' });
+    }
+  };
+
+
   const overallStats = React.useMemo(() => {
     const evaluatedTests = tests.filter(t => t.status === 'Değerlendirildi');
     const totalQuestions = evaluatedTests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
@@ -155,7 +185,6 @@ export default function EducationPage() {
         categories[categoryName].tests.push(test);
     });
 
-    // Return an array of [categoryName, data] sorted by a predefined order if needed, or alphabetically
     const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Diğer'];
     
     return Object.entries(categories).sort(([a], [b]) => {
@@ -179,7 +208,7 @@ export default function EducationPage() {
                 İçerik Yönetimi
             </Button>
         </Link>
-         <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+         <Dialog open={isAssignDialogOpen} onOpenChange={(open) => { if (!open) setEditingTest(null); setIsAssignDialogOpen(open); }}>
             <DialogTrigger asChild>
                 <Button className="bg-white/20 text-white hover:bg-white/30 border-none">
                     <PlusCircle className="mr-2 h-4 w-4" />
@@ -289,6 +318,24 @@ export default function EducationPage() {
       ) : (
         selectedStudent && <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Öğrenciye atanmış herhangi bir test bulunmuyor.</CardContent></Card>
       )}
+
+       <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Testi Değerlendir</DialogTitle>
+                    <DialogDescription>
+                        {gradingTest?.title} testinin sonuçlarını girin.
+                    </DialogDescription>
+                </DialogHeader>
+                {gradingTest && (
+                    <ManualGradeForm
+                        test={gradingTest}
+                        onSave={handleGradeSubmit}
+                        onCancel={() => setIsGradeDialogOpen(false)}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
     </>
   );
 }
