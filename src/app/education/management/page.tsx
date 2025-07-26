@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
-import { QuestionBank, PracticeExam } from "@/lib/data";
+import { NewTestForm } from "@/components/new-test-form";
+import { QuestionBank, PracticeExam, Test } from "@/lib/data";
 import {
   onQuestionBanksUpdate,
   onPracticeExamsUpdate,
@@ -24,12 +25,18 @@ import {
   addPracticeExam,
   updatePracticeExam,
   deletePracticeExam,
+  onTestsUpdate,
+  deleteTest,
+  addTest,
+  updateTest,
 } from "@/lib/dataService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/components/auth-provider";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
+    'Atanmış Ödevler': Send,
     'Matematik': Ruler,
     'Fen Bilimleri': TestTube2,
     'Türkçe': BookCopy,
@@ -40,6 +47,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
 
 const categoryColors: { [key: string]: string } = {
     'Genel Deneme Sınavları': 'border-yellow-500/80 text-yellow-600',
+    'Atanmış Ödevler': 'border-teal-500/80 text-teal-600',
     'Matematik': 'border-red-500/80 text-red-600',
     'Fen Bilimleri': 'border-orange-500/80 text-orange-600',
     'Türkçe': 'border-yellow-400/80 text-yellow-500',
@@ -51,24 +59,35 @@ const categoryColors: { [key: string]: string } = {
 
 export default function EducationManagementPage() {
     const { toast } = useToast();
+    const { familyMembers } = useAuth();
 
     const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
     const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
+    const [tests, setTests] = React.useState<Test[]>([]);
     const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
     
     const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
     const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
+    const [isTestDialogOpen, setIsTestDialogOpen] = React.useState(false);
+
     const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
     const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
+    const [editingTest, setEditingTest] = React.useState<Test | null>(null);
+    
+    const studentMembers = React.useMemo(() => 
+        familyMembers.filter(m => m.role.includes('Çocuk')), 
+    [familyMembers]);
 
     React.useEffect(() => {
         const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
         const unsubExams = onPracticeExamsUpdate(setPracticeExams);
         const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
+        const unsubTests = onTestsUpdate(setTests);
         return () => {
             unsubBanks();
             unsubExams();
             unsubSubjects();
+            unsubTests();
         };
     }, []);
 
@@ -85,6 +104,11 @@ export default function EducationManagementPage() {
     const openEditExamDialog = (exam: PracticeExam) => {
         setEditingExam(exam);
         setIsExamDialogOpen(true);
+    }
+    
+    const openEditTestDialog = (test: Test) => {
+        setEditingTest(test);
+        setIsTestDialogOpen(true);
     }
 
     const handleBankSubmit = async (bankData: Omit<QuestionBank, 'id' | 'familyId'>, id?: string) => {
@@ -137,14 +161,41 @@ export default function EducationManagementPage() {
         }
     };
 
+    const handleTestSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => {
+        try {
+            if (id) {
+                await updateTest(id, testData);
+                toast({ title: "✅ Ödev Güncellendi" });
+            } else {
+                await addTest({ ...testData, status: 'Atandı' });
+                toast({ title: "✅ Ödev Atandı" });
+            }
+            setEditingTest(null);
+            setIsTestDialogOpen(false);
+        } catch (error) {
+             toast({ title: "❌ Kaydetme Hatası", variant: 'destructive'});
+        }
+    };
+
+    const handleDeleteTest = async (testId: string) => {
+        try {
+            await deleteTest(testId);
+            toast({ title: "🗑️ Ödev Silindi", variant: "destructive" });
+        } catch (error) {
+             toast({ title: "❌ Silme Hatası", variant: 'destructive'});
+        }
+    };
+    
     const contentByCategory = React.useMemo(() => {
-        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[] } } = {};
+        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[] } } = {};
         
         availableSubjects.forEach(s => {
-            if (!categories[s]) categories[s] = { banks: [], exams: [] };
+            if (!categories[s]) categories[s] = { banks: [], exams: [], tests: [] };
         });
-        if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [] };
-        if (!categories['Serbest Etkinlikler']) categories['Serbest Etkinlikler'] = { banks: [], exams: [] };
+        if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [], tests: [] };
+        if (!categories['Atanmış Ödevler']) categories['Atanmış Ödevler'] = { banks: [], exams: [], tests: [] };
+        if (!categories['Serbest Etkinlikler']) categories['Serbest Etkinlikler'] = { banks: [], exams: [], tests: [] };
+        
 
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
@@ -164,9 +215,12 @@ export default function EducationManagementPage() {
             categories['Genel Deneme Sınavları'].exams.push(exam);
         });
 
-        return categories;
-    }, [questionBanks, practiceExams, availableSubjects]);
+        tests.forEach(test => {
+            categories['Atanmış Ödevler'].tests.push(test);
+        });
 
+        return categories;
+    }, [questionBanks, practiceExams, tests, availableSubjects]);
 
     return (
         <>
@@ -193,7 +247,7 @@ export default function EducationManagementPage() {
             <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
                 {Object.entries(contentByCategory).map(([category, content]) => {
                     const Icon = categoryIcons[category] || BookCopy;
-                    const totalCount = content.banks.length + content.exams.length;
+                    const totalCount = content.banks.length + content.exams.length + content.tests.length;
                     
                     if (totalCount === 0) return null;
 
@@ -233,7 +287,7 @@ export default function EducationManagementPage() {
                                                 </div>
                                             </Card>
                                         ))}
-                                         {content.exams.map(exam => (
+                                        {content.exams.map(exam => (
                                             <Card key={exam.id} className="p-3">
                                                 <div className="flex justify-between items-center">
                                                     <div>
@@ -255,6 +309,31 @@ export default function EducationManagementPage() {
                                                 </div>
                                             </Card>
                                         ))}
+                                        {content.tests.map(test => {
+                                            const student = familyMembers.find(m => m.id === test.studentId);
+                                            return (
+                                                <Card key={test.id} className="p-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <p className="font-semibold">{test.title}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {student?.name || 'Bilinmeyen Öğrenci'} - Son Teslim: {test.dueDate}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Button variant="ghost" size="icon" onClick={() => openEditTestDialog(test)}><Edit className="w-4 h-4"/></Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader><AlertDialogTitle>Ödevi sil?</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            )
+                                        })}
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
@@ -285,6 +364,23 @@ export default function EducationManagementPage() {
                     <NewPracticeExamForm 
                         onSubmit={handleExamSubmit}
                         initialData={editingExam}
+                        availableSubjects={availableSubjects}
+                        onSubjectCreated={handleCreateSubject}
+                    />
+                </DialogContent>
+            </Dialog>
+            
+            <Dialog open={isTestDialogOpen} onOpenChange={(open) => { if(!open) setEditingTest(null); setIsTestDialogOpen(open); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
+                    </DialogHeader>
+                    <NewTestForm 
+                        students={studentMembers} 
+                        questionBanks={questionBanks}
+                        practiceExams={practiceExams}
+                        onAssign={handleTestSubmit}
+                        initialData={editingTest}
                         availableSubjects={availableSubjects}
                         onSubjectCreated={handleCreateSubject}
                     />
