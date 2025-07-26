@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -174,13 +174,13 @@ export default function EducationManagementPage() {
         }
     };
 
-    const handleTestSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => {
+    const handleTestSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
         try {
             if (id) {
                 await updateTest(id, testData);
                 toast({ title: "✅ Ödev Güncellendi" });
             } else {
-                await addTest({ ...testData, status: 'Atandı' });
+                await addTest({ ...testData, status: 'Atandı', isArchived: false });
                 toast({ title: "✅ Ödev Atandı" });
             }
             setEditingTest(null);
@@ -198,6 +198,15 @@ export default function EducationManagementPage() {
              toast({ title: "❌ Silme Hatası", variant: 'destructive'});
         }
     };
+
+    const handleArchiveTest = async (test: Test) => {
+        try {
+            await updateTest(test.id, { isArchived: true });
+            toast({ title: "Ödev Arşivlendi", description: `"${test.title}" arşive taşındı.` });
+        } catch (error) {
+            toast({ title: "❌ Arşivleme Hatası", variant: 'destructive'});
+        }
+    }
 
     const handleGradeSubmit = async (gradeData: ManualGradeData) => {
         if (!gradingTest || !familyId) return;
@@ -254,8 +263,8 @@ export default function EducationManagementPage() {
             categories['Genel Deneme Sınavları'].exams.push(exam);
         });
 
-        // Değerlendirme bekleyenler bu listeye dahil edilmeyecek
-        tests.filter(t => t.status !== 'Değerlendirme Bekliyor').forEach(test => {
+        // "Değerlendirme Bekliyor" ve arşivlenmiş olanlar bu listede gösterilmeyecek
+        tests.filter(t => t.status !== 'Değerlendirme Bekliyor' && !t.isArchived).forEach(test => {
             categories['Atanmış Ödevler'].tests.push(test);
         });
 
@@ -385,12 +394,22 @@ export default function EducationManagementPage() {
                                                 <Card key={test.id} className="p-3">
                                                     <div className="flex justify-between items-center">
                                                         <div>
-                                                            <p className="font-semibold">{test.title}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-semibold">{test.title}</p>
+                                                                <Badge variant={test.status === 'Sonuçlandı' ? 'default' : 'outline'}>
+                                                                    {test.status}
+                                                                </Badge>
+                                                            </div>
                                                             <p className="text-xs text-muted-foreground">
                                                                 {student?.name || 'Bilinmeyen Öğrenci'} - Son Teslim: {test.dueDate}
                                                             </p>
                                                         </div>
                                                         <div className="flex items-center gap-1">
+                                                            {test.status === 'Sonuçlandı' && (
+                                                                <Button variant="ghost" size="icon" onClick={() => handleArchiveTest(test)} title="Arşivle">
+                                                                    <Archive className="w-4 h-4 text-muted-foreground"/>
+                                                                </Button>
+                                                            )}
                                                             <Button variant="ghost" size="icon" onClick={() => openEditTestDialog(test)}><Edit className="w-4 h-4"/></Button>
                                                             <AlertDialog>
                                                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
@@ -477,5 +496,3 @@ export default function EducationManagementPage() {
         </>
     );
 }
-
-    

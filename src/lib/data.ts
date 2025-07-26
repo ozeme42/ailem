@@ -171,6 +171,7 @@ export interface Test {
   assignedDate: string;
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
+  isArchived: boolean;
   sourceType: 'quick' | 'bank' | 'exam' | 'mistake';
   gradingType?: GradingType;
   sourceId?: string;
@@ -382,5 +383,6 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
         sourceType: 'exam',
         sourceId: '1',
         gradingType: 'auto',
+        isArchived: false,
     }
 ]

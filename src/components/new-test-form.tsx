@@ -81,7 +81,7 @@ type NewTestFormProps = {
   students: FamilyMember[];
   questionBanks: QuestionBank[];
   practiceExams: PracticeExam[];
-  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => void;
+  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => void;
   initialData?: Test | null;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
@@ -177,7 +177,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
     dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
     
-    let newTest: Omit<Test, 'id' | 'status' | 'familyId'> | null = null;
+    let newTest: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'> | null = null;
     
     const currentActiveTab = initialData?.sourceType || activeTab;
 
