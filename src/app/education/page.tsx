@@ -84,22 +84,32 @@ export default function EducationPage() {
 
   React.useEffect(() => {
     if (!selectedStudent) return;
+    
+    // Set up real-time listener for tests.
+    // This will automatically update the UI whenever the tests collection changes in Firestore.
     const unsubTests = onTestsUpdate((allTests) => {
         const studentTests = allTests
             .filter(t => t.studentId === selectedStudent.id)
             .sort((a,b) => {
                 try {
-                    return compareDesc(parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }), parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }));
+                    // Handle potential invalid date strings gracefully
+                    const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                    const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                    if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+                    return compareDesc(dateA, dateB);
                 } catch (e) {
                     return 0; // Return neutral if dates are invalid
                 }
             });
         setTests(studentTests);
     });
+    
+    // These listeners do not need to be student-specific as they provide content for new assignments
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
     const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
     
+    // Cleanup function to unsubscribe from listeners when the component unmounts or student changes
     return () => {
       unsubTests();
       unsubBanks();
@@ -171,7 +181,7 @@ export default function EducationPage() {
   }, [tests]);
   
   const testsByCategory = React.useMemo(() => {
-    const categories: { [key: string]: { total: number, completed: number, tests: Test[] } } = {};
+    const categories: { [key: string]: { total: number, completed: number } } = {};
 
     const getCategoryName = (test: Test): string => {
         if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
@@ -182,13 +192,12 @@ export default function EducationPage() {
     tests.forEach(test => {
         const categoryName = getCategoryName(test);
         if (!categories[categoryName]) {
-            categories[categoryName] = { total: 0, completed: 0, tests: [] };
+            categories[categoryName] = { total: 0, completed: 0 };
         }
         categories[categoryName].total++;
         if (test.status !== 'Atandı') {
             categories[categoryName].completed++;
         }
-        categories[categoryName].tests.push(test);
     });
 
     const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Diğer'];
@@ -304,8 +313,7 @@ export default function EducationPage() {
         </Link>
       )}
 
-      {tests.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
             {testsByCategory.map(([category, data]) => {
                 if (data.total === 0) return null;
                 const Icon = categoryIcons[category] || FileText;
@@ -322,7 +330,7 @@ export default function EducationPage() {
                             </CardHeader>
                             <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
                                 <p className="text-lg text-foreground">{data.total} Adet Sınav</p>
-                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Sınav Çözüldü</p>
+                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
                             </CardContent>
                             <CardFooter className="p-0">
                                 <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none" indicatorClassName={progressColor} />
@@ -332,14 +340,11 @@ export default function EducationPage() {
                 )
             })}
         </div>
-      ) : (
-        selectedStudent && <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Öğrenciye atanmış herhangi bir test bulunmuyor.</CardContent></Card>
-      )}
        
        <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Tüm Testler</CardTitle>
-          <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmış tüm testler.</CardDescription>
+          <CardTitle>Atanmış ve Bekleyen Tüm Testler</CardTitle>
+          <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmış tüm testlerin birleşik listesi.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
@@ -385,3 +390,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
