@@ -204,6 +204,11 @@ export default function EducationPage() {
 
   }, [tests, availableSubjects]);
 
+  const openGradeDialog = (test: Test) => {
+    setGradingTest(test);
+    setIsGradeDialogOpen(true);
+  };
+
 
   return (
     <>
@@ -330,6 +335,39 @@ export default function EducationPage() {
       ) : (
         selectedStudent && <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Öğrenciye atanmış herhangi bir test bulunmuyor.</CardContent></Card>
       )}
+       
+       <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Tüm Testler</CardTitle>
+          <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmış tüm testler.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {tests.length > 0 ? (
+            tests.map(test => {
+                const isManualGradingNeeded = test.status === 'Çözüldü' && (test.gradingType === 'manual' || test.gradingType === 'manual-text');
+                const isGraded = test.status === 'Değerlendirildi';
+                const isPending = test.status === 'Atandı';
+
+                return (
+                    <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
+                        <div className="flex-grow">
+                            <Badge variant={isGraded ? "default" : "secondary"}>{test.status}</Badge>
+                            <h3 className="font-semibold text-lg">{test.title}</h3>
+                            <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-3 sm:mt-0">
+                             {isPending && <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>}
+                             {isManualGradingNeeded && <Button variant="outline" onClick={() => openGradeDialog(test)}>Değerlendir</Button>}
+                             {isGraded && <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>}
+                        </div>
+                    </Card>
+                );
+            })
+          ) : (
+            <p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>
+          )}
+        </CardContent>
+      </Card>
 
        <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
             <DialogContent>
@@ -351,3 +389,6 @@ export default function EducationPage() {
     </>
   );
 }
+
+
+      
