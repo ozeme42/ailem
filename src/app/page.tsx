@@ -16,7 +16,7 @@ import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc } from "date-fns";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
@@ -178,15 +178,19 @@ export default function Home() {
   const calendarSummary = React.useMemo(() => {
     const today = new Date();
     const upcoming = calendarEvents
-        .map(event => ({ ...event, date: parseISO(event.startDate) }))
-        .filter(event => event.date >= today)
-        .sort((a, b) => compareAsc(a.date, b.date));
-    
+      .map(event => ({
+        ...event,
+        date: parseISO(event.startDate),
+        daysLeft: differenceInDays(parseISO(event.startDate), today),
+      }))
+      .filter(event => isFuture(event.date) || isToday(event.date))
+      .sort((a, b) => compareAsc(a.date, b.date));
+
     return {
-        totalUpcoming: upcoming.length,
-        nextEvent: upcoming[0], // Show the very next event
+      upcomingEvents: upcoming,
     };
   }, [calendarEvents]);
+
 
   const latestBooks = React.useMemo(() => {
       // Assuming the books array is roughly in creation order. Reverse and take 10.
@@ -373,16 +377,18 @@ export default function Home() {
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
                     <div className="flex-grow my-4 space-y-2">
-                        {calendarSummary.nextEvent ? (
-                            <>
-                               <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                    <p className="font-semibold text-sm md:text-base">{calendarSummary.nextEvent.title}</p>
-                                    <p className="text-xs md:text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy', { locale: tr })}</p>
-                               </div>
-                                {calendarSummary.totalUpcoming > 1 && (
-                                    <p className="text-[11px] md:text-xs text-white/80 pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
-                                )}
-                            </>
+                        {calendarSummary.upcomingEvents.length > 0 ? (
+                           calendarSummary.upcomingEvents.map(event => (
+                            <div key={event.id} className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold text-sm md:text-base">{event.title}</p>
+                                    <p className="text-xs md:text-sm text-white/90">{format(event.date, 'dd MMMM yyyy', { locale: tr })}</p>
+                                </div>
+                                <Badge variant="secondary" className="bg-white/30 text-white">
+                                    {event.daysLeft > 0 ? `${event.daysLeft} gün sonra` : "Bugün"}
+                                </Badge>
+                           </div>
+                           ))
                         ) : (
                            <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
                              <p className="text-xs md:text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
