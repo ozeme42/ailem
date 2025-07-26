@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -248,6 +248,47 @@ export default function OpticalFormPage() {
         )
     }
 
+    if (test.status === 'Değerlendirildi') {
+        return (
+            <div className="container mx-auto py-8">
+                <header className="mb-4">
+                    <Button variant="ghost" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Geri
+                    </Button>
+                </header>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl">{test.title} - Sonuç Raporu</CardTitle>
+                        <CardDescription>{test.subject}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="flex justify-center">
+                            <div className="text-center p-6 border-4 border-primary rounded-full aspect-square flex flex-col justify-center items-center">
+                                <p className="text-sm text-muted-foreground">PUAN</p>
+                                <p className="text-6xl font-bold text-primary">{(test.score || 0).toFixed(1)}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                            <Card className="p-4 bg-green-500/10">
+                                <CardTitle className="flex items-center justify-center gap-2"><Check className="text-green-600"/> Doğru</CardTitle>
+                                <p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p>
+                            </Card>
+                            <Card className="p-4 bg-red-500/10">
+                                <CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle>
+                                <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
+                            </Card>
+                             <Card className="p-4 bg-gray-500/10">
+                                <CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle>
+                                <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
+                            </Card>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+    
+    // Test is 'Atandı' or 'Çözüldü' but not yet evaluated, so show the test-taking UI
     const handleMcqAnswerChange = (questionNumber: number, value: string) => {
         setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };
