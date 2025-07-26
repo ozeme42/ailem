@@ -413,7 +413,7 @@ export default function Home() {
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
                 </div>
             </Link>
-            <Link href="/library/archive" className="group block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
+             <Link href="/library/archive" className="group block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
                 <Card className="bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg h-full">
                     <CardHeader>
                         <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
@@ -434,7 +434,7 @@ export default function Home() {
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
                                             <div className="absolute bottom-0 left-0 p-2 text-white">
-                                                <p className="font-bold text-xs truncate" title={book.title}>{book.title}</p>
+                                                <p className="font-bold text-xs whitespace-normal break-words line-clamp-2" title={book.title}>{book.title}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -541,7 +541,7 @@ export default function Home() {
             ) : (
               <div className="text-center py-8 bg-white/10 rounded-lg">
                 <Check className="mx-auto h-8 w-8 text-white/80" />
-                <p className="mt-2 text-sm text-white/90">Bekleyen görev bulunmuyor. Harika!</p>
+                <p className="mt-2 text-sm text-white/90">Bekleyen görev yok. Harika!</p>
               </div>
             )}
           </CardContent>
