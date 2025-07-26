@@ -63,14 +63,15 @@ export function NewGoalForm({ familyMembers, onCreate }: NewGoalFormProps) {
   const sectionCount = form.watch("sectionCount");
 
   React.useEffect(() => {
-    const currentCount = fields.length;
+    const currentCount = form.getValues('sectionNames').length;
     if (sectionCount > 0 && sectionCount !== currentCount) {
       const newFields = Array.from({ length: sectionCount }, (_, i) => {
         return fields[i] || { name: `Bölüm ${i + 1}` };
       });
       replace(newFields);
     }
-  }, [sectionCount, fields, replace]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionCount]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const totalTasks = values.sectionCount * values.tasksPerSection;
@@ -252,5 +253,3 @@ export function NewGoalForm({ familyMembers, onCreate }: NewGoalFormProps) {
     </Form>
   );
 }
-
-    
