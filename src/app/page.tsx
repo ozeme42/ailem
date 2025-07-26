@@ -153,18 +153,28 @@ export default function Home() {
   }, [tasks, userLibraries, calendarEvents, books, familyMembers]);
 
   const dailySummary = React.useMemo(() => {
-    const completedTasksCount = tasks.filter(t => t.completed).length;
     const upcomingEventsCount = calendarEvents.filter(e => isFuture(parseISO(e.startDate))).length;
     const finishedBooksCount = userLibraries.reduce((acc, lib) => {
         return acc + lib.books.filter(b => b.status === 'finished').length;
     }, 0);
 
     return {
-        completedTasks: completedTasksCount,
         upcomingEvents: upcomingEventsCount,
         finishedBooks: finishedBooksCount
     }
-  }, [tasks, calendarEvents, userLibraries])
+  }, [calendarEvents, userLibraries]);
+
+  const pendingTasksSummary = React.useMemo(() => {
+    return tasks
+      .filter(task => !task.completed)
+      .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
+      .map(task => ({
+        ...task,
+        assignee: familyMembers.find(m => m.id === task.assigneeId)
+      }))
+      .slice(0, 5); // Show top 5 pending tasks
+  }, [tasks, familyMembers]);
+
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
   const todaysPlan = mealPlan[format(new Date(), 'yyyy-MM-dd')];
@@ -374,61 +384,9 @@ export default function Home() {
             </Link>
         </div>
 
-        <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-white md:text-card-foreground text-xl">Yeni Eklenen Kitaplar</CardTitle>
-                    </div>
-                    <Link href="/library/archive">
-                        <Button variant="ghost" className="text-white/80 hover:text-white md:text-muted-foreground md:hover:text-foreground">
-                            Tümünü Gör <ArrowRight className="ml-2 h-4 w-4"/>
-                        </Button>
-                    </Link>
-                </div>
-            </CardHeader>
-            <CardContent>
-                 <div className="relative">
-                    <div className="overflow-x-auto pb-4 -mb-4">
-                        <div className="flex flex-nowrap gap-4">
-                            {latestBooks.map(book => (
-                               <div key={book.id} onClick={() => setViewingBook(book)} className="group block w-24 sm:w-32 shrink-0 cursor-pointer">
-                                  <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
-                                    <Image 
-                                      src={book.image || `https://placehold.co/300x450.png`} 
-                                      alt={book.title} 
-                                      width={300} 
-                                      height={450} 
-                                      className="w-full h-auto object-cover aspect-[2/3]"
-                                      data-ai-hint="book cover" 
-                                    />
-                                  </Card>
-                                  <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
-                                  <p className="text-xs text-white/80 md:text-muted-foreground truncate">{book.author}</p>
-                               </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-         </Card>
-
       <section>
         <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <Card className="flex-1 min-w-[150px] overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-green-500/10">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
-                  <CheckSquare size={18} className="text-green-500" />
-                </div>
-                <div className="text-left">
-                  <p className="text-2xl font-extrabold text-green-500">{dailySummary.completedTasks}</p>
-                  <p className="text-xs font-semibold text-foreground">Tamamlanan Görev</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
           <Card className="flex-1 min-w-[150px] overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-blue-500/10">
             <CardContent className="p-3">
                <div className="flex items-center justify-center gap-2">
@@ -488,7 +446,38 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Bekleyen Görevler</CardTitle>
+            <CardDescription>Tüm aile için yaklaşan görevler.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pendingTasksSummary.length > 0 ? (
+              pendingTasksSummary.map(task => (
+                <div key={task.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                  <div className="flex-grow">
+                    <p className="font-semibold">{task.title}</p>
+                    <p className="text-sm text-muted-foreground">{format(parseISO(task.dueDate), "d MMMM, EEEE", { locale: tr })}</p>
+                  </div>
+                  {task.assignee && (
+                    <div className="flex flex-col items-center">
+                       <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" 
+                          style={{ backgroundColor: task.assignee.color, color: '#fff' }}
+                      >
+                          {task.assignee.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-xs mt-1 text-muted-foreground">{task.assignee.name}</span>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Bekleyen görev bulunmuyor. Harika!</p>
+            )}
+          </CardContent>
+        </Card>
         <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle>Aile XP Karşılaştırması</CardTitle>
