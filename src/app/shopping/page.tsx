@@ -173,8 +173,6 @@ const EditNoteDialog = ({ note, listName, isOpen, onOpenChange, onSubmit }: {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -214,6 +212,7 @@ export default function ShoppingPage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [newNoteText, setNewNoteText] = useState('');
   const [editingNote, setEditingNote] = useState<ShoppingNoteItem | null>(null);
+  const [isEditNoteDialogOpen, setIsEditNoteDialogOpen] = useState(false);
   
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate(setShoppingLists);
@@ -314,10 +313,16 @@ export default function ShoppingPage() {
       }
   };
   
+  const handleOpenEditDialog = (note: ShoppingNoteItem) => {
+    setEditingNote(note);
+    setIsEditNoteDialogOpen(true);
+  };
+
   const handleUpdateNoteSubmit = async (newText: string) => {
     if (editingNote && selectedNoteList) {
       await updateNoteItemInList(selectedNoteList.id, editingNote.id, newText);
       setEditingNote(null);
+      setIsEditNoteDialogOpen(false);
       toast({ title: "Not Güncellendi" });
     }
   };
@@ -485,7 +490,7 @@ export default function ShoppingPage() {
                       <div key={note.id} className="p-3 bg-card border rounded-lg flex justify-between items-start gap-2 group">
                           <p className="text-sm flex-grow whitespace-pre-wrap">{note.text}</p>
                           <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNote(note)}><Edit className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditDialog(note)}><Edit className="h-4 w-4" /></Button>
                               <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
@@ -569,8 +574,13 @@ export default function ShoppingPage() {
       <EditNoteDialog
         note={editingNote}
         listName={selectedNoteList?.name || ''}
-        isOpen={!!editingNote}
-        onOpenChange={(open) => { if (!open) setEditingNote(null); }}
+        isOpen={isEditNoteDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditNoteDialogOpen(open);
+          if (!open) {
+            setEditingNote(null);
+          }
+        }}
         onSubmit={handleUpdateNoteSubmit}
       />
     </div>
