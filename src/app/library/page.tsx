@@ -1,7 +1,6 @@
 
 "use client";
 
-import * as React from "react";
 import { useState, useEffect, useMemo } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
@@ -12,7 +11,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -245,7 +244,7 @@ export default function LibraryPage() {
         {readingBooks.length > 0 && (
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-6">
                     {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                 </div>
             </div>
@@ -345,39 +344,37 @@ function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: an
 
 function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
+    const progressPercent = book.progress || 0;
+    const pagesRead = Math.round((progressPercent / 100) * (book.pageCount || 0));
 
     return (
         <>
-            <Card className="flex items-center gap-4 p-4 transition-all hover:shadow-md">
-                <Image src={book.image} alt={book.title} width={80} height={120} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
-                <div className="flex-grow space-y-2">
-                    <div>
-                        <p className="font-semibold leading-tight" title={book.title}>{book.title}</p>
-                        <p className="text-sm text-muted-foreground">{book.author}</p>
-                        {book.startedAt && <p className="text-xs text-muted-foreground">Başlangıç: {format(parseISO(book.startedAt), 'dd.MM.yy')}</p>}
-                    </div>
-                    <Progress value={book.progress || 0} />
-                    <div className="text-xs text-muted-foreground flex justify-between items-center">
-                        <span>{book.pageCount ? `${Math.round(((book.progress || 0) / 100) * book.pageCount)}/${book.pageCount} sayfa` : `${book.progress || 0}%`}</span>
-                        <span className="font-semibold text-primary">{book.progress || 0}%</span>
+            <Card className="overflow-hidden shadow-lg border-border/50">
+                <div className="p-4">
+                    <div className="flex gap-4">
+                        <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
+                        <div className="flex-grow flex flex-col">
+                            <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
+                            <p className="text-sm text-muted-foreground">{book.author}</p>
+                            {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                            <div className="mt-auto pt-4">
+                                <Progress value={progressPercent} className="h-2"/>
+                                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                    <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
+                                    <span className="font-semibold text-primary">{progressPercent}%</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="shrink-0 self-start">
-                            <MoreVertical className="h-4 w-4"/>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setIsProgressDialogOpen(true)}>İlerleme Gir</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
-                            <BookCheck className="mr-2 h-4 w-4"/> Bitirildi Olarak İşaretle
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
-                            <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <CardFooter className="p-2 bg-muted/50 grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsProgressDialogOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4"/> İlerleme Gir
+                    </Button>
+                    <Button variant="default" size="sm" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
+                         <BookCheck className="mr-2 h-4 w-4"/> Bitirildi
+                    </Button>
+                </CardFooter>
             </Card>
             {isProgressDialogOpen && <ProgressDialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen} book={book} onUpdateStatus={onUpdateStatus} />}
         </>
@@ -408,7 +405,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-    
-
-    
