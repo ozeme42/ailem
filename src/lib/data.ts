@@ -155,7 +155,7 @@ export interface Student {
 }
 
 export type AnswerKey = { [key: number]: string };
-export type TextAnswerKey = { [key: number]: string };
+export type TextAnswerKey = { [key: string]: string };
 export type GradingType = 'auto' | 'manual-text' | 'manual';
 export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated';
 export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
@@ -288,6 +288,7 @@ export interface Mistake {
     subject: string;
     topic: string;
     createdAt: string; // ISO date string
+    status: 'active' | 'corrected';
 }
 // This data is now only for initial setup
 // ... (rest of the initial data remains the same)

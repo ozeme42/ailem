@@ -1,6 +1,5 @@
 
 
-
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -240,7 +239,6 @@ export const addTask = async (data: Omit<Task, 'id' | 'familyId'>) => {
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'tasks'), { ...data, familyId });
 };
-export const updateTask = (id: string, data: Partial<Task>) => updateDoc(doc(db, 'tasks', id), data);
 export const deleteTask = (id: string) => deleteDoc(doc(db, "tasks", id));
 
 // Calendar Events
@@ -417,12 +415,13 @@ export const updateNoteItemInList = async (listId: string, itemId: string, newTe
 // Education
 // ... existing education functions ...
 export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback);
-export const addMistake = async (data: Omit<Mistake, 'id' | 'familyId'>) => {
+export const addMistake = async (data: Omit<Mistake, 'id' | 'familyId' | 'status'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'mistakes'), { ...data, familyId });
+    return addDoc(collection(db, 'mistakes'), { ...data, familyId, status: 'active' });
 };
 export const deleteMistake = (id: string) => deleteDoc(doc(db, "mistakes", id));
+export const updateMistake = (id: string, data: Partial<Omit<Mistake, 'id'>>) => updateDoc(doc(db, 'mistakes', id), data);
 
 
 export const onSubjectsUpdate = (callback: (subjects: string[]) => void) => {
@@ -725,6 +724,12 @@ export const checkAndAwardBadges = async (
     }
 };
 
+export const updateTask = async (id: string, data: Partial<Task>) => {
+    // When updating a task, handle subtasks and other fields
+    const taskRef = doc(db, 'tasks', id);
+    return updateDoc(taskRef, data);
+};
+
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
     // When updating a test, ensure empty/undefined fields are handled correctly for Firestore.
     const updateData = { ...data };
@@ -739,5 +744,23 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         delete updateData.studentTextAnswers;
     }
     
-    return updateDoc(doc(db, 'tests', id), updateData);
+    const testDocRef = doc(db, 'tests', id);
+    await updateDoc(testDocRef, updateData);
+
+    // If it's a mistake test evaluation, update the mistakes
+    if(updateData.sourceType === 'mistake' && updateData.studentTextAnswersEvaluation) {
+        const batch = writeBatch(db);
+        const testDoc = await getDoc(testDocRef);
+        const testData = testDoc.data() as Test;
+
+        if (testData.mistakeIds) {
+            for(const mistakeId of testData.mistakeIds) {
+                if (updateData.studentTextAnswersEvaluation[mistakeId] === 'correct') {
+                    const mistakeRef = doc(db, 'mistakes', mistakeId);
+                    batch.update(mistakeRef, { status: 'corrected' });
+                }
+            }
+        }
+        await batch.commit();
+    }
 };
