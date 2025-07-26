@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useFieldArray, useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { FamilyMember, Goal, GoalSection, GoalTask } from "@/lib/data";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Alert, AlertTitle } from "./ui/alert";
 import { AlertTriangle } from "lucide-react";
 
 
@@ -34,6 +34,7 @@ const formSchema = z.object({
   sectionCount: z.coerce.number().min(1, "En az 1 bölüm olmalıdır."),
   sections: z.array(sectionSchema),
 }).refine(data => {
+    if (data.sections.length === 0) return true;
     const totalSectionUnits = data.sections.reduce((acc, section) => acc + (section.unitCount || 0), 0);
     return totalSectionUnits === data.totalUnits;
 }, {
@@ -78,9 +79,36 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
 
   React.useEffect(() => {
     if (initialData) {
-        // Since this form is for auto-generation, we don't pre-fill it for editing.
-        // Editing will require a different, manual form logic.
-        // For now, reset to default when initialData is present but not suitable for this form.
+        const sectionsData = initialData.sections.map(s => {
+            const totalUnits = s.tasks.length;
+            const firstTaskTitle = s.tasks[0]?.title || "";
+            const lastTaskTitle = s.tasks[s.tasks.length-1]?.title || "";
+
+            const matchFirst = firstTaskTitle.match(/(\d+)-/);
+            const matchLast = lastTaskTitle.match(/-(\d+)\./);
+            const startUnit = matchFirst ? parseInt(matchFirst[1],10) : 0;
+            const endUnit = matchLast ? parseInt(matchLast[1], 10) : 0;
+            const unitCount = (endUnit - startUnit) + 1;
+
+            return {
+                title: s.title,
+                unitCount: unitCount,
+                taskCount: totalUnits
+            }
+        });
+
+        const totalUnits = sectionsData.reduce((acc, s) => acc + s.unitCount, 0);
+
+        form.reset({
+            title: initialData.title,
+            description: initialData.description,
+            assigneeId: initialData.assigneeId,
+            totalUnits: totalUnits,
+            unitName: 'sayfa', // This needs to be dynamic if we support more than pages
+            sectionCount: initialData.sections.length,
+            sections: sectionsData as any,
+        });
+    } else {
         form.reset({
             title: "",
             description: "",
@@ -91,17 +119,17 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
             sectionCount: 1
         });
     }
-  }, [initialData, form]);
+  }, [initialData, form, replace]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     let unitTracker = 0;
 
     const finalSections = values.sections.map((section, sectionIndex) => {
-        const unitsPerTask = section.unitCount / section.taskCount;
+        const unitsPerTask = section.taskCount > 0 ? section.unitCount / section.taskCount : 0;
         const tasks = Array.from({ length: section.taskCount }, (_, taskIndex) => {
-            const startUnit = Math.round(unitTracker + (taskIndex * unitsPerTask)) + 1;
-            const endUnit = Math.round(unitTracker + ((taskIndex + 1) * unitsPerTask));
+            const startUnit = Math.floor(unitTracker + (taskIndex * unitsPerTask)) + 1;
+            const endUnit = Math.floor(unitTracker + ((taskIndex + 1) * unitsPerTask));
             return {
                 title: `${startUnit}-${endUnit}. ${values.unitName} tamamla`,
                 order: taskIndex + 1,
