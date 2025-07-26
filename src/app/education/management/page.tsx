@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,12 @@ import {
   deleteTest,
   addTest,
   updateTest,
+  checkAndAwardBadges
 } from "@/lib/dataService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
+import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
@@ -59,7 +61,7 @@ const categoryColors: { [key: string]: string } = {
 
 export default function EducationManagementPage() {
     const { toast } = useToast();
-    const { familyMembers } = useAuth();
+    const { familyMembers, familyId } = useAuth();
 
     const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
     const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
@@ -69,10 +71,12 @@ export default function EducationManagementPage() {
     const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
     const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
     const [isTestDialogOpen, setIsTestDialogOpen] = React.useState(false);
+    const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
 
     const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
     const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
     const [editingTest, setEditingTest] = React.useState<Test | null>(null);
+    const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
     
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -90,6 +94,10 @@ export default function EducationManagementPage() {
             unsubTests();
         };
     }, []);
+
+    const testsAwaitingGrading = React.useMemo(() => {
+        return tests.filter(test => test.status === 'Değerlendirme Bekliyor');
+    }, [tests]);
 
     const handleCreateSubject = async (subjectName: string) => {
         const newSubjects = [...new Set([...availableSubjects, subjectName])];
@@ -110,6 +118,11 @@ export default function EducationManagementPage() {
         setEditingTest(test);
         setIsTestDialogOpen(true);
     }
+
+    const openGradeDialog = (test: Test) => {
+        setGradingTest(test);
+        setIsGradeDialogOpen(true);
+    };
 
     const handleBankSubmit = async (bankData: Omit<QuestionBank, 'id' | 'familyId'>, id?: string) => {
         try {
@@ -185,6 +198,33 @@ export default function EducationManagementPage() {
              toast({ title: "❌ Silme Hatası", variant: 'destructive'});
         }
     };
+
+    const handleGradeSubmit = async (gradeData: ManualGradeData) => {
+        if (!gradingTest || !familyId) return;
+        try {
+            const score = gradingTest.questionCount > 0
+                ? (gradeData.correct / gradingTest.questionCount) * 100
+                : 0;
+
+            const updatedData: Partial<Test> = {
+                status: 'Sonuçlandı',
+                correctAnswers: gradeData.correct,
+                incorrectAnswers: gradeData.incorrect,
+                emptyAnswers: gradeData.empty,
+                score: score,
+                studentTextAnswersEvaluation: gradeData.evaluations,
+            };
+
+            await updateTest(gradingTest.id, updatedData);
+            await checkAndAwardBadges(gradingTest.studentId, familyId, { type: 'test_completed', test: { ...gradingTest, ...updatedData } });
+            
+            toast({ title: "✅ Test Değerlendirildi", description: `${gradingTest.title} için sonuçlar kaydedildi.` });
+            setIsGradeDialogOpen(false);
+            setGradingTest(null);
+        } catch (error) {
+            toast({ title: "❌ Değerlendirme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive' });
+        }
+    };
     
     const contentByCategory = React.useMemo(() => {
         const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[] } } = {};
@@ -196,7 +236,6 @@ export default function EducationManagementPage() {
         if (!categories['Atanmış Ödevler']) categories['Atanmış Ödevler'] = { banks: [], exams: [], tests: [] };
         if (!categories['Serbest Etkinlikler']) categories['Serbest Etkinlikler'] = { banks: [], exams: [], tests: [] };
         
-
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
                 if (categories[subject.name]) {
@@ -215,7 +254,8 @@ export default function EducationManagementPage() {
             categories['Genel Deneme Sınavları'].exams.push(exam);
         });
 
-        tests.forEach(test => {
+        // Değerlendirme bekleyenler bu listeye dahil edilmeyecek
+        tests.filter(t => t.status !== 'Değerlendirme Bekliyor').forEach(test => {
             categories['Atanmış Ödevler'].tests.push(test);
         });
 
@@ -244,6 +284,36 @@ export default function EducationManagementPage() {
                 </Dialog>
             </PageHeader>
             
+            {testsAwaitingGrading.length > 0 && (
+                <Card className="mb-6 border-primary/50 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-primary">
+                            <FilePen />
+                            Değerlendirme Bekleyenler ({testsAwaitingGrading.length})
+                        </CardTitle>
+                        <CardDescription>
+                            Öğrenciler tarafından tamamlanan ve sonucunu girmeniz gereken testler.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {testsAwaitingGrading.map(test => {
+                             const student = familyMembers.find(m => m.id === test.studentId);
+                             return (
+                                 <div key={test.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                                     <div>
+                                        <p className="font-semibold">{test.title}</p>
+                                        <p className="text-sm text-muted-foreground">{student?.name || 'Bilinmeyen Öğrenci'}</p>
+                                     </div>
+                                     <Button size="sm" onClick={() => openGradeDialog(test)}>
+                                        Sonuç Gir
+                                     </Button>
+                                 </div>
+                             )
+                        })}
+                    </CardContent>
+                </Card>
+            )}
+
             <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
                 {Object.entries(contentByCategory).map(([category, content]) => {
                     const Icon = categoryIcons[category] || BookCopy;
@@ -386,6 +456,26 @@ export default function EducationManagementPage() {
                     />
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Testi Değerlendir</DialogTitle>
+                        <DialogDescription>
+                            {gradingTest?.title} testinin sonuçlarını girin.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {gradingTest && (
+                        <ManualGradeForm
+                            test={gradingTest}
+                            onSave={handleGradeSubmit}
+                            onCancel={() => setIsGradeDialogOpen(false)}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
+
+    

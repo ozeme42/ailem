@@ -68,10 +68,8 @@ export default function EducationPage() {
   const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
 
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
-  const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
   const [editingTest, setEditingTest] = React.useState<Test | null>(null);
-  const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
-
+  
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
   [familyMembers]);
@@ -85,31 +83,26 @@ export default function EducationPage() {
   React.useEffect(() => {
     if (!selectedStudent) return;
     
-    // Set up real-time listener for tests.
-    // This will automatically update the UI whenever the tests collection changes in Firestore.
     const unsubTests = onTestsUpdate((allTests) => {
         const studentTests = allTests
             .filter(t => t.studentId === selectedStudent.id)
             .sort((a,b) => {
                 try {
-                    // Handle potential invalid date strings gracefully
                     const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                     const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                     if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
                     return compareDesc(dateA, dateB);
                 } catch (e) {
-                    return 0; // Return neutral if dates are invalid
+                    return 0;
                 }
             });
         setTests(studentTests);
     });
     
-    // These listeners do not need to be student-specific as they provide content for new assignments
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
     const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
     
-    // Cleanup function to unsubscribe from listeners when the component unmounts or student changes
     return () => {
       unsubTests();
       unsubBanks();
@@ -139,34 +132,6 @@ export default function EducationPage() {
          toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
     }
   };
-
-  const handleGradeSubmit = async (gradeData: ManualGradeData) => {
-    if (!gradingTest || !familyId) return;
-    try {
-        const score = gradingTest.questionCount > 0
-            ? (gradeData.correct / gradingTest.questionCount) * 100
-            : 0;
-
-        const updatedData: Partial<Test> = {
-            status: 'Sonuçlandı',
-            correctAnswers: gradeData.correct,
-            incorrectAnswers: gradeData.incorrect,
-            emptyAnswers: gradeData.empty,
-            score: score,
-            studentTextAnswersEvaluation: gradeData.evaluations,
-        };
-
-        await updateTest(gradingTest.id, updatedData);
-        await checkAndAwardBadges(gradingTest.studentId, familyId, { type: 'test_completed', test: { ...gradingTest, ...updatedData } });
-        
-        toast({ title: "✅ Test Değerlendirildi", description: `${gradingTest.title} için sonuçlar kaydedildi.` });
-        setIsGradeDialogOpen(false);
-        setGradingTest(null);
-    } catch (error) {
-        toast({ title: "❌ Değerlendirme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive' });
-    }
-  };
-
 
   const overallStats = React.useMemo(() => {
     const evaluatedTests = tests.filter(t => t.status === 'Sonuçlandı');
@@ -212,12 +177,6 @@ export default function EducationPage() {
     });
 
   }, [tests, availableSubjects]);
-
-  const openGradeDialog = (test: Test) => {
-    setGradingTest(test);
-    setIsGradeDialogOpen(true);
-  };
-
 
   return (
     <>
@@ -349,16 +308,18 @@ export default function EducationPage() {
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
             tests.map(test => {
+                // Değerlendirme bekleyen testler burada gösterilmeyecek.
+                if (test.status === 'Değerlendirme Bekliyor') return null;
+
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">
-                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : (test.status === 'Değerlendirme Bekliyor' ? "secondary" : "outline")}>{test.status}</Badge>
+                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"}>{test.status}</Badge>
                             <h3 className="font-semibold text-lg">{test.title}</h3>
                             <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-3 sm:mt-0">
                              {test.status === 'Atandı' && <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>}
-                             {test.status === 'Değerlendirme Bekliyor' && <Button variant="outline" onClick={() => openGradeDialog(test)}>Değerlendir</Button>}
                              {test.status === 'Sonuçlandı' && <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>}
                         </div>
                     </Card>
@@ -369,24 +330,6 @@ export default function EducationPage() {
           )}
         </CardContent>
       </Card>
-
-       <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Testi Değerlendir</DialogTitle>
-                    <DialogDescription>
-                        {gradingTest?.title} testinin sonuçlarını girin.
-                    </DialogDescription>
-                </DialogHeader>
-                {gradingTest && (
-                    <ManualGradeForm
-                        test={gradingTest}
-                        onSave={handleGradeSubmit}
-                        onCancel={() => setIsGradeDialogOpen(false)}
-                    />
-                )}
-            </DialogContent>
-        </Dialog>
     </>
   );
 }
