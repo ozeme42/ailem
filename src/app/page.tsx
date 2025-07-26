@@ -282,8 +282,8 @@ export default function Home() {
       </header>
       
         <div className="flex flex-col gap-2">
-             <div className="grid grid-cols-2">
-                 <Link href="/shopping" className="group block">
+            <div className="grid grid-cols-2">
+                <Link href="/shopping" className="group block">
                     <div className="flex flex-col p-4 rounded-l-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -394,15 +394,17 @@ export default function Home() {
       </section>
 
       {latestBooks.length > 0 && (
-         <Card className="shadow-lg">
-             <CardHeader>
+         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
+            <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle>Yeni Eklenen Kitaplar</CardTitle>
-                        <CardDescription>Kütüphaneye son eklenenler.</CardDescription>
+                        <CardTitle className="text-white md:text-card-foreground">Yeni Eklenen Kitaplar</CardTitle>
+                        <CardDescription className="text-white/80 md:text-muted-foreground">Kütüphaneye son eklenenler.</CardDescription>
                     </div>
                     <Link href="/library/archive">
-                        <Button variant="ghost">Tümünü Gör <ArrowRight className="ml-2 h-4 w-4"/></Button>
+                        <Button variant="ghost" className="text-white/80 hover:text-white md:text-muted-foreground md:hover:text-foreground">
+                            Tümünü Gör <ArrowRight className="ml-2 h-4 w-4"/>
+                        </Button>
                     </Link>
                 </div>
             </CardHeader>
@@ -411,7 +413,7 @@ export default function Home() {
                     <div className="overflow-x-auto pb-4 -mb-4">
                         <div className="flex flex-nowrap gap-4">
                             {latestBooks.map(book => (
-                               <Link key={book.id} href="/library/archive" className="group block w-32 sm:w-36 shrink-0">
+                               <Link key={book.id} href="/library/archive" className="group block w-24 sm:w-32 shrink-0">
                                   <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
                                     <Image 
                                       src={book.image || `https://placehold.co/300x450.png`} 
@@ -423,7 +425,7 @@ export default function Home() {
                                     />
                                   </Card>
                                   <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                                  <p className="text-xs text-white/80 md:text-muted-foreground truncate">{book.author}</p>
                                </Link>
                             ))}
                         </div>
@@ -511,5 +513,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
