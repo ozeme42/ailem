@@ -180,7 +180,7 @@ export default function Home() {
   }, [tasks, familyMembers]);
 
 
-  const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
+  const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp, fill: member.color }));
   const todaysPlan = mealPlan[format(new Date(), 'yyyy-MM-dd')];
 
   const shoppingSummary = React.useMemo(() => {
@@ -569,7 +569,7 @@ export default function Home() {
                         <Tooltip cursor={false} content={<ChartTooltipContent />} />
                         <Bar dataKey="xp" radius={8}>
                            {familyXpData.map((entry, index) => (
-                             <Cell key={`cell-${index}`} fill={familyXpChartConfig[entry.name as keyof typeof familyXpChartConfig]?.color} />
+                             <Cell key={`cell-${index}`} fill={entry.fill} />
                            ))}
                         </Bar>
                     </BarChart>
