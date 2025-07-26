@@ -276,62 +276,67 @@ export default function Home() {
       </header>
       
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <Link href="/shopping" className="group">
-                <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
+            <Link href="/shopping" className="group block">
+                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
-                    <div className="flex-grow my-4">
+                    <div className="flex-grow my-4 space-y-2">
                         {shoppingSummary.totalPending > 0 ? (
-                            <div className="space-y-2">
+                            <>
                                 {shoppingSummary.itemsToShow.map(item => (
-                                    <div key={item.id} className="flex items-center gap-2 text-sm">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                                    <div key={item.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-white/20 backdrop-blur-sm">
                                         <span>{item.name}</span>
                                     </div>
                                 ))}
                                 {shoppingSummary.totalPending > 3 && (
                                     <p className="text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
                                 )}
-                            </div>
+                            </>
                         ) : (
-                        <p className="text-sm text-white/90">Alınacak ürün yok. Harika!</p>
+                           <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                <p className="text-sm text-white/90">Alınacak ürün yok. Harika!</p>
+                           </div>
                         )}
                     </div>
                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                 </div>
             </Link>
-             <Link href="/yemek" className="group">
-                <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
+            <Link href="/yemek" className="group block">
+                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
-                    <div className="flex-grow my-4">
+                    <div className="flex-grow my-4 space-y-2">
                         {todaysMeal ? (
-                            <>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
                                 <p className="font-semibold truncate">{todaysMeal.title}</p>
                                 <p className="text-sm text-white/90">Akşam yemeği için planlandı.</p>
-                            </>
+                            </div>
                         ) : (
-                            <div className="text-white/90">
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
                                 <p className="font-semibold">Bugün ne pişirsem?</p>
-                                <p className="text-sm">Akşam yemeği için henüz bir plan yok.</p>
+                                <p className="text-sm text-white/90">Akşam yemeği için henüz bir plan yok.</p>
                             </div>
                         )}
                     </div>
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
                 </div>
             </Link>
-            <Link href="/calendar" className="group">
-                <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
+            <Link href="/calendar" className="group block">
+                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
-                    <div className="flex-grow my-4">
+                    <div className="flex-grow my-4 space-y-2">
                         {calendarSummary.nextEvent ? (
                             <>
-                                <p className="font-semibold">{calendarSummary.nextEvent.title}</p>
-                                <p className="text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy', { locale: tr })}</p>
+                               <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                    <p className="font-semibold">{calendarSummary.nextEvent.title}</p>
+                                    <p className="text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy', { locale: tr })}</p>
+                               </div>
                                 {calendarSummary.totalUpcoming > 1 && (
                                     <p className="text-xs text-white/80 pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
                                 )}
                             </>
                         ) : (
-                            <p className="text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
+                           <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                             <p className="text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
+                           </div>
                         )}
                     </div>
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
