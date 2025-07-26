@@ -220,8 +220,8 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
                 return (
                      <Card key={subject}>
                          <AccordionItem value={subject} className="border-b-0">
-                            <AccordionTrigger className="p-4 hover:no-underline">
-                                <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center p-4">
+                                <AccordionTrigger className="hover:no-underline flex-grow">
                                     <div className="flex items-center gap-3">
                                         <Icon className="w-8 h-8" />
                                         <div className="text-left">
@@ -229,17 +229,17 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
                                             <p className="text-sm text-muted-foreground">{topics.length} konu</p>
                                         </div>
                                     </div>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                            <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive mr-2"><Trash2 className="w-4 h-4"/></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>Dersi Sil</AlertDialogTitle><AlertDialogDescription>"{subject}" dersini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteSubject(subject)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </AccordionTrigger>
+                                </AccordionTrigger>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive shrink-0"><Trash2 className="w-4 h-4"/></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>Dersi Sil</AlertDialogTitle><AlertDialogDescription>"{subject}" dersini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteSubject(subject)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                             <AccordionContent className="p-4 pt-0">
                                 <div className="space-y-2">
                                 {topics.map(topic => (
