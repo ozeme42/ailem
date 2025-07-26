@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 
@@ -110,8 +110,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       topicId: initialData?.sourceType === 'bank' ? initialData.topicId : "",
       // Exam Test
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : "",
-      assignedDate: initialData?.assignedDate ? new Date(initialData.assignedDate) : undefined,
-      dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : undefined,
+      assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
+      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
     },
   });
   
@@ -121,6 +121,15 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   };
 
   React.useEffect(() => {
+    const parseDate = (dateString: string | undefined) => {
+        if (!dateString) return undefined;
+        try {
+            return parse(dateString, 'dd MMMM yyyy', new Date(), { locale: tr });
+        } catch (error) {
+            return undefined;
+        }
+    }
+
     if (initialData) {
       handleTabChange(initialData.sourceType);
       setSelectedBankId(initialData.sourceId || null);
@@ -135,8 +144,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         bankId: initialData.sourceType === 'bank' ? initialData.sourceId : "",
         topicId: initialData.sourceType === 'bank' ? initialData.topicId : "",
         examId: initialData.sourceType === 'exam' ? initialData.sourceId : "",
-        assignedDate: initialData.assignedDate ? new Date(initialData.assignedDate) : undefined,
-        dueDate: initialData.dueDate ? new Date(initialData.dueDate) : undefined,
+        assignedDate: parseDate(initialData.assignedDate),
+        dueDate: parseDate(initialData.dueDate),
       });
     } else {
       handleTabChange('quick');
