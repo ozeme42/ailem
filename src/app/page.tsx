@@ -172,8 +172,8 @@ export default function Home() {
 
   const pendingTasksSummary = React.useMemo(() => {
     return tasks
-      .filter(task => !task.completed)
-      .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
+      .filter(task => !task.completed && task.category === 'Ev İşleri')
+      .sort((a, b) => compareAsc(parseISO(a.dueDate), b.dueDate))
       .map(task => ({
         ...task,
         assignee: familyMembers.find(m => m.id === task.assigneeId)
@@ -185,12 +185,12 @@ export default function Home() {
     const students = familyMembers.filter(m => m.role.includes('Çocuk'));
     const studentIds = new Set(students.map(s => s.id));
 
-    const testsPending = tests
+    const pendingTests = tests
         .filter(t => studentIds.has(t.studentId) && t.status === 'Atandı')
         .map(t => ({ ...t, type: 'test' as const, student: familyMembers.find(m => m.id === t.studentId) }))
         .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
         
-    const studiesPending = studyAssignments
+    const pendingStudies = studyAssignments
         .filter(a => studentIds.has(a.studentId) && a.status === 'assigned')
         .map(a => ({ ...a, type: 'study' as const, title: a.topic, dueDate: a.dueDate, student: familyMembers.find(m => m.id === a.studentId) }))
         .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
@@ -500,7 +500,7 @@ export default function Home() {
         <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
           <CardHeader>
             <CardTitle>Bekleyen Görevler</CardTitle>
-            <CardDescription className="text-white/80">Tüm aile için yaklaşan görevler.</CardDescription>
+            <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {pendingTasksSummary.length > 0 ? (
