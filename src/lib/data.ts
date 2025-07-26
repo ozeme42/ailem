@@ -1,5 +1,6 @@
 
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -126,6 +127,33 @@ export type MealPlan = {
     [meal: string]: Recipe | null; // "Kahvaltı" | "Akşam Yemeği"
   }
 }
+
+// Goals / Roadmaps
+export interface GoalTask {
+    id: string;
+    title: string;
+    completed: boolean;
+    order: number;
+}
+export interface GoalSection {
+    id: string;
+    title: string;
+    status: 'locked' | 'unlocked' | 'completed';
+    order: number;
+    tasks: GoalTask[];
+}
+export interface Goal {
+    id: string;
+    familyId: string;
+    creatorId: string;
+    assigneeId: string;
+    title: string;
+    description?: string;
+    createdAt: string; // ISO String
+    status: 'in-progress' | 'completed';
+    sections: GoalSection[];
+}
+
 
 // Static data that doesn't change often can remain here.
 // Data that will be managed by the user is now in Firestore.

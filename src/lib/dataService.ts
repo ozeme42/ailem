@@ -1,9 +1,10 @@
 
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -501,6 +502,46 @@ export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'fam
 };
 export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id'>>) => updateDoc(doc(db, 'studyAssignments', id), data);
 export const deleteStudyAssignment = (id: string) => deleteDoc(doc(db, 'studyAssignments', id));
+
+// Goals (Roadmaps)
+export const onGoalsUpdate = (callback: (goals: Goal[]) => void) => onFamilyDataUpdate<Goal>('goals', callback);
+export const onGoalUpdate = (goalId: string, callback: (goal: Goal | null) => void) => {
+    const docRef = doc(db, 'goals', goalId);
+    return onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+            callback({ id: snapshot.id, ...snapshot.data() } as Goal);
+        } else {
+            callback(null);
+        }
+    });
+};
+export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status'>) => {
+    const familyId = await getCurrentFamilyId();
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!familyId || !user) throw new Error("User not authenticated or not in a family");
+
+    const newGoal: Omit<Goal, 'id'> = {
+        ...data,
+        familyId,
+        creatorId: user.uid,
+        createdAt: new Date().toISOString(),
+        status: 'in-progress',
+        sections: data.sections.map((section, index) => ({
+            ...section,
+            id: Date.now().toString() + index,
+            status: index === 0 ? 'unlocked' : 'locked',
+            tasks: section.tasks.map((task, taskIndex) => ({
+                ...task,
+                id: Date.now().toString() + index + taskIndex,
+                completed: false,
+            }))
+        }))
+    };
+    return addDoc(collection(db, 'goals'), newGoal);
+};
+export const updateGoal = (id: string, data: Partial<Omit<Goal, 'id'>>) => updateDoc(doc(db, 'goals', id), data);
+export const deleteGoal = (id: string) => deleteDoc(doc(db, 'goals', id));
 
 
 // This needs to be called from a client component that has access to the AuthContext
