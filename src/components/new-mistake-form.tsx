@@ -13,8 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/components/ui/combobox';
-import { Loader2, UploadCloud } from 'lucide-react';
+import { Loader2, UploadCloud, Camera, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+import { ImageCropper } from '@/components/image-cropper';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
@@ -28,14 +30,19 @@ type NewMistakeFormProps = {
   onFormSubmit: () => void;
 };
 
+type FormStep = 'select_source' | 'capture_photo' | 'crop_image' | 'fill_details';
+
 export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const [step, setStep] = React.useState<FormStep>('select_source');
+  const [imageToCrop, setImageToCrop] = React.useState<string | null>(null);
+  
   const [allSubjects, setAllSubjects] = React.useState<string[]>([]);
-  // We'll manage topics locally based on the selected subject, but for simplicity, we use one list for all topics.
   const [allTopics, setAllTopics] = React.useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,8 +55,6 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
 
   React.useEffect(() => {
     const unsubSubjects = onSubjectsUpdate(setAllSubjects);
-    // In a more complex app, topics would be fetched based on the selected subject.
-    // For now, we'll just use a generic list or allow creating new ones.
     return () => unsubSubjects();
   }, []);
 
@@ -59,8 +64,6 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
   };
   
   const handleCreateTopic = async (topicName: string) => {
-    // In a real app, you would likely save topics under a specific subject.
-    // For this implementation, we just add it to a local/general list for the combobox.
     setAllTopics(prev => [...new Set([...prev, topicName])]);
   };
 
@@ -69,10 +72,51 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        form.setValue('imageDataUri', reader.result as string, { shouldValidate: true });
+        setImageToCrop(reader.result as string);
+        setStep('crop_image');
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const startCamera = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+        }
+        setStep('capture_photo');
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Kamera Erişimi Başarısız',
+            description: 'Lütfen tarayıcı ayarlarınızdan kamera izinlerini kontrol edin.',
+        });
+        console.error("Camera access error:", error);
+    }
+  };
+
+  const handleCapture = () => {
+    if (videoRef.current) {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            setImageToCrop(canvas.toDataURL('image/jpeg'));
+            setStep('crop_image');
+
+            // Stop camera stream
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+  };
+
+  const onCropComplete = (croppedImageUrl: string) => {
+    form.setValue('imageDataUri', croppedImageUrl, { shouldValidate: true });
+    setStep('fill_details');
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -113,40 +157,50 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
   
   const subjectOptions = allSubjects.map(s => ({ label: s, value: s }));
   const topicOptions = allTopics.map(t => ({ label: t, value: t }));
-  const imageValue = form.watch('imageDataUri');
+
+  if (step === 'select_source') {
+    return (
+      <div className="space-y-4 pt-4">
+          <Button variant="outline" className="w-full h-24" onClick={() => fileInputRef.current?.click()}>
+              <UploadCloud className="mr-2 h-5 w-5"/> Dosya Yükle
+          </Button>
+          <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+          <Button variant="outline" className="w-full h-24" onClick={startCamera}>
+              <Camera className="mr-2 h-5 w-5"/> Fotoğraf Çek
+          </Button>
+      </div>
+    );
+  }
+
+  if (step === 'capture_photo') {
+      return (
+          <div className="space-y-4 pt-4">
+              <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+              <Button className="w-full" onClick={handleCapture}>Çek</Button>
+              <Button variant="ghost" className="w-full" onClick={() => setStep('select_source')}>Geri</Button>
+          </div>
+      );
+  }
+
+  if (step === 'crop_image' && imageToCrop) {
+      return (
+          <div className="pt-4">
+            <div className="relative w-full h-96">
+                <ImageCropper image={imageToCrop} onCropComplete={onCropComplete} />
+            </div>
+            <Button variant="ghost" className="w-full mt-4" onClick={() => setStep('select_source')}>Geri</Button>
+          </div>
+      )
+  }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+        <Button variant="ghost" size="sm" onClick={() => setStep('select_source')} className="mb-2">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Resmi Değiştir
+        </Button>
+        <Image src={form.getValues('imageDataUri')} alt="Kırpılan Soru" width={400} height={300} className="w-full h-auto rounded-md" data-ai-hint="question paper" />
         
-         <FormField
-          control={form.control}
-          name="imageDataUri"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Soru Fotoğrafı</FormLabel>
-              <FormControl>
-                <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-              </FormControl>
-              <div
-                className="aspect-video w-full border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer rounded-md"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {imageValue ? (
-                  <Image src={imageValue} alt="Soru önizlemesi" layout="fill" className="object-contain rounded-md p-2" data-ai-hint="question paper" />
-                ) : (
-                  <>
-                    <UploadCloud className="h-10 w-10" />
-                    <p className="mt-2 text-sm">Resim Yükle</p>
-                    <p className="text-xs">Tıkla veya sürükle bırak</p>
-                  </>
-                )}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <FormField
           control={form.control}
           name="subject"
