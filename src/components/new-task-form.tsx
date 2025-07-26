@@ -392,5 +392,3 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
     </Form>
   );
 }
-
-    
