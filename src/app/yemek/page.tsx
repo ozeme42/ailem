@@ -211,10 +211,10 @@ export default function YemekPlanlamaPage() {
         </CardContent>
       </Card>
       
-      <Card className="mb-8">
+      <Card className="mb-8 bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg rounded-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><BarChart2 className="text-primary"/> İstatistikler</CardTitle>
-          <CardDescription>Ailenin yemek tercihleri ve en popüler tarifler.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><BarChart2/> İstatistikler</CardTitle>
+          <CardDescription className="text-white/80">Ailenin yemek tercihleri ve en popüler tarifler.</CardDescription>
         </CardHeader>
         <CardContent>
             <h3 className="font-semibold mb-2 text-center">En Çok Yenenler</h3>
@@ -222,46 +222,46 @@ export default function YemekPlanlamaPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {mostEaten.map((recipe, index) => (
                        recipe.id ? (
-                        <Card key={recipe.id} className="p-4 flex items-center gap-4">
-                             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted font-bold text-lg text-primary">{index + 1}</div>
+                        <Card key={recipe.id} className="p-4 flex items-center gap-4 bg-white/20 text-white border-0">
+                             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-white/30 font-bold text-lg">{index + 1}</div>
                              <div>
                                  <p className="font-semibold">{recipe.title}</p>
-                                 <p className="text-sm text-muted-foreground">{recipe.count} kez pişirildi</p>
+                                 <p className="text-sm text-white/80">{recipe.count} kez pişirildi</p>
                              </div>
                         </Card>
                        ) : null
                     ))}
                 </div>
             ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">İstatistik gösterecek kadar veri henüz yok.</p>
+                <p className="text-sm text-white/80 text-center py-4">İstatistik gösterecek kadar veri henüz yok.</p>
             )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-xl">
           <CardHeader>
              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <CardTitle>Tarif Kütüphanesi</CardTitle>
                  <div className="w-full sm:w-auto md:w-1/3 relative">
-                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
                     <Input 
                       placeholder="Tarif ara..." 
-                      className="pl-10"
+                      className="pl-10 bg-white/20 border-0 placeholder:text-white/70"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                  </div>
              </div>
-             <CardDescription>
+             <CardDescription className="text-white/80">
                 Ailenizin favori tariflerini burada bulun, yönetin ve yenilerini ekleyin.
              </CardDescription>
           </CardHeader>
           <CardContent>
              <Tabs defaultValue="Hepsi" onValueChange={(value) => setActiveTab(value)}>
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6">
-                    <TabsTrigger value="Hepsi">Hepsi</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 bg-white/20 text-white">
+                    <TabsTrigger value="Hepsi" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">Hepsi</TabsTrigger>
                     {Object.keys(categoryIcons).map(category => (
-                        <TabsTrigger key={category} value={category}>
+                        <TabsTrigger key={category} value={category} className="data-[state=active]:bg-white data-[state=active]:text-blue-600">
                             {React.cloneElement(categoryIcons[category], { className: "mr-2 h-4 w-4"})}
                             {category}
                         </TabsTrigger>
@@ -274,7 +274,7 @@ export default function YemekPlanlamaPage() {
                         {filteredRecipes.map(recipe => (
                            <Dialog key={recipe.id}>
                                 <DialogTrigger asChild>
-                                    <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1">
+                                    <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
                                       <CardHeader className="p-4">
                                           <div className="flex justify-between items-start">
                                             <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
@@ -305,7 +305,7 @@ export default function YemekPlanlamaPage() {
                         ))}
                     </div>
                  ) : (
-                    <div className="text-center py-16 text-muted-foreground">
+                    <div className="text-center py-16 text-white/80">
                         <p>Aradığınız kriterlere uygun tarif bulunamadı.</p>
                     </div>
                  )}
@@ -372,3 +372,4 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
