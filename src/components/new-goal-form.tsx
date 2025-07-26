@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -14,23 +14,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { FamilyMember, Goal, GoalSection, GoalTask } from "@/lib/data";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Card, CardContent } from "./ui/card";
 
+
+const taskSchema = z.object({
+  title: z.string().min(1, "Görev adı boş olamaz."),
+});
+
+const sectionSchema = z.object({
+  title: z.string().min(1, "Bölüm adı boş olamaz."),
+  tasks: z.array(taskSchema).min(1, "Her bölümde en az bir görev olmalıdır."),
+});
 
 const formSchema = z.object({
   title: z.string().min(3, "Hedef adı en az 3 karakter olmalıdır."),
   description: z.string().optional(),
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
-  
-  // New automated fields
-  totalUnits: z.coerce.number().min(1, "Toplam birim en az 1 olmalıdır."),
-  unitName: z.string().min(1, "Birim adı zorunludur.").default("sayfa"),
-  unitsPerTask: z.coerce.number().min(1, "Birim başına görev en az 1 olmalıdır.").default(20),
-  sectionCount: z.coerce.number().min(1, "En az 1 bölüm olmalıdır.").max(100, "En fazla 100 bölüm olabilir.").default(1),
-
-}).refine(data => data.totalUnits >= data.unitsPerTask, {
-    message: "Toplam birim, görev başına birimden küçük olamaz.",
-    path: ["totalUnits"],
+  sections: z.array(sectionSchema).min(1, "En az bir bölüm eklemelisiniz."),
 });
 
 type NewGoalFormProps = {
@@ -44,61 +44,21 @@ export function NewGoalForm({ familyMembers, onCreate }: NewGoalFormProps) {
     defaultValues: {
       title: "",
       description: "",
-      totalUnits: 100,
-      unitName: "sayfa",
-      unitsPerTask: 10,
-      sectionCount: 4,
+      sections: [],
     },
   });
 
-  const { totalUnits, unitName, unitsPerTask, sectionCount } = useWatch({ control: form.control });
-
-  const generatedPlan = React.useMemo(() => {
-    if (!totalUnits || !unitName || !unitsPerTask || !sectionCount || sectionCount === 0 || totalUnits < unitsPerTask) {
-        return null;
-    }
-    
-    const totalTasks = Math.ceil(totalUnits / unitsPerTask);
-    const tasksPerSection = Math.ceil(totalTasks / sectionCount);
-    
-    const sections: { title: string; tasks: { title: string }[] }[] = [];
-
-    let currentUnit = 0;
-
-    for (let i = 0; i < sectionCount; i++) {
-        if (currentUnit >= totalUnits) break;
-
-        const sectionTasks: { title: string }[] = [];
-        const startUnitForSection = currentUnit + 1;
-
-        for (let j = 0; j < tasksPerSection; j++) {
-            if (currentUnit >= totalUnits) break;
-            
-            const taskStartUnit = currentUnit + 1;
-            const taskEndUnit = Math.min(currentUnit + unitsPerTask, totalUnits);
-            sectionTasks.push({ title: `${taskStartUnit}-${taskEndUnit}. ${unitName}` });
-            currentUnit = taskEndUnit;
-        }
-
-        const endUnitForSection = currentUnit;
-        sections.push({
-            title: `Bölüm ${i + 1}: ${startUnitForSection}-${endUnitForSection}. ${unitName}`,
-            tasks: sectionTasks
-        });
-    }
-
-    return sections;
-
-  }, [totalUnits, unitName, unitsPerTask, sectionCount]);
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "sections",
+  });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!generatedPlan) return;
-
     const goalData = {
         title: values.title,
         description: values.description,
         assigneeId: values.assigneeId,
-        sections: generatedPlan.map((section, sectionIndex) => ({
+        sections: values.sections.map((section, sectionIndex) => ({
             title: section.title,
             order: sectionIndex + 1,
             tasks: section.tasks.map((task, taskIndex) => ({
@@ -160,40 +120,82 @@ export function NewGoalForm({ familyMembers, onCreate }: NewGoalFormProps) {
                 )}
                 />
                 
-                <div className="p-4 border rounded-lg space-y-4 bg-muted/50">
-                    <h3 className="text-lg font-semibold">Hedef Otomasyonu</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                         <FormField control={form.control} name="totalUnits" render={({ field }) => (
-                            <FormItem><FormLabel>Toplam Birim</FormLabel><FormControl><Input type="number" placeholder="300" {...field} /></FormControl><FormMessage /></FormItem>
-                         )}/>
-                         <FormField control={form.control} name="unitName" render={({ field }) => (
-                            <FormItem><FormLabel>Birim Adı</FormLabel><FormControl><Input placeholder="sayfa, km, video" {...field} /></FormControl><FormMessage /></FormItem>
-                         )}/>
-                    </div>
-                     <div className="grid grid-cols-2 gap-4">
-                         <FormField control={form.control} name="unitsPerTask" render={({ field }) => (
-                            <FormItem><FormLabel>Görev Başına Birim</FormLabel><FormControl><Input type="number" placeholder="20" {...field} /></FormControl><FormMessage /></FormItem>
-                         )}/>
-                         <FormField control={form.control} name="sectionCount" render={({ field }) => (
-                            <FormItem><FormLabel>Bölüm Sayısı</FormLabel><FormControl><Input type="number" placeholder="5" {...field} /></FormControl><FormMessage /></FormItem>
-                         )}/>
-                    </div>
+                <div className="space-y-4">
+                    <FormLabel>Bölümler</FormLabel>
+                    {fields.map((sectionField, sectionIndex) => (
+                        <Card key={sectionField.id} className="p-4 bg-muted/50">
+                            <div className="flex justify-between items-start gap-2 mb-4">
+                                <FormField
+                                    control={form.control}
+                                    name={`sections.${sectionIndex}.title`}
+                                    render={({ field }) => (
+                                        <FormItem className="flex-grow">
+                                            <FormLabel className="text-xs">Bölüm {sectionIndex + 1}</FormLabel>
+                                            <FormControl><Input placeholder="Bölüm başlığı" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(sectionIndex)} className="mt-6">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                            
+                            <SectionTasks control={form.control} sectionIndex={sectionIndex} />
+                        </Card>
+                    ))}
+                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ title: "", tasks: [{title: ""}] })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Yeni Bölüm Ekle
+                    </Button>
+                     <FormMessage>{form.formState.errors.sections?.message}</FormMessage>
                 </div>
-
-                {generatedPlan && (
-                    <Alert>
-                        <AlertTitle>Otomatik Plan Özeti</AlertTitle>
-                        <AlertDescription>
-                            Bu ayarlarla, toplamda {generatedPlan.reduce((acc, s) => acc + s.tasks.length, 0)} görev ve {generatedPlan.length} bölüm oluşturulacak.
-                        </AlertDescription>
-                    </Alert>
-                )}
             </div>
         </ScrollArea>
         <div className="pt-4 border-t">
-            <Button type="submit" className="w-full" disabled={!generatedPlan}>Yol Haritasını Oluştur</Button>
+            <Button type="submit" className="w-full">Yol Haritasını Oluştur</Button>
         </div>
       </form>
     </Form>
+  );
+}
+
+
+function SectionTasks({ control, sectionIndex }: { control: any, sectionIndex: number }) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `sections.${sectionIndex}.tasks`
+  });
+
+  return (
+    <div className="pl-4 border-l-2 ml-2 space-y-3">
+        <FormLabel className="text-sm">Görevler</FormLabel>
+        {fields.map((taskField, taskIndex) => (
+            <div key={taskField.id} className="flex items-center gap-2">
+                <FormField
+                    control={control}
+                    name={`sections.${sectionIndex}.tasks.${taskIndex}.title`}
+                    render={({ field }) => (
+                        <FormItem className="flex-grow">
+                             <FormControl><Input placeholder={`Görev ${taskIndex + 1}`} {...field} /></FormControl>
+                             <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(taskIndex)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+            </div>
+        ))}
+         <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => append({ title: "" })}
+            >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Görev Ekle
+        </Button>
+    </div>
   );
 }
