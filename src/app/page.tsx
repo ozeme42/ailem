@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -77,6 +77,7 @@ export default function Home() {
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [tests, setTests] = React.useState<Test[]>([]);
+  const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
   const [books, setBooks] = React.useState<Book[]>([]);
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
@@ -88,6 +89,7 @@ export default function Home() {
     const unsubCalendar = onCalendarEventsUpdate(setCalendarEvents);
     const unsubTasks = onTasksUpdate(setTasks);
     const unsubTests = onTestsUpdate(setTests);
+    const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
     const unsubBooks = onBooksUpdate(setBooks);
     let unsubLibraries = () => {};
     if (familyId) {
@@ -100,6 +102,7 @@ export default function Home() {
       unsubCalendar();
       unsubTasks();
       unsubTests();
+      unsubStudyAssignments();
       unsubLibraries();
       unsubBooks();
     };
@@ -178,22 +181,31 @@ export default function Home() {
       .slice(0, 5); // Show top 5 pending tasks
   }, [tasks, familyMembers]);
 
-  const pendingTestsByStudent = React.useMemo(() => {
-    const studentTests: { [key: string]: { student: FamilyMember, tests: Test[] } } = {};
+  const pendingAssignmentsByStudent = React.useMemo(() => {
+    const studentAssignments: { [key: string]: { student: FamilyMember, assignments: any[] } } = {};
     const students = familyMembers.filter(m => m.role.includes('Çocuk'));
 
     students.forEach(student => {
-        const pending = tests.filter(t => t.studentId === student.id && t.status === 'Atandı');
-        if (pending.length > 0) {
-            studentTests[student.id] = {
+        const pendingTests = tests
+            .filter(t => t.studentId === student.id && t.status === 'Atandı')
+            .map(t => ({ ...t, type: 'test' as const }));
+
+        const pendingStudies = studyAssignments
+            .filter(a => a.studentId === student.id && a.status === 'assigned')
+            .map(a => ({ ...a, type: 'study' as const, title: a.topic, dueDate: a.dueDate }));
+
+        const allPending = [...pendingTests, ...pendingStudies];
+        
+        if (allPending.length > 0) {
+            studentAssignments[student.id] = {
                 student: student,
-                tests: pending.sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
+                assignments: allPending.sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
             };
         }
     });
 
-    return Object.values(studentTests);
-  }, [tests, familyMembers]);
+    return Object.values(studentAssignments);
+  }, [tests, studyAssignments, familyMembers]);
 
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp, fill: member.color }));
@@ -539,8 +551,8 @@ export default function Home() {
                 <CardDescription className="text-white/80">Öğrencilerin bekleyen ödevleri.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {pendingTestsByStudent.length > 0 ? (
-                  pendingTestsByStudent.map(({ student, tests }) => (
+                {pendingAssignmentsByStudent.length > 0 ? (
+                  pendingAssignmentsByStudent.map(({ student, assignments }) => (
                     <div key={student.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
                       <div 
                         className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shrink-0 border-2 border-white/30" 
@@ -551,13 +563,16 @@ export default function Home() {
                       <div className="flex-grow">
                         <div className="flex items-center gap-2">
                             <p className="font-semibold">{student.name}</p>
-                            <Badge variant="secondary" className="bg-white/30 text-white h-5">{tests.length}</Badge>
+                            <Badge variant="secondary" className="bg-white/30 text-white h-5">{assignments.length}</Badge>
                         </div>
                         <div className="text-xs text-white/80 mt-1 space-y-0.5">
-                            {tests.slice(0, 2).map(t => (
-                                <p key={t.id} className="truncate" title={t.title}>{t.title}</p>
+                            {assignments.slice(0, 2).map(ass => (
+                                <p key={ass.id} className="truncate flex items-center gap-1.5" title={ass.title}>
+                                    {ass.type === 'test' ? <GraduationCap className="size-3.5" /> : <BookHeart className="size-3.5" />}
+                                    {ass.title}
+                                </p>
                             ))}
-                            {tests.length > 2 && <p>+ {tests.length - 2} ödev daha...</p>}
+                            {assignments.length > 2 && <p>+ {assignments.length - 2} görev daha...</p>}
                         </div>
                       </div>
                     </div>
@@ -653,3 +668,4 @@ export default function Home() {
     </div>
   );
 }
+
