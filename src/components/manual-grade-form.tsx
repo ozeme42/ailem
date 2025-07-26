@@ -37,6 +37,8 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
 
     const isTextGrading = test.gradingType === 'manual-text' && test.studentTextAnswers && Object.keys(test.studentTextAnswers).length > 0;
     const isMistakePoolGrading = test.sourceType === 'mistake' && test.mistakeIds;
+    const isSimpleManualGrading = test.gradingType === 'manual';
+    
     const [mistakeQuestions, setMistakeQuestions] = React.useState<any[]>([]);
     
     // State for question-by-question evaluation
@@ -44,8 +46,8 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
 
     React.useEffect(() => {
         const fetchMistakeQuestions = async () => {
-            if (isMistakePoolGrading) {
-                const mistakeDocs = await Promise.all(test.mistakeIds!.map(id => getDoc(doc(db, 'mistakes', id))));
+            if (isMistakePoolGrading && test.mistakeIds) {
+                const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
                 setMistakeQuestions(mistakeDocs.map(d => ({ id: d.id, ...d.data() })));
             }
         };
@@ -94,12 +96,14 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     });
 
     React.useEffect(() => {
-        form.reset({
-             correct: summary.correct,
-             incorrect: summary.incorrect,
-             empty: summary.empty
-        });
-    }, [summary, form]);
+        if (isTextGrading || isMistakePoolGrading) {
+            form.reset({
+                correct: summary.correct,
+                incorrect: summary.incorrect,
+                empty: summary.empty
+            });
+        }
+    }, [summary, form, isTextGrading, isMistakePoolGrading]);
 
     const handleEvaluationChange = (questionIdentifier: string, status: EvaluationStatus) => {
         setEvaluations(prev => ({ ...prev, [questionIdentifier]: status }));
@@ -177,56 +181,67 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         </form>
     )
   }
+  
+  if (isSimpleManualGrading) {
+      return (
+         <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+                <FormField
+                control={form.control}
+                name="correct"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Doğru</FormLabel>
+                    <FormControl>
+                        <Input type="number" {...field} />
+                    </FormControl>
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="incorrect"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Yanlış</FormLabel>
+                    <FormControl>
+                        <Input type="number" {...field} />
+                    </FormControl>
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="empty"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Boş</FormLabel>
+                    <FormControl>
+                        <Input type="number" {...field} />
+                    </FormControl>
+                    </FormItem>
+                )}
+                />
+            </div>
+            <FormMessage>
+              {form.formState.errors.correct?.message}
+            </FormMessage>
+            <div className="flex justify-end gap-4">
+                <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
+                <Button type="submit">Sonuçları Kaydet</Button>
+            </div>
+          </form>
+        </Form>
+      )
+  }
 
+  // Fallback for any unexpected case
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-3 gap-4">
-            <FormField
-            control={form.control}
-            name="correct"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Doğru</FormLabel>
-                <FormControl>
-                    <Input type="number" {...field} />
-                </FormControl>
-                </FormItem>
-            )}
-            />
-             <FormField
-            control={form.control}
-            name="incorrect"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Yanlış</FormLabel>
-                <FormControl>
-                    <Input type="number" {...field} />
-                </FormControl>
-                </FormItem>
-            )}
-            />
-             <FormField
-            control={form.control}
-            name="empty"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Boş</FormLabel>
-                <FormControl>
-                    <Input type="number" {...field} />
-                </FormControl>
-                </FormItem>
-            )}
-            />
-        </div>
-        <FormMessage>
-          {form.formState.errors.correct?.message}
-        </FormMessage>
-        <div className="flex justify-end gap-4">
-            <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
-            <Button type="submit">Sonuçları Kaydet</Button>
-        </div>
-      </form>
-    </Form>
+      <div className="p-4 text-center">
+        <p>Bu test türü için bir değerlendirme formu bulunamadı.</p>
+        <Button type="button" variant="ghost" onClick={onCancel} className="mt-4">Kapat</Button>
+      </div>
   );
 }
+
