@@ -72,8 +72,8 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImageToCrop(reader.result as string);
-        setStep('crop_image');
+        form.setValue('imageDataUri', reader.result as string, { shouldValidate: true });
+        setStep('fill_details');
       };
       reader.readAsDataURL(file);
     }
