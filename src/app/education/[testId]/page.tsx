@@ -52,24 +52,21 @@ export default function OpticalFormPage() {
             };
             
             const gradingType = test.gradingType || 'manual';
-
-            // --- REFACTORED AND CORRECTED GRADING LOGIC ---
             
-            // 1. Manual Grading Flow (manual-text or manual)
             // If the test is NOT auto-graded, its status MUST become 'Çözüldü'
             if (gradingType !== 'auto') {
                 updatedData.status = 'Çözüldü'; 
                 if (gradingType === 'manual-text') {
                     updatedData.studentTextAnswers = textAnswers;
                 }
+                 if(gradingType === 'auto') { // For backwards compatibility if old tests were manual but had answers
+                    updatedData.studentAnswers = mcqAnswers;
+                }
                 toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                     description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
                 });
-
-            // 2. Auto Grading Flow (auto)
-            // This block ONLY runs if gradingType is 'auto'
-            } else {
+            } else { // This block ONLY runs if gradingType is 'auto'
                 updatedData.studentAnswers = mcqAnswers;
                 let answerKey: { [key: string]: string } | undefined = undefined;
 
@@ -130,8 +127,6 @@ export default function OpticalFormPage() {
                 }
             }
             
-            // --- END OF REFACTORED LOGIC ---
-
             await updateTest(test.id, updatedData);
             router.push('/education');
 
