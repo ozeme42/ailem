@@ -101,11 +101,12 @@ const SidebarProvider = React.forwardRef<
     
     // Close sidebar on page change.
     React.useEffect(() => {
-      if (!isMobile) {
+      if (isMobile) {
+        setOpenMobile(false)
+      } else {
         setOpen(false)
       }
-      setOpenMobile(false)
-    }, [pathname, isMobile, setOpen])
+    }, [pathname, isMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
