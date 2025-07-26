@@ -181,30 +181,21 @@ export default function Home() {
       .slice(0, 5); // Show top 5 pending tasks
   }, [tasks, familyMembers]);
 
-  const pendingAssignmentsByStudent = React.useMemo(() => {
-    const studentAssignments: { [key: string]: { student: FamilyMember, assignments: any[] } } = {};
+  const { pendingTests, pendingStudies } = React.useMemo(() => {
     const students = familyMembers.filter(m => m.role.includes('Çocuk'));
+    const studentIds = new Set(students.map(s => s.id));
 
-    students.forEach(student => {
-        const pendingTests = tests
-            .filter(t => t.studentId === student.id && t.status === 'Atandı')
-            .map(t => ({ ...t, type: 'test' as const }));
-
-        const pendingStudies = studyAssignments
-            .filter(a => a.studentId === student.id && a.status === 'assigned')
-            .map(a => ({ ...a, type: 'study' as const, title: a.topic, dueDate: a.dueDate }));
-
-        const allPending = [...pendingTests, ...pendingStudies];
+    const testsPending = tests
+        .filter(t => studentIds.has(t.studentId) && t.status === 'Atandı')
+        .map(t => ({ ...t, type: 'test' as const, student: familyMembers.find(m => m.id === t.studentId) }))
+        .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
         
-        if (allPending.length > 0) {
-            studentAssignments[student.id] = {
-                student: student,
-                assignments: allPending.sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
-            };
-        }
-    });
+    const studiesPending = studyAssignments
+        .filter(a => studentIds.has(a.studentId) && a.status === 'assigned')
+        .map(a => ({ ...a, type: 'study' as const, title: a.topic, dueDate: a.dueDate, student: familyMembers.find(m => m.id === a.studentId) }))
+        .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
 
-    return Object.values(studentAssignments);
+    return { pendingTests, pendingStudies };
   }, [tests, studyAssignments, familyMembers]);
 
 
@@ -548,35 +539,38 @@ export default function Home() {
             <Card className="shadow-lg bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white h-full">
               <CardHeader>
                 <CardTitle>Ödev Takibi</CardTitle>
-                <CardDescription className="text-white/80">Öğrencilerin bekleyen ödevleri.</CardDescription>
+                <CardDescription className="text-white/80">Öğrencilerin bekleyen eğitim görevleri.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {pendingAssignmentsByStudent.length > 0 ? (
-                  pendingAssignmentsByStudent.map(({ student, assignments }) => (
-                    <div key={student.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shrink-0 border-2 border-white/30" 
-                        style={{ backgroundColor: student.color, color: '#fff' }}
-                      >
-                          {student.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-grow">
-                        <div className="flex items-center gap-2">
-                            <p className="font-semibold">{student.name}</p>
-                            <Badge variant="secondary" className="bg-white/30 text-white h-5">{assignments.length}</Badge>
-                        </div>
-                        <div className="text-xs text-white/80 mt-1 space-y-0.5">
-                            {assignments.slice(0, 2).map(ass => (
-                                <p key={ass.id} className="truncate flex items-center gap-1.5" title={ass.title}>
-                                    {ass.type === 'test' ? <GraduationCap className="size-3.5" /> : <BookHeart className="size-3.5" />}
-                                    {ass.title}
-                                </p>
-                            ))}
-                            {assignments.length > 2 && <p>+ {assignments.length - 2} görev daha...</p>}
+                {(pendingTests.length > 0 || pendingStudies.length > 0) ? (
+                  <>
+                    {pendingTests.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-white/90 mb-2">Bekleyen Testler</h4>
+                        <div className="space-y-2">
+                           {pendingTests.slice(0, 2).map(test => (
+                             <div key={test.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/20 backdrop-blur-sm">
+                               <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold shrink-0 border-2 border-white/30" style={{backgroundColor: test.student?.color}}>{test.student?.name.charAt(0)}</div>
+                               <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-white/80 truncate">{test.student?.name}</p></div>
+                             </div>
+                           ))}
                         </div>
                       </div>
-                    </div>
-                  ))
+                    )}
+                     {pendingStudies.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-white/90 mb-2">Konu Anlatımları</h4>
+                         <div className="space-y-2">
+                           {pendingStudies.slice(0, 2).map(study => (
+                              <div key={study.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/20 backdrop-blur-sm">
+                               <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold shrink-0 border-2 border-white/30" style={{backgroundColor: study.student?.color}}>{study.student?.name.charAt(0)}</div>
+                               <div className="truncate"><p className="font-semibold truncate text-sm">{study.topic}</p><p className="text-xs text-white/80 truncate">{study.student?.name}</p></div>
+                             </div>
+                           ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-8 bg-white/10 rounded-lg">
                     <GraduationCap className="mx-auto h-8 w-8 text-white/80" />
@@ -668,4 +662,3 @@ export default function Home() {
     </div>
   );
 }
-
