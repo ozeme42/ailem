@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import type { Test } from "@/lib/data";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated';
 type Evaluations = { [key: string]: EvaluationStatus };
@@ -34,28 +36,43 @@ type ManualGradeFormProps = {
 export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps) {
 
     const isTextGrading = test.gradingType === 'manual-text' && test.studentTextAnswers && Object.keys(test.studentTextAnswers).length > 0;
+    const isMistakePoolGrading = test.sourceType === 'mistake' && test.mistakeIds;
+    const [mistakeQuestions, setMistakeQuestions] = React.useState<any[]>([]);
     
-    // State for question-by-question evaluation in text grading
+    // State for question-by-question evaluation
     const [evaluations, setEvaluations] = React.useState<Evaluations>(test.studentTextAnswersEvaluation || {});
+
+    React.useEffect(() => {
+        const fetchMistakeQuestions = async () => {
+            if (isMistakePoolGrading) {
+                const mistakeDocs = await Promise.all(test.mistakeIds!.map(id => getDoc(doc(db, 'mistakes', id))));
+                setMistakeQuestions(mistakeDocs.map(d => ({ id: d.id, ...d.data() })));
+            }
+        };
+        fetchMistakeQuestions();
+    }, [isMistakePoolGrading, test.mistakeIds]);
     
     // Calculate summary based on evaluations state
     const summary = React.useMemo(() => {
-        if (!isTextGrading) return { correct: 0, incorrect: 0, empty: test.questionCount };
-        
         let correct = 0;
         let incorrect = 0;
-        const totalAnswers = Object.keys(test.studentTextAnswers || {}).length;
+        let empty = 0;
 
-        Object.values(evaluations).forEach(status => {
-            if (status === 'correct') correct++;
-            else if (status === 'incorrect') incorrect++;
-        });
-
-        const evaluatedCount = correct + incorrect;
-        const empty = test.questionCount - totalAnswers + (totalAnswers - evaluatedCount);
+        if (isTextGrading || isMistakePoolGrading) {
+            const studentAnswers = test.studentTextAnswers || {};
+            const totalAnswers = Object.keys(studentAnswers).filter(k => studentAnswers[k].trim() !== "").length;
+            
+            Object.values(evaluations).forEach(status => {
+                if (status === 'correct') correct++;
+                else if (status === 'incorrect') incorrect++;
+            });
+    
+            const evaluatedCount = correct + incorrect;
+            empty = test.questionCount - totalAnswers + (totalAnswers - evaluatedCount);
+        }
 
         return { correct, incorrect, empty };
-    }, [evaluations, test.questionCount, isTextGrading, test.studentTextAnswers]);
+    }, [evaluations, test.questionCount, isTextGrading, isMistakePoolGrading, test.studentTextAnswers]);
 
 
     const formSchema = z.object({
@@ -84,19 +101,21 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         });
     }, [summary, form]);
 
-    const handleEvaluationChange = (questionNumber: string, status: EvaluationStatus) => {
-        setEvaluations(prev => ({ ...prev, [questionNumber]: status }));
+    const handleEvaluationChange = (questionIdentifier: string, status: EvaluationStatus) => {
+        setEvaluations(prev => ({ ...prev, [questionIdentifier]: status }));
     };
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        if (isTextGrading) {
+        if (isTextGrading || isMistakePoolGrading) {
             onSave({ ...summary, evaluations });
         } else {
             onSave({ ...values, evaluations: {} });
         }
     }
   
-  if (isTextGrading) {
+  if (isTextGrading || isMistakePoolGrading) {
+    const questions = isMistakePoolGrading ? mistakeQuestions : Object.entries(test.studentTextAnswers!);
+
     return (
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
              <Card>
@@ -107,18 +126,27 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                 <CardContent>
                      <ScrollArea className="h-64 pr-4">
                         <div className="space-y-3">
-                        {Object.entries(test.studentTextAnswers!).map(([qNum, ans]) => (
-                            <div key={qNum} className="p-3 border rounded-lg">
-                                <p className="text-sm">
-                                    <span className="font-semibold text-primary">{qNum}. Soru:</span>
-                                    <span className="text-muted-foreground ml-2">{ans || "(Boş bırakılmış)"}</span>
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <Button type="button" size="sm" variant={evaluations[qNum] === 'correct' ? 'default' : 'outline'} className="text-green-600 border-green-500/50 hover:bg-green-500/10" onClick={() => handleEvaluationChange(qNum, 'correct')}>Doğru</Button>
-                                    <Button type="button" size="sm" variant={evaluations[qNum] === 'incorrect' ? 'destructive' : 'outline'} className="text-red-600 border-red-500/50 hover:bg-red-500/10" onClick={() => handleEvaluationChange(qNum, 'incorrect')}>Yanlış</Button>
+                        {questions.map((q, index) => {
+                            const qNum = isMistakePoolGrading ? (index + 1).toString() : q[0];
+                            const qIdentifier = isMistakePoolGrading ? q.id : q[0];
+                            const studentAns = test.studentTextAnswers?.[qIdentifier] || "(Boş bırakılmış)";
+                            const imageUrl = isMistakePoolGrading ? q.imageUrl : null;
+                            
+                            return (
+                                <div key={qIdentifier} className="p-3 border rounded-lg">
+                                    <p className="text-sm font-semibold text-primary">{qNum}. Soru</p>
+                                    {imageUrl && <Image src={imageUrl} alt={`Soru ${qNum}`} width={400} height={300} className="my-2 rounded-md border" data-ai-hint="question paper"/>}
+                                    <p className="text-sm my-2">
+                                        <span className="font-semibold">Öğrenci Cevabı:</span>
+                                        <span className="text-muted-foreground ml-2">{studentAns}</span>
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <Button type="button" size="sm" variant={evaluations[qIdentifier] === 'correct' ? 'default' : 'outline'} className="text-green-600 border-green-500/50 hover:bg-green-500/10" onClick={() => handleEvaluationChange(qIdentifier, 'correct')}>Doğru</Button>
+                                        <Button type="button" size="sm" variant={evaluations[qIdentifier] === 'incorrect' ? 'destructive' : 'outline'} className="text-red-600 border-red-500/50 hover:bg-red-500/10" onClick={() => handleEvaluationChange(qIdentifier, 'incorrect')}>Yanlış</Button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                         </div>
                     </ScrollArea>
                 </CardContent>

@@ -19,6 +19,7 @@ import { onSnapshot } from "firebase/firestore";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
@@ -35,8 +36,9 @@ export default function OpticalFormPage() {
     const [timeLeft, setTimeLeft] = React.useState(0);
     const [totalTime, setTotalTime] = React.useState(0);
     const [isPaused, setIsPaused] = React.useState(false);
-    const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<number>>(new Set());
-    const [currentQuestion, setCurrentQuestion] = React.useState(1);
+    const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<string>>(new Set());
+    const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+    const [mistakePoolQuestions, setMistakePoolQuestions] = React.useState<any[]>([]);
 
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
@@ -56,7 +58,14 @@ export default function OpticalFormPage() {
             // If the test is NOT auto-graded, its status MUST become 'Çözüldü'
             if (gradingType !== 'auto') {
                 updatedData.status = 'Çözüldü'; 
-                if (gradingType === 'manual-text') {
+                if (test.sourceType === 'mistake') {
+                    // For mistake pool tests, answers are saved differently
+                    const mistakeAnswers: { [mistakeId: string]: string } = {};
+                     mistakePoolQuestions.forEach(q => {
+                        mistakeAnswers[q.id] = textAnswers[q.id] || "";
+                    });
+                    updatedData.studentTextAnswers = mistakeAnswers;
+                } else if (gradingType === 'manual-text') {
                     updatedData.studentTextAnswers = textAnswers;
                 } else { // For mcq with manual grading
                     updatedData.studentAnswers = mcqAnswers;
@@ -137,7 +146,7 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
-    }, [test, mcqAnswers, textAnswers, router, toast, totalTime, timeLeft]);
+    }, [test, mcqAnswers, textAnswers, router, toast, totalTime, timeLeft, mistakePoolQuestions]);
     
     const handlePauseToggle = async () => {
         if (!test) return;
@@ -153,12 +162,11 @@ export default function OpticalFormPage() {
         }
     };
 
-
     React.useEffect(() => {
         if (!testId) return;
         const testDocRef = doc(db, 'tests', testId);
         
-        const unsubscribe = onSnapshot(testDocRef, (docSnap) => {
+        const unsubscribe = onSnapshot(testDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 setTest(currentTest);
@@ -186,6 +194,14 @@ export default function OpticalFormPage() {
                         setTextAnswers(initialAnswers);
                      }
                 }
+                
+                // If it's a mistake pool test, fetch the questions
+                if (currentTest.sourceType === 'mistake' && currentTest.mistakeIds) {
+                    const mistakeDocs = await Promise.all(currentTest.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
+                    const mistakes = mistakeDocs.map(d => ({ id: d.id, ...d.data() }));
+                    setMistakePoolQuestions(mistakes);
+                }
+
             } else {
                 setTest(null);
             }
@@ -287,21 +303,21 @@ export default function OpticalFormPage() {
         setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };
 
-    const handleTextAnswerChange = (questionNumber: number, value: string) => {
-        setTextAnswers(prev => ({ ...prev, [questionNumber]: value }));
-        setDirtyTextAnswers(prev => new Set(prev.add(questionNumber)));
+    const handleTextAnswerChange = (questionIdentifier: string, value: string) => {
+        setTextAnswers(prev => ({ ...prev, [questionIdentifier]: value }));
+        setDirtyTextAnswers(prev => new Set(prev.add(questionIdentifier)));
     };
     
-    const handleSaveSingleAnswer = async (questionNumber: number) => {
+    const handleSaveSingleAnswer = async (questionIdentifier: string) => {
         try {
             await updateTest(test.id, { studentTextAnswers: textAnswers });
             toast({
-                title: `✅ ${questionNumber}. Soru Kaydedildi!`,
+                title: `✅ Cevap Kaydedildi!`,
                 description: "Cevabın başarıyla kaydedildi.",
             });
             setDirtyTextAnswers(prev => {
                 const newSet = new Set(prev);
-                newSet.delete(questionNumber);
+                newSet.delete(questionIdentifier);
                 return newSet;
             });
         } catch (error) {
@@ -315,11 +331,14 @@ export default function OpticalFormPage() {
 
     const answeredQuestions = test.gradingType === 'auto'
         ? Object.values(mcqAnswers).filter(a => a !== null).length
-        : (test.gradingType === 'manual-text' ? Object.values(textAnswers).filter(a => a.trim() !== "").length : 0);
+        : Object.values(textAnswers).filter(a => a.trim() !== "").length;
 
-    const isInteractive = test.gradingType === 'auto' || test.gradingType === 'manual-text';
+    const isInteractive = test.gradingType === 'auto' || test.gradingType === 'manual-text' || test.sourceType === 'mistake';
+    const isMistakePoolTest = test.sourceType === 'mistake';
+    const currentQuestionNumber = currentQuestionIndex + 1;
     
-    const questionNumber = currentQuestion;
+    const currentMistakeQuestion = isMistakePoolTest ? mistakePoolQuestions[currentQuestionIndex] : null;
+
 
     const timePercentage = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0;
 
@@ -358,26 +377,40 @@ export default function OpticalFormPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-2xl">{test.title}</CardTitle>
-                            <CardDescription>{test.subject} - Soru {currentQuestion} / {test.questionCount}</CardDescription>
+                            <CardDescription>{test.subject} - Soru {currentQuestionNumber} / {test.questionCount}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{questionNumber}</div>
-                                {test.gradingType === 'auto' ? (
+                            {isMistakePoolTest ? (
+                                currentMistakeQuestion && (
+                                    <div className="space-y-4">
+                                        <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
+                                        <div className="flex-grow flex items-center gap-2">
+                                            <Input
+                                                placeholder="Cevabınızı buraya yazın..."
+                                                value={textAnswers[currentMistakeQuestion.id] || ""}
+                                                onChange={(e) => handleTextAnswerChange(currentMistakeQuestion.id, e.target.value)}
+                                                className="flex-grow"
+                                            />
+                                        </div>
+                                    </div>
+                                )
+                            ) : test.gradingType === 'auto' ? (
+                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionNumber}</div>
                                     <RadioGroup
-                                        value={mcqAnswers[questionNumber] || ""}
-                                        onValueChange={(value) => handleMcqAnswerChange(questionNumber, value)}
+                                        value={mcqAnswers[currentQuestionNumber] || ""}
+                                        onValueChange={(value) => handleMcqAnswerChange(currentQuestionNumber, value)}
                                         className="flex flex-wrap gap-4"
                                     >
                                         {['A', 'B', 'C'].map(option => (
                                             <div key={option}>
-                                                <RadioGroupItem value={option} id={`q${questionNumber}-${option}`} className="sr-only" />
+                                                <RadioGroupItem value={option} id={`q${currentQuestionNumber}-${option}`} className="sr-only" />
                                                 <Label
-                                                    htmlFor={`q${questionNumber}-${option}`}
+                                                    htmlFor={`q${currentQuestionNumber}-${option}`}
                                                     className={cn(
                                                         "flex items-center justify-center w-16 h-16 text-2xl font-bold rounded-lg border-2 cursor-pointer transition-colors",
                                                         "hover:bg-accent hover:text-accent-foreground",
-                                                        mcqAnswers[questionNumber] === option
+                                                        mcqAnswers[currentQuestionNumber] === option
                                                             ? "bg-primary text-primary-foreground border-primary"
                                                             : "bg-transparent border-input"
                                                     )}
@@ -387,34 +420,37 @@ export default function OpticalFormPage() {
                                             </div>
                                         ))}
                                     </RadioGroup>
-                                ) : test.gradingType === 'manual-text' ? (
+                                 </div>
+                            ) : test.gradingType === 'manual-text' ? (
+                                <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
+                                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionNumber}</div>
                                    <div className="flex-grow flex items-center gap-2">
                                         <Input
                                             placeholder="Cevabınızı buraya yazın..."
-                                            value={textAnswers[questionNumber] || ""}
-                                            onChange={(e) => handleTextAnswerChange(questionNumber, e.target.value)}
+                                            value={textAnswers[currentQuestionNumber] || ""}
+                                            onChange={(e) => handleTextAnswerChange(currentQuestionNumber.toString(), e.target.value)}
                                             className="flex-grow"
                                         />
                                         <Button 
                                             size="icon" 
                                             variant="ghost"
-                                            onClick={() => handleSaveSingleAnswer(questionNumber)}
-                                            disabled={!dirtyTextAnswers.has(questionNumber)}
+                                            onClick={() => handleSaveSingleAnswer(currentQuestionNumber.toString())}
+                                            disabled={!dirtyTextAnswers.has(currentQuestionNumber.toString())}
                                             aria-label="Cevabı Kaydet"
                                         >
                                             <Save className="h-4 w-4" />
                                         </Button>
                                     </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground flex-grow">Bu soru için cevap girişi gerekmiyor.</p>
-                                )}
-                            </div>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground p-3">Bu test için cevap girişi gerekmiyor. Sınav sonunda "Testi Bitir" butonuna tıklamanız yeterlidir.</p>
+                            )}
                         </CardContent>
                          <CardContent className="flex justify-between items-center pt-4">
-                            <Button variant="outline" onClick={() => setCurrentQuestion(q => q - 1)} disabled={currentQuestion === 1}>
+                            <Button variant="outline" onClick={() => setCurrentQuestionIndex(q => q - 1)} disabled={currentQuestionIndex === 0}>
                                 <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
                             </Button>
-                             <Button onClick={() => setCurrentQuestion(q => q + 1)} disabled={currentQuestion === test.questionCount}>
+                             <Button onClick={() => setCurrentQuestionIndex(q => q + 1)} disabled={currentQuestionIndex === test.questionCount - 1}>
                                 Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
                             </Button>
                         </CardContent>
