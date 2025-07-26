@@ -24,6 +24,7 @@ import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Slider } from '@/components/ui/slider';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Input } from "@/components/ui/input";
 
 
 export default function LibraryPage() {
@@ -298,10 +299,14 @@ export default function LibraryPage() {
 }
 
 function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress: number) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
-    const [progress, setProgress] = React.useState(book.progress || 0);
+    const initialPage = Math.round(((book.progress || 0) / 100) * (book.pageCount || 1));
+    const [currentPage, setCurrentPage] = React.useState(initialPage);
 
     const handleSave = () => {
-        onUpdateStatus(book.id, 'reading', progress);
+        if (book.pageCount) {
+            const newProgress = Math.min(Math.round((currentPage / book.pageCount) * 100), 100);
+            onUpdateStatus(book.id, newProgress === 100 ? 'finished' : 'reading', newProgress);
+        }
         onOpenChange(false);
     };
 
@@ -310,16 +315,23 @@ function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: an
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
-                    <DialogDescription>Kitabın yüzde kaçını tamamladığını belirt.</DialogDescription>
+                    <DialogDescription>Kitabın hangi sayfasında olduğunu gir.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                    <Slider
-                        value={[progress]}
-                        max={100}
-                        step={1}
-                        onValueChange={(value) => setProgress(value[0])}
-                    />
-                    <div className="text-center font-bold text-2xl text-primary">{progress}%</div>
+                     <div className="space-y-2">
+                        <Label htmlFor="currentPage">Okuduğun Sayfa / {book.pageCount || '?'}</Label>
+                        <Input
+                            id="currentPage"
+                            type="number"
+                            value={currentPage}
+                            onChange={(e) => setCurrentPage(Number(e.target.value))}
+                            max={book.pageCount}
+                            min={0}
+                        />
+                     </div>
+                    <div className="text-center font-bold text-2xl text-primary">
+                        {book.pageCount ? `${Math.round((currentPage / book.pageCount) * 100)}%` : '??%'}
+                    </div>
                 </div>
                 <DialogFooter>
                      <DialogClose asChild>
@@ -351,7 +363,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                     <div className="w-full space-y-2">
                         <Progress value={book.progress || 0} />
                         <div className="text-xs text-muted-foreground flex justify-between items-center">
-                           <span>{book.progress || 0}%</span>
+                           <span>{book.pageCount ? `${Math.round(((book.progress || 0) / 100) * book.pageCount)}/${book.pageCount} sayfa` : `${book.progress || 0}%`}</span>
                            {book.startedAt && <span>Başlangıç: {format(parseISO(book.startedAt), 'dd.MM.yy')}</span>}
                         </div>
                         <DropdownMenu>
@@ -384,3 +396,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     )
 }
 
+
+    
