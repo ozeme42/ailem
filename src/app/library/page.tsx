@@ -11,7 +11,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -249,21 +249,21 @@ export default function LibraryPage() {
                 </div>
             </div>
         )}
+        
+        {finishedBooks.length > 0 && (
+            <div className="mb-8">
+                <h2 className="text-2xl font-semibold mb-4">Bitirdiklerim</h2>
+                 <div className="grid grid-cols-1 gap-6">
+                    {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                </div>
+            </div>
+        )}
 
         {toReadBooks.length > 0 && (
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Sıradakiler</h2>
                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
-                </div>
-            </div>
-        )}
-
-        {finishedBooks.length > 0 && (
-            <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Bitirdiklerim</h2>
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {finishedBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                 </div>
             </div>
         )}
@@ -350,34 +350,68 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpda
     return (
         <>
             <Card className="overflow-hidden shadow-lg border-border/50">
-                <div className="p-4">
-                    <div className="flex gap-4">
-                        <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
-                        <div className="flex-grow flex flex-col">
-                            <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
-                            <p className="text-sm text-muted-foreground">{book.author}</p>
-                            {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
-                            <div className="mt-auto pt-4">
-                                <Progress value={progressPercent} className="h-2"/>
-                                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                    <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
-                                    <span className="font-semibold text-primary">{progressPercent}%</span>
-                                </div>
+                <div className="p-4 flex gap-4">
+                    <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
+                    <div className="flex-grow flex flex-col">
+                        <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
+                        <p className="text-sm text-muted-foreground">{book.author}</p>
+                        {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                        <div className="mt-auto pt-4">
+                            <Progress value={progressPercent} className="h-2"/>
+                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
+                                <span className="font-semibold text-primary">{progressPercent}%</span>
                             </div>
                         </div>
                     </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="shrink-0">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setIsProgressDialogOpen(true)}>
+                                <Edit className="mr-2 h-4 w-4"/> İlerleme Gir
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
+                                <BookCheck className="mr-2 h-4 w-4"/> Bitirildi Olarak İşaretle
+                            </DropdownMenuItem>
+                             <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
+                               <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
-                <CardFooter className="p-2 bg-muted/50 grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setIsProgressDialogOpen(true)}>
-                        <Edit className="mr-2 h-4 w-4"/> İlerleme Gir
-                    </Button>
-                    <Button variant="default" size="sm" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
-                         <BookCheck className="mr-2 h-4 w-4"/> Bitirildi
-                    </Button>
-                </CardFooter>
             </Card>
             {isProgressDialogOpen && <ProgressDialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen} book={book} onUpdateStatus={onUpdateStatus} />}
         </>
+    )
+}
+
+function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
+    return (
+        <Card className="overflow-hidden shadow-lg border-border/50 bg-muted/30">
+            <div className="p-4 flex gap-4">
+                <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
+                <div className="flex-grow flex flex-col">
+                    <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
+                    <p className="text-sm text-muted-foreground">{book.author}</p>
+                    <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+                        {book.startedAt && <p>Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                        {book.finishedAt && <p>Bitiş: {format(parseISO(book.finishedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                    </div>
+                     <div className="mt-auto pt-4 flex gap-2">
+                        <Button variant="outline" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                             <RotateCcw className="mr-2 h-4 w-4"/> Tekrar Oku
+                        </Button>
+                        <Button variant="ghost" size="sm" className="w-full text-destructive hover:text-destructive" onClick={() => onRemove(book.id)}>
+                            <Trash2 className="mr-2 h-4 w-4"/> Kaldır
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </Card>
     )
 }
 
