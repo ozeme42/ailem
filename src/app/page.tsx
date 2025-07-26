@@ -423,7 +423,7 @@ export default function Home() {
                             <div className="-mx-6 px-6 overflow-x-auto pb-4 -mb-4">
                                 <div className="flex flex-nowrap gap-4">
                                     {latestBooks.map(book => (
-                                        <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="group/book relative w-24 sm:w-32 shrink-0 cursor-pointer">
+                                        <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="group/book relative w-40 sm:w-48 shrink-0 cursor-pointer">
                                             <Image 
                                                 src={book.image || `https://placehold.co/300x450.png`} 
                                                 alt={book.title} 
@@ -566,8 +566,8 @@ export default function Home() {
                         <XAxis dataKey="xp" type="number" hide />
                         <Tooltip cursor={false} content={<ChartTooltipContent />} />
                         <Bar dataKey="xp" radius={8}>
-                           {familyXpData.map((entry, index) => (
-                             <Cell key={`cell-${index}`} fill={entry.fill} />
+                           {familyXpData.map((entry) => (
+                             <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                            ))}
                         </Bar>
                     </BarChart>
