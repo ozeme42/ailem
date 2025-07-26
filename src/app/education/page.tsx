@@ -176,39 +176,42 @@ export default function EducationPage() {
 
   return (
     <>
-      <PageHeader title="Eğitim & Sınav 🎓">
-         <Link href="/education/management">
-            <Button variant="outline">
-                <Settings className="mr-2 h-4 w-4" />
-                İçerik Yönetimi
-            </Button>
-        </Link>
-        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleOpenNewTest} className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Yeni Ödev Ata
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
-              <DialogDescription>
-                {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
-              </DialogDescription>
-            </DialogHeader>
-            <NewTestForm 
-                students={studentMembers} 
-                questionBanks={questionBanks}
-                practiceExams={practiceExams}
-                onAssign={handleAssignmentSubmit}
-                initialData={editingTest}
-                availableSubjects={availableSubjects}
-                onSubjectCreated={handleCreateSubject}
-            />
-          </DialogContent>
-        </Dialog>
-      </PageHeader>
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl shadow-lg mb-8">
+        <h1 className="text-2xl font-bold">Eğitim & Sınav 🎓</h1>
+        <div className="flex items-center gap-2">
+            <Link href="/education/management">
+                <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                    <Settings className="mr-2 h-4 w-4" />
+                    İçerik Yönetimi
+                </Button>
+            </Link>
+             <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Yeni Ödev Ata
+                    </Button>
+                </DialogTrigger>
+                 <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                    <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
+                    <DialogDescription>
+                        {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
+                    </DialogDescription>
+                    </DialogHeader>
+                    <NewTestForm 
+                        students={studentMembers} 
+                        questionBanks={questionBanks}
+                        practiceExams={practiceExams}
+                        onAssign={handleAssignmentSubmit}
+                        initialData={editingTest}
+                        availableSubjects={availableSubjects}
+                        onSubjectCreated={handleCreateSubject}
+                    />
+                </DialogContent>
+             </Dialog>
+        </div>
+      </div>
 
       <div className="flex gap-4 mb-8 overflow-x-auto pb-4">
         {studentMembers.map((student) => (
@@ -398,5 +401,7 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
 
     
