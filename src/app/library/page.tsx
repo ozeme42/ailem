@@ -22,6 +22,7 @@ import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from '@/components/ui/slider';
+import { PageHeader } from '@/components/page-header';
 
 
 export default function LibraryPage() {
@@ -151,19 +152,14 @@ export default function LibraryPage() {
   return (
     <>
       <div className="space-y-6">
-        <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg rounded-xl mb-6">
-              <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                      <Library/>
-                      Kişisel Kütüphanesi
-                  </CardTitle>
-                  <CardDescription>
-                      <Link href="/library/archive" className="text-white/80 hover:text-white underline">
-                          Kitaplığımıza Göz At
-                      </Link>
-                  </CardDescription>
-              </CardHeader>
-        </Card>
+        <PageHeader title="Kişisel Kütüphanem">
+            <Link href="/library/archive">
+                <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                    <Library className="mr-2 h-4 w-4"/>
+                    Kitaplığımız
+                </Button>
+            </Link>
+        </PageHeader>
         
         <div className="flex items-center gap-4 border-b pb-4 overflow-x-auto">
           {familyMembers.map((member) => (
@@ -350,40 +346,42 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpda
         <>
             <Card className="overflow-hidden shadow-lg border-border/50">
                 <div className="p-4 flex flex-row gap-4">
-                    <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
-                    <div className="flex-grow flex flex-col">
-                        <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
-                        <p className="text-sm text-muted-foreground">{book.author}</p>
-                        {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                    <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 sm:w-24 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
+                    <div className="flex-grow flex flex-col min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                             <div className="flex-grow min-w-0">
+                                <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
+                                <p className="text-sm text-muted-foreground truncate">{book.author}</p>
+                                {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 self-start">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
+                                        <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                         
-                        <div className="mt-auto space-y-2 pt-4">
+                        <div className="mt-4 space-y-2">
                             <Progress value={progressPercent} className="h-2"/>
-                            <div className="flex justify-between text-xs text-muted-foreground">
+                            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                                 <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
                                 <span className="font-semibold text-primary">{progressPercent}%</span>
                             </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col justify-between shrink-0">
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 self-end">
-                                    <MoreVertical className="h-4 w-4" />
+                            <div className="flex gap-2 pt-2">
+                                <Button variant="outline" size="sm" className="w-full" onClick={() => setIsProgressDialogOpen(true)}>
+                                    <Edit className="mr-2 h-4 w-4"/> İlerleme
                                 </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                 <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
-                                   <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                         <div className="flex flex-col gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setIsProgressDialogOpen(true)}>
-                                <Edit className="mr-2 h-4 w-4"/> İlerleme
-                            </Button>
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
-                                <BookCheck className="mr-2 h-4 w-4"/> Bitir
-                            </Button>
+                                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
+                                    <BookCheck className="mr-2 h-4 w-4"/> Bitir
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

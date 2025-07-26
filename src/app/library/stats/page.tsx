@@ -132,9 +132,7 @@ export default function LibraryStatsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white rounded-xl shadow-lg mb-6">
-        <h1 className="text-2xl font-bold">Kütüphane İstatistikleri 📈</h1>
-      </div>
+      <PageHeader title="Kütüphane İstatistikleri 📈" />
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
