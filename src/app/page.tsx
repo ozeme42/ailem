@@ -473,34 +473,6 @@ export default function Home() {
             </Link>
         </div>
 
-      <section>
-        <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
-            <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Üye Ekle
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Yeni Aile Üyesi Ekle</DialogTitle>
-                    <DialogDescription>
-                        Ailenize yeni bir üye (çocuk veya başka bir veli) ekleyin.
-                    </DialogDescription>
-                </DialogHeader>
-                <NewFamilyMemberForm onMemberAdded={() => setIsMemberFormOpen(false)} />
-              </DialogContent>
-            </Dialog>
-        </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {familyMembers.map((member) => (
-            <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} />
-          ))}
-        </div>
-      </section>
-
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
           <CardHeader>
@@ -595,6 +567,33 @@ export default function Home() {
         </CardContent>
       </Card>
 
+      <section>
+        <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
+            <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Üye Ekle
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Yeni Aile Üyesi Ekle</DialogTitle>
+                    <DialogDescription>
+                        Ailenize yeni bir üye (çocuk veya başka bir veli) ekleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                <NewFamilyMemberForm onMemberAdded={() => setIsMemberFormOpen(false)} />
+              </DialogContent>
+            </Dialog>
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {familyMembers.map((member) => (
+            <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} />
+          ))}
+        </div>
+      </section>
 
        <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
             <DialogContent>
