@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMe
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTaskForm } from "@/components/new-task-form";
+import { PageHeader } from "@/components/page-header";
 
 export default function TasksPage() {
   const { user, familyMembers, loading: authLoading } = useAuth();
@@ -79,13 +80,12 @@ export default function TasksPage() {
   
   return (
     <>
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-xl shadow-lg mb-6">
-        <h1 className="text-2xl font-bold">Görev Yönetimi 📝</h1>
+      <PageHeader title="Görev Yönetimi 📝">
         <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={handleOpenNewTask}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Yeni Görev Ekle
         </Button>
-      </div>
+      </PageHeader>
 
        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
           <DialogContent className="sm:max-w-md">

@@ -222,14 +222,14 @@ const totalAssignedCount = assignedTestsGrouped.quickTests.length + assignedTest
     <>
       <PageHeader title="Eğitim & Sınav 🎓">
          <Link href="/education/management">
-            <Button variant="outline">
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Settings className="mr-2 h-4 w-4" />
                 İçerik Yönetimi
             </Button>
         </Link>
          <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-white/20 text-white hover:bg-white/30 border-none">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Yeni Ödev Ata
                 </Button>

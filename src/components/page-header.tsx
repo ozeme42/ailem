@@ -11,14 +11,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, children }: PageHeaderProps) {
   return (
-    <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 p-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl shadow-lg">
       <div className="flex items-center gap-4">
-        <SidebarTrigger />
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+        <SidebarTrigger className="text-primary-foreground hover:bg-white/20 hover:text-primary-foreground" />
+        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 self-end sm:self-center">
         <Link href="/" className="hidden md:flex">
-            <Button variant="outline">
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Home className="mr-2 h-4 w-4" />
                 Ana Sayfa
             </Button>

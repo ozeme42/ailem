@@ -15,10 +15,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Recipe, MealPlan } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { onMealPlanUpdate, onRecipesUpdate, addRecipe } from "@/lib/dataService";
+import { onMealPlanUpdate, onRecipesUpdate, addRecipe, updateMealPlan } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
 import { NewRecipeForm } from "@/components/new-recipe-form";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/page-header";
 
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
@@ -144,8 +145,7 @@ export default function YemekPlanlamaPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl shadow-lg mb-6">
-        <h1 className="text-2xl font-bold">Yemek Planı & Tarifler 🍲</h1>
+      <PageHeader title="Yemek Planı & Tarifler 🍲">
         <Button 
             variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none"
             onClick={() => {
@@ -156,7 +156,7 @@ export default function YemekPlanlamaPage() {
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Tarif Ekle
         </Button>
-      </div>
+      </PageHeader>
 
        <Card className="mb-8">
         <CardHeader>
@@ -388,7 +388,3 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
-
-
-
-    

@@ -509,8 +509,7 @@ export default function ShoppingPage() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl shadow-lg mb-6">
-            <h1 className="text-2xl font-bold">Alışveriş & Notlar</h1>
+        <PageHeader title="Alışveriş & Notlar">
             <Dialog>
                 <DialogTrigger asChild>
                     <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
@@ -527,7 +526,7 @@ export default function ShoppingPage() {
                     </div>
                 </DialogContent>
             </Dialog>
-        </div>
+        </PageHeader>
       <Tabs defaultValue="lists" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="lists">Alışveriş Listeleri</TabsTrigger>
