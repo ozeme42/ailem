@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -333,6 +333,18 @@ export default function Home() {
                     </div>
                 </Link>
             </div>
+             <div className="grid grid-cols-2">
+                 <Link href="/shopping" className="group block">
+                    <div className="flex flex-col p-4 rounded-l-xl shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
+                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ListChecks /> İhtiyaçlar</h3>
+                    </div>
+                </Link>
+                <Link href="/shopping" className="group block">
+                    <div className="flex flex-col p-4 rounded-r-xl shadow-lg text-white bg-gradient-to-br from-purple-500 to-fuchsia-600 h-full transition-transform group-hover:-translate-y-1">
+                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Notebook /> Notlar</h3>
+                    </div>
+                </Link>
+            </div>
             <Link href="/calendar" className="group block">
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
@@ -360,8 +372,7 @@ export default function Home() {
             </Link>
         </div>
 
-      {latestBooks.length > 0 && (
-         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
+       <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
@@ -399,8 +410,6 @@ export default function Home() {
                 </div>
             </CardContent>
          </Card>
-      )}
-
 
       <section>
         <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
