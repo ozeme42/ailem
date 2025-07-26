@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -207,6 +207,33 @@ export default function Home() {
   const latestBooks = React.useMemo(() => {
       return [...books].reverse().slice(0, 10);
   }, [books]);
+  
+  const libraryStats = React.useMemo(() => {
+    return familyMembers.map(member => {
+        const memberLibrary = userLibraries.find(lib => lib.memberId === member.id);
+        if (!memberLibrary) {
+            return { memberId: member.id, name: member.name, color: member.color, booksRead: 0, pagesRead: 0 };
+        }
+
+        const finishedBookIds = new Set(
+            memberLibrary.books
+                .filter(b => b.status === 'finished')
+                .map(b => b.bookId)
+        );
+
+        const pagesRead = books
+            .filter(b => finishedBookIds.has(b.id))
+            .reduce((sum, b) => sum + (b.pageCount || 0), 0);
+
+        return {
+            memberId: member.id,
+            name: member.name,
+            color: member.color,
+            booksRead: finishedBookIds.size,
+            pagesRead: pagesRead
+        };
+    });
+  }, [familyMembers, userLibraries, books]);
 
 
   if (loading) {
@@ -447,40 +474,6 @@ export default function Home() {
         </div>
 
       <section>
-        <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Card className="flex-1 min-w-[150px] overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-blue-500/10">
-            <CardContent className="p-3">
-               <div className="flex items-center justify-center gap-2">
-                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
-                   <Calendar size={18} className="text-blue-500" />
-                 </div>
-                 <div className="text-left">
-                   <p className="text-2xl font-extrabold text-blue-500">{dailySummary.upcomingEvents}</p>
-                   <p className="text-xs font-semibold text-foreground">Yaklaşan Etkinlik</p>
-                 </div>
-               </div>
-            </CardContent>
-          </Card>
-          <Card className="flex-1 min-w-[150px] overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-purple-500/10">
-            <CardContent className="p-3">
-               <div className="flex items-center justify-center gap-2">
-                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
-                   <BookOpen size={18} className="text-purple-500" />
-                 </div>
-                 <div className="text-left">
-                   <p className="text-2xl font-extrabold text-purple-500">{dailySummary.finishedBooks}</p>
-                   <p className="text-xs font-semibold text-foreground">Okunan Kitap</p>
-                 </div>
-               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      
-
-      <section>
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
             <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
@@ -575,6 +568,33 @@ export default function Home() {
             </CardContent>
         </Card>
       </section>
+      
+      <Card className="shadow-lg bg-gradient-to-br from-pink-500 to-purple-600 text-white">
+        <CardHeader>
+            <CardTitle>Kişisel Kitaplıklar</CardTitle>
+            <CardDescription className="text-white/80">Herkesin okuma ilerlemesi.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            {libraryStats.map(stat => (
+                <div key={stat.memberId} className="flex items-center gap-4 p-3 rounded-lg bg-white/20">
+                    <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shrink-0 border-2 border-white/50" 
+                        style={{ backgroundColor: stat.color, color: '#fff' }}
+                    >
+                        {stat.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-grow">
+                        <p className="font-semibold">{stat.name}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                        <p className="font-bold">{stat.booksRead} <span className="font-normal text-sm text-white/80">kitap</span></p>
+                        <p className="font-bold">{stat.pagesRead.toLocaleString()} <span className="font-normal text-sm text-white/80">sayfa</span></p>
+                    </div>
+                </div>
+            ))}
+        </CardContent>
+      </Card>
+
 
        <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
             <DialogContent>
