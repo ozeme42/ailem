@@ -64,17 +64,6 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   const sectionCount = form.watch("sectionCount");
 
   React.useEffect(() => {
-    const currentFields = form.getValues('sectionNames') || [];
-    const currentCount = currentFields.length;
-    if (sectionCount > 0 && sectionCount !== currentCount) {
-      const newFields = Array.from({ length: sectionCount }, (_, i) => {
-        return currentFields[i] || { name: `Bölüm ${i + 1}` };
-      });
-      replace(newFields);
-    }
-  }, [sectionCount, replace, form]);
-
-  React.useEffect(() => {
     if (initialData) {
         form.reset({
             title: initialData.title,
@@ -82,8 +71,6 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
             assigneeId: initialData.assigneeId,
             sectionCount: initialData.sections.length,
             sectionNames: initialData.sections.sort((a,b) => a.order - b.order).map(s => ({ name: s.title })),
-            // Note: Automatic generation fields might not map perfectly back.
-            // This assumes a certain structure was used to create them.
             totalUnits: initialData.sections.flatMap(s => s.tasks).length,
             tasksPerSection: initialData.sections[0]?.tasks.length || 1,
             unitName: 'görev'
@@ -100,7 +87,19 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
           sectionNames: Array.from({ length: 10 }, (_, i) => ({ name: `Bölüm ${i + 1}` })),
         });
     }
-  }, [initialData, form]);
+  }, [initialData, form, replace]);
+  
+  React.useEffect(() => {
+    const currentFields = form.getValues('sectionNames') || [];
+    const currentCount = currentFields.length;
+    if (sectionCount > 0 && sectionCount !== currentCount) {
+      const newFields = Array.from({ length: sectionCount }, (_, i) => {
+        return currentFields[i] || { name: `Bölüm ${i + 1}` };
+      });
+      replace(newFields);
+    }
+  }, [sectionCount, form, replace]);
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const totalTasks = values.sectionCount * values.tasksPerSection;
