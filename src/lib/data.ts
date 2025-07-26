@@ -170,7 +170,7 @@ export interface Test {
   questionCount: number;
   assignedDate: string;
   dueDate: string;
-  status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi';
+  status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
   sourceType: 'quick' | 'bank' | 'exam' | 'mistake';
   gradingType?: GradingType;
   sourceId?: string;

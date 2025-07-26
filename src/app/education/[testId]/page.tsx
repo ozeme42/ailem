@@ -55,9 +55,9 @@ export default function OpticalFormPage() {
             
             const gradingType = test.gradingType || 'manual';
             
-            // If the test is NOT auto-graded, its status MUST become 'Çözüldü'
+            // If the test is NOT auto-graded, its status MUST become 'Değerlendirme Bekliyor'
             if (gradingType !== 'auto') {
-                updatedData.status = 'Çözüldü'; 
+                updatedData.status = 'Değerlendirme Bekliyor'; 
                 if (test.sourceType === 'mistake') {
                     // For mistake pool tests, answers are saved differently
                     const mistakeAnswers: { [mistakeId: string]: string } = {};
@@ -111,7 +111,7 @@ export default function OpticalFormPage() {
                     }
                     
                     const score = (correct / test.questionCount) * 100;
-                    updatedData.status = 'Değerlendirildi';
+                    updatedData.status = 'Sonuçlandı';
                     updatedData.correctAnswers = correct;
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
@@ -126,8 +126,8 @@ export default function OpticalFormPage() {
                          await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
                     }
                 } else {
-                    // Answer key not found for an 'auto' test, mark as 'Çözüldü' for manual check
-                    updatedData.status = 'Çözüldü';
+                    // Answer key not found for an 'auto' test, mark as 'Değerlendirme Bekliyor' for manual check
+                    updatedData.status = 'Değerlendirme Bekliyor';
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                         description: "Cevapların kaydedildi ama cevap anahtarı bulunamadı. Testin yakında manuel olarak değerlendirilecek.",
@@ -258,7 +258,7 @@ export default function OpticalFormPage() {
         )
     }
 
-    if (test.status === 'Değerlendirildi') {
+    if (test.status === 'Sonuçlandı') {
         return (
             <div className="container mx-auto py-8">
                 <header className="mb-4">
@@ -298,7 +298,7 @@ export default function OpticalFormPage() {
         );
     }
     
-    // Test is 'Atandı' or 'Çözüldü' but not yet evaluated, so show the test-taking UI
+    // Test is 'Atandı' or 'Değerlendirme Bekliyor', so show the test-taking UI
     const handleMcqAnswerChange = (questionNumber: number, value: string) => {
         setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };

@@ -93,7 +93,7 @@ export default function CategoryDetailPage() {
     const allTopics = questionBanks.flatMap(qb => qb.subjects.flatMap(s => s.topics.map(t => ({...t, subjectName: s.name} as Topic & { subjectName: string } ))));
 
     testsForCategory
-      .filter(t => t.status === 'Değerlendirildi' && t.sourceType === 'bank' && t.topicId)
+      .filter(t => t.status === 'Sonuçlandı' && t.sourceType === 'bank' && t.topicId)
       .forEach(test => {
         const topicInfo = allTopics.find(t => t.id.toString() === test.topicId && t.subjectName === categoryName);
         if (topicInfo) {
@@ -173,7 +173,7 @@ export default function CategoryDetailPage() {
           <h3 className="text-xl font-bold">Atanmış Sınavlar</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTests.map((test) => {
-              const isSolved = test.status !== 'Atandı';
+              const isPending = test.status === 'Atandı';
               const startDate = formatTestDate(test.assignedDate);
               const endDate = formatTestDate(test.dueDate);
               const duration = test.questionCount * 1.5;
@@ -187,7 +187,7 @@ export default function CategoryDetailPage() {
                           <p className="text-xs text-muted-foreground">{test.subject}</p>
                           <h3 className="font-bold text-lg leading-tight">{test.title}</h3>
                       </div>
-                      {isSolved ? (
+                      {!isPending ? (
                           <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>
                       ) : (
                           <Box className="w-8 h-8 text-muted-foreground/70" />
@@ -221,12 +221,12 @@ export default function CategoryDetailPage() {
                           size="lg" 
                           className={cn(
                               "w-full rounded-t-none h-12 text-base",
-                              isSolved 
+                              !isPending 
                                   ? "bg-pink-600 hover:bg-pink-700"
                                   : "bg-cyan-500 hover:bg-cyan-600"
                           )}
                       >
-                        {isSolved ? 'Sonuçlarımı Göster' : 'Sınav Giriş Ekranına Git'}
+                        {isPending ? 'Sınav Giriş Ekranına Git' : 'Sonuçlarımı Göster'}
                       </Button>
                     </Link>
                   </CardFooter>

@@ -138,7 +138,7 @@ export default function EducationPage() {
             : 0;
 
         const updatedData: Partial<Test> = {
-            status: 'Değerlendirildi',
+            status: 'Sonuçlandı',
             correctAnswers: gradeData.correct,
             incorrectAnswers: gradeData.incorrect,
             emptyAnswers: gradeData.empty,
@@ -159,7 +159,7 @@ export default function EducationPage() {
 
 
   const overallStats = React.useMemo(() => {
-    const evaluatedTests = tests.filter(t => t.status === 'Değerlendirildi');
+    const evaluatedTests = tests.filter(t => t.status === 'Sonuçlandı');
     const totalQuestions = evaluatedTests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
     const totalCorrect = evaluatedTests.reduce((sum, test) => sum + (test.correctAnswers || 0), 0);
     const successRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
@@ -288,7 +288,7 @@ export default function EducationPage() {
                 <div className="grid grid-cols-2 gap-6 items-center">
                     <div>
                         <div className="text-4xl font-bold">{overallStats.testCount}</div>
-                        <p className="text-muted-foreground">Değerlendirilen Test</p>
+                        <p className="text-muted-foreground">Sonuçlanan Test</p>
                     </div>
                      <div>
                         <div className="flex items-baseline gap-2">
@@ -347,14 +347,14 @@ export default function EducationPage() {
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">
-                            <Badge variant={test.status === 'Değerlendirildi' ? "default" : (test.status === 'Çözüldü' ? "secondary" : "outline")}>{test.status}</Badge>
+                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : (test.status === 'Değerlendirme Bekliyor' ? "secondary" : "outline")}>{test.status}</Badge>
                             <h3 className="font-semibold text-lg">{test.title}</h3>
                             <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-3 sm:mt-0">
                              {test.status === 'Atandı' && <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>}
-                             {test.status === 'Çözüldü' && <Button variant="outline" onClick={() => openGradeDialog(test)}>Değerlendir</Button>}
-                             {test.status === 'Değerlendirildi' && <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>}
+                             {test.status === 'Değerlendirme Bekliyor' && <Button variant="outline" onClick={() => openGradeDialog(test)}>Değerlendir</Button>}
+                             {test.status === 'Sonuçlandı' && <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>}
                         </div>
                     </Card>
                 );

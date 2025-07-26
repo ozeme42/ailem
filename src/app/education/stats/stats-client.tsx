@@ -47,7 +47,7 @@ export default function StatsClient() {
     };
     
     const unsubTests = onTestsUpdate(allTests => {
-      setTests(allTests.filter(t => t.studentId === studentId && t.status === 'Değerlendirildi'));
+      setTests(allTests.filter(t => t.studentId === studentId && t.status === 'Sonuçlandı'));
       setLoading(false);
     });
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
@@ -261,7 +261,7 @@ export default function StatsClient() {
        <Card>
           <CardHeader>
             <CardTitle>Test Sonuçları</CardTitle>
-            <CardDescription>Tüm değerlendirilmiş testlerin detaylı dökümü.</CardDescription>
+            <CardDescription>Tüm sonuçlanan testlerin detaylı dökümü.</CardDescription>
           </CardHeader>
           <CardContent>
              <Table>
