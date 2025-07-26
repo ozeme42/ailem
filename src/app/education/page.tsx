@@ -103,7 +103,7 @@ export default function EducationPage() {
             correctAnswers: gradeData.correct,
             incorrectAnswers: gradeData.incorrect,
             emptyAnswers: gradeData.empty,
-            score: (gradeData.correct / (gradingTest?.questionCount || 1)) * 100,
+            score: (gradingTest?.questionCount || 1) > 0 ? (gradeData.correct / (gradingTest?.questionCount || 1)) * 100 : 0,
             studentTextAnswersEvaluation: gradeData.evaluations,
         });
         toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
@@ -153,23 +153,23 @@ export default function EducationPage() {
     }
     try {
       const formatString = "dd MMMM yyyy";
-      const parsedDate = parse(dateString, formatString, new Date(), { locale: tr });
+      let parsedDate;
+      // Check if the date string is already in ISO format from new Date()
+      if (dateString.includes('-') && dateString.includes('T')) {
+          parsedDate = parseISO(dateString);
+      } else {
+          parsedDate = parse(dateString, formatString, new Date(), { locale: tr });
+      }
       
       if (isNaN(parsedDate.getTime())) {
-          const isoParsed = parseISO(dateString);
-           if (isNaN(isoParsed.getTime())) {
-             return { month: "Bilinmiyor", day: "??" };
-           }
-           const month = format(isoParsed, 'MMMM', { locale: tr });
-           const day = format(isoParsed, 'dd');
-           return { month, day };
+          return { month: "Geçersiz", day: "Tarih" };
       }
 
       const month = format(parsedDate, 'MMMM', { locale: tr });
       const day = format(parsedDate, 'dd');
       return { month, day };
     } catch (e) {
-      return { month: "Bilinmiyor", day: "??" };
+      return { month: "Hata", day: "!" };
     }
   };
 
@@ -302,28 +302,6 @@ export default function EducationPage() {
                             <Link href={`/education/${test.id}`} className="w-full">
                                 <Button className="w-full bg-cyan-500 hover:bg-cyan-600">Sınav Giriş Ekranına Git</Button>
                             </Link>
-                            <div className="flex gap-2">
-                                <Button variant="outline" className="w-full" onClick={() => handleOpenEditTest(test)}>
-                                  <Edit className="mr-2 h-4 w-4" /> Düzenle
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="icon">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Testi Silmek İstediğinize Emin Misiniz?</AlertDialogTitle>
-                                      <AlertDialogDescription>Bu işlem geri alınamaz. "{test.title}" testi kalıcı olarak silinecektir.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>İptal</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
                         </CardFooter>
                     </Card>
                )}) : <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Atanmış yeni test bulunmuyor.</CardContent></Card>}
@@ -420,3 +398,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
