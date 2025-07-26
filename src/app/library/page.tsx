@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, FC } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
@@ -123,8 +123,6 @@ export default function LibraryPage() {
       .filter(Boolean) as (BookType & { status: 'to-read' | 'reading' | 'finished', progress?: number, startedAt?: string, finishedAt?: string })[];
 
     const pagesReadToday = allMemberBooks.reduce((acc, book) => {
-        // This is a simplification. A real app would need a history of progress.
-        // For now, we assume progress is linear and spread across the days since start.
         if (book.status === 'reading' && book.startedAt && book.pageCount) {
              const daysSinceStart = (new Date().getTime() - parseISO(book.startedAt).getTime()) / (1000 * 3600 * 24);
              if (daysSinceStart >= 1) {
@@ -135,7 +133,7 @@ export default function LibraryPage() {
         return acc;
     }, 0);
 
-    const pagesReadThisWeek = pagesReadToday * 7; // Simplification
+    const pagesReadThisWeek = pagesReadToday * 7; 
     const finishedBooks = allMemberBooks.filter(b => b.status === 'finished');
     const monthlyBooks = finishedBooks.filter(b => b.finishedAt && new Date().getMonth() === parseISO(b.finishedAt).getMonth()).length;
     const yearlyBooks = finishedBooks.filter(b => b.finishedAt && new Date().getFullYear() === parseISO(b.finishedAt).getFullYear()).length;
@@ -352,37 +350,40 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpda
         <>
             <Card className="overflow-hidden shadow-lg border-border/50">
                 <div className="p-4 flex flex-row gap-4">
-                    <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 sm:w-24 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
-                    <div className="flex-grow flex flex-col w-full">
+                    <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
+                    <div className="flex-grow flex flex-col">
                         <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
                         <p className="text-sm text-muted-foreground">{book.author}</p>
                         {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
-                        <div className="mt-4 pt-4 sm:mt-auto">
+                        
+                        <div className="mt-auto space-y-2 pt-4">
                             <Progress value={progressPercent} className="h-2"/>
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                            <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
                                 <span className="font-semibold text-primary">{progressPercent}%</span>
                             </div>
                         </div>
-                         <div className="flex gap-2 mt-4">
-                            <Button variant="outline" className="w-full" onClick={() => setIsProgressDialogOpen(true)}>
-                                <Edit className="mr-2 h-4 w-4"/> İlerleme Gir
+                    </div>
+                    <div className="flex flex-col justify-between shrink-0">
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 self-end">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                 <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
+                                   <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                         <div className="flex flex-col gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setIsProgressDialogOpen(true)}>
+                                <Edit className="mr-2 h-4 w-4"/> İlerleme
                             </Button>
-                            <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
                                 <BookCheck className="mr-2 h-4 w-4"/> Bitir
                             </Button>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="shrink-0">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                     <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
-                                       <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                     </div>
                 </div>
@@ -396,7 +397,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
     return (
         <Card className="overflow-hidden shadow-lg border-border/50 bg-muted/30">
             <div className="p-4 flex flex-row gap-4">
-                <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 sm:w-24 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
+                <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
                 <div className="flex-grow flex flex-col">
                     <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
                     <p className="text-sm text-muted-foreground">{book.author}</p>
