@@ -49,11 +49,11 @@ export default function CategoryDetailPage() {
     }
     const unsubscribeTests = onTestsUpdate((tests) => {
       setAllTests(tests.filter(t => t.studentId === studentId));
-      if (!loading) setLoading(false);
+      if (loading) setLoading(false);
     });
     const unsubscribeBanks = onQuestionBanksUpdate((banks) => {
         setQuestionBanks(banks);
-        if (!loading) setLoading(false);
+        if (loading) setLoading(false);
     });
 
     // Initial loading state management
@@ -66,7 +66,7 @@ export default function CategoryDetailPage() {
         unsubscribeTests();
         unsubscribeBanks();
     };
-  }, [studentId]);
+  }, [studentId, loading]);
 
   const { filteredTests, topicStats } = React.useMemo(() => {
     const getCategoryName = (test: Test): string => {
