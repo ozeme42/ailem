@@ -555,7 +555,7 @@ export default function Home() {
                         </div>
                         <div className="text-xs text-white/80 mt-1 space-y-0.5">
                             {tests.slice(0, 2).map(t => (
-                                <p key={t.id} className="truncate" title={t.title}>{t.title} - Son: {t.dueDate}</p>
+                                <p key={t.id} className="truncate" title={t.title}>{t.title}</p>
                             ))}
                             {tests.length > 2 && <p>+ {tests.length - 2} ödev daha...</p>}
                         </div>
