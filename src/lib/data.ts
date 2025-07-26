@@ -91,7 +91,7 @@ export interface Recipe {
     id: string;
     familyId: string;
     title: string;
-    category: 'Kahvaltı' | 'Akşam Yemeği' | 'Atıştırmalık';
+    category: 'Kahvaltı' | 'Akşam Yemeği';
     rating: number;
     instructions?: string;
 }
@@ -263,12 +263,6 @@ export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
         category: 'Akşam Yemeği',
         rating: 4.9,
         instructions: "Tüm sebzeleri doğrayın. Mercimeği yıkayıp süzün. Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin. Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun. Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin. Baharatları ekleyip bir taşım daha kaynatın."
-    },
-     {
-        title: "Meyveli Yoğurt",
-        category: 'Atıştırmalık',
-        rating: 4.5,
-        instructions: "Meyveleri doğrayın. Yoğurdu bir kaseye alın, bal ile karıştırın. Üzerine meyveleri ve yulaf ezmesini ekleyerek servis yapın."
     }
 ];
 
@@ -349,5 +343,7 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
         gradingType: 'auto',
     }
 ]
+
+    
 
     

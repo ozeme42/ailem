@@ -23,7 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 const categoryIcons: { [key: string]: React.ReactElement } = {
   "Kahvaltı": <Soup className="h-4 w-4 mr-2" />,
   "Akşam Yemeği": <Soup className="h-4 w-4 mr-2" />,
-  "Atıştırmalık": <Wheat className="h-4 w-4 mr-2" />,
 };
 
 const mealTypes = ["Kahvaltı", "Akşam Yemeği"];
@@ -258,7 +257,7 @@ export default function YemekPlanlamaPage() {
           </CardHeader>
           <CardContent>
              <Tabs defaultValue="Hepsi" onValueChange={(value) => setActiveTab(value)}>
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 bg-white/20 text-white">
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 mb-6 bg-white/20 text-white">
                     <TabsTrigger value="Hepsi" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">Hepsi</TabsTrigger>
                     {Object.keys(categoryIcons).map(category => (
                         <TabsTrigger key={category} value={category} className="data-[state=active]:bg-white data-[state=active]:text-blue-600">
@@ -373,3 +372,6 @@ export default function YemekPlanlamaPage() {
   );
 }
 
+
+
+    

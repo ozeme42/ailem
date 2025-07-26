@@ -15,7 +15,7 @@ import { Textarea } from "./ui/textarea";
 
 const formSchema = z.object({
   title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
-  category: z.enum(['Kahvaltı', 'Akşam Yemeği', 'Atıştırmalık'], { required_error: "Kategori seçmelisiniz." }),
+  category: z.enum(['Kahvaltı', 'Akşam Yemeği'], { required_error: "Kategori seçmelisiniz." }),
   rating: z.coerce.number().min(1).max(5).default(4),
   instructions: z.string().optional(),
 });
@@ -66,7 +66,6 @@ export function NewRecipeForm({ onSubmit, initialData }: NewRecipeFormProps) {
                 <SelectContent>
                     <SelectItem value="Kahvaltı">Kahvaltı</SelectItem>
                     <SelectItem value="Akşam Yemeği">Akşam Yemeği</SelectItem>
-                    <SelectItem value="Atıştırmalık">Atıştırmalık</SelectItem>
                 </SelectContent>
                 </Select>
                 <FormMessage />
@@ -96,3 +95,5 @@ export function NewRecipeForm({ onSubmit, initialData }: NewRecipeFormProps) {
     </Form>
   );
 }
+
+    
