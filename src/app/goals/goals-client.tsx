@@ -111,6 +111,9 @@ export default function GoalsClient() {
                 {goals.map(goal => {
                     const progress = calculateOverallProgress(goal);
                     const assignee = familyMembers.find(m => m.id === goal.assigneeId);
+                    const totalSections = goal.sections.length;
+                    const completedSections = goal.sections.filter(s => s.status === 'completed').length;
+
                     return (
                         <Card key={goal.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
                              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -163,15 +166,19 @@ export default function GoalsClient() {
                                     </div>
                                     <CardDescription>{goal.description}</CardDescription>
                                 </CardHeader>
-                                <CardContent className="flex-grow">
+                                <CardContent className="flex-grow space-y-3">
                                      <div className="space-y-1 text-sm">
                                         <p className="text-muted-foreground">Sıradaki Adım:</p>
                                         <p className="font-medium">{getNextTask(goal)}</p>
                                     </div>
+                                    <div className="text-sm">
+                                        <p className="text-muted-foreground">Bölüm İlerlemesi:</p>
+                                        <p className="font-medium">{completedSections} / {totalSections} Bölüm Tamamlandı</p>
+                                    </div>
                                 </CardContent>
                                 <CardFooter className="flex flex-col items-start">
                                     <div className="flex justify-between w-full text-xs text-muted-foreground mb-1">
-                                        <span>İlerleme</span>
+                                        <span>Genel İlerleme</span>
                                         <span>{Math.round(progress)}%</span>
                                     </div>
                                     <Progress value={progress} className="w-full h-2" />
