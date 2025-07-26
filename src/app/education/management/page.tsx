@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, PracticeExam, Test, StudyPlan } from "@/lib/data";
+import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment } from "@/lib/data";
 import {
   onQuestionBanksUpdate,
   onPracticeExamsUpdate,
@@ -34,7 +34,10 @@ import {
   onStudyPlansUpdate,
   addStudyPlan,
   updateStudyPlan,
-  deleteStudyPlan
+  deleteStudyPlan,
+  onStudyAssignmentsUpdate,
+  addStudyAssignment,
+  deleteStudyAssignment
 } from "@/lib/dataService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +50,9 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { NewStudyAssignmentForm } from "@/components/new-study-assignment-form";
+import { format, parseISO } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -338,9 +344,13 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
 }
 
 function StudyPlanManagement() {
+  const { familyMembers } = useAuth();
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
+  const [assignments, setAssignments] = React.useState<StudyAssignment[]>([]);
   const [editingPlan, setEditingPlan] = React.useState<StudyPlan | null>(null);
   const [isPlanDialogOpen, setIsPlanDialogOpen] = React.useState(false);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = React.useState(false);
+  const [currentPlanForAssignment, setCurrentPlanForAssignment] = React.useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof newStudyPlanSchema>>({
@@ -348,15 +358,24 @@ function StudyPlanManagement() {
   });
 
   React.useEffect(() => {
-    const unsub = onStudyPlansUpdate(setStudyPlans);
-    return () => unsub();
+    const unsubPlans = onStudyPlansUpdate(setStudyPlans);
+    const unsubAssignments = onStudyAssignmentsUpdate(setAssignments);
+    return () => {
+      unsubPlans();
+      unsubAssignments();
+    };
   }, []);
   
-  const handleOpenDialog = (plan: StudyPlan | null) => {
+  const handleOpenPlanDialog = (plan: StudyPlan | null) => {
     setEditingPlan(plan);
     form.reset(plan ? { title: plan.title, description: plan.description } : { title: '', description: '' });
     setIsPlanDialogOpen(true);
   };
+  
+  const handleOpenAssignmentDialog = (planId: string) => {
+      setCurrentPlanForAssignment(planId);
+      setIsAssignmentDialogOpen(true);
+  }
 
   const handlePlanSubmit = async (values: z.infer<typeof newStudyPlanSchema>) => {
     try {
@@ -373,6 +392,17 @@ function StudyPlanManagement() {
     }
   };
   
+  const handleAssignmentSubmit = async (values: Omit<StudyAssignment, 'id' | 'familyId' | 'studyPlanId' | 'status'>) => {
+      if (!currentPlanForAssignment) return;
+      try {
+          await addStudyAssignment({ ...values, studyPlanId: currentPlanForAssignment, status: 'assigned' });
+          toast({ title: 'Konu Atandı' });
+          setIsAssignmentDialogOpen(false);
+      } catch (error) {
+           toast({ title: 'Hata', variant: 'destructive' });
+      }
+  }
+
   const handleDeletePlan = async (planId: string) => {
       try {
           await deleteStudyPlan(planId);
@@ -381,43 +411,92 @@ function StudyPlanManagement() {
           toast({title: "Hata", variant: "destructive"});
       }
   }
+  
+  const handleDeleteAssignment = async (assignmentId: string) => {
+       try {
+          await deleteStudyAssignment(assignmentId);
+          toast({title: "Atama Silindi", variant: "destructive"});
+      } catch (error) {
+          toast({title: "Hata", variant: "destructive"});
+      }
+  }
+
+  const assignmentsByPlan = React.useMemo(() => {
+    const grouped: { [planId: string]: StudyAssignment[] } = {};
+    assignments.forEach(a => {
+        if (!grouped[a.studyPlanId]) grouped[a.studyPlanId] = [];
+        grouped[a.studyPlanId].push(a);
+    });
+    return grouped;
+  }, [assignments]);
+
 
   return (
     <>
       <div className="flex justify-end mb-4">
-        <Button onClick={() => handleOpenDialog(null)}>
+        <Button onClick={() => handleOpenPlanDialog(null)}>
           <PlusCircle className="mr-2 h-4 w-4" /> Yeni Çalışma Planı Ekle
         </Button>
       </div>
-       <div className="space-y-4">
-        {studyPlans.map(plan => (
-          <Card key={plan.id}>
-            <CardHeader className="flex flex-row justify-between items-start">
-              <div>
-                <CardTitle>{plan.title}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-              </div>
-              <div className="flex gap-1">
-                 <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(plan)}><Edit className="w-4 h-4"/></Button>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Planı sil?</AlertDialogTitle><AlertDialogDescription>"{plan.title}" planı kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </CardHeader>
-             <CardContent>
-                {/* TODO: Add assignments to the plan here */}
-                <p className="text-sm text-muted-foreground">Bu plana ait konu atamaları yakında burada görünecek.</p>
-            </CardContent>
-          </Card>
-        ))}
+       <Accordion type="multiple" className="w-full space-y-4">
+        {studyPlans.map(plan => {
+            const planAssignments = assignmentsByPlan[plan.id] || [];
+            return (
+            <Card key={plan.id}>
+                <AccordionItem value={plan.id} className="border-b-0">
+                    <CardHeader className="flex flex-row justify-between items-start pb-2">
+                        <AccordionTrigger className="flex-grow p-0 hover:no-underline">
+                             <div>
+                                <CardTitle>{plan.title}</CardTitle>
+                                <CardDescription>{plan.description}</CardDescription>
+                            </div>
+                        </AccordionTrigger>
+                        <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenPlanDialog(plan)}><Edit className="w-4 h-4"/></Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Planı sil?</AlertDialogTitle><AlertDialogDescription>"{plan.title}" planı ve içindeki tüm atamalar kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </CardHeader>
+                    <AccordionContent className="px-6 pb-6">
+                        <div className="space-y-3 pt-4 border-t">
+                            {planAssignments.map(assignment => {
+                                const student = familyMembers.find(m => m.id === assignment.studentId);
+                                return (
+                                    <div key={assignment.id} className="p-3 border rounded-lg flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold">{assignment.topic} <span className="text-sm text-muted-foreground font-normal">({assignment.subject})</span></p>
+                                            <p className="text-sm text-muted-foreground">
+                                                <Badge variant="outline" className="mr-2">{student?.name || '?'}</Badge>
+                                                {format(parseISO(assignment.startDate), 'dd MMM', {locale: tr})} - {format(parseISO(assignment.dueDate), 'dd MMM yyyy', {locale: tr})}
+                                            </p>
+                                        </div>
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>Atamayı Sil</AlertDialogTitle><AlertDialogDescription>Bu atamayı silmek istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                )
+                            })}
+                            <Button variant="outline" className="w-full mt-2" onClick={() => handleOpenAssignmentDialog(plan.id)}>
+                                <PlusCircle className="mr-2 h-4 w-4"/> Yeni Atama Ekle
+                            </Button>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Card>
+        )})}
         {studyPlans.length === 0 && (
             <p className="text-center p-8 text-muted-foreground">Henüz çalışma planı oluşturulmadı.</p>
         )}
-      </div>
+      </Accordion>
 
        <Dialog open={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen}>
           <DialogContent>
@@ -455,6 +534,22 @@ function StudyPlanManagement() {
               </form>
             </Form>
           </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Yeni Konu Ataması</DialogTitle>
+                    <DialogDescription>
+                        Çalışma planına yeni bir konu ekleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                <NewStudyAssignmentForm
+                    students={familyMembers.filter(m => m.role.includes('Çocuk'))}
+                    availableSubjects={[]} 
+                    onAssign={handleAssignmentSubmit}
+                />
+            </DialogContent>
         </Dialog>
     </>
   )
