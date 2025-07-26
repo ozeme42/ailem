@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
@@ -140,7 +140,6 @@ export default function EducationPage() {
     const getCategoryName = (test: Test): string => {
         if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
         if (availableSubjects.includes(test.subject)) return test.subject;
-        // You might want to handle custom subjects from question banks if they don't align with `availableSubjects`
         return 'Diğer';
     }
 
@@ -156,7 +155,18 @@ export default function EducationPage() {
         categories[categoryName].tests.push(test);
     });
 
-    return Object.entries(categories);
+    // Return an array of [categoryName, data] sorted by a predefined order if needed, or alphabetically
+    const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Diğer'];
+    
+    return Object.entries(categories).sort(([a], [b]) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
   }, [tests, availableSubjects]);
 
 
@@ -251,30 +261,33 @@ export default function EducationPage() {
       {tests.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
             {testsByCategory.map(([category, data]) => {
+                if (data.total === 0) return null;
                 const Icon = categoryIcons[category] || FileText;
                 const colorClass = categoryColors[category] || 'border-gray-500/80 text-gray-600';
                 const progressColor = categoryProgressColors[category] || 'bg-gray-500';
                 const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
 
                 return (
-                    <Card key={category} className={cn("flex flex-col border-t-4 shadow-sm hover:shadow-lg transition-shadow", colorClass)}>
-                        <CardHeader className="text-center">
-                            <Icon className="w-16 h-16 mx-auto mb-4" />
-                            <CardTitle className={cn("text-xl", colorClass)}>{category}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
-                            <p className="text-lg text-foreground">{data.total} Adet Sınav</p>
-                            <p className="text-sm text-green-600 font-medium">{data.completed} Adet Sınav Çözüldü</p>
-                        </CardContent>
-                        <CardFooter className="p-0">
-                            <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none" indicatorClassName={progressColor} />
-                        </CardFooter>
-                    </Card>
+                    <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
+                        <Card className={cn("flex flex-col border-t-4 shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                            <CardHeader className="text-center">
+                                <Icon className="w-16 h-16 mx-auto mb-4" />
+                                <CardTitle className={cn("text-xl", colorClass)}>{category}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
+                                <p className="text-lg text-foreground">{data.total} Adet Sınav</p>
+                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Sınav Çözüldü</p>
+                            </CardContent>
+                            <CardFooter className="p-0">
+                                <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none" indicatorClassName={progressColor} />
+                            </CardFooter>
+                        </Card>
+                    </Link>
                 )
             })}
         </div>
       ) : (
-        <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Öğrenciye atanmış herhangi bir test bulunmuyor.</CardContent></Card>
+        selectedStudent && <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Öğrenciye atanmış herhangi bir test bulunmuyor.</CardContent></Card>
       )}
     </>
   );
