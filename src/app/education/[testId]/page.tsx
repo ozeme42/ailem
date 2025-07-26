@@ -96,7 +96,7 @@ export default function OpticalFormPage() {
                     let empty = 0;
 
                     for (let i = 1; i <= test.questionCount; i++) {
-                        if (!mcqAnswers[i]) {
+                        if (!mcqAnswers[i] || mcqAnswers[i] === null) {
                             empty++;
                         } else if (mcqAnswers[i] === (answerKey as any)[i]) {
                             correct++;
