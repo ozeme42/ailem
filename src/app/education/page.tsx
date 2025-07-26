@@ -176,7 +176,7 @@ export default function EducationPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl shadow-lg mb-8">
+      <div className="flex flex-col items-start justify-center gap-4 p-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl shadow-lg mb-8">
         <h1 className="text-2xl font-bold">Eğitim & Sınav 🎓</h1>
         <div className="flex items-center gap-2">
             <Link href="/education/management">
@@ -401,7 +401,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
-
-    
