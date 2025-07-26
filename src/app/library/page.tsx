@@ -99,18 +99,21 @@ export default function LibraryPage() {
 
   return (
     <div className="space-y-6">
-       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl shadow-lg mb-6">
-        <h1 className="text-2xl font-bold">{selectedMember ? `${selectedMember.name}'in Kütüphanesi` : 'Kütüphanem'} 📚</h1>
-        <Link href="/library/archive">
-            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                <Library className="mr-2 h-4 w-4" />
-                Kitaplığımız'a Göz At
-            </Button>
-        </Link>
-      </div>
+       <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg rounded-xl mb-6">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                    <Library/>
+                    Kişisel Kütüphanesi
+                </CardTitle>
+                <CardDescription>
+                    <Link href="/library/archive" className="text-white/80 hover:text-white underline">
+                        Tüm ailenin kitaplığına göz atmak için buraya tıklayın.
+                    </Link>
+                </CardDescription>
+            </CardHeader>
+       </Card>
       
       <div className="flex items-center gap-4 border-b pb-4">
-        <p className="font-semibold text-sm">Kütüphanesini Gör:</p>
          {familyMembers.map((member) => (
           <Button
             key={member.id}
