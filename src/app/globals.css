@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,13 +36,13 @@ body {
     --chart-4: 262 83% 58%; /* Purple */
     --chart-5: 340 82% 52%; /* Pink */
     
-    --sidebar-background: 224 71.4% 6.1%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 66%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 217 32% 22%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 27.9% 12.9%;
+    --sidebar-background: 240 5.2% 96.9%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 217.2 91.2% 66%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 240 5.9% 90%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 240 5.9% 90%;
     --sidebar-ring: 217.2 91.2% 66%;
   }
 
