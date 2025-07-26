@@ -110,15 +110,15 @@ export default function LibraryPage() {
 
   }, [selectedMember, userLibraries, allBooks]);
   
-  const dailyGoal = selectedMember?.readingGoals?.daily || { pages: 50, books: 0 };
-  const weeklyGoal = selectedMember?.readingGoals?.weekly || { pages: 300, books: 1 };
-  const monthlyGoal = selectedMember?.readingGoals?.monthly || { pages: 1200, books: 4 };
+  const readingGoals = selectedMember?.readingGoals || {};
+  const { daily, weekly, monthly, yearly } = readingGoals;
 
   // This is a mock calculation. In a real app, this data would come from a more detailed tracking system.
   const currentProgress = {
       daily: { pages: 25, books: 0 },
       weekly: { pages: 150, books: 0 },
-      monthly: { books: finishedBooks.length, bookGoal: monthlyGoal.books },
+      monthly: { books: finishedBooks.length, bookGoal: monthly?.books || 4 },
+      yearly: { books: finishedBooks.length, bookGoal: yearly?.books || 20 },
   }
 
 
@@ -139,12 +139,12 @@ export default function LibraryPage() {
               </CardHeader>
         </Card>
         
-        <div className="flex items-center gap-4 border-b pb-4">
+        <div className="flex items-center gap-4 border-b pb-4 overflow-x-auto">
           {familyMembers.map((member) => (
             <Button
               key={member.id}
               variant={selectedMember?.id === member.id ? "default" : "outline"}
-              className={`h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
+              className={`h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 shrink-0 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
               onClick={() => setSelectedMember(member)}
             >
               <div 
@@ -184,21 +184,21 @@ export default function LibraryPage() {
                       <div className="space-y-1">
                           <div className="flex justify-between items-baseline text-xs text-muted-foreground">
                               <span className="font-medium">Günlük</span>
-                              <span>{currentProgress.daily.pages}/{dailyGoal.pages} sayfa</span>
+                              <span>{currentProgress.daily.pages}/{daily?.pages || 0} sayfa</span>
                           </div>
-                          <Progress value={(dailyGoal.pages ? (currentProgress.daily.pages / dailyGoal.pages) : 0) * 100} className="h-2"/>
+                          <Progress value={(daily?.pages ? (currentProgress.daily.pages / daily.pages) : 0) * 100} className="h-2"/>
                       </div>
                       <div className="space-y-1">
                           <div className="flex justify-between items-baseline text-xs text-muted-foreground">
                               <span className="font-medium">Haftalık</span>
-                              <span>{currentProgress.weekly.pages}/{weeklyGoal.pages} sayfa</span>
+                              <span>{currentProgress.weekly.pages}/{weekly?.pages || 0} sayfa</span>
                           </div>
-                          <Progress value={(weeklyGoal.pages ? (currentProgress.weekly.pages / weeklyGoal.pages) : 0) * 100} className="h-2"/>
+                          <Progress value={(weekly?.pages ? (currentProgress.weekly.pages / weekly.pages) : 0) * 100} className="h-2"/>
                       </div>
                       <div className="space-y-1">
                           <div className="flex justify-between items-baseline text-xs text-muted-foreground">
                               <span className="font-medium">Aylık</span>
-                              <span>{currentProgress.monthly.books}/{monthlyGoal.books} kitap</span>
+                              <span>{currentProgress.monthly.books}/{currentProgress.monthly.bookGoal} kitap</span>
                           </div>
                           <Progress value={(currentProgress.monthly.bookGoal ? (currentProgress.monthly.books / currentProgress.monthly.bookGoal) : 0) * 100} className="h-2"/>
                       </div>

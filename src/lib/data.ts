@@ -9,9 +9,11 @@ export interface User {
 }
 
 export interface ReadingGoals {
+    primaryGoal?: 'daily' | 'weekly' | 'monthly' | 'yearly';
     daily?: { pages?: number; books?: number };
     weekly?: { pages?: number; books?: number };
     monthly?: { pages?: number; books?: number };
+    yearly?: { pages?: number; books?: number };
 }
 
 export interface FamilyMember {

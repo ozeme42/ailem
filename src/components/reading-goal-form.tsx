@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import type { ReadingGoals } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { DialogFooter } from "./ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 const goalSchema = z.object({
   pages: z.coerce.number().min(0).optional(),
@@ -18,9 +19,11 @@ const goalSchema = z.object({
 });
 
 const formSchema = z.object({
+  primaryGoal: z.enum(['daily', 'weekly', 'monthly', 'yearly']).default('monthly'),
   daily: goalSchema.optional(),
   weekly: goalSchema.optional(),
   monthly: goalSchema.optional(),
+  yearly: goalSchema.optional(),
 });
 
 type ReadingGoalFormProps = {
@@ -28,132 +31,116 @@ type ReadingGoalFormProps = {
   onSave: (goals: ReadingGoals) => void;
 };
 
+type GoalPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+
 export function SetReadingGoalForm({ initialGoals, onSave }: ReadingGoalFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      daily: initialGoals?.daily || { pages: 0, books: 0 },
-      weekly: initialGoals?.weekly || { pages: 0, books: 0 },
-      monthly: initialGoals?.monthly || { pages: 0, books: 0 },
-    },
-  });
+    const [primaryGoal, setPrimaryGoal] = React.useState<GoalPeriod>(initialGoals?.primaryGoal || 'monthly');
 
-  const { watch, setValue } = form;
-  const monthlyPages = watch("monthly.pages");
-  const weeklyPages = watch("weekly.pages");
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            primaryGoal: initialGoals?.primaryGoal || 'monthly',
+            daily: initialGoals?.daily || { pages: 0, books: 0 },
+            weekly: initialGoals?.weekly || { pages: 0, books: 0 },
+            monthly: initialGoals?.monthly || { pages: 0, books: 0 },
+            yearly: initialGoals?.yearly || { pages: 0, books: 0 },
+        },
+    });
 
-  React.useEffect(() => {
-    if (monthlyPages && monthlyPages > 0) {
-      const calculatedWeekly = Math.round(monthlyPages / 4);
-      const calculatedDaily = Math.round(monthlyPages / 30);
-      if (!watch("weekly.pages")) setValue("weekly.pages", calculatedWeekly);
-      if (!watch("daily.pages")) setValue("daily.pages", calculatedDaily);
-    }
-  }, [monthlyPages, setValue, watch]);
+    const { watch, setValue } = form;
+    const watchedValues = watch();
 
-  React.useEffect(() => {
-    if (weeklyPages && weeklyPages > 0 && !monthlyPages) {
-       const calculatedDaily = Math.round(weeklyPages / 7);
-       if (!watch("daily.pages")) setValue("daily.pages", calculatedDaily);
-    }
-  }, [weeklyPages, monthlyPages, setValue, watch]);
+    React.useEffect(() => {
+        const calculateGoals = (sourcePeriod: GoalPeriod, sourceValue: number, sourceType: 'pages' | 'books') => {
+            const calculations = {
+                pages: { daily: 1, weekly: 7, monthly: 30, yearly: 365 },
+                books: { daily: 1, weekly: 7, monthly: 30, yearly: 365 }
+            };
+            const sourceDays = calculations[sourceType][sourcePeriod];
+            
+            (Object.keys(calculations[sourceType]) as GoalPeriod[]).forEach(targetPeriod => {
+                if (targetPeriod !== sourcePeriod) {
+                    const targetDays = calculations[sourceType][targetPeriod];
+                    const calculatedValue = Math.round((sourceValue / sourceDays) * targetDays);
+                    setValue(`${targetPeriod}.${sourceType}`, calculatedValue, { shouldValidate: true });
+                }
+            });
+        };
 
-
-  function handleFormSubmit(values: z.infer<typeof formSchema>) {
-    onSave(values);
-  }
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 pt-4">
-        <Card>
-            <CardHeader><CardTitle className="text-lg">Günlük Hedefler</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="daily.pages"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Sayfa</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-                 <FormField
-                    control={form.control}
-                    name="daily.books"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Kitap</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader><CardTitle className="text-lg">Haftalık Hedefler</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="weekly.pages"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Sayfa</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-                 <FormField
-                    control={form.control}
-                    name="weekly.books"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Kitap</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader><CardTitle className="text-lg">Aylık Hedefler</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="monthly.pages"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Sayfa</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-                 <FormField
-                    control={form.control}
-                    name="monthly.books"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Kitap</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-            </CardContent>
-        </Card>
+        const sourceValuePages = watchedValues[primaryGoal]?.pages;
+        if (sourceValuePages !== undefined) {
+            calculateGoals(primaryGoal, sourceValuePages, 'pages');
+        }
         
-        <DialogFooter>
-             <Button type="submit" className="w-full">Hedefleri Kaydet</Button>
-        </DialogFooter>
-      </form>
-    </Form>
-  );
+        const sourceValueBooks = watchedValues[primaryGoal]?.books;
+        if (sourceValueBooks !== undefined) {
+             calculateGoals(primaryGoal, sourceValueBooks, 'books');
+        }
+
+    }, [watchedValues[primaryGoal], primaryGoal, setValue]);
+
+
+    function handleFormSubmit(values: z.infer<typeof formSchema>) {
+        onSave(values);
+    }
+    
+    const onTabChange = (value: string) => {
+        const newPrimaryGoal = value as GoalPeriod;
+        setPrimaryGoal(newPrimaryGoal);
+        setValue('primaryGoal', newPrimaryGoal);
+    };
+
+    const renderGoalInputs = (period: GoalPeriod) => {
+        const isEnabled = primaryGoal === period;
+        return (
+            <CardContent className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name={`${period}.pages`}
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Sayfa</FormLabel>
+                        <FormControl><Input type="number" {...field} disabled={!isEnabled} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name={`${period}.books`}
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Kitap</FormLabel>
+                        <FormControl><Input type="number" {...field} disabled={!isEnabled} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </CardContent>
+        );
+    }
+
+    return (
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 pt-4">
+            <Tabs value={primaryGoal} onValueChange={onTabChange} className="w-full">
+                 <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="daily">Günlük</TabsTrigger>
+                    <TabsTrigger value="weekly">Haftalık</TabsTrigger>
+                    <TabsTrigger value="monthly">Aylık</TabsTrigger>
+                    <TabsTrigger value="yearly">Yıllık</TabsTrigger>
+                </TabsList>
+                <TabsContent value="daily" className="mt-4">{renderGoalInputs('daily')}</TabsContent>
+                <TabsContent value="weekly" className="mt-4">{renderGoalInputs('weekly')}</TabsContent>
+                <TabsContent value="monthly" className="mt-4">{renderGoalInputs('monthly')}</TabsContent>
+                <TabsContent value="yearly" className="mt-4">{renderGoalInputs('yearly')}</TabsContent>
+            </Tabs>
+            
+            <DialogFooter>
+                <Button type="submit" className="w-full">Hedefleri Kaydet</Button>
+            </DialogFooter>
+        </form>
+        </Form>
+    );
 }
