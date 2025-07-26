@@ -3,8 +3,9 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2 } from "lucide-react";
-import { format, addDays, startOfWeek } from "date-fns";
+import { format, addDays, startOfWeek, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
+import { formatDistanceToNow } from 'date-fns';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Recipe, MealPlan } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { onMealPlanUpdate, updateMealPlan, onRecipesUpdate, addRecipe } from "@/lib/dataService";
+import { onMealPlanUpdate, onRecipesUpdate, addRecipe } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
 import { NewRecipeForm } from "@/components/new-recipe-form";
 import { useToast } from "@/hooks/use-toast";
@@ -110,15 +111,25 @@ export default function YemekPlanlamaPage() {
      updateMealPlan(dayKey, updatedDayPlan);
   };
 
-  const { mostEaten, recipeCounts } = React.useMemo(() => {
+  const { mostEaten, recipeCounts, lastEatenDates } = React.useMemo(() => {
     const counts = new Map<string, number>();
-    Object.values(mealPlan).forEach(dayPlan => {
-      Object.values(dayPlan).forEach(recipe => {
-        if (recipe?.id) {
-          counts.set(recipe.id, (counts.get(recipe.id) || 0) + 1);
+    const lastDates = new Map<string, string>(); // recipeId -> date string 'yyyy-MM-dd'
+    
+    const sortedDayKeys = Object.keys(mealPlan).sort((a, b) => b.localeCompare(a)); // Sort dates descending
+
+    for (const dayKey of sortedDayKeys) {
+        const dayPlan = mealPlan[dayKey];
+        for (const recipe of Object.values(dayPlan)) {
+            if (recipe?.id) {
+                // Increment count
+                counts.set(recipe.id, (counts.get(recipe.id) || 0) + 1);
+                // Set last eaten date if not already set (since we iterate from most recent)
+                if (!lastDates.has(recipe.id)) {
+                    lastDates.set(recipe.id, dayKey);
+                }
+            }
         }
-      });
-    });
+    }
 
     const sorted = Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1])
@@ -128,7 +139,7 @@ export default function YemekPlanlamaPage() {
         return { ...recipe, count };
       });
 
-    return { mostEaten: sorted, recipeCounts: counts };
+    return { mostEaten: sorted, recipeCounts: counts, lastEatenDates: lastDates };
   }, [mealPlan, recipes]);
 
   return (
@@ -291,6 +302,12 @@ export default function YemekPlanlamaPage() {
                                         <DialogTitle className="text-3xl font-bold">{recipe.title}</DialogTitle>
                                         <DialogDescription className="flex items-center gap-4 pt-2">
                                             <span><Star className="inline-block mr-1 h-4 w-4 text-yellow-400 fill-yellow-400"/>{recipe.rating}/5</span>
+                                             {lastEatenDates.has(recipe.id) && (
+                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                    <Clock className="h-4 w-4" />
+                                                    Son Yeme: {formatDistanceToNow(parseISO(lastEatenDates.get(recipe.id)!), { addSuffix: true, locale: tr })}
+                                                </span>
+                                            )}
                                         </DialogDescription>
                                     </DialogHeader>
                                     {recipe.instructions && (
