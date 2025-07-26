@@ -275,7 +275,7 @@ export default function Home() {
           </div>
       </header>
       
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             <Link href="/shopping" className="group block">
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
@@ -320,7 +320,7 @@ export default function Home() {
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
                 </div>
             </Link>
-            <Link href="/calendar" className="group block">
+            <Link href="/calendar" className="group block col-span-2 md:col-span-1">
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
                     <div className="flex-grow my-4 space-y-2">
