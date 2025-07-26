@@ -53,6 +53,18 @@ export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
 export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
 
+// Recipes
+export const onRecipesUpdate = (callback: (recipes: Recipe[]) => void) => onFamilyDataUpdate<Recipe>('recipes', callback);
+export const addRecipe = async (data: Omit<Recipe, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    const docRef = await addDoc(collection(db, 'recipes'), { ...data, familyId });
+    return docRef.id;
+};
+export const updateRecipe = (id: string, data: Partial<Omit<Recipe, 'id' | 'familyId'>>) => updateDoc(doc(db, 'recipes', id), data);
+export const deleteRecipe = (id: string) => deleteDoc(doc(db, "recipes", id));
+
+
 // One-time migration function
 export const migrateOrphanBooks = async (familyId: string) => {
     const booksCollection = collection(db, 'mediaItems');
@@ -490,9 +502,8 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
         { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
     ];
 
-    const initialRecipes: Recipe[] = [
+    const initialRecipes: Omit<Recipe, 'id'|'familyId'>[] = [
         {
-            id: 1,
             title: "Menemen",
             category: 'Kahvaltı',
             prepTime: "20 dk",
@@ -501,7 +512,6 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
             instructions: ["Biberleri ve domatesleri doğrayın.", "Tereyağını tavada eritin ve biberleri kavurun.", "Domatesleri ekleyip suyunu çekene kadar pişirin.", "Yumurtaları kırın ve karıştırarak pişirin.", "Baharatları ekleyip servis yapın."]
         },
         {
-            id: 2,
             title: "Mercimek Çorbası",
             category: 'Akşam Yemeği',
             prepTime: "40 dk",
@@ -513,8 +523,8 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 
     const initialMealPlan: MealPlan = {
       "2024-08-12": { // This key needs to be dynamic based on current week, but for initial data it's fine
-        "Kahvaltı": initialRecipes[0],
-        "Akşam Yemeği": initialRecipes[1],
+        "Kahvaltı": initialRecipes[0] as Recipe,
+        "Akşam Yemeği": initialRecipes[1] as Recipe,
       },
     };
 
@@ -593,6 +603,12 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     initialCalendarEvents.forEach(event => {
         const docRef = doc(collection(db, 'calendarEvents'));
         batch.set(docRef, { ...event, familyId });
+    });
+
+    // Initial Recipes
+    initialRecipes.forEach(recipe => {
+        const docRef = doc(collection(db, 'recipes'));
+        batch.set(docRef, { ...recipe, familyId });
     });
 
     // Initial Meal Plan

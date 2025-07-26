@@ -13,10 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { recipes as staticRecipes, Recipe, MealPlan } from "@/lib/data";
+import { Recipe, MealPlan } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { onMealPlanUpdate, updateMealPlan } from "@/lib/dataService";
+import { onMealPlanUpdate, updateMealPlan, onRecipesUpdate, addRecipe } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
+import { NewRecipeForm } from "@/components/new-recipe-form";
+import { useToast } from "@/hooks/use-toast";
 
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
@@ -34,18 +36,24 @@ type MealSelection = {
 
 
 export default function YemekPlanlamaPage() {
-  const [recipes, setRecipes] = React.useState<Recipe[]>(staticRecipes);
+  const [recipes, setRecipes] = React.useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("Hepsi");
   const [currentDate, setCurrentDate] = React.useState(new Date());
+  const { toast } = useToast();
   
   const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
   const [isRecipeSelectorOpen, setIsRecipeSelectorOpen] = React.useState(false);
+  const [isNewRecipeDialogOpen, setIsNewRecipeDialogOpen] = React.useState(false);
   const [currentMealSelection, setCurrentMealSelection] = React.useState<MealSelection>(null);
 
   React.useEffect(() => {
-    const unsubscribe = onMealPlanUpdate(setMealPlan);
-    return () => unsubscribe();
+    const unsubscribePlan = onMealPlanUpdate(setMealPlan);
+    const unsubscribeRecipes = onRecipesUpdate(setRecipes);
+    return () => {
+        unsubscribePlan();
+        unsubscribeRecipes();
+    };
   }, []);
 
   const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -58,6 +66,23 @@ export default function YemekPlanlamaPage() {
                           recipe.ingredients.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
+  
+  const handleAddNewRecipe = async (recipeData: Omit<Recipe, 'id' | 'familyId'>) => {
+    try {
+        const newRecipeId = await addRecipe(recipeData);
+        toast({ title: "✅ Tarif Eklendi", description: `"${recipeData.title}" başarıyla kütüphaneye eklendi.`});
+        setIsNewRecipeDialogOpen(false);
+        
+        // If we are in the middle of a meal selection, add the new recipe to the plan
+        if (currentMealSelection) {
+            const newRecipe = { ...recipeData, id: newRecipeId };
+            handleSelectRecipe(newRecipe);
+        }
+
+    } catch (e) {
+        toast({ title: "❌ Hata", description: "Tarif eklenirken bir hata oluştu.", variant: 'destructive'});
+    }
+  };
 
   const handleOpenRecipeSelector = (day: Date, mealType: string) => {
     setCurrentMealSelection({ day, mealType });
@@ -91,7 +116,13 @@ export default function YemekPlanlamaPage() {
   return (
     <>
       <PageHeader title="Yemek Planı & Tarifler 🍲">
-        <Button className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+        <Button 
+            className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-shadow"
+            onClick={() => {
+                setCurrentMealSelection(null); // Ensure we are not in selection mode
+                setIsNewRecipeDialogOpen(true);
+            }}
+        >
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Tarif Ekle
         </Button>
@@ -254,7 +285,20 @@ export default function YemekPlanlamaPage() {
                     } için bir tarif seçin.
                   </DialogDescription>
               </DialogHeader>
-              <ScrollArea className="h-96 -mx-6 px-6">
+              <div className="my-4">
+                <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                        setIsRecipeSelectorOpen(false); // Close this dialog
+                        setIsNewRecipeDialogOpen(true); // Open the new recipe dialog
+                    }}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Aradığın yok mu? Yeni Tarif Oluştur
+                </Button>
+              </div>
+              <ScrollArea className="h-72 -mx-6 px-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
                     {recipes.map(recipe => (
                         <Card 
@@ -272,7 +316,19 @@ export default function YemekPlanlamaPage() {
               </ScrollArea>
           </DialogContent>
       </Dialog>
+      
+      {/* New Recipe Dialog */}
+       <Dialog open={isNewRecipeDialogOpen} onOpenChange={setIsNewRecipeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Yeni Tarif Ekle</DialogTitle>
+            <DialogDescription>
+              Yeni tarifi kütüphaneye ekleyin. Kaydedince plana da eklenecektir.
+            </DialogDescription>
+          </DialogHeader>
+          <NewRecipeForm onSubmit={handleAddNewRecipe} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
-

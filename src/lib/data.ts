@@ -88,7 +88,8 @@ export interface UserLibrary {
 
 
 export interface Recipe {
-    id: number;
+    id: string;
+    familyId: string;
     title: string;
     category: 'Kahvaltı' | 'Akşam Yemeği' | 'Atıştırmalık';
     prepTime: string;
@@ -251,9 +252,9 @@ export interface ShoppingNoteList {
 }
 
 
-export const recipes: Recipe[] = [
+// This data is now only for initial setup
+export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
     {
-        id: 1,
         title: "Menemen",
         category: 'Kahvaltı',
         prepTime: "20 dk",
@@ -262,7 +263,6 @@ export const recipes: Recipe[] = [
         instructions: ["Biberleri ve domatesleri doğrayın.", "Tereyağını tavada eritin ve biberleri kavurun.", "Domatesleri ekleyip suyunu çekene kadar pişirin.", "Yumurtaları kırın ve karıştırarak pişirin.", "Baharatları ekleyip servis yapın."]
     },
     {
-        id: 2,
         title: "Mercimek Çorbası",
         category: 'Akşam Yemeği',
         prepTime: "40 dk",
@@ -271,7 +271,6 @@ export const recipes: Recipe[] = [
         instructions: ["Tüm sebzeleri doğrayın.", "Mercimeği yıkayıp süzün.", "Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin.", "Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun.", "Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin.", "Baharatları ekleyip bir taşım daha kaynatın."]
     },
      {
-        id: 4,
         title: "Meyveli Yoğurt",
         category: 'Atıştırmalık',
         prepTime: "5 dk",
@@ -311,8 +310,8 @@ export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
 
 export const initialMealPlan: MealPlan = {
   "2024-08-12": {
-    "Kahvaltı": recipes[0],
-    "Akşam Yemeği": recipes[1],
+    "Kahvaltı": initialRecipes[0] as Recipe, // Casting here for initial setup
+    "Akşam Yemeği": initialRecipes[1] as Recipe,
   },
 };
 
