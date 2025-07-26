@@ -58,8 +58,7 @@ export default function OpticalFormPage() {
                 updatedData.status = 'Çözüldü'; 
                 if (gradingType === 'manual-text') {
                     updatedData.studentTextAnswers = textAnswers;
-                }
-                 if(gradingType === 'auto') { // For backwards compatibility if old tests were manual but had answers
+                } else { // For mcq with manual grading
                     updatedData.studentAnswers = mcqAnswers;
                 }
                 toast({
