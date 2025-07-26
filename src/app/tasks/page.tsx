@@ -127,11 +127,11 @@ export default function TasksPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Zorluğa Göre</DropdownMenuLabel>
+                <DropdownMenuLabel>Kategoriye Göre</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                 <DropdownMenuCheckboxItem>Kolay</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Orta</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Zor</DropdownMenuCheckboxItem>
+                 <DropdownMenuCheckboxItem>Ev İşleri</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Kişisel</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Okul</DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

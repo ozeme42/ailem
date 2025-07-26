@@ -45,15 +45,29 @@ export interface Task {
   title: string;
   assigneeId: string; // Now refers to FamilyMember.id
   points: number;
-  dueDate: string;
-  completed: boolean;
+  dueDate: string; // For one-time tasks, or the start date for recurring tasks
+  completed: boolean; // For one-time tasks or for each instance of a recurring task
   category: 'Ev İşleri' | 'Okul' | 'Kişisel' | 'Aile';
   subtasks?: Subtask[];
-  difficulty: 'Kolay' | 'Orta' | 'Zor';
   notes?: string;
   photo?: string;
   audioNoteUrl?: string;
+
+  // New recurrence fields
+  isRecurring?: boolean;
+  recurrenceType?: 'daily' | 'weekly' | 'monthly';
+  recurrenceDays?: string[]; // e.g., ['Mon', 'Wed', 'Fri'] for weekly
+  recurrenceEndDate?: string; // Optional end date for recurring tasks
+
+  // Progress for count-based recurring tasks
+  totalOccurrences?: number;
+  completedOccurrences?: number;
+
+  // Streak tracking for daily tasks
+  streak?: number;
+  lastCompletedDate?: string; // ISO date string
 }
+
 
 export interface CalendarEvent {
     id: string;
@@ -286,8 +300,8 @@ export const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
 ];
 
 export const initialTasks: Omit<Task, 'id' | 'familyId'>[] = [
-    { title: 'Odanı Topla', assigneeId: "3", points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
-    { title: 'Matematik Ödevi', assigneeId: "4", points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
+    { title: 'Odanı Topla', assigneeId: "3", points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}] },
+    { title: 'Matematik Ödevi', assigneeId: "4", points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [] },
 ];
 
 export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
@@ -323,7 +337,7 @@ export const initialQuestionBanks: Omit<QuestionBank, 'id' | 'familyId'>[] = [
                 name: "Matematik",
                 topics: [
                     { id: 1, name: "Doğal Sayılar", questionCount: 20, gradingType: 'auto', answerKey: {1: 'A', 2: 'B'} },
-                    { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text', answerKey: {} },
+                    { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text' },
                 ]
             }
         ]
@@ -356,5 +370,3 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
         gradingType: 'auto',
     }
 ]
-
-    

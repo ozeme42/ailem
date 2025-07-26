@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Star, GripVertical, ChevronDown, Paperclip, Mic, Pause, Play, Trash2, Edit } from "lucide-react";
+import { Star, GripVertical, ChevronDown, Paperclip, Mic, Pause, Play, Trash2, Edit, Flame, Repeat, History } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,8 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
   const { familyId } = useAuth();
   const [isCompleted, setIsCompleted] = React.useState(task.completed);
   const [subtasks, setSubtasks] = React.useState<Subtask[]>(task.subtasks || []);
+  const [completedOccurrences, setCompletedOccurrences] = React.useState(task.completedOccurrences || 0);
+
   const { toast } = useToast();
 
   const handleCompletion = async () => {
@@ -34,11 +36,22 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
 
     const newCompletionState = !isCompleted;
     try {
-        await updateTask(task.id, { completed: newCompletionState });
         
-        const xpChange = newCompletionState ? task.points : -task.points;
+        let xpChange = newCompletionState ? task.points : -task.points;
         const completedTasksChange = newCompletionState ? 1 : -1;
         
+        const updateData: Partial<Task> = { completed: newCompletionState };
+
+        if (task.isRecurring) {
+            const newCompletedOccurrences = completedOccurrences + (newCompletionState ? 1 : -1);
+            updateData.completedOccurrences = newCompletedOccurrences;
+            updateData.lastCompletedDate = new Date().toISOString();
+             // For recurring tasks, completion might reset. Let's assume it doesn't for now.
+             // But we might want to handle daily reset logic elsewhere.
+        }
+
+        await updateTask(task.id, updateData);
+
         const newXp = (assignee.xp || 0) + xpChange;
         const newLevel = Math.floor(newXp / 1000) + 1;
 
@@ -48,11 +61,9 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
             level: newLevel,
         });
         
-        // Check for badges after state update
         if (newCompletionState) {
             await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
         }
-
 
         if (newCompletionState) {
           toast({
@@ -95,26 +106,20 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
     }
   };
   
-  // Update local state if task prop changes (due to real-time updates from onSnapshot)
   React.useEffect(() => {
     setIsCompleted(task.completed);
     setSubtasks(task.subtasks || []);
+    setCompletedOccurrences(task.completedOccurrences || 0);
   }, [task]);
 
 
   const completedSubtasks = subtasks.filter(st => st.completed).length;
-  const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : (isCompleted ? 100 : 0);
-
-
-  const difficultyColors = {
-    Kolay: 'border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400',
-    Orta: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
-    Zor: 'border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-400',
-  }
+  const subtaskProgress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : (isCompleted ? 100 : 0);
+  const occurrenceProgress = task.totalOccurrences ? (completedOccurrences / task.totalOccurrences) * 100 : 0;
 
   return (
     <Collapsible>
-      <Card className={`transition-all duration-300 ${isCompleted ? 'bg-muted/50 border-dashed' : 'bg-card hover:shadow-md'}`}>
+      <Card className={`transition-all duration-300 ${isCompleted && !task.isRecurring ? 'bg-muted/50 border-dashed' : 'bg-card hover:shadow-md'}`}>
         <CardContent className="p-4 flex items-center gap-4">
           <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
           <Checkbox
@@ -126,23 +131,38 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
           <div className="flex-grow">
             <label
               htmlFor={`task-${task.id}`}
-              className={`font-medium transition-colors cursor-pointer ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+              className={`font-medium transition-colors cursor-pointer ${isCompleted && !task.isRecurring ? 'line-through text-muted-foreground' : 'text-foreground'}`}
             >
               {task.title}
             </label>
-            <p className="text-xs text-muted-foreground">{task.dueDate}</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <p>{task.dueDate}</p>
+                {task.isRecurring && <Repeat className="h-3 w-3" />}
+            </div>
              {(subtasks && subtasks.length > 0) && (
                 <div className="flex items-center gap-2 mt-1">
-                    <Progress value={progress} className="h-1 w-24" />
+                    <Progress value={subtaskProgress} className="h-1 w-24" />
                     <span className="text-xs text-muted-foreground">{completedSubtasks}/{subtasks.length}</span>
                 </div>
             )}
+            {task.isRecurring && task.totalOccurrences && (
+                <div className="flex items-center gap-2 mt-1">
+                    <Progress value={occurrenceProgress} className="h-1 w-24" />
+                    <span className="text-xs text-muted-foreground">{completedOccurrences}/{task.totalOccurrences}</span>
+                </div>
+            )}
           </div>
-          <Badge variant="outline" className={`hidden sm:flex ${difficultyColors[task.difficulty]}`}>{task.difficulty}</Badge>
-          <Badge variant="secondary" className="flex items-center gap-1.5 py-1 px-2.5 text-sm">
-            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-500" />
-            <span className="font-bold">{task.points}</span>
-          </Badge>
+          <div className="hidden sm:flex items-center gap-2">
+            {task.recurrenceType === 'daily' && task.streak && task.streak > 1 && (
+                <Badge variant="outline" className="border-orange-500/50 bg-orange-500/10 text-orange-700 dark:text-orange-400">
+                    <Flame className="w-3.5 h-3.5 mr-1"/> {task.streak} Seri
+                </Badge>
+            )}
+            <Badge variant="secondary" className="flex items-center gap-1.5 py-1 px-2.5 text-sm">
+                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-500" />
+                <span className="font-bold">{task.points}</span>
+            </Badge>
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             {assignee && (
                 <div 
@@ -152,7 +172,6 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
                     {assignee.name.charAt(0).toUpperCase()}
                 </div>
             )}
-            <span className="text-sm font-medium hidden md:inline">{assignee?.name}</span>
           </div>
           <div className="flex items-center">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(task)}><Edit className="h-4 w-4"/></Button>

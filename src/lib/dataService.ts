@@ -5,7 +5,7 @@ import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus } from './data';
-import { isPast, parseISO } from 'date-fns';
+import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -451,7 +451,6 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'tests'), { ...data, familyId });
 };
-export const updateTest = (id: string, data: Partial<Omit<Test, 'id'>>) => updateDoc(doc(db, 'tests', id), data);
 export const deleteTest = (id: string) => deleteDoc(doc(db, "tests", id));
 
 
@@ -485,8 +484,8 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     ];
 
     const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId'>[] = [
-        { title: 'Odanı Topla', points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}], difficulty: 'Orta' },
-        { title: 'Matematik Ödevi', points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [], difficulty: 'Zor' },
+        { title: 'Odanı Topla', points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}] },
+        { title: 'Matematik Ödevi', points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [] },
     ];
 
     const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
@@ -664,7 +663,27 @@ export const checkAndAwardBadges = async (
         if (completedCount >= 10) newBadges.add('🔥');
         if (completedCount >= 50) newBadges.add('🚀');
         if (completedCount >= 100) newBadges.add('🏆');
-        if (triggerEvent.task?.difficulty === 'Zor') newBadges.add('💪');
+        
+        // Streak logic for daily tasks
+        if (triggerEvent.task?.recurrenceType === 'daily') {
+            const taskDocRef = doc(db, 'tasks', triggerEvent.task.id);
+            const taskDoc = (await getDoc(taskDocRef)).data() as Task;
+            let currentStreak = taskDoc.streak || 0;
+            if (taskDoc.lastCompletedDate) {
+                const lastDate = parseISO(taskDoc.lastCompletedDate);
+                const today = new Date();
+                const yesterday = subDays(today, 1);
+                if (isSameDay(lastDate, yesterday)) {
+                    currentStreak++; // It's a consecutive day
+                } else if (!isSameDay(lastDate, today)) {
+                    currentStreak = 1; // Streak is broken, reset to 1
+                }
+            } else {
+                currentStreak = 1; // First completion
+            }
+            await updateDoc(taskDocRef, { streak: currentStreak, lastCompletedDate: new Date().toISOString() });
+            if (currentStreak >= 7) newBadges.add('📅');
+        }
     }
 
     if (triggerEvent.type === 'test_completed') {
@@ -694,4 +713,21 @@ export const checkAndAwardBadges = async (
         updatedMembers[memberIndex] = { ...member, badges: Array.from(newBadges) };
         await updateDoc(familyRef, { members: updatedMembers });
     }
+};
+
+export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
+    // When updating a test, ensure empty/undefined fields are handled correctly for Firestore.
+    const updateData = { ...data };
+
+    if ('answerKey' in updateData && (updateData.answerKey === undefined || Object.keys(updateData.answerKey).length === 0)) {
+        delete updateData.answerKey;
+    }
+     if ('studentAnswers' in updateData && (updateData.studentAnswers === undefined || Object.keys(updateData.studentAnswers).length === 0)) {
+        delete updateData.studentAnswers;
+    }
+     if ('studentTextAnswers' in updateData && (updateData.studentTextAnswers === undefined || Object.keys(updateData.studentTextAnswers).length === 0)) {
+        delete updateData.studentTextAnswers;
+    }
+    
+    return updateDoc(doc(db, 'tests', id), updateData);
 };
