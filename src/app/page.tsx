@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { useTheme } from "next-themes";
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -45,6 +46,24 @@ const activityIcons = {
     book: { icon: BookOpen, color: 'from-yellow-500 to-amber-500' },
     event: { icon: Calendar, color: 'from-blue-500 to-sky-500' },
 };
+
+function ModeToggle() {
+  const { setTheme, theme } = useTheme()
+
+  return (
+      <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          className="rounded-full p-2 transition-colors hover:bg-white/20 text-primary-foreground"
+          aria-label="Toggle theme"
+      >
+          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Temayı değiştir</span>
+      </Button>
+  )
+}
 
 export default function Home() {
   const { user, familyId, familyMembers, loading, logout } = useAuth();
@@ -233,6 +252,7 @@ export default function Home() {
                  {recentActivities.length === 0 && <p className="text-xs text-muted-foreground text-center p-4">Henüz yeni bir bildirim yok.</p>}
               </DropdownMenuContent>
             </DropdownMenu>
+            <ModeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <button className="rounded-full p-2 transition-colors hover:bg-white/20">
