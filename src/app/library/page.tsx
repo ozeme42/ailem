@@ -297,7 +297,7 @@ export default function LibraryPage() {
 
 function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress: number) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
     const initialPage = Math.round(((book.progress || 0) / 100) * (book.pageCount || 1));
-    const [currentPage, setCurrentPage] = React.useState(initialPage);
+    const [currentPage, setCurrentPage] = useState(initialPage);
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
@@ -344,26 +344,27 @@ function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: an
 }
 
 function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
-    const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
+    const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
 
     return (
         <>
             <Card className="flex items-center gap-4 p-4 transition-all hover:shadow-md">
-                <Image src={book.image} alt={book.title} width={80} height={120} className="rounded-md aspect-[2/3] object-cover" data-ai-hint="book cover"/>
+                <Image src={book.image} alt={book.title} width={80} height={120} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
                 <div className="flex-grow space-y-2">
                     <div>
                         <p className="font-semibold leading-tight" title={book.title}>{book.title}</p>
                         <p className="text-sm text-muted-foreground">{book.author}</p>
+                        {book.startedAt && <p className="text-xs text-muted-foreground">Başlangıç: {format(parseISO(book.startedAt), 'dd.MM.yy')}</p>}
                     </div>
                     <Progress value={book.progress || 0} />
                     <div className="text-xs text-muted-foreground flex justify-between items-center">
                         <span>{book.pageCount ? `${Math.round(((book.progress || 0) / 100) * book.pageCount)}/${book.pageCount} sayfa` : `${book.progress || 0}%`}</span>
-                        {book.startedAt && <span>Başlangıç: {format(parseISO(book.startedAt), 'dd.MM.yy')}</span>}
+                        <span className="font-semibold text-primary">{book.progress || 0}%</span>
                     </div>
                 </div>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="shrink-0">
+                        <Button variant="ghost" size="icon" className="shrink-0 self-start">
                             <MoreVertical className="h-4 w-4"/>
                         </Button>
                     </DropdownMenuTrigger>
@@ -407,3 +408,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
