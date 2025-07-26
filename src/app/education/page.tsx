@@ -3,17 +3,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTestForm } from "@/components/new-test-form";
-import { students, examProgress, QuestionBank, Test, PracticeExam } from "@/lib/data";
+import { QuestionBank, Test, PracticeExam } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -21,8 +20,42 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { format, parseISO, parse } from 'date-fns';
+import { format, parseISO, parse, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
+
+const categoryIcons: { [key: string]: React.ElementType } = {
+    'Genel Deneme Sınavları': ClipboardList,
+    'Matematik': Ruler,
+    'Fen Bilimleri': TestTube2,
+    'Türkçe': BookCopy,
+    'Sosyal Bilgiler': Globe,
+    'İngilizce': MessageSquare,
+    'Serbest Etkinlikler': Gamepad2,
+    'Diğer': FileText,
+};
+
+const categoryColors: { [key: string]: string } = {
+    'Genel Deneme Sınavları': 'border-yellow-500/80 text-yellow-600',
+    'Matematik': 'border-red-500/80 text-red-600',
+    'Fen Bilimleri': 'border-orange-500/80 text-orange-600',
+    'Türkçe': 'border-yellow-400/80 text-yellow-500',
+    'Sosyal Bilgiler': 'border-cyan-500/80 text-cyan-600',
+    'İngilizce': 'border-blue-500/80 text-blue-600',
+    'Serbest Etkinlikler': 'border-purple-500/80 text-purple-600',
+    'Diğer': 'border-gray-500/80 text-gray-600',
+};
+
+const categoryProgressColors: { [key: string]: string } = {
+    'Genel Deneme Sınavları': 'bg-yellow-500',
+    'Matematik': 'bg-red-500',
+    'Fen Bilimleri': 'bg-orange-500',
+    'Türkçe': 'bg-yellow-400',
+    'Sosyal Bilgiler': 'bg-cyan-500',
+    'İngilizce': 'bg-blue-500',
+    'Serbest Etkinlikler': 'bg-purple-500',
+    'Diğer': 'bg-gray-500',
+};
+
 
 export default function EducationPage() {
   const { toast } = useToast();
@@ -36,7 +69,6 @@ export default function EducationPage() {
 
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
   const [editingTest, setEditingTest] = React.useState<Test | null>(null);
-  const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
 
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -51,7 +83,10 @@ export default function EducationPage() {
   React.useEffect(() => {
     if (!selectedStudent) return;
     const unsubTests = onTestsUpdate((allTests) => {
-        setTests(allTests.filter(t => t.studentId === selectedStudent.id));
+        const studentTests = allTests
+            .filter(t => t.studentId === selectedStudent.id)
+            .sort((a,b) => compareDesc(new Date(a.assignedDate), new Date(b.assignedDate)));
+        setTests(studentTests);
     });
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
@@ -86,56 +121,9 @@ export default function EducationPage() {
          toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
     }
   };
-  
-  const handleDeleteTest = async (testId: string) => {
-    try {
-        await deleteTest(testId);
-        toast({ title: "🗑️ Ödev Silindi", variant: "destructive" });
-    } catch (error) {
-         toast({ title: "❌ Silme Hatası", description: "Ödev silinirken bir hata oluştu.", variant: 'destructive'});
-    }
-  };
 
-  const handleManualGrade = async (testId: string, gradeData: ManualGradeData) => {
-      try {
-        await updateTest(testId, {
-            status: 'Değerlendirildi',
-            correctAnswers: gradeData.correct,
-            incorrectAnswers: gradeData.incorrect,
-            emptyAnswers: gradeData.empty,
-            score: (gradingTest?.questionCount || 1) > 0 ? (gradeData.correct / (gradingTest?.questionCount || 1)) * 100 : 0,
-            studentTextAnswersEvaluation: gradeData.evaluations,
-        });
-        toast({ title: "✅ Test Değerlendirildi", description: "Sonuçlar başarıyla kaydedildi." });
-        setGradingTest(null);
-      } catch(error) {
-        toast({ title: "❌ Kaydetme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive'});
-      }
-  }
-
-  const handleOpenEditTest = (test: Test) => {
-    setEditingTest(test);
-    setIsAssignDialogOpen(true);
-  };
-  
-  const handleOpenNewTest = () => {
-    setEditingTest(null);
-    setIsAssignDialogOpen(true);
-  };
-
-  const completedTests = tests.filter(t => t.status !== 'Atandı');
-
-  const getStatusBadgeClasses = (status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi') => {
-     switch (status) {
-      case 'Atandı': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400';
-      case 'Çözüldü': return 'bg-blue-500/20 text-blue-600 dark:text-blue-400';
-      case 'Değerlendirildi': return 'bg-green-500/20 text-green-600 dark:text-green-400';
-      default: return 'bg-gray-500/20 text-gray-600 dark:text-gray-400';
-    }
-  }
-  
   const overallStats = React.useMemo(() => {
-    const evaluatedTests = completedTests.filter(t => t.status === 'Değerlendirildi');
+    const evaluatedTests = tests.filter(t => t.status === 'Değerlendirildi');
     const totalQuestions = evaluatedTests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
     const totalCorrect = evaluatedTests.reduce((sum, test) => sum + (test.correctAnswers || 0), 0);
     const successRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
@@ -144,78 +132,32 @@ export default function EducationPage() {
       testCount: evaluatedTests.length,
       successRate: successRate,
     }
-  }, [completedTests]);
+  }, [tests]);
   
-  const assignedTestsGrouped = React.useMemo(() => {
-    const assigned = tests.filter(t => t.status === 'Atandı');
-    
-    const groups: {
-        quickTests: Test[];
-        exams: Test[];
-        banks: { bank: QuestionBank; tests: Test[], completedTopicCount: number, totalTopicCount: number }[];
-    } = { quickTests: [], exams: [], banks: [] };
+  const testsByCategory = React.useMemo(() => {
+    const categories: { [key: string]: { total: number, completed: number, tests: Test[] } } = {};
 
-    assigned.forEach(test => {
-        if (test.sourceType === 'quick') {
-            groups.quickTests.push(test);
-        } else if (test.sourceType === 'exam') {
-            groups.exams.push(test);
-        } else if (test.sourceType === 'bank' && test.sourceId) {
-            let bankGroup = groups.banks.find(b => b.bank.id === test.sourceId);
-            if (!bankGroup) {
-                const bankDetails = questionBanks.find(b => b.id === test.sourceId);
-                if (bankDetails) {
-                    const allBankTests = tests.filter(t => t.sourceId === bankDetails.id);
-                    const completedTopicIds = new Set(allBankTests.filter(t => t.status === 'Değerlendirildi').map(t => t.topicId));
-                    const totalTopics = bankDetails.subjects.reduce((acc, s) => acc + s.topics.length, 0);
+    const getCategoryName = (test: Test): string => {
+        if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+        if (availableSubjects.includes(test.subject)) return test.subject;
+        // You might want to handle custom subjects from question banks if they don't align with `availableSubjects`
+        return 'Diğer';
+    }
 
-                    bankGroup = { 
-                        bank: bankDetails, 
-                        tests: [], 
-                        completedTopicCount: completedTopicIds.size, 
-                        totalTopicCount: totalTopics 
-                    };
-                    groups.banks.push(bankGroup);
-                }
-            }
-            if (bankGroup) {
-                bankGroup.tests.push(test);
-            }
+    tests.forEach(test => {
+        const categoryName = getCategoryName(test);
+        if (!categories[categoryName]) {
+            categories[categoryName] = { total: 0, completed: 0, tests: [] };
         }
+        categories[categoryName].total++;
+        if (test.status !== 'Atandı') {
+            categories[categoryName].completed++;
+        }
+        categories[categoryName].tests.push(test);
     });
 
-    return groups;
-}, [tests, questionBanks, practiceExams]);
-
-const totalAssignedCount = assignedTestsGrouped.quickTests.length + assignedTestsGrouped.exams.length + assignedTestsGrouped.banks.reduce((acc, b) => acc + b.tests.length, 0);
-
-
-
-  const parseAndFormatDate = (dateString?: string) => {
-    if (!dateString) {
-        return { month: "Bilinmiyor", day: "??" };
-    }
-    try {
-      const formatString = "dd MMMM yyyy";
-      let parsedDate;
-      // Check if the date string is already in ISO format from new Date()
-      if (dateString.includes('-') && dateString.includes('T')) {
-          parsedDate = parseISO(dateString);
-      } else {
-          parsedDate = parse(dateString, formatString, new Date(), { locale: tr });
-      }
-      
-      if (isNaN(parsedDate.getTime())) {
-          return { month: "Geçersiz", day: "Tarih" };
-      }
-
-      const month = format(parsedDate, 'MMMM', { locale: tr });
-      const day = format(parsedDate, 'dd');
-      return { month, day };
-    } catch (e) {
-      return { month: "Hata", day: "!" };
-    }
-  };
+    return Object.entries(categories);
+  }, [tests, availableSubjects]);
 
 
   return (
@@ -306,191 +248,34 @@ const totalAssignedCount = assignedTestsGrouped.quickTests.length + assignedTest
         </Link>
       )}
 
+      {tests.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+            {testsByCategory.map(([category, data]) => {
+                const Icon = categoryIcons[category] || FileText;
+                const colorClass = categoryColors[category] || 'border-gray-500/80 text-gray-600';
+                const progressColor = categoryProgressColors[category] || 'bg-gray-500';
+                const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
 
-      <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="assignments">Aktif Ödevler ({totalAssignedCount})</TabsTrigger>
-          <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="assignments" className="mt-4 space-y-6">
-            {totalAssignedCount > 0 ? (
-                <>
-                {assignedTestsGrouped.banks.length > 0 && (
-                    <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-muted-foreground">Soru Bankası Ödevleri</h2>
-                    {assignedTestsGrouped.banks.map(({ bank, tests, completedTopicCount, totalTopicCount }) => (
-                        <Card key={bank.id}>
-                        <CardHeader>
-                            <CardTitle>{bank.name}</CardTitle>
-                            <CardDescription>
-                                Bu soru bankasındaki {totalTopicCount} konudan {completedTopicCount} tanesi tamamlandı.
-                            </CardDescription>
-                            <Progress value={(completedTopicCount / totalTopicCount) * 100} className="mt-2 h-2" />
+                return (
+                    <Card key={category} className={cn("flex flex-col border-t-4 shadow-sm hover:shadow-lg transition-shadow", colorClass)}>
+                        <CardHeader className="text-center">
+                            <Icon className="w-16 h-16 mx-auto mb-4" />
+                            <CardTitle className={cn("text-xl", colorClass)}>{category}</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {tests.map(test => {
-                                const startDate = parseAndFormatDate(test.assignedDate);
-                                const endDate = parseAndFormatDate(test.dueDate);
-                                return <AssignmentCard key={test.id} test={test} startDate={startDate} endDate={endDate} />;
-                            })}
+                        <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
+                            <p className="text-lg text-foreground">{data.total} Adet Sınav</p>
+                            <p className="text-sm text-green-600 font-medium">{data.completed} Adet Sınav Çözüldü</p>
                         </CardContent>
-                        </Card>
-                    ))}
-                    </div>
-                )}
-
-                {assignedTestsGrouped.exams.length > 0 && (
-                    <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-muted-foreground">Deneme Sınavları</h2>
-                    {assignedTestsGrouped.exams.map(test => {
-                        const startDate = parseAndFormatDate(test.assignedDate);
-                        const endDate = parseAndFormatDate(test.dueDate);
-                        return <AssignmentCard key={test.id} test={test} startDate={startDate} endDate={endDate} />;
-                    })}
-                    </div>
-                )}
-
-                {assignedTestsGrouped.quickTests.length > 0 && (
-                    <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-muted-foreground">Hızlı Testler</h2>
-                    {assignedTestsGrouped.quickTests.map(test => {
-                        const startDate = parseAndFormatDate(test.assignedDate);
-                        const endDate = parseAndFormatDate(test.dueDate);
-                        return <AssignmentCard key={test.id} test={test} startDate={startDate} endDate={endDate} />;
-                    })}
-                    </div>
-                )}
-                </>
-            ) : (
-                <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Atanmış yeni test bulunmuyor.</CardContent></Card>
-            )}
-        </TabsContent>
-        
-        <TabsContent value="results">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-              {completedTests.length > 0 ? completedTests.map(test => (
-                 <Card key={test.id} className="flex flex-col">
-                    <CardHeader>
-                        <Badge className={cn("w-fit", getStatusBadgeClasses(test.status))}>
-                            {test.status}
-                        </Badge>
-                        <CardTitle className="pt-2">{test.title}</CardTitle>
-                        <CardDescription>{test.subject}</CardDescription>
-                    </CardHeader>
-                   <CardContent className="flex-grow">
-                        {test.status === 'Değerlendirildi' && (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between p-2 rounded-md bg-purple-500/10">
-                                    <span className="font-semibold flex items-center gap-2"><Award className="text-purple-600"/> Puan</span>
-                                    <span className="font-bold text-purple-600">{test.score?.toFixed(1) ?? '-'}</span>
-                                </div>
-                                <div className="flex items-center justify-between p-2 rounded-md bg-green-500/10">
-                                    <span className="font-semibold flex items-center gap-2"><CheckCircle className="text-green-600"/> Doğru</span>
-                                    <span className="font-bold text-green-600">{test.correctAnswers ?? '-'}</span>
-                                </div>
-                                <div className="flex items-center justify-between p-2 rounded-md bg-red-500/10">
-                                    <span className="font-semibold flex items-center gap-2"><XCircle className="text-red-600"/> Yanlış</span>
-                                    <span className="font-bold text-red-600">{test.incorrectAnswers ?? '-'}</span>
-                                </div>
-                                <div className="flex items-center justify-between p-2 rounded-md bg-gray-500/10">
-                                    <span className="font-semibold flex items-center gap-2"><MinusCircle className="text-gray-600"/> Boş</span>
-                                    <span className="font-bold text-gray-600">{test.emptyAnswers ?? '-'}</span>
-                                </div>
-                            </div>
-                        )}
-                        {test.status === 'Çözüldü' && (
-                            <div className="flex flex-col items-center justify-center text-center h-full p-4 bg-blue-500/5 rounded-lg">
-                               <p className="text-muted-foreground mb-3 text-sm">Bu test öğrenci tarafından çözüldü, değerlendirme bekleniyor.</p>
-                               <Button onClick={() => setGradingTest(test)} className="bg-pink-500 hover:bg-pink-600">
-                                   <CheckSquare className="mr-2 h-4 w-4"/>
-                                   Sonuçları Gir
-                               </Button>
-                            </div>
-                        )}
-                   </CardContent>
-                    <CardFooter className="flex gap-2">
-                         <Button variant="outline" className="w-full" onClick={() => handleOpenEditTest(test)}>
-                          <Edit className="mr-2 h-4 w-4" /> Düzenle
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="icon">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Testi Silmek İstediğinize Emin Misiniz?</AlertDialogTitle>
-                              <AlertDialogDescription>Bu işlem geri alınamaz. "{test.title}" testi ve sonuçları kalıcı olarak silinecektir.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>İptal</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </CardFooter>
-                </Card>
-              )) : <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış bir test yok.</CardContent></Card>}
-            </div>
-        </TabsContent>
-      </Tabs>
-      
-      <Dialog open={!!gradingTest} onOpenChange={(open) => !open && setGradingTest(null)}>
-        <DialogContent className="max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>Manuel Değerlendirme</DialogTitle>
-                <DialogDescription>
-                    "{gradingTest?.title}" testinin sonuçlarını girin. Toplam {gradingTest?.questionCount} soru.
-                </DialogDescription>
-            </DialogHeader>
-            {gradingTest && (
-                <ManualGradeForm
-                    test={gradingTest}
-                    onSave={(data) => handleManualGrade(gradingTest.id, data)}
-                    onCancel={() => setGradingTest(null)}
-                />
-            )}
-        </DialogContent>
-      </Dialog>
+                        <CardFooter className="p-0">
+                            <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none" indicatorClassName={progressColor} />
+                        </CardFooter>
+                    </Card>
+                )
+            })}
+        </div>
+      ) : (
+        <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Öğrenciye atanmış herhangi bir test bulunmuyor.</CardContent></Card>
+      )}
     </>
   );
 }
-
-
-function AssignmentCard({ test, startDate, endDate }: { test: Test; startDate: { day: string; month: string }; endDate: { day: string; month: string }; }) {
-    return (
-        <Card className="flex flex-col bg-muted/30">
-            <CardHeader>
-                <CardDescription>{test.subject}</CardDescription>
-                <CardTitle>{test.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow flex items-center gap-4">
-                <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/50">
-                    <BookOpen className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs mt-1 text-muted-foreground">
-                        {test.questionCount} Soru
-                    </span>
-                </div>
-                <div className="text-sm text-muted-foreground space-y-2 border-l pl-4">
-                    <p><span className="font-semibold text-foreground">Başlangıç:</span> {startDate.day} {startDate.month}</p>
-                    <p><span className="font-semibold text-foreground">Bitiş:</span> {endDate.day} {endDate.month}</p>
-                </div>
-                <div className="ml-auto text-center">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-muted">
-                        <Clock className="h-5 w-5 text-muted-foreground mr-1"/>
-                        <span className="text-xl font-bold">{test.questionCount * 1.5}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">DAKİKA</span>
-                </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2 items-stretch">
-                <Link href={`/education/${test.id}`} className="w-full">
-                    <Button className="w-full bg-cyan-500 hover:bg-cyan-600">Sınav Giriş Ekranına Git</Button>
-                </Link>
-            </CardFooter>
-        </Card>
-    );
-}
-
