@@ -402,19 +402,27 @@ export default function ShoppingPage() {
                     </TabsList>
                     <TabsContent value="pending" className="mt-4 space-y-2">
                          {pendingItems.map(item => (
-                            <div key={item.id} className="flex items-center p-3 rounded-lg group border bg-card">
-                                <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)} className="size-5" />
+                            <div 
+                                key={item.id} 
+                                className="flex items-center p-3 rounded-lg group border bg-card cursor-pointer"
+                                onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)}
+                            >
+                                <Checkbox id={item.id} checked={item.isBought} className="size-5 pointer-events-none" />
                                 <Label htmlFor={item.id} className="ml-3 font-medium cursor-pointer">{item.name}</Label>
-                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => {e.stopPropagation(); deleteShoppingListItemFromList(selectedList.id, item.id)}}><X className="h-4 w-4" /></Button>
                             </div>
                          ))}
                     </TabsContent>
                     <TabsContent value="bought" className="mt-4 space-y-2">
                          {boughtItems.map(item => (
-                           <div key={item.id} className="flex items-center p-3 rounded-lg border bg-muted/50 group">
-                                <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)} className="size-5" />
+                           <div 
+                                key={item.id} 
+                                className="flex items-center p-3 rounded-lg border bg-muted/50 group cursor-pointer"
+                                onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)}
+                            >
+                                <Checkbox id={item.id} checked={item.isBought} className="size-5 pointer-events-none" />
                                 <Label htmlFor={item.id} className="ml-3 font-medium cursor-pointer line-through text-muted-foreground">{item.name}</Label>
-                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><X className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => {e.stopPropagation(); deleteShoppingListItemFromList(selectedList.id, item.id)}}><X className="h-4 w-4" /></Button>
                             </div>
                          ))}
                          {boughtItems.length > 0 && (
