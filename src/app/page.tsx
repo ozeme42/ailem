@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -27,6 +27,9 @@ import { tr } from 'date-fns/locale';
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import { BookDetailDialog } from "@/components/book-detail-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -69,6 +72,7 @@ function ModeToggle() {
 
 export default function Home() {
   const { user, familyId, familyMembers, loading, logout } = useAuth();
+  const { toast } = useToast();
   const [isMemberFormOpen, setIsMemberFormOpen] = React.useState(false);
   const [editingMember, setEditingMember] = React.useState<FamilyMember | null>(null);
   
@@ -205,7 +209,6 @@ export default function Home() {
 
 
   const latestBooks = React.useMemo(() => {
-      // Assuming the books array is roughly in creation order. Reverse and take 10.
       return [...books].reverse().slice(0, 10);
   }, [books]);
 
@@ -235,6 +238,35 @@ export default function Home() {
         setEditingMember(currentUserMember);
     }
   }
+
+  const handleTaskCompletion = async (task: Task, assignee: FamilyMember) => {
+    if (!familyId) return;
+    try {
+        await updateTask(task.id, { completed: true });
+        
+        const xpChange = task.points;
+        const completedTasksChange = 1;
+        
+        const newXp = (assignee.xp || 0) + xpChange;
+        const newLevel = Math.floor(newXp / 1000) + 1;
+
+        await updateFamilyMemberInFamily(familyId, assignee.id, {
+            xp: newXp,
+            completedTasks: (assignee.completedTasks || 0) + completedTasksChange,
+            level: newLevel,
+        });
+        
+        await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
+
+        toast({
+            title: "🎉 Görev Tamamlandı!",
+            description: `Harika iş, ${assignee?.name || ''}! ${task.points} XP kazandın.`,
+        });
+    } catch (error) {
+        toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -362,7 +394,7 @@ export default function Home() {
                     <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
                     <div className="flex-grow my-4 space-y-2">
                         {calendarSummary.upcomingEvents.length > 0 ? (
-                           calendarSummary.upcomingEvents.map(event => (
+                           calendarSummary.upcomingEvents.slice(0, 3).map(event => (
                             <div key={event.id} className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold text-sm md:text-base">{event.title}</p>
@@ -378,10 +410,42 @@ export default function Home() {
                              <p className="text-xs md:text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
                            </div>
                         )}
+                        {calendarSummary.upcomingEvents.length > 3 && (
+                            <p className="text-xs text-white/80 pt-1">+ {calendarSummary.upcomingEvents.length - 3} etkinlik daha...</p>
+                        )}
                     </div>
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
                 </div>
             </Link>
+            <Card className="md:bg-gradient-to-r md:from-orange-400 md:to-rose-400 md:text-white rounded-xl shadow-lg transition-transform hover:-translate-y-1">
+                <CardHeader>
+                    <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="relative">
+                        <div className="-mx-6 px-6 overflow-x-auto pb-4 -mb-4">
+                            <div className="flex flex-nowrap gap-4">
+                                {latestBooks.map(book => (
+                                    <div key={book.id} onClick={() => setViewingBook(book)} className="group relative w-24 sm:w-32 shrink-0 cursor-pointer">
+                                        <Image 
+                                            src={book.image || `https://placehold.co/300x450.png`} 
+                                            alt={book.title} 
+                                            width={300} 
+                                            height={450} 
+                                            className="w-full h-auto object-cover aspect-[2/3] rounded-md shadow-lg transition-transform duration-300 group-hover:scale-105"
+                                            data-ai-hint="book cover" 
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
+                                        <div className="absolute bottom-0 left-0 p-2 text-white">
+                                            <p className="font-bold text-xs truncate" title={book.title}>{book.title}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
 
       <section>
@@ -447,34 +511,40 @@ export default function Home() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
           <CardHeader>
             <CardTitle>Bekleyen Görevler</CardTitle>
-            <CardDescription>Tüm aile için yaklaşan görevler.</CardDescription>
+            <CardDescription className="text-white/80">Tüm aile için yaklaşan görevler.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {pendingTasksSummary.length > 0 ? (
               pendingTasksSummary.map(task => (
-                <div key={task.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
+                  <Checkbox
+                    id={`home-task-${task.id}`}
+                    onCheckedChange={() => task.assignee && handleTaskCompletion(task, task.assignee)}
+                    className="border-white text-white ring-offset-white data-[state=checked]:bg-white data-[state=checked]:text-teal-600"
+                  />
                   <div className="flex-grow">
-                    <p className="font-semibold">{task.title}</p>
-                    <p className="text-sm text-muted-foreground">{format(parseISO(task.dueDate), "d MMMM, EEEE", { locale: tr })}</p>
+                    <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
+                    <p className="text-xs text-white/80">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
                   </div>
                   {task.assignee && (
-                    <div className="flex flex-col items-center">
-                       <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" 
-                          style={{ backgroundColor: task.assignee.color, color: '#fff' }}
-                      >
-                          {task.assignee.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-xs mt-1 text-muted-foreground">{task.assignee.name}</span>
+                     <div 
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
+                        style={{ backgroundColor: task.assignee.color, color: '#fff' }}
+                        title={task.assignee.name}
+                    >
+                        {task.assignee.name.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-center py-8">Bekleyen görev bulunmuyor. Harika!</p>
+              <div className="text-center py-8 bg-white/10 rounded-lg">
+                <Check className="mx-auto h-8 w-8 text-white/80" />
+                <p className="mt-2 text-sm text-white/90">Bekleyen görev bulunmuyor. Harika!</p>
+              </div>
             )}
           </CardContent>
         </Card>
