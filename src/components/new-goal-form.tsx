@@ -11,11 +11,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { FamilyMember, Goal } from "@/lib/data";
+import type { FamilyMember, Goal, GoalSection } from "@/lib/data";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertTitle } from "./ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 
 const sectionSchema = z.object({
@@ -41,28 +42,19 @@ type NewGoalFormProps = {
 };
 
 export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-        title: initialData.title,
-        description: initialData.description,
-        assigneeId: initialData.assigneeId,
-        sectionCount: initialData.sections.length,
-        sections: initialData.sections.map(s => ({ title: s.title, taskCount: s.tasks.length })),
-        // These are not directly editable for now, but need defaults
-        totalUnits: initialData.sections.reduce((acc, s) => acc + s.tasks.length, 100), // Approximate
-        unitName: 'Birim',
-    } : {
+    defaultValues: {
       title: "",
       description: "",
       totalUnits: 100,
       unitName: 'sayfa',
       sectionCount: 1,
-      sections: [],
+      sections: [{ title: 'Bölüm 1', taskCount: 5 }],
     },
   });
 
-  const { fields, replace } = useFieldArray({
+  const { fields, replace, remove } = useFieldArray({
     control: form.control,
     name: "sections",
   });
@@ -71,7 +63,37 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   const totalUnits = form.watch('totalUnits');
   const unitsPerSection = sectionCount > 0 ? Math.floor(totalUnits / sectionCount) : 0;
   const remainderUnits = sectionCount > 0 ? totalUnits % sectionCount : 0;
+  
+  React.useEffect(() => {
+    if (initialData) {
+        const sectionsData = initialData.sections.map(s => ({ title: s.title, taskCount: s.tasks.length }));
+        const totalCalculatedUnits = initialData.sections.reduce((acc, section) => {
+            const lastTaskTitle = section.tasks[section.tasks.length - 1]?.title || "0";
+            const unitsMatch = lastTaskTitle.match(/(\d+)/);
+            return acc + (unitsMatch ? parseInt(unitsMatch[0], 10) : 0);
+        }, 0);
 
+        form.reset({
+            title: initialData.title,
+            description: initialData.description || "",
+            assigneeId: initialData.assigneeId,
+            totalUnits: totalCalculatedUnits > 0 ? totalCalculatedUnits : 100, // Best guess
+            unitName: initialData.sections[0]?.tasks[0]?.title.split(" ").pop() || 'birim',
+            sectionCount: initialData.sections.length,
+            sections: sectionsData
+        });
+    } else {
+        form.reset({
+            title: "",
+            description: "",
+            assigneeId: undefined,
+            totalUnits: 100,
+            unitName: 'sayfa',
+            sectionCount: 1,
+            sections: [{ title: 'Bölüm 1', taskCount: 5 }],
+        });
+    }
+  }, [initialData, form]);
 
   React.useEffect(() => {
     const currentSections = form.getValues('sections');
@@ -84,7 +106,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   function onSubmit(values: z.infer<typeof formSchema>) {
     let unitTracker = 0;
 
-    const finalSections = values.sections.map((section, sectionIndex) => {
+    const finalSections: Omit<GoalSection, 'id' | 'status'>[] = values.sections.map((section, sectionIndex) => {
       const currentSectionUnits = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
       const unitsPerTask = section.taskCount > 0 ? currentSectionUnits / section.taskCount : 0;
       
@@ -96,7 +118,6 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
           return {
               title: `${startUnit}-${endUnit} ${values.unitName} tamamla`,
               order: taskIndex + 1,
-              id: Date.now().toString() + sectionIndex + taskIndex + 't', // Temp ID
               completed: false,
           };
       });
@@ -104,8 +125,6 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
       return {
           title: section.title,
           order: sectionIndex + 1,
-          id: Date.now().toString() + sectionIndex + 's', // Temp ID
-          status: sectionIndex === 0 ? 'unlocked' : 'locked',
           tasks: tasks,
       };
     });
@@ -114,7 +133,6 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
         title: values.title,
         description: values.description,
         assigneeId: values.assigneeId,
-        creatorId: '', // Will be set in dataService
         sections: finalSections,
     };
 
@@ -196,10 +214,16 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
                      {fields.map((sectionField, sectionIndex) => {
                          const sectionUnitCount = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
                          return (
-                            <Card key={sectionField.id} className="p-4">
-                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                            <Card key={sectionField.id} className="p-4 relative">
+                               <div className="flex justify-between items-start">
+                                    <p className="text-sm font-semibold text-primary">Bölüm {sectionIndex + 1}</p>
+                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6 absolute top-1 right-1" onClick={() => remove(sectionIndex)}>
+                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                               </div>
+                               <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 items-end mt-2")}>
                                     <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
-                                        <FormItem className="sm:col-span-2"><FormLabel>Bölüm {sectionIndex + 1} Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Bölüm Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                       <FormField control={form.control} name={`sections.${sectionIndex}.taskCount`} render={({ field }) => (
                                         <FormItem><FormLabel>Görev Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>

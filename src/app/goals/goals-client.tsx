@@ -37,8 +37,6 @@ export default function GoalsClient() {
     const handleFormSubmit = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status'>) => {
         try {
             if (editingGoal) {
-                // NOTE: The current form is for auto-generation. A different form would be needed for manual editing.
-                // This will currently re-generate the goal based on new parameters.
                 await updateGoal(editingGoal.id, data);
                 toast({ title: 'Yol Haritası Güncellendi!', description: `"${data.title}" başarıyla güncellendi.` });
             } else {
@@ -48,6 +46,7 @@ export default function GoalsClient() {
             setIsFormOpen(false);
             setEditingGoal(null);
         } catch (error) {
+            console.error("Goal submission error: ", error)
             toast({ title: 'Hata', description: 'İşlem sırasında bir hata oluştu.', variant: 'destructive' });
         }
     };
@@ -85,7 +84,7 @@ export default function GoalsClient() {
     return (
         <div className="space-y-6">
             <PageHeader title="Yol Haritaları">
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setEditingGoal(null); setIsFormOpen(open); }}>
                     <DialogTrigger asChild>
                         <Button onClick={() => handleOpenDialog(null)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
@@ -115,14 +114,14 @@ export default function GoalsClient() {
                     return (
                         <Card key={goal.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
                              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                {/* <Button
+                                <Button
                                     variant="secondary"
                                     size="icon"
                                     className="h-7 w-7"
                                     onClick={(e) => { e.stopPropagation(); handleOpenDialog(goal); }}
                                 >
                                     <Edit className="h-4 w-4" />
-                                </Button> */}
+                                </Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button
