@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { FamilyMember, Goal, GoalSection, GoalTask } from "@/lib/data";
-import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertTitle } from "./ui/alert";
@@ -21,7 +20,6 @@ import { AlertTriangle } from "lucide-react";
 
 const sectionSchema = z.object({
   title: z.string().min(1, "Bölüm başlığı boş olamaz.").default(""),
-  unitCount: z.coerce.number().min(1, "Birim sayısı en az 1 olmalı.").default(0),
   taskCount: z.coerce.number().min(1, "Görev sayısı en az 1 olmalı.").default(1),
 });
 
@@ -31,15 +29,8 @@ const formSchema = z.object({
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   totalUnits: z.coerce.number().min(1, "Toplam birim en az 1 olmalıdır."),
   unitName: z.string().min(1, "Birim adı zorunludur."),
-  sectionCount: z.coerce.number().min(1, "En az 1 bölüm olmalıdır."),
+  sectionCount: z.coerce.number().min(1, "En az 1 bölüm olmalıdır.").default(1),
   sections: z.array(sectionSchema),
-}).refine(data => {
-    if (data.sections.length === 0) return true;
-    const totalSectionUnits = data.sections.reduce((acc, section) => acc + (section.unitCount || 0), 0);
-    return totalSectionUnits === data.totalUnits;
-}, {
-    message: "Bölümlere atanan toplam birim sayısı, genel toplam birim sayısıyla eşleşmelidir.",
-    path: ['totalUnits']
 });
 
 
@@ -62,80 +53,62 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
     },
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, replace } = useFieldArray({
     control: form.control,
     name: "sections",
   });
   
   const sectionCount = form.watch('sectionCount');
+  const totalUnits = form.watch('totalUnits');
+  const unitsPerSection = sectionCount > 0 ? Math.floor(totalUnits / sectionCount) : 0;
+  const remainderUnits = sectionCount > 0 ? totalUnits % sectionCount : 0;
+
 
   React.useEffect(() => {
     const currentSections = form.getValues('sections');
     const newSections = Array.from({ length: sectionCount || 0 }, (_, i) => {
-      return currentSections[i] || { title: `Bölüm ${i + 1}`, unitCount: 0, taskCount: 1 };
+      return currentSections[i] || { title: `Bölüm ${i + 1}`, taskCount: 10 };
     });
     replace(newSections);
   }, [sectionCount, replace, form]);
 
   React.useEffect(() => {
     if (initialData) {
-        const sectionsData = initialData.sections.map(s => {
-            const totalUnits = s.tasks.length;
-            const firstTaskTitle = s.tasks[0]?.title || "";
-            const lastTaskTitle = s.tasks[s.tasks.length-1]?.title || "";
-
-            const matchFirst = firstTaskTitle.match(/(\d+)-/);
-            const matchLast = lastTaskTitle.match(/-(\d+)\./);
-            const startUnit = matchFirst ? parseInt(matchFirst[1],10) : 0;
-            const endUnit = matchLast ? parseInt(matchLast[1], 10) : 0;
-            const unitCount = (endUnit - startUnit) + 1;
-
-            return {
-                title: s.title,
-                unitCount: unitCount,
-                taskCount: totalUnits
-            }
-        });
-
-        const totalUnits = sectionsData.reduce((acc, s) => acc + s.unitCount, 0);
-
+        // Since editing is complex with this auto-generation logic, we will reset to a clean slate.
+        // A more advanced implementation might try to reverse-engineer the form state from the data.
+        // For now, we will just load the main details.
         form.reset({
             title: initialData.title,
             description: initialData.description,
             assigneeId: initialData.assigneeId,
-            totalUnits: totalUnits,
-            unitName: 'sayfa', // This needs to be dynamic if we support more than pages
-            sectionCount: initialData.sections.length,
-            sections: sectionsData as any,
-        });
-    } else {
-        form.reset({
-            title: "",
-            description: "",
-            assigneeId: undefined,
-            sections: [],
+            // Resetting auto-generation fields as they are not easily reversible
             totalUnits: 100,
             unitName: 'sayfa',
-            sectionCount: 1
+            sectionCount: initialData.sections.length,
+            sections: initialData.sections.map(s => ({ title: s.title, taskCount: s.tasks.length }))
         });
     }
-  }, [initialData, form, replace]);
+  }, [initialData, form]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     let unitTracker = 0;
 
     const finalSections = values.sections.map((section, sectionIndex) => {
-        const unitsPerTask = section.taskCount > 0 ? section.unitCount / section.taskCount : 0;
+        // Calculate units for this specific section, distributing the remainder
+        const currentSectionUnits = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
+        const unitsPerTask = section.taskCount > 0 ? currentSectionUnits / section.taskCount : 0;
+
         const tasks = Array.from({ length: section.taskCount }, (_, taskIndex) => {
-            const startUnit = Math.floor(unitTracker + (taskIndex * unitsPerTask)) + 1;
-            const endUnit = Math.floor(unitTracker + ((taskIndex + 1) * unitsPerTask));
+            const startUnit = Math.floor(unitTracker) + 1;
+            unitTracker += unitsPerTask;
+            const endUnit = Math.floor(unitTracker);
+            
             return {
                 title: `${startUnit}-${endUnit}. ${values.unitName} tamamla`,
                 order: taskIndex + 1,
             };
         });
-        unitTracker += section.unitCount;
 
         return {
             title: section.title,
@@ -153,10 +126,6 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
 
     onCreate(goalData as any);
   }
-  
-  const totalAllocatedUnits = form.watch('sections').reduce((acc, s) => acc + (s.unitCount || 0), 0);
-  const totalUnits = form.watch('totalUnits');
-  const remainingUnits = totalUnits - totalAllocatedUnits;
 
   return (
     <Form {...form}>
@@ -229,30 +198,23 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
                 </Card>
 
                 <div className="space-y-4">
-                    <div className="flex justify-between items-baseline">
-                        <FormLabel>Bölümleri Özelleştir</FormLabel>
-                        {form.formState.errors.totalUnits && (
-                             <p className="text-sm font-medium text-destructive">{form.formState.errors.totalUnits.message}</p>
-                        )}
-                        {remainingUnits !== 0 && (
-                            <p className="text-sm font-medium text-destructive">Kalan Birim: {remainingUnits}</p>
-                        )}
-                    </div>
-                     {fields.map((sectionField, sectionIndex) => (
-                        <Card key={sectionField.id} className="p-4">
-                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
-                                    <FormItem className="sm:col-span-3"><FormLabel>Bölüm {sectionIndex + 1} Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                 <FormField control={form.control} name={`sections.${sectionIndex}.unitCount`} render={({ field }) => (
-                                    <FormItem className="sm:col-span-2"><FormLabel>Bölümün Birim Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                  <FormField control={form.control} name={`sections.${sectionIndex}.taskCount`} render={({ field }) => (
-                                    <FormItem><FormLabel>Görev Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                           </div>
-                        </Card>
-                    ))}
+                    <FormLabel>Bölümleri Özelleştir</FormLabel>
+                     {fields.map((sectionField, sectionIndex) => {
+                         const sectionUnitCount = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
+                         return (
+                            <Card key={sectionField.id} className="p-4">
+                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
+                                        <FormItem className="sm:col-span-2"><FormLabel>Bölüm {sectionIndex + 1} Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                      <FormField control={form.control} name={`sections.${sectionIndex}.taskCount`} render={({ field }) => (
+                                        <FormItem><FormLabel>Görev Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                               </div>
+                               <p className="text-xs text-muted-foreground mt-2">Bu bölüm otomatik olarak ~{sectionUnitCount} {form.getValues('unitName') || 'birim'} olarak ayarlandı.</p>
+                            </Card>
+                        )
+                     })}
                 </div>
             </div>
         </ScrollArea>
