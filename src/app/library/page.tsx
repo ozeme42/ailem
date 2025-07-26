@@ -21,6 +21,7 @@ import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
+import { Slider } from '@/components/ui/slider';
 
 
 export default function LibraryPage() {
@@ -350,8 +351,8 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpda
     return (
         <>
             <Card className="overflow-hidden shadow-lg border-border/50">
-                <div className="p-4 flex flex-col sm:flex-row gap-4">
-                    <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md self-center sm:self-start" data-ai-hint="book cover"/>
+                <div className="p-4 flex flex-row gap-4">
+                    <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 sm:w-24 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
                     <div className="flex-grow flex flex-col w-full">
                         <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
                         <p className="text-sm text-muted-foreground">{book.author}</p>
@@ -394,8 +395,8 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpda
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
         <Card className="overflow-hidden shadow-lg border-border/50 bg-muted/30">
-            <div className="p-4 flex gap-4">
-                <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
+            <div className="p-4 flex flex-row gap-4">
+                <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 sm:w-24 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
                 <div className="flex-grow flex flex-col">
                     <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
                     <p className="text-sm text-muted-foreground">{book.author}</p>
