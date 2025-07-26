@@ -51,7 +51,21 @@ export default function OpticalFormPage() {
                 timeSpentSeconds: timeSpent
             };
 
-            if (test.gradingType === 'auto') {
+            // --- REFACTORED GRADING LOGIC ---
+            
+            // 1. Manual Grading Flow (manual-text or manual)
+            if (test.gradingType !== 'auto') {
+                updatedData.status = 'Çözüldü'; // Set to 'Çözüldü' for manual grading
+                if (test.gradingType === 'manual-text') {
+                    updatedData.studentTextAnswers = textAnswers;
+                }
+                toast({
+                    title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
+                    description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
+                });
+
+            // 2. Auto Grading Flow (auto)
+            } else {
                 updatedData.studentAnswers = mcqAnswers;
                 let answerKey: { [key: string]: string } | undefined = undefined;
 
@@ -87,12 +101,12 @@ export default function OpticalFormPage() {
                         }
                     }
 
-                    updatedData.status = 'Değerlendirildi';
+                    updatedData.status = 'Değerlendirildi'; // Set to 'Değerlendirildi' as it's auto-graded
                     updatedData.correctAnswers = correct;
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
                     updatedData.score = (correct / test.questionCount) * 100;
-                     toast({
+                    toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı ve Değerlendirildi!",
                         description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
                     });
@@ -101,22 +115,15 @@ export default function OpticalFormPage() {
                     updatedData.status = 'Çözüldü';
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
-                        description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
+                        description: "Cevapların kaydedildi ama cevap anahtarı bulunamadı. Testin yakında manuel olarak değerlendirilecek.",
                     });
                 }
-            } else { // Manual grading (text or no-answer)
-                updatedData.status = 'Çözüldü';
-                if (test.gradingType === 'manual-text') {
-                    updatedData.studentTextAnswers = textAnswers;
-                }
-                 toast({
-                    title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
-                    description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
-                });
             }
+            
+            // --- END OF REFACTORED LOGIC ---
 
             await updateTest(test.id, updatedData);
-            if(test.familyId && test.studentId && updatedData.status === 'Değerlendirildi') {
+            if (test.familyId && test.studentId && updatedData.status === 'Değerlendirildi') {
                 await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
             }
 
@@ -162,7 +169,7 @@ export default function OpticalFormPage() {
                      
                      setTotalTime(totalDuration);
                      setTimeLeft(totalDuration - timeAlreadySpent);
-                     setIsPaused(currentTest.timerStatus === 'paused');
+                     setIsPaused(currentTest.timerStatus === 'paused' || currentTest.status !== 'Atandı');
 
                      const type = currentTest.gradingType || 'manual';
                      if(type === 'auto') {
@@ -416,7 +423,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    
-
-    
