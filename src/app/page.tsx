@@ -415,40 +415,46 @@ export default function Home() {
 
       <section>
         <h2 className="text-2xl font-bold text-foreground mb-4">📊 Günlük Özet</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-green-500/10">
-                <CardContent className="p-4">
-                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
-                      <CheckSquare size={24} className="text-green-500" />
-                   </div>
-                   <div className="text-center">
-                     <p className="text-3xl font-extrabold text-green-500">{dailySummary.completedTasks}</p>
-                     <p className="text-sm font-semibold text-foreground">Tamamlanan Görevler</p>
-                   </div>
-                </CardContent>
-            </Card>
-             <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-blue-500/10">
-                <CardContent className="p-4">
-                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
-                      <Calendar size={24} className="text-blue-500" />
-                   </div>
-                   <div className="text-center">
-                     <p className="text-3xl font-extrabold text-blue-500">{dailySummary.upcomingEvents}</p>
-                     <p className="text-sm font-semibold text-foreground">Yaklaşan Etkinlikler</p>
-                   </div>
-                </CardContent>
-            </Card>
-             <Card className="overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-purple-500/10">
-                <CardContent className="p-4">
-                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
-                      <BookOpen size={24} className="text-purple-500" />
-                   </div>
-                   <div className="text-center">
-                     <p className="text-3xl font-extrabold text-purple-500">{dailySummary.finishedBooks}</p>
-                     <p className="text-sm font-semibold text-foreground">Okunan Kitaplar</p>
-                   </div>
-                </CardContent>
-            </Card>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Card className="flex-1 min-w-[150px] overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-green-500/10">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
+                  <CheckSquare size={18} className="text-green-500" />
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-extrabold text-green-500">{dailySummary.completedTasks}</p>
+                  <p className="text-xs font-semibold text-foreground">Tamamlanan Görev</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="flex-1 min-w-[150px] overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-blue-500/10">
+            <CardContent className="p-3">
+               <div className="flex items-center justify-center gap-2">
+                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
+                   <Calendar size={18} className="text-blue-500" />
+                 </div>
+                 <div className="text-left">
+                   <p className="text-2xl font-extrabold text-blue-500">{dailySummary.upcomingEvents}</p>
+                   <p className="text-xs font-semibold text-foreground">Yaklaşan Etkinlik</p>
+                 </div>
+               </div>
+            </CardContent>
+          </Card>
+          <Card className="flex-1 min-w-[150px] overflow-hidden border-0 shadow-lg transition-transform hover:scale-105 bg-purple-500/10">
+            <CardContent className="p-3">
+               <div className="flex items-center justify-center gap-2">
+                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-gray-100 shadow-inner">
+                   <BookOpen size={18} className="text-purple-500" />
+                 </div>
+                 <div className="text-left">
+                   <p className="text-2xl font-extrabold text-purple-500">{dailySummary.finishedBooks}</p>
+                   <p className="text-xs font-semibold text-foreground">Okunan Kitap</p>
+                 </div>
+               </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
