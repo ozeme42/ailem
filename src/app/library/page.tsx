@@ -350,38 +350,40 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpda
     return (
         <>
             <Card className="overflow-hidden shadow-lg border-border/50">
-                <div className="p-4 flex gap-4">
-                    <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
-                    <div className="flex-grow flex flex-col">
+                <div className="p-4 flex flex-col sm:flex-row gap-4">
+                    <Image src={book.image} alt={book.title} width={100} height={150} className="rounded-md aspect-[2/3] object-cover shadow-md self-center sm:self-start" data-ai-hint="book cover"/>
+                    <div className="flex-grow flex flex-col w-full">
                         <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
                         <p className="text-sm text-muted-foreground">{book.author}</p>
                         {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
-                        <div className="mt-auto pt-4">
+                        <div className="mt-4 pt-4 sm:mt-auto">
                             <Progress value={progressPercent} className="h-2"/>
                             <div className="flex justify-between text-xs text-muted-foreground mt-1">
                                 <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
                                 <span className="font-semibold text-primary">{progressPercent}%</span>
                             </div>
                         </div>
-                    </div>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="shrink-0">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setIsProgressDialogOpen(true)}>
+                         <div className="flex gap-2 mt-4">
+                            <Button variant="outline" className="w-full" onClick={() => setIsProgressDialogOpen(true)}>
                                 <Edit className="mr-2 h-4 w-4"/> İlerleme Gir
-                            </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
-                                <BookCheck className="mr-2 h-4 w-4"/> Bitirildi Olarak İşaretle
-                            </DropdownMenuItem>
-                             <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
-                               <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                            </Button>
+                            <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
+                                <BookCheck className="mr-2 h-4 w-4"/> Bitir
+                            </Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="shrink-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                     <DropdownMenuItem className="text-destructive" onClick={() => onRemove(book.id)}>
+                                       <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
                 </div>
             </Card>
             {isProgressDialogOpen && <ProgressDialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen} book={book} onUpdateStatus={onUpdateStatus} />}
