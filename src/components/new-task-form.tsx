@@ -169,8 +169,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
   return (
     <Form {...form}>
        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <ScrollArea className="max-h-[60vh] p-1">
-         <div className="space-y-4 pr-6">
+         <div className="space-y-4 pr-1">
             <FormField
             control={form.control}
             name="title"
@@ -382,7 +381,6 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                 </div>
             </div>
          </div>
-        </ScrollArea>
         <div className="pt-4 border-t">
           <Button type="submit" className="w-full">
             {taskToEdit ? 'Görevi Güncelle' : 'Görevi Ekle'}
