@@ -6,7 +6,6 @@ import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCirc
 import { format, addDays, startOfWeek } from "date-fns";
 import { tr } from "date-fns/locale";
 
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -114,9 +113,10 @@ export default function YemekPlanlamaPage() {
 
   return (
     <>
-      <PageHeader title="Yemek Planı & Tarifler 🍲">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl shadow-lg mb-6">
+        <h1 className="text-2xl font-bold">Yemek Planı & Tarifler 🍲</h1>
         <Button 
-            className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-shadow"
+            variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none"
             onClick={() => {
                 setCurrentMealSelection(null); // Ensure we are not in selection mode
                 setIsNewRecipeDialogOpen(true);
@@ -125,7 +125,7 @@ export default function YemekPlanlamaPage() {
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Tarif Ekle
         </Button>
-      </PageHeader>
+      </div>
 
        <Card className="mb-8">
         <CardHeader>
