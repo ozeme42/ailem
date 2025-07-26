@@ -95,6 +95,18 @@ export default function LibraryPage() {
     return { readingBooks: reading, toReadBooks: toRead, finishedBooks: finished, stats: statistics };
 
   }, [selectedMember, userLibraries, allBooks]);
+  
+  // Mock goal data and progress
+  const dailyGoal = { pages: 50, books: 0 }; // It's hard to finish a book in a day
+  const weeklyGoal = { pages: 300, books: 1 };
+  const monthlyGoal = { pages: 1200, books: 4 };
+
+  // This is a mock calculation. In a real app, this data would come from a more detailed tracking system.
+  const currentProgress = {
+      daily: { pages: 25, books: 0 },
+      weekly: { pages: 150, books: 0 },
+      monthly: { pages: 450, books: 1 },
+  }
 
 
   return (
@@ -138,24 +150,45 @@ export default function LibraryPage() {
             <CardDescription>Kişisel okuma hedeflerin ve istatistiklerin.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-6 text-center">
-                 <Card className="p-4">
-                    <CardTitle className="flex items-center justify-center gap-2"><CheckSquare className="text-green-500"/> Okunan Kitap</CardTitle>
-                    <p className="text-3xl font-bold mt-2">{stats.finished}</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                 <Card className="p-2 sm:p-4">
+                    <CardTitle className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-base"><CheckSquare className="text-green-500 size-4 sm:size-5"/> Okunan</CardTitle>
+                    <p className="text-xl sm:text-2xl font-bold mt-1 sm:mt-2">{stats.finished}</p>
                  </Card>
-                 <Card className="p-4">
-                    <CardTitle className="flex items-center justify-center gap-2"><BookOpen className="text-blue-500"/> Okunacak Kitap</CardTitle>
-                    <p className="text-3xl font-bold mt-2">{stats.reading + toReadBooks.length}</p>
+                 <Card className="p-2 sm:p-4">
+                    <CardTitle className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-base"><BookOpen className="text-blue-500 size-4 sm:size-5"/> Kalan</CardTitle>
+                    <p className="text-xl sm:text-2xl font-bold mt-1 sm:mt-2">{stats.reading + toReadBooks.length}</p>
                  </Card>
-                 <Card className="p-4">
-                    <CardTitle className="flex items-center justify-center gap-2"><Target className="text-purple-500"/> Toplam Kitap</CardTitle>
-                    <p className="text-3xl font-bold mt-2">{stats.total}</p>
+                 <Card className="p-2 sm:p-4">
+                    <CardTitle className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-base"><Target className="text-purple-500 size-4 sm:size-5"/> Toplam</CardTitle>
+                    <p className="text-xl sm:text-2xl font-bold mt-1 sm:mt-2">{stats.total}</p>
                  </Card>
             </div>
-            <div>
-              <Label>Genel Tamamlama Oranı</Label>
-              <Progress value={stats.percentage} className="mt-2" />
-              <p className="text-sm text-muted-foreground mt-1 text-right">{stats.percentage.toFixed(0)}% Tamamlandı</p>
+             <div>
+                <Label className="text-sm sm:text-base">Okuma Hedefleri</Label>
+                <div className="space-y-3 mt-2">
+                    <div className="space-y-1">
+                        <div className="flex justify-between items-baseline text-xs text-muted-foreground">
+                            <span className="font-medium">Günlük</span>
+                            <span>{currentProgress.daily.pages}/{dailyGoal.pages} sayfa</span>
+                        </div>
+                        <Progress value={(currentProgress.daily.pages / dailyGoal.pages) * 100} className="h-2"/>
+                    </div>
+                     <div className="space-y-1">
+                        <div className="flex justify-between items-baseline text-xs text-muted-foreground">
+                            <span className="font-medium">Haftalık</span>
+                            <span>{currentProgress.weekly.pages}/{weeklyGoal.pages} sayfa</span>
+                        </div>
+                        <Progress value={(currentProgress.weekly.pages / weeklyGoal.pages) * 100} className="h-2"/>
+                    </div>
+                     <div className="space-y-1">
+                        <div className="flex justify-between items-baseline text-xs text-muted-foreground">
+                            <span className="font-medium">Aylık</span>
+                             <span>{currentProgress.monthly.books}/{monthlyGoal.books} kitap</span>
+                        </div>
+                         <Progress value={(currentProgress.monthly.books / monthlyGoal.books) * 100} className="h-2"/>
+                    </div>
+                </div>
             </div>
         </CardContent>
       </Card>
@@ -248,3 +281,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: BookType & { progr
         </Card>
     )
 }
+
