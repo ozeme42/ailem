@@ -51,13 +51,15 @@ export default function TasksPage() {
   
   const leaderboard = [...familyMembers].sort((a,b) => b.xp - a.xp);
 
-  const filteredTasks = tasks.filter(task => 
-    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (getAssignee(task.assigneeId) && getAssignee(task.assigneeId)!.name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredTasks = tasks.filter(task => {
+    const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (getAssignee(task.assigneeId) && getAssignee(task.assigneeId)!.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const categoryMatch = task.category === 'Ev İşleri' || task.category === 'Kişisel';
+    return searchMatch && categoryMatch;
+  });
 
-  const todoTasks = filteredTasks.filter((task) => !task.completed);
-  const completedTasks = filteredTasks.filter((task) => task.completed);
+  const houseTasks = filteredTasks.filter((task) => task.category === 'Ev İşleri');
+  const personalTasks = filteredTasks.filter((task) => task.category === 'Kişisel');
   
   return (
     <>
@@ -109,13 +111,6 @@ export default function TasksPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Kategoriye Göre</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem>Ev İşleri</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Okul</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Aile</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Kişisel</DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuLabel>Zorluğa Göre</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                  <DropdownMenuCheckboxItem>Kolay</DropdownMenuCheckboxItem>
@@ -125,27 +120,27 @@ export default function TasksPage() {
             </DropdownMenu>
           </div>
 
-          <Tabs defaultValue="todo">
+          <Tabs defaultValue="Ev İşleri">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="todo">Yapılacaklar ({todoTasks.length})</TabsTrigger>
-              <TabsTrigger value="completed">Tamamlananlar ({completedTasks.length})</TabsTrigger>
+              <TabsTrigger value="Ev İşleri">Ev İşleri ({houseTasks.length})</TabsTrigger>
+              <TabsTrigger value="Kişisel">Kişisel ({personalTasks.length})</TabsTrigger>
             </TabsList>
-            <TabsContent value="todo" className="mt-4 space-y-3">
-              {todoTasks.length > 0 ? (
-                todoTasks.map((task) => (
+            <TabsContent value="Ev İşleri" className="mt-4 space-y-3">
+              {houseTasks.length > 0 ? (
+                houseTasks.map((task) => (
                   <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
                 ))
               ) : (
-                <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Bekleyen görev yok. Harika!</CardContent></Card>
+                <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Bu kategoride görev yok.</CardContent></Card>
               )}
             </TabsContent>
-            <TabsContent value="completed" className="mt-4 space-y-3">
-               {completedTasks.length > 0 ? (
-                completedTasks.map((task) => (
+            <TabsContent value="Kişisel" className="mt-4 space-y-3">
+               {personalTasks.length > 0 ? (
+                personalTasks.map((task) => (
                   <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
                 ))
                ) : (
-                <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>
+                <Card className="mt-4"><CardContent className="p-8 text-center text-muted-foreground">Bu kategoride görev yok.</CardContent></Card>
                )}
             </TabsContent>
           </Tabs>
@@ -179,18 +174,6 @@ export default function TasksPage() {
                     </li>
                   ))}
               </ul>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle>Kategori Dağılımı</CardTitle>
-               <CardDescription>Görevlerin kategorilere göre dağılımı.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Ev İşleri</span> <Badge variant="outline">{tasks.filter(t => t.category === "Ev İşleri").length}</Badge></div>
-                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span> Okul</span> <Badge variant="outline">{tasks.filter(t => t.category === "Okul").length}</Badge></div>
-                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Aile</span> <Badge variant="outline">{tasks.filter(t => t.category === "Aile").length}</Badge></div>
-                <div className="flex justify-between items-center text-sm"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Kişisel</span> <Badge variant="outline">{tasks.filter(t => t.category === "Kişisel").length}</Badge></div>
             </CardContent>
           </Card>
         </aside>

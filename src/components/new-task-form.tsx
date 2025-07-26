@@ -31,7 +31,7 @@ const formSchema = z.object({
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   difficulty: z.enum(["Kolay", "Orta", "Zor"], { required_error: "Lütfen bir zorluk seviyesi seçin." }),
   dueDate: z.date({ required_error: "Lütfen bir bitiş tarihi seçin." }),
-  category: z.enum(['Ev İşleri', 'Okul', 'Kişisel', 'Aile'], { required_error: "Lütfen bir kategori seçin." }),
+  category: z.enum(['Ev İşleri', 'Kişisel'], { required_error: "Lütfen bir kategori seçin." }),
   subtasks: z.array(subtaskSchema).optional(),
 });
 
@@ -66,7 +66,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
         assigneeId: taskToEdit.assigneeId,
         difficulty: taskToEdit.difficulty,
         dueDate: new Date(taskToEdit.dueDate),
-        category: taskToEdit.category,
+        category: taskToEdit.category === 'Ev İşleri' || taskToEdit.category === 'Kişisel' ? taskToEdit.category : 'Ev İşleri',
         subtasks: (taskToEdit.subtasks || []).map(st => ({ title: st.title })),
       });
     } else {
@@ -111,7 +111,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                 description: `"${values.title}" görevi başarıyla güncellendi.`,
             });
         } else {
-            await addTask(taskData);
+            await addTask(taskData as Omit<Task, 'id' | 'familyId'>);
             toast({
                 title: "✅ Görev Başarıyla Oluşturuldu!",
                 description: `"${values.title}" görevi başarıyla eklendi.`,
@@ -161,9 +161,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                     </FormControl>
                     <SelectContent>
                         <SelectItem value="Ev İşleri">Ev İşleri</SelectItem>
-                        <SelectItem value="Okul">Okul</SelectItem>
                         <SelectItem value="Kişisel">Kişisel</SelectItem>
-                        <SelectItem value="Aile">Aile</SelectItem>
                     </SelectContent>
                     </Select>
                     <FormMessage />
