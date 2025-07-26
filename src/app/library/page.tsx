@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useState, useEffect, useMemo } from 'react';
 import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
@@ -382,3 +383,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
