@@ -164,7 +164,7 @@ export default function Home() {
   }, [tasks, calendarEvents, userLibraries])
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp }));
-  const todaysMeal = mealPlan[format(new Date(), 'yyyy-MM-dd')]?.['Akşam Yemeği'] as Recipe | undefined;
+  const todaysPlan = mealPlan[format(new Date(), 'yyyy-MM-dd')];
 
   const shoppingSummary = React.useMemo(() => {
     const allPendingItems = shoppingLists.flatMap(list => list.items?.filter(item => !item.isBought) || []);
@@ -304,17 +304,18 @@ export default function Home() {
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                     <div className="flex-grow my-4 space-y-2">
-                        {todaysMeal ? (
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                <p className="font-semibold truncate">{todaysMeal.title}</p>
-                                <p className="text-sm text-white/90">Akşam yemeği için planlandı.</p>
+                       <div className="space-y-2">
+                            <p className="font-semibold text-sm text-white/90">Kahvaltı</p>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[40px]">
+                                <p className="text-sm truncate">{todaysPlan?.['Kahvaltı']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
                             </div>
-                        ) : (
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                <p className="font-semibold">Bugün ne pişirsem?</p>
-                                <p className="text-sm text-white/90">Akşam yemeği için henüz bir plan yok.</p>
+                        </div>
+                        <div className="space-y-2">
+                             <p className="font-semibold text-sm text-white/90">Akşam Yemeği</p>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[40px]">
+                                <p className="text-sm truncate">{todaysPlan?.['Akşam Yemeği']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
                             </div>
-                        )}
+                        </div>
                     </div>
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
                 </div>
