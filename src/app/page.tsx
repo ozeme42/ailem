@@ -280,6 +280,47 @@ export default function Home() {
               </DropdownMenu>
           </div>
       </header>
+
+      {latestBooks.length > 0 && (
+         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle className="text-white md:text-card-foreground text-xl">Yeni Eklenen Kitaplar</CardTitle>
+                    </div>
+                    <Link href="/library/archive">
+                        <Button variant="ghost" className="text-white/80 hover:text-white md:text-muted-foreground md:hover:text-foreground">
+                            Tümünü Gör <ArrowRight className="ml-2 h-4 w-4"/>
+                        </Button>
+                    </Link>
+                </div>
+            </CardHeader>
+            <CardContent>
+                 <div className="relative">
+                    <div className="overflow-x-auto pb-4 -mb-4">
+                        <div className="flex flex-nowrap gap-4">
+                            {latestBooks.map(book => (
+                               <Link key={book.id} href="/library/archive" className="group block w-24 sm:w-32 shrink-0">
+                                  <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
+                                    <Image 
+                                      src={book.image || `https://placehold.co/300x450.png`} 
+                                      alt={book.title} 
+                                      width={300} 
+                                      height={450} 
+                                      className="w-full h-auto object-cover aspect-[2/3]"
+                                      data-ai-hint="book cover" 
+                                    />
+                                  </Card>
+                                  <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
+                                  <p className="text-xs text-white/80 md:text-muted-foreground truncate">{book.author}</p>
+                               </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+         </Card>
+      )}
       
         <div className="flex flex-col gap-2">
             <div className="grid grid-cols-2">
@@ -393,47 +434,7 @@ export default function Home() {
         </div>
       </section>
 
-      {latestBooks.length > 0 && (
-         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-white md:text-card-foreground">Yeni Eklenen Kitaplar</CardTitle>
-                        <CardDescription className="text-white/80 md:text-muted-foreground">Kütüphaneye son eklenenler.</CardDescription>
-                    </div>
-                    <Link href="/library/archive">
-                        <Button variant="ghost" className="text-white/80 hover:text-white md:text-muted-foreground md:hover:text-foreground">
-                            Tümünü Gör <ArrowRight className="ml-2 h-4 w-4"/>
-                        </Button>
-                    </Link>
-                </div>
-            </CardHeader>
-            <CardContent>
-                 <div className="relative">
-                    <div className="overflow-x-auto pb-4 -mb-4">
-                        <div className="flex flex-nowrap gap-4">
-                            {latestBooks.map(book => (
-                               <Link key={book.id} href="/library/archive" className="group block w-24 sm:w-32 shrink-0">
-                                  <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
-                                    <Image 
-                                      src={book.image || `https://placehold.co/300x450.png`} 
-                                      alt={book.title} 
-                                      width={300} 
-                                      height={450} 
-                                      className="w-full h-auto object-cover aspect-[2/3]"
-                                      data-ai-hint="book cover" 
-                                    />
-                                  </Card>
-                                  <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
-                                  <p className="text-xs text-white/80 md:text-muted-foreground truncate">{book.author}</p>
-                               </Link>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-         </Card>
-      )}
+      
 
       <section>
         <div className="flex items-center justify-between mb-4">
