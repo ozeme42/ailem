@@ -278,22 +278,22 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-3">
             <Link href="/shopping" className="group block">
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
-                    <h3 className="flex items-center gap-3 text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
+                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                     <div className="flex-grow my-4 space-y-2">
                         {shoppingSummary.totalPending > 0 ? (
                             <>
                                 {shoppingSummary.itemsToShow.map(item => (
-                                    <div key={item.id} className="flex items-center gap-2 text-sm p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                    <div key={item.id} className="flex items-center gap-2 text-xs md:text-sm p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
                                         <span>{item.name}</span>
                                     </div>
                                 ))}
                                 {shoppingSummary.totalPending > 3 && (
-                                    <p className="text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
+                                    <p className="text-[11px] md:text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
                                 )}
                             </>
                         ) : (
-                           <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                <p className="text-sm text-white/90">Alınacak ürün yok. Harika!</p>
+                           <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                <p className="text-xs md:text-sm text-white/90">Alınacak ürün yok. Harika!</p>
                            </div>
                         )}
                     </div>
@@ -302,18 +302,18 @@ export default function Home() {
             </Link>
             <Link href="/yemek" className="group block">
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
-                    <h3 className="flex items-center gap-3 text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
+                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                     <div className="flex-grow my-4 space-y-2">
-                       <div className="space-y-2">
-                            <p className="font-semibold text-sm text-white/90">Kahvaltı</p>
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[40px]">
-                                <p className="text-sm truncate">{todaysPlan?.['Kahvaltı']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
+                       <div className="space-y-1 md:space-y-2">
+                            <p className="font-semibold text-xs md:text-sm text-white/90">Kahvaltı</p>
+                            <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
+                                <p className="text-xs md:text-sm truncate">{todaysPlan?.['Kahvaltı']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                             <p className="font-semibold text-sm text-white/90">Akşam Yemeği</p>
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[40px]">
-                                <p className="text-sm truncate">{todaysPlan?.['Akşam Yemeği']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
+                        <div className="space-y-1 md:space-y-2">
+                             <p className="font-semibold text-xs md:text-sm text-white/90">Akşam Yemeği</p>
+                            <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
+                                <p className="text-xs md:text-sm truncate">{todaysPlan?.['Akşam Yemeği']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
                             </div>
                         </div>
                     </div>
@@ -322,21 +322,21 @@ export default function Home() {
             </Link>
             <Link href="/calendar" className="group block col-span-2 md:col-span-1">
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
-                    <h3 className="flex items-center gap-3 text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
+                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
                     <div className="flex-grow my-4 space-y-2">
                         {calendarSummary.nextEvent ? (
                             <>
-                               <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                    <p className="font-semibold">{calendarSummary.nextEvent.title}</p>
-                                    <p className="text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy', { locale: tr })}</p>
+                               <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                    <p className="font-semibold text-sm md:text-base">{calendarSummary.nextEvent.title}</p>
+                                    <p className="text-xs md:text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy', { locale: tr })}</p>
                                </div>
                                 {calendarSummary.totalUpcoming > 1 && (
-                                    <p className="text-xs text-white/80 pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
+                                    <p className="text-[11px] md:text-xs text-white/80 pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
                                 )}
                             </>
                         ) : (
-                           <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                             <p className="text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
+                           <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                             <p className="text-xs md:text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
                            </div>
                         )}
                     </div>
