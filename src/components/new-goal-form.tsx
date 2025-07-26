@@ -7,31 +7,38 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { FamilyMember, Goal, GoalSection, GoalTask } from "@/lib/data";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { AlertTriangle } from "lucide-react";
 
-const taskSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(1, "Görev başlığı boş olamaz."),
-});
 
 const sectionSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(1, "Bölüm adı boş olamaz."),
-  tasks: z.array(taskSchema).min(1, "Her bölümde en az bir görev olmalıdır."),
+  title: z.string().min(1, "Bölüm başlığı boş olamaz.").default(""),
+  unitCount: z.coerce.number().min(1, "Birim sayısı en az 1 olmalı.").default(0),
+  taskCount: z.coerce.number().min(1, "Görev sayısı en az 1 olmalı.").default(1),
 });
 
 const formSchema = z.object({
   title: z.string().min(3, "Hedef adı en az 3 karakter olmalıdır."),
   description: z.string().optional(),
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
-  sections: z.array(sectionSchema).min(1, "En az bir bölüm oluşturmalısınız."),
+  totalUnits: z.coerce.number().min(1, "Toplam birim en az 1 olmalıdır."),
+  unitName: z.string().min(1, "Birim adı zorunludur."),
+  sectionCount: z.coerce.number().min(1, "En az 1 bölüm olmalıdır."),
+  sections: z.array(sectionSchema),
+}).refine(data => {
+    const totalSectionUnits = data.sections.reduce((acc, section) => acc + (section.unitCount || 0), 0);
+    return totalSectionUnits === data.totalUnits;
+}, {
+    message: "Bölümlere atanan toplam birim sayısı, genel toplam birim sayısıyla eşleşmelidir.",
+    path: ['totalUnits']
 });
 
 
@@ -47,130 +54,177 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
     defaultValues: {
       title: "",
       description: "",
+      totalUnits: 100,
+      unitName: 'sayfa',
+      sectionCount: 1,
       sections: [],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "sections",
   });
+  
+  const sectionCount = form.watch('sectionCount');
+
+  React.useEffect(() => {
+    const currentSections = form.getValues('sections');
+    const newSections = Array.from({ length: sectionCount || 0 }, (_, i) => {
+      return currentSections[i] || { title: `Bölüm ${i + 1}`, unitCount: 0, taskCount: 1 };
+    });
+    replace(newSections);
+  }, [sectionCount, replace, form]);
 
   React.useEffect(() => {
     if (initialData) {
+        // Since this form is for auto-generation, we don't pre-fill it for editing.
+        // Editing will require a different, manual form logic.
+        // For now, reset to default when initialData is present but not suitable for this form.
         form.reset({
-            title: initialData.title,
-            description: initialData.description,
-            assigneeId: initialData.assigneeId,
-            sections: initialData.sections.sort((a,b) => a.order - b.order).map(s => ({
-                id: s.id,
-                title: s.title,
-                tasks: s.tasks.sort((a,b) => a.order - b.order).map(t => ({ id: t.id, title: t.title }))
-            }))
-        });
-    } else {
-        form.reset({
-          title: "",
-          description: "",
-          assigneeId: undefined,
-          sections: [],
+            title: "",
+            description: "",
+            assigneeId: undefined,
+            sections: [],
+            totalUnits: 100,
+            unitName: 'sayfa',
+            sectionCount: 1
         });
     }
   }, [initialData, form]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    let unitTracker = 0;
+
+    const finalSections = values.sections.map((section, sectionIndex) => {
+        const unitsPerTask = section.unitCount / section.taskCount;
+        const tasks = Array.from({ length: section.taskCount }, (_, taskIndex) => {
+            const startUnit = Math.round(unitTracker + (taskIndex * unitsPerTask)) + 1;
+            const endUnit = Math.round(unitTracker + ((taskIndex + 1) * unitsPerTask));
+            return {
+                title: `${startUnit}-${endUnit}. ${values.unitName} tamamla`,
+                order: taskIndex + 1,
+            };
+        });
+        unitTracker += section.unitCount;
+
+        return {
+            title: section.title,
+            order: sectionIndex + 1,
+            tasks: tasks,
+        };
+    });
+
     const goalData = {
         title: values.title,
         description: values.description,
         assigneeId: values.assigneeId,
-        sections: values.sections.map((section, sectionIndex) => ({
-            ...section,
-            order: sectionIndex + 1,
-            tasks: section.tasks.map((task, taskIndex) => ({
-                ...task,
-                order: taskIndex + 1
-            }))
-        }))
+        sections: finalSections,
     };
+
     onCreate(goalData as any);
   }
+  
+  const totalAllocatedUnits = form.watch('sections').reduce((acc, s) => acc + (s.unitCount || 0), 0);
+  const totalUnits = form.watch('totalUnits');
+  const remainingUnits = totalUnits - totalAllocatedUnits;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <ScrollArea className="h-[65vh] pr-4">
             <div className="space-y-4">
-                <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Hedef Başlığı</FormLabel>
-                    <FormControl><Input placeholder="Büyük hedefin nedir?" {...field} /></FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
+                 <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Hedef Başlığı</FormLabel>
+                        <FormControl><Input placeholder="Büyük hedefin nedir?" {...field} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
-                <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Açıklama (Opsiyonel)</FormLabel>
-                    <FormControl><Textarea placeholder="Bu hedefin önemini veya detaylarını açıkla..." {...field} /></FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
+                 <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Açıklama (Opsiyonel)</FormLabel>
+                        <FormControl><Textarea placeholder="Bu hedefin önemini veya detaylarını açıkla..." {...field} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
-                <FormField
-                control={form.control}
-                name="assigneeId"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Sorumlu Kişi</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Bu hedef kimin için?" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {familyMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                            {member.name}
-                            </SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
+                 <FormField
+                    control={form.control}
+                    name="assigneeId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Sorumlu Kişi</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Bu hedef kimin için?" /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {familyMembers.map((member) => (
+                                <SelectItem key={member.id} value={member.id}>
+                                {member.name}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
-                
+
+                <Card className="p-4 bg-muted/50">
+                    <CardHeader className="p-0 pb-4">
+                        <CardTitle className="text-lg">Hedef Yapılandırması</CardTitle>
+                        <CardDescription>Hedefini otomatik olarak görevlere bölmek için bu alanları doldur.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0 space-y-4">
+                         <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="totalUnits" render={({ field }) => (
+                                <FormItem><FormLabel>Toplam Birim</FormLabel><FormControl><Input type="number" placeholder="300" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                             <FormField control={form.control} name="unitName" render={({ field }) => (
+                                <FormItem><FormLabel>Birim Adı</FormLabel><FormControl><Input placeholder="sayfa" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <FormField control={form.control} name="sectionCount" render={({ field }) => (
+                            <FormItem><FormLabel>Bölüm Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                    </CardContent>
+                </Card>
+
                 <div className="space-y-4">
-                    <FormLabel>Bölümler</FormLabel>
-                    {fields.map((sectionField, sectionIndex) => (
-                        <Card key={sectionField.id} className="p-4 bg-muted/50">
-                            <div className="flex justify-between items-start mb-2">
-                                <FormField
-                                    control={form.control}
-                                    name={`sections.${sectionIndex}.title`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex-grow">
-                                            <FormLabel className="text-xs">Bölüm {sectionIndex + 1}</FormLabel>
-                                            <FormControl><Input placeholder={`Bölüm adı...`} {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="button" variant="ghost" size="icon" className="ml-2 mt-6" onClick={() => remove(sectionIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                            </div>
-                            <SectionTasks control={form.control} sectionIndex={sectionIndex} />
+                    <div className="flex justify-between items-baseline">
+                        <FormLabel>Bölümleri Özelleştir</FormLabel>
+                        {form.formState.errors.totalUnits && (
+                             <p className="text-sm font-medium text-destructive">{form.formState.errors.totalUnits.message}</p>
+                        )}
+                        {remainingUnits !== 0 && (
+                            <p className="text-sm font-medium text-destructive">Kalan Birim: {remainingUnits}</p>
+                        )}
+                    </div>
+                     {fields.map((sectionField, sectionIndex) => (
+                        <Card key={sectionField.id} className="p-4">
+                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
+                                    <FormItem className="sm:col-span-3"><FormLabel>Bölüm {sectionIndex + 1} Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                 <FormField control={form.control} name={`sections.${sectionIndex}.unitCount`} render={({ field }) => (
+                                    <FormItem className="sm:col-span-2"><FormLabel>Bölümün Birim Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                  <FormField control={form.control} name={`sections.${sectionIndex}.taskCount`} render={({ field }) => (
+                                    <FormItem><FormLabel>Görev Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                           </div>
                         </Card>
                     ))}
-                    <Button type="button" variant="outline" className="w-full" onClick={() => append({ title: "", tasks: [{title: ""}] })}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Yeni Bölüm Ekle
-                    </Button>
-                    <FormMessage>{form.formState.errors.sections?.message || form.formState.errors.sections?.root?.message}</FormMessage>
                 </div>
             </div>
         </ScrollArea>
@@ -179,43 +233,5 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
         </div>
       </form>
     </Form>
-  );
-}
-
-
-function SectionTasks({ control, sectionIndex }: { control: any; sectionIndex: number }) {
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: `sections.${sectionIndex}.tasks`,
-  });
-
-  return (
-    <div className="space-y-3 pl-4 border-l-2 ml-2">
-       <FormLabel className="text-xs">Görevler</FormLabel>
-        {fields.map((taskField, taskIndex) => (
-            <div key={taskField.id} className="flex items-center gap-2">
-                <FormField
-                    control={control}
-                    name={`sections.${sectionIndex}.tasks.${taskIndex}.title`}
-                    render={({ field }) => (
-                        <FormItem className="flex-grow">
-                            <FormControl><Input placeholder={`Görev ${taskIndex + 1}`} {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => remove(taskIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-            </div>
-        ))}
-         <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => append({ title: "" })}
-            >
-            <PlusCircle className="mr-2 h-4 w-4" /> Görev Ekle
-        </Button>
-    </div>
   );
 }
