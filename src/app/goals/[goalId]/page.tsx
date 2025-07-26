@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import GoalDetailClient from './goal-detail-client';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function GoalDetailPage() {
   return (
