@@ -202,6 +202,13 @@ export default function LibraryPage() {
                           </div>
                           <Progress value={(currentProgress.monthly.bookGoal ? (currentProgress.monthly.books / currentProgress.monthly.bookGoal) : 0) * 100} className="h-2"/>
                       </div>
+                      <div className="space-y-1">
+                          <div className="flex justify-between items-baseline text-xs text-muted-foreground">
+                              <span className="font-medium">Yıllık</span>
+                              <span>{currentProgress.yearly.books}/{currentProgress.yearly.bookGoal} kitap</span>
+                          </div>
+                          <Progress value={(currentProgress.yearly.bookGoal ? (currentProgress.yearly.books / currentProgress.yearly.bookGoal) : 0) * 100} className="h-2"/>
+                      </div>
                   </div>
               </div>
           </CardContent>
