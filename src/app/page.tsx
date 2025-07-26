@@ -276,69 +276,67 @@ export default function Home() {
       </header>
       
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600">
-                <h3 className="flex items-center gap-3 text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
-                <div className="flex-grow my-4">
-                    {shoppingSummary.totalPending > 0 ? (
-                        <div className="space-y-2">
-                            {shoppingSummary.itemsToShow.map(item => (
-                                <div key={item.id} className="flex items-center gap-2 text-sm">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
-                                    <span>{item.name}</span>
-                                </div>
-                            ))}
-                            {shoppingSummary.totalPending > 3 && (
-                                <p className="text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
-                            )}
-                        </div>
-                    ) : (
-                       <p className="text-sm text-white/90">Alınacak ürün yok. Harika!</p>
-                    )}
+             <Link href="/shopping" className="group">
+                <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
+                    <h3 className="flex items-center gap-3 text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
+                    <div className="flex-grow my-4">
+                        {shoppingSummary.totalPending > 0 ? (
+                            <div className="space-y-2">
+                                {shoppingSummary.itemsToShow.map(item => (
+                                    <div key={item.id} className="flex items-center gap-2 text-sm">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                                        <span>{item.name}</span>
+                                    </div>
+                                ))}
+                                {shoppingSummary.totalPending > 3 && (
+                                    <p className="text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
+                                )}
+                            </div>
+                        ) : (
+                        <p className="text-sm text-white/90">Alınacak ürün yok. Harika!</p>
+                        )}
+                    </div>
+                    <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                 </div>
-                <Link href="/shopping" className="w-full mt-auto">
-                    <Button variant="outline" className="w-full bg-white/20 text-white hover:bg-white/30 border-none">Listeye Git</Button>
-                </Link>
-            </div>
-            <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600">
-                <h3 className="flex items-center gap-3 text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
-                <div className="flex-grow my-4">
-                     {todaysMeal ? (
-                         <>
-                            <p className="font-semibold truncate">{todaysMeal.title}</p>
-                            <p className="text-sm text-white/90">Akşam yemeği için planlandı.</p>
-                         </>
-                    ) : (
-                        <div className="text-white/90">
-                            <p className="font-semibold">Bugün ne pişirsem?</p>
-                            <p className="text-sm">Akşam yemeği için henüz bir plan yok.</p>
-                        </div>
-                    )}
+            </Link>
+             <Link href="/yemek" className="group">
+                <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
+                    <h3 className="flex items-center gap-3 text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
+                    <div className="flex-grow my-4">
+                        {todaysMeal ? (
+                            <>
+                                <p className="font-semibold truncate">{todaysMeal.title}</p>
+                                <p className="text-sm text-white/90">Akşam yemeği için planlandı.</p>
+                            </>
+                        ) : (
+                            <div className="text-white/90">
+                                <p className="font-semibold">Bugün ne pişirsem?</p>
+                                <p className="text-sm">Akşam yemeği için henüz bir plan yok.</p>
+                            </div>
+                        )}
+                    </div>
+                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
                 </div>
-                <Link href="/yemek" className="w-full mt-auto">
-                    <Button variant="outline" className="w-full bg-white/20 text-white hover:bg-white/30 border-none">
-                        {todaysMeal ? 'Menüyü Görüntüle' : 'Yemek Planla'}
-                    </Button>
-                </Link>
-            </div>
-            <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600">
-                <h3 className="flex items-center gap-3 text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
-                <div className="flex-grow my-4">
-                    {calendarSummary.nextEvent ? (
-                        <>
-                            <p className="font-semibold">{calendarSummary.nextEvent.title}</p>
-                            <p className="text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy')}</p>
-                             {calendarSummary.totalUpcoming > 1 && (
-                                <p className="text-xs text-white/80 pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
-                            )}
-                        </>
-                    ) : (
-                        <p className="text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
-                    )}
+            </Link>
+            <Link href="/calendar" className="group">
+                <div className="flex flex-col p-6 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
+                    <h3 className="flex items-center gap-3 text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
+                    <div className="flex-grow my-4">
+                        {calendarSummary.nextEvent ? (
+                            <>
+                                <p className="font-semibold">{calendarSummary.nextEvent.title}</p>
+                                <p className="text-sm text-white/90">{format(calendarSummary.nextEvent.date, 'dd MMMM yyyy', { locale: tr })}</p>
+                                {calendarSummary.totalUpcoming > 1 && (
+                                    <p className="text-xs text-white/80 pt-1">+ {calendarSummary.totalUpcoming - 1} etkinlik daha...</p>
+                                )}
+                            </>
+                        ) : (
+                            <p className="text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
+                        )}
+                    </div>
+                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
                 </div>
-                <Link href="/calendar" className="w-full mt-auto">
-                    <Button variant="outline" className="w-full bg-white/20 text-white hover:bg-white/30 border-none">Takvime Git</Button>
-                </Link>
-            </div>
+            </Link>
         </div>
 
 
