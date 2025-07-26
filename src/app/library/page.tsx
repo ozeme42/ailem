@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
-import Image from 'next/image';
+import * as React from "react";
+import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { Book as BookType, UserLibrary, FamilyMember, ReadingGoals } from '@/lib/data';
@@ -22,7 +22,7 @@ import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Slider } from '@/components/ui/slider';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 export default function LibraryPage() {
@@ -297,7 +297,7 @@ export default function LibraryPage() {
 }
 
 function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress: number) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
-    const [progress, setProgress] = useState(book.progress || 0);
+    const [progress, setProgress] = React.useState(book.progress || 0);
 
     const handleSave = () => {
         onUpdateStatus(book.id, 'reading', progress);
@@ -313,7 +313,7 @@ function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: an
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <Slider
-                        defaultValue={[progress]}
+                        value={[progress]}
                         max={100}
                         step={1}
                         onValueChange={(value) => setProgress(value[0])}
@@ -332,7 +332,7 @@ function ProgressDialog({ book, onUpdateStatus, open, onOpenChange }: { book: an
 }
 
 function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
-    const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
+    const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
     
     return (
         <Card className="overflow-hidden flex flex-col group text-center">
