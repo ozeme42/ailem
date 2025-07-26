@@ -14,7 +14,7 @@ body {
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 217.2 91.2% 66%;
     --primary-foreground: 210 20% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -26,7 +26,7 @@ body {
     --destructive-foreground: 210 20% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 217.2 91.2% 59.8%;
+    --ring: 217.2 91.2% 66%;
     --radius: 0.75rem;
 
     --chart-1: 217 91% 60%; /* Blue */
@@ -37,12 +37,12 @@ body {
     
     --sidebar-background: 224 71.4% 6.1%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 217 91% 66%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 217 32% 22%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 215 27.9% 12.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 217.2 91.2% 66%;
   }
 
   .dark {
@@ -52,7 +52,7 @@ body {
     --card-foreground: 210 20% 98%;
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 20% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 217.2 91.2% 66%;
     --primary-foreground: 210 20% 98%;
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 20% 98%;
@@ -64,7 +64,7 @@ body {
     --destructive-foreground: 210 20% 98%;
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
-    --ring: 217.2 91.2% 59.8%;
+    --ring: 217.2 91.2% 66%;
 
     --chart-1: 217 91% 60%; /* Blue */
     --chart-2: 142 71% 45%; /* Green */
@@ -74,12 +74,12 @@ body {
 
     --sidebar-background: 224 71.4% 6.1%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 217 91% 66%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 217 32% 22%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 215 27.9% 12.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 217.2 91.2% 66%;
   }
 }
 
