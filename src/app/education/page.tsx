@@ -344,21 +344,17 @@ export default function EducationPage() {
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
             tests.map(test => {
-                const isManualGradingNeeded = test.status === 'Çözüldü' && (test.gradingType === 'manual' || test.gradingType === 'manual-text');
-                const isGraded = test.status === 'Değerlendirildi';
-                const isPending = test.status === 'Atandı';
-
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">
-                            <Badge variant={isGraded ? "default" : "secondary"}>{test.status}</Badge>
+                            <Badge variant={test.status === 'Değerlendirildi' ? "default" : "secondary"}>{test.status}</Badge>
                             <h3 className="font-semibold text-lg">{test.title}</h3>
                             <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-3 sm:mt-0">
-                             {isPending && <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>}
-                             {isManualGradingNeeded && <Button variant="outline" onClick={() => openGradeDialog(test)}>Değerlendir</Button>}
-                             {isGraded && <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>}
+                             {test.status === 'Atandı' && <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>}
+                             {test.status === 'Çözüldü' && <Button variant="outline" onClick={() => openGradeDialog(test)}>Değerlendir</Button>}
+                             {test.status === 'Değerlendirildi' && <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>}
                         </div>
                     </Card>
                 );
@@ -392,3 +388,5 @@ export default function EducationPage() {
 
 
       
+
+    

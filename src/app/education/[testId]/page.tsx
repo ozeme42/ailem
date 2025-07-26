@@ -97,6 +97,7 @@ export default function OpticalFormPage() {
                         description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
                     });
                 } else {
+                    // Answer key not found, mark as solved for manual grading
                     updatedData.status = 'Çözüldü';
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
@@ -115,7 +116,7 @@ export default function OpticalFormPage() {
             }
 
             await updateTest(test.id, updatedData);
-            if(test.familyId && test.studentId) {
+            if(test.familyId && test.studentId && updatedData.status === 'Değerlendirildi') {
                 await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
             }
 
@@ -415,5 +416,7 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
 
     
