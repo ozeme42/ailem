@@ -400,11 +400,15 @@ export default function ShoppingPage() {
                         <TabsTrigger value="pending">Alınacaklar ({pendingItems.length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="pending" className="mt-4 space-y-2">
-                         {pendingItems.map(item => (
+                    <TabsContent value="pending" className="mt-4">
+                         <div className="border rounded-lg bg-card">
+                         {pendingItems.map((item, index) => (
                             <div 
                                 key={item.id} 
-                                className="flex items-center p-3 rounded-lg group border bg-card cursor-pointer"
+                                className={cn(
+                                    "flex items-center p-3 group cursor-pointer",
+                                    index < pendingItems.length - 1 && "border-b"
+                                )}
                                 onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)}
                             >
                                 <Checkbox id={item.id} checked={item.isBought} className="size-5 pointer-events-none" />
@@ -412,12 +416,17 @@ export default function ShoppingPage() {
                                 <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => {e.stopPropagation(); deleteShoppingListItemFromList(selectedList.id, item.id)}}><X className="h-4 w-4" /></Button>
                             </div>
                          ))}
+                         </div>
                     </TabsContent>
-                    <TabsContent value="bought" className="mt-4 space-y-2">
-                         {boughtItems.map(item => (
+                    <TabsContent value="bought" className="mt-4">
+                        <div className="border rounded-lg bg-card">
+                         {boughtItems.map((item, index) => (
                            <div 
                                 key={item.id} 
-                                className="flex items-center p-3 rounded-lg border bg-muted/50 group cursor-pointer"
+                                className={cn(
+                                    "flex items-center p-3 group cursor-pointer bg-muted/50",
+                                     index < boughtItems.length - 1 && "border-b"
+                                )}
                                 onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)}
                             >
                                 <Checkbox id={item.id} checked={item.isBought} className="size-5 pointer-events-none" />
@@ -425,6 +434,7 @@ export default function ShoppingPage() {
                                 <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => {e.stopPropagation(); deleteShoppingListItemFromList(selectedList.id, item.id)}}><X className="h-4 w-4" /></Button>
                             </div>
                          ))}
+                         </div>
                          {boughtItems.length > 0 && (
                             <Button variant="outline" className="w-full mt-4" onClick={() => clearBoughtItemsFromList(selectedList.id)}>
                                 Alınanları Temizle
