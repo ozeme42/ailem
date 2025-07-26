@@ -4,14 +4,15 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
-import { onGoalsUpdate, addGoal } from '@/lib/dataService';
+import { onGoalsUpdate, addGoal, deleteGoal } from '@/lib/dataService';
 import type { Goal } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from '@/components/ui/progress';
-import { PlusCircle, Target } from 'lucide-react';
+import { PlusCircle, Target, Trash2 } from 'lucide-react';
 import { NewGoalForm } from '@/components/new-goal-form';
 import { useToast } from '@/hooks/use-toast';
 
@@ -37,6 +38,15 @@ export default function GoalsClient() {
         }
     };
     
+    const handleDeleteGoal = async (goalId: string) => {
+        try {
+            await deleteGoal(goalId);
+            toast({ title: 'Yol Haritası Silindi', variant: 'destructive' });
+        } catch (error) {
+            toast({ title: 'Hata', description: 'Hedef silinirken bir sorun oluştu.', variant: 'destructive' });
+        }
+    };
+
     const calculateOverallProgress = (goal: Goal) => {
         const totalTasks = goal.sections.reduce((acc, section) => acc + section.tasks.length, 0);
         if (totalTasks === 0) return 0;
@@ -87,8 +97,32 @@ export default function GoalsClient() {
                     const progress = calculateOverallProgress(goal);
                     const assignee = familyMembers.find(m => m.id === goal.assigneeId);
                     return (
-                        <Link key={goal.id} href={`/goals/${goal.id}`} className="block">
-                            <Card className="flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
+                        <Card key={goal.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            "{goal.title}" yol haritasını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>İptal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteGoal(goal.id)}>Evet, Sil</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <Link href={`/goals/${goal.id}`} className="block flex flex-col h-full">
                                 <CardHeader>
                                     <div className="flex justify-between items-start gap-2">
                                         <CardTitle>{goal.title}</CardTitle>
@@ -117,8 +151,8 @@ export default function GoalsClient() {
                                     </div>
                                     <Progress value={progress} className="w-full h-2" />
                                 </CardFooter>
-                            </Card>
-                        </Link>
+                            </Link>
+                        </Card>
                     )
                 })}
             </div>

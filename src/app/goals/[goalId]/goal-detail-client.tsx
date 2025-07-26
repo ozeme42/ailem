@@ -8,13 +8,42 @@ import { onGoalUpdate, updateGoal } from '@/lib/dataService';
 import type { Goal, GoalSection, GoalTask } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ArrowLeft, Check, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+
+const CircularProgress = ({ progress }: { progress: number }) => {
+    const radius = 16;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (progress / 100) * circumference;
+
+    return (
+        <div className="relative size-10">
+            <svg className="size-full" width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="18" cy="18" r={radius} fill="transparent" stroke="hsl(var(--muted))" strokeWidth="3"></circle>
+                <circle
+                    cx="18"
+                    cy="18"
+                    r={radius}
+                    fill="transparent"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="3"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                    className="transition-all duration-300"
+                ></circle>
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary">
+                {Math.round(progress)}%
+            </span>
+        </div>
+    );
+};
 
 export default function GoalDetailClient() {
     const params = useParams();
@@ -34,7 +63,7 @@ export default function GoalDetailClient() {
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
         if (!goal) return;
         
-        const newSections = goal.sections.map(section => {
+        let newSections = goal.sections.map(section => {
             if (section.id === sectionId) {
                 const newTasks = section.tasks.map(task => {
                     if (task.id === taskId) {
@@ -47,26 +76,30 @@ export default function GoalDetailClient() {
             return section;
         });
 
-        // Check if a section is completed and unlock the next one
-        const updatedSectionsWithUnlocks = checkAndUnlockSections(newSections);
+        // Check for unlocks *after* toggling the task
+        const originalSections = goal.sections;
+        newSections = checkAndUnlockSections(newSections, originalSections);
 
-        const updatedGoal = { ...goal, sections: updatedSectionsWithUnlocks };
-        await updateGoal(goalId, { sections: updatedSectionsWithUnlocks });
+        const updatedGoal = { ...goal, sections: newSections };
+        await updateGoal(goalId, { sections: newSections });
         setGoal(updatedGoal); // Optimistic update
     };
 
-    const checkAndUnlockSections = (sections: GoalSection[]): GoalSection[] => {
+    const checkAndUnlockSections = (sections: GoalSection[], originalSections: GoalSection[]): GoalSection[] => {
         const sortedSections = [...sections].sort((a,b) => a.order - b.order);
         let allPreviousCompleted = true;
 
         return sortedSections.map((section, index) => {
+            const originalSection = originalSections.find(s => s.id === section.id);
+            if (!originalSection) return section;
+
             if (index === 0) { // First section is always unlocked
                 section.status = section.tasks.every(t => t.completed) ? 'completed' : 'unlocked';
                 allPreviousCompleted = section.status === 'completed';
                 return section;
             }
 
-            if (allPreviousCompleted && section.status === 'locked') {
+            if (allPreviousCompleted && originalSection.status === 'locked') {
                 toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
                 section.status = 'unlocked';
             }
@@ -85,7 +118,7 @@ export default function GoalDetailClient() {
     }
 
     const calculateSectionProgress = (section: GoalSection) => {
-        if (section.tasks.length === 0) return 0;
+        if (section.tasks.length === 0) return section.status === 'completed' ? 100 : 0;
         const completedTasks = section.tasks.filter(t => t.completed).length;
         return (completedTasks / section.tasks.length) * 100;
     };
@@ -102,7 +135,7 @@ export default function GoalDetailClient() {
             </PageHeader>
             
             <Accordion type="multiple" defaultValue={sortedSections.filter(s => s.status === 'unlocked').map(s => s.id)} className="w-full space-y-4">
-                {sortedSections.map((section, index) => {
+                {sortedSections.map((section) => {
                     const progress = calculateSectionProgress(section);
                     const isLocked = section.status === 'locked';
 
@@ -110,32 +143,35 @@ export default function GoalDetailClient() {
                         <Card key={section.id} className={cn(isLocked && "bg-muted/50")}>
                             <AccordionItem value={section.id} className="border-b-0">
                                 <AccordionTrigger className="p-4 hover:no-underline" disabled={isLocked}>
-                                    <div className="flex items-center gap-3 w-full">
+                                    <div className="flex items-center gap-4 w-full">
                                         {isLocked ? (
-                                            <Lock className="w-6 h-6 text-muted-foreground" />
+                                            <Lock className="w-8 h-8 text-muted-foreground" />
                                         ) : section.status === 'completed' ? (
-                                            <Check className="w-6 h-6 text-green-500"/>
+                                            <div className="relative size-10 flex items-center justify-center">
+                                                <CircularProgress progress={100} />
+                                                <Check className="h-5 w-5 absolute text-primary"/>
+                                            </div>
                                         ) : (
-                                            <div className="w-6 h-6 text-primary font-bold text-lg flex items-center justify-center">{index + 1}</div>
+                                            <CircularProgress progress={progress} />
                                         )}
                                         <div className="text-left flex-grow">
                                             <h3 className="text-lg font-semibold">{section.title}</h3>
-                                            <Progress value={progress} className="h-1 mt-1" />
                                         </div>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-4 pt-0">
-                                    <div className="space-y-2 pl-9">
+                                    <div className="space-y-2 pl-14">
                                         {section.tasks.sort((a,b) => a.order - b.order).map(task => (
-                                            <div key={task.id} className="flex items-center space-x-2">
+                                            <div key={task.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted">
                                                 <Checkbox
                                                     id={`${section.id}-${task.id}`}
                                                     checked={task.completed}
                                                     onCheckedChange={() => handleTaskToggle(section.id, task.id)}
+                                                    className="size-5"
                                                 />
                                                 <label
                                                     htmlFor={`${section.id}-${task.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                                                 >
                                                     {task.title}
                                                 </label>
@@ -151,4 +187,3 @@ export default function GoalDetailClient() {
         </div>
     );
 }
-
