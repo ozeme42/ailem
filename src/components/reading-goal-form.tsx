@@ -38,6 +38,27 @@ export function SetReadingGoalForm({ initialGoals, onSave }: ReadingGoalFormProp
     },
   });
 
+  const { watch, setValue } = form;
+  const monthlyPages = watch("monthly.pages");
+  const weeklyPages = watch("weekly.pages");
+
+  React.useEffect(() => {
+    if (monthlyPages && monthlyPages > 0) {
+      const calculatedWeekly = Math.round(monthlyPages / 4);
+      const calculatedDaily = Math.round(monthlyPages / 30);
+      if (!watch("weekly.pages")) setValue("weekly.pages", calculatedWeekly);
+      if (!watch("daily.pages")) setValue("daily.pages", calculatedDaily);
+    }
+  }, [monthlyPages, setValue, watch]);
+
+  React.useEffect(() => {
+    if (weeklyPages && weeklyPages > 0 && !monthlyPages) {
+       const calculatedDaily = Math.round(weeklyPages / 7);
+       if (!watch("daily.pages")) setValue("daily.pages", calculatedDaily);
+    }
+  }, [weeklyPages, monthlyPages, setValue, watch]);
+
+
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
     onSave(values);
   }
@@ -136,4 +157,3 @@ export function SetReadingGoalForm({ initialGoals, onSave }: ReadingGoalFormProp
     </Form>
   );
 }
-
