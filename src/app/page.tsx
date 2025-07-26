@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -29,6 +29,7 @@ import Image from "next/image";
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 
 const familyXpChartConfig = {
@@ -80,6 +81,7 @@ export default function Home() {
   const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
   const [books, setBooks] = React.useState<Book[]>([]);
+  const [goals, setGoals] = React.useState<Goal[]>([]);
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
 
 
@@ -91,6 +93,7 @@ export default function Home() {
     const unsubTests = onTestsUpdate(setTests);
     const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
     const unsubBooks = onBooksUpdate(setBooks);
+    const unsubGoals = onGoalsUpdate(setGoals);
     let unsubLibraries = () => {};
     if (familyId) {
       unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
@@ -105,6 +108,7 @@ export default function Home() {
       unsubStudyAssignments();
       unsubLibraries();
       unsubBooks();
+      unsubGoals();
     };
   }, [familyId]);
 
@@ -258,6 +262,41 @@ export default function Home() {
     });
   }, [familyMembers, userLibraries, books]);
 
+  const activeGoals = React.useMemo(() => {
+    return goals
+      .filter(goal => goal.status === 'in-progress')
+      .map(goal => {
+        const sortedSections = goal.sections.sort((a, b) => a.order - b.order);
+        let nextTask: GoalTask | null = null;
+        let currentSection: GoalSection | null = null;
+
+        for (const section of sortedSections) {
+            if (section.status !== 'completed') {
+                currentSection = section;
+                for (const task of section.tasks.sort((a,b) => a.order - b.order)) {
+                    if (!task.completed) {
+                        nextTask = task;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        
+        const totalTasks = goal.sections.reduce((acc, s) => acc + s.tasks.length, 0);
+        const completedTasks = goal.sections.reduce((acc, s) => acc + s.tasks.filter(t => t.completed).length, 0);
+        const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+        return {
+          ...goal,
+          nextTask,
+          currentSection,
+          progress,
+          assignee: familyMembers.find(m => m.id === goal.assigneeId)
+        };
+      });
+  }, [goals, familyMembers]);
+
 
   if (loading) {
     return (
@@ -312,6 +351,47 @@ export default function Home() {
         toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
     }
   };
+
+  const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
+    let newSections = goal.sections.map(section => {
+        if (section.id === sectionId) {
+            const newTasks = section.tasks.map(task => {
+                if (task.id === taskId) {
+                    return { ...task, completed: !task.completed };
+                }
+                return task;
+            });
+            return { ...section, tasks: newTasks };
+        }
+        return section;
+    });
+
+    const checkAndUnlockSections = (sections: GoalSection[]): GoalSection[] => {
+        const sortedSections = [...sections].sort((a,b) => a.order - b.order);
+        let allPreviousCompleted = true;
+
+        return sortedSections.map((section, index) => {
+            if (index === 0) { // First section is always unlocked
+                section.status = section.tasks.every(t => t.completed) ? 'completed' : 'unlocked';
+            } else {
+                 if (allPreviousCompleted && section.status === 'locked') {
+                    section.status = 'unlocked';
+                }
+                if (section.status === 'unlocked' && section.tasks.every(t => t.completed)) {
+                    section.status = 'completed';
+                }
+            }
+            allPreviousCompleted = section.status === 'completed';
+            return section;
+        });
+    };
+    
+    newSections = checkAndUnlockSections(newSections);
+
+    const isGoalComplete = newSections.every(s => s.status === 'completed');
+
+    await updateGoal(goal.id, { sections: newSections, status: isGoalComplete ? 'completed' : 'in-progress' });
+};
 
 
   return (
@@ -495,6 +575,51 @@ export default function Home() {
                 </Card>
             </Link>
         </div>
+      
+      <Card className="shadow-lg bg-gradient-to-br from-indigo-500 to-blue-600 text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Target /> Yol Haritaları</CardTitle>
+          <CardDescription className="text-white/80">Aktif hedefler ve sıradaki adımlar.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {activeGoals.length > 0 ? (
+            activeGoals.map(goal => (
+              <div key={goal.id} className="p-3 bg-white/20 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <Link href={`/goals/${goal.id}`} className="font-bold hover:underline">{goal.title}</Link>
+                    <p className="text-sm text-white/80">{goal.assignee?.name}</p>
+                  </div>
+                  <Progress value={goal.progress} className="w-24 h-2 bg-white/30" indicatorClassName="bg-white" />
+                </div>
+                {goal.nextTask ? (
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-3">
+                        <Checkbox
+                            id={`goal-task-${goal.nextTask.id}`}
+                            checked={false}
+                            onCheckedChange={() => handleGoalTaskToggle(goal, goal.currentSection!.id, goal.nextTask!.id)}
+                            className="border-white text-white ring-offset-background data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
+                        />
+                        <div>
+                             <label htmlFor={`goal-task-${goal.nextTask.id}`} className="font-semibold cursor-pointer text-sm">{goal.nextTask.title}</label>
+                             <p className="text-xs text-white/80">Sıradaki Adım: {goal.currentSection?.title}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="mt-2 text-sm text-center font-semibold text-green-300">🎉 Tüm hedefler tamamlandı!</p>
+                )}
+              </div>
+            ))
+          ) : (
+            <Link href="/goals" className="block text-center py-8 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+              <Target className="mx-auto h-8 w-8 text-white/80" />
+              <p className="mt-2 text-sm text-white/90 font-semibold">Aktif yol haritası yok.</p>
+              <p className="text-xs text-white/80">Yeni bir hedef oluşturmak için tıkla.</p>
+            </Link>
+          )}
+        </CardContent>
+      </Card>
+
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">

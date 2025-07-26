@@ -38,9 +38,13 @@ const CircularProgress = ({ progress }: { progress: number }) => {
                     className="transition-all duration-300"
                 ></circle>
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary">
-                {Math.round(progress)}%
-            </span>
+            {progress < 100 ? (
+                 <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary">
+                    {Math.round(progress)}%
+                </span>
+            ) : (
+                 <Check className="h-5 w-5 absolute inset-0 m-auto text-primary"/>
+            )}
         </div>
     );
 };
@@ -76,41 +80,31 @@ export default function GoalDetailClient() {
             return section;
         });
 
-        // Check for unlocks *after* toggling the task
-        const originalSections = goal.sections;
-        newSections = checkAndUnlockSections(newSections, originalSections);
+        const checkAndUnlockSections = (sections: GoalSection[]): GoalSection[] => {
+            const sortedSections = [...sections].sort((a,b) => a.order - b.order);
+            let allPreviousCompleted = true;
 
-        const updatedGoal = { ...goal, sections: newSections };
-        await updateGoal(goalId, { sections: newSections });
-        setGoal(updatedGoal); // Optimistic update
-    };
-
-    const checkAndUnlockSections = (sections: GoalSection[], originalSections: GoalSection[]): GoalSection[] => {
-        const sortedSections = [...sections].sort((a,b) => a.order - b.order);
-        let allPreviousCompleted = true;
-
-        return sortedSections.map((section, index) => {
-            const originalSection = originalSections.find(s => s.id === section.id);
-            if (!originalSection) return section;
-
-            if (index === 0) { // First section is always unlocked
-                section.status = section.tasks.every(t => t.completed) ? 'completed' : 'unlocked';
+            return sortedSections.map((section, index) => {
+                if (index === 0) { // First section is always unlocked
+                    section.status = section.tasks.every(t => t.completed) ? 'completed' : 'unlocked';
+                } else {
+                    if (allPreviousCompleted && section.status === 'locked') {
+                        toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
+                        section.status = 'unlocked';
+                    }
+                    if (section.status === 'unlocked' && section.tasks.every(t => t.completed)) {
+                        section.status = 'completed';
+                    }
+                }
                 allPreviousCompleted = section.status === 'completed';
                 return section;
-            }
+            });
+        };
 
-            if (allPreviousCompleted && originalSection.status === 'locked') {
-                toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
-                section.status = 'unlocked';
-            }
-            
-            if (section.status === 'unlocked' && section.tasks.every(t => t.completed)) {
-                section.status = 'completed';
-            }
+        newSections = checkAndUnlockSections(newSections);
+        const isGoalComplete = newSections.every(s => s.status === 'completed');
 
-            allPreviousCompleted = section.status === 'completed';
-            return section;
-        });
+        await updateGoal(goalId, { sections: newSections, status: isGoalComplete ? 'completed' : 'in-progress' });
     };
 
     if (!goal) {
@@ -146,11 +140,6 @@ export default function GoalDetailClient() {
                                     <div className="flex items-center gap-4 w-full">
                                         {isLocked ? (
                                             <Lock className="w-8 h-8 text-muted-foreground" />
-                                        ) : section.status === 'completed' ? (
-                                            <div className="relative size-10 flex items-center justify-center">
-                                                <CircularProgress progress={100} />
-                                                <Check className="h-5 w-5 absolute text-primary"/>
-                                            </div>
                                         ) : (
                                             <CircularProgress progress={progress} />
                                         )}
