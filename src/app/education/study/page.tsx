@@ -139,21 +139,23 @@ export default function StudyPage() {
                                      const Icon = categoryIcons[assignment.subject] || BookCopy;
                                     return (
                                         <AccordionItem key={assignment.id} value={assignment.id}>
-                                            <AccordionTrigger>
-                                                <div className="flex items-center gap-4 flex-grow">
-                                                    <Checkbox 
-                                                        checked={assignment.status === 'completed'} 
-                                                        onCheckedChange={() => handleStatusChange(assignment)}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="size-5"
-                                                    />
-                                                    <div className="text-left">
-                                                        <p className={cn("font-semibold", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</p>
-                                                        <p className="text-sm text-muted-foreground">{assignment.subject}</p>
+                                            <div className="flex items-center gap-4 w-full">
+                                                <Checkbox 
+                                                    id={`checkbox-${assignment.id}`}
+                                                    checked={assignment.status === 'completed'} 
+                                                    onCheckedChange={() => handleStatusChange(assignment)}
+                                                    className="size-5"
+                                                />
+                                                <AccordionTrigger className="flex-grow">
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <div className="text-left">
+                                                            <p className={cn("font-semibold", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</p>
+                                                            <p className="text-sm text-muted-foreground">{assignment.subject}</p>
+                                                        </div>
+                                                        {getStatusBadge(assignment)}
                                                     </div>
-                                                </div>
-                                                {getStatusBadge(assignment)}
-                                            </AccordionTrigger>
+                                                </AccordionTrigger>
+                                            </div>
                                             <AccordionContent>
                                                 <div className="pl-10 space-y-4">
                                                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -195,4 +197,3 @@ export default function StudyPage() {
     </div>
   );
 }
-
