@@ -39,9 +39,10 @@ const formSchema = z.object({
 type NewGoalFormProps = {
   familyMembers: FamilyMember[];
   onCreate: (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status' | 'sections'> & { sections: Omit<GoalSection, 'id'|'status'|'tasks'>[] & { tasks: Omit<GoalTask, 'id'|'completed'>[] }[] }) => void;
+  initialData?: Goal | null;
 };
 
-export function NewGoalForm({ familyMembers, onCreate }: NewGoalFormProps) {
+export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,15 +64,43 @@ export function NewGoalForm({ familyMembers, onCreate }: NewGoalFormProps) {
   const sectionCount = form.watch("sectionCount");
 
   React.useEffect(() => {
-    const currentCount = form.getValues('sectionNames').length;
+    const currentFields = form.getValues('sectionNames') || [];
+    const currentCount = currentFields.length;
     if (sectionCount > 0 && sectionCount !== currentCount) {
       const newFields = Array.from({ length: sectionCount }, (_, i) => {
-        return fields[i] || { name: `Bölüm ${i + 1}` };
+        return currentFields[i] || { name: `Bölüm ${i + 1}` };
       });
       replace(newFields);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sectionCount]);
+  }, [sectionCount, replace, form]);
+
+  React.useEffect(() => {
+    if (initialData) {
+        form.reset({
+            title: initialData.title,
+            description: initialData.description,
+            assigneeId: initialData.assigneeId,
+            sectionCount: initialData.sections.length,
+            sectionNames: initialData.sections.sort((a,b) => a.order - b.order).map(s => ({ name: s.title })),
+            // Note: Automatic generation fields might not map perfectly back.
+            // This assumes a certain structure was used to create them.
+            totalUnits: initialData.sections.flatMap(s => s.tasks).length,
+            tasksPerSection: initialData.sections[0]?.tasks.length || 1,
+            unitName: 'görev'
+        });
+    } else {
+        form.reset({
+          title: "",
+          description: "",
+          assigneeId: undefined,
+          totalUnits: 100,
+          unitName: "sayfa",
+          sectionCount: 10,
+          tasksPerSection: 1,
+          sectionNames: Array.from({ length: 10 }, (_, i) => ({ name: `Bölüm ${i + 1}` })),
+        });
+    }
+  }, [initialData, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const totalTasks = values.sectionCount * values.tasksPerSection;
@@ -247,7 +276,7 @@ export function NewGoalForm({ familyMembers, onCreate }: NewGoalFormProps) {
             </div>
         </ScrollArea>
         <div className="pt-4 border-t">
-            <Button type="submit" className="w-full">Yol Haritasını Oluştur</Button>
+            <Button type="submit" className="w-full">{initialData ? "Değişiklikleri Kaydet" : "Yol Haritasını Oluştur"}</Button>
         </div>
       </form>
     </Form>

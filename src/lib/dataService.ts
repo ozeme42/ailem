@@ -540,7 +540,36 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
     };
     return addDoc(collection(db, 'goals'), newGoal);
 };
-export const updateGoal = (id: string, data: Partial<Omit<Goal, 'id'>>) => updateDoc(doc(db, 'goals', id), data);
+
+export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'familyId' | 'creatorId' | 'createdAt'>>) => {
+    const goalRef = doc(db, 'goals', id);
+
+    // Reconstruct sections if they are part of the update, ensuring IDs are preserved if possible
+    if (data.sections) {
+        const originalGoalSnap = await getDoc(goalRef);
+        const originalGoal = originalGoalSnap.data() as Goal;
+
+        data.sections = data.sections.map((section, index) => {
+            const originalSection = originalGoal.sections.find(s => s.order === index + 1);
+            return {
+                ...section,
+                id: originalSection?.id || Date.now().toString() + index,
+                status: originalSection?.status || (index === 0 ? 'unlocked' : 'locked'),
+                tasks: section.tasks.map((task, taskIndex) => {
+                    const originalTask = originalSection?.tasks.find(t => t.order === taskIndex + 1);
+                    return {
+                        ...task,
+                        id: originalTask?.id || Date.now().toString() + index + taskIndex,
+                        completed: originalTask?.completed || false,
+                    };
+                })
+            };
+        });
+    }
+
+    return updateDoc(goalRef, data);
+};
+
 export const deleteGoal = (id: string) => deleteDoc(doc(db, 'goals', id));
 
 
