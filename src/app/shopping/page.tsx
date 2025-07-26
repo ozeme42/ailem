@@ -351,30 +351,31 @@ export default function ShoppingPage() {
   if (selectedList) {
      const Icon = listIcons[selectedList.icon as keyof typeof listIcons] || ShoppingCart;
      return (
-        <div>
-          <PageHeader title={selectedList.name}>
-            <div className='flex items-center gap-2'>
-              <Button variant="ghost" onClick={() => setSelectedList(null)}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Geri
-              </Button>
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                          <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>İptal</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
+        <div className={cn("p-4 rounded-xl", selectedListColor)}>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
+                 <div className='flex items-center gap-2'>
+                  <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Geri
+                  </Button>
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
+                              <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>İptal</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+                </div>
             </div>
-          </PageHeader>
             <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
                 <form onSubmit={handleAddItem} className="flex gap-2 relative">
                     <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
@@ -450,27 +451,30 @@ export default function ShoppingPage() {
   if (selectedNoteList) {
      const Icon = listIcons[selectedNoteList.icon as keyof typeof listIcons] || Notebook;
      return (
-        <div>
-          <PageHeader title={selectedNoteList.name}>
-            <div className='flex items-center gap-2'>
-              <Button variant="ghost" onClick={() => setSelectedNoteList(null)}><ArrowLeft className="h-5 w-5 mr-2" /> Geri</Button>
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitleComponent>"{selectedNoteList.name}" defterini sil?</AlertDialogTitleComponent>
-                          <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>İptal</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => { deleteShoppingNoteList(selectedNoteList.id); setSelectedNoteList(null); }}>Sil</AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
+        <div className={cn("p-4 rounded-xl", selectedListColor)}>
+           <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-white">{selectedNoteList.name}</h1>
+              <div className='flex items-center gap-2'>
+                <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedNoteList(null)}>
+                  <ArrowLeft className="h-5 w-5 mr-2" /> Geri
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitleComponent>"{selectedNoteList.name}" defterini sil?</AlertDialogTitleComponent>
+                            <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => { deleteShoppingNoteList(selectedNoteList.id); setSelectedNoteList(null); }}>Sil</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
-          </PageHeader>
           <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
               <form onSubmit={handleAddNote} className="flex items-start gap-2">
                   <Textarea placeholder="Yeni not..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={1} className="flex-grow" />
