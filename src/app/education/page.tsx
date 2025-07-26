@@ -123,7 +123,6 @@ export default function EducationPage() {
     setIsAssignDialogOpen(true);
   };
 
-  const assignedTests = tests.filter(t => t.status === 'Atandı');
   const completedTests = tests.filter(t => t.status !== 'Atandı');
 
   const getStatusBadgeClasses = (status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi') => {
@@ -146,6 +145,51 @@ export default function EducationPage() {
       successRate: successRate,
     }
   }, [completedTests]);
+  
+  const assignedTestsGrouped = React.useMemo(() => {
+    const assigned = tests.filter(t => t.status === 'Atandı');
+    
+    const groups: {
+        quickTests: Test[];
+        exams: Test[];
+        banks: { bank: QuestionBank; tests: Test[], completedTopicCount: number, totalTopicCount: number }[];
+    } = { quickTests: [], exams: [], banks: [] };
+
+    assigned.forEach(test => {
+        if (test.sourceType === 'quick') {
+            groups.quickTests.push(test);
+        } else if (test.sourceType === 'exam') {
+            groups.exams.push(test);
+        } else if (test.sourceType === 'bank' && test.sourceId) {
+            let bankGroup = groups.banks.find(b => b.bank.id === test.sourceId);
+            if (!bankGroup) {
+                const bankDetails = questionBanks.find(b => b.id === test.sourceId);
+                if (bankDetails) {
+                    const allBankTests = tests.filter(t => t.sourceId === bankDetails.id);
+                    const completedTopicIds = new Set(allBankTests.filter(t => t.status === 'Değerlendirildi').map(t => t.topicId));
+                    const totalTopics = bankDetails.subjects.reduce((acc, s) => acc + s.topics.length, 0);
+
+                    bankGroup = { 
+                        bank: bankDetails, 
+                        tests: [], 
+                        completedTopicCount: completedTopicIds.size, 
+                        totalTopicCount: totalTopics 
+                    };
+                    groups.banks.push(bankGroup);
+                }
+            }
+            if (bankGroup) {
+                bankGroup.tests.push(test);
+            }
+        }
+    });
+
+    return groups;
+}, [tests, questionBanks, practiceExams]);
+
+const totalAssignedCount = assignedTestsGrouped.quickTests.length + assignedTestsGrouped.exams.length + assignedTestsGrouped.banks.reduce((acc, b) => acc + b.tests.length, 0);
+
+
 
   const parseAndFormatDate = (dateString?: string) => {
     if (!dateString) {
@@ -267,48 +311,62 @@ export default function EducationPage() {
 
       <Tabs defaultValue="assignments" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="assignments">Aktif Ödevler ({assignedTests.length})</TabsTrigger>
+          <TabsTrigger value="assignments">Aktif Ödevler ({totalAssignedCount})</TabsTrigger>
           <TabsTrigger value="results">Tamamlananlar ({completedTests.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="assignments">
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-               {assignedTests.length > 0 ? assignedTests.map(test => {
-                  const startDate = parseAndFormatDate(test.assignedDate);
-                  const endDate = parseAndFormatDate(test.dueDate);
-                  return (
-                    <Card key={test.id} className="flex flex-col">
+        <TabsContent value="assignments" className="mt-4 space-y-6">
+            {totalAssignedCount > 0 ? (
+                <>
+                {assignedTestsGrouped.banks.length > 0 && (
+                    <div className="space-y-4">
+                    <h2 className="text-lg font-semibold text-muted-foreground">Soru Bankası Ödevleri</h2>
+                    {assignedTestsGrouped.banks.map(({ bank, tests, completedTopicCount, totalTopicCount }) => (
+                        <Card key={bank.id}>
                         <CardHeader>
-                            <CardDescription>{test.subject}</CardDescription>
-                            <CardTitle>{test.title}</CardTitle>
+                            <CardTitle>{bank.name}</CardTitle>
+                            <CardDescription>
+                                Bu soru bankasındaki {totalTopicCount} konudan {completedTopicCount} tanesi tamamlandı.
+                            </CardDescription>
+                            <Progress value={(completedTopicCount / totalTopicCount) * 100} className="mt-2 h-2" />
                         </CardHeader>
-                        <CardContent className="flex-grow flex items-center gap-4">
-                            <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/50">
-                                <BookOpen className="h-6 w-6 text-muted-foreground" />
-                                <span className="text-xs mt-1 text-muted-foreground">
-                                    {test.questionCount} Soru
-                                </span>
-                            </div>
-                            <div className="text-sm text-muted-foreground space-y-2 border-l pl-4">
-                                <p><span className="font-semibold text-foreground">Başlangıç:</span> {startDate.day} {startDate.month}</p>
-                                <p><span className="font-semibold text-foreground">Bitiş:</span> {endDate.day} {endDate.month}</p>
-                            </div>
-                            <div className="ml-auto text-center">
-                                <div className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-muted">
-                                    <Clock className="h-5 w-5 text-muted-foreground mr-1"/>
-                                    <span className="text-xl font-bold">{test.questionCount * 1.5}</span>
-                                </div>
-                                <span className="text-xs text-muted-foreground">DAKİKA</span>
-                            </div>
+                        <CardContent className="space-y-3">
+                            {tests.map(test => {
+                                const startDate = parseAndFormatDate(test.assignedDate);
+                                const endDate = parseAndFormatDate(test.dueDate);
+                                return <AssignmentCard key={test.id} test={test} startDate={startDate} endDate={endDate} />;
+                            })}
                         </CardContent>
-                        <CardFooter className="flex flex-col gap-2 items-stretch">
-                            <Link href={`/education/${test.id}`} className="w-full">
-                                <Button className="w-full bg-cyan-500 hover:bg-cyan-600">Sınav Giriş Ekranına Git</Button>
-                            </Link>
-                        </CardFooter>
-                    </Card>
-               )}) : <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Atanmış yeni test bulunmuyor.</CardContent></Card>}
-            </div>
+                        </Card>
+                    ))}
+                    </div>
+                )}
+
+                {assignedTestsGrouped.exams.length > 0 && (
+                    <div className="space-y-4">
+                    <h2 className="text-lg font-semibold text-muted-foreground">Deneme Sınavları</h2>
+                    {assignedTestsGrouped.exams.map(test => {
+                        const startDate = parseAndFormatDate(test.assignedDate);
+                        const endDate = parseAndFormatDate(test.dueDate);
+                        return <AssignmentCard key={test.id} test={test} startDate={startDate} endDate={endDate} />;
+                    })}
+                    </div>
+                )}
+
+                {assignedTestsGrouped.quickTests.length > 0 && (
+                    <div className="space-y-4">
+                    <h2 className="text-lg font-semibold text-muted-foreground">Hızlı Testler</h2>
+                    {assignedTestsGrouped.quickTests.map(test => {
+                        const startDate = parseAndFormatDate(test.assignedDate);
+                        const endDate = parseAndFormatDate(test.dueDate);
+                        return <AssignmentCard key={test.id} test={test} startDate={startDate} endDate={endDate} />;
+                    })}
+                    </div>
+                )}
+                </>
+            ) : (
+                <Card className="col-span-full"><CardContent className="p-8 text-center text-muted-foreground">Atanmış yeni test bulunmuyor.</CardContent></Card>
+            )}
         </TabsContent>
         
         <TabsContent value="results">
@@ -401,3 +459,40 @@ export default function EducationPage() {
     </>
   );
 }
+
+
+function AssignmentCard({ test, startDate, endDate }: { test: Test; startDate: { day: string; month: string }; endDate: { day: string; month: string }; }) {
+    return (
+        <Card className="flex flex-col bg-muted/30">
+            <CardHeader>
+                <CardDescription>{test.subject}</CardDescription>
+                <CardTitle>{test.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow flex items-center gap-4">
+                <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/50">
+                    <BookOpen className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs mt-1 text-muted-foreground">
+                        {test.questionCount} Soru
+                    </span>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-2 border-l pl-4">
+                    <p><span className="font-semibold text-foreground">Başlangıç:</span> {startDate.day} {startDate.month}</p>
+                    <p><span className="font-semibold text-foreground">Bitiş:</span> {endDate.day} {endDate.month}</p>
+                </div>
+                <div className="ml-auto text-center">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-muted">
+                        <Clock className="h-5 w-5 text-muted-foreground mr-1"/>
+                        <span className="text-xl font-bold">{test.questionCount * 1.5}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">DAKİKA</span>
+                </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-2 items-stretch">
+                <Link href={`/education/${test.id}`} className="w-full">
+                    <Button className="w-full bg-cyan-500 hover:bg-cyan-600">Sınav Giriş Ekranına Git</Button>
+                </Link>
+            </CardFooter>
+        </Card>
+    );
+}
+
