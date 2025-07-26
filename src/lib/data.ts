@@ -8,6 +8,12 @@ export interface User {
     familyId: string | null;
 }
 
+export interface ReadingGoals {
+    daily?: { pages?: number; books?: number };
+    weekly?: { pages?: number; books?: number };
+    monthly?: { pages?: number; books?: number };
+}
+
 export interface FamilyMember {
   id: string; // Using string for ID now
   name: string;
@@ -21,6 +27,7 @@ export interface FamilyMember {
   badges: string[];
   mood: 'happy' | 'excited' | 'focused' | 'playful' | 'tired' | 'stressed';
   status: 'online' | 'away' | 'offline';
+  readingGoals?: ReadingGoals;
 }
 
 export interface Subtask {
