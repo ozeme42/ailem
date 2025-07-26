@@ -864,7 +864,7 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
                            </CardContent>
                           <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); onEdit(book)}}><Edit className="h-4 w-4"/></Button>
-                              <AlertDialog onOpenChange={(e) => e.stopPropagation()}>
+                              <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                       <Button size="icon" variant="destructive" className="h-8 w-8" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                   </AlertDialogTrigger>
