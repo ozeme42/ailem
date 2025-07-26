@@ -11,7 +11,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { FamilyMember, Goal, GoalSection, GoalTask } from "@/lib/data";
+import type { FamilyMember, Goal } from "@/lib/data";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertTitle } from "./ui/alert";
@@ -36,14 +36,23 @@ const formSchema = z.object({
 
 type NewGoalFormProps = {
   familyMembers: FamilyMember[];
-  onCreate: (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status' | 'sections'> & { sections: Omit<GoalSection, 'id'|'status'|'tasks'>[] & { tasks: Omit<GoalTask, 'id'|'completed'>[] }[] }) => void;
+  onCreate: (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status'>) => void;
   initialData?: Goal | null;
 };
 
 export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+        title: initialData.title,
+        description: initialData.description,
+        assigneeId: initialData.assigneeId,
+        sectionCount: initialData.sections.length,
+        sections: initialData.sections.map(s => ({ title: s.title, taskCount: s.tasks.length })),
+        // These are not directly editable for now, but need defaults
+        totalUnits: initialData.sections.reduce((acc, s) => acc + s.tasks.length, 100), // Approximate
+        unitName: 'Birim',
+    } : {
       title: "",
       description: "",
       totalUnits: 100,
@@ -67,64 +76,49 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   React.useEffect(() => {
     const currentSections = form.getValues('sections');
     const newSections = Array.from({ length: sectionCount || 0 }, (_, i) => {
-      return currentSections[i] || { title: `Bölüm ${i + 1}`, taskCount: 10 };
+      return currentSections[i] || { title: `Bölüm ${i + 1}`, taskCount: 5 };
     });
     replace(newSections);
   }, [sectionCount, replace, form]);
-
-  React.useEffect(() => {
-    if (initialData) {
-        // Since editing is complex with this auto-generation logic, we will reset to a clean slate.
-        // A more advanced implementation might try to reverse-engineer the form state from the data.
-        // For now, we will just load the main details.
-        form.reset({
-            title: initialData.title,
-            description: initialData.description,
-            assigneeId: initialData.assigneeId,
-            // Resetting auto-generation fields as they are not easily reversible
-            totalUnits: 100,
-            unitName: 'sayfa',
-            sectionCount: initialData.sections.length,
-            sections: initialData.sections.map(s => ({ title: s.title, taskCount: s.tasks.length }))
-        });
-    }
-  }, [initialData, form]);
-
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     let unitTracker = 0;
 
     const finalSections = values.sections.map((section, sectionIndex) => {
-        // Calculate units for this specific section, distributing the remainder
-        const currentSectionUnits = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
-        const unitsPerTask = section.taskCount > 0 ? currentSectionUnits / section.taskCount : 0;
+      const currentSectionUnits = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
+      const unitsPerTask = section.taskCount > 0 ? currentSectionUnits / section.taskCount : 0;
+      
+      const tasks = Array.from({ length: section.taskCount }, (_, taskIndex) => {
+          const startUnit = Math.floor(unitTracker) + 1;
+          unitTracker += unitsPerTask;
+          const endUnit = Math.round(unitTracker);
+          
+          return {
+              title: `${startUnit}-${endUnit} ${values.unitName} tamamla`,
+              order: taskIndex + 1,
+              id: Date.now().toString() + sectionIndex + taskIndex + 't', // Temp ID
+              completed: false,
+          };
+      });
 
-        const tasks = Array.from({ length: section.taskCount }, (_, taskIndex) => {
-            const startUnit = Math.floor(unitTracker) + 1;
-            unitTracker += unitsPerTask;
-            const endUnit = Math.floor(unitTracker);
-            
-            return {
-                title: `${startUnit}-${endUnit}. ${values.unitName} tamamla`,
-                order: taskIndex + 1,
-            };
-        });
-
-        return {
-            title: section.title,
-            order: sectionIndex + 1,
-            tasks: tasks,
-        };
+      return {
+          title: section.title,
+          order: sectionIndex + 1,
+          id: Date.now().toString() + sectionIndex + 's', // Temp ID
+          status: sectionIndex === 0 ? 'unlocked' : 'locked',
+          tasks: tasks,
+      };
     });
-
+    
     const goalData = {
         title: values.title,
         description: values.description,
         assigneeId: values.assigneeId,
+        creatorId: '', // Will be set in dataService
         sections: finalSections,
     };
 
-    onCreate(goalData as any);
+    onCreate(goalData as Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status'>);
   }
 
   return (
@@ -203,7 +197,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
                          const sectionUnitCount = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
                          return (
                             <Card key={sectionField.id} className="p-4">
-                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                                     <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
                                         <FormItem className="sm:col-span-2"><FormLabel>Bölüm {sectionIndex + 1} Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
