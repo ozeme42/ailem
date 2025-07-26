@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
@@ -87,7 +87,13 @@ export default function EducationPage() {
     const unsubTests = onTestsUpdate((allTests) => {
         const studentTests = allTests
             .filter(t => t.studentId === selectedStudent.id)
-            .sort((a,b) => compareDesc(parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }), parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr })));
+            .sort((a,b) => {
+                try {
+                    return compareDesc(parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }), parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }));
+                } catch (e) {
+                    return 0; // Return neutral if dates are invalid
+                }
+            });
         setTests(studentTests);
     });
     const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
@@ -202,6 +208,12 @@ export default function EducationPage() {
   return (
     <>
       <PageHeader title="Eğitim & Sınav 🎓">
+         <Link href="/education/mistake-pool">
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                <NotebookText className="mr-2 h-4 w-4" />
+                Yanlış Havuzu
+            </Button>
+        </Link>
          <Link href="/education/management">
             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Settings className="mr-2 h-4 w-4" />

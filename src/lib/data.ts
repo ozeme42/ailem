@@ -171,7 +171,7 @@ export interface Test {
   assignedDate: string;
   dueDate: string;
   status: 'Atandı' | 'Çözüldü' | 'Değerlendirildi';
-  sourceType: 'quick' | 'bank' | 'exam';
+  sourceType: 'quick' | 'bank' | 'exam' | 'mistake';
   gradingType?: GradingType;
   sourceId?: string;
   topicId?: string;
@@ -185,6 +185,7 @@ export interface Test {
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
+  mistakeIds?: string[];
 }
 
 export interface Topic {
@@ -278,6 +279,18 @@ export interface ShoppingNoteList {
 
 
 // This data is now only for initial setup
+// ... (rest of the initial data remains the same)
+export interface Mistake {
+    id: string;
+    familyId: string;
+    creatorId: string;
+    imageUrl: string;
+    subject: string;
+    topic: string;
+    createdAt: string; // ISO date string
+}
+// This data is now only for initial setup
+// ... (rest of the initial data remains the same)
 export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
     {
         title: "Menemen",
