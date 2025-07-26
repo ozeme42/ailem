@@ -26,6 +26,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import { BookDetailDialog } from "@/components/book-detail-dialog";
 
 const familyXpChartConfig = {
   xp: { label: "XP", },
@@ -77,6 +78,7 @@ export default function Home() {
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
   const [books, setBooks] = React.useState<Book[]>([]);
+  const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
 
 
   React.useEffect(() => {
@@ -288,8 +290,8 @@ export default function Home() {
       
         <div className="flex flex-col gap-2">
             <div className="grid grid-cols-2">
-                <Link href="/shopping" className="group block">
-                    <div className="flex flex-col p-4 rounded-l-xl shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
+                <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
+                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
                             {shoppingSummary.totalPending > 0 ? (
@@ -312,8 +314,8 @@ export default function Home() {
                         <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block">
-                    <div className="flex flex-col p-4 rounded-r-xl shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
+                <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
+                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
                         <div className="space-y-1 md:space-y-2">
@@ -372,7 +374,7 @@ export default function Home() {
             </Link>
         </div>
 
-       <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
+        <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white md:bg-card md:text-card-foreground">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
@@ -390,7 +392,7 @@ export default function Home() {
                     <div className="overflow-x-auto pb-4 -mb-4">
                         <div className="flex flex-nowrap gap-4">
                             {latestBooks.map(book => (
-                               <Link key={book.id} href="/library/archive" className="group block w-24 sm:w-32 shrink-0">
+                               <div key={book.id} onClick={() => setViewingBook(book)} className="group block w-24 sm:w-32 shrink-0 cursor-pointer">
                                   <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
                                     <Image 
                                       src={book.image || `https://placehold.co/300x450.png`} 
@@ -403,7 +405,7 @@ export default function Home() {
                                   </Card>
                                   <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
                                   <p className="text-xs text-white/80 md:text-muted-foreground truncate">{book.author}</p>
-                               </Link>
+                               </div>
                             ))}
                         </div>
                     </div>
@@ -527,6 +529,12 @@ export default function Home() {
                 )}
             </DialogContent>
         </Dialog>
+        
+        <BookDetailDialog 
+            book={viewingBook} 
+            isOpen={!!viewingBook} 
+            onOpenChange={(open) => {if(!open) setViewingBook(null)}}
+        />
     </div>
   );
 }

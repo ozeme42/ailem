@@ -30,6 +30,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
+import { BookDetailDialog } from '@/components/book-detail-dialog';
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -299,6 +300,7 @@ export default function ArchiveClient() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [viewingBook, setViewingBook] = useState<Book | null>(null);
   const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -625,10 +627,10 @@ export default function ArchiveClient() {
           </div>
 
           <TabsContent value="adults" className="mt-6 flex-grow overflow-y-auto">
-              <BookShelf books={adultBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
+              <BookShelf books={adultBooks} onViewDetails={setViewingBook} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
           </TabsContent>
           <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
-              <BookShelf books={childrenBooks} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
+              <BookShelf books={childrenBooks} onViewDetails={setViewingBook} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
           </TabsContent>
         </Tabs>
       ) : (
@@ -679,6 +681,13 @@ export default function ArchiveClient() {
            </Card>
         </div>
       )}
+
+      {/* View Book Details Dialog */}
+      <BookDetailDialog 
+        book={viewingBook} 
+        isOpen={!!viewingBook}
+        onOpenChange={(open) => {if(!open) setViewingBook(null)}}
+      />
 
 
       {/* Add/Edit Book Dialog */}
@@ -785,7 +794,7 @@ export default function ArchiveClient() {
 }
 
 // BookShelf COMPONENT
-function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void, onAddToLibrary: (bookId: string, memberId: string) => void, familyMembers: any[] }) {
+function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onViewDetails }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void, onAddToLibrary: (bookId: string, memberId: string) => void, familyMembers: any[], onViewDetails: (book: Book) => void }) {
   const shelves = useMemo(() => {
     const grouped: Record<string, Book[]> = {};
     books.forEach(book => {
@@ -821,7 +830,7 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers }: {
             <div className="overflow-x-auto pb-4 -mb-4">
                 <div className="flex flex-nowrap gap-4">
                     {shelfBooks.map(book => (
-                       <Card key={book.id} className="group relative w-40 sm:w-48 shrink-0 overflow-hidden flex flex-col">
+                       <Card key={book.id} onClick={() => onViewDetails(book)} className="group relative w-40 sm:w-48 shrink-0 overflow-hidden flex flex-col cursor-pointer">
                           <div className="relative">
                             <Image 
                               src={book.image || `https://placehold.co/300x450.png`} 
@@ -857,12 +866,12 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers }: {
                                 </DropdownMenu>
                            </CardContent>
                           <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                              <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => onEdit(book)}><Edit className="h-4 w-4"/></Button>
-                              <AlertDialog>
+                              <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); onEdit(book)}}><Edit className="h-4 w-4"/></Button>
+                              <AlertDialog onOpenChange={(e) => e.stopPropagation()}>
                                   <AlertDialogTrigger asChild>
-                                      <Button size="icon" variant="destructive" className="h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
+                                      <Button size="icon" variant="destructive" className="h-8 w-8" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                   </AlertDialogTrigger>
-                                  <AlertDialogContent>
+                                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                       <AlertDialogHeader><AlertDialogTitle>Kitabı Sil</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                                       <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(book.id)}>Sil</AlertDialogAction></AlertDialogFooter>
                                   </AlertDialogContent>
