@@ -1,4 +1,5 @@
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -85,6 +86,7 @@ export interface UserLibraryBook {
     status: BookReadingStatus;
     progress?: number; // 0-100 for 'reading' status
     addedAt: string; // ISO Date string
+    startedAt?: string; // ISO Date string, set when status becomes 'reading' for the first time
     finishedAt?: string; // ISO Date string, set when status becomes 'finished'
 }
 

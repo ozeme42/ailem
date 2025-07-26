@@ -1,5 +1,6 @@
 
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -128,7 +129,7 @@ export const addBookToMemberLibrary = async (familyId: string, memberId: string,
     });
 };
 
-export const updateUserBookStatus = async (familyId: string, memberId: string, bookId: string, newStatus: BookReadingStatus) => {
+export const updateUserBookStatus = async (familyId: string, memberId: string, bookId: string, newStatus: BookReadingStatus, progress?: number) => {
     const libraryId = `${familyId}_${memberId}`;
     const libraryRef = doc(db, 'userLibraries', libraryId);
     const librarySnap = await getDoc(libraryRef);
@@ -137,12 +138,15 @@ export const updateUserBookStatus = async (familyId: string, memberId: string, b
         const library = librarySnap.data() as UserLibrary;
         const updatedBooks = library.books.map(book => {
             if (book.bookId === bookId) {
-                 const updatedBook = { ...book, status: newStatus };
-                 if (newStatus === 'finished' && !book.finishedAt) {
-                    updatedBook.finishedAt = new Date().toISOString();
-                 }
-                 if (newStatus === 'reading' && book.status === 'to-read') {
-                    // Could also set a `startedAt` date here if needed
+                 const updatedBook: UserLibraryBook = { ...book, status: newStatus };
+                 if (newStatus === 'finished') {
+                    if (!book.finishedAt) updatedBook.finishedAt = new Date().toISOString();
+                    updatedBook.progress = 100;
+                 } else if (newStatus === 'reading') {
+                    if (!book.startedAt) updatedBook.startedAt = new Date().toISOString();
+                    if(progress !== undefined) updatedBook.progress = progress;
+                 } else if (newStatus === 'to-read') {
+                    updatedBook.progress = 0;
                  }
                  return updatedBook;
             }
