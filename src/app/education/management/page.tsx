@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
@@ -44,19 +45,222 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Türkçe': BookCopy,
     'Sosyal Bilgiler': Globe,
     'İngilizce': MessageSquare,
-    'Serbest Etkinlikler': Gamepad2
+    'Serbest Etkinlikler': Gamepad2,
+    'Diğer': Library
 };
 
-const categoryColors: { [key: string]: string } = {
-    'Genel Deneme Sınavları': 'border-yellow-500/80 text-yellow-600',
-    'Atanmış Ödevler': 'border-teal-500/80 text-teal-600',
-    'Matematik': 'border-red-500/80 text-red-600',
-    'Fen Bilimleri': 'border-orange-500/80 text-orange-600',
-    'Türkçe': 'border-yellow-400/80 text-yellow-500',
-    'Sosyal Bilgiler': 'border-cyan-500/80 text-cyan-600',
-    'İngilizce': 'border-blue-500/80 text-blue-600',
-    'Serbest Etkinlikler': 'border-purple-500/80 text-purple-600',
-};
+
+function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, onOpenEditExam, onOpenEditTest, onArchiveTest, onDeleteTest }) {
+    const { familyMembers } = useAuth();
+
+    const contentByCategory = React.useMemo(() => {
+        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[] } } = {};
+        
+        const allSubjects = new Set(questionBanks.flatMap(qb => qb.subjects.map(s => s.name)));
+        
+        Array.from(allSubjects).forEach(s => {
+            if (!categories[s]) categories[s] = { banks: [], exams: [], tests: [] };
+        });
+
+        if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [], tests: [] };
+        if (!categories['Atanmış Ödevler']) categories['Atanmış Ödevler'] = { banks: [], exams: [], tests: [] };
+        
+        questionBanks.forEach(bank => {
+            bank.subjects.forEach(subject => {
+                 if (categories[subject.name]) {
+                    if (!categories[subject.name].banks.find(b => b.id === bank.id)) {
+                        categories[subject.name].banks.push(bank);
+                    }
+                }
+            });
+        });
+
+        practiceExams.forEach(exam => {
+            if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [], tests: [] };
+            categories['Genel Deneme Sınavları'].exams.push(exam);
+        });
+        
+        tests.filter(t => t.status !== 'Değerlendirme Bekliyor' && !t.isArchived).forEach(test => {
+             if (!categories['Atanmış Ödevler']) categories['Atanmış Ödevler'] = { banks: [], exams: [], tests: [] };
+            categories['Atanmış Ödevler'].tests.push(test);
+        });
+
+
+        return categories;
+    }, [questionBanks, practiceExams, tests]);
+
+    return (
+        <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
+            {Object.entries(contentByCategory).map(([category, content]) => {
+                const Icon = categoryIcons[category] || BookCopy;
+                const totalCount = content.banks.length + content.exams.length + content.tests.length;
+                
+                if (totalCount === 0) return null;
+
+                return (
+                    <Card key={category}>
+                         <AccordionItem value={category} className="border-b-0">
+                            <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                    <Icon className="w-8 h-8" />
+                                    <div className="text-left">
+                                        <h3 className="text-lg font-semibold">{category}</h3>
+                                        <p className="text-sm text-muted-foreground">{totalCount} içerik bulundu</p>
+                                    </div>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-4 pt-0">
+                                <div className="space-y-3">
+                                    {content.banks.map(bank => (
+                                        <Card key={bank.id} className="p-3">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <p className="font-semibold">{bank.name}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {bank.subjects.length} Ders, {bank.subjects.reduce((acc, s) => acc + s.topics.length, 0)} Konu
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Button variant="ghost" size="icon" onClick={() => onOpenEditBank(bank)}><Edit className="w-4 h-4"/></Button>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                    {content.exams.map(exam => (
+                                        <Card key={exam.id} className="p-3">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <p className="font-semibold">{exam.name}</p>
+                                                     <p className="text-xs text-muted-foreground">
+                                                        {exam.subjects.length} Ders, {exam.subjects.reduce((acc, s) => acc + s.questionCount, 0)} Soru
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Button variant="ghost" size="icon" onClick={() => onOpenEditExam(exam)}><Edit className="w-4 h-4"/></Button>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                    {content.tests.map(test => {
+                                        const student = familyMembers.find(m => m.id === test.studentId);
+                                        return (
+                                            <Card key={test.id} className="p-3">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-semibold">{test.title}</p>
+                                                            <Badge variant={test.status === 'Sonuçlandı' ? 'default' : 'outline'}>
+                                                                {test.status}
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {student?.name || 'Bilinmeyen Öğrenci'} - Son Teslim: {test.dueDate}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        {test.status === 'Sonuçlandı' && (
+                                                            <Button variant="ghost" size="icon" onClick={() => onArchiveTest(test)} title="Arşivle">
+                                                                <Archive className="w-4 h-4 text-muted-foreground"/>
+                                                            </Button>
+                                                        )}
+                                                        <Button variant="ghost" size="icon" onClick={() => onOpenEditTest(test)}><Edit className="w-4 h-4"/></Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader><AlertDialogTitle>Ödevi sil?</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        )
+                                    })}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Card>
+                )
+            })}
+        </Accordion>
+    );
+}
+
+function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSubject }) {
+
+    const topicsBySubject = React.useMemo(() => {
+        const mapping: { [key: string]: any[] } = {};
+        subjects.forEach(s => mapping[s] = []);
+        questionBanks.forEach(bank => {
+            bank.subjects.forEach(subject => {
+                if (mapping[subject.name]) {
+                    subject.topics.forEach(topic => {
+                        if (!mapping[subject.name].some(t => t.name === topic.name)) {
+                             mapping[subject.name].push({ ...topic, bankName: bank.name, bankId: bank.id });
+                        }
+                    });
+                }
+            });
+        });
+        return mapping;
+    }, [subjects, questionBanks]);
+    
+    const handleEditTopic = (bankId) => {
+        const bank = questionBanks.find(b => b.id === bankId);
+        if (bank) {
+            onOpenEditBank(bank);
+        }
+    };
+
+    return (
+         <Accordion type="multiple" className="w-full space-y-4">
+            {subjects.map((subject) => {
+                const Icon = categoryIcons[subject] || BookCopy;
+                const topics = topicsBySubject[subject] || [];
+                return (
+                     <Card key={subject}>
+                         <AccordionItem value={subject} className="border-b-0">
+                            <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-3">
+                                        <Icon className="w-8 h-8" />
+                                        <div className="text-left">
+                                            <h3 className="text-lg font-semibold">{subject}</h3>
+                                            <p className="text-sm text-muted-foreground">{topics.length} konu</p>
+                                        </div>
+                                    </div>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                            <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive mr-2"><Trash2 className="w-4 h-4"/></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>Dersi Sil</AlertDialogTitle><AlertDialogDescription>"{subject}" dersini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteSubject(subject)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-4 pt-0">
+                                <div className="space-y-2">
+                                {topics.map(topic => (
+                                    <div key={`${topic.id}-${topic.bankId}`} className="flex justify-between items-center p-2 border rounded-md">
+                                        <div>
+                                            <p className="font-medium">{topic.name}</p>
+                                            <p className="text-xs text-muted-foreground">{topic.bankName}</p>
+                                        </div>
+                                        <Button variant="ghost" size="sm" onClick={() => handleEditTopic(topic.bankId)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
+                                    </div>
+                                ))}
+                                {topics.length === 0 && <p className="text-sm text-muted-foreground text-center p-4">Bu derse ait konu bulunamadı.</p>}
+                                </div>
+                            </AccordionContent>
+                         </AccordionItem>
+                    </Card>
+                );
+            })}
+         </Accordion>
+    );
+}
 
 
 export default function EducationManagementPage() {
@@ -102,6 +306,21 @@ export default function EducationManagementPage() {
     const handleCreateSubject = async (subjectName: string) => {
         const newSubjects = [...new Set([...availableSubjects, subjectName])];
         await updateSubjects(newSubjects);
+        toast({ title: "Yeni Ders Oluşturuldu" });
+    };
+
+    const handleDeleteSubject = async (subjectToDelete: string) => {
+        if (questionBanks.some(qb => qb.subjects.some(s => s.name === subjectToDelete))) {
+            toast({ variant: 'destructive', title: "Silme Hatası", description: "Bu dersi silemezsiniz çünkü bir soru bankasında kullanılıyor." });
+            return;
+        }
+         if (practiceExams.some(pe => pe.subjects.some(s => s.name === subjectToDelete))) {
+            toast({ variant: 'destructive', title: "Silme Hatası", description: "Bu dersi silemezsiniz çünkü bir deneme sınavında kullanılıyor." });
+            return;
+        }
+        const newSubjects = availableSubjects.filter(s => s !== subjectToDelete);
+        await updateSubjects(newSubjects);
+        toast({ variant: 'destructive', title: "Ders Silindi" });
     };
     
     const openEditBankDialog = (bank: QuestionBank) => {
@@ -140,15 +359,6 @@ export default function EducationManagementPage() {
         }
     };
 
-    const handleDeleteBank = async (bankId: string) => {
-        try {
-            await deleteQuestionBank(bankId);
-            toast({ title: "🗑️ Soru Bankası Silindi", variant: "destructive" });
-        } catch (error) {
-             toast({ title: "❌ Silme Hatası", variant: 'destructive'});
-        }
-    };
-
     const handleExamSubmit = async (examData: Omit<PracticeExam, 'id' | 'familyId'>, id?: string) => {
         try {
             if (id) {
@@ -162,15 +372,6 @@ export default function EducationManagementPage() {
             setIsExamDialogOpen(false);
         } catch (error) {
             toast({ title: "❌ Kaydetme Hatası", variant: 'destructive'});
-        }
-    };
-
-    const handleDeleteExam = async (examId: string) => {
-        try {
-            await deletePracticeExam(examId);
-            toast({ title: "🗑️ Deneme Sınavı Silindi", variant: "destructive" });
-        } catch (error) {
-            toast({ title: "❌ Silme Hatası", variant: 'destructive'});
         }
     };
 
@@ -234,42 +435,6 @@ export default function EducationManagementPage() {
             toast({ title: "❌ Değerlendirme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive' });
         }
     };
-    
-    const contentByCategory = React.useMemo(() => {
-        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[] } } = {};
-        
-        availableSubjects.forEach(s => {
-            if (!categories[s]) categories[s] = { banks: [], exams: [], tests: [] };
-        });
-        if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [], tests: [] };
-        if (!categories['Atanmış Ödevler']) categories['Atanmış Ödevler'] = { banks: [], exams: [], tests: [] };
-        if (!categories['Serbest Etkinlikler']) categories['Serbest Etkinlikler'] = { banks: [], exams: [], tests: [] };
-        
-        questionBanks.forEach(bank => {
-            bank.subjects.forEach(subject => {
-                if (categories[subject.name]) {
-                    if (!categories[subject.name].banks.find(b => b.id === bank.id)) {
-                        categories[subject.name].banks.push(bank);
-                    }
-                } else {
-                     if (!categories['Serbest Etkinlikler'].banks.find(b => b.id === bank.id)) {
-                        categories['Serbest Etkinlikler'].banks.push(bank);
-                    }
-                }
-            });
-        });
-
-        practiceExams.forEach(exam => {
-            categories['Genel Deneme Sınavları'].exams.push(exam);
-        });
-
-        // "Değerlendirme Bekliyor" ve arşivlenmiş olanlar bu listede gösterilmeyecek
-        tests.filter(t => t.status !== 'Değerlendirme Bekliyor' && !t.isArchived).forEach(test => {
-            categories['Atanmış Ödevler'].tests.push(test);
-        });
-
-        return categories;
-    }, [questionBanks, practiceExams, tests, availableSubjects]);
 
     return (
         <>
@@ -286,8 +451,8 @@ export default function EducationManagementPage() {
                             <DialogTitle>Ne Oluşturmak İstersiniz?</DialogTitle>
                         </DialogHeader>
                          <div className="grid grid-cols-2 gap-4 py-4">
-                            <Button variant="outline" className="h-24" onClick={() => setIsBankDialogOpen(true)}>Soru Bankası</Button>
-                            <Button variant="outline" className="h-24" onClick={() => setIsExamDialogOpen(true)}>Deneme Sınavı</Button>
+                            <Button variant="outline" className="h-24" onClick={() => { setEditingBank(null); setIsBankDialogOpen(true); }}>Soru Bankası</Button>
+                            <Button variant="outline" className="h-24" onClick={() => { setEditingExam(null); setIsExamDialogOpen(true); }}>Deneme Sınavı</Button>
                         </div>
                     </DialogContent>
                 </Dialog>
@@ -323,113 +488,32 @@ export default function EducationManagementPage() {
                 </Card>
             )}
 
-            <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
-                {Object.entries(contentByCategory).map(([category, content]) => {
-                    const Icon = categoryIcons[category] || BookCopy;
-                    const totalCount = content.banks.length + content.exams.length + content.tests.length;
-                    
-                    if (totalCount === 0) return null;
-
-                    return (
-                        <Card key={category}>
-                             <AccordionItem value={category} className="border-b-0">
-                                <AccordionTrigger className="p-4 hover:no-underline">
-                                    <div className="flex items-center gap-3">
-                                        <Icon className="w-8 h-8" />
-                                        <div className="text-left">
-                                            <h3 className="text-lg font-semibold">{category}</h3>
-                                            <p className="text-sm text-muted-foreground">{totalCount} içerik bulundu</p>
-                                        </div>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="p-4 pt-0">
-                                    <div className="space-y-3">
-                                        {content.banks.map(bank => (
-                                            <Card key={bank.id} className="p-3">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <p className="font-semibold">{bank.name}</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {bank.subjects.length} Ders, {bank.subjects.reduce((acc, s) => acc + s.topics.length, 0)} Konu
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Button variant="ghost" size="icon" onClick={() => openEditBankDialog(bank)}><Edit className="w-4 h-4"/></Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader><AlertDialogTitle>Soru bankasını sil?</AlertDialogTitle><AlertDialogDescription>"{bank.name}" kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteBank(bank.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        ))}
-                                        {content.exams.map(exam => (
-                                            <Card key={exam.id} className="p-3">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <p className="font-semibold">{exam.name}</p>
-                                                         <p className="text-xs text-muted-foreground">
-                                                            {exam.subjects.length} Ders, {exam.subjects.reduce((acc, s) => acc + s.questionCount, 0)} Soru
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Button variant="ghost" size="icon" onClick={() => openEditExamDialog(exam)}><Edit className="w-4 h-4"/></Button>
-                                                         <AlertDialog>
-                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader><AlertDialogTitle>Deneme sınavını sil?</AlertDialogTitle><AlertDialogDescription>"{exam.name}" kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        ))}
-                                        {content.tests.map(test => {
-                                            const student = familyMembers.find(m => m.id === test.studentId);
-                                            return (
-                                                <Card key={test.id} className="p-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="font-semibold">{test.title}</p>
-                                                                <Badge variant={test.status === 'Sonuçlandı' ? 'default' : 'outline'}>
-                                                                    {test.status}
-                                                                </Badge>
-                                                            </div>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {student?.name || 'Bilinmeyen Öğrenci'} - Son Teslim: {test.dueDate}
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            {test.status === 'Sonuçlandı' && (
-                                                                <Button variant="ghost" size="icon" onClick={() => handleArchiveTest(test)} title="Arşivle">
-                                                                    <Archive className="w-4 h-4 text-muted-foreground"/>
-                                                                </Button>
-                                                            )}
-                                                            <Button variant="ghost" size="icon" onClick={() => openEditTestDialog(test)}><Edit className="w-4 h-4"/></Button>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader><AlertDialogTitle>Ödevi sil?</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </div>
-                                                    </div>
-                                                </Card>
-                                            )
-                                        })}
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Card>
-                    )
-                })}
-            </Accordion>
+            <Tabs defaultValue="library" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="library">İçerik Kütüphanesi</TabsTrigger>
+                    <TabsTrigger value="curriculum">Ders ve Konu Yönetimi</TabsTrigger>
+                </TabsList>
+                <TabsContent value="library" className="mt-4">
+                    <ContentLibrary 
+                        questionBanks={questionBanks}
+                        practiceExams={practiceExams}
+                        tests={tests}
+                        onOpenEditBank={openEditBankDialog}
+                        onOpenEditExam={openEditExamDialog}
+                        onOpenEditTest={openEditTestDialog}
+                        onArchiveTest={handleArchiveTest}
+                        onDeleteTest={handleDeleteTest}
+                    />
+                </TabsContent>
+                <TabsContent value="curriculum" className="mt-4">
+                    <SubjectManagement 
+                        subjects={availableSubjects}
+                        questionBanks={questionBanks}
+                        onOpenEditBank={openEditBankDialog}
+                        onDeleteSubject={handleDeleteSubject}
+                    />
+                </TabsContent>
+            </Tabs>
             
             <Dialog open={isBankDialogOpen} onOpenChange={(open) => { if(!open) setEditingBank(null); setIsBankDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-2xl">

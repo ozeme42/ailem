@@ -15,6 +15,7 @@ import type { PracticeExam, GradingType } from "@/lib/data";
 import { AnswerKeyForm } from "./answer-key-form";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Combobox } from "./ui/combobox";
+import { useToast } from "@/hooks/use-toast";
 
 const subjectSchema = z.object({
   id: z.number(),
@@ -34,7 +35,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type NewPracticeExamFormProps = {
-    onSubmit: (data: Omit<PracticeExam, 'id'>, id?: string) => void;
+    onSubmit: (data: Omit<PracticeExam, 'id' | 'familyId'>, id?: string) => void;
     initialData?: PracticeExam | null;
     availableSubjects: string[];
     onSubjectCreated: (subject: string) => void;
@@ -42,6 +43,7 @@ type NewPracticeExamFormProps = {
 
 export function NewPracticeExamForm({ onSubmit, initialData, availableSubjects, onSubjectCreated }: NewPracticeExamFormProps) {
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
+  const { toast } = useToast();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -79,6 +81,14 @@ export function NewPracticeExamForm({ onSubmit, initialData, availableSubjects, 
   const subjectsValue = form.watch('subjects');
   const gradingType = form.watch('gradingType');
   const totalQuestions = subjectsValue.reduce((acc, s) => acc + (s.questionCount || 0), 0);
+  
+  const handleSubjectCreate = (name: string) => {
+    onSubjectCreated(name);
+    toast({
+      title: "Yeni Ders Oluşturuldu",
+      description: `"${name}" dersi genel ders listesine eklendi.`
+    })
+  }
 
   function handleFormSubmit(values: FormData) {
      if (values.gradingType !== 'auto') {
@@ -120,7 +130,7 @@ export function NewPracticeExamForm({ onSubmit, initialData, availableSubjects, 
                         options={subjectOptions}
                         value={field.value}
                         onChange={field.onChange}
-                        onCreate={onSubjectCreated}
+                        onCreate={handleSubjectCreate}
                         placeholder="Ders seç veya oluştur..."
                         notfoundText="Ders bulunamadı."
                         createText="Yeni ders oluştur:"

@@ -17,6 +17,7 @@ import type { QuestionBank } from "@/lib/data";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Combobox } from "./ui/combobox";
+import { useToast } from "@/hooks/use-toast";
 
 type AnswerKey = { [key: number]: string };
 
@@ -42,13 +43,14 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type NewQuestionBankFormProps = {
-    onSubmit: (data: Omit<QuestionBank, 'id'>, id?: string) => void;
+    onSubmit: (data: Omit<QuestionBank, 'id' | 'familyId'>, id?: string) => void;
     initialData?: QuestionBank | null;
     availableSubjects: string[];
     onSubjectCreated: (subject: string) => void;
 }
 
 export function NewQuestionBankForm({ onSubmit, initialData, availableSubjects, onSubjectCreated }: NewQuestionBankFormProps) {
+  const { toast } = useToast();
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -91,6 +93,14 @@ export function NewQuestionBankForm({ onSubmit, initialData, availableSubjects, 
     onSubmit({ ...values, subjects: cleanedSubjects }, initialData?.id);
   }
   
+  const handleSubjectCreate = (name: string) => {
+    onSubjectCreated(name);
+    toast({
+      title: "Yeni Ders Oluşturuldu",
+      description: `"${name}" dersi genel ders listesine eklendi.`
+    })
+  }
+
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
   return (
@@ -125,7 +135,7 @@ export function NewQuestionBankForm({ onSubmit, initialData, availableSubjects, 
                                 options={subjectOptions}
                                 value={field.value}
                                 onChange={field.onChange}
-                                onCreate={onSubjectCreated}
+                                onCreate={handleSubjectCreate}
                                 placeholder="Ders seç veya oluştur..."
                                 notfoundText="Ders bulunamadı."
                                 createText="Yeni ders oluştur:"
@@ -151,7 +161,7 @@ export function NewQuestionBankForm({ onSubmit, initialData, availableSubjects, 
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => append({ id: Date.now(), name: "Matematik", topics: [] })}
+            onClick={() => append({ id: Date.now(), name: "", topics: [] })}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Ders Ekle
