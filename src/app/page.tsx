@@ -281,7 +281,7 @@ export default function Home() {
         });
 
         for (const section of sortedSections) {
-            if (section.status !== 'completed') {
+          if (!section.tasks.every(t => t.completed)) {
                 currentSection = section;
                 for (const task of [...section.tasks].sort((a,b) => a.order - b.order)) {
                     if (!task.completed) {
@@ -295,12 +295,29 @@ export default function Home() {
         
         const overallProgress = (goal.totalUnits || 0) > 0 ? (completedUnits / goal.totalUnits!) * 100 : 0;
         
+        // Calculate current section progress
+        let sectionCompletedUnits = 0;
+        let sectionTotalUnits = 0;
+        if (currentSection) {
+            currentSection.tasks.forEach(task => {
+                const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
+                sectionTotalUnits += units;
+                if (task.completed) {
+                    sectionCompletedUnits += units;
+                }
+            });
+        }
+        const sectionProgress = sectionTotalUnits > 0 ? (sectionCompletedUnits / sectionTotalUnits) * 100 : 0;
+        
         return {
           ...goal,
           nextTask,
           currentSection,
           completedUnits,
           overallProgress,
+          sectionCompletedUnits,
+          sectionTotalUnits,
+          sectionProgress,
           assignee: familyMembers.find(m => m.id === goal.assigneeId)
         };
       });
@@ -386,20 +403,12 @@ export default function Home() {
         const allTasksCompleted = section.tasks.every((t) => t.completed);
         if (allTasksCompleted) {
             section.status = 'completed';
+        } else {
+            section.status = 'unlocked'; // Keep it unlocked if not all tasks are done
         }
     });
     
-    // Set next section to unlocked
-    const firstIncompleteIndex = newSections.findIndex(s => s.status !== 'completed');
-    if (firstIncompleteIndex > 0) {
-        const prevSection = newSections[firstIncompleteIndex - 1];
-        if(prevSection.status === 'completed') {
-            // newSections[firstIncompleteIndex].status = 'unlocked'; // Kilit sistemi kaldırıldı
-        }
-    }
-
-
-    const isGoalComplete = newSections.every((s) => s.status === 'completed');
+    const isGoalComplete = newSections.every((s) => s.tasks.every(t => t.completed));
     const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
 
     try {
@@ -582,10 +591,12 @@ export default function Home() {
                     <p className="font-bold">{goal.title}</p>
                     <p className="text-sm text-white/80">{goal.assignee?.name}</p>
                   </div>
-                  <div className="text-right text-xs">
-                     <p>{goal.completedUnits} / {goal.totalUnits}</p>
-                     <p>{goal.unitName}</p>
-                  </div>
+                   {goal.nextTask && (
+                        <div className="text-right text-xs shrink-0">
+                            <p className="font-semibold">{goal.currentSection?.title}</p>
+                            <p>Sıradaki Adım</p>
+                        </div>
+                    )}
                 </div>
                 
                  {goal.nextTask ? (
@@ -600,7 +611,6 @@ export default function Home() {
                                 />
                                 <div className="flex-grow">
                                     <label htmlFor={`goal-task-${goal.nextTask.id}`} className="font-semibold cursor-pointer text-sm">{goal.nextTask.title}</label>
-                                    <p className="text-xs text-white/80">Sıradaki Adım: {goal.currentSection?.title}</p>
                                 </div>
                             </div>
                          </div>
@@ -609,7 +619,16 @@ export default function Home() {
                     <p className="mt-2 text-sm text-center font-semibold text-green-300">🎉 Tüm hedefler tamamlandı!</p>
                 )}
 
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-4">
+                    {goal.currentSection && (
+                        <div>
+                            <div className="flex justify-between text-xs text-white/80 mb-1">
+                                <span>Bölüm İlerlemesi ({goal.sectionCompletedUnits}/{goal.sectionTotalUnits} {goal.unitName})</span>
+                                <span>{Math.round(goal.sectionProgress)}%</span>
+                            </div>
+                            <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
+                        </div>
+                    )}
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
                             <span>Genel İlerleme ({goal.completedUnits}/{goal.totalUnits} {goal.unitName})</span>
