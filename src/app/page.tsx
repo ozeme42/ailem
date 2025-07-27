@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday } from "date-fns";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
@@ -176,8 +177,12 @@ export default function Home() {
 
   const pendingTasksSummary = React.useMemo(() => {
     return tasks
-      .filter(task => !task.completed && task.category === 'Ev İşleri')
-      .sort((a, b) => compareAsc(parseISO(a.dueDate), b.dueDate))
+      .filter(task => !task.completed && ['Ev İşleri', 'Kişisel'].includes(task.category))
+      .sort((a, b) => {
+        if(a.recurrenceType === 'daily' && b.recurrenceType !== 'daily') return -1;
+        if(a.recurrenceType !== 'daily' && b.recurrenceType === 'daily') return 1;
+        return compareAsc(parseISO(a.dueDate), parseISO(b.dueDate))
+      })
       .map(task => ({
         ...task,
         assignee: familyMembers.find(m => m.id === task.assigneeId)
@@ -270,7 +275,6 @@ export default function Home() {
         let nextTask: GoalTask | null = null;
         let currentSection: GoalSection | null = null;
         
-        // Find the first section that is not fully completed
         for (const section of sortedSections) {
             if (!section.tasks.every(t => t.completed)) {
                 currentSection = section;
@@ -278,12 +282,10 @@ export default function Home() {
             }
         }
         
-        // If all sections are completed, something is wrong with the goal status, but we can fallback
         if (!currentSection && sortedSections.length > 0) {
             currentSection = sortedSections[sortedSections.length - 1];
         }
 
-        // Find the next task in the current section
         if (currentSection) {
             for (const task of [...currentSection.tasks].sort((a,b) => a.order - b.order)) {
                 if (!task.completed) {
@@ -293,7 +295,6 @@ export default function Home() {
             }
         }
         
-        // Calculate overall progress based on units
         let completedUnits = 0;
         (goal.sections || []).forEach(section => {
             section.tasks.forEach(task => {
@@ -305,7 +306,6 @@ export default function Home() {
         });
         const overallProgress = (goal.totalUnits || 0) > 0 ? (completedUnits / goal.totalUnits!) * 100 : 0;
         
-        // Calculate current section progress based on units
         let sectionCompletedUnits = 0;
         let sectionTotalUnits = 0;
         if (currentSection) {
@@ -385,6 +385,55 @@ export default function Home() {
         });
     } catch (error) {
         toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
+    }
+  };
+
+  const handleDailyTaskCompletion = async (task: Task, assignee: FamilyMember) => {
+    if (!familyId) return;
+    
+    const today = new Date();
+    const lastCompleted = task.lastCompletedDate ? parseISO(task.lastCompletedDate) : null;
+    
+    if (lastCompleted && isSameDay(today, lastCompleted)) {
+      toast({
+        title: "✋ Zaten Tamamlandı",
+        description: "Bu görevi bugün için zaten tamamladın.",
+      });
+      return;
+    }
+
+    try {
+      const xpChange = task.points;
+      const newXp = (assignee.xp || 0) + xpChange;
+      const newLevel = Math.floor(newXp / 1000) + 1;
+      let newStreak = task.streak || 0;
+
+      if (lastCompleted && isSameDay(subDays(today, 1), lastCompleted)) {
+        newStreak++; // Consecutive day
+      } else {
+        newStreak = 1; // Streak broken or first time
+      }
+
+      await updateTask(task.id, {
+        lastCompletedDate: today.toISOString(),
+        streak: newStreak,
+      });
+
+      await updateFamilyMemberInFamily(familyId, assignee.id, {
+        xp: newXp,
+        completedTasks: (assignee.completedTasks || 0) + 1,
+        level: newLevel,
+        streak: newStreak > (assignee.streak || 0) ? newStreak : assignee.streak,
+      });
+
+      await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
+
+      toast({
+        title: "🎉 Seri Devam Ediyor!",
+        description: `${assignee.name}, ${task.points} XP kazandın! Serin: ${newStreak}`,
+      });
+    } catch (error) {
+      toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
     }
   };
 
@@ -631,7 +680,7 @@ export default function Home() {
                     {goal.currentSection && (
                         <div>
                             <div className="flex justify-between text-xs text-white/80 mb-1">
-                                <span>{goal.currentSection.title} ({goal.sectionCompletedUnits}/{goal.sectionTotalUnits} {goal.unitName})</span>
+                                <span>{goal.currentSection.title}</span>
                                 <span>{Math.round(goal.sectionProgress)}%</span>
                             </div>
                             <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
@@ -639,7 +688,7 @@ export default function Home() {
                     )}
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>Genel İlerleme ({goal.completedUnits}/{goal.totalUnits} {goal.unitName})</span>
+                             <span>Genel İlerleme ({goal.completedUnits}/{goal.totalUnits} {goal.unitName})</span>
                             <span>{Math.round(goal.overallProgress)}%</span>
                         </div>
                         <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
@@ -666,28 +715,68 @@ export default function Home() {
           </CardHeader>
           <CardContent className="space-y-3">
             {pendingTasksSummary.length > 0 ? (
-              pendingTasksSummary.map(task => (
-                <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
-                  <Checkbox
-                    id={`home-task-${task.id}`}
-                    onCheckedChange={() => task.assignee && handleTaskCompletion(task, task.assignee)}
-                    className="border-white text-white ring-offset-white data-[state=checked]:bg-white data-[state=checked]:text-teal-600"
-                  />
-                  <div className="flex-grow">
-                    <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
-                    <p className="text-xs text-white/80">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
-                  </div>
-                  {task.assignee && (
-                     <div 
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
-                        style={{ backgroundColor: task.assignee.color, color: '#fff' }}
-                        title={task.assignee.name}
-                    >
-                        {task.assignee.name.charAt(0).toUpperCase()}
+              pendingTasksSummary.map(task => {
+                const isDaily = task.recurrenceType === 'daily';
+                const isCompletedToday = task.lastCompletedDate ? isToday(parseISO(task.lastCompletedDate)) : false;
+
+                if (isDaily) {
+                  return (
+                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
+                      <Button
+                        variant={isCompletedToday ? "ghost" : "default"}
+                        size="icon"
+                        className={cn(
+                          "w-12 h-12 rounded-full text-white flex-col",
+                          isCompletedToday 
+                            ? "bg-white/10 border-2 border-dashed border-white/50" 
+                            : "bg-white/30 hover:bg-white/40"
+                        )}
+                        onClick={() => task.assignee && handleDailyTaskCompletion(task, task.assignee)}
+                        disabled={isCompletedToday}
+                      >
+                        {isCompletedToday ? <Check /> : <Flame />}
+                        <span className="text-xs mt-0.5">{task.streak || 0}</span>
+                      </Button>
+                      <div className="flex-grow">
+                        <label className="font-semibold cursor-pointer">{task.title}</label>
+                        <p className="text-xs text-white/80">Günlük Görev</p>
+                      </div>
+                      {task.assignee && (
+                        <div 
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
+                          style={{ backgroundColor: task.assignee.color, color: '#fff' }}
+                          title={task.assignee.name}
+                        >
+                          {task.assignee.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))
+                  );
+                }
+
+                return (
+                  <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
+                    <Checkbox
+                      id={`home-task-${task.id}`}
+                      onCheckedChange={() => task.assignee && handleTaskCompletion(task, task.assignee)}
+                      className="border-white text-white ring-offset-white data-[state=checked]:bg-white data-[state=checked]:text-teal-600"
+                    />
+                    <div className="flex-grow">
+                      <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
+                      <p className="text-xs text-white/80">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
+                    </div>
+                    {task.assignee && (
+                       <div 
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
+                          style={{ backgroundColor: task.assignee.color, color: '#fff' }}
+                          title={task.assignee.name}
+                      >
+                          {task.assignee.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             ) : (
               <div className="text-center py-8 bg-white/10 rounded-lg">
                 <Check className="mx-auto h-8 w-8 text-white/80" />
@@ -824,3 +913,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -548,20 +548,30 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
     return addDoc(collection(db, 'goals'), newGoal);
 };
 
-// Helper function to remove undefined properties from an object
+// Helper function to recursively remove undefined properties from an object
 function removeUndefined(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
+  if (obj === null || obj === undefined) return undefined;
+
   if (Array.isArray(obj)) {
     return obj.map(removeUndefined);
   }
+
   if (typeof obj === 'object') {
-    return Object.entries(obj).reduce((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = removeUndefined(value);
+    const newObj: { [key: string]: any } = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        if (value !== undefined) {
+          const cleanedValue = removeUndefined(value);
+          if (cleanedValue !== undefined) {
+            newObj[key] = cleanedValue;
+          }
+        }
       }
-      return acc;
-    }, {} as {[key: string]: any});
+    }
+    return newObj;
   }
+  
   return obj;
 }
 
@@ -822,7 +832,8 @@ export const checkAndAwardBadges = async (
 export const updateTask = async (id: string, data: Partial<Task>) => {
     // When updating a task, handle subtasks and other fields
     const taskRef = doc(db, 'tasks', id);
-    return updateDoc(taskRef, data);
+    const updateData = removeUndefined(data);
+    return updateDoc(taskRef, updateData);
 };
 
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
@@ -859,4 +870,5 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
+
 
