@@ -289,10 +289,13 @@ export default function Home() {
         const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
         
         const totalSections = goal.sections.length;
-        const completedSections = goal.sections.filter(s => s.status === 'completed').length;
+        const completedSections = goal.sections.filter(s => {
+            if(s.tasks.length === 0) return s.status === 'completed'; // Count empty sections if they are marked completed
+            return s.tasks.every(t => t.completed);
+        }).length;
+
         const sectionProgress = totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
         const unitName = goal.sections?.[0]?.tasks?.[0]?.title.split(" ").pop() || 'birim';
-
 
         return {
           ...goal,
@@ -364,62 +367,51 @@ export default function Home() {
   };
 
   const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
-    // --- Optimistic UI Update ---
-    const newOptimisticGoals = goals.map(g => {
-        if (g.id !== goal.id) return g;
-        const newSections = g.sections.map(s => {
-            if (s.id !== sectionId) return s;
-            const newTasks = s.tasks.map(t =>
-                t.id === taskId ? { ...t, completed: !t.completed } : t
-            );
-            return { ...s, tasks: newTasks };
-        });
-        return { ...g, sections: newSections };
-    });
-    setGoals(newOptimisticGoals);
-    // --- End Optimistic UI ---
+    const deepClonedGoal = JSON.parse(JSON.stringify(goal));
+    let wasGoalCompleted = deepClonedGoal.status === 'completed';
 
-    try {
-        const goalToUpdate = newOptimisticGoals.find(g => g.id === goal.id)!;
-        let newSections = JSON.parse(JSON.stringify(goalToUpdate.sections));
+    // Find and toggle the task
+    const sectionIndex = deepClonedGoal.sections.findIndex((s: GoalSection) => s.id === sectionId);
+    if (sectionIndex === -1) return;
 
-        // Recalculate all section and goal statuses
-        let allPreviousSectionsCompleted = true;
-        newSections.sort((a: GoalSection, b: GoalSection) => a.order - b.order).forEach((section: GoalSection, index: number) => {
-            const allTasksInSectionCompleted = section.tasks.every(t => t.completed);
+    const taskIndex = deepClonedGoal.sections[sectionIndex].tasks.findIndex((t: GoalTask) => t.id === taskId);
+    if (taskIndex === -1) return;
 
-            if (allTasksInSectionCompleted) {
-                if (section.status !== 'completed') {
-                    section.status = 'completed';
-                }
-            } else {
-                 if (section.status === 'completed') {
-                    section.status = 'unlocked';
-                 }
+    const currentTask = deepClonedGoal.sections[sectionIndex].tasks[taskIndex];
+    currentTask.completed = !currentTask.completed;
+
+    // Recalculate all section statuses based on the new state
+    for (let i = 0; i < deepClonedGoal.sections.length; i++) {
+        const section = deepClonedGoal.sections[i];
+        const allTasksInSectionCompleted = section.tasks.every((t: GoalTask) => t.completed);
+
+        if (allTasksInSectionCompleted) {
+            section.status = 'completed';
+            // Unlock the next section if it exists and is locked
+            if (i + 1 < deepClonedGoal.sections.length && deepClonedGoal.sections[i + 1].status === 'locked') {
+                deepClonedGoal.sections[i + 1].status = 'unlocked';
+                toast({ title: 'Yeni Bölüm Açıldı!', description: `"${deepClonedGoal.sections[i + 1].title}" bölümüne başlayabilirsin.` });
             }
-            
-            if (index > 0) {
-                 const previousSection = newSections[index - 1];
-                 if(previousSection.status === 'completed' && section.status === 'locked') {
-                    section.status = 'unlocked';
-                    toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
-                 }
-            } else if (section.status === 'locked') {
+        } else {
+            // If the section was previously completed, and now it's not, it becomes unlocked
+            if (section.status === 'completed') {
                 section.status = 'unlocked';
             }
-            
-            allPreviousSectionsCompleted = allPreviousSectionsCompleted && allTasksInSectionCompleted;
-        });
-
-        const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
-        const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
-        
-        await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
-
+        }
+    }
+    
+    const isGoalComplete = deepClonedGoal.sections.every((s: GoalSection) => s.status === 'completed');
+    deepClonedGoal.status = isGoalComplete ? 'completed' : 'in-progress';
+    
+    if (isGoalComplete && !wasGoalCompleted) {
+        toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${deepClonedGoal.title}" hedefini başarıyla tamamladın.` });
+    }
+    
+    try {
+        await updateGoal(goal.id, { sections: deepClonedGoal.sections, status: deepClonedGoal.status });
     } catch (error) {
-        toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
-        setGoals(goals); // Revert on failure
         console.error("Failed to update goal task:", error);
+        toast({ title: "Hata", description: "Görev durumu güncellenirken bir sorun oluştu.", variant: "destructive" });
     }
   };
 
@@ -548,7 +540,7 @@ export default function Home() {
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
                 </div>
             </Link>
-             <Link href="/library/archive" className="group block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
+             <Link href="/library/archive" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
                 <Card className="bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg h-full">
                     <CardHeader>
                         <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
