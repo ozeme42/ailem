@@ -741,45 +741,47 @@ export default function Home() {
 
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
-          <CardHeader>
-            <CardTitle>Bekleyen Ev İşleri</CardTitle>
-            <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingHouseTasks.length > 0 ? (
-              pendingHouseTasks.map(task => {
-                return (
-                  <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
-                    <Checkbox
-                      id={`home-task-${task.id}`}
-                      onCheckedChange={() => task.assignee && handleTaskCompletion(task, task.assignee)}
-                      className="border-white text-white ring-offset-white data-[state=checked]:bg-white data-[state=checked]:text-teal-600"
-                    />
-                    <div className="flex-grow">
-                      <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
-                      <p className="text-xs text-white/80">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
-                    </div>
-                    {task.assignee && (
-                       <div 
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
-                          style={{ backgroundColor: task.assignee.color, color: '#fff' }}
-                          title={task.assignee.name}
-                      >
-                          {task.assignee.name.charAt(0).toUpperCase()}
+        <Link href="/tasks" className="block transition-transform hover:-translate-y-1">
+          <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white h-full">
+            <CardHeader>
+              <CardTitle>Bekleyen Ev İşleri</CardTitle>
+              <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pendingHouseTasks.length > 0 ? (
+                pendingHouseTasks.map(task => {
+                  return (
+                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
+                      <Checkbox
+                        id={`home-task-${task.id}`}
+                        onCheckedChange={() => task.assignee && handleTaskCompletion(task, task.assignee)}
+                        className="border-white text-white ring-offset-white data-[state=checked]:bg-white data-[state=checked]:text-teal-600"
+                      />
+                      <div className="flex-grow">
+                        <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
+                        <p className="text-xs text-white/80">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
                       </div>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-8 bg-white/10 rounded-lg">
-                <Check className="mx-auto h-8 w-8 text-white/80" />
-                <p className="mt-2 text-sm text-white/90">Bekleyen ev işi yok. Harika!</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      {task.assignee && (
+                         <div 
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
+                            style={{ backgroundColor: task.assignee.color, color: '#fff' }}
+                            title={task.assignee.name}
+                        >
+                            {task.assignee.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8 bg-white/10 rounded-lg">
+                  <Check className="mx-auto h-8 w-8 text-white/80" />
+                  <p className="mt-2 text-sm text-white/90">Bekleyen ev işi yok. Harika!</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
         
         {familyMembers.map(member => {
             const { habits, other } = personalTasksByMember[member.id] || { habits: [], other: [] };
@@ -973,6 +975,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
