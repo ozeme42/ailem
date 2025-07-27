@@ -8,7 +8,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Responsive
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -80,6 +80,7 @@ export default function Home() {
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [tests, setTests] = React.useState<Test[]>([]);
   const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
+  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
   const [books, setBooks] = React.useState<Book[]>([]);
   const [goals, setGoals] = React.useState<Goal[]>([]);
@@ -93,6 +94,7 @@ export default function Home() {
     const unsubTasks = onTasksUpdate(setTasks);
     const unsubTests = onTestsUpdate(setTests);
     const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
+    const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
     const unsubBooks = onBooksUpdate(setBooks);
     const unsubGoals = onGoalsUpdate(setGoals);
     let unsubLibraries = () => {};
@@ -107,6 +109,7 @@ export default function Home() {
       unsubTasks();
       unsubTests();
       unsubStudyAssignments();
+      unsubStudyPlans();
       unsubLibraries();
       unsubBooks();
       unsubGoals();
@@ -207,7 +210,7 @@ export default function Home() {
 
 
   const educationAssignmentsByStudent = React.useMemo(() => {
-      const grouped: { [key: string]: { tests: Test[], studies: StudyAssignment[] } } = {};
+      const grouped: { [key: string]: { tests: Test[], studies: (StudyAssignment & { studyPlanTitle?: string })[] } } = {};
       const students = familyMembers.filter(m => m.role.includes('Çocuk'));
       const studentIds = new Set(students.map(s => s.id));
 
@@ -227,12 +230,16 @@ export default function Home() {
         .filter(a => studentIds.has(a.studentId) && a.status === 'assigned')
         .forEach(assignment => {
             if (grouped[assignment.studentId]) {
-                grouped[assignment.studentId].studies.push(assignment);
+                const plan = studyPlans.find(p => p.id === assignment.studyPlanId);
+                grouped[assignment.studentId].studies.push({
+                    ...assignment,
+                    studyPlanTitle: plan?.title,
+                });
             }
         });
 
       return grouped;
-  }, [tests, studyAssignments, familyMembers]);
+  }, [tests, studyAssignments, familyMembers, studyPlans]);
 
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp, fill: member.color }));
@@ -707,7 +714,7 @@ export default function Home() {
                         <div>
                             <div className="flex justify-between text-xs text-white/80 mb-1">
                                 <span>{goal.currentSection.title}</span>
-                                <span>{Math.round(goal.sectionProgress)}%</span>
+                                <span>{goal.sectionCompletedUnits}/{goal.sectionTotalUnits} {goal.unitName}</span>
                             </div>
                             <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
                         </div>
@@ -851,7 +858,7 @@ export default function Home() {
                                 </div>
                             </div>
                         )}
-                        {(tests.length > 0 || studies.length > 0) && (
+                         {tests.length > 0 && (
                              <div>
                                 <Link href="/education" className="group"><h4 className="font-semibold text-sm mb-2 text-muted-foreground group-hover:text-primary">Ödevler <ArrowRight className="inline h-3 w-3" /></h4></Link>
                                 <div className="space-y-2">
@@ -861,10 +868,20 @@ export default function Home() {
                                             <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+                        {studies.length > 0 && (
+                             <div>
+                                <Link href="/education/study" className="group"><h4 className="font-semibold text-sm mb-2 text-muted-foreground group-hover:text-primary">Konu Anlatımı <ArrowRight className="inline h-3 w-3" /></h4></Link>
+                                <div className="space-y-2">
                                     {studies.map(study => (
                                         <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900">
                                             <BookHeart className="h-5 w-5 shrink-0" />
-                                            <div className="truncate"><p className="font-semibold truncate text-sm">{study.topic}</p><p className="text-xs text-blue-800/80 truncate">{study.subject}</p></div>
+                                            <div className="truncate">
+                                                <p className="font-semibold truncate text-sm">{study.topic}</p>
+                                                <p className="text-xs text-blue-800/80 truncate">{study.subject} ({study.studyPlanTitle})</p>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -956,5 +973,6 @@ export default function Home() {
     </div>
   );
 }
+
 
 
