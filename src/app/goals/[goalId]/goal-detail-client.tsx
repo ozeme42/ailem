@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -68,8 +69,8 @@ export default function GoalDetailClient() {
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
         if (!goal) return;
 
-        const originalGoal = JSON.parse(JSON.stringify(goal)); // Save original state for potential rollback
-        const newOptimisticGoal = JSON.parse(JSON.stringify(goal)); // Create a deep copy for optimistic update
+        const originalGoal = JSON.parse(JSON.stringify(goal)); // Deep copy for potential rollback
+        const newOptimisticGoal = JSON.parse(JSON.stringify(goal));
 
         // --- Start of logic ---
         let wasGoalCompleted = newOptimisticGoal.status === 'completed';
@@ -79,13 +80,11 @@ export default function GoalDetailClient() {
         const taskIndex = newOptimisticGoal.sections[sectionIndex].tasks.findIndex((t: GoalTask) => t.id === taskId);
         if (taskIndex === -1) return;
 
-        // Toggle the task's completed status
+        // Optimistically update the UI before database call
         newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed = !newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed;
-
-        // Optimistically update the UI
         setGoal(newOptimisticGoal);
 
-        // Recalculate all section statuses based on the new state
+        // Recalculate all section and goal statuses based on the new state
         newOptimisticGoal.sections.forEach((currentSection: GoalSection, index: number) => {
             const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
             
@@ -128,7 +127,7 @@ export default function GoalDetailClient() {
             // If the database update fails, revert the optimistic change and show an error.
             toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
             setGoal(originalGoal); // Revert to the original state
-            console.error("Failed to update task:", error);
+            console.error("Failed to update goal task:", error);
         }
     };
 

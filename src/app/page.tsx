@@ -364,26 +364,24 @@ export default function Home() {
   };
 
   const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
-    const newGoals = [...goals];
-    const goalIndex = newGoals.findIndex(g => g.id === goal.id);
-    if (goalIndex === -1) return;
+    const originalGoal = JSON.parse(JSON.stringify(goal)); // Deep copy for potential rollback
+    const newOptimisticGoal = JSON.parse(JSON.stringify(goal));
 
-    const deepClonedGoal = JSON.parse(JSON.stringify(newGoals[goalIndex]));
-    let wasGoalCompleted = deepClonedGoal.status === 'completed';
-
-    const sectionIndex = deepClonedGoal.sections.findIndex((s: GoalSection) => s.id === sectionId);
+    // --- Start of logic ---
+    let wasGoalCompleted = newOptimisticGoal.status === 'completed';
+    const sectionIndex = newOptimisticGoal.sections.findIndex((s: GoalSection) => s.id === sectionId);
     if (sectionIndex === -1) return;
 
-    const taskIndex = deepClonedGoal.sections[sectionIndex].tasks.findIndex((t: GoalTask) => t.id === taskId);
+    const taskIndex = newOptimisticGoal.sections[sectionIndex].tasks.findIndex((t: GoalTask) => t.id === taskId);
     if (taskIndex === -1) return;
 
-    // Optimistically update the UI
-    deepClonedGoal.sections[sectionIndex].tasks[taskIndex].completed = !deepClonedGoal.sections[sectionIndex].tasks[taskIndex].completed;
-    newGoals[goalIndex] = deepClonedGoal;
+    // Optimistically update the UI before database call
+    newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed = !newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed;
+    const newGoals = goals.map(g => (g.id === newOptimisticGoal.id ? newOptimisticGoal : g));
     setGoals(newGoals);
 
-    // Recalculate all section and goal statuses
-    deepClonedGoal.sections.forEach((currentSection: GoalSection, index: number) => {
+    // Recalculate all section and goal statuses based on the new state
+    newOptimisticGoal.sections.forEach((currentSection: GoalSection, index: number) => {
         const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
         
         if (allTasksInSectionCompleted) {
@@ -396,37 +394,39 @@ export default function Home() {
              }
         }
         
+        // Unlock the next section if the current one is complete and the next one is locked.
         if (index > 0) {
-             const previousSection = deepClonedGoal.sections[index - 1];
+             const previousSection = newOptimisticGoal.sections[index - 1];
              if(previousSection.status === 'completed' && currentSection.status === 'locked') {
                 currentSection.status = 'unlocked';
                 toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
              }
-        } else {
+        } else { // First section should always be unlocked.
              if (currentSection.status === 'locked') {
                 currentSection.status = 'unlocked';
              }
         }
     });
 
-    const isGoalComplete = deepClonedGoal.sections.every((s: GoalSection) => s.status === 'completed');
-    deepClonedGoal.status = isGoalComplete ? 'completed' : 'in-progress';
+    const isGoalComplete = newOptimisticGoal.sections.every((s: GoalSection) => s.status === 'completed');
+    newOptimisticGoal.status = isGoalComplete ? 'completed' : 'in-progress';
     
     if (isGoalComplete && !wasGoalCompleted) {
-        toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${deepClonedGoal.title}" hedefini başarıyla tamamladın.` });
+        toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${newOptimisticGoal.title}" hedefini başarıyla tamamladın.` });
     }
-    
+    // --- End of logic ---
+
     try {
-        await updateGoal(goal.id, { sections: deepClonedGoal.sections, status: deepClonedGoal.status });
+        // Now, update the database with the fully recalculated state.
+        await updateGoal(goal.id, { sections: newOptimisticGoal.sections, status: newOptimisticGoal.status });
     } catch (error) {
+        // If the database update fails, revert the optimistic change and show an error.
+        toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
+        const revertedGoals = goals.map(g => (g.id === originalGoal.id ? originalGoal : g));
+        setGoals(revertedGoals);
         console.error("Failed to update goal task:", error);
-        // Revert optimistic update on failure
-        const originalGoals = [...goals];
-        originalGoals[goalIndex] = goal;
-        setGoals(originalGoals);
-        toast({ title: "Hata", description: "Görev durumu güncellenirken bir sorun oluştu.", variant: "destructive" });
     }
-  };
+};
 
 
   return (
@@ -630,14 +630,14 @@ export default function Home() {
                 <div className="mt-4 space-y-2">
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>{goal.unitName ? `${goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} İlerlemesi` : "Görev İlerlemesi"}</span>
+                            <span>{goal.unitName ? `${goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} İlerlemesi` : 'Görev İlerlemesi'}</span>
                             <span>{Math.round(goal.taskProgress)}%</span>
                         </div>
                         <Progress value={goal.taskProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
                     </div>
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>{goal.currentSection?.title || "Bölüm İlerlemesi"}</span>
+                            <span>{goal.currentSection?.title || 'Bölüm İlerlemesi'}</span>
                              <span>{Math.round(goal.sectionProgress)}%</span>
                         </div>
                         <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
@@ -822,3 +822,4 @@ export default function Home() {
     </div>
   );
 }
+
