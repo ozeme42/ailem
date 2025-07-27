@@ -266,12 +266,36 @@ export default function Home() {
     return goals
       .filter(goal => goal.status === 'in-progress')
       .map(goal => {
-        const sortedSections = [...goal.sections].sort((a, b) => a.order - b.order);
+        const sortedSections = [...(goal.sections || [])].sort((a, b) => a.order - b.order);
         let nextTask: GoalTask | null = null;
         let currentSection: GoalSection | null = null;
         
+        // Find the first section that is not fully completed
+        for (const section of sortedSections) {
+            if (!section.tasks.every(t => t.completed)) {
+                currentSection = section;
+                break;
+            }
+        }
+        
+        // If all sections are completed, something is wrong with the goal status, but we can fallback
+        if (!currentSection && sortedSections.length > 0) {
+            currentSection = sortedSections[sortedSections.length - 1];
+        }
+
+        // Find the next task in the current section
+        if (currentSection) {
+            for (const task of [...currentSection.tasks].sort((a,b) => a.order - b.order)) {
+                if (!task.completed) {
+                    nextTask = task;
+                    break;
+                }
+            }
+        }
+        
+        // Calculate overall progress based on units
         let completedUnits = 0;
-        goal.sections.forEach(section => {
+        (goal.sections || []).forEach(section => {
             section.tasks.forEach(task => {
                 if (task.completed) {
                     const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
@@ -279,23 +303,9 @@ export default function Home() {
                 }
             })
         });
-
-        for (const section of sortedSections) {
-          if (!section.tasks.every(t => t.completed)) {
-                currentSection = section;
-                for (const task of [...section.tasks].sort((a,b) => a.order - b.order)) {
-                    if (!task.completed) {
-                        nextTask = task;
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-        
         const overallProgress = (goal.totalUnits || 0) > 0 ? (completedUnits / goal.totalUnits!) * 100 : 0;
         
-        // Calculate current section progress
+        // Calculate current section progress based on units
         let sectionCompletedUnits = 0;
         let sectionTotalUnits = 0;
         if (currentSection) {
@@ -403,12 +413,10 @@ export default function Home() {
         const allTasksCompleted = section.tasks.every((t) => t.completed);
         if (allTasksCompleted) {
             section.status = 'completed';
-        } else {
-            section.status = 'unlocked'; // Keep it unlocked if not all tasks are done
         }
     });
     
-    const isGoalComplete = newSections.every((s) => s.tasks.every(t => t.completed));
+    const isGoalComplete = newSections.every((s) => s.status === 'completed');
     const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
 
     try {
@@ -623,7 +631,7 @@ export default function Home() {
                     {goal.currentSection && (
                         <div>
                             <div className="flex justify-between text-xs text-white/80 mb-1">
-                                <span>Bölüm İlerlemesi ({goal.sectionCompletedUnits}/{goal.sectionTotalUnits} {goal.unitName})</span>
+                                <span>{goal.currentSection.title} ({goal.sectionCompletedUnits}/{goal.sectionTotalUnits} {goal.unitName})</span>
                                 <span>{Math.round(goal.sectionProgress)}%</span>
                             </div>
                             <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
