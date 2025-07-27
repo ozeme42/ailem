@@ -167,7 +167,7 @@ export default function ProfileClient() {
             <TabsContent value="todo" className="mt-4 space-y-3">
               {todoTasks.length > 0 ? (
                 todoTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} assignee={member} />
+                  <TaskItem key={task.id} task={task} assignee={member} onEdit={() => {}} />
                 ))
               ) : (
                 <Card><CardContent className="p-8 text-center text-muted-foreground">Bekleyen görev yok.</CardContent></Card>
@@ -176,7 +176,7 @@ export default function ProfileClient() {
             <TabsContent value="completed" className="mt-4 space-y-3">
                {completedTasks.length > 0 ? (
                 completedTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} assignee={member} />
+                  <TaskItem key={task.id} task={task} assignee={member} onEdit={() => {}} />
                 ))
                ) : (
                 <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>

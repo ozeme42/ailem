@@ -36,36 +36,20 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
 
     const newCompletionState = !isCompleted;
     try {
-        
-        let xpChange = newCompletionState ? task.points : -task.points;
-        const completedTasksChange = newCompletionState ? 1 : -1;
-        
         const updateData: Partial<Task> = { completed: newCompletionState };
 
         if (task.isRecurring) {
             const newCompletedOccurrences = completedOccurrences + (newCompletionState ? 1 : -1);
             updateData.completedOccurrences = newCompletedOccurrences;
             updateData.lastCompletedDate = new Date().toISOString();
-             // For recurring tasks, completion might reset. Let's assume it doesn't for now.
-             // But we might want to handle daily reset logic elsewhere.
         }
 
         await updateTask(task.id, updateData);
-
-        const newXp = (assignee.xp || 0) + xpChange;
-        const newLevel = Math.floor(newXp / 1000) + 1;
-
-        await updateFamilyMemberInFamily(familyId, assignee.id, {
-            xp: newXp,
-            completedTasks: (assignee.completedTasks || 0) + completedTasksChange,
-            level: newLevel,
-        });
         
+        // Award points and badges only on completion
         if (newCompletionState) {
-            await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
-        }
+          await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
 
-        if (newCompletionState) {
           toast({
             title: "🎉 Görev Tamamlandı!",
             description: `Harika iş, ${assignee?.name || ''}! ${task.points} XP kazandın.`,
@@ -92,14 +76,6 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
         } else if (!allSubtasksCompleted && task.completed) {
              // If a subtask is un-checked, un-complete the main task
              await updateTask(task.id, { completed: false });
-             
-             // Revert points and task count
-             const newXp = (assignee.xp || 0) - task.points;
-             await updateFamilyMemberInFamily(familyId, assignee.id, {
-                xp: newXp < 0 ? 0 : newXp,
-                completedTasks: (assignee.completedTasks || 1) - 1,
-                level: Math.floor(newXp / 1000) + 1,
-            });
         }
     } catch (error) {
         toast({ title: "Hata", description: "Alt görev güncellenirken bir sorun oluştu.", variant: "destructive"});

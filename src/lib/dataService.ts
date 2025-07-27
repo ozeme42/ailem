@@ -770,9 +770,11 @@ export const checkAndAwardBadges = async (
 
     const member: FamilyMember = family.members[memberIndex];
     const newBadges = new Set(member.badges || []);
+    let xpGained = 0;
 
-    if (triggerEvent.type === 'task_completed') {
-        const completedCount = member.completedTasks;
+    if (triggerEvent.type === 'task_completed' && triggerEvent.task) {
+        xpGained += triggerEvent.task.points;
+        const completedCount = member.completedTasks + 1; // Assuming it's already updated
         if (completedCount >= 1) newBadges.add('✨');
         if (completedCount >= 10) newBadges.add('🔥');
         if (completedCount >= 50) newBadges.add('🚀');
@@ -800,8 +802,9 @@ export const checkAndAwardBadges = async (
         }
     }
 
-    if (triggerEvent.type === 'test_completed') {
-        const testCountSnapshot = await getDocs(query(collection(db, "tests"), where("studentId", "==", memberId), where("status", "==", "Değerlendirildi")));
+    if (triggerEvent.type === 'test_completed' && triggerEvent.test) {
+        xpGained += Math.round((triggerEvent.test.score || 0) / 2); // e.g., 100 score = 50 XP
+        const testCountSnapshot = await getDocs(query(collection(db, "tests"), where("studentId", "==", memberId), where("status", "==", "Sonuçlandı")));
         const completedTestCount = testCountSnapshot.size;
 
         if (completedTestCount >= 1) newBadges.add('🎓');
@@ -811,7 +814,8 @@ export const checkAndAwardBadges = async (
         if ((triggerEvent.test?.score || 0) === 100) newBadges.add('💯');
     }
     
-    if (triggerEvent.type === 'book_finished') {
+    if (triggerEvent.type === 'book_finished' && triggerEvent.book) {
+        xpGained += 100; // Fixed 100 XP for finishing a book
         const userLibQuery = await getDoc(doc(db, "userLibraries", `${familyId}_${memberId}`));
         if (userLibQuery.exists()) {
             const finishedBooksCount = userLibQuery.data().books.filter((b: UserLibraryBook) => b.status === 'finished').length;
@@ -822,10 +826,15 @@ export const checkAndAwardBadges = async (
         if ((triggerEvent.book?.pageCount || 0) >= 500) newBadges.add(' marathon');
     }
 
+    const updatedMemberData: Partial<FamilyMember> = {
+        xp: (member.xp || 0) + xpGained,
+    };
     if (newBadges.size > (member.badges || []).length) {
-        const updatedMembers = [...family.members];
-        updatedMembers[memberIndex] = { ...member, badges: Array.from(newBadges) };
-        await updateDoc(familyRef, { members: updatedMembers });
+        updatedMemberData.badges = Array.from(newBadges);
+    }
+    
+    if (xpGained > 0 || updatedMemberData.badges) {
+        await updateFamilyMemberInFamily(familyId, memberId, updatedMemberData);
     }
 };
 
@@ -870,5 +879,6 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
+
 
 
