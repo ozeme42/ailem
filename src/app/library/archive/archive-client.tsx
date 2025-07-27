@@ -698,21 +698,21 @@ export default function ArchiveClient() {
             <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
           </DialogHeader>
           <FormProvider {...formMethods}>
-            <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} id="book-form">
-              <ScrollArea className="max-h-[70vh] p-1">
-                <div className="pr-5">
-                    <BookForm existingTags={allTags} />
-                </div>
-              </ScrollArea>
+            <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} id="book-form" className="overflow-hidden">
+                <ScrollArea className="max-h-[70vh] -mr-6 pr-6 py-1">
+                    <div className="space-y-4">
+                        <BookForm existingTags={allTags} />
+                    </div>
+                </ScrollArea>
+                <DialogFooter className="pt-4 mt-4 border-t">
+                    <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {editingBook ? 'Kaydet' : 'Ekle'}
+                    </Button>
+                </DialogFooter>
             </form>
           </FormProvider>
-          <DialogFooter className="pt-4 border-t">
-            <Button variant="ghost" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
-            <Button type="submit" form="book-form" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingBook ? 'Kaydet' : 'Ekle'}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
       
