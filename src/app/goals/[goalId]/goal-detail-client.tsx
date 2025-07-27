@@ -74,7 +74,7 @@ export default function GoalDetailClient() {
         const originalGoal = await getGoal(goalId);
         if (!originalGoal) return;
 
-        const newSections: GoalSection[] = JSON.parse(JSON.stringify(originalGoal.sections));
+        let newSections: GoalSection[] = JSON.parse(JSON.stringify(originalGoal.sections));
         let taskUpdated = false;
 
         for (const section of newSections) {
@@ -84,12 +84,18 @@ export default function GoalDetailClient() {
                     task.completed = !task.completed;
                     taskUpdated = true;
                 }
-                const allTasksCompleted = section.tasks.every(t => t.completed);
-                section.status = allTasksCompleted ? 'completed' : 'unlocked';
             }
         }
         
         if (!taskUpdated) return;
+
+        // Recalculate section status after task toggle
+        newSections.forEach(section => {
+            const allTasksCompleted = section.tasks.every(t => t.completed);
+            if (allTasksCompleted) {
+                section.status = 'completed';
+            }
+        });
         
         const isGoalComplete = newSections.every(s => s.status === 'completed');
         const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
@@ -154,6 +160,8 @@ export default function GoalDetailClient() {
                 {sortedSections.map((section) => {
                     const progress = calculateSectionProgress(section);
                     const isUnlocked = section.status !== 'locked';
+                    const completedTasks = section.tasks.filter(t => t.completed).length;
+                    const totalTasks = section.tasks.length;
 
                     return (
                         <Card key={section.id} className={cn(!isUnlocked && "opacity-60 bg-muted/50")}>
@@ -162,7 +170,12 @@ export default function GoalDetailClient() {
                                     <div className="flex items-center gap-4 w-full">
                                         <CircularProgress progress={progress} />
                                         <div className="text-left flex-grow">
-                                            <h3 className="text-lg font-semibold">{section.title}</h3>
+                                            <h3 className="text-lg font-semibold">
+                                                {section.title}
+                                                <span className="text-sm font-normal text-muted-foreground ml-2">
+                                                    ({completedTasks}/{totalTasks})
+                                                </span>
+                                            </h3>
                                         </div>
                                     </div>
                                 </AccordionTrigger>
