@@ -14,6 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ArrowLeft, Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 const CircularProgress = ({ progress }: { progress: number }) => {
     const radius = 16;
@@ -66,45 +67,47 @@ export default function GoalDetailClient() {
 
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
         if (!goal) return;
+
+        // Create a deep copy to avoid direct state mutation
+        let newSections = JSON.parse(JSON.stringify(goal.sections)) as GoalSection[];
+
+        // 1. Toggle the specific task's completed status
+        const sectionIndex = newSections.findIndex(s => s.id === sectionId);
+        if (sectionIndex === -1) return;
         
-        let newSections = goal.sections.map(section => {
-            if (section.id === sectionId) {
-                const newTasks = section.tasks.map(task => {
-                    if (task.id === taskId) {
-                        return { ...task, completed: !task.completed };
-                    }
-                    return task;
-                });
-                return { ...section, tasks: newTasks };
+        const taskIndex = newSections[sectionIndex].tasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) return;
+
+        newSections[sectionIndex].tasks[taskIndex].completed = !newSections[sectionIndex].tasks[taskIndex].completed;
+
+        // 2. Check and update section statuses
+        let allPreviousCompleted = true;
+        for (let i = 0; i < newSections.length; i++) {
+            const section = newSections[i];
+            const allTasksInSectionCompleted = section.tasks.every(t => t.completed);
+
+            if (allTasksInSectionCompleted) {
+                section.status = 'completed';
             }
-            return section;
-        });
 
-        const checkAndUnlockSections = (sections: GoalSection[]): GoalSection[] => {
-            const sortedSections = [...sections].sort((a,b) => a.order - b.order);
-            let allPreviousCompleted = true;
+            // 3. Unlock the next section if conditions are met
+            if (i > 0 && allPreviousCompleted && section.status === 'locked') {
+                section.status = 'unlocked';
+                toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
+            }
+            
+            // For the next iteration, check if the current section is complete
+            allPreviousCompleted = section.status === 'completed';
+        }
 
-            return sortedSections.map((section, index) => {
-                 const isCompleted = section.tasks.every(t => t.completed);
-                 
-                 if (isCompleted) {
-                    section.status = 'completed';
-                 }
-
-                 if (index > 0 && allPreviousCompleted && section.status === 'locked') {
-                    toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
-                    section.status = 'unlocked';
-                 }
-                 allPreviousCompleted = section.status === 'completed';
-                return section;
-            });
-        };
-
-        newSections = checkAndUnlockSections(newSections);
+        // 4. Update the overall goal status
         const isGoalComplete = newSections.every(s => s.status === 'completed');
+        const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
 
-        await updateGoal(goalId, { sections: newSections, status: isGoalComplete ? 'completed' : 'in-progress' });
+        // 5. Persist the changes
+        await updateGoal(goalId, { sections: newSections, status: newGoalStatus });
     };
+
 
     if (!goal) {
         return <div>Yükleniyor...</div>;
