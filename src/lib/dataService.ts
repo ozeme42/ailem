@@ -548,44 +548,28 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
     return addDoc(collection(db, 'goals'), newGoal);
 };
 
+// Helper function to remove undefined properties from an object
+function removeUndefined(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefined);
+  }
+  if (typeof obj === 'object') {
+    return Object.entries(obj).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = removeUndefined(value);
+      }
+      return acc;
+    }, {} as {[key: string]: any});
+  }
+  return obj;
+}
+
+
 export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'familyId' | 'creatorId' | 'createdAt'>>) => {
     const goalRef = doc(db, 'goals', id);
-    const updateData = { ...data };
-
-    // Firestore cannot accept undefined fields.
-    if (updateData.description === undefined) {
-      delete updateData.description;
-    }
-    if (updateData.totalUnits === undefined) {
-      delete updateData.totalUnits;
-    }
-    if (updateData.unitName === undefined) {
-      delete updateData.unitName;
-    }
-    if (updateData.sectionCount === undefined) {
-      delete updateData.sectionCount;
-    }
-  
-    // Ensure sections are handled correctly
-    if (updateData.sections) {
-        updateData.sections = updateData.sections.map(section => {
-            const newSection: GoalSection = {
-                id: section.id,
-                title: section.title,
-                status: section.status,
-                order: section.order,
-                tasks: section.tasks.map(task => ({
-                    id: task.id,
-                    title: task.title,
-                    completed: task.completed,
-                    order: task.order,
-                }))
-            };
-            return newSection;
-        });
-    }
-
-    return updateDoc(goalRef, updateData);
+    const cleanedData = removeUndefined(data);
+    return updateDoc(goalRef, cleanedData);
 };
 
 
@@ -875,3 +859,4 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
+
