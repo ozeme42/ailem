@@ -301,16 +301,15 @@ export default function Home() {
     });
   }, [familyMembers, userLibraries, books]);
 
-  const activeGoals = React.useMemo(() => {
+   const activeGoals = React.useMemo(() => {
     return goals
       .filter(goal => goal.status === 'in-progress')
       .map(goal => {
         const sortedSections = [...(goal.sections || [])].sort((a, b) => a.order - b.order);
-        let nextTask: GoalTask | null = null;
         let currentSection: GoalSection | null = null;
         
         for (const section of sortedSections) {
-            if (!section.tasks.every(t => t.completed)) {
+            if (section.status !== 'completed') {
                 currentSection = section;
                 break;
             }
@@ -319,47 +318,19 @@ export default function Home() {
         if (!currentSection && sortedSections.length > 0) {
             currentSection = sortedSections[sortedSections.length - 1];
         }
-
-        if (currentSection) {
-            for (const task of [...currentSection.tasks].sort((a,b) => a.order - b.order)) {
-                if (!task.completed) {
-                    nextTask = task;
-                    break;
-                }
-            }
-        }
         
-        const completedUnits = (goal.sections || [])
-          .flatMap(section => section.tasks)
-          .filter(task => task.completed)
-          .reduce((sum, task) => {
-              const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
-              return sum + units;
-          }, 0);
+        const totalCompletedUnits = (goal.sections || []).reduce((sum, section) => sum + (section.completedUnits || 0), 0);
+        const overallProgress = (goal.totalUnits || 0) > 0 ? (totalCompletedUnits / goal.totalUnits!) * 100 : 0;
         
-        const overallProgress = (goal.totalUnits || 0) > 0 ? (completedUnits / goal.totalUnits!) * 100 : 0;
-        
-        let sectionCompletedUnits = 0;
-        let sectionTotalUnits = 0;
-        if (currentSection) {
-             currentSection.tasks.forEach(task => {
-                const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
-                sectionTotalUnits += units;
-                if (task.completed) {
-                    sectionCompletedUnits += units;
-                }
-            });
-        }
-        const sectionProgress = sectionTotalUnits > 0 ? (sectionCompletedUnits / sectionTotalUnits) * 100 : 0;
+        const sectionProgress = currentSection && currentSection.sectionTotalUnits > 0 
+            ? ((currentSection.completedUnits || 0) / currentSection.sectionTotalUnits) * 100 
+            : 0;
         
         return {
           ...goal,
-          nextTask,
           currentSection,
-          completedUnits,
+          totalCompletedUnits,
           overallProgress,
-          sectionCompletedUnits,
-          sectionTotalUnits,
           sectionProgress,
           assignee: familyMembers.find(m => m.id === goal.assigneeId)
         };
@@ -467,45 +438,6 @@ export default function Home() {
       });
     } catch (error) {
       toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
-    }
-  };
-
-  const handleGoalTaskToggle = async (goalId: string, sectionId: string, taskId: string) => {
-    const originalGoal = await getGoal(goalId);
-    if (!originalGoal) return;
-
-    const newSections = JSON.parse(JSON.stringify(originalGoal.sections)) as GoalSection[];
-
-    let taskUpdated = false;
-    for (const section of newSections) {
-        if (section.id === sectionId) {
-            const task = section.tasks.find((t) => t.id === taskId);
-            if (task) {
-                task.completed = !task.completed;
-                taskUpdated = true;
-                break;
-            }
-        }
-    }
-
-    if (!taskUpdated) return;
-
-    // Recalculate section status
-    newSections.forEach((section) => {
-        const allTasksCompleted = section.tasks.every((t) => t.completed);
-        if (allTasksCompleted) {
-            section.status = 'completed';
-        }
-    });
-    
-    const isGoalComplete = newSections.every((s) => s.status === 'completed');
-    const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
-
-    try {
-        await updateGoal(originalGoal.id, { sections: newSections, status: newGoalStatus });
-    } catch (error) {
-        toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
-        console.error("Failed to update goal task:", error);
     }
   };
 
@@ -681,47 +613,21 @@ export default function Home() {
                     <p className="font-bold">{goal.title}</p>
                     <p className="text-sm text-white/80">{goal.assignee?.name}</p>
                   </div>
-                   {goal.nextTask && (
-                        <div className="text-right text-xs shrink-0">
-                            <p className="font-semibold">{goal.currentSection?.title}</p>
-                            <p>Sıradaki Adım</p>
-                        </div>
-                    )}
                 </div>
                 
-                 {goal.nextTask ? (
-                    <div className="mt-4 pt-3 border-t border-white/20">
-                         <div className="space-y-2" onClick={(e) => {e.preventDefault();}}>
-                            <div className="flex items-center gap-3">
-                                <Checkbox
-                                    id={`goal-task-${goal.nextTask.id}`}
-                                    checked={goal.nextTask.completed}
-                                    onCheckedChange={() => handleGoalTaskToggle(goal.id, goal.currentSection!.id, goal.nextTask!.id)}
-                                    className="border-white text-white ring-offset-background data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
-                                />
-                                <div className="flex-grow">
-                                    <label htmlFor={`goal-task-${goal.nextTask.id}`} className="font-semibold cursor-pointer text-sm">{goal.nextTask.title}</label>
-                                </div>
-                            </div>
-                         </div>
-                    </div>
-                ) : (
-                    <p className="mt-2 text-sm text-center font-semibold text-green-300">🎉 Tüm hedefler tamamlandı!</p>
-                )}
-
                 <div className="mt-4 space-y-4">
                     {goal.currentSection && (
                         <div>
                             <div className="flex justify-between text-xs text-white/80 mb-1">
                                 <span>{goal.currentSection.title}</span>
-                                <span>{goal.sectionCompletedUnits}/{goal.sectionTotalUnits} {goal.unitName}</span>
+                                <span>{goal.currentSection.completedUnits || 0}/{goal.currentSection.sectionTotalUnits} {goal.unitName}</span>
                             </div>
-                            <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
+                            <Progress value={goal.sectionProgress || 0} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
                         </div>
                     )}
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                             <span>Genel İlerleme ({goal.completedUnits}/{goal.totalUnits} {goal.unitName})</span>
+                             <span>Genel İlerleme ({goal.totalCompletedUnits}/{goal.totalUnits} {goal.unitName})</span>
                             <span>{Math.round(goal.overallProgress)}%</span>
                         </div>
                         <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
@@ -790,7 +696,7 @@ export default function Home() {
             if (habits.length === 0 && other.length === 0 && tests.length === 0 && studies.length === 0) return null;
             
             return (
-                <Card key={`personal-tasks-${member.id}`} className="shadow-lg" style={{ borderTop: `4px solid ${member.color}`}}>
+                <Card key={`personal-tasks-${member.id}`} className="shadow-lg border-t-4" style={{ borderTopColor: member.color }}>
                     <CardHeader>
                         <div className="flex items-center gap-3">
                              <div 
@@ -860,8 +766,8 @@ export default function Home() {
                                 </div>
                             </div>
                         )}
-                         {tests.length > 0 && (
-                             <div>
+                         {(tests.length > 0 || studies.length > 0) && (
+                           <div>
                                 <Link href="/education" className="group"><h4 className="font-semibold text-sm mb-2 text-muted-foreground group-hover:text-primary">Ödevler <ArrowRight className="inline h-3 w-3" /></h4></Link>
                                 <div className="space-y-2">
                                     {tests.map(test => (
@@ -870,19 +776,12 @@ export default function Home() {
                                             <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
                                         </div>
                                     ))}
-                                </div>
-                            </div>
-                        )}
-                        {studies.length > 0 && (
-                             <div>
-                                <Link href="/education/study" className="group"><h4 className="font-semibold text-sm mb-2 text-muted-foreground group-hover:text-primary">Konu Anlatımı <ArrowRight className="inline h-3 w-3" /></h4></Link>
-                                <div className="space-y-2">
                                     {studies.map(study => (
                                         <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900">
                                             <BookHeart className="h-5 w-5 shrink-0" />
                                             <div className="truncate">
                                                 <p className="font-semibold truncate text-sm">{study.topic}</p>
-                                                <p className="text-xs text-blue-800/80 truncate">{study.subject} ({study.studyPlanTitle})</p>
+                                                <p className="text-xs text-blue-800/80 truncate">{study.subject}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -975,6 +874,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 

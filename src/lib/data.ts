@@ -138,9 +138,10 @@ export interface GoalTask {
 export interface GoalSection {
     id: string;
     title: string;
-    status: 'unlocked' | 'completed';
     order: number;
-    tasks: GoalTask[];
+    status: 'unlocked' | 'completed';
+    sectionTotalUnits: number;
+    completedUnits: number;
 }
 export interface Goal {
     id: string;
@@ -153,9 +154,9 @@ export interface Goal {
     status: 'in-progress' | 'completed';
     sections: GoalSection[];
     // Fields for editing
-    totalUnits?: number;
-    unitName?: string;
-    sectionCount?: number;
+    totalUnits: number;
+    unitName: string;
+    sectionCount: number;
 }
 
 

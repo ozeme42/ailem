@@ -21,7 +21,6 @@ import { cn } from "@/lib/utils";
 
 const sectionSchema = z.object({
   title: z.string().min(1, "Bölüm başlığı boş olamaz.").default(""),
-  taskCount: z.coerce.number().min(1, "Görev sayısı en az 1 olmalı.").default(1),
 });
 
 const formSchema = z.object({
@@ -50,7 +49,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
       totalUnits: 100,
       unitName: 'sayfa',
       sectionCount: 1,
-      sections: [{ title: 'Bölüm 1', taskCount: 5 }],
+      sections: [{ title: 'Bölüm 1' }],
     },
   });
 
@@ -60,27 +59,21 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   });
   
   const sectionCount = form.watch('sectionCount');
-  const totalUnits = form.watch('totalUnits');
-  const unitsPerSection = sectionCount > 0 ? Math.floor(totalUnits / sectionCount) : 0;
-  const remainderUnits = sectionCount > 0 ? totalUnits % sectionCount : 0;
   
   React.useEffect(() => {
     if (initialData) {
-        // When editing, load the EXACT data from the goal object.
         form.reset({
             title: initialData.title,
             description: initialData.description || "",
             assigneeId: initialData.assigneeId,
-            totalUnits: initialData.totalUnits || 100,
-            unitName: initialData.unitName || 'birim',
-            sectionCount: initialData.sectionCount || initialData.sections.length,
+            totalUnits: initialData.totalUnits,
+            unitName: initialData.unitName,
+            sectionCount: initialData.sectionCount,
             sections: initialData.sections.map(s => ({
                 title: s.title,
-                taskCount: s.tasks.length
             }))
         });
     } else {
-        // For a new goal, set default values.
         form.reset({
             title: "",
             description: "",
@@ -88,7 +81,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
             totalUnits: 100,
             unitName: 'sayfa',
             sectionCount: 1,
-            sections: [{ title: 'Bölüm 1', taskCount: 5 }],
+            sections: [{ title: 'Bölüm 1' }],
         });
     }
   }, [initialData, form]);
@@ -96,33 +89,23 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   React.useEffect(() => {
     const currentSections = form.getValues('sections');
     const newSections = Array.from({ length: sectionCount || 0 }, (_, i) => {
-      return currentSections[i] || { title: `Bölüm ${i + 1}`, taskCount: 5 };
+      return currentSections[i] || { title: `Bölüm ${i + 1}` };
     });
     replace(newSections);
   }, [sectionCount, replace, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    const totalUnits = values.totalUnits;
+    const sectionCount = values.sectionCount;
+    const unitsPerSection = sectionCount > 0 ? Math.floor(totalUnits / sectionCount) : 0;
+    const remainderUnits = sectionCount > 0 ? totalUnits % sectionCount : 0;
 
     const finalSections: Omit<GoalSection, 'id' | 'status'>[] = values.sections.map((section, sectionIndex) => {
-      const currentSectionUnits = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
-      const unitsPerTask = section.taskCount > 0 ? Math.floor(currentSectionUnits / section.taskCount) : 0;
-      const remainderUnitsPerTask = section.taskCount > 0 ? currentSectionUnits % section.taskCount : 0;
-      
-      const tasks = Array.from({ length: section.taskCount }, (_, taskIndex) => {
-          const taskUnits = unitsPerTask + (taskIndex < remainderUnitsPerTask ? 1 : 0);
-          
-          return {
-              title: `${taskUnits} ${values.unitName} tamamla`,
-              order: taskIndex + 1,
-              completed: false,
-          };
-      });
-
       return {
           title: section.title,
           order: sectionIndex + 1,
-          tasks: tasks,
-          status: 'unlocked',
+          sectionTotalUnits: unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0),
+          completedUnits: 0,
       };
     });
     
@@ -192,7 +175,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
                 <Card className="p-4 bg-muted/50">
                     <CardHeader className="p-0 pb-4">
                         <CardTitle className="text-lg">Hedef Yapılandırması</CardTitle>
-                        <CardDescription>Hedefini otomatik olarak görevlere bölmek için bu alanları doldur.</CardDescription>
+                        <CardDescription>Hedefini otomatik olarak bölümlere ayırmak için bu alanları doldur.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-0 space-y-4">
                          <div className="grid grid-cols-2 gap-4">
@@ -212,7 +195,6 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
                 <div className="space-y-4">
                     <FormLabel>Bölümleri Özelleştir</FormLabel>
                      {fields.map((sectionField, sectionIndex) => {
-                         const sectionUnitCount = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
                          return (
                             <Card key={sectionField.id} className="p-4 relative">
                                <div className="flex justify-between items-start">
@@ -225,11 +207,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
                                     <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
                                         <FormItem><FormLabel>Bölüm Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
-                                      <FormField control={form.control} name={`sections.${sectionIndex}.taskCount`} render={({ field }) => (
-                                        <FormItem><FormLabel>Görev Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
                                </div>
-                               <p className="text-xs text-muted-foreground mt-2">Bu bölüm otomatik olarak ~{sectionUnitCount} {form.getValues('unitName') || 'birim'} olarak ayarlandı.</p>
                             </Card>
                         )
                      })}
