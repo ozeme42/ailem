@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { onGoalUpdate, updateGoal } from '@/lib/dataService';
+import { onGoalUpdate, updateGoal, getGoal } from '@/lib/dataService';
 import type { Goal, GoalSection, GoalTask } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -66,24 +66,32 @@ export default function GoalDetailClient() {
     }, [goalId, user]);
 
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
-        if (!goal) return;
-      
-        // Create a deep copy to avoid direct state mutation
-        const newSections = JSON.parse(JSON.stringify(goal.sections));
-      
-        let sectionToUpdate = newSections.find((s: GoalSection) => s.id === sectionId);
-        if (!sectionToUpdate) return;
-      
-        let taskToUpdate = sectionToUpdate.tasks.find((t: GoalTask) => t.id === taskId);
-        if (!taskToUpdate) return;
-      
-        // Toggle completion status
-        taskToUpdate.completed = !taskToUpdate.completed;
-      
-        // Recalculate section and goal status
+        const originalGoal = await getGoal(goalId);
+        if (!originalGoal) return;
+    
+        // Create a deep copy to avoid direct state mutation issues.
+        const newSections = JSON.parse(JSON.stringify(originalGoal.sections));
+    
+        let taskFound = false;
+        newSections.forEach((section: GoalSection) => {
+            if (section.id === sectionId) {
+                const task = section.tasks.find((t: GoalTask) => t.id === taskId);
+                if (task) {
+                    task.completed = !task.completed;
+                    taskFound = true;
+                }
+            }
+        });
+    
+        if (!taskFound) {
+            toast({ title: "Hata", description: "Görev bulunamadı.", variant: "destructive" });
+            return;
+        }
+        
+        // Recalculate section and goal status after the change
         newSections.forEach((currentSection: GoalSection, index: number) => {
             const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
-      
+    
             if (allTasksInSectionCompleted) {
                 currentSection.status = 'completed';
                 // Unlock next section if it exists and is locked
@@ -102,9 +110,9 @@ export default function GoalDetailClient() {
         const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
       
         try {
-            await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
-            if (newGoalStatus === 'completed' && goal.status !== 'completed') {
-                 toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${goal.title}" hedefini başarıyla tamamladın.` });
+            await updateGoal(originalGoal.id, { sections: newSections, status: newGoalStatus });
+            if (newGoalStatus === 'completed' && originalGoal.status !== 'completed') {
+                 toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${originalGoal.title}" hedefini başarıyla tamamladın.` });
             }
         } catch (error) {
             toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });

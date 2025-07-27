@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -362,26 +362,33 @@ export default function Home() {
     }
   };
 
-  const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
-    const goalToUpdate = goals.find(g => g.id === goal.id);
-    if (!goalToUpdate) return;
-  
-    // Create a deep copy to avoid direct state mutation
-    const newSections = JSON.parse(JSON.stringify(goalToUpdate.sections));
-  
-    let sectionToUpdate = newSections.find((s: GoalSection) => s.id === sectionId);
-    if (!sectionToUpdate) return;
-  
-    let taskToUpdate = sectionToUpdate.tasks.find((t: GoalTask) => t.id === taskId);
-    if (!taskToUpdate) return;
-  
-    // Toggle completion status
-    taskToUpdate.completed = !taskToUpdate.completed;
-  
-    // Recalculate section and goal status
+  const handleGoalTaskToggle = async (goalId: string, sectionId: string, taskId: string) => {
+    const originalGoal = await getGoal(goalId);
+    if (!originalGoal) return;
+
+    // Create a deep copy to avoid direct state mutation issues.
+    const newSections = JSON.parse(JSON.stringify(originalGoal.sections));
+
+    let taskFound = false;
+    newSections.forEach((section: GoalSection) => {
+        if (section.id === sectionId) {
+            const task = section.tasks.find((t: GoalTask) => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                taskFound = true;
+            }
+        }
+    });
+
+    if (!taskFound) {
+        toast({ title: "Hata", description: "Görev bulunamadı.", variant: "destructive" });
+        return;
+    }
+    
+    // Recalculate section and goal status after the change
     newSections.forEach((currentSection: GoalSection, index: number) => {
         const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
-  
+
         if (allTasksInSectionCompleted) {
             currentSection.status = 'completed';
             // Unlock next section if it exists and is locked
@@ -400,9 +407,9 @@ export default function Home() {
     const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
   
     try {
-        await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
-        if (newGoalStatus === 'completed' && goal.status !== 'completed') {
-             toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${goal.title}" hedefini başarıyla tamamladın.` });
+        await updateGoal(originalGoal.id, { sections: newSections, status: newGoalStatus });
+        if (newGoalStatus === 'completed' && originalGoal.status !== 'completed') {
+             toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${originalGoal.title}" hedefini başarıyla tamamladın.` });
         }
     } catch (error) {
         toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
@@ -595,7 +602,7 @@ export default function Home() {
                                 <Checkbox
                                     id={`goal-task-${goal.nextTask.id}`}
                                     checked={goal.nextTask.completed}
-                                    onCheckedChange={() => handleGoalTaskToggle(goal, goal.currentSection!.id, goal.nextTask!.id)}
+                                    onCheckedChange={() => handleGoalTaskToggle(goal.id, goal.currentSection!.id, goal.nextTask!.id)}
                                     className="border-white text-white ring-offset-background data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
                                 />
                                 <div className="flex-grow">
@@ -612,14 +619,14 @@ export default function Home() {
                 <div className="mt-4 space-y-2">
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>{goal.unitName ? `${goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} İlerlemesi` : 'Görev İlerlemesi'}</span>
+                             <span>{goal.unitName ? `${goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} İlerlemesi` : 'Görev İlerlemesi'}</span>
                             <span>{Math.round(goal.taskProgress)}%</span>
                         </div>
                         <Progress value={goal.taskProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
                     </div>
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>{goal.currentSection?.title || 'Bölüm İlerlemesi'}</span>
+                           <span>{goal.currentSection?.title || "Bölüm İlerlemesi"}</span>
                              <span>{Math.round(goal.sectionProgress)}%</span>
                         </div>
                         <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />

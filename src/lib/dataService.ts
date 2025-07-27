@@ -515,6 +515,14 @@ export const onGoalUpdate = (goalId: string, callback: (goal: Goal | null) => vo
         }
     });
 };
+export const getGoal = async (goalId: string): Promise<Goal | null> => {
+    const docRef = doc(db, 'goals', goalId);
+    const snapshot = await getDoc(docRef);
+    if (snapshot.exists()) {
+        return { id: snapshot.id, ...snapshot.data() } as Goal;
+    }
+    return null;
+}
 export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status'>) => {
     const familyId = await getCurrentFamilyId();
     const auth = getAuth();
