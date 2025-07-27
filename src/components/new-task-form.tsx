@@ -119,7 +119,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-        const taskData = {
+        const baseTaskData = {
             title: values.title,
             assigneeId: values.assigneeId,
             dueDate: format(values.dueDate, "yyyy-MM-dd"),
@@ -132,14 +132,19 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                 completed: false
             })),
             isRecurring: values.isRecurring,
-            recurrenceType: values.isRecurring ? values.recurrenceType : undefined,
-            recurrenceDays: values.isRecurring && values.recurrenceType === 'weekly' ? values.recurrenceDays : undefined,
-            recurrenceEndDate: values.isRecurring && values.recurrenceEndDate ? format(values.recurrenceEndDate, "yyyy-MM-dd") : undefined,
-            totalOccurrences: values.isRecurring ? values.totalOccurrences : undefined,
             completedOccurrences: 0,
             streak: 0,
-            lastCompletedDate: undefined,
         };
+
+        const taskData: any = { ...baseTaskData };
+
+        if (values.isRecurring) {
+            if (values.recurrenceType) taskData.recurrenceType = values.recurrenceType;
+            if (values.recurrenceType === 'weekly' && values.recurrenceDays) taskData.recurrenceDays = values.recurrenceDays;
+            if (values.recurrenceEndDate) taskData.recurrenceEndDate = format(values.recurrenceEndDate, "yyyy-MM-dd");
+            if (values.totalOccurrences) taskData.totalOccurrences = values.totalOccurrences;
+        }
+
 
         if (taskToEdit) {
             await updateTask(taskToEdit.id, taskData);
