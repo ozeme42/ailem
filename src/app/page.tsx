@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -36,6 +36,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { NewBookForm } from "@/components/new-book-form";
 
 
 const familyXpChartConfig = {
@@ -95,6 +96,8 @@ export default function Home() {
   const [books, setBooks] = React.useState<Book[]>([]);
   const [goals, setGoals] = React.useState<Goal[]>([]);
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
+  const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
+  const [editingBook, setEditingBook] = React.useState<Book | null>(null);
   const [editingGoal, setEditingGoal] = React.useState<{ goal: Goal; section: GoalSection } | null>(null);
 
   const progressForm = useForm<z.infer<typeof progressFormSchema>>({
@@ -220,12 +223,8 @@ export default function Home() {
   const pendingHouseTasks = React.useMemo(() => {
     return tasks
       .filter(task => !task.completed && task.category === 'Ev İşleri')
-      .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
-      .map(task => ({
-        ...task,
-        assignee: familyMembers.find(m => m.id === task.assigneeId)
-      }));
-  }, [tasks, familyMembers]);
+      .sort((a, b) => compareAsc(parseISO(a.dueDate), b.dueDate ? parseISO(b.dueDate) : 0));
+  }, [tasks]);
   
   const personalTasksByMember = React.useMemo(() => {
     const grouped: { [key: string]: { habits: Task[], other: Task[] } } = {};
@@ -479,6 +478,26 @@ export default function Home() {
       toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
     }
   };
+  
+    const handleOpenEditDialog = React.useCallback((bookToEdit: Book) => {
+        setEditingBook(bookToEdit);
+        setIsAddBookDialogOpen(true);
+    }, []);
+
+    const handleAddToLibrary = async (bookId: string, memberId: string) => {
+        if (!familyId) return;
+        try {
+            await addBookToMemberLibrary(familyId, memberId, bookId);
+            const member = familyMembers.find(m => m.id === memberId);
+            const book = books.find(b => b.id === bookId);
+            toast({
+                title: `"${book?.title}"`,
+                description: `${member?.name} adlı üyenin kitaplığına eklendi.`
+            });
+        } catch (e) {
+            toast({ title: "Hata", description: "Kitap eklenirken bir sorun oluştu.", variant: 'destructive' });
+        }
+    };
 
 
   return (
@@ -700,24 +719,25 @@ export default function Home() {
             <CardContent className="space-y-3">
               {pendingHouseTasks.length > 0 ? (
                 pendingHouseTasks.map(task => {
+                  const assignee = familyMembers.find(m => m.id === task.assigneeId)
                   return (
                     <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
                       <Checkbox
                         id={`home-task-${task.id}`}
-                        onCheckedChange={() => task.assignee && handleTaskCompletion(task, task.assignee)}
+                        onCheckedChange={() => assignee && handleTaskCompletion(task, assignee)}
                         className="border-white text-white ring-offset-white data-[state=checked]:bg-white data-[state=checked]:text-teal-600"
                       />
                       <div className="flex-grow">
                         <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
                         <p className="text-xs text-white/80">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
                       </div>
-                      {task.assignee && (
+                      {assignee && (
                          <div 
                             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
-                            style={{ backgroundColor: task.assignee.color, color: '#fff' }}
-                            title={task.assignee.name}
+                            style={{ backgroundColor: assignee.color, color: '#fff' }}
+                            title={assignee.name}
                         >
-                            {task.assignee.name.charAt(0).toUpperCase()}
+                            {assignee.name.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
@@ -812,7 +832,7 @@ export default function Home() {
                         )}
                          {(tests.length > 0 || studies.length > 0) && (
                            <div>
-                                <Link href="/education" className="group"><h4 className="font-semibold text-sm mb-2 text-muted-foreground group-hover:text-primary">Ödevler <ArrowRight className="inline h-3 w-3" /></h4></Link>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ödevler <Link href="/education" className="group"><ArrowRight className="inline h-3 w-3" /></Link></h4>
                                 <div className="space-y-2">
                                     {tests.map(test => (
                                         <div key={test.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-red-500/10 text-red-900">
@@ -914,6 +934,9 @@ export default function Home() {
             book={viewingBook} 
             isOpen={!!viewingBook} 
             onOpenChange={(open) => {if(!open) setViewingBook(null)}}
+            onEdit={handleOpenEditDialog}
+            onAddToLibrary={handleAddToLibrary}
+            familyMembers={familyMembers}
         />
 
       <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset(); }}}>
@@ -948,6 +971,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 

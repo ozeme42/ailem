@@ -3,19 +3,32 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { Book, Star } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Book, Star, Edit, UserPlus, MoreVertical } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import type { Book as BookType } from '@/lib/data';
+import type { Book as BookType, FamilyMember } from '@/lib/data';
+import { Button } from './ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 interface BookDetailDialogProps {
   book: BookType | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onEdit?: (book: BookType) => void;
+  onAddToLibrary?: (bookId: string, memberId: string) => void;
+  familyMembers?: FamilyMember[];
 }
 
-export function BookDetailDialog({ book, isOpen, onOpenChange }: BookDetailDialogProps) {
+export function BookDetailDialog({ book, isOpen, onOpenChange, onEdit, onAddToLibrary, familyMembers = [] }: BookDetailDialogProps) {
   if (!book) return null;
+
+  const handleEditClick = () => {
+    onOpenChange(false); // Close this dialog
+    if (onEdit) {
+      // Use a timeout to allow this dialog to close before opening the next
+      setTimeout(() => onEdit(book), 150);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -50,6 +63,35 @@ export function BookDetailDialog({ book, isOpen, onOpenChange }: BookDetailDialo
               {book.tags && book.tags.length > 0 && <p><strong>Tür:</strong> {book.tags.join(', ')}</p>}
               {book.pageCount && <p><strong>Sayfa Sayısı:</strong> {book.pageCount}</p>}
             </div>
+             <DialogFooter className="mt-6 sm:justify-start gap-2">
+              {onEdit && (
+                 <Button variant="outline" onClick={handleEditClick}>
+                    <Edit className="mr-2 h-4 w-4"/> Düzenle
+                </Button>
+              )}
+               {onAddToLibrary && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      <UserPlus className="mr-2 h-4 w-4"/> Kitaplığıma Ekle
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>Kimin Kitaplığına Eklensin?</DropdownMenuLabel>
+                    {familyMembers.map(member => (
+                      <DropdownMenuItem 
+                        key={member.id} 
+                        onClick={() => onAddToLibrary(book.id, member.id)}
+                        disabled={(book.readers || []).includes(member.id)}
+                      >
+                        {member.name}
+                        {(book.readers || []).includes(member.id) && <span className="text-xs text-muted-foreground ml-auto">Ekli</span>}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </DialogFooter>
           </div>
         </div>
       </DialogContent>
