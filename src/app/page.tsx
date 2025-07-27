@@ -403,25 +403,6 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <button className="rounded-full p-2 transition-colors hover:bg-white/20">
-                        <Settings className="h-5 w-5" />
-                    </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Ayarlar</DropdownMenuLabel>
-                    <DropdownMenuItem onSelect={handleEditCurrentUser}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Profilimi Düzenle</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                     <DropdownMenuItem onSelect={logout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Çıkış Yap</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
           </div>
       </header>
 
