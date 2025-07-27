@@ -4,17 +4,17 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { onGoalUpdate, updateGoal, getGoal } from '@/lib/dataService';
+import { onGoalUpdate, updateGoal } from '@/lib/dataService';
 import type { Goal, GoalSection, GoalTask } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ArrowLeft, Check, Lock } from 'lucide-react';
+import { ArrowLeft, Check, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Progress } from '@/components/ui/progress';
+import { Reorder } from 'framer-motion';
 
 const CircularProgress = ({ progress }: { progress: number }) => {
     const radius = 16;
@@ -66,48 +66,60 @@ export default function GoalDetailClient() {
     }, [goalId, user]);
 
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
-        const originalGoal = await getGoal(goalId);
-        if (!originalGoal) {
-            toast({ title: "Hata", description: "Hedef bulunamadı.", variant: "destructive" });
-            return;
+        if (!goal) return;
+    
+        const newGoal = JSON.parse(JSON.stringify(goal)) as Goal;
+        const section = newGoal.sections.find(s => s.id === sectionId);
+        if (!section) return;
+
+        const task = section.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.completed = !task.completed;
         }
 
-        const newSections = JSON.parse(JSON.stringify(originalGoal.sections)) as GoalSection[];
-
-        let taskUpdated = false;
-        for (const section of newSections) {
-            if (section.id === sectionId) {
-                const task = section.tasks.find((t) => t.id === taskId);
-                if (task) {
-                    task.completed = !task.completed;
-                    taskUpdated = true;
-                    break;
-                }
-            }
+        const allTasksInSectionCompleted = section.tasks.every(t => t.completed);
+        if (allTasksInSectionCompleted) {
+            section.status = 'completed';
+        } else {
+            section.status = 'unlocked';
         }
-
-        if (!taskUpdated) return;
-
-        // Recalculate section status
-        newSections.forEach((section) => {
-            const allTasksCompleted = section.tasks.every((t) => t.completed);
-            section.status = allTasksCompleted ? 'completed' : 'unlocked';
-        });
-
-        const isGoalComplete = newSections.every((s) => s.status === 'completed');
-        const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
-      
+    
         try {
-            await updateGoal(originalGoal.id, { sections: newSections, status: newGoalStatus });
-            if (newGoalStatus === 'completed' && originalGoal.status !== 'completed') {
-                 toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${originalGoal.title}" hedefini başarıyla tamamladın.` });
-            }
+            await updateGoal(newGoal.id, { sections: newGoal.sections });
         } catch (error) {
             toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
             console.error("Failed to update goal task:", error);
         }
     };
+    
+    const handleReorderTasks = async (sectionId: string, reorderedTasks: GoalTask[]) => {
+        if (!goal) return;
 
+        const newGoal = JSON.parse(JSON.stringify(goal)) as Goal;
+        const sectionIndex = newGoal.sections.findIndex(s => s.id === sectionId);
+        if (sectionIndex === -1) return;
+
+        // Update the tasks with new order property
+        const updatedTasks = reorderedTasks.map((task, index) => ({
+            ...task,
+            order: index + 1,
+        }));
+
+        newGoal.sections[sectionIndex].tasks = updatedTasks;
+
+        // Optimistically update the local state for a smoother UI response
+        setGoal(newGoal);
+
+        try {
+            // Save the entire updated sections array to Firestore
+            await updateGoal(newGoal.id, { sections: newGoal.sections });
+        } catch (error) {
+            toast({ title: "Hata", description: "Sıralama kaydedilemedi.", variant: "destructive" });
+            console.error("Failed to reorder tasks:", error);
+            // Revert to original state if save fails
+            const originalGoal = await onGoalUpdate(goalId, setGoal);
+        }
+    };
 
     if (!goal) {
         return <div>Yükleniyor...</div>;
@@ -146,24 +158,32 @@ export default function GoalDetailClient() {
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-4 pt-0">
-                                    <div className="space-y-2 pl-14">
+                                    <Reorder.Group
+                                        axis="y"
+                                        values={section.tasks.sort((a,b) => a.order - b.order)}
+                                        onReorder={(newOrder) => handleReorderTasks(section.id, newOrder)}
+                                        className="space-y-2 pl-14"
+                                    >
                                         {section.tasks.sort((a,b) => a.order - b.order).map(task => (
-                                            <div key={task.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted">
-                                                <Checkbox
-                                                    id={`${section.id}-${task.id}`}
-                                                    checked={task.completed}
-                                                    onCheckedChange={() => handleTaskToggle(section.id, task.id)}
-                                                    className="size-5"
-                                                />
-                                                <label
-                                                    htmlFor={`${section.id}-${task.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                                >
-                                                    {task.title}
-                                                </label>
-                                            </div>
+                                            <Reorder.Item key={task.id} value={task}>
+                                                <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted bg-background">
+                                                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                                                    <Checkbox
+                                                        id={`${section.id}-${task.id}`}
+                                                        checked={task.completed}
+                                                        onCheckedChange={() => handleTaskToggle(section.id, task.id)}
+                                                        className="size-5"
+                                                    />
+                                                    <label
+                                                        htmlFor={`${section.id}-${task.id}`}
+                                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                                    >
+                                                        {task.title}
+                                                    </label>
+                                                </div>
+                                            </Reorder.Item>
                                         ))}
-                                    </div>
+                                    </Reorder.Group>
                                 </AccordionContent>
                             </AccordionItem>
                         </Card>
