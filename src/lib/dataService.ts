@@ -549,32 +549,35 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
 
 export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'familyId' | 'creatorId' | 'createdAt'>>) => {
     const goalRef = doc(db, 'goals', id);
+    const updateData = { ...data };
 
-    // Reconstruct sections if they are part of the update, ensuring IDs are preserved if possible
-    if (data.sections) {
-        const originalGoalSnap = await getDoc(goalRef);
-        const originalGoal = originalGoalSnap.data() as Goal;
-
-        data.sections = data.sections.map((section, index) => {
-            const originalSection = originalGoal.sections.find(s => s.order === index + 1);
-            return {
-                ...section,
-                id: originalSection?.id || Date.now().toString() + index,
-                status: 'unlocked', // Always unlocked
-                tasks: section.tasks.map((task, taskIndex) => {
-                    const originalTask = originalSection?.tasks.find(t => t.order === taskIndex + 1);
-                    return {
-                        ...task,
-                        id: originalTask?.id || Date.now().toString() + index + taskIndex,
-                        completed: originalTask?.completed || false,
-                    };
-                })
+    // Firestore cannot accept undefined fields.
+    if ('description' in updateData && updateData.description === undefined) {
+      delete updateData.description;
+    }
+  
+    // Ensure sections are handled correctly
+    if (updateData.sections) {
+        updateData.sections = updateData.sections.map(section => {
+            const newSection: GoalSection = {
+                id: section.id,
+                title: section.title,
+                status: section.status,
+                order: section.order,
+                tasks: section.tasks.map(task => ({
+                    id: task.id,
+                    title: task.title,
+                    completed: task.completed,
+                    order: task.order,
+                }))
             };
+            return newSection;
         });
     }
 
-    return updateDoc(goalRef, data);
+    return updateDoc(goalRef, updateData);
 };
+
 
 export const deleteGoal = (id: string) => deleteDoc(doc(db, 'goals', id));
 

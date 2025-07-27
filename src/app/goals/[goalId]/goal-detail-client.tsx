@@ -72,30 +72,29 @@ export default function GoalDetailClient() {
             return;
         }
 
-        const newSections = JSON.parse(JSON.stringify(originalGoal.sections));
-        let taskUpdated = false;
+        const newSections = JSON.parse(JSON.stringify(originalGoal.sections)) as GoalSection[];
 
-        const section = newSections.find((s: GoalSection) => s.id === sectionId);
-        if (section) {
-            const task = section.tasks.find((t: GoalTask) => t.id === taskId);
-            if (task) {
-                task.completed = !task.completed;
-                taskUpdated = true;
+        let taskUpdated = false;
+        for (const section of newSections) {
+            if (section.id === sectionId) {
+                const task = section.tasks.find((t) => t.id === taskId);
+                if (task) {
+                    task.completed = !task.completed;
+                    taskUpdated = true;
+                    break;
+                }
             }
         }
 
         if (!taskUpdated) return;
 
-        newSections.forEach((currentSection: GoalSection) => {
-            const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
-            if (allTasksInSectionCompleted) {
-                currentSection.status = 'completed';
-            } else {
-                currentSection.status = 'unlocked';
-            }
+        // Recalculate section status
+        newSections.forEach((section) => {
+            const allTasksCompleted = section.tasks.every((t) => t.completed);
+            section.status = allTasksCompleted ? 'completed' : 'unlocked';
         });
-    
-        const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
+
+        const isGoalComplete = newSections.every((s) => s.status === 'completed');
         const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
       
         try {
