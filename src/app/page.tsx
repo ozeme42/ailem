@@ -175,16 +175,30 @@ export default function Home() {
     }
   }, [calendarEvents, userLibraries]);
 
-  const pendingTasksSummary = React.useMemo(() => {
+  const pendingHouseTasks = React.useMemo(() => {
     return tasks
-      .filter(task => !task.completed && task.recurrenceType !== 'daily' && ['Ev İşleri', 'Kişisel'].includes(task.category))
+      .filter(task => !task.completed && task.recurrenceType !== 'daily' && task.category === 'Ev İşleri')
       .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
       .map(task => ({
         ...task,
         assignee: familyMembers.find(m => m.id === task.assigneeId)
       }))
-      .slice(0, 5); // Show top 5 pending tasks
+      .slice(0, 5);
   }, [tasks, familyMembers]);
+  
+  const personalTasksByMember = React.useMemo(() => {
+    const grouped: { [key: string]: Task[] } = {};
+    tasks
+      .filter(task => !task.completed && task.category === 'Kişisel')
+      .forEach(task => {
+        if (!grouped[task.assigneeId]) {
+          grouped[task.assigneeId] = [];
+        }
+        grouped[task.assigneeId].push(task);
+      });
+    return grouped;
+  }, [tasks]);
+
 
   const dailyTasksSummary = React.useMemo(() => {
     return tasks
@@ -766,12 +780,12 @@ export default function Home() {
 
         <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
           <CardHeader>
-            <CardTitle>Bekleyen Görevler</CardTitle>
+            <CardTitle>Bekleyen Ev İşleri</CardTitle>
             <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {pendingTasksSummary.length > 0 ? (
-              pendingTasksSummary.map(task => {
+            {pendingHouseTasks.length > 0 ? (
+              pendingHouseTasks.map(task => {
                 return (
                   <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
                     <Checkbox
@@ -798,12 +812,51 @@ export default function Home() {
             ) : (
               <div className="text-center py-8 bg-white/10 rounded-lg">
                 <Check className="mx-auto h-8 w-8 text-white/80" />
-                <p className="mt-2 text-sm text-white/90">Bekleyen görev yok. Harika!</p>
+                <p className="mt-2 text-sm text-white/90">Bekleyen ev işi yok. Harika!</p>
               </div>
             )}
           </CardContent>
         </Card>
         
+        {familyMembers.map(member => {
+            const memberPersonalTasks = personalTasksByMember[member.id] || [];
+            if (memberPersonalTasks.length === 0) return null;
+            return (
+                <Card key={`personal-tasks-${member.id}`} className="shadow-lg" style={{ borderTop: `4px solid ${member.color}`}}>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                             <div 
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0" 
+                                style={{ backgroundColor: member.color }}
+                                title={member.name}
+                            >
+                                {member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <CardTitle>{member.name}'in Kişisel Görevleri</CardTitle>
+                                <CardDescription>{memberPersonalTasks.length} bekleyen görev</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {memberPersonalTasks.map(task => (
+                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
+                                <Checkbox
+                                    id={`personal-task-${task.id}`}
+                                    onCheckedChange={() => handleTaskCompletion(task, member)}
+                                    className="border-primary"
+                                />
+                                <div className="flex-grow">
+                                    <label htmlFor={`personal-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
+                                    <p className="text-xs text-muted-foreground">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            )
+        })}
+
         <Link href="/education" className="block group lg:col-span-2">
             <Card className="shadow-lg bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white h-full">
               <CardHeader>
