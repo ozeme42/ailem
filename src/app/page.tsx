@@ -187,26 +187,23 @@ export default function Home() {
   }, [tasks, familyMembers]);
   
   const personalTasksByMember = React.useMemo(() => {
-    const grouped: { [key: string]: Task[] } = {};
+    const grouped: { [key: string]: { habits: Task[], other: Task[] } } = {};
+    familyMembers.forEach(m => {
+      grouped[m.id] = { habits: [], other: [] };
+    });
+
     tasks
       .filter(task => !task.completed && task.category === 'Kişisel')
       .forEach(task => {
-        if (!grouped[task.assigneeId]) {
-          grouped[task.assigneeId] = [];
+        if (grouped[task.assigneeId]) {
+          if (task.recurrenceType === 'daily') {
+            grouped[task.assigneeId].habits.push(task);
+          } else {
+            grouped[task.assigneeId].other.push(task);
+          }
         }
-        grouped[task.assigneeId].push(task);
       });
     return grouped;
-  }, [tasks]);
-
-
-  const dailyTasksSummary = React.useMemo(() => {
-    return tasks
-      .filter(task => task.recurrenceType === 'daily')
-      .map(task => ({
-        ...task,
-        assignee: familyMembers.find(m => m.id === task.assigneeId)
-      }));
   }, [tasks, familyMembers]);
 
 
@@ -727,57 +724,6 @@ export default function Home() {
 
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow-lg bg-gradient-to-br from-red-500 to-orange-500 text-white">
-          <CardHeader>
-            <CardTitle>Günlük Alışkanlıklar</CardTitle>
-            <CardDescription className="text-white/80">Günlük tekrarlanan seri görevleri.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-             {dailyTasksSummary.length > 0 ? (
-              dailyTasksSummary.map(task => {
-                const isCompletedToday = task.lastCompletedDate ? isToday(parseISO(task.lastCompletedDate)) : false;
-                return (
-                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
-                      <Button
-                        variant={isCompletedToday ? "ghost" : "default"}
-                        size="icon"
-                        className={cn(
-                          "w-12 h-12 rounded-full text-white flex-col shrink-0",
-                          isCompletedToday 
-                            ? "bg-white/10 border-2 border-dashed border-white/50" 
-                            : "bg-white/30 hover:bg-white/40"
-                        )}
-                        onClick={() => task.assignee && handleDailyTaskCompletion(task, task.assignee)}
-                        disabled={isCompletedToday}
-                      >
-                        {isCompletedToday ? <Check /> : <Flame />}
-                        <span className="text-xs mt-0.5">{task.streak || 0}</span>
-                      </Button>
-                      <div className="flex-grow">
-                        <label className="font-semibold cursor-pointer">{task.title}</label>
-                        <p className="text-xs text-white/80">Günlük Görev</p>
-                      </div>
-                      {task.assignee && (
-                        <div 
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
-                          style={{ backgroundColor: task.assignee.color, color: '#fff' }}
-                          title={task.assignee.name}
-                        >
-                          {task.assignee.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  );
-              })
-            ) : (
-              <div className="text-center py-8 bg-white/10 rounded-lg">
-                <Check className="mx-auto h-8 w-8 text-white/80" />
-                <p className="mt-2 text-sm text-white/90">Günlük görev yok.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
           <CardHeader>
             <CardTitle>Bekleyen Ev İşleri</CardTitle>
@@ -819,8 +765,9 @@ export default function Home() {
         </Card>
         
         {familyMembers.map(member => {
-            const memberPersonalTasks = personalTasksByMember[member.id] || [];
-            if (memberPersonalTasks.length === 0) return null;
+            const { habits, other } = personalTasksByMember[member.id] || { habits: [], other: [] };
+            if (habits.length === 0 && other.length === 0) return null;
+            
             return (
                 <Card key={`personal-tasks-${member.id}`} className="shadow-lg" style={{ borderTop: `4px solid ${member.color}`}}>
                     <CardHeader>
@@ -833,25 +780,65 @@ export default function Home() {
                                 {member.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <CardTitle>{member.name}'in Kişisel Görevleri</CardTitle>
-                                <CardDescription>{memberPersonalTasks.length} bekleyen görev</CardDescription>
+                                <CardTitle>{member.name}'in Görevleri</CardTitle>
+                                <CardDescription>{habits.length + other.length} bekleyen görev</CardDescription>
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                        {memberPersonalTasks.map(task => (
-                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
-                                <Checkbox
-                                    id={`personal-task-${task.id}`}
-                                    onCheckedChange={() => handleTaskCompletion(task, member)}
-                                    className="border-primary"
-                                />
-                                <div className="flex-grow">
-                                    <label htmlFor={`personal-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
-                                    <p className="text-xs text-muted-foreground">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
+                    <CardContent className="space-y-4">
+                        {habits.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Alışkanlıklar</h4>
+                                <div className="space-y-3">
+                                    {habits.map(task => {
+                                        const isCompletedToday = task.lastCompletedDate ? isToday(parseISO(task.lastCompletedDate)) : false;
+                                        return (
+                                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
+                                            <Button
+                                                variant={isCompletedToday ? "ghost" : "default"}
+                                                size="icon"
+                                                className={cn(
+                                                "w-12 h-12 rounded-full flex-col shrink-0",
+                                                isCompletedToday 
+                                                    ? "bg-background border-2 border-dashed border-muted-foreground/50" 
+                                                    : "bg-primary/90 hover:bg-primary"
+                                                )}
+                                                onClick={() => handleDailyTaskCompletion(task, member)}
+                                                disabled={isCompletedToday}
+                                            >
+                                                {isCompletedToday ? <Check /> : <Flame />}
+                                                <span className="text-xs mt-0.5">{task.streak || 0}</span>
+                                            </Button>
+                                            <div className="flex-grow">
+                                                <label className="font-semibold cursor-pointer">{task.title}</label>
+                                                <p className="text-xs text-muted-foreground">Günlük Görev</p>
+                                            </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                        ))}
+                        )}
+                        {other.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Diğer Görevler</h4>
+                                <div className="space-y-3">
+                                {other.map(task => (
+                                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
+                                        <Checkbox
+                                            id={`personal-task-${task.id}`}
+                                            onCheckedChange={() => handleTaskCompletion(task, member)}
+                                            className="border-primary"
+                                        />
+                                        <div className="flex-grow">
+                                            <label htmlFor={`personal-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
+                                            <p className="text-xs text-muted-foreground">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )
@@ -984,3 +971,4 @@ export default function Home() {
     </div>
   );
 }
+
