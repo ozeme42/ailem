@@ -269,6 +269,16 @@ export default function Home() {
         const sortedSections = [...goal.sections].sort((a, b) => a.order - b.order);
         let nextTask: GoalTask | null = null;
         let currentSection: GoalSection | null = null;
+        
+        let completedUnits = 0;
+        goal.sections.forEach(section => {
+            section.tasks.forEach(task => {
+                if (task.completed) {
+                    const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
+                    completedUnits += units;
+                }
+            })
+        });
 
         for (const section of sortedSections) {
             if (section.status !== 'completed') {
@@ -283,25 +293,14 @@ export default function Home() {
             }
         }
         
-        const totalTasks = goal.sections.reduce((acc, s) => acc + s.tasks.length, 0);
-        const completedTasks = goal.sections.reduce((acc, s) => acc + s.tasks.filter(t => t.completed).length, 0);
-        const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        const overallProgress = (goal.totalUnits || 0) > 0 ? (completedUnits / goal.totalUnits!) * 100 : 0;
         
-        const completedSections = goal.sections.filter(s => s.status === 'completed').length;
-        const totalSections = goal.sections.length;
-        const sectionProgress = totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
-        
-        const unitName = goal.sections?.[0]?.tasks?.[0]?.title.split(" ").pop() || 'birim';
-
         return {
           ...goal,
-          unitName,
           nextTask,
           currentSection,
-          taskProgress,
-          sectionProgress,
-          completedSections,
-          totalSections,
+          completedUnits,
+          overallProgress,
           assignee: familyMembers.find(m => m.id === goal.assigneeId)
         };
       });
@@ -364,10 +363,7 @@ export default function Home() {
 
   const handleGoalTaskToggle = async (goalId: string, sectionId: string, taskId: string) => {
     const originalGoal = await getGoal(goalId);
-    if (!originalGoal) {
-        toast({ title: "Hata", description: "Hedef bulunamadı.", variant: "destructive" });
-        return;
-    }
+    if (!originalGoal) return;
 
     const newSections = JSON.parse(JSON.stringify(originalGoal.sections)) as GoalSection[];
 
@@ -388,8 +384,20 @@ export default function Home() {
     // Recalculate section status
     newSections.forEach((section) => {
         const allTasksCompleted = section.tasks.every((t) => t.completed);
-        section.status = allTasksCompleted ? 'completed' : 'unlocked';
+        if (allTasksCompleted) {
+            section.status = 'completed';
+        }
     });
+    
+    // Set next section to unlocked
+    const firstIncompleteIndex = newSections.findIndex(s => s.status !== 'completed');
+    if (firstIncompleteIndex > 0) {
+        const prevSection = newSections[firstIncompleteIndex - 1];
+        if(prevSection.status === 'completed') {
+            // newSections[firstIncompleteIndex].status = 'unlocked'; // Kilit sistemi kaldırıldı
+        }
+    }
+
 
     const isGoalComplete = newSections.every((s) => s.status === 'completed');
     const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
@@ -575,8 +583,8 @@ export default function Home() {
                     <p className="text-sm text-white/80">{goal.assignee?.name}</p>
                   </div>
                   <div className="text-right text-xs">
-                     <p>{goal.completedSections} / {goal.totalSections}</p>
-                     <p>Bölüm</p>
+                     <p>{goal.completedUnits} / {goal.totalUnits}</p>
+                     <p>{goal.unitName}</p>
                   </div>
                 </div>
                 
@@ -604,17 +612,10 @@ export default function Home() {
                 <div className="mt-4 space-y-2">
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                             <span>{goal.unitName ? `${goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} İlerlemesi` : 'Görev İlerlemesi'}</span>
-                            <span>{Math.round(goal.taskProgress)}%</span>
+                            <span>Genel İlerleme ({goal.completedUnits}/{goal.totalUnits} {goal.unitName})</span>
+                            <span>{Math.round(goal.overallProgress)}%</span>
                         </div>
-                        <Progress value={goal.taskProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
-                    </div>
-                    <div>
-                        <div className="flex justify-between text-xs text-white/80 mb-1">
-                           <span>{goal.currentSection?.title || "Bölüm İlerlemesi"}</span>
-                             <span>{Math.round(goal.sectionProgress)}%</span>
-                        </div>
-                        <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
+                        <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
                     </div>
                 </div>
               </Link>
