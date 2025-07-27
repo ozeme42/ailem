@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Bell, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -402,36 +402,6 @@ export default function Home() {
               <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
           </div>
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="relative rounded-full p-2 transition-colors hover:bg-white/20">
-                    <Bell className="h-5 w-5" />
-                    {recentActivities.length > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 bg-red-500 text-white border-2 border-background">{recentActivities.length}</Badge>}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel>Son Bildirimler</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {recentActivities.map((activity) => {
-                    const ActivityIcon = activityIcons[activity.type as keyof typeof activityIcons].icon || Star;
-                    const color = activityIcons[activity.type as keyof typeof activityIcons].color || 'from-gray-500 to-gray-600';
-                    return (
-                        <DropdownMenuItem key={activity.id} className="flex items-start gap-3 p-2">
-                             <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-white ${color}`}>
-                                <ActivityIcon className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium">
-                                    <span className="font-bold">{activity.user}</span> <span className="text-muted-foreground font-normal">{activity.title}</span>
-                                </p>
-                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(activity.date, { addSuffix: true, locale: tr })}</p>
-                            </div>
-                        </DropdownMenuItem>
-                    );
-                })}
-                 {recentActivities.length === 0 && <p className="text-xs text-muted-foreground text-center p-4">Henüz yeni bir bildirim yok.</p>}
-              </DropdownMenuContent>
-            </DropdownMenu>
             <ModeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
