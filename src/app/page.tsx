@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -581,7 +581,7 @@ export default function Home() {
                 
                  {goal.nextTask ? (
                     <div className="mt-4 pt-3 border-t border-white/20">
-                         <div className="space-y-2" onClick={(e) => e.preventDefault()}>
+                         <div className="space-y-2" onClick={(e) => {e.preventDefault(); e.stopPropagation();}}>
                             <div className="flex items-center gap-3">
                                 <Checkbox
                                     id={`goal-task-${goal.nextTask.id}`}
