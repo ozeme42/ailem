@@ -85,9 +85,10 @@ export default function GoalDetailClient() {
             let allPreviousCompleted = true;
 
             return sortedSections.map((section, index) => {
-                if (index === 0) { // First section is always unlocked
-                    section.status = section.tasks.every(t => t.completed) ? 'completed' : 'unlocked';
-                } else {
+                 if (section.order === 1) { // First section is always "unlocked" implicitly
+                    allPreviousCompleted = section.tasks.every(t => t.completed);
+                    section.status = allPreviousCompleted ? 'completed' : 'unlocked';
+                 } else {
                     if (allPreviousCompleted && section.status === 'locked') {
                         toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
                         section.status = 'unlocked';
@@ -95,8 +96,8 @@ export default function GoalDetailClient() {
                     if (section.status === 'unlocked' && section.tasks.every(t => t.completed)) {
                         section.status = 'completed';
                     }
-                }
-                allPreviousCompleted = section.status === 'completed';
+                    allPreviousCompleted = section.status === 'completed';
+                 }
                 return section;
             });
         };

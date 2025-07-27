@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -285,13 +286,20 @@ export default function Home() {
         
         const totalTasks = goal.sections.reduce((acc, s) => acc + s.tasks.length, 0);
         const completedTasks = goal.sections.reduce((acc, s) => acc + s.tasks.filter(t => t.completed).length, 0);
-        const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        
+        const totalSections = goal.sections.length;
+        const completedSections = goal.sections.filter(s => s.status === 'completed').length;
+        const sectionProgress = totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
 
         return {
           ...goal,
           nextTask,
           currentSection,
-          progress,
+          taskProgress,
+          sectionProgress,
+          completedSections,
+          totalSections,
           assignee: familyMembers.find(m => m.id === goal.assigneeId)
         };
       });
@@ -403,6 +411,30 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleEditCurrentUser}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  <span>Profili Düzenle</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsMemberFormOpen(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  <span>Üye Ekle</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Çıkış Yap</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
       </header>
 
@@ -535,31 +567,54 @@ export default function Home() {
         <CardContent className="space-y-4">
           {activeGoals.length > 0 ? (
             activeGoals.map(goal => (
-              <Link key={goal.id} href={`/goals/${goal.id}`} className="block p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
+              <Link key={goal.id} href={`/goals/${goal.id}`} className="block p-4 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-grow">
                     <p className="font-bold">{goal.title}</p>
                     <p className="text-sm text-white/80">{goal.assignee?.name}</p>
                   </div>
-                  <Progress value={goal.progress} className="w-24 h-2 bg-white/30" indicatorClassName="bg-white" />
+                  <div className="text-right text-xs">
+                     <p>{goal.completedSections} / {goal.totalSections}</p>
+                     <p>Bölüm</p>
+                  </div>
                 </div>
-                {goal.nextTask ? (
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-3">
-                        <div onClick={(e) => e.stopPropagation()}>
-                           <Checkbox
-                                id={`goal-task-${goal.nextTask.id}`}
-                                onCheckedChange={() => handleGoalTaskToggle(goal, goal.currentSection!.id, goal.nextTask!.id)}
-                                className="border-white text-white ring-offset-background data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
-                           />
-                        </div>
-                        <div>
-                             <label htmlFor={`goal-task-${goal.nextTask.id}`} className="font-semibold cursor-pointer text-sm">{goal.nextTask.title}</label>
-                             <p className="text-xs text-white/80">Sıradaki Adım: {goal.currentSection?.title}</p>
-                        </div>
+                
+                 {goal.nextTask ? (
+                    <div className="mt-4 pt-3 border-t border-white/20">
+                         <div className="space-y-2" onClick={(e) => e.preventDefault()}>
+                            <div className="flex items-center gap-3">
+                                <Checkbox
+                                    id={`goal-task-${goal.nextTask.id}`}
+                                    onCheckedChange={() => handleGoalTaskToggle(goal, goal.currentSection!.id, goal.nextTask!.id)}
+                                    className="border-white text-white ring-offset-background data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
+                                />
+                                <div className="flex-grow">
+                                    <label htmlFor={`goal-task-${goal.nextTask.id}`} className="font-semibold cursor-pointer text-sm">{goal.nextTask.title}</label>
+                                    <p className="text-xs text-white/80">Sıradaki Adım: {goal.currentSection?.title}</p>
+                                </div>
+                            </div>
+                         </div>
                     </div>
                 ) : (
                     <p className="mt-2 text-sm text-center font-semibold text-green-300">🎉 Tüm hedefler tamamlandı!</p>
                 )}
+
+                <div className="mt-4 space-y-2">
+                    <div>
+                        <div className="flex justify-between text-xs text-white/80 mb-1">
+                            <span>Görev İlerlemesi</span>
+                            <span>{Math.round(goal.taskProgress)}%</span>
+                        </div>
+                        <Progress value={goal.taskProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
+                    </div>
+                    <div>
+                        <div className="flex justify-between text-xs text-white/80 mb-1">
+                            <span>Bölüm İlerlemesi</span>
+                             <span>{Math.round(goal.sectionProgress)}%</span>
+                        </div>
+                        <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
+                    </div>
+                </div>
               </Link>
             ))
           ) : (
