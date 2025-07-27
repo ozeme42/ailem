@@ -851,8 +851,8 @@ export default function Home() {
                                 </div>
                             </div>
                         )}
-                        {(tests.length > 0 || studies.length > 0) && (
-                            <div>
+                        {tests.length > 0 && (
+                             <div>
                                 <Link href="/education" className="group"><h4 className="font-semibold text-sm mb-2 text-muted-foreground group-hover:text-primary">Ödevler <ArrowRight className="inline h-3 w-3" /></h4></Link>
                                 <div className="space-y-2">
                                     {tests.map(test => (
@@ -861,6 +861,13 @@ export default function Home() {
                                             <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+                         {studies.length > 0 && (
+                             <div>
+                                <Link href="/education/study" className="group"><h4 className="font-semibold text-sm mb-2 mt-4 text-muted-foreground group-hover:text-primary">Konu Anlatımı <ArrowRight className="inline h-3 w-3" /></h4></Link>
+                                <div className="space-y-2">
                                     {studies.map(study => (
                                         <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900">
                                             <BookHeart className="h-5 w-5 shrink-0" />
@@ -956,3 +963,4 @@ export default function Home() {
     </div>
   );
 }
+
