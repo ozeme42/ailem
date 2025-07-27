@@ -66,13 +66,17 @@ export default function GoalDetailClient() {
     }, [goalId, user]);
 
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
+        // 1. Read the latest state of the goal from Firestore
         const originalGoal = await getGoal(goalId);
-        if (!originalGoal) return;
+        if (!originalGoal) {
+            toast({ title: "Hata", description: "Hedef bulunamadı.", variant: "destructive" });
+            return;
+        }
     
-        // Create a deep copy to avoid direct state mutation issues.
+        // 2. Modify the data in memory
         const newSections = JSON.parse(JSON.stringify(originalGoal.sections));
-    
         let taskFound = false;
+        
         newSections.forEach((section: GoalSection) => {
             if (section.id === sectionId) {
                 const task = section.tasks.find((t: GoalTask) => t.id === taskId);
@@ -93,13 +97,16 @@ export default function GoalDetailClient() {
             const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
     
             if (allTasksInSectionCompleted) {
-                currentSection.status = 'completed';
+                if (currentSection.status !== 'completed') {
+                   currentSection.status = 'completed';
+                }
                 // Unlock next section if it exists and is locked
                 if (index + 1 < newSections.length && newSections[index + 1].status === 'locked') {
                     newSections[index + 1].status = 'unlocked';
                 }
             } else {
                  // If any task is un-completed, the section cannot be 'completed'
+                 // But it should remain 'unlocked' if it was already unlocked
                 if (currentSection.status === 'completed') {
                     currentSection.status = 'unlocked';
                 }
@@ -109,6 +116,7 @@ export default function GoalDetailClient() {
         const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
         const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
       
+        // 3. Write the entire updated object back to Firestore
         try {
             await updateGoal(originalGoal.id, { sections: newSections, status: newGoalStatus });
             if (newGoalStatus === 'completed' && originalGoal.status !== 'completed') {
