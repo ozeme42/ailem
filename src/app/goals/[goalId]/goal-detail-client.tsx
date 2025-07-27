@@ -117,7 +117,7 @@ export default function GoalDetailClient() {
             toast({ title: "Hata", description: "Sıralama kaydedilemedi.", variant: "destructive" });
             console.error("Failed to reorder tasks:", error);
             // Revert to original state if save fails
-            const originalGoal = await onGoalUpdate(goalId, setGoal);
+            onGoalUpdate(goalId, setGoal);
         }
     };
 
@@ -145,11 +145,12 @@ export default function GoalDetailClient() {
             <Accordion type="multiple" defaultValue={sortedSections.map(s => s.id)} className="w-full space-y-4">
                 {sortedSections.map((section) => {
                     const progress = calculateSectionProgress(section);
+                    const isUnlocked = section.status !== 'locked';
 
                     return (
-                        <Card key={section.id}>
+                        <Card key={section.id} className={cn(!isUnlocked && "opacity-60 bg-muted/50")}>
                             <AccordionItem value={section.id} className="border-b-0">
-                                <AccordionTrigger className="p-4 hover:no-underline">
+                                <AccordionTrigger disabled={!isUnlocked} className="p-4 hover:no-underline">
                                     <div className="flex items-center gap-4 w-full">
                                         <CircularProgress progress={progress} />
                                         <div className="text-left flex-grow">
@@ -176,7 +177,7 @@ export default function GoalDetailClient() {
                                                     />
                                                     <label
                                                         htmlFor={`${section.id}-${task.id}`}
-                                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                                        className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer", task.completed && "line-through text-muted-foreground")}
                                                     >
                                                         {task.title}
                                                     </label>

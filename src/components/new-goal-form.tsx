@@ -104,19 +104,17 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   }, [sectionCount, replace, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    let unitTracker = 0;
 
     const finalSections: Omit<GoalSection, 'id' | 'status'>[] = values.sections.map((section, sectionIndex) => {
       const currentSectionUnits = unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0);
-      const unitsPerTask = section.taskCount > 0 ? currentSectionUnits / section.taskCount : 0;
+      const unitsPerTask = section.taskCount > 0 ? Math.floor(currentSectionUnits / section.taskCount) : 0;
+      const remainderUnitsPerTask = section.taskCount > 0 ? currentSectionUnits % section.taskCount : 0;
       
       const tasks = Array.from({ length: section.taskCount }, (_, taskIndex) => {
-          const startUnit = Math.floor(unitTracker) + 1;
-          unitTracker += unitsPerTask;
-          const endUnit = Math.round(unitTracker);
+          const taskUnits = unitsPerTask + (taskIndex < remainderUnitsPerTask ? 1 : 0);
           
           return {
-              title: `${startUnit}-${endUnit} ${values.unitName} tamamla`,
+              title: `${taskUnits} ${values.unitName} tamamla`,
               order: taskIndex + 1,
               completed: false,
           };
@@ -126,6 +124,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
           title: section.title,
           order: sectionIndex + 1,
           tasks: tasks,
+          status: 'unlocked',
       };
     });
     
