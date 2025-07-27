@@ -395,7 +395,7 @@ export default function Home() {
 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header className="flex items-center justify-between gap-4 p-4 bg-gradient-to-br from-primary to-accent/80 text-primary-foreground rounded-xl shadow-lg">
           <div className="flex items-center gap-4">
               <SidebarTrigger className="text-primary-foreground hover:bg-white/20 hover:text-primary-foreground" />
