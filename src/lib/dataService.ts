@@ -1,4 +1,5 @@
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -552,16 +553,16 @@ export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'fa
     const updateData = { ...data };
 
     // Firestore cannot accept undefined fields.
-    if ('description' in updateData && updateData.description === undefined) {
+    if (updateData.description === undefined) {
       delete updateData.description;
     }
-    if ('totalUnits' in updateData && updateData.totalUnits === undefined) {
+    if (updateData.totalUnits === undefined) {
       delete updateData.totalUnits;
     }
-    if ('unitName' in updateData && updateData.unitName === undefined) {
+    if (updateData.unitName === undefined) {
       delete updateData.unitName;
     }
-    if ('sectionCount' in updateData && updateData.sectionCount === undefined) {
+    if (updateData.sectionCount === undefined) {
       delete updateData.sectionCount;
     }
   
