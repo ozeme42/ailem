@@ -362,44 +362,42 @@ export default function Home() {
 
   const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
     let newSections = goal.sections.map(section => {
-        if (section.id === sectionId) {
-            const newTasks = section.tasks.map(task => {
-                if (task.id === taskId) {
-                    return { ...task, completed: !task.completed };
-                }
-                return task;
-            });
-            return { ...section, tasks: newTasks };
-        }
-        return section;
+      if (section.id === sectionId) {
+        const updatedTasks = section.tasks.map(task =>
+          task.id === taskId ? { ...task, completed: !task.completed } : task
+        );
+        return { ...section, tasks: updatedTasks };
+      }
+      return section;
     });
 
     const checkAndUnlockSections = (sections: GoalSection[]): GoalSection[] => {
-        const sortedSections = [...sections].sort((a,b) => a.order - b.order);
-        let allPreviousCompleted = true;
+      const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+      let allPreviousCompleted = true;
 
-        return sortedSections.map((section, index) => {
-            if (index === 0) { // First section is always unlocked
-                section.status = section.tasks.every(t => t.completed) ? 'completed' : 'unlocked';
-            } else {
-                 if (allPreviousCompleted && section.status === 'locked') {
-                    section.status = 'unlocked';
-                }
-                if (section.status === 'unlocked' && section.tasks.every(t => t.completed)) {
-                    section.status = 'completed';
-                }
-            }
-            allPreviousCompleted = section.status === 'completed';
-            return section;
-        });
+      return sortedSections.map((section, index) => {
+        const isCompleted = section.tasks.every(t => t.completed);
+        if (isCompleted) {
+          section.status = 'completed';
+        }
+        
+        if (index > 0 && allPreviousCompleted && section.status === 'locked') {
+          section.status = 'unlocked';
+        }
+
+        allPreviousCompleted = section.status === 'completed';
+        return section;
+      });
     };
-    
-    newSections = checkAndUnlockSections(newSections);
 
+    newSections = checkAndUnlockSections(newSections);
     const isGoalComplete = newSections.every(s => s.status === 'completed');
 
-    await updateGoal(goal.id, { sections: newSections, status: isGoalComplete ? 'completed' : 'in-progress' });
-};
+    await updateGoal(goal.id, {
+      sections: newSections,
+      status: isGoalComplete ? 'completed' : 'in-progress'
+    });
+  };
 
 
   return (
