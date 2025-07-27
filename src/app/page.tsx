@@ -177,18 +177,24 @@ export default function Home() {
 
   const pendingTasksSummary = React.useMemo(() => {
     return tasks
-      .filter(task => !task.completed && ['Ev İşleri', 'Kişisel'].includes(task.category))
-      .sort((a, b) => {
-        if(a.recurrenceType === 'daily' && b.recurrenceType !== 'daily') return -1;
-        if(a.recurrenceType !== 'daily' && b.recurrenceType === 'daily') return 1;
-        return compareAsc(parseISO(a.dueDate), parseISO(b.dueDate))
-      })
+      .filter(task => !task.completed && task.recurrenceType !== 'daily' && ['Ev İşleri', 'Kişisel'].includes(task.category))
+      .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)))
       .map(task => ({
         ...task,
         assignee: familyMembers.find(m => m.id === task.assigneeId)
       }))
       .slice(0, 5); // Show top 5 pending tasks
   }, [tasks, familyMembers]);
+
+  const dailyTasksSummary = React.useMemo(() => {
+    return tasks
+      .filter(task => task.recurrenceType === 'daily')
+      .map(task => ({
+        ...task,
+        assignee: familyMembers.find(m => m.id === task.assigneeId)
+      }));
+  }, [tasks, familyMembers]);
+
 
   const { pendingTests, pendingStudies } = React.useMemo(() => {
     const students = familyMembers.filter(m => m.role.includes('Çocuk'));
@@ -707,25 +713,22 @@ export default function Home() {
 
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
+        <Card className="shadow-lg bg-gradient-to-br from-red-500 to-orange-500 text-white">
           <CardHeader>
-            <CardTitle>Bekleyen Görevler</CardTitle>
-            <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
+            <CardTitle>Günlük Alışkanlıklar</CardTitle>
+            <CardDescription className="text-white/80">Günlük tekrarlanan seri görevleri.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {pendingTasksSummary.length > 0 ? (
-              pendingTasksSummary.map(task => {
-                const isDaily = task.recurrenceType === 'daily';
+             {dailyTasksSummary.length > 0 ? (
+              dailyTasksSummary.map(task => {
                 const isCompletedToday = task.lastCompletedDate ? isToday(parseISO(task.lastCompletedDate)) : false;
-
-                if (isDaily) {
-                  return (
+                return (
                     <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
                       <Button
                         variant={isCompletedToday ? "ghost" : "default"}
                         size="icon"
                         className={cn(
-                          "w-12 h-12 rounded-full text-white flex-col",
+                          "w-12 h-12 rounded-full text-white flex-col shrink-0",
                           isCompletedToday 
                             ? "bg-white/10 border-2 border-dashed border-white/50" 
                             : "bg-white/30 hover:bg-white/40"
@@ -751,8 +754,24 @@ export default function Home() {
                       )}
                     </div>
                   );
-                }
+              })
+            ) : (
+              <div className="text-center py-8 bg-white/10 rounded-lg">
+                <Check className="mx-auto h-8 w-8 text-white/80" />
+                <p className="mt-2 text-sm text-white/90">Günlük görev yok.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
+        <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
+          <CardHeader>
+            <CardTitle>Bekleyen Görevler</CardTitle>
+            <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pendingTasksSummary.length > 0 ? (
+              pendingTasksSummary.map(task => {
                 return (
                   <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
                     <Checkbox
@@ -785,7 +804,7 @@ export default function Home() {
           </CardContent>
         </Card>
         
-        <Link href="/education" className="block group">
+        <Link href="/education" className="block group lg:col-span-2">
             <Card className="shadow-lg bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white h-full">
               <CardHeader>
                 <CardTitle>Ödev Takibi</CardTitle>
