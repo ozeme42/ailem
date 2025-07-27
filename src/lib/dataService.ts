@@ -537,12 +537,8 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
         sections: data.sections.map((section, index) => ({
             ...section,
             id: Date.now().toString() + index,
-            status: 'unlocked', 
-            tasks: section.tasks.map((task, taskIndex) => ({
-                ...task,
-                id: Date.now().toString() + index + taskIndex,
-                completed: false,
-            }))
+            status: 'unlocked',
+            completedUnits: 0,
         }))
     };
     return addDoc(collection(db, 'goals'), newGoal);
@@ -879,6 +875,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
+
 
 
 

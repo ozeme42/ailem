@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -10,7 +11,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Progress } from '@/components/ui/progress';
 import { PlusCircle, Target, Trash2, Edit } from 'lucide-react';
 import { NewGoalForm } from '@/components/new-goal-form';
@@ -61,21 +62,15 @@ export default function GoalsClient() {
     };
 
     const calculateOverallProgress = (goal: Goal) => {
-        const totalTasks = goal.sections.reduce((acc, section) => acc + section.tasks.length, 0);
-        if (totalTasks === 0) return 0;
-        const completedTasks = goal.sections.reduce((acc, section) => acc + section.tasks.filter(t => t.completed).length, 0);
-        return (completedTasks / totalTasks) * 100;
+        if (!goal.totalUnits) return 0;
+        const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
+        return (totalCompletedUnits / goal.totalUnits) * 100;
     };
     
-    const getNextTask = (goal: Goal) => {
-        for (const section of goal.sections.sort((a,b) => a.order - b.order)) {
+    const getNextSectionTitle = (goal: Goal) => {
+        for (const section of goal.sections.sort((a, b) => a.order - b.order)) {
             if (section.status !== 'completed') {
-                for (const task of section.tasks.sort((a,b) => a.order - b.order)) {
-                    if (!task.completed) {
-                        return task.title;
-                    }
-                }
-                 return `Sıradaki Bölüm: ${section.title}`;
+                return `Sıradaki Bölüm: ${section.title}`;
             }
         }
         return "Tüm hedefler tamamlandı!";
@@ -168,8 +163,7 @@ export default function GoalsClient() {
                                 </CardHeader>
                                 <CardContent className="flex-grow space-y-3">
                                      <div className="space-y-1 text-sm">
-                                        <p className="text-muted-foreground">Sıradaki Adım:</p>
-                                        <p className="font-medium">{getNextTask(goal)}</p>
+                                        <p className="text-muted-foreground">{getNextSectionTitle(goal)}</p>
                                     </div>
                                     <div className="text-sm">
                                         <p className="text-muted-foreground">Bölüm İlerlemesi:</p>

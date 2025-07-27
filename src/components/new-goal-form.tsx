@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -100,12 +101,11 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
     const unitsPerSection = sectionCount > 0 ? Math.floor(totalUnits / sectionCount) : 0;
     const remainderUnits = sectionCount > 0 ? totalUnits % sectionCount : 0;
 
-    const finalSections: Omit<GoalSection, 'id' | 'status'>[] = values.sections.map((section, sectionIndex) => {
+    const finalSections: Omit<GoalSection, 'id' | 'status' | 'completedUnits'>[] = values.sections.map((section, sectionIndex) => {
       return {
           title: section.title,
           order: sectionIndex + 1,
           sectionTotalUnits: unitsPerSection + (sectionIndex < remainderUnits ? 1 : 0),
-          completedUnits: 0,
       };
     });
     
