@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -288,7 +287,7 @@ export default function Home() {
         const completedTasks = goal.sections.reduce((acc, s) => acc + s.tasks.filter(t => t.completed).length, 0);
         const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
         
-        const completedSections = goal.sections.filter(s => s.tasks.every(t => t.completed)).length;
+        const completedSections = goal.sections.filter(s => s.status === 'completed').length;
         const totalSections = goal.sections.length;
         const sectionProgress = totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
         
@@ -364,69 +363,52 @@ export default function Home() {
   };
 
   const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
-    const originalGoal = JSON.parse(JSON.stringify(goal)); // Deep copy for potential rollback
-    const newOptimisticGoal = JSON.parse(JSON.stringify(goal));
-
-    // --- Start of logic ---
-    let wasGoalCompleted = newOptimisticGoal.status === 'completed';
-    const sectionIndex = newOptimisticGoal.sections.findIndex((s: GoalSection) => s.id === sectionId);
-    if (sectionIndex === -1) return;
-
-    const taskIndex = newOptimisticGoal.sections[sectionIndex].tasks.findIndex((t: GoalTask) => t.id === taskId);
-    if (taskIndex === -1) return;
-
-    // Optimistically update the UI before database call
-    newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed = !newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed;
-    const newGoals = goals.map(g => (g.id === newOptimisticGoal.id ? newOptimisticGoal : g));
-    setGoals(newGoals);
-
-    // Recalculate all section and goal statuses based on the new state
-    newOptimisticGoal.sections.forEach((currentSection: GoalSection, index: number) => {
+    const goalToUpdate = goals.find(g => g.id === goal.id);
+    if (!goalToUpdate) return;
+  
+    // Create a deep copy to avoid direct state mutation
+    const newSections = JSON.parse(JSON.stringify(goalToUpdate.sections));
+  
+    let sectionToUpdate = newSections.find((s: GoalSection) => s.id === sectionId);
+    if (!sectionToUpdate) return;
+  
+    let taskToUpdate = sectionToUpdate.tasks.find((t: GoalTask) => t.id === taskId);
+    if (!taskToUpdate) return;
+  
+    // Toggle completion status
+    taskToUpdate.completed = !taskToUpdate.completed;
+  
+    // Recalculate section and goal status
+    newSections.forEach((currentSection: GoalSection, index: number) => {
         const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
-        
+  
         if (allTasksInSectionCompleted) {
-            if (currentSection.status !== 'completed') {
-                currentSection.status = 'completed';
+            currentSection.status = 'completed';
+            // Unlock next section if it exists and is locked
+            if (index + 1 < newSections.length && newSections[index + 1].status === 'locked') {
+                newSections[index + 1].status = 'unlocked';
             }
         } else {
-             if (currentSection.status === 'completed') {
+             // If any task is un-completed, the section cannot be 'completed'
+            if (currentSection.status === 'completed') {
                 currentSection.status = 'unlocked';
-             }
-        }
-        
-        // Unlock the next section if the current one is complete and the next one is locked.
-        if (index > 0) {
-             const previousSection = newOptimisticGoal.sections[index - 1];
-             if(previousSection.status === 'completed' && currentSection.status === 'locked') {
-                currentSection.status = 'unlocked';
-                toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
-             }
-        } else { // First section should always be unlocked.
-             if (currentSection.status === 'locked') {
-                currentSection.status = 'unlocked';
-             }
+            }
         }
     });
 
-    const isGoalComplete = newOptimisticGoal.sections.every((s: GoalSection) => s.status === 'completed');
-    newOptimisticGoal.status = isGoalComplete ? 'completed' : 'in-progress';
-    
-    if (isGoalComplete && !wasGoalCompleted) {
-        toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${newOptimisticGoal.title}" hedefini başarıyla tamamladın.` });
-    }
-    // --- End of logic ---
-
+    const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
+    const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
+  
     try {
-        // Now, update the database with the fully recalculated state.
-        await updateGoal(goal.id, { sections: newOptimisticGoal.sections, status: newOptimisticGoal.status });
+        await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
+        if (newGoalStatus === 'completed' && goal.status !== 'completed') {
+             toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${goal.title}" hedefini başarıyla tamamladın.` });
+        }
     } catch (error) {
-        // If the database update fails, revert the optimistic change and show an error.
         toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
-        const revertedGoals = goals.map(g => (g.id === originalGoal.id ? originalGoal : g));
-        setGoals(revertedGoals);
         console.error("Failed to update goal task:", error);
     }
-};
+  };
 
 
   return (
@@ -822,4 +804,3 @@ export default function Home() {
     </div>
   );
 }
-
