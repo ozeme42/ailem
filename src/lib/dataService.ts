@@ -1,6 +1,4 @@
 
-
-
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -538,7 +536,7 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
         sections: data.sections.map((section, index) => ({
             ...section,
             id: Date.now().toString() + index,
-            status: index === 0 ? 'unlocked' : 'locked',
+            status: 'unlocked', // All sections are unlocked by default now
             tasks: section.tasks.map((task, taskIndex) => ({
                 ...task,
                 id: Date.now().toString() + index + taskIndex,
@@ -562,7 +560,7 @@ export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'fa
             return {
                 ...section,
                 id: originalSection?.id || Date.now().toString() + index,
-                status: originalSection?.status || (index === 0 ? 'unlocked' : 'locked'),
+                status: 'unlocked', // Always unlocked
                 tasks: section.tasks.map((task, taskIndex) => {
                     const originalTask = originalSection?.tasks.find(t => t.order === taskIndex + 1);
                     return {

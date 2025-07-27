@@ -66,57 +66,38 @@ export default function GoalDetailClient() {
     }, [goalId, user]);
 
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
-        // 1. Read the latest state of the goal from Firestore
         const originalGoal = await getGoal(goalId);
         if (!originalGoal) {
             toast({ title: "Hata", description: "Hedef bulunamadı.", variant: "destructive" });
             return;
         }
-    
-        // 2. Modify the data in memory
+
         const newSections = JSON.parse(JSON.stringify(originalGoal.sections));
-        let taskFound = false;
-        
-        newSections.forEach((section: GoalSection) => {
-            if (section.id === sectionId) {
-                const task = section.tasks.find((t: GoalTask) => t.id === taskId);
-                if (task) {
-                    task.completed = !task.completed;
-                    taskFound = true;
-                }
+        let taskUpdated = false;
+
+        const section = newSections.find((s: GoalSection) => s.id === sectionId);
+        if (section) {
+            const task = section.tasks.find((t: GoalTask) => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                taskUpdated = true;
             }
-        });
-    
-        if (!taskFound) {
-            toast({ title: "Hata", description: "Görev bulunamadı.", variant: "destructive" });
-            return;
         }
-        
-        // Recalculate section and goal status after the change
-        newSections.forEach((currentSection: GoalSection, index: number) => {
+
+        if (!taskUpdated) return;
+
+        newSections.forEach((currentSection: GoalSection) => {
             const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
-    
             if (allTasksInSectionCompleted) {
-                if (currentSection.status !== 'completed') {
-                   currentSection.status = 'completed';
-                }
-                // Unlock next section if it exists and is locked
-                if (index + 1 < newSections.length && newSections[index + 1].status === 'locked') {
-                    newSections[index + 1].status = 'unlocked';
-                }
+                currentSection.status = 'completed';
             } else {
-                 // If any task is un-completed, the section cannot be 'completed'
-                 // But it should remain 'unlocked' if it was already unlocked
-                if (currentSection.status === 'completed') {
-                    currentSection.status = 'unlocked';
-                }
+                currentSection.status = 'unlocked';
             }
         });
     
         const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
         const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
       
-        // 3. Write the entire updated object back to Firestore
         try {
             await updateGoal(originalGoal.id, { sections: newSections, status: newGoalStatus });
             if (newGoalStatus === 'completed' && originalGoal.status !== 'completed') {
@@ -150,21 +131,16 @@ export default function GoalDetailClient() {
                 </Button>
             </PageHeader>
             
-            <Accordion type="multiple" defaultValue={sortedSections.filter(s => s.status === 'unlocked').map(s => s.id)} className="w-full space-y-4">
+            <Accordion type="multiple" defaultValue={sortedSections.map(s => s.id)} className="w-full space-y-4">
                 {sortedSections.map((section) => {
                     const progress = calculateSectionProgress(section);
-                    const isLocked = section.status === 'locked';
 
                     return (
-                        <Card key={section.id} className={cn(isLocked && "bg-muted/50")}>
+                        <Card key={section.id}>
                             <AccordionItem value={section.id} className="border-b-0">
-                                <AccordionTrigger className="p-4 hover:no-underline" disabled={isLocked}>
+                                <AccordionTrigger className="p-4 hover:no-underline">
                                     <div className="flex items-center gap-4 w-full">
-                                        {isLocked ? (
-                                            <Lock className="w-8 h-8 text-muted-foreground" />
-                                        ) : (
-                                            <CircularProgress progress={progress} />
-                                        )}
+                                        <CircularProgress progress={progress} />
                                         <div className="text-left flex-grow">
                                             <h3 className="text-lg font-semibold">{section.title}</h3>
                                         </div>

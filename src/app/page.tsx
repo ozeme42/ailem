@@ -363,62 +363,43 @@ export default function Home() {
   };
 
   const handleGoalTaskToggle = async (goalId: string, sectionId: string, taskId: string) => {
-    // 1. Read the latest state of the goal from Firestore
     const originalGoal = await getGoal(goalId);
     if (!originalGoal) {
         toast({ title: "Hata", description: "Hedef bulunamadı.", variant: "destructive" });
         return;
     }
 
-    // 2. Modify the data in memory
     const newSections = JSON.parse(JSON.stringify(originalGoal.sections));
-    let taskFound = false;
+    let taskUpdated = false;
 
-    newSections.forEach((section: GoalSection) => {
-        if (section.id === sectionId) {
-            const task = section.tasks.find((t: GoalTask) => t.id === taskId);
-            if (task) {
-                task.completed = !task.completed;
-                taskFound = true;
-            }
+    // Find and update the task
+    const section = newSections.find((s: GoalSection) => s.id === sectionId);
+    if (section) {
+        const task = section.tasks.find((t: GoalTask) => t.id === taskId);
+        if (task) {
+            task.completed = !task.completed;
+            taskUpdated = true;
         }
-    });
-
-    if (!taskFound) {
-        toast({ title: "Hata", description: "Görev bulunamadı.", variant: "destructive" });
-        return;
     }
-    
-    // Recalculate section and goal status after the change
+
+    if (!taskUpdated) return;
+
+    // Recalculate section status
     newSections.forEach((currentSection: GoalSection, index: number) => {
         const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
-
         if (allTasksInSectionCompleted) {
-            if (currentSection.status !== 'completed') {
-                currentSection.status = 'completed';
-            }
-            // Unlock next section if it exists and is locked
-            if (index + 1 < newSections.length && newSections[index + 1].status === 'locked') {
-                newSections[index + 1].status = 'unlocked';
-            }
+            currentSection.status = 'completed';
         } else {
-            // If any task is un-completed, the section cannot be 'completed'
-            // But it should remain 'unlocked' if it was already unlocked
-            if (currentSection.status === 'completed') {
-                currentSection.status = 'unlocked';
-            }
+             // If a task was unchecked, section is no longer completed
+            currentSection.status = 'unlocked';
         }
     });
-    
+
     const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
     const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
   
-    // 3. Write the entire updated object back to Firestore
     try {
         await updateGoal(originalGoal.id, { sections: newSections, status: newGoalStatus });
-        if (newGoalStatus === 'completed' && originalGoal.status !== 'completed') {
-             toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${originalGoal.title}" hedefini başarıyla tamamladın.` });
-        }
     } catch (error) {
         toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
         console.error("Failed to update goal task:", error);
