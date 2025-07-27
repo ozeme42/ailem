@@ -69,8 +69,7 @@ export default function GoalDetailClient() {
         if (!goal) return;
 
         // --- Optimistic UI Update ---
-        // Create a new version of the goal with the toggled task for immediate UI feedback.
-        const newOptimisticGoal = JSON.parse(JSON.stringify(goal));
+        const newOptimisticGoal = JSON.parse(JSON.stringify(goal)); // Deep copy
         const section = newOptimisticGoal.sections.find((s: GoalSection) => s.id === sectionId);
         if (section) {
             const task = section.tasks.find((t: GoalTask) => t.id === taskId);
@@ -78,25 +77,16 @@ export default function GoalDetailClient() {
                 task.completed = !task.completed;
             }
         }
-        // Immediately update the local state to make the UI feel instant.
         setGoal(newOptimisticGoal);
         // --- End of Optimistic UI Update ---
 
         try {
             // Now, prepare the data and update the database in the background.
-            const updatedSections = goal.sections.map(s => {
-                if (s.id === sectionId) {
-                    const updatedTasks = s.tasks.map(t =>
-                        t.id === taskId ? { ...t, completed: !t.completed } : t
-                    );
-                    return { ...s, tasks: updatedTasks };
-                }
-                return s;
-            });
+            const newSections = JSON.parse(JSON.stringify(newOptimisticGoal.sections));
 
             // Recalculate all section and goal statuses based on the new state.
             let allPreviousSectionsCompleted = true;
-            updatedSections.sort((a,b) => a.order - b.order).forEach((currentSection, index) => {
+            newSections.sort((a: GoalSection, b: GoalSection) => a.order - b.order).forEach((currentSection: GoalSection, index: number) => {
                 const allTasksInSectionCompleted = currentSection.tasks.every(t => t.completed);
 
                 if (allTasksInSectionCompleted) {
@@ -111,7 +101,7 @@ export default function GoalDetailClient() {
                 
                 // Unlock the next section if the current one is complete and the next one is locked.
                 if (index > 0) {
-                     const previousSection = updatedSections[index - 1];
+                     const previousSection = newSections[index - 1];
                      if(previousSection.status === 'completed' && currentSection.status === 'locked') {
                         currentSection.status = 'unlocked';
                         toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
@@ -124,10 +114,10 @@ export default function GoalDetailClient() {
                 allPreviousSectionsCompleted = allPreviousSectionsCompleted && allTasksInSectionCompleted;
             });
 
-            const isGoalComplete = updatedSections.every(s => s.status === 'completed');
+            const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
             const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
             
-            await updateGoal(goal.id, { sections: updatedSections, status: newGoalStatus });
+            await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
 
         } catch (error) {
             // If the database update fails, revert the optimistic change and show an error.

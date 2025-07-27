@@ -267,14 +267,14 @@ export default function Home() {
     return goals
       .filter(goal => goal.status === 'in-progress')
       .map(goal => {
-        const sortedSections = goal.sections.sort((a, b) => a.order - b.order);
+        const sortedSections = [...goal.sections].sort((a, b) => a.order - b.order);
         let nextTask: GoalTask | null = null;
         let currentSection: GoalSection | null = null;
 
         for (const section of sortedSections) {
             if (section.status !== 'completed') {
                 currentSection = section;
-                for (const task of section.tasks.sort((a,b) => a.order - b.order)) {
+                for (const task of [...section.tasks].sort((a,b) => a.order - b.order)) {
                     if (!task.completed) {
                         nextTask = task;
                         break;
@@ -291,9 +291,12 @@ export default function Home() {
         const totalSections = goal.sections.length;
         const completedSections = goal.sections.filter(s => s.status === 'completed').length;
         const sectionProgress = totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
+        const unitName = goal.sections?.[0]?.tasks?.[0]?.title.split(" ").pop() || 'birim';
+
 
         return {
           ...goal,
+          unitName,
           nextTask,
           currentSection,
           taskProgress,
@@ -361,44 +364,63 @@ export default function Home() {
   };
 
   const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
-    let newSections = goal.sections.map(section => {
-      if (section.id === sectionId) {
-        const updatedTasks = section.tasks.map(task =>
-          task.id === taskId ? { ...task, completed: !task.completed } : task
-        );
-        return { ...section, tasks: updatedTasks };
-      }
-      return section;
+    // --- Optimistic UI Update ---
+    const newOptimisticGoals = goals.map(g => {
+        if (g.id !== goal.id) return g;
+        const newSections = g.sections.map(s => {
+            if (s.id !== sectionId) return s;
+            const newTasks = s.tasks.map(t =>
+                t.id === taskId ? { ...t, completed: !t.completed } : t
+            );
+            return { ...s, tasks: newTasks };
+        });
+        return { ...g, sections: newSections };
     });
+    setGoals(newOptimisticGoals);
+    // --- End Optimistic UI ---
 
-    const checkAndUnlockSections = (sections: GoalSection[]): GoalSection[] => {
-      const sortedSections = [...sections].sort((a, b) => a.order - b.order);
-      let allPreviousCompleted = true;
+    try {
+        const goalToUpdate = newOptimisticGoals.find(g => g.id === goal.id)!;
+        let newSections = JSON.parse(JSON.stringify(goalToUpdate.sections));
 
-      return sortedSections.map((section, index) => {
-        const isCompleted = section.tasks.every(t => t.completed);
+        // Recalculate all section and goal statuses
+        let allPreviousSectionsCompleted = true;
+        newSections.sort((a: GoalSection, b: GoalSection) => a.order - b.order).forEach((section: GoalSection, index: number) => {
+            const allTasksInSectionCompleted = section.tasks.every(t => t.completed);
+
+            if (allTasksInSectionCompleted) {
+                if (section.status !== 'completed') {
+                    section.status = 'completed';
+                }
+            } else {
+                 if (section.status === 'completed') {
+                    section.status = 'unlocked';
+                 }
+            }
+            
+            if (index > 0) {
+                 const previousSection = newSections[index - 1];
+                 if(previousSection.status === 'completed' && section.status === 'locked') {
+                    section.status = 'unlocked';
+                    toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
+                 }
+            } else if (section.status === 'locked') {
+                section.status = 'unlocked';
+            }
+            
+            allPreviousSectionsCompleted = allPreviousSectionsCompleted && allTasksInSectionCompleted;
+        });
+
+        const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
+        const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
         
-        if (isCompleted) {
-          section.status = 'completed';
-        }
+        await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
 
-        if (index > 0 && allPreviousCompleted && section.status === 'locked') {
-          section.status = 'unlocked';
-          toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
-        }
-        
-        allPreviousCompleted = section.status === 'completed';
-        return section;
-      });
-    };
-
-    newSections = checkAndUnlockSections(newSections);
-    const isGoalComplete = newSections.every(s => s.status === 'completed');
-
-    await updateGoal(goal.id, {
-      sections: newSections,
-      status: isGoalComplete ? 'completed' : 'in-progress'
-    });
+    } catch (error) {
+        toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
+        setGoals(goals); // Revert on failure
+        console.error("Failed to update goal task:", error);
+    }
   };
 
 
@@ -585,6 +607,7 @@ export default function Home() {
                             <div className="flex items-center gap-3">
                                 <Checkbox
                                     id={`goal-task-${goal.nextTask.id}`}
+                                    checked={goal.nextTask.completed}
                                     onCheckedChange={() => handleGoalTaskToggle(goal, goal.currentSection!.id, goal.nextTask!.id)}
                                     className="border-white text-white ring-offset-background data-[state=checked]:bg-white data-[state=checked]:text-indigo-600"
                                 />
@@ -602,14 +625,14 @@ export default function Home() {
                 <div className="mt-4 space-y-2">
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>Görev İlerlemesi</span>
+                            <span>{goal.unitName ? `${goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} İlerlemesi` : "Görev İlerlemesi"}</span>
                             <span>{Math.round(goal.taskProgress)}%</span>
                         </div>
                         <Progress value={goal.taskProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
                     </div>
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>Bölüm İlerlemesi</span>
+                            <span>{goal.currentSection?.title || "Bölüm İlerlemesi"}</span>
                              <span>{Math.round(goal.sectionProgress)}%</span>
                         </div>
                         <Progress value={goal.sectionProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
