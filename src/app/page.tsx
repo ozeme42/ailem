@@ -377,14 +377,16 @@ export default function Home() {
 
       return sortedSections.map((section, index) => {
         const isCompleted = section.tasks.every(t => t.completed);
+        
         if (isCompleted) {
           section.status = 'completed';
         }
-        
+
         if (index > 0 && allPreviousCompleted && section.status === 'locked') {
           section.status = 'unlocked';
+          toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
         }
-
+        
         allPreviousCompleted = section.status === 'completed';
         return section;
       });
@@ -579,7 +581,7 @@ export default function Home() {
                 
                  {goal.nextTask ? (
                     <div className="mt-4 pt-3 border-t border-white/20">
-                         <div className="space-y-2" onClick={(e) => {e.preventDefault(); e.stopPropagation();}}>
+                         <div className="space-y-2" onClick={(e) => {e.preventDefault();}}>
                             <div className="flex items-center gap-3">
                                 <Checkbox
                                     id={`goal-task-${goal.nextTask.id}`}

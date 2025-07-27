@@ -85,19 +85,17 @@ export default function GoalDetailClient() {
             let allPreviousCompleted = true;
 
             return sortedSections.map((section, index) => {
-                 if (section.order === 1) { // First section is always "unlocked" implicitly
-                    allPreviousCompleted = section.tasks.every(t => t.completed);
-                    section.status = allPreviousCompleted ? 'completed' : 'unlocked';
-                 } else {
-                    if (allPreviousCompleted && section.status === 'locked') {
-                        toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
-                        section.status = 'unlocked';
-                    }
-                    if (section.status === 'unlocked' && section.tasks.every(t => t.completed)) {
-                        section.status = 'completed';
-                    }
-                    allPreviousCompleted = section.status === 'completed';
+                 const isCompleted = section.tasks.every(t => t.completed);
+                 
+                 if (isCompleted) {
+                    section.status = 'completed';
                  }
+
+                 if (index > 0 && allPreviousCompleted && section.status === 'locked') {
+                    toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
+                    section.status = 'unlocked';
+                 }
+                 allPreviousCompleted = section.status === 'completed';
                 return section;
             });
         };
