@@ -68,7 +68,6 @@ export default function GoalDetailClient() {
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
         if (!goal) return;
 
-        // Create a deep copy to avoid direct state mutation
         let newSections = JSON.parse(JSON.stringify(goal.sections)) as GoalSection[];
 
         // 1. Toggle the specific task's completed status
@@ -81,23 +80,23 @@ export default function GoalDetailClient() {
         newSections[sectionIndex].tasks[taskIndex].completed = !newSections[sectionIndex].tasks[taskIndex].completed;
 
         // 2. Check and update section statuses
-        let allPreviousCompleted = true;
+        let previousSectionCompleted = true;
         for (let i = 0; i < newSections.length; i++) {
             const section = newSections[i];
             const allTasksInSectionCompleted = section.tasks.every(t => t.completed);
 
             if (allTasksInSectionCompleted) {
-                section.status = 'completed';
+                if(section.status !== 'completed') section.status = 'completed';
+            } else {
+                 if(section.status === 'completed') section.status = 'unlocked';
             }
-
-            // 3. Unlock the next section if conditions are met
-            if (i > 0 && allPreviousCompleted && section.status === 'locked') {
+            
+            if (i > 0 && previousSectionCompleted && section.status === 'locked') {
                 section.status = 'unlocked';
                 toast({ title: 'Yeni Bölüm Açıldı!', description: `"${section.title}" bölümüne başlayabilirsin.` });
             }
-            
-            // For the next iteration, check if the current section is complete
-            allPreviousCompleted = section.status === 'completed';
+
+            previousSectionCompleted = section.status === 'completed';
         }
 
         // 4. Update the overall goal status
