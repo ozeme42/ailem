@@ -388,7 +388,7 @@ export default function Home() {
     // Recalculate section and goal status after the change
     newSections.forEach((currentSection: GoalSection, index: number) => {
         const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
-
+    
         if (allTasksInSectionCompleted) {
             currentSection.status = 'completed';
             // Unlock next section if it exists and is locked
