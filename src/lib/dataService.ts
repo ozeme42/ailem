@@ -575,6 +575,16 @@ function removeUndefined(obj: any): any {
 export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'familyId' | 'creatorId' | 'createdAt'>>) => {
     const goalRef = doc(db, 'goals', id);
     const cleanedData = removeUndefined(data);
+
+    // Recalculate section statuses if sections are being updated
+    if (cleanedData.sections) {
+        cleanedData.sections.forEach((section: GoalSection) => {
+            if ((section.completedUnits || 0) >= section.sectionTotalUnits) {
+                section.status = 'completed';
+            }
+        });
+    }
+
     return updateDoc(goalRef, cleanedData);
 };
 
@@ -875,6 +885,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
+
 
 
 

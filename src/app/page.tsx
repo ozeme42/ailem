@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
@@ -31,6 +31,11 @@ import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 
 
 const familyXpChartConfig = {
@@ -49,6 +54,11 @@ const activityIcons = {
     book: { icon: BookOpen, color: 'from-yellow-500 to-amber-500' },
     event: { icon: Calendar, color: 'from-blue-500 to-sky-500' },
 };
+
+const progressFormSchema = z.object({
+  progress: z.coerce.number().min(1, "En az 1 birim ilerleme girilmelidir."),
+});
+
 
 function ModeToggle() {
   const { setTheme, theme } = useTheme()
@@ -85,6 +95,12 @@ export default function Home() {
   const [books, setBooks] = React.useState<Book[]>([]);
   const [goals, setGoals] = React.useState<Goal[]>([]);
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
+  const [editingGoal, setEditingGoal] = React.useState<{ goal: Goal; section: GoalSection } | null>(null);
+
+  const progressForm = useForm<z.infer<typeof progressFormSchema>>({
+      resolver: zodResolver(progressFormSchema),
+      defaultValues: { progress: undefined },
+  });
 
 
   React.useEffect(() => {
@@ -115,6 +131,29 @@ export default function Home() {
       unsubGoals();
     };
   }, [familyId]);
+  
+  const handleProgressSubmit = async (values: z.infer<typeof progressFormSchema>) => {
+      if (!editingGoal) return;
+      const { goal, section } = editingGoal;
+
+      const newCompletedUnits = (section.completedUnits || 0) + values.progress;
+      const sectionProgress = Math.min(newCompletedUnits, section.sectionTotalUnits);
+
+      const newSections = goal.sections.map(s => 
+          s.id === section.id 
+              ? { ...s, completedUnits: sectionProgress } 
+              : s
+      );
+      
+      try {
+          await updateGoal(goal.id, { sections: newSections });
+          toast({ title: "İlerleme Kaydedildi!", description: `${values.progress} ${goal.unitName} eklendi.` });
+          setEditingGoal(null);
+          progressForm.reset();
+      } catch(e) {
+          toast({ title: "Hata", variant: 'destructive' });
+      }
+  };
 
   const recentActivities = React.useMemo(() => {
     const activities: any[] = [];
@@ -607,12 +646,17 @@ export default function Home() {
         <CardContent className="space-y-4">
           {activeGoals.length > 0 ? (
             activeGoals.map(goal => (
-              <Link key={goal.id} href={`/goals/${goal.id}`} className="block p-4 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+              <div key={goal.id} className="p-4 bg-white/20 rounded-lg">
                 <div className="flex justify-between items-start gap-4">
-                  <div className="flex-grow">
-                    <p className="font-bold">{goal.title}</p>
-                    <p className="text-sm text-white/80">{goal.assignee?.name}</p>
-                  </div>
+                    <Link href={`/goals/${goal.id}`} className="block flex-grow group">
+                        <p className="font-bold group-hover:underline">{goal.title}</p>
+                        <p className="text-sm text-white/80">{goal.assignee?.name}</p>
+                    </Link>
+                    {goal.currentSection && goal.currentSection.status !== 'completed' && (
+                       <Button size="sm" variant="secondary" className="shrink-0 bg-amber-300 text-amber-900 hover:bg-amber-400" onClick={() => setEditingGoal({goal, section: goal.currentSection!})}>
+                            İlerleme Ekle
+                        </Button>
+                    )}
                 </div>
                 
                 <div className="mt-4 space-y-4">
@@ -633,7 +677,7 @@ export default function Home() {
                         <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
                     </div>
                 </div>
-              </Link>
+              </div>
             ))
           ) : (
             <Link href="/goals" className="block text-center py-8 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
@@ -647,7 +691,7 @@ export default function Home() {
 
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Link href="/tasks" className="block transition-transform hover:-translate-y-1">
+        <Link href="/tasks" className="block transition-transform hover:-translate-y-1 group">
           <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white h-full">
             <CardHeader>
               <CardTitle>Bekleyen Ev İşleri</CardTitle>
@@ -779,9 +823,9 @@ export default function Home() {
                                     {studies.map(study => (
                                         <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900">
                                             <BookHeart className="h-5 w-5 shrink-0" />
-                                            <div className="truncate">
+                                             <div className="truncate">
                                                 <p className="font-semibold truncate text-sm">{study.topic}</p>
-                                                <p className="text-xs text-blue-800/80 truncate">{study.subject}</p>
+                                                <p className="text-xs text-blue-800/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -871,9 +915,40 @@ export default function Home() {
             isOpen={!!viewingBook} 
             onOpenChange={(open) => {if(!open) setViewingBook(null)}}
         />
+
+      <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset(); }}}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
+                  <DialogDescription>
+                      Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
+                  </DialogDescription>
+              </DialogHeader>
+              <Form {...progressForm}>
+                  <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
+                      <FormField
+                          control={progressForm.control}
+                          name="progress"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Tamamlanan Birim ({editingGoal?.goal.unitName})</FormLabel>
+                                  <FormControl><Input type="number" autoFocus {...field} /></FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <DialogFooter>
+                          <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>İptal</Button>
+                          <Button type="submit">Kaydet</Button>
+                      </DialogFooter>
+                  </form>
+              </Form>
+          </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 
 
