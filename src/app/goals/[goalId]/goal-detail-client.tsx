@@ -68,54 +68,73 @@ export default function GoalDetailClient() {
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
         if (!goal) return;
 
-        // 1. Create a deep copy of the sections to avoid direct mutation.
-        const newSections: GoalSection[] = JSON.parse(JSON.stringify(goal.sections));
+        // --- Optimistic UI Update ---
+        // Create a new version of the goal with the toggled task for immediate UI feedback.
+        const newOptimisticGoal = JSON.parse(JSON.stringify(goal));
+        const section = newOptimisticGoal.sections.find((s: GoalSection) => s.id === sectionId);
+        if (section) {
+            const task = section.tasks.find((t: GoalTask) => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+            }
+        }
+        // Immediately update the local state to make the UI feel instant.
+        setGoal(newOptimisticGoal);
+        // --- End of Optimistic UI Update ---
 
-        // 2. Find and toggle the specific task's completed status.
-        const sectionIndex = newSections.findIndex(s => s.id === sectionId);
-        if (sectionIndex === -1) return;
-        
-        const taskIndex = newSections[sectionIndex].tasks.findIndex(t => t.id === taskId);
-        if (taskIndex === -1) return;
-
-        newSections[sectionIndex].tasks[taskIndex].completed = !newSections[sectionIndex].tasks[taskIndex].completed;
-
-        // 3. Iterate through all sections in order to update their statuses.
-        let allPreviousSectionsCompleted = true;
-        newSections.sort((a,b) => a.order - b.order).forEach((currentSection, index) => {
-            const allTasksInSectionCompleted = currentSection.tasks.every(t => t.completed);
-
-            if (allTasksInSectionCompleted) {
-                if (currentSection.status !== 'completed') {
-                    currentSection.status = 'completed';
+        try {
+            // Now, prepare the data and update the database in the background.
+            const updatedSections = goal.sections.map(s => {
+                if (s.id === sectionId) {
+                    const updatedTasks = s.tasks.map(t =>
+                        t.id === taskId ? { ...t, completed: !t.completed } : t
+                    );
+                    return { ...s, tasks: updatedTasks };
                 }
-            } else {
-                 if (currentSection.status === 'completed') {
-                    currentSection.status = 'unlocked';
-                 }
-            }
+                return s;
+            });
+
+            // Recalculate all section and goal statuses based on the new state.
+            let allPreviousSectionsCompleted = true;
+            updatedSections.sort((a,b) => a.order - b.order).forEach((currentSection, index) => {
+                const allTasksInSectionCompleted = currentSection.tasks.every(t => t.completed);
+
+                if (allTasksInSectionCompleted) {
+                    if (currentSection.status !== 'completed') {
+                        currentSection.status = 'completed';
+                    }
+                } else {
+                     if (currentSection.status === 'completed') {
+                        currentSection.status = 'unlocked';
+                     }
+                }
+                
+                // Unlock the next section if the current one is complete and the next one is locked.
+                if (index > 0) {
+                     const previousSection = updatedSections[index - 1];
+                     if(previousSection.status === 'completed' && currentSection.status === 'locked') {
+                        currentSection.status = 'unlocked';
+                        toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
+                     }
+                } else { // First section should always be unlocked.
+                     if (currentSection.status === 'locked') {
+                        currentSection.status = 'unlocked';
+                     }
+                }
+                allPreviousSectionsCompleted = allPreviousSectionsCompleted && allTasksInSectionCompleted;
+            });
+
+            const isGoalComplete = updatedSections.every(s => s.status === 'completed');
+            const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
             
-            // Unlock the next section if the current one is complete and the next one is locked.
-            if (index > 0) {
-                 const previousSection = newSections[index - 1];
-                 if(previousSection.status === 'completed' && currentSection.status === 'locked') {
-                    currentSection.status = 'unlocked';
-                    toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
-                 }
-            } else { // First section logic
-                 if (currentSection.status === 'locked') {
-                    currentSection.status = 'unlocked';
-                 }
-            }
-        });
+            await updateGoal(goal.id, { sections: updatedSections, status: newGoalStatus });
 
-
-        // 4. Update the overall goal status.
-        const isGoalComplete = newSections.every(s => s.status === 'completed');
-        const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
-
-        // 5. Persist the changes to Firestore.
-        await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
+        } catch (error) {
+            // If the database update fails, revert the optimistic change and show an error.
+            toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
+            setGoal(goal); // Revert to the original state before the click.
+            console.error("Failed to update task:", error);
+        }
     };
 
 
