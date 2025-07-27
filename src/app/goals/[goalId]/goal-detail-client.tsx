@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { onGoalUpdate, updateGoal } from '@/lib/dataService';
+import { getGoal, updateGoal } from '@/lib/dataService';
 import type { Goal, GoalSection, GoalTask } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -61,63 +61,71 @@ export default function GoalDetailClient() {
 
     React.useEffect(() => {
         if (!goalId || !user) return;
-        const unsubscribe = onGoalUpdate(goalId, setGoal);
-        return () => unsubscribe();
+        
+        const fetchAndSetGoal = async () => {
+            const fetchedGoal = await getGoal(goalId);
+            setGoal(fetchedGoal);
+        };
+        fetchAndSetGoal();
+
     }, [goalId, user]);
 
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
-        if (!goal) return;
-    
-        const newGoal = JSON.parse(JSON.stringify(goal)) as Goal;
-        const section = newGoal.sections.find(s => s.id === sectionId);
-        if (!section) return;
+        const originalGoal = await getGoal(goalId);
+        if (!originalGoal) return;
 
-        const task = section.tasks.find(t => t.id === taskId);
-        if (task) {
-            task.completed = !task.completed;
-        }
+        const newSections: GoalSection[] = JSON.parse(JSON.stringify(originalGoal.sections));
+        let taskUpdated = false;
 
-        const allTasksInSectionCompleted = section.tasks.every(t => t.completed);
-        if (allTasksInSectionCompleted) {
-            section.status = 'completed';
-        } else {
-            section.status = 'unlocked';
+        for (const section of newSections) {
+            if (section.id === sectionId) {
+                const task = section.tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.completed = !task.completed;
+                    taskUpdated = true;
+                }
+                const allTasksCompleted = section.tasks.every(t => t.completed);
+                section.status = allTasksCompleted ? 'completed' : 'unlocked';
+            }
         }
-    
+        
+        if (!taskUpdated) return;
+        
+        const isGoalComplete = newSections.every(s => s.status === 'completed');
+        const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
+
         try {
-            await updateGoal(newGoal.id, { sections: newGoal.sections });
+            await updateGoal(goalId, { sections: newSections, status: newGoalStatus });
+            // Optimistically update UI
+            const updatedGoal = { ...originalGoal, sections: newSections, status: newGoalStatus };
+            setGoal(updatedGoal);
         } catch (error) {
             toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
-            console.error("Failed to update goal task:", error);
         }
     };
     
     const handleReorderTasks = async (sectionId: string, reorderedTasks: GoalTask[]) => {
-        if (!goal) return;
+        const originalGoal = await getGoal(goalId);
+        if (!originalGoal) return;
 
-        const newGoal = JSON.parse(JSON.stringify(goal)) as Goal;
-        const sectionIndex = newGoal.sections.findIndex(s => s.id === sectionId);
+        const newSections = JSON.parse(JSON.stringify(originalGoal.sections)) as GoalSection[];
+        const sectionIndex = newSections.findIndex(s => s.id === sectionId);
         if (sectionIndex === -1) return;
 
-        // Update the tasks with new order property
-        const updatedTasks = reorderedTasks.map((task, index) => ({
+        newSections[sectionIndex].tasks = reorderedTasks.map((task, index) => ({
             ...task,
             order: index + 1,
         }));
-
-        newGoal.sections[sectionIndex].tasks = updatedTasks;
-
+        
         // Optimistically update the local state for a smoother UI response
-        setGoal(newGoal);
+        setGoal({ ...originalGoal, sections: newSections });
 
         try {
-            // Save the entire updated sections array to Firestore
-            await updateGoal(newGoal.id, { sections: newGoal.sections });
+            await updateGoal(originalGoal.id, { sections: newSections });
         } catch (error) {
             toast({ title: "Hata", description: "Sıralama kaydedilemedi.", variant: "destructive" });
-            console.error("Failed to reorder tasks:", error);
-            // Revert to original state if save fails
-            onGoalUpdate(goalId, setGoal);
+            const revertedGoal = await getGoal(goalId);
+            setGoal(revertedGoal);
         }
     };
 
