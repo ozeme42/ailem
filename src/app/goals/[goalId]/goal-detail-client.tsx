@@ -68,61 +68,66 @@ export default function GoalDetailClient() {
     const handleTaskToggle = async (sectionId: string, taskId: string) => {
         if (!goal) return;
 
-        // --- Optimistic UI Update ---
-        const newOptimisticGoal = JSON.parse(JSON.stringify(goal)); // Deep copy
-        const section = newOptimisticGoal.sections.find((s: GoalSection) => s.id === sectionId);
-        if (section) {
-            const task = section.tasks.find((t: GoalTask) => t.id === taskId);
-            if (task) {
-                task.completed = !task.completed;
-            }
-        }
+        const originalGoal = JSON.parse(JSON.stringify(goal)); // Save original state for potential rollback
+        const newOptimisticGoal = JSON.parse(JSON.stringify(goal)); // Create a deep copy for optimistic update
+
+        // --- Start of logic ---
+        let wasGoalCompleted = newOptimisticGoal.status === 'completed';
+        const sectionIndex = newOptimisticGoal.sections.findIndex((s: GoalSection) => s.id === sectionId);
+        if (sectionIndex === -1) return;
+
+        const taskIndex = newOptimisticGoal.sections[sectionIndex].tasks.findIndex((t: GoalTask) => t.id === taskId);
+        if (taskIndex === -1) return;
+
+        // Toggle the task's completed status
+        newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed = !newOptimisticGoal.sections[sectionIndex].tasks[taskIndex].completed;
+
+        // Optimistically update the UI
         setGoal(newOptimisticGoal);
-        // --- End of Optimistic UI Update ---
+
+        // Recalculate all section statuses based on the new state
+        newOptimisticGoal.sections.forEach((currentSection: GoalSection, index: number) => {
+            const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
+            
+            if (allTasksInSectionCompleted) {
+                if (currentSection.status !== 'completed') {
+                    currentSection.status = 'completed';
+                }
+            } else {
+                 if (currentSection.status === 'completed') {
+                    currentSection.status = 'unlocked';
+                 }
+            }
+            
+            // Unlock the next section if the current one is complete and the next one is locked.
+            if (index > 0) {
+                 const previousSection = newOptimisticGoal.sections[index - 1];
+                 if(previousSection.status === 'completed' && currentSection.status === 'locked') {
+                    currentSection.status = 'unlocked';
+                    toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
+                 }
+            } else { // First section should always be unlocked.
+                 if (currentSection.status === 'locked') {
+                    currentSection.status = 'unlocked';
+                 }
+            }
+        });
+
+        const isGoalComplete = newOptimisticGoal.sections.every((s: GoalSection) => s.status === 'completed');
+        newOptimisticGoal.status = isGoalComplete ? 'completed' : 'in-progress';
+        
+        if (isGoalComplete && !wasGoalCompleted) {
+            toast({ title: '🎉 Hedef Tamamlandı!', description: `Tebrikler! "${newOptimisticGoal.title}" hedefini başarıyla tamamladın.` });
+        }
+        // --- End of logic ---
 
         try {
-            // Now, prepare the data and update the database in the background.
-            const newSections = JSON.parse(JSON.stringify(newOptimisticGoal.sections));
-
-            // Recalculate all section and goal statuses based on the new state.
-            let allPreviousSectionsCompleted = true;
-            newSections.sort((a: GoalSection, b: GoalSection) => a.order - b.order).forEach((currentSection: GoalSection, index: number) => {
-                const allTasksInSectionCompleted = currentSection.tasks.every(t => t.completed);
-
-                if (allTasksInSectionCompleted) {
-                    if (currentSection.status !== 'completed') {
-                        currentSection.status = 'completed';
-                    }
-                } else {
-                     if (currentSection.status === 'completed') {
-                        currentSection.status = 'unlocked';
-                     }
-                }
-                
-                // Unlock the next section if the current one is complete and the next one is locked.
-                if (index > 0) {
-                     const previousSection = newSections[index - 1];
-                     if(previousSection.status === 'completed' && currentSection.status === 'locked') {
-                        currentSection.status = 'unlocked';
-                        toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
-                     }
-                } else { // First section should always be unlocked.
-                     if (currentSection.status === 'locked') {
-                        currentSection.status = 'unlocked';
-                     }
-                }
-                allPreviousSectionsCompleted = allPreviousSectionsCompleted && allTasksInSectionCompleted;
-            });
-
-            const isGoalComplete = newSections.every((s: GoalSection) => s.status === 'completed');
-            const newGoalStatus = isGoalComplete ? 'completed' : 'in-progress';
-            
-            await updateGoal(goal.id, { sections: newSections, status: newGoalStatus });
-
+            // Now, update the database with the fully recalculated state.
+            await updateGoal(goal.id, { sections: newOptimisticGoal.sections, status: newOptimisticGoal.status });
         } catch (error) {
             // If the database update fails, revert the optimistic change and show an error.
             toast({ title: "Hata", description: "Görev güncellenemedi.", variant: "destructive" });
-            setGoal(goal); // Revert to the original state before the click.
+            setGoal(originalGoal); // Revert to the original state
             console.error("Failed to update task:", error);
         }
     };

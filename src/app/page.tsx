@@ -288,13 +288,10 @@ export default function Home() {
         const completedTasks = goal.sections.reduce((acc, s) => acc + s.tasks.filter(t => t.completed).length, 0);
         const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
         
+        const completedSections = goal.sections.filter(s => s.tasks.every(t => t.completed)).length;
         const totalSections = goal.sections.length;
-        const completedSections = goal.sections.filter(s => {
-            if(s.tasks.length === 0) return s.status === 'completed'; // Count empty sections if they are marked completed
-            return s.tasks.every(t => t.completed);
-        }).length;
-
         const sectionProgress = totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
+        
         const unitName = goal.sections?.[0]?.tasks?.[0]?.title.split(" ").pop() || 'birim';
 
         return {
@@ -367,39 +364,51 @@ export default function Home() {
   };
 
   const handleGoalTaskToggle = async (goal: Goal, sectionId: string, taskId: string) => {
-    const deepClonedGoal = JSON.parse(JSON.stringify(goal));
+    const newGoals = [...goals];
+    const goalIndex = newGoals.findIndex(g => g.id === goal.id);
+    if (goalIndex === -1) return;
+
+    const deepClonedGoal = JSON.parse(JSON.stringify(newGoals[goalIndex]));
     let wasGoalCompleted = deepClonedGoal.status === 'completed';
 
-    // Find and toggle the task
     const sectionIndex = deepClonedGoal.sections.findIndex((s: GoalSection) => s.id === sectionId);
     if (sectionIndex === -1) return;
 
     const taskIndex = deepClonedGoal.sections[sectionIndex].tasks.findIndex((t: GoalTask) => t.id === taskId);
     if (taskIndex === -1) return;
 
-    const currentTask = deepClonedGoal.sections[sectionIndex].tasks[taskIndex];
-    currentTask.completed = !currentTask.completed;
+    // Optimistically update the UI
+    deepClonedGoal.sections[sectionIndex].tasks[taskIndex].completed = !deepClonedGoal.sections[sectionIndex].tasks[taskIndex].completed;
+    newGoals[goalIndex] = deepClonedGoal;
+    setGoals(newGoals);
 
-    // Recalculate all section statuses based on the new state
-    for (let i = 0; i < deepClonedGoal.sections.length; i++) {
-        const section = deepClonedGoal.sections[i];
-        const allTasksInSectionCompleted = section.tasks.every((t: GoalTask) => t.completed);
-
+    // Recalculate all section and goal statuses
+    deepClonedGoal.sections.forEach((currentSection: GoalSection, index: number) => {
+        const allTasksInSectionCompleted = currentSection.tasks.every((t: GoalTask) => t.completed);
+        
         if (allTasksInSectionCompleted) {
-            section.status = 'completed';
-            // Unlock the next section if it exists and is locked
-            if (i + 1 < deepClonedGoal.sections.length && deepClonedGoal.sections[i + 1].status === 'locked') {
-                deepClonedGoal.sections[i + 1].status = 'unlocked';
-                toast({ title: 'Yeni Bölüm Açıldı!', description: `"${deepClonedGoal.sections[i + 1].title}" bölümüne başlayabilirsin.` });
+            if (currentSection.status !== 'completed') {
+                currentSection.status = 'completed';
             }
         } else {
-            // If the section was previously completed, and now it's not, it becomes unlocked
-            if (section.status === 'completed') {
-                section.status = 'unlocked';
-            }
+             if (currentSection.status === 'completed') {
+                currentSection.status = 'unlocked';
+             }
         }
-    }
-    
+        
+        if (index > 0) {
+             const previousSection = deepClonedGoal.sections[index - 1];
+             if(previousSection.status === 'completed' && currentSection.status === 'locked') {
+                currentSection.status = 'unlocked';
+                toast({ title: 'Yeni Bölüm Açıldı!', description: `"${currentSection.title}" bölümüne başlayabilirsin.` });
+             }
+        } else {
+             if (currentSection.status === 'locked') {
+                currentSection.status = 'unlocked';
+             }
+        }
+    });
+
     const isGoalComplete = deepClonedGoal.sections.every((s: GoalSection) => s.status === 'completed');
     deepClonedGoal.status = isGoalComplete ? 'completed' : 'in-progress';
     
@@ -411,6 +420,10 @@ export default function Home() {
         await updateGoal(goal.id, { sections: deepClonedGoal.sections, status: deepClonedGoal.status });
     } catch (error) {
         console.error("Failed to update goal task:", error);
+        // Revert optimistic update on failure
+        const originalGoals = [...goals];
+        originalGoals[goalIndex] = goal;
+        setGoals(originalGoals);
         toast({ title: "Hata", description: "Görev durumu güncellenirken bir sorun oluştu.", variant: "destructive" });
     }
   };
