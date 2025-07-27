@@ -536,7 +536,7 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
         sections: data.sections.map((section, index) => ({
             ...section,
             id: Date.now().toString() + index,
-            status: 'unlocked', // All sections are unlocked by default now
+            status: 'unlocked', 
             tasks: section.tasks.map((task, taskIndex) => ({
                 ...task,
                 id: Date.now().toString() + index + taskIndex,
@@ -554,6 +554,15 @@ export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'fa
     // Firestore cannot accept undefined fields.
     if ('description' in updateData && updateData.description === undefined) {
       delete updateData.description;
+    }
+    if ('totalUnits' in updateData && updateData.totalUnits === undefined) {
+      delete updateData.totalUnits;
+    }
+    if ('unitName' in updateData && updateData.unitName === undefined) {
+      delete updateData.unitName;
+    }
+    if ('sectionCount' in updateData && updateData.sectionCount === undefined) {
+      delete updateData.sectionCount;
     }
   
     // Ensure sections are handled correctly

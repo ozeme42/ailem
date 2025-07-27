@@ -66,23 +66,21 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   
   React.useEffect(() => {
     if (initialData) {
-        const sectionsData = initialData.sections.map(s => ({ title: s.title, taskCount: s.tasks.length }));
-        const totalCalculatedUnits = initialData.sections.reduce((acc, section) => {
-            const lastTaskTitle = section.tasks[section.tasks.length - 1]?.title || "0";
-            const unitsMatch = lastTaskTitle.match(/(\d+)/);
-            return acc + (unitsMatch ? parseInt(unitsMatch[0], 10) : 0);
-        }, 0);
-
+        // When editing, load the EXACT data from the goal object.
         form.reset({
             title: initialData.title,
             description: initialData.description || "",
             assigneeId: initialData.assigneeId,
-            totalUnits: totalCalculatedUnits > 0 ? totalCalculatedUnits : 100, // Best guess
-            unitName: initialData.sections[0]?.tasks[0]?.title.split(" ").pop() || 'birim',
-            sectionCount: initialData.sections.length,
-            sections: sectionsData
+            totalUnits: initialData.totalUnits || 100,
+            unitName: initialData.unitName || 'birim',
+            sectionCount: initialData.sectionCount || initialData.sections.length,
+            sections: initialData.sections.map(s => ({
+                title: s.title,
+                taskCount: s.tasks.length
+            }))
         });
     } else {
+        // For a new goal, set default values.
         form.reset({
             title: "",
             description: "",
@@ -133,6 +131,9 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
         description: values.description,
         assigneeId: values.assigneeId,
         sections: finalSections,
+        totalUnits: values.totalUnits,
+        unitName: values.unitName,
+        sectionCount: values.sectionCount,
     };
 
     onCreate(goalData as Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status'>);
