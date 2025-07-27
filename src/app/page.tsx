@@ -295,21 +295,20 @@ export default function Home() {
             }
         }
         
-        let completedUnits = 0;
-        (goal.sections || []).forEach(section => {
-            section.tasks.forEach(task => {
-                if (task.completed) {
-                    const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
-                    completedUnits += units;
-                }
-            })
-        });
+        const completedUnits = (goal.sections || [])
+          .flatMap(section => section.tasks)
+          .filter(task => task.completed)
+          .reduce((sum, task) => {
+              const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
+              return sum + units;
+          }, 0);
+        
         const overallProgress = (goal.totalUnits || 0) > 0 ? (completedUnits / goal.totalUnits!) * 100 : 0;
         
         let sectionCompletedUnits = 0;
         let sectionTotalUnits = 0;
         if (currentSection) {
-            currentSection.tasks.forEach(task => {
+             currentSection.tasks.forEach(task => {
                 const units = parseInt(task.title.match(/^(\d+)/)?.[1] || '0');
                 sectionTotalUnits += units;
                 if (task.completed) {
@@ -913,4 +912,3 @@ export default function Home() {
     </div>
   );
 }
-
