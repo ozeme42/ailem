@@ -803,7 +803,7 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
 // NEW SOUND FORM DIALOG
 const newSoundFormSchema = z.object({
   name: z.string().min(2, "Ses adı en az 2 karakter olmalıdır."),
-  soundFile: z.instanceof(File, { message: "Lütfen bir ses dosyası seçin." }),
+  soundFile: z.instanceof(File, { message: "Lütfen bir ses dosyası seçin." }).nullable(),
   loop: z.boolean().default(true),
 });
 
@@ -815,12 +815,15 @@ function NewSoundForm({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange:
 
     const form = useForm<NewSoundFormData>({
         resolver: zodResolver(newSoundFormSchema),
-        defaultValues: { name: "", loop: true },
+        defaultValues: { name: "", loop: true, soundFile: null },
     });
 
     const onSubmit = async (data: NewSoundFormData) => {
         setIsSubmitting(true);
         try {
+            if (!data.soundFile) {
+                throw new Error("Lütfen bir ses dosyası seçin.");
+            }
             toast({ title: "Ses Yükleniyor..." });
             const file = data.soundFile;
             const destinationPath = `ambient-sounds/${file.name.replace(/[^a-zA-Z0-9.]/g, '-')}-${Date.now()}`;
@@ -886,11 +889,11 @@ function NewSoundForm({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange:
                          <FormField
                             control={form.control}
                             name="soundFile"
-                            render={({ field: { onChange, ...fieldProps } }) => (
+                            render={({ field: { onChange, value, ...fieldProps } }) => (
                                 <FormItem>
                                     <FormLabel>Ses Dosyası</FormLabel>
                                     <FormControl>
-                                        <Input type="file" accept="audio/*" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} />
+                                        <Input type="file" accept="audio/*" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0] || null)} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
