@@ -88,7 +88,7 @@ function AuthorsStatsSkeleton() {
             </PageHeader>
             <Card>
                 <CardContent className="p-4 space-y-2">
-                    {[...Array(5)].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
                 </CardContent>
             </Card>
         </div>
