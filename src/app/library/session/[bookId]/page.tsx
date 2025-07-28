@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, BookCheck, StickyNote, BookText, ArrowLeft } from "lucide-react";
+import { Play, Pause, BookCheck, StickyNote, BookText, ArrowLeft, Plus, X } from "lucide-react";
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -36,8 +36,8 @@ export default function ReadingSessionPage() {
     const [elapsedTime, setElapsedTime] = React.useState(0);
     const [startTime, setStartTime] = React.useState(new Date());
 
-    const [notes, setNotes] = React.useState("");
-    const [summary, setSummary] = React.useState("");
+    const [notesList, setNotesList] = React.useState<string[]>([]);
+    const [newNoteText, setNewNoteText] = React.useState("");
     const [pagesRead, setPagesRead] = React.useState(0);
     
     const [showExtras, setShowExtras] = React.useState(false);
@@ -66,6 +66,17 @@ export default function ReadingSessionPage() {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, [timerRunning, startTime]);
+    
+    const handleAddNote = () => {
+        if (newNoteText.trim()) {
+            setNotesList(prev => [...prev, newNoteText.trim()]);
+            setNewNoteText("");
+        }
+    };
+    
+    const handleDeleteNote = (indexToDelete: number) => {
+        setNotesList(prev => prev.filter((_, index) => index !== indexToDelete));
+    };
 
     const handleSaveSession = async () => {
         if (!familyId || !user || !book) {
@@ -81,8 +92,7 @@ export default function ReadingSessionPage() {
             endTime: new Date().toISOString(),
             durationSeconds: durationSeconds,
             pagesRead: pagesRead,
-            notes: notes,
-            summary: summary,
+            notes: notesList.join('\n---\n'), // Join notes with a separator
         };
 
         await addReadingSession(newSession);
@@ -107,7 +117,7 @@ export default function ReadingSessionPage() {
     }
 
     return (
-        <div className="fixed inset-0 bg-background z-50 overflow-y-auto pb-24">
+        <div className="relative overflow-y-auto pb-24">
             <div
                 className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"
             />
@@ -133,12 +143,12 @@ export default function ReadingSessionPage() {
                 <main className="flex-grow flex flex-col justify-center items-center gap-8 my-8">
                      <div className="relative w-full max-w-lg p-1 overflow-hidden">
                         <svg className="absolute inset-0 w-full h-full" width="100%" height="100%">
-                            <defs>
+                             <defs>
                                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                     <stop offset="0%" stopColor="hsl(var(--chart-1))" />
-                                     <stop offset="25%" stopColor="hsl(var(--chart-5))" />
-                                     <stop offset="50%" stopColor="hsl(var(--chart-3))" />
-                                     <stop offset="100%" stopColor="hsl(var(--primary))" />
+                                    <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                                    <stop offset="25%" stopColor="hsl(var(--chart-5))" />
+                                    <stop offset="50%" stopColor="hsl(var(--chart-3))" />
+                                    <stop offset="100%" stopColor="hsl(var(--primary))" />
                                 </linearGradient>
                             </defs>
                             <motion.rect
@@ -151,12 +161,12 @@ export default function ReadingSessionPage() {
                                 strokeWidth="8"
                                 pathLength="1"
                                 strokeDasharray="1"
+                                strokeDashoffset={0}
                                 initial={{ strokeDashoffset: 1 }}
                                 animate={{ strokeDashoffset: 0 }}
                                 transition={{
                                     duration: 60,
                                     repeat: Infinity,
-                                    repeatType: 'loop',
                                     ease: 'linear'
                                 }}
                             />
@@ -180,34 +190,44 @@ export default function ReadingSessionPage() {
                     </Button>
                 </main>
 
-                <footer className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
+                <footer className="space-y-6 pb-4">
                      <AnimatePresence>
                         {showExtras && (
                             <motion.div
+                                className="space-y-4"
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
                             >
                                 <Label htmlFor="notes">Notlar</Label>
-                                <Textarea id="notes" placeholder="Okurken aklına gelenler, önemli alıntılar..." value={notes} onChange={(e) => setNotes(e.target.value)} className="h-24 bg-background/50"/>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    <AnimatePresence>
-                        {showExtras && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                            >
-                                <Label htmlFor="summary">Özet</Label>
-                                <Textarea id="summary" placeholder="Bu okuma seansında neler oldu?" value={summary} onChange={(e) => setSummary(e.target.value)} className="h-24 bg-background/50"/>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        id="new-note"
+                                        placeholder="Aklına gelen bir şeyi yaz..." 
+                                        value={newNoteText} 
+                                        onChange={(e) => setNewNoteText(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddNote(); }}}
+                                        className="bg-background/50"
+                                    />
+                                    <Button type="button" onClick={handleAddNote}>
+                                        <Plus className="h-4 w-4 mr-1"/> Ekle
+                                    </Button>
+                                </div>
+                                <div className="space-y-2">
+                                    {notesList.map((note, index) => (
+                                        <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800/50">
+                                            <p className="flex-grow text-sm text-yellow-900 dark:text-yellow-200">{note}</p>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-yellow-700 dark:text-yellow-400 hover:bg-black/10" onClick={() => handleDeleteNote(index)}>
+                                                <X className="h-4 w-4"/>
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                      
-                     <div className="md:col-span-2">
+                     <div>
                         <Label htmlFor="pagesRead">Okunan Sayfa Sayısı</Label>
                         <Input id="pagesRead" type="number" placeholder="0" value={pagesRead === 0 ? '' : pagesRead} onChange={(e) => setPagesRead(Number(e.target.value))} className="bg-background/50"/>
                      </div>
@@ -216,7 +236,7 @@ export default function ReadingSessionPage() {
                 <div className="flex justify-between items-center gap-2 mt-4">
                     <div className="flex gap-2">
                          <Button variant="outline" onClick={() => setShowExtras(!showExtras)}>
-                            <StickyNote className="mr-2 h-5 w-5"/> Not & Özet Ekle
+                            <StickyNote className="mr-2 h-5 w-5"/> Not Ekle
                         </Button>
                     </div>
                     <div className="flex justify-end gap-2">
