@@ -12,8 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
-import { Play, Pause, BookCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Play, Pause, BookCheck, StickyNote, BookText } from "lucide-react";
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -39,6 +39,9 @@ export default function ReadingSessionPage() {
     const [notes, setNotes] = React.useState("");
     const [summary, setSummary] = React.useState("");
     const [pagesRead, setPagesRead] = React.useState(0);
+    
+    const [showNotes, setShowNotes] = React.useState(false);
+    const [showSummary, setShowSummary] = React.useState(false);
 
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
     
@@ -150,26 +153,54 @@ export default function ReadingSessionPage() {
                 </main>
 
                 <footer className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
-                     <div>
-                        <Label htmlFor="notes">Notlar</Label>
-                        <Textarea id="notes" placeholder="Okurken aklına gelenler, önemli alıntılar..." value={notes} onChange={(e) => setNotes(e.target.value)} className="h-24 bg-background/50"/>
-                     </div>
-                     <div>
-                        <Label htmlFor="summary">Özet</Label>
-                        <Textarea id="summary" placeholder="Bu okuma seansında neler oldu?" value={summary} onChange={(e) => setSummary(e.target.value)} className="h-24 bg-background/50"/>
-                     </div>
+                     <AnimatePresence>
+                        {showNotes && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                            >
+                                <Label htmlFor="notes">Notlar</Label>
+                                <Textarea id="notes" placeholder="Okurken aklına gelenler, önemli alıntılar..." value={notes} onChange={(e) => setNotes(e.target.value)} className="h-24 bg-background/50"/>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <AnimatePresence>
+                        {showSummary && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                            >
+                                <Label htmlFor="summary">Özet</Label>
+                                <Textarea id="summary" placeholder="Bu okuma seansında neler oldu?" value={summary} onChange={(e) => setSummary(e.target.value)} className="h-24 bg-background/50"/>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                     
                      <div className="md:col-span-2">
                         <Label htmlFor="pagesRead">Okunan Sayfa Sayısı</Label>
                         <Input id="pagesRead" type="number" placeholder="0" value={pagesRead === 0 ? '' : pagesRead} onChange={(e) => setPagesRead(Number(e.target.value))} className="bg-background/50"/>
                      </div>
                 </footer>
                 
-                <div className="flex justify-end gap-2">
-                    <Button variant="ghost" onClick={() => router.push('/library')}>İptal Et</Button>
-                    <Button onClick={handleSaveSession} className="bg-green-600 hover:bg-green-700">
-                        <BookCheck className="mr-2 h-5 w-5" />
-                        Oturumu Kaydet
-                    </Button>
+                <div className="flex justify-between items-center gap-2">
+                    <div className="flex gap-2">
+                         <Button variant="outline" onClick={() => setShowNotes(!showNotes)}>
+                            <StickyNote className="mr-2 h-5 w-5"/> Not Ekle
+                        </Button>
+                         <Button variant="outline" onClick={() => setShowSummary(!showSummary)}>
+                            <BookText className="mr-2 h-5 w-5"/> Özet Ekle
+                        </Button>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="ghost" onClick={() => router.push('/library')}>İptal Et</Button>
+                        <Button onClick={handleSaveSession} className="bg-green-600 hover:bg-green-700">
+                            <BookCheck className="mr-2 h-5 w-5" />
+                            Oturumu Kaydet
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
