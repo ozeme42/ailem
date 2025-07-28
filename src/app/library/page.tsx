@@ -198,7 +198,7 @@ export default function LibraryPage() {
 
   const readingGoals = selectedMember?.readingGoals;
   const monthlyGoalProgress = useMemo(() => {
-    if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0 };
+    if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0, pagesRead: 0, booksRead: 0 };
     
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
@@ -420,9 +420,9 @@ function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: 
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Link href={`/library/session/${book.id}`} passHref legacyBehavior>
+                                <Link href={`/library/session/${book.id}`} passHref>
                                     <Button asChild variant="outline" size="icon">
-                                        <a><Timer/></a>
+                                        <Timer/>
                                     </Button>
                                 </Link>
                                 <Button variant="secondary" className="w-full" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
@@ -485,3 +485,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
