@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, FC, useRef } from 'react';
@@ -421,8 +420,8 @@ function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: 
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Link href={`/library/session/${book.id}`} passHref>
-                                    <Button variant="outline" size="icon" asChild>
+                                <Link href={`/library/session/${book.id}`} passHref legacyBehavior>
+                                    <Button asChild variant="outline" size="icon">
                                         <a><Timer/></a>
                                     </Button>
                                 </Link>
