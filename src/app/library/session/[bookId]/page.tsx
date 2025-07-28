@@ -147,21 +147,24 @@ export default function ReadingSessionPage() {
                         <svg className="absolute inset-0 w-full h-full" width="100%" height="100%">
                             <defs>
                                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style={{stopColor: 'hsl(var(--primary))'}} />
-                                <stop offset="100%" style={{stopColor: 'hsl(var(--accent))'}} />
+                                     <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                                     <stop offset="25%" stopColor="hsl(var(--chart-5))" />
+                                     <stop offset="50%" stopColor="hsl(var(--chart-3))" />
+                                     <stop offset="100%" stopColor="hsl(var(--primary))" />
                                 </linearGradient>
                             </defs>
                             <motion.rect
-                                x="2" y="2"
-                                width="calc(100% - 4px)" height="calc(100% - 4px)"
+                                x="4" y="4"
+                                width="calc(100% - 8px)" height="calc(100% - 8px)"
                                 rx="14"
                                 ry="14"
                                 fill="transparent"
                                 stroke="url(#gradient)"
-                                strokeWidth="4"
+                                strokeWidth="8"
                                 pathLength="1"
                                 strokeDasharray="1"
-                                animate={{ strokeDashoffset: [1, 0] }}
+                                initial={{ strokeDashoffset: 1 }}
+                                animate={{ strokeDashoffset: 0 }}
                                 transition={{
                                     duration: 60,
                                     repeat: Infinity,
