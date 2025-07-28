@@ -143,29 +143,33 @@ export default function ReadingSessionPage() {
                 </header>
                 
                 <main className="flex-grow flex flex-col justify-center items-center gap-8">
-                    <div className="text-center relative p-1 rounded-2xl overflow-hidden w-full max-w-md">
-                         <motion.div
-                            className="absolute top-0 left-0 h-1 w-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
-                            animate={{ width: ['0%', '100%', '100%', '0%', '0%'] }}
+                     <div className="text-center relative w-full max-w-md bg-background/80 backdrop-blur-sm rounded-2xl p-1 overflow-hidden bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10">
+                        <motion.div
+                            className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+                            style={{ originX: 0 }}
+                            animate={{ scaleX: [0, 1, 1, 0, 0] }}
                             transition={{ duration: 4, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1] }}
-                         />
-                         <motion.div
-                            className="absolute top-0 right-0 w-1 h-0 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500"
-                            animate={{ height: ['0%', '100%', '100%', '0%', '0%'] }}
+                        />
+                        <motion.div
+                            className="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500"
+                            style={{ originY: 0 }}
+                            animate={{ scaleY: [0, 1, 1, 0, 0] }}
                             transition={{ duration: 4, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 1 }}
-                         />
-                         <motion.div
-                            className="absolute bottom-0 right-0 h-1 w-0 bg-gradient-to-l from-blue-500 via-purple-500 to-pink-500"
-                            animate={{ width: ['0%', '100%', '100%', '0%', '0%'] }}
+                        />
+                        <motion.div
+                            className="absolute bottom-0 right-0 h-1 w-full bg-gradient-to-l from-blue-500 via-purple-500 to-pink-500"
+                            style={{ originX: 1 }}
+                            animate={{ scaleX: [0, 1, 1, 0, 0] }}
                             transition={{ duration: 4, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 2 }}
-                         />
+                        />
                          <motion.div
-                            className="absolute bottom-0 left-0 w-1 h-0 bg-gradient-to-t from-blue-500 via-purple-500 to-pink-500"
-                            animate={{ height: ['0%', '100%', '100%', '0%', '0%'] }}
+                            className="absolute bottom-0 left-0 w-1 h-full bg-gradient-to-t from-blue-500 via-purple-500 to-pink-500"
+                            style={{ originY: 1 }}
+                            animate={{ scaleY: [0, 1, 1, 0, 0] }}
                             transition={{ duration: 4, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 3 }}
-                         />
-                         
-                         <div className="relative bg-background/80 backdrop-blur-sm rounded-xl p-4 md:p-8 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10">
+                        />
+                        
+                        <div className="relative rounded-xl p-4 md:p-8">
                             <p className="text-lg text-muted-foreground">Okuma Süresi</p>
                             <p className="text-7xl md:text-9xl font-bold font-mono tracking-tighter">{formatDuration(elapsedTime)}</p>
                         </div>
@@ -235,3 +239,4 @@ export default function ReadingSessionPage() {
         </div>
     );
 }
+
