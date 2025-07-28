@@ -138,8 +138,7 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
   }, [hierarchicalShelves]);
 
   return (
-    <ScrollArea className="h-full pr-4">
-        <div className="space-y-4">
+    <div className="space-y-4">
         <FormField control={control} name="title" render={({ field }) => (
             <FormItem><FormLabel>Kitap Adı</FormLabel><FormControl><Input placeholder="Kitabın adını girin..." {...field} /></FormControl><FormMessage /></FormItem>
         )} />
@@ -284,7 +283,6 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
             </FormItem>
         )} />
-        </div>
-    </ScrollArea>
+    </div>
   );
 };
