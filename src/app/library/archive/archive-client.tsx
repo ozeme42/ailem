@@ -1,9 +1,9 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -380,6 +380,11 @@ export default function ArchiveClient() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsBulkJsonDialogOpen(true)}>
                 <FilePlus className="mr-2 h-4 w-4"/> Toplu Ekle (JSON)
+              </DropdownMenuItem>
+               <DropdownMenuItem asChild>
+                 <Link href="/library/all">
+                    <Edit className="mr-2 h-4 w-4"/> Tümünü Yönet
+                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
