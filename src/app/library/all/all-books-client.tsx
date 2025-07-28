@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { ArrowUpDown, Edit, Loader2, Search, X } from "lucide-react";
+import { ArrowUpDown, Edit, Loader2, Search, X, Filter, SlidersHorizontal } from "lucide-react";
 import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
@@ -22,6 +22,10 @@ import { onTagsUpdate } from "@/lib/dataService";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 
 const bookFormSchema = z.object({
@@ -44,7 +48,11 @@ export function AllBooksClient() {
   const [books, setBooks] = React.useState<Book[]>([]);
   const [allTags, setAllTags] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
+  
+  // Filtering states
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [showOnlyChildrenBooks, setShowOnlyChildrenBooks] = React.useState(false);
+  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
   
   const [sortKey, setSortKey] = React.useState<SortKey>(null);
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
@@ -105,11 +113,23 @@ export function AllBooksClient() {
 
 
   const sortedAndFilteredBooks = React.useMemo(() => {
-    let filtered = books.filter(book => 
-      book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (book.author && book.author.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (book.tags && book.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-    );
+    let filtered = books
+      .filter(book => {
+          // Search term filter
+          const searchLower = searchTerm.toLowerCase();
+          const searchMatch = searchLower === '' ||
+            book.title.toLowerCase().includes(searchLower) ||
+            (book.author && book.author.toLowerCase().includes(searchLower));
+          
+          // Children's book filter
+          const childrenMatch = !showOnlyChildrenBooks || book.isForChildren;
+
+          // Tags filter
+          const tagsMatch = selectedTags.length === 0 || 
+            selectedTags.every(filterTag => (book.tags || []).includes(filterTag));
+          
+          return searchMatch && childrenMatch && tagsMatch;
+      });
 
     if (sortKey) {
         filtered.sort((a, b) => {
@@ -130,7 +150,7 @@ export function AllBooksClient() {
     }
 
     return filtered;
-  }, [books, searchTerm, sortKey, sortDirection]);
+  }, [books, searchTerm, sortKey, sortDirection, showOnlyChildrenBooks, selectedTags]);
 
   const handleSort = (key: SortKey) => {
       if (sortKey === key) {
@@ -147,22 +167,90 @@ export function AllBooksClient() {
       }
       return sortDirection === 'asc' ? <ArrowUpDown className="ml-2 h-4 w-4" /> : <ArrowUpDown className="ml-2 h-4 w-4" />; // Could use ArrowUp/Down for more clarity
   };
+  
+  const handleTagSelect = (tag: string) => {
+    setSelectedTags(prev => 
+        prev.includes(tag) 
+            ? prev.filter(t => t !== tag) 
+            : [...prev, tag]
+    );
+  };
+
 
   return (
     <>
       <div className="space-y-6">
         <PageHeader title="Tüm Kitaplar" />
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Başlık, yazar veya raf ara..." 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="relative w-full flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Başlık veya yazar ara..." 
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-4 self-stretch sm:self-center">
+                <div className="flex items-center space-x-2">
+                    <Switch 
+                        id="children-books-only"
+                        checked={showOnlyChildrenBooks}
+                        onCheckedChange={setShowOnlyChildrenBooks}
+                    />
+                    <Label htmlFor="children-books-only">Sadece Çocuk</Label>
+                </div>
+                 <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline">
+                        <SlidersHorizontal className="mr-2 h-4 w-4" />
+                        Raflar ({selectedTags.length})
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-0">
+                      <Command>
+                        <CommandInput placeholder="Raf ara..." />
+                        <CommandList>
+                          <CommandEmpty>Raf bulunamadı.</CommandEmpty>
+                          <CommandGroup>
+                            {allTags.sort().map(tag => (
+                              <CommandItem
+                                key={tag}
+                                onSelect={() => handleTagSelect(tag)}
+                                className="cursor-pointer"
+                              >
+                                <div className={cn(
+                                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                    selectedTags.includes(tag) ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible"
+                                )}>
+                                    <X className="h-4 w-4" />
+                                </div>
+                                <span>{tag}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+              </div>
+            </div>
+            {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-sm font-medium">Filtreler:</span>
+                    {selectedTags.map(tag => (
+                        <Badge key={tag} variant="secondary">
+                            {tag}
+                            <button onClick={() => handleTagSelect(tag)} className="ml-1.5 rounded-full p-0.5 hover:bg-background/50">
+                                <X className="h-3 w-3"/>
+                            </button>
+                        </Badge>
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedTags([])}>Tümünü Temizle</Button>
+                </div>
+            )}
         </div>
         
         <Card>
@@ -198,7 +286,7 @@ export function AllBooksClient() {
                 <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
             )}
             {!loading && sortedAndFilteredBooks.length === 0 && (
-                <div className="text-center text-muted-foreground p-8">Sonuç bulunamadı.</div>
+                <div className="text-center text-muted-foreground p-8">Filtrelerle eşleşen sonuç bulunamadı.</div>
             )}
         </Card>
 
