@@ -152,7 +152,7 @@ export default function LibraryStatsPage() {
             <p className="text-xs text-muted-foreground">Kütüphanedeki toplam eser sayısı</p>
           </CardContent>
         </Card>
-        <Link href="/library/stats/authors" className="block">
+        <Link href="/library/stats/authors" className="block h-full">
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Toplam Yazar</CardTitle>
@@ -280,3 +280,4 @@ export default function LibraryStatsPage() {
     </>
   );
 }
+
