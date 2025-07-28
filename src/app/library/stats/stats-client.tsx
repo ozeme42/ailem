@@ -174,7 +174,7 @@ export default function LibraryStatsPage() {
             <p className="text-xs text-muted-foreground">Puanlanan kitapların ortalaması</p>
           </CardContent>
         </Card>
-         <Link href="/library/stats/pages" className="block h-full">
+        <Link href="/library/stats/pages" className="block h-full">
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
@@ -280,4 +280,3 @@ export default function LibraryStatsPage() {
     </>
   );
 }
-
