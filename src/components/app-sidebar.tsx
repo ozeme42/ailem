@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
@@ -19,6 +19,7 @@ export function AppSidebar() {
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },
     { href: "/goals", label: "Yol Haritaları", icon: Target },
+    { href: "/memorization", label: "Ezber Takibi", icon: CheckCircle },
     { 
       href: "/library", 
       label: "Kütüphane", 
@@ -35,7 +36,6 @@ export function AppSidebar() {
       icon: GraduationCap,
       subItems: [
           { href: "/education", label: "Genel Bakış" },
-          { href: "/education/prayers", label: "Dualar & Sureler" },
           { href: "/education/study", label: "Konu Anlatımı" },
           { href: "/education/management", label: "Yönetim" },
       ]
@@ -117,5 +117,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
-    

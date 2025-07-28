@@ -3,9 +3,8 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, PrayerContent } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, EzberItem, EzberProgress } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
-import { initialPrayers } from './prayer-data';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -19,29 +18,49 @@ const getCurrentFamilyId = async (): Promise<string | null> => {
 // Generic CRUD operations
 // These need to be updated to use the familyId from the logged-in user.
 
-const onFamilyDataUpdate = <T>(collectionName: string, callback: (data: T[]) => void) => {
+const onFamilyDataUpdate = <T>(collectionName: string, callback: (data: T[]) => void, runOnce = false) => {
     const auth = getAuth();
-    return onAuthStateChanged(auth, (user) => {
+    const handler = (user: import('firebase/auth').User | null) => {
         if (user) {
             const userDocRef = doc(db, 'users', user.uid);
-            onSnapshot(userDocRef, (userDoc) => {
+            const userUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
                 if (userDoc.exists()) {
                     const familyId = userDoc.data().familyId;
                     if (familyId) {
-                         const q = query(collection(db, collectionName), where("familyId", "==", familyId));
-                         return onSnapshot(q, (snapshot) => {
+                        const q = query(collection(db, collectionName), where("familyId", "==", familyId));
+                        const dataUnsubscribe = onSnapshot(q, (snapshot) => {
                             const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
                             callback(items);
+                            if (runOnce) {
+                                userUnsubscribe();
+                                dataUnsubscribe();
+                            }
                         });
+                        if (runOnce) return () => dataUnsubscribe();
+                    } else {
+                        callback([]);
+                        if (runOnce) userUnsubscribe();
                     }
+                } else {
+                    callback([]);
+                    if (runOnce) userUnsubscribe();
                 }
-                callback([]);
             });
+            if (runOnce) return () => userUnsubscribe();
         } else {
             callback([]);
         }
-    });
+        return () => {}; // Return an empty unsubscribe function
+    };
+
+    if (runOnce) {
+        handler(auth.currentUser);
+        return () => {};
+    }
+
+    return onAuthStateChanged(auth, handler);
 };
+
 
 
 // Books (mediaItems)
@@ -760,12 +779,6 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
         batch.set(docRef, { ...test, familyId, studentId: userId, status: 'Atandı' });
     });
     
-    // Initial Prayers
-    initialPrayers.forEach(prayer => {
-        const docRef = doc(collection(db, 'prayers'));
-        batch.set(docRef, { ...prayer, familyId });
-    });
-    
     // Check if default data has been initialized
     const familyDataRef = doc(db, 'families', familyId);
     batch.update(familyDataRef, { defaultDataInitialized: true });
@@ -901,7 +914,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
 };
 
 // Ambient Sounds
-export const onAmbientSoundsUpdate = (callback: (sounds: AmbientSound[]) => void) => onFamilyDataUpdate<AmbientSound>('ambientSounds', callback);
+export const onAmbientSoundsUpdate = (callback: (sounds: AmbientSound[]) => void, runOnce?: boolean) => onFamilyDataUpdate<AmbientSound>('ambientSounds', callback, runOnce);
 export const addAmbientSound = async (data: Omit<AmbientSound, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
@@ -909,26 +922,39 @@ export const addAmbientSound = async (data: Omit<AmbientSound, 'id' | 'familyId'
 };
 export const deleteAmbientSound = (id: string) => deleteDoc(doc(db, "ambientSounds", id));
 
-// Prayers
-export const onPrayersUpdate = (callback: (prayers: PrayerContent[]) => void) => {
-    return onFamilyDataUpdate<PrayerContent>('prayers', async (prayers) => {
-        if (prayers.length === 0) {
-            const familyId = await getCurrentFamilyId();
-            if (familyId) {
-                console.log("No prayers found for family, populating default prayers...");
-                const batch = writeBatch(db);
-                initialPrayers.forEach(prayer => {
-                    const docRef = doc(collection(db, 'prayers'));
-                    batch.set(docRef, { ...prayer, familyId });
-                });
-                await batch.commit();
-                // We don't call the callback here, as the listener will pick up the new data automatically.
-            } else {
-                 callback([]); // No familyId, so return empty
-            }
-        } else {
-            callback(prayers);
-        }
-    });
+// Ezber Takibi
+export const onEzberItemsUpdate = (callback: (items: EzberItem[]) => void, runOnce?: boolean) => onFamilyDataUpdate<EzberItem>('ezberItems', callback, runOnce);
+export const addEzberItem = async (data: Omit<EzberItem, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'ezberItems'), { ...data, familyId });
 };
-export const updatePrayerContent = (id: string, data: Partial<Omit<PrayerContent, 'id'>>) => updateDoc(doc(db, 'prayers', id), data);
+export const updateEzberItem = (id: string, data: Partial<Omit<EzberItem, 'id' | 'familyId'>>) => updateDoc(doc(db, 'ezberItems', id), data);
+export const deleteEzberItem = async (id: string) => {
+    // Also delete progress associated with this item
+    const q = query(collection(db, 'ezberProgress'), where('itemId', '==', id));
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    batch.delete(doc(db, 'ezberItems', id));
+    return batch.commit();
+};
+
+export const onEzberProgressUpdate = (callback: (progress: EzberProgress[]) => void, runOnce?: boolean) => onFamilyDataUpdate<EzberProgress>('ezberProgress', callback, runOnce);
+export const updateEzberProgress = async (itemId: string, memberId: string, completed: boolean) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    
+    const progressId = `${itemId}_${memberId}`;
+    const docRef = doc(db, 'ezberProgress', progressId);
+
+    const progressData: EzberProgress = {
+        id: progressId,
+        familyId,
+        itemId,
+        memberId,
+        completed,
+        completedAt: completed ? new Date().toISOString() : undefined,
+    };
+    return setDoc(docRef, progressData, { merge: true });
+};

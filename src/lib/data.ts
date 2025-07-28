@@ -171,17 +171,24 @@ export interface Goal {
     sectionCount: number;
 }
 
-export interface PrayerContent {
+export interface EzberItem {
     id: string;
     familyId: string;
     title: string;
-    category: 'Namaz Sureleri' | 'Namaz Duaları' | 'Günlük Dualar';
-    arabicText: string;
-    turkishText: string;
-    meaning: string;
-    audioUrl?: string;
-    order: number;
+    category: 'Sure' | 'Dua';
+    content?: string;
+    imageUrl?: string;
 }
+
+export interface EzberProgress {
+    id: string; // composite key: `${itemId}_${memberId}`
+    familyId: string;
+    itemId: string;
+    memberId: string;
+    completed: boolean;
+    completedAt?: string; // ISO string
+}
+
 
 
 // Static data that doesn't change often can remain here.
