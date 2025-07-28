@@ -815,7 +815,7 @@ function NewSoundForm({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange:
 
     const form = useForm<NewSoundFormData>({
         resolver: zodResolver(newSoundFormSchema),
-        defaultValues: { loop: true },
+        defaultValues: { name: "", loop: true },
     });
 
     const onSubmit = async (data: NewSoundFormData) => {
@@ -921,4 +921,3 @@ function NewSoundForm({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange:
         </Dialog>
     );
 }
-
