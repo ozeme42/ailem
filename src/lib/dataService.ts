@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, PrayerContent } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -902,3 +902,7 @@ export const addAmbientSound = async (data: Omit<AmbientSound, 'id' | 'familyId'
     return addDoc(collection(db, 'ambientSounds'), { ...data, familyId });
 };
 export const deleteAmbientSound = (id: string) => deleteDoc(doc(db, "ambientSounds", id));
+
+// Prayers
+export const onPrayersUpdate = (callback: (prayers: PrayerContent[]) => void) => onFamilyDataUpdate<PrayerContent>('prayers', callback);
+export const updatePrayerContent = (id: string, data: Partial<Omit<PrayerContent, 'id'>>) => updateDoc(doc(db, 'prayers', id), data);
