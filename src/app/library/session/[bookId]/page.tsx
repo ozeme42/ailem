@@ -25,7 +25,7 @@ function formatDuration(seconds: number) {
 }
 
 const soundLibrary = [
-  { id: 'metronome', name: 'Metronom', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/metronome.mp3", loop: true },
+  { id: 'metronome', name: 'Metronom', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/mar-calmado-272997.mp3", loop: true },
   { id: 'rain', name: 'Yağmur', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/rain.mp3" , loop: true },
   { id: 'wind', name: 'Rüzgar', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/wind.mp3", loop: true },
   { id: 'ney', name: 'Ney', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/ney.mp3", loop: true },
