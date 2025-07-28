@@ -144,34 +144,38 @@ export default function ReadingSessionPage() {
                 
                 <main className="flex-grow flex flex-col justify-center items-center gap-8">
                      <div className="relative w-full max-w-lg bg-background/80 backdrop-blur-sm rounded-2xl p-1 overflow-hidden">
-                         <motion.div
-                            className="absolute top-0 left-0 h-2 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
-                            style={{ originX: 0 }}
-                            animate={{ scaleX: [0, 1, 1, 0, 0] }}
-                            transition={{ duration: 60, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1] }}
-                        />
-                        <motion.div
-                            className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500"
-                            style={{ originY: 0 }}
-                            animate={{ scaleY: [0, 1, 1, 0, 0] }}
-                            transition={{ duration: 60, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 15 }}
-                        />
-                        <motion.div
-                            className="absolute bottom-0 right-0 h-2 w-full bg-gradient-to-l from-blue-500 via-purple-500 to-pink-500"
-                            style={{ originX: 1 }}
-                            animate={{ scaleX: [0, 1, 1, 0, 0] }}
-                            transition={{ duration: 60, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 30 }}
-                        />
-                         <motion.div
-                            className="absolute bottom-0 left-0 w-2 h-full bg-gradient-to-t from-blue-500 via-purple-500 to-pink-500"
-                            style={{ originY: 1 }}
-                            animate={{ scaleY: [0, 1, 1, 0, 0] }}
-                            transition={{ duration: 60, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 45 }}
-                        />
-                        
+                        <svg className="absolute inset-0 w-full h-full" width="100%" height="100%">
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{stopColor: 'hsl(var(--primary))'}} />
+                                <stop offset="100%" style={{stopColor: 'hsl(var(--accent))'}} />
+                                </linearGradient>
+                            </defs>
+                            <motion.rect
+                                x="2" y="2"
+                                width="calc(100% - 4px)" height="calc(100% - 4px)"
+                                rx="14"
+                                ry="14"
+                                fill="transparent"
+                                stroke="url(#gradient)"
+                                strokeWidth="4"
+                                pathLength="1"
+                                strokeDasharray="1"
+                                animate={{ strokeDashoffset: [1, 0] }}
+                                transition={{
+                                    duration: 60,
+                                    repeat: Infinity,
+                                    repeatType: 'loop',
+                                    ease: 'linear'
+                                }}
+                            />
+                        </svg>
+
                          <div className="relative rounded-xl p-4 md:p-8 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 h-full flex flex-col justify-center items-center text-center">
                             <p className="text-lg text-muted-foreground">Okuma Süresi</p>
-                            <p className="text-7xl md:text-8xl font-bold font-mono tracking-tight">{formatDuration(elapsedTime)}</p>
+                            <p className="text-7xl md:text-8xl font-bold font-mono tracking-tighter">
+                                {formatDuration(elapsedTime)}
+                            </p>
                         </div>
                     </div>
                     
