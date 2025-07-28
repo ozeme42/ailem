@@ -197,6 +197,30 @@ export default function LibraryPage() {
 
   }, [memberSessions]);
 
+  const readingGoals = selectedMember?.readingGoals;
+  const monthlyGoalProgress = useMemo(() => {
+    if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0 };
+    
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+    const monthlySessions = memberSessions.filter(s => parseISO(s.startTime) >= startOfMonth);
+    const pagesRead = monthlySessions.reduce((sum, s) => sum + s.pagesRead, 0);
+
+    const finishedBookIds = new Set(
+        userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
+            .filter(b => b.status === 'finished' && b.finishedAt && parseISO(b.finishedAt) >= startOfMonth)
+            .map(b => b.bookId)
+    );
+    const booksRead = finishedBookIds.size;
+
+    return {
+        pages: (pagesRead / (readingGoals.monthly.pages || 1)) * 100,
+        books: (booksRead / (readingGoals.monthly.books || 1)) * 100,
+        pagesRead,
+        booksRead
+    };
+  }, [readingGoals, memberSessions, userLibraries, selectedMember]);
+
 
   return (
     <>
@@ -228,6 +252,30 @@ export default function LibraryPage() {
             </Button>
           ))}
         </div>
+        
+        {readingGoals && (
+            <Card className="mb-8">
+                <CardHeader>
+                    <CardTitle>Aylık Okuma Hedefleri</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-6">
+                    <div>
+                        <div className="flex justify-between text-sm mb-1">
+                            <span className="text-muted-foreground">Sayfa Hedefi</span>
+                            <span className="font-semibold">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly?.pages || 0}</span>
+                        </div>
+                        <Progress value={monthlyGoalProgress.pages} />
+                    </div>
+                     <div>
+                        <div className="flex justify-between text-sm mb-1">
+                            <span className="text-muted-foreground">Kitap Hedefi</span>
+                             <span className="font-semibold">{monthlyGoalProgress.booksRead} / {readingGoals.monthly?.books || 0}</span>
+                        </div>
+                        <Progress value={monthlyGoalProgress.books} indicatorClassName="bg-green-500" />
+                    </div>
+                </CardContent>
+            </Card>
+        )}
 
         <Card className="mb-8">
           <CardHeader>
@@ -274,7 +322,7 @@ export default function LibraryPage() {
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
                 <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onSaveSession={handleSaveSession} />)}
+                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onSaveSession={handleSaveSession} onUpdateStatus={handleUpdateStatus} />)}
                 </div>
             </div>
         )}
@@ -367,11 +415,13 @@ function SaveSessionDialog({ book, session, onSave, open, onOpenChange }: { book
     );
 }
 
-function ReadingBookCard({ book, onSaveSession }: { book: any, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void }) {
+function ReadingBookCard({ book, onSaveSession, onUpdateStatus }: { book: any, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void }) {
     const [timerRunning, setTimerRunning] = useState(false);
     const [elapsedTime, setElapsedTime] = useState(0);
     const [startTime, setStartTime] = useState<Date | null>(null);
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+    const [progressValue, setProgressValue] = useState(book.progress || 0);
+    const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
@@ -399,8 +449,12 @@ function ReadingBookCard({ book, onSaveSession }: { book: any, onSaveSession: (b
         setElapsedTime(0);
     };
 
-    const progressPercent = book.progress || 0;
-    const pagesRead = Math.round((progressPercent / 100) * (book.pageCount || 0));
+    const handleProgressSave = () => {
+        onUpdateStatus(book.id, 'reading', progressValue);
+        setIsProgressDialogOpen(false);
+    }
+
+    const pagesRead = Math.round((book.progress || 0) / 100 * (book.pageCount || 0));
 
     return (
         <>
@@ -415,22 +469,43 @@ function ReadingBookCard({ book, onSaveSession }: { book: any, onSaveSession: (b
                         </div>
                         
                         <div className="mt-4 space-y-2">
-                            <Progress value={progressPercent} className="h-2"/>
+                            <Progress value={book.progress || 0} className="h-2"/>
                             <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                                 <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
-                                <span className="font-semibold text-primary">{progressPercent}%</span>
+                                <span className="font-semibold text-primary">{book.progress || 0}%</span>
                             </div>
                             <div className="flex gap-2 pt-2">
-                                <Button className="w-full" onClick={timerRunning ? stopTimer : startTimer}>
-                                    {timerRunning ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
-                                    {timerRunning ? (
-                                        <div className="flex items-center gap-1">
-                                            <Timer className="animate-pulse" />
-                                            <span>{formatDuration(elapsedTime)}</span>
+                                <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button className="w-full">İlerleme Gir</Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>İlerlemeni Güncelle</DialogTitle>
+                                            <DialogDescription>"{book.title}" kitabında kaçıncı sayfadasın?</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="py-4 space-y-4">
+                                            <Label htmlFor="progress-slider">İlerleme: {progressValue}%</Label>
+                                            <Slider id="progress-slider" value={[progressValue]} onValueChange={(v) => setProgressValue(v[0])} max={100} step={1} />
+                                            <div className="text-center text-muted-foreground">{Math.round(progressValue/100 * (book.pageCount || 0))} / {book.pageCount || '?'} sayfa</div>
                                         </div>
-                                    ) : "Okumaya Başla"}
+                                        <DialogFooter>
+                                            <Button variant="secondary" onClick={() => setIsProgressDialogOpen(false)}>İptal</Button>
+                                            <Button onClick={handleProgressSave}>Kaydet</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                                <Button variant="outline" size="icon" onClick={timerRunning ? stopTimer : startTimer}>
+                                    {timerRunning ? <Pause/> : <Play/>}
                                 </Button>
+                                <Button variant="secondary" className="w-full" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
                             </div>
+                            {timerRunning && (
+                                <div className="flex items-center justify-center gap-2 p-2 rounded-md bg-muted text-center text-lg font-mono tracking-wider">
+                                    <Timer className="h-5 w-5 animate-pulse text-primary"/>
+                                    <span>{formatDuration(elapsedTime)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
