@@ -3,18 +3,18 @@
 
 import * as React from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Book, User, Library, Star } from "lucide-react";
+import { Book, User, Library, Star, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { Book as BookType, monthlyReadingStats, UserLibrary } from "@/lib/data";
+import { Book as BookType, UserLibrary } from "@/lib/data";
 import { onBooksUpdate, onUserLibrariesUpdate } from "@/lib/dataService";
 import { useAuth } from '@/components/auth-provider';
 import { Button } from "@/components/ui/button";
 import { format, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import Link from "next/link";
 
 const readingChartConfig = {
   books: { label: "Okunan Kitap", color: "hsl(var(--chart-2))" },
@@ -51,14 +51,18 @@ export default function LibraryStatsPage() {
 
     const stats = React.useMemo(() => {
         const totalBooks = books.length;
-        const totalAuthors = new Set(books.map(b => b.author)).size;
         const totalPages = books.reduce((sum, book) => sum + (book.pageCount || 0), 0);
         const ratedBooks = books.filter(b => b.rating > 0);
         const avgRating = ratedBooks.length > 0
             ? (ratedBooks.reduce((sum, book) => sum + book.rating, 0) / ratedBooks.length).toFixed(1)
             : "0.0";
         
-        return { totalBooks, totalAuthors, totalPages, avgRating };
+        return { 
+            totalBooks, 
+            totalAuthors: new Set(books.map(b => b.author)).size, 
+            totalPages, 
+            avgRating,
+        };
     }, [books]);
     
     const genreData = React.useMemo(() => {
@@ -105,7 +109,6 @@ export default function LibraryStatsPage() {
                 return {
                     ...book,
                     pageCount: bookDetails?.pageCount || 0,
-                    // Use a finishedAt date if available, otherwise fallback to addedAt
                     date: new Date(book.finishedAt || book.addedAt),
                 };
             });
@@ -130,23 +133,25 @@ export default function LibraryStatsPage() {
         return Object.entries(statsByMonth).map(([month, data]) => ({ month, ...data }));
     }, [userLibraries, books]);
 
-
   return (
     <>
       <PageHeader title="Kütüphane İstatistikleri 📈" />
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Kitap</CardTitle>
-            <Library className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalBooks}</div>
-            <p className="text-xs text-muted-foreground">Kütüphanedeki toplam eser sayısı</p>
-          </CardContent>
-        </Card>
-        <Link href="/library/stats/authors">
+        <Link href="/library/all" className="block h-full">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Toplam Kitap</CardTitle>
+                    <Library className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalBooks}</div>
+                    <p className="text-xs text-muted-foreground">Kütüphanedeki toplam eser sayısı</p>
+                </CardContent>
+            </Card>
+        </Link>
+        
+        <Link href="/library/stats/authors" className="block h-full">
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Toplam Yazar</CardTitle>
@@ -158,6 +163,20 @@ export default function LibraryStatsPage() {
                 </CardContent>
             </Card>
         </Link>
+        
+        <Link href="/library/stats/pages" className="block h-full">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
+                    <Book className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
+                    <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
+                </CardContent>
+            </Card>
+        </Link>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ortalama Puan</CardTitle>
@@ -166,16 +185,6 @@ export default function LibraryStatsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgRating} / 5.0</div>
             <p className="text-xs text-muted-foreground">Puanlanan kitapların ortalaması</p>
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
-            <Book className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
-             <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
           </CardContent>
         </Card>
       </div>
