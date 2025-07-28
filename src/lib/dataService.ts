@@ -894,4 +894,3 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
-

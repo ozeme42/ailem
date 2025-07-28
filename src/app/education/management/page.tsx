@@ -156,7 +156,7 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
                                                     <p className="font-semibold">{exam.name}</p>
                                                      <p className="text-xs text-muted-foreground">
                                                         {exam.subjects.length} Ders, {exam.subjects.reduce((acc, s) => acc + s.questionCount, 0)} Soru
-                                                    </p>
+                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <Button variant="ghost" size="icon" onClick={() => onOpenEditExam(exam)}><Edit className="w-4 h-4"/></Button>
