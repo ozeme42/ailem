@@ -138,18 +138,15 @@ export default function ReadingSessionPage() {
                 </header>
                 
                 <main className="flex-grow flex flex-col justify-center items-center gap-8">
-                    <div className="text-center relative">
-                        <motion.div
-                            className="absolute -inset-4 md:-inset-8 rounded-2xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
-                            animate={{
-                                rotate: 360,
+                    <div className="text-center relative p-1 rounded-2xl overflow-hidden">
+                         <motion.div
+                            className="absolute inset-0"
+                             style={{
+                                background: 'conic-gradient(from 0deg, #ec4899, #8b5cf6, #3b82f6, #ec4899)',
                             }}
-                            transition={{
-                                duration: 10,
-                                ease: "linear",
-                                repeat: Infinity,
-                            }}
-                        />
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                         />
                          <div className="relative bg-background/80 backdrop-blur-sm rounded-xl p-4 md:p-8">
                             <p className="text-lg text-muted-foreground">Okuma Süresi</p>
                             <p className="text-7xl md:text-9xl font-bold font-mono tracking-tighter">{formatDuration(elapsedTime)}</p>
