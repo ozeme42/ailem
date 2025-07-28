@@ -1,4 +1,8 @@
+
 import type { PrayerContent } from './data';
+
+// Helper function to create full URLs
+const getSoundUrl = (fileName: string) => `https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/${fileName}?alt=media`;
 
 export const initialPrayers: Omit<PrayerContent, 'id' | 'familyId'>[] = [
   // Namaz Sureleri
@@ -21,7 +25,8 @@ Mâliki yevmiddin
 Sirâtallezîne en'amte aleyhim
 Ğayrilmağdûbi aleyhim ve leddâllîn`,
     meaning: 'Rahman ve Rahim olan Allah\'ın adıyla.\nHamd, Alemlerin Rabbi\nRahman, Rahim\nHesap ve ceza gününün maliki Allah\'a mahsustur.\n(Allahım!) Yalnız sana ibadet ederiz ve yalnız senden yardım dileriz.\nBizi doğru yola, kendilerine nimet verdiklerinin yoluna ilet; gazaba uğrayanlarınkine ve sapkınlarınkine değil.',
-    order: 1
+    order: 1,
+    audioUrl: getSoundUrl('fatiha.mp3')
   },
   {
     title: 'Fil Suresi',
@@ -38,7 +43,8 @@ Ve ersele aleyhim tayran ebâbîl
 Termîhim bihicâratin min siccîl
 Fece'alehum ke'asfin me'kûl`,
     meaning: `Rabbinin, fil sahiplerine ne yaptığını görmedin mi? Onların tuzaklarını boşa çıkarmadı mı? Üzerlerine balçıktan pişirilmiş taşlar atan sürü sürü kuşlar gönderdi. Nihayet onları yenilmiş ekin yaprakları gibi yaptı.`,
-    order: 2
+    order: 2,
+    audioUrl: getSoundUrl('fil.mp3')
   },
   {
     title: 'Kureyş Suresi',
@@ -53,7 +59,8 @@ Fece'alehum ke'asfin me'kûl`,
 Felya'budû rabbe hâzelbeyt
 Ellezî et'amehum min cû'in ve âmenehum min havf`,
     meaning: `Kureyş'in güvenliği, onların kış ve yaz yolculuklarının güvenliği için, şu evin (Kâbe'nin) Rabbine kulluk etsinler. O ki, onları açlıktan doyurdu ve korkudan emin kıldı.`,
-    order: 3
+    order: 3,
+    audioUrl: getSoundUrl('kureys.mp3')
   },
   {
     title: 'Maun Suresi',
@@ -74,7 +81,8 @@ Ellezînehum an salâtihim sâhûn
 Ellezînehum yurâûne
 Ve yemne'ûnelmâ'ûn`,
     meaning: `Gördün mü o dine yalan diyeni? İşte o, yetimi itip kakar. Yoksulu doyurmaya teşvik etmez. O halde vay o namaz kılanların haline ki, Onlar namazlarını ciddiye almazlar. Onlar gösteriş yaparlar. Ve yardımlığa (zekât ve komşu yardımı gibi) mâni olurlar.`,
-    order: 4
+    order: 4,
+    audioUrl: getSoundUrl('maun.mp3')
   },
   {
     title: 'Kevser Suresi',
@@ -87,7 +95,8 @@ Ve yemne'ûnelmâ'ûn`,
 Fesalli lirabbike venhar
 İnne şânieke huvel'ebter`,
     meaning: `(Resûlüm!) Kuşkusuz biz sana Kevser'i verdik. Şimdi sen Rabbin için namaz kıl ve kurban kes! Asıl sonu kesik olan, şüphesiz sana hınç besleyendir.`,
-    order: 5
+    order: 5,
+    audioUrl: getSoundUrl('kevser.mp3')
   },
   {
     title: 'Kafirun Suresi',
@@ -106,7 +115,8 @@ Ve lâ ene âbidun mâ abedtum
 Ve lâ entum âbidûne mâ a'bud
 Lekum dînukum veliye dîn`,
     meaning: `De ki: Ey inkârcılar! Ben sizin taptıklarınıza tapmam. Siz de benim taptığıma tapıcılar değilsiniz. Ben sizin taptıklarınıza tapmış değilim. Siz de benim taptığıma tapıcılar değilsiniz. Sizin dininiz size, benim dinim banadır.`,
-    order: 6
+    order: 6,
+    audioUrl: getSoundUrl('kafirun.mp3')
   },
   {
     title: 'Nasr Suresi',
@@ -119,7 +129,8 @@ Lekum dînukum veliye dîn`,
 Ve raeytennâse yedhulûne fî dînillâhi efvâcâ
 Fesebbih bihamdi rabbike vestağfirh, İnnehû kâne tevvâbâ`,
     meaning: `Allah'ın yardımı ve fetih (Mekke fethi) geldiğinde ve insanların bölük bölük Allah'ın dinine girdiğini gördüğünde, Rabbine hamd ederek tespihte bulun ve O'ndan bağışlama dile. Çünkü O, tövbeleri çok kabul edendir.`,
-    order: 7
+    order: 7,
+    audioUrl: getSoundUrl('nasr.mp3')
   },
   {
     title: 'Tebbet Suresi',
@@ -136,7 +147,8 @@ Seyaslâ nâren zâte leheb
 Vemraetuhû hammâletelhatab
 Fî cîdihâ hablun min mesed`,
     meaning: `Ebû Leheb'in elleri kurusun, zaten kurudu. Malı ve kazandıkları ona fayda vermedi. O, alevli bir ateşe girecektir. Karısı da, odun taşıyıcı olarak. Boynunda bükülmüş hurma liflerinden bir ip olduğu halde.`,
-    order: 8
+    order: 8,
+    audioUrl: getSoundUrl('tebbet.mp3')
   },
   {
     title: 'İhlas Suresi',
@@ -151,7 +163,8 @@ Allâhussamed
 Lem yelid ve lem yûled
 Ve lem yekun lehû kufuven ehad`,
     meaning: `De ki: O, Allah'tır, bir tektir. Allah Samed'dir (Her şey O'na muhtaçtır, O, hiçbir şeye muhtaç değildir). O, doğurmamış ve doğmamıştır. O'nun hiçbir dengi yoktur.`,
-    order: 9
+    order: 9,
+    audioUrl: getSoundUrl('ihlas.mp3')
   },
   {
     title: 'Felak Suresi',
@@ -168,7 +181,8 @@ Ve min şerri ğâsikın izâ vekab
 Ve min şerrinneffâsâti fil'ukad
 Ve min şerri hâsidin izâ hased`,
     meaning: `De ki: "Sabahın Rabbine sığınırım, yarattığı şeylerin şerrinden, karanlığı çöktüğü zaman gecenin şerrinden, düğümlere üfürenlerin şerrinden, ve haset ettiği zaman hasetçinin şerrinden."`,
-    order: 10
+    order: 10,
+    audioUrl: getSoundUrl('felak.mp3')
   },
   {
     title: 'Nas Suresi',
@@ -187,7 +201,8 @@ Min şerrilvesvâsilhannâs
 Ellezî yuvesvisu fî sudûrinnâs
 Minelcinneti vennâs`,
     meaning: `De ki: "İnsanların Rabbine, insanların Melikine, insanların İlahına sığınırım. O sinsi vesvesecinin şerrinden. O ki, insanların göğüslerine vesvese verir. Gerek cinden, gerek insandan."`,
-    order: 11
+    order: 11,
+    audioUrl: getSoundUrl('nas.mp3')
   },
   // Namaz Duaları
   {
@@ -202,7 +217,8 @@ Ve tebarekesmuk
 Ve teala cedduk
 Ve la ilahe gayruk.`,
     meaning: `Allah'ım! Sen eksik sıfatlardan uzaksın, seni daima överim. Senin adın mübarektir. Senin şanın her şeyden üstündür. Senden başka ilah yoktur.`,
-    order: 12
+    order: 12,
+    audioUrl: getSoundUrl('subhaneke.mp3')
   },
   {
     title: 'Ettehiyyatü Duası',
@@ -218,7 +234,8 @@ Esselâmu aleynâ ve alâ ibâdillâhissâlihîn
 Eşhedü en lâ ilâhe illAllâh
 Ve eşhedü enne Muhammeden abduhû ve resûluh`,
     meaning: `Dil ile, beden ile ve mal ile yapılan bütün ibadetler Allah'a mahsustur. Ey Peygamber! Allah'ın selamı, rahmeti ve bereketi senin üzerine olsun. Selam bizim ve Allah'ın iyi kullarının üzerine olsun. Şahitlik ederim ki, Allah'tan başka ilah yoktur. Yine şahitlik ederim ki, Muhammed, O'nun kulu ve elçisidir.`,
-    order: 13
+    order: 13,
+    audioUrl: getSoundUrl('ettehiyyatu.mp3')
   },
   {
     title: 'Allahümme Salli Duası',
@@ -230,7 +247,8 @@ Ve eşhedü enne Muhammeden abduhû ve resûluh`,
 Kema salleyte ala İbrahime ve ala ali İbrahim
 İnneke hamidun mecid.`,
     meaning: `Allah'ım! Muhammed'e ve Muhammed'in ailesine, İbrahim'e ve İbrahim'in ailesine rahmet ettiğin gibi rahmet eyle. Şüphesiz sen övülmeye layık ve şanı yüce olansın.`,
-    order: 14
+    order: 14,
+    audioUrl: getSoundUrl('salli.mp3')
   },
   {
     title: 'Allahümme Barik Duası',
@@ -242,7 +260,8 @@ Kema salleyte ala İbrahime ve ala ali İbrahim
 Kema barekte ala İbrahime ve ala ali İbrahim
 İnneke hamidun mecid.`,
     meaning: `Allah'ım! Muhammed'e ve Muhammed'in ailesine, İbrahim'e ve İbrahim'in ailesine bereket ihsan ettiğin gibi bereket ihsan eyle. Şüphesiz sen övülmeye layık ve şanı yüce olansın.`,
-    order: 15
+    order: 15,
+    audioUrl: getSoundUrl('barik.mp3')
   },
   {
     title: 'Rabbena Atina Duası',
@@ -254,7 +273,8 @@ Kema barekte ala İbrahime ve ala ali İbrahim
 Ve fil'ahireti haseneten
 Ve kına azabennar.`,
     meaning: `Rabbimiz! Bize dünyada da iyilik ver, ahirette de iyilik ver. Ve bizi cehennem azabından koru.`,
-    order: 16
+    order: 16,
+    audioUrl: getSoundUrl('rabbena_atina.mp3')
   },
   {
     title: 'Rabbenağfirli Duası',
@@ -264,6 +284,7 @@ Ve kına azabennar.`,
     turkishText: `Rabbenağfirli ve li-valideyye
 Ve lil-mu'minine yevme yekumul hisab.`,
     meaning: `Rabbimiz! Hesap gününde beni, annemi, babamı ve bütün mü'minleri bağışla.`,
-    order: 17
+    order: 17,
+    audioUrl: getSoundUrl('rabbenagfirli.mp3')
   },
 ];
