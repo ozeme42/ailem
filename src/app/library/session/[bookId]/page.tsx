@@ -22,7 +22,8 @@ function formatDuration(seconds: number) {
     return `${h}:${m}:${s}`;
 }
 
-const metronomeSoundUrl = "https://storage.googleapis.com/ailem-app.firebasestorage.app/mar-calmado-272997.mp3";
+const metronomeSoundUrl = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+
 
 export default function ReadingSessionPage() {
     const params = useParams();
@@ -73,14 +74,13 @@ export default function ReadingSessionPage() {
     }, [timerRunning, startTime]);
 
     React.useEffect(() => {
-        // Initialize Audio on client
         if (typeof window !== 'undefined' && !metronomeAudioRef.current) {
              metronomeAudioRef.current = new Audio(metronomeSoundUrl);
              metronomeAudioRef.current.preload = 'auto';
         }
 
         if (isMetronomeOn) {
-            const bpm = 60; // Standard 60 beats per minute
+            const bpm = 60;
             const interval = (60 / bpm) * 1000;
             metronomeIntervalRef.current = setInterval(() => {
                 if (metronomeAudioRef.current) {
@@ -94,7 +94,6 @@ export default function ReadingSessionPage() {
             }
         }
         
-        // Cleanup on component unmount
         return () => {
              if (metronomeIntervalRef.current) {
                 clearInterval(metronomeIntervalRef.current);
@@ -128,7 +127,7 @@ export default function ReadingSessionPage() {
             endTime: new Date().toISOString(),
             durationSeconds: durationSeconds,
             pagesRead: pagesRead,
-            notes: notesList.join('\n---\n'), // Join notes with a separator
+            notes: notesList.join('\n---\n'),
         };
 
         await addReadingSession(newSession);
@@ -283,7 +282,7 @@ export default function ReadingSessionPage() {
                 <div className="flex justify-between items-center gap-2 mt-4">
                     <div className="flex gap-2">
                          <Button variant="outline" onClick={() => setShowExtras(!showExtras)}>
-                            <StickyNote className="mr-2 h-5 w-5"/> Not Ekle
+                            <StickyNote className="mr-2 h-5 w-5"/> Not & Özet Ekle
                         </Button>
                     </div>
                     <div className="flex justify-end gap-2">
@@ -299,3 +298,4 @@ export default function ReadingSessionPage() {
     );
 
     
+}
