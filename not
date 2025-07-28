@@ -1,0 +1,1 @@
+gcloud storage buckets update gs://ailem-app.firebasestorage.app --cors-file=cors.json
