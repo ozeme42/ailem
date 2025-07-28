@@ -152,6 +152,7 @@ export default function LibraryStatsPage() {
             <p className="text-xs text-muted-foreground">Kütüphanedeki toplam eser sayısı</p>
           </CardContent>
         </Card>
+        
         <Link href="/library/stats/authors" className="block h-full">
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -164,6 +165,7 @@ export default function LibraryStatsPage() {
                 </CardContent>
             </Card>
         </Link>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ortalama Puan</CardTitle>
@@ -174,8 +176,9 @@ export default function LibraryStatsPage() {
             <p className="text-xs text-muted-foreground">Puanlanan kitapların ortalaması</p>
           </CardContent>
         </Card>
-        <Link href="/library/stats/pages" className="block h-full">
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+            <Link href="/library/stats/pages" className="block h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
                     <Book className="h-4 w-4 text-orange-500" />
@@ -184,8 +187,8 @@ export default function LibraryStatsPage() {
                     <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
                     <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
                 </CardContent>
-            </Card>
-        </Link>
+            </Link>
+        </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">
@@ -279,4 +282,5 @@ export default function LibraryStatsPage() {
         </Card>
     </>
   );
-}
+
+    
