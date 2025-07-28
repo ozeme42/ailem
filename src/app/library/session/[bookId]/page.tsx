@@ -22,7 +22,7 @@ function formatDuration(seconds: number) {
     return `${h}:${m}:${s}`;
 }
 
-const metronomeSoundUrl = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+const metronomeSoundUrl = "data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YUReZgA=";
 
 
 export default function ReadingSessionPage() {
@@ -282,7 +282,7 @@ export default function ReadingSessionPage() {
                 <div className="flex justify-between items-center gap-2 mt-4">
                     <div className="flex gap-2">
                          <Button variant="outline" onClick={() => setShowExtras(!showExtras)}>
-                            <StickyNote className="mr-2 h-5 w-5"/> Not & Özet Ekle
+                            <StickyNote className="mr-2 h-5 w-5"/> Not Ekle
                         </Button>
                     </div>
                     <div className="flex justify-end gap-2">
