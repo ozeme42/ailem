@@ -177,8 +177,8 @@ export default function LibraryStatsPage() {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
-            <Link href="/library/stats/pages" className="block h-full">
+        <Link href="/library/stats/pages" className="block h-full">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
                     <Book className="h-4 w-4 text-orange-500" />
@@ -187,8 +187,8 @@ export default function LibraryStatsPage() {
                     <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
                     <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
                 </CardContent>
-            </Link>
-        </Card>
+            </Card>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">
@@ -282,5 +282,4 @@ export default function LibraryStatsPage() {
         </Card>
     </>
   );
-
-    
+}
