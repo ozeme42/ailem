@@ -25,11 +25,11 @@ function formatDuration(seconds: number) {
 }
 
 const soundLibrary = [
-  { id: 'metronome', name: 'Metronom', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/mar-calmado-272997.mp3?alt=media", loop: true },
-  { id: 'rain', name: 'Yağmur', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/rain.mp3" , loop: true },
-  { id: 'wind', name: 'Rüzgar', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/wind.mp3", loop: true },
-  { id: 'ney', name: 'Ney', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/ney.mp3", loop: true },
-  { id: 'wave', name: 'Dalga', url: "https://storage.googleapis.com/ailem-app.firebasestorage.app/wave.mp3", loop: true }
+  { id: 'metronome', name: 'Metronom', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/drumsticks-pro-mark-la-special-2bn-hickory-no4-103712.mp3?alt=media", loop: true },
+  { id: 'rain', name: 'Yağmur', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/rain.mp3?alt=media", loop: true },
+  { id: 'wind', name: 'Rüzgar', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/wind.mp3?alt=media", loop: true },
+  { id: 'ney', name: 'Ney', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/ney.mp3?alt=media", loop: true },
+  { id: 'wave', name: 'Dalga', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/mar-calmado-272997.mp3?alt=media", loop: true }
 ];
 
 export default function ReadingSessionPage() {
