@@ -22,6 +22,9 @@ function formatDuration(seconds: number) {
     return `${h}:${m}:${s}`;
 }
 
+const metronomeSoundDataUri = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+
+
 export default function ReadingSessionPage() {
     const params = useParams();
     const router = useRouter();
@@ -74,15 +77,18 @@ export default function ReadingSessionPage() {
     React.useEffect(() => {
         // Initialize Audio on client
         if (typeof window !== 'undefined' && !metronomeAudioRef.current) {
-            metronomeAudioRef.current = new Audio('https://cdn.freesound.org/previews/264/26422_39434-lq.mp3');
-            metronomeAudioRef.current.preload = 'auto';
+             metronomeAudioRef.current = new Audio(metronomeSoundDataUri);
+             metronomeAudioRef.current.preload = 'auto';
         }
 
         if (isMetronomeOn) {
             const bpm = 60; // Standard 60 beats per minute
             const interval = (60 / bpm) * 1000;
             metronomeIntervalRef.current = setInterval(() => {
-                metronomeAudioRef.current?.play().catch(e => console.error("Error playing audio:", e));
+                if (metronomeAudioRef.current) {
+                    metronomeAudioRef.current.currentTime = 0;
+                    metronomeAudioRef.current.play().catch(e => console.error("Error playing audio:", e));
+                }
             }, interval);
         } else {
             if (metronomeIntervalRef.current) {
@@ -94,10 +100,6 @@ export default function ReadingSessionPage() {
         return () => {
              if (metronomeIntervalRef.current) {
                 clearInterval(metronomeIntervalRef.current);
-            }
-            if (metronomeAudioRef.current) {
-                metronomeAudioRef.current.pause();
-                metronomeAudioRef.current = null;
             }
         }
 
@@ -181,7 +183,7 @@ export default function ReadingSessionPage() {
                         <svg className="absolute inset-0 w-full h-full" width="100%" height="100%">
                              <defs>
                                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                                     <stop offset="0%" stopColor="hsl(var(--chart-1))" />
                                     <stop offset="25%" stopColor="hsl(var(--chart-5))" />
                                     <stop offset="50%" stopColor="hsl(var(--chart-3))" />
                                     <stop offset="100%" stopColor="hsl(var(--primary))" />
@@ -197,11 +199,11 @@ export default function ReadingSessionPage() {
                                 strokeWidth="8"
                                 pathLength="1"
                                 strokeDasharray="1"
+                                strokeDashoffset={1 - (elapsedTime % 60) / 60}
                                 initial={{ strokeDashoffset: 1 }}
-                                animate={{ strokeDashoffset: 0 }}
+                                animate={{ strokeDashoffset: 1 - (elapsedTime % 60) / 60 }}
                                 transition={{
-                                    duration: 60,
-                                    repeat: Infinity,
+                                    duration: 1,
                                     ease: 'linear'
                                 }}
                             />
@@ -297,4 +299,3 @@ export default function ReadingSessionPage() {
         </div>
     );
 }
-
