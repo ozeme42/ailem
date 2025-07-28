@@ -910,5 +910,25 @@ export const addAmbientSound = async (data: Omit<AmbientSound, 'id' | 'familyId'
 export const deleteAmbientSound = (id: string) => deleteDoc(doc(db, "ambientSounds", id));
 
 // Prayers
-export const onPrayersUpdate = (callback: (prayers: PrayerContent[]) => void) => onFamilyDataUpdate<PrayerContent>('prayers', callback);
+export const onPrayersUpdate = (callback: (prayers: PrayerContent[]) => void) => {
+    return onFamilyDataUpdate<PrayerContent>('prayers', async (prayers) => {
+        if (prayers.length === 0) {
+            const familyId = await getCurrentFamilyId();
+            if (familyId) {
+                console.log("No prayers found for family, populating default prayers...");
+                const batch = writeBatch(db);
+                initialPrayers.forEach(prayer => {
+                    const docRef = doc(collection(db, 'prayers'));
+                    batch.set(docRef, { ...prayer, familyId });
+                });
+                await batch.commit();
+                // We don't call the callback here, as the listener will pick up the new data automatically.
+            } else {
+                 callback([]); // No familyId, so return empty
+            }
+        } else {
+            callback(prayers);
+        }
+    });
+};
 export const updatePrayerContent = (id: string, data: Partial<Omit<PrayerContent, 'id'>>) => updateDoc(doc(db, 'prayers', id), data);
