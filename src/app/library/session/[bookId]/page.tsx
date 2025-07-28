@@ -108,8 +108,8 @@ export default function ReadingSessionPage() {
     }
 
     return (
-        <div className="fixed inset-0 bg-background z-50 flex flex-col overflow-y-auto">
-             <motion.div
+        <div className="fixed inset-0 bg-background z-50 overflow-y-auto pb-24">
+            <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"
                 animate={{
                     backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
@@ -123,7 +123,7 @@ export default function ReadingSessionPage() {
                     backgroundSize: '400% 400%',
                 }}
             />
-            <div className="relative flex flex-col h-full w-full max-w-4xl mx-auto p-4 md:p-8">
+            <div className="relative w-full max-w-4xl mx-auto p-4 md:p-8">
                 <header className="flex items-start gap-4 mb-8">
                     <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => router.back()}>
                         <ArrowLeft />
@@ -142,7 +142,7 @@ export default function ReadingSessionPage() {
                     </div>
                 </header>
                 
-                <main className="flex-grow flex flex-col justify-center items-center gap-8">
+                <main className="flex-grow flex flex-col justify-center items-center gap-8 my-8">
                      <div className="relative w-full max-w-lg bg-background/80 backdrop-blur-sm rounded-2xl p-1 overflow-hidden">
                         <svg className="absolute inset-0 w-full h-full" width="100%" height="100%">
                             <defs>
@@ -225,7 +225,7 @@ export default function ReadingSessionPage() {
                      </div>
                 </footer>
                 
-                <div className="flex justify-between items-center gap-2">
+                <div className="flex justify-between items-center gap-2 mt-4">
                     <div className="flex gap-2">
                          <Button variant="outline" onClick={() => setShowNotes(!showNotes)}>
                             <StickyNote className="mr-2 h-5 w-5"/> Not Ekle
