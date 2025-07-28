@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -894,3 +894,12 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
+
+// Ambient Sounds
+export const onAmbientSoundsUpdate = (callback: (sounds: AmbientSound[]) => void) => onFamilyDataUpdate<AmbientSound>('ambientSounds', callback);
+export const addAmbientSound = async (data: Omit<AmbientSound, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'ambientSounds'), { ...data, familyId });
+};
+export const deleteAmbientSound = (id: string) => deleteDoc(doc(db, "ambientSounds", id));

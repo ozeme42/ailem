@@ -357,6 +357,13 @@ export interface Mistake {
     createdAt: string; // ISO date string
     status: 'active' | 'corrected';
 }
+export interface AmbientSound {
+    id: string;
+    familyId: string;
+    name: string;
+    url: string; // Public URL to the audio file in Firebase Storage
+    loop: boolean;
+}
 // This data is now only for initial setup
 // ... (rest of the initial data remains the same)
 export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [

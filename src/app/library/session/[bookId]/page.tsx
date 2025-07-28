@@ -1,12 +1,13 @@
 
+
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { onBooksUpdate, addReadingSession, updateUserBookStatus } from "@/lib/dataService";
-import type { Book, ReadingSession } from "@/lib/data";
+import { onBooksUpdate, addReadingSession, updateUserBookStatus, onAmbientSoundsUpdate } from "@/lib/dataService";
+import type { Book, ReadingSession, AmbientSound } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -24,14 +25,6 @@ function formatDuration(seconds: number) {
     return `${h}:${m}:${s}`;
 }
 
-const soundLibrary = [
-  { id: 'metronome', name: 'Metronom', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/drumsticks-pro-mark-la-special-2bn-hickory-no4-103712.mp3?alt=media", loop: true },
-  { id: 'rain', name: 'Yağmur', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/rain.mp3?alt=media", loop: true },
-  { id: 'wind', name: 'Rüzgar', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/wind.mp3?alt=media", loop: true },
-  { id: 'ney', name: 'Ney', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/ney.mp3?alt=media", loop: true },
-  { id: 'wave', name: 'Dalga', url: "https://firebasestorage.googleapis.com/v0/b/ailem-app.firebasestorage.app/o/mar-calmado-272997.mp3?alt=media", loop: true }
-];
-
 export default function ReadingSessionPage() {
     const params = useParams();
     const router = useRouter();
@@ -41,6 +34,7 @@ export default function ReadingSessionPage() {
 
     const [book, setBook] = React.useState<Book | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [ambientSounds, setAmbientSounds] = React.useState<AmbientSound[]>([]);
 
     const [startTime, setStartTime] = React.useState(new Date());
     const [elapsedTime, setElapsedTime] = React.useState(0);
@@ -50,7 +44,7 @@ export default function ReadingSessionPage() {
     const [pagesRead, setPagesRead] = React.useState(0);
     
     const [showExtras, setShowExtras] = React.useState(false);
-    const [selectedSound, setSelectedSound] = React.useState<string | null>(null);
+    const [selectedSoundId, setSelectedSoundId] = React.useState<string | null>(null);
 
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -61,7 +55,11 @@ export default function ReadingSessionPage() {
           setBook(currentBook || null);
           setIsLoading(false);
         });
-        return () => unsubscribeBooks();
+        const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
+        return () => {
+            unsubscribeBooks();
+            unsubscribeSounds();
+        };
     }, [bookId]);
 
     React.useEffect(() => {
@@ -78,9 +76,9 @@ export default function ReadingSessionPage() {
         };
     }, [timerRunning, startTime]);
 
-     React.useEffect(() => {
+    React.useEffect(() => {
         if (audioRef.current) {
-            const sound = soundLibrary.find(s => s.id === selectedSound);
+            const sound = ambientSounds.find(s => s.id === selectedSoundId);
 
             // Stop any currently playing sound first
             audioRef.current.pause();
@@ -92,8 +90,7 @@ export default function ReadingSessionPage() {
                 audioRef.current.play().catch(e => console.error("Error playing audio:", e));
             }
         }
-        
-    }, [selectedSound]);
+    }, [selectedSoundId, ambientSounds]);
 
      React.useEffect(() => {
         // Create audio element on mount
@@ -235,7 +232,7 @@ export default function ReadingSessionPage() {
                             <DropdownMenuTrigger asChild>
                                  <Button
                                     size="icon"
-                                    variant={selectedSound ? "default" : "outline"}
+                                    variant={selectedSoundId ? "default" : "outline"}
                                     className="rounded-full w-16 h-16"
                                     aria-label="Toggle Sound"
                                 >
@@ -245,13 +242,13 @@ export default function ReadingSessionPage() {
                             <DropdownMenuContent>
                                 <DropdownMenuLabel>Ambiyans Sesi</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuRadioGroup value={selectedSound || ''} onValueChange={setSelectedSound}>
-                                    {soundLibrary.map(sound => (
+                                <DropdownMenuRadioGroup value={selectedSoundId || ''} onValueChange={setSelectedSoundId}>
+                                    {ambientSounds.map(sound => (
                                          <DropdownMenuRadioItem key={sound.id} value={sound.id}>{sound.name}</DropdownMenuRadioItem>
                                     ))}
                                 </DropdownMenuRadioGroup>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => setSelectedSound(null)}>Sesi Kapat</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

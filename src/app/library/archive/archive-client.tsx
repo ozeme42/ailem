@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Book } from '@/lib/data';
+import { Book, AmbientSound } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -25,11 +25,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, Music } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary } from '@/lib/dataService';
+import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, onAmbientSoundsUpdate, addAmbientSound, deleteAmbientSound } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
 import { BookForm, BookFormData } from '@/components/new-book-form';
@@ -69,10 +69,12 @@ type ShelfFormData = z.infer<typeof shelfFormSchema>;
 export default function ArchiveClient() {
   const { user, familyId, familyMembers } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
+  const [ambientSounds, setAmbientSounds] = useState<AmbientSound[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
+  const [isSoundFormOpen, setIsSoundFormOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [viewingBook, setViewingBook] = useState<Book | null>(null);
   const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
@@ -80,6 +82,7 @@ export default function ArchiveClient() {
   
   const [view, setView] = useState<'books' | 'management'>('books');
   const [activeTab, setActiveTab] = useState("adults");
+  const [activeManagementTab, setActiveManagementTab] = useState("shelves");
 
   const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState('');
@@ -94,10 +97,12 @@ export default function ArchiveClient() {
   useEffect(() => {
     const unsubscribeBooks = onBooksUpdate(setBooks);
     const unsubscribeTags = onTagsUpdate(setAllTags);
+    const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
 
     return () => {
         unsubscribeBooks();
         unsubscribeTags();
+        unsubscribeSounds();
     };
   }, [user]);
 
@@ -151,6 +156,7 @@ export default function ArchiveClient() {
                 type: 'Kitap',
                 rating: 0,
                 description: '',
+                isForChildren: false,
                 readers: [],
                 ...bookData,
             };
@@ -357,7 +363,7 @@ export default function ArchiveClient() {
       <PageHeader title="Kitaplığımız 📚">
           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setView(view === 'books' ? 'management' : 'books')}>
               <Settings className="mr-2 h-4 w-4"/>
-              {view === 'books' ? 'Raf Yönetimi' : 'Kitapları Gör'}
+              {view === 'books' ? 'Yönetim' : 'Kitapları Gör'}
           </Button>
           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => handleOpenAddDialog()}>
             <PlusCircle className="mr-2 h-4 w-4"/> Yeni Kitap Ekle
@@ -405,52 +411,98 @@ export default function ArchiveClient() {
           </TabsContent>
         </Tabs>
       ) : (
-        <div className="mt-6 flex-grow overflow-y-auto">
-           <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Rafları Yönet</CardTitle>
-                        <CardDescription>Mevcut tüm ana rafları buradan düzenleyebilir veya silebilirsiniz.</CardDescription>
-                    </div>
-                     <Button onClick={() => handleOpenShelfDialog(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni Raf Ekle
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-2 pr-4">
-                        {allTags.filter(t => !t.includes('/')).map(tag => (
-                            <div key={tag} className="flex items-center justify-between p-3 border rounded-lg">
-                                <p className="font-medium">{tag}</p>
-                                <div className="flex items-center gap-2">
-                                    <Button variant="ghost" size="icon" onClick={() => handleOpenShelfDialog(tag)}>
-                                        <Edit className="w-4 h-4"/>
-                                    </Button>
+        <Tabs defaultValue="shelves" onValueChange={setActiveManagementTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="shelves">Raf Yönetimi</TabsTrigger>
+              <TabsTrigger value="sounds">Ambiyans Sesleri</TabsTrigger>
+            </TabsList>
+            <TabsContent value="shelves" className="mt-4">
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Rafları Yönet</CardTitle>
+                            <CardDescription>Mevcut tüm ana rafları buradan düzenleyebilir veya silebilirsiniz.</CardDescription>
+                        </div>
+                         <Button onClick={() => handleOpenShelfDialog(null)}>
+                            <PlusCircle className="mr-2 h-4 w-4"/> Yeni Raf Ekle
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2 pr-4">
+                            {allTags.filter(t => !t.includes('/')).map(tag => (
+                                <div key={tag} className="flex items-center justify-between p-3 border rounded-lg">
+                                    <p className="font-medium">{tag}</p>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenShelfDialog(tag)}>
+                                            <Edit className="w-4 h-4"/>
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                    <Trash2 className="w-4 h-4"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Rafı Sil</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        "{tag}" rafını ve tüm alt raflarını silmek istediğinizden emin misiniz? Bu işlem, bu etiketleri tüm kitaplardan kaldıracak ve raf kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteShelf(tag)}>Sil</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+               </Card>
+            </TabsContent>
+            <TabsContent value="sounds" className="mt-4">
+               <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Ambiyans Sesleri</CardTitle>
+                            <CardDescription>Okuma seanslarında kullanılacak sesleri yönetin.</CardDescription>
+                        </div>
+                         <Button onClick={() => setIsSoundFormOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4"/> Yeni Ses Ekle
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                       <div className="space-y-2 pr-4">
+                            {ambientSounds.map(sound => (
+                                <div key={sound.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <Music className="w-5 h-5 text-primary"/>
+                                        <p className="font-medium">{sound.name}</p>
+                                    </div>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                <Trash2 className="w-4 h-4"/>
-                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Rafı Sil</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    "{tag}" rafını ve tüm alt raflarını silmek istediğinizden emin misiniz? Bu işlem, bu etiketleri tüm kitaplardan kaldıracak ve raf kalıcı olarak silinecektir. Bu işlem geri alınamaz.
-                                                </AlertDialogDescription>
+                                                <AlertDialogTitle>Sesi Sil</AlertDialogTitle>
+                                                <AlertDialogDescription>"{sound.name}" sesini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteShelf(tag)}>Sil</AlertDialogAction>
+                                                <AlertDialogAction onClick={() => deleteAmbientSound(sound.id)}>Sil</AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-           </Card>
-        </div>
+                            ))}
+                       </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
       )}
 
       {/* View Book Details Dialog */}
@@ -567,6 +619,9 @@ export default function ArchiveClient() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        {/* Add Sound Dialog */}
+        <NewSoundForm isOpen={isSoundFormOpen} onOpenChange={setIsSoundFormOpen} />
     </div>
   );
 }
@@ -740,6 +795,128 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
                         İçeri Aktar
                     </Button>
                 </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// NEW SOUND FORM DIALOG
+const newSoundFormSchema = z.object({
+  name: z.string().min(2, "Ses adı en az 2 karakter olmalıdır."),
+  soundFile: z.instanceof(File, { message: "Lütfen bir ses dosyası seçin." }),
+  loop: z.boolean().default(true),
+});
+
+type NewSoundFormData = z.infer<typeof newSoundFormSchema>;
+
+function NewSoundForm({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange: (open: boolean) => void }) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const form = useForm<NewSoundFormData>({
+        resolver: zodResolver(newSoundFormSchema),
+        defaultValues: { loop: true },
+    });
+
+    const onSubmit = async (data: NewSoundFormData) => {
+        setIsSubmitting(true);
+        try {
+            toast({ title: "Ses Yükleniyor..." });
+            const file = data.soundFile;
+            const destinationPath = `ambient-sounds/${file.name.replace(/[^a-zA-Z0-9.]/g, '-')}-${Date.now()}`;
+            
+            // Create a Data URI from the file for the migration flow
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const imageDataUri = reader.result as string;
+                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
+
+                if (!migrationResult.success || !migrationResult.newUrl) {
+                    throw new Error(migrationResult.error || "Ses dosyası yüklenemedi.");
+                }
+
+                const soundData: Omit<AmbientSound, 'id' | 'familyId'> = {
+                    name: data.name,
+                    url: migrationResult.newUrl,
+                    loop: data.loop,
+                };
+
+                await addAmbientSound(soundData);
+                toast({ title: "✅ Ses Eklendi", description: `"${data.name}" sesi kütüphaneye eklendi.` });
+                form.reset();
+                onOpenChange(false);
+            };
+
+            reader.onerror = (error) => {
+                throw new Error("Dosya okunurken bir hata oluştu.");
+            };
+
+        } catch (e: any) {
+            toast({ title: "❌ Hata", description: e.message || "İşlem sırasında bir hata oluştu.", variant: 'destructive'});
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Yeni Ambiyans Sesi Ekle</DialogTitle>
+                    <DialogDescription>
+                        Okuma seanslarında kullanmak için yeni bir ses (örn: mp3, wav) yükleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                 <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Ses Adı</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="örn: Yağmur Sesi" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="soundFile"
+                            render={({ field: { onChange, ...fieldProps } }) => (
+                                <FormItem>
+                                    <FormLabel>Ses Dosyası</FormLabel>
+                                    <FormControl>
+                                        <Input type="file" accept="audio/*" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="loop"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                    <FormLabel>Sesi Döngüye Al</FormLabel>
+                                    <FormControl>
+                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                         <DialogFooter>
+                            <Button variant="ghost" onClick={() => onOpenChange(false)} type="button">İptal</Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Ekle
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     );
