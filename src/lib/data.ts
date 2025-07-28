@@ -112,6 +112,17 @@ export interface UserLibrary {
     books: UserLibraryBook[];
 }
 
+export interface ReadingSession {
+    id: string;
+    familyId: string;
+    memberId: string;
+    bookId: string;
+    startTime: string; // ISO Date string
+    endTime: string; // ISO Date string
+    durationSeconds: number;
+    pagesRead: number;
+}
+
 
 export interface Recipe {
     id: string;

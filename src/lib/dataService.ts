@@ -1,9 +1,10 @@
 
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -52,6 +53,15 @@ export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
 };
 export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
+
+// Reading Sessions
+export const onReadingSessionsUpdate = (callback: (sessions: ReadingSession[]) => void) => onFamilyDataUpdate<ReadingSession>('readingSessions', callback);
+export const addReadingSession = async (data: Omit<ReadingSession, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'readingSessions'), { ...data, familyId });
+};
+
 
 // Recipes
 export const onRecipesUpdate = (callback: (recipes: Recipe[]) => void) => onFamilyDataUpdate<Recipe>('recipes', callback);
@@ -640,7 +650,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     ];
 
     const initialMealPlan: MealPlan = {
-      "2024-08-12": { // This key needs to be dynamic based on current week, but for initial data it's fine
+      "2024-08-12": { // This key needs to be dynamic based on current week, but for initial setup it's fine
         "Kahvaltı": initialRecipes[0] as Recipe,
         "Akşam Yemeği": initialRecipes[1] as Recipe,
       },
@@ -885,6 +895,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
 };
+
 
 
 
