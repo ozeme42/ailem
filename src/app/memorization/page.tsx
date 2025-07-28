@@ -31,6 +31,7 @@ import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMem
 import { useAuth } from '@/components/auth-provider';
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 
 // SCHEMAS & TYPES
