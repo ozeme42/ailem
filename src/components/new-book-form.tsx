@@ -128,7 +128,7 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
   }, [hierarchicalShelves]);
 
   return (
-    <div className="space-y-4 py-4">
+    <div className="space-y-4">
         <FormField control={control} name="title" render={({ field }) => (
             <FormItem><FormLabel>Kitap Adı</FormLabel><FormControl><Input placeholder="Kitabın adını girin..." {...field} /></FormControl><FormMessage /></FormItem>
         )} />

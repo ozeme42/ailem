@@ -467,19 +467,20 @@ export default function ArchiveClient() {
       {/* Add/Edit Book Dialog */}
        <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
           <DialogContent className="sm:max-w-lg flex flex-col">
-            <DialogHeader>
-              <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
-            </DialogHeader>
             <FormProvider {...formMethods}>
               <form
                 id="book-form"
                 onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)}
                 className="flex-1 flex flex-col min-h-0"
               >
-                <ScrollArea className="flex-1 min-h-0 pr-4">
-                   <BookForm existingTags={allTags} />
+                <DialogHeader>
+                    <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
+                </DialogHeader>
+                <ScrollArea className="flex-1 min-h-0">
+                   <div className="pr-6 py-4">
+                     <BookForm existingTags={allTags} />
+                   </div>
                 </ScrollArea>
-
                 <DialogFooter className="pt-4 border-t flex-shrink-0">
                     <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
                     <Button type="submit" disabled={isSubmitting}>
@@ -743,3 +744,4 @@ function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, on
         </Dialog>
     );
 }
+
