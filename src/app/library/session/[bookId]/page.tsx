@@ -22,7 +22,7 @@ function formatDuration(seconds: number) {
     return `${h}:${m}:${s}`;
 }
 
-const metronomeSoundUrl = "https://storage.googleapis.com/ailem-app.firebasestorage.app/mar-calmado-272997.mp3";
+const metronomeSoundUrl = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
 
 export default function ReadingSessionPage() {
     const params = useParams();
