@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Book, User, Library, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, ArrowRight } from "lucide-react";
+import { Book, User, Library, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/page-header";
@@ -15,9 +15,6 @@ import { useAuth } from '@/components/auth-provider';
 import { Button } from "@/components/ui/button";
 import { format, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 
 const readingChartConfig = {
   books: { label: "Okunan Kitap", color: "hsl(var(--chart-2))" },
@@ -28,7 +25,6 @@ export default function LibraryStatsPage() {
     const { familyId, familyMembers } = useAuth();
     const [books, setBooks] = React.useState<BookType[]>([]);
     const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
-    const [isAuthorDialogOpen, setIsAuthorDialogOpen] = React.useState(false);
 
     const memberReadingConfig = React.useMemo(() => {
         const config: ChartConfig = { booksRead: { label: "Okunan Kitap" } };
@@ -149,7 +145,7 @@ export default function LibraryStatsPage() {
              <Button variant="outline">Sayfa Sayısı Sıralaması <ArrowRight className="ml-2 h-4 w-4"/></Button>
         </Link>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -288,3 +284,5 @@ export default function LibraryStatsPage() {
     </>
   );
 }
+
+    
