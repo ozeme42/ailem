@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { ArrowUpDown, Edit, Search } from "lucide-react";
+import { ArrowUpDown, Edit, Loader2, Search, X } from "lucide-react";
 import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
@@ -13,16 +13,15 @@ import { onBooksUpdate, updateBook, updateTags } from "@/lib/dataService";
 import type { Book } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { BookDetailDialog } from "@/components/book-detail-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BookForm, BookFormData } from "@/components/new-book-form";
 import { useToast } from "@/hooks/use-toast";
 import { onTagsUpdate } from "@/lib/dataService";
-import { Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 const bookFormSchema = z.object({
@@ -196,7 +195,7 @@ export function AllBooksClient() {
                 </TableBody>
             </Table>
              {loading && (
-                <p className="text-center text-muted-foreground p-8">Yükleniyor...</p>
+                <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
             )}
             {!loading && sortedAndFilteredBooks.length === 0 && (
                 <div className="text-center text-muted-foreground p-8">Sonuç bulunamadı.</div>
@@ -206,25 +205,32 @@ export function AllBooksClient() {
       </div>
         
         <Dialog open={!!editingBook} onOpenChange={(open) => !open && setEditingBook(null)}>
-            <DialogContent className="sm:max-w-lg">
-                <FormProvider {...formMethods}>
-                <form onSubmit={formMethods.handleSubmit(handleUpdateBook)} className="flex flex-col h-full">
-                    <DialogHeader>
-                        <DialogTitle>Kitabı Düzenle</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 min-h-0 py-4">
-                        <BookForm existingTags={allTags} />
-                    </div>
-                    <div className="pt-4 border-t flex-shrink-0">
-                    <Button type="submit" disabled={isSubmitting} className="w-full">
+          <DialogContent className="sm:max-w-lg flex flex-col h-full max-h-[90vh]">
+            <FormProvider {...formMethods}>
+              <form
+                id="book-form"
+                onSubmit={formMethods.handleSubmit(handleUpdateBook)}
+                className="flex-1 flex flex-col min-h-0 h-full"
+              >
+                <DialogHeader>
+                    <DialogTitle>Kitabı Düzenle</DialogTitle>
+                </DialogHeader>
+                 <ScrollArea className="flex-1 min-h-0">
+                   <div className="pr-6 py-4">
+                     <BookForm existingTags={allTags} />
+                   </div>
+                </ScrollArea>
+                <DialogFooter className="pt-4 border-t flex-shrink-0">
+                    <Button variant="ghost" type="button" onClick={() => setEditingBook(null)} disabled={isSubmitting}>İptal</Button>
+                    <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Kaydet
                     </Button>
-                    </div>
-                </form>
-                </FormProvider>
-            </DialogContent>
-        </Dialog>
+                </DialogFooter>
+              </form>
+            </FormProvider>
+          </DialogContent>
+      </Dialog>
     </>
   );
 }
