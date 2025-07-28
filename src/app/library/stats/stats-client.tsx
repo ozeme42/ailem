@@ -4,6 +4,7 @@
 import * as React from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Book, User, Library, Star, ArrowDownWideNarrow, ArrowUpWideNarrow } from "lucide-react";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import { format, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "../ui/badge";
+import { Badge } from "@/components/ui/badge";
 
 const readingChartConfig = {
   books: { label: "Okunan Kitap", color: "hsl(var(--chart-2))" },
@@ -28,9 +29,6 @@ export default function LibraryStatsPage() {
     const [books, setBooks] = React.useState<BookType[]>([]);
     const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
     const [isAuthorDialogOpen, setIsAuthorDialogOpen] = React.useState(false);
-    const [isPageCountDialogOpen, setIsPageCountDialogOpen] = React.useState(false);
-    const [pageSortOrder, setPageSortOrder] = React.useState<'desc' | 'asc'>('desc');
-
 
     const memberReadingConfig = React.useMemo(() => {
         const config: ChartConfig = { booksRead: { label: "Okunan Kitap" } };
@@ -63,23 +61,11 @@ export default function LibraryStatsPage() {
             ? (ratedBooks.reduce((sum, book) => sum + book.rating, 0) / ratedBooks.length).toFixed(1)
             : "0.0";
         
-        const authorCounts = new Map<string, number>();
-        books.forEach(book => {
-            if (book.author) {
-                authorCounts.set(book.author, (authorCounts.get(book.author) || 0) + 1);
-            }
-        });
-
-        const sortedAuthors = Array.from(authorCounts.entries())
-            .map(([author, count]) => ({ author, count }))
-            .sort((a, b) => b.count - a.count);
-
         return { 
             totalBooks, 
-            totalAuthors: authorCounts.size, 
+            totalAuthors: new Set(books.map(b => b.author)).size, 
             totalPages, 
             avgRating,
-            authorStats: sortedAuthors 
         };
     }, [books]);
     
@@ -151,17 +137,6 @@ export default function LibraryStatsPage() {
         return Object.entries(statsByMonth).map(([month, data]) => ({ month, ...data }));
     }, [userLibraries, books]);
 
-    const sortedBooksByPageCount = React.useMemo(() => {
-        return [...books]
-          .filter(book => book.pageCount && book.pageCount > 0)
-          .sort((a, b) => {
-            const pageA = a.pageCount || 0;
-            const pageB = b.pageCount || 0;
-            return pageSortOrder === 'desc' ? pageB - pageA : pageA - pageB;
-          });
-      }, [books, pageSortOrder]);
-
-
   return (
     <>
       <PageHeader title="Kütüphane İstatistikleri 📈" />
@@ -177,41 +152,18 @@ export default function LibraryStatsPage() {
             <p className="text-xs text-muted-foreground">Kütüphanedeki toplam eser sayısı</p>
           </CardContent>
         </Card>
-        <Dialog open={isAuthorDialogOpen} onOpenChange={setIsAuthorDialogOpen}>
-            <DialogTrigger asChild>
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Toplam Yazar</CardTitle>
-                        <User className="h-4 w-4 text-purple-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalAuthors}</div>
-                        <p className="text-xs text-muted-foreground">Farklı yazar sayısı</p>
-                    </CardContent>
-                </Card>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Yazar Sıralaması</DialogTitle>
-                    <DialogDescription>
-                        Kütüphanede en çok kitabı bulunan yazarlar.
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="h-72 mt-4">
-                    <div className="space-y-2 pr-4">
-                        {stats.authorStats.map((authorStat, index) => (
-                            <div key={authorStat.author} className="flex items-center justify-between p-3 border rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <span className="font-bold text-sm text-muted-foreground w-6 text-center">{index + 1}</span>
-                                    <p className="font-semibold">{authorStat.author}</p>
-                                </div>
-                                <p className="font-bold text-primary">{authorStat.count} kitap</p>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </DialogContent>
-        </Dialog>
+        <Link href="/library/stats/authors" className="block">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Toplam Yazar</CardTitle>
+                    <User className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalAuthors}</div>
+                    <p className="text-xs text-muted-foreground">Farklı yazar sayısı</p>
+                </CardContent>
+            </Card>
+        </Link>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ortalama Puan</CardTitle>
@@ -222,55 +174,18 @@ export default function LibraryStatsPage() {
             <p className="text-xs text-muted-foreground">Puanlanan kitapların ortalaması</p>
           </CardContent>
         </Card>
-         <Dialog open={isPageCountDialogOpen} onOpenChange={setIsPageCountDialogOpen}>
-            <DialogTrigger asChild>
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
-                        <Book className="h-4 w-4 text-orange-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
-                        <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
-                    </CardContent>
-                </Card>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>Kitaplar Sayfa Sayısına Göre</DialogTitle>
-                    <DialogDescription>
-                    Tüm kitaplar sayfa sayılarına göre sıralanmıştır.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex justify-end gap-2 my-4">
-                    <Button
-                        variant={pageSortOrder === 'desc' ? 'default' : 'outline'}
-                        onClick={() => setPageSortOrder('desc')}
-                    >
-                       <ArrowDownWideNarrow className="mr-2 h-4 w-4"/> Çoktan Aza
-                    </Button>
-                    <Button
-                        variant={pageSortOrder === 'asc' ? 'default' : 'outline'}
-                        onClick={() => setPageSortOrder('asc')}
-                    >
-                        <ArrowUpWideNarrow className="mr-2 h-4 w-4"/> Azdan Çoğa
-                    </Button>
-                </div>
-                <ScrollArea className="h-72">
-                    <div className="space-y-2 pr-4">
-                        {sortedBooksByPageCount.map(book => (
-                        <div key={book.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div>
-                            <p className="font-semibold">{book.title}</p>
-                            <p className="text-sm text-muted-foreground">{book.author}</p>
-                            </div>
-                            <Badge variant="secondary">{book.pageCount} sayfa</Badge>
-                        </div>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </DialogContent>
-         </Dialog>
+         <Link href="/library/stats/pages" className="block">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
+                    <Book className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
+                    <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
+                </CardContent>
+            </Card>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">
