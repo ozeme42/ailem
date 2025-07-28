@@ -468,13 +468,18 @@ export default function ArchiveClient() {
        <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <FormProvider {...formMethods}>
-            <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} className="flex flex-col h-full">
-              <DialogHeader className="flex-shrink-0">
-                <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
-              </DialogHeader>
-              <div className="flex-grow min-h-0 py-4">
+            <DialogHeader>
+              <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)}
+              className="flex flex-col min-h-0 flex-grow"
+            >
+              <div className="flex-grow min-h-0">
                   <ScrollArea className="h-full pr-4">
-                    <BookForm existingTags={allTags} />
+                    <div className="py-4">
+                      <BookForm existingTags={allTags} />
+                    </div>
                   </ScrollArea>
               </div>
               <DialogFooter className="pt-4 border-t flex-shrink-0">
