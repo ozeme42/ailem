@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { ArrowUpDown, Search, Edit } from "lucide-react";
+import { ArrowUpDown, Edit, Search } from "lucide-react";
 import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
@@ -21,6 +21,9 @@ import { BookForm, BookFormData } from "@/components/new-book-form";
 import { useToast } from "@/hooks/use-toast";
 import { onTagsUpdate } from "@/lib/dataService";
 import { Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+
 
 const bookFormSchema = z.object({
   title: z.string().min(2, "Kitap adı en az 2 karakter olmalıdır."),
@@ -36,14 +39,17 @@ const bookFormSchema = z.object({
   rating: z.number().optional(),
 });
 
+type SortKey = keyof Book | null;
 
 export function AllBooksClient() {
   const [books, setBooks] = React.useState<Book[]>([]);
   const [allTags, setAllTags] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
+  
+  const [sortKey, setSortKey] = React.useState<SortKey>(null);
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
 
-  const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
   const [editingBook, setEditingBook] = React.useState<Book | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
@@ -64,20 +70,17 @@ export function AllBooksClient() {
   }, []);
 
   const handleOpenEditDialog = React.useCallback((bookToEdit: Book) => {
-    setViewingBook(null); // Close detail dialog
-    setTimeout(() => { // Allow detail dialog to close before opening edit
-        setEditingBook(bookToEdit);
-        formMethods.reset({
-            title: bookToEdit.title,
-            author: bookToEdit.author,
-            pageCount: bookToEdit.pageCount,
-            image: bookToEdit.image,
-            isForChildren: bookToEdit.isForChildren,
-            tags: bookToEdit.tags || [],
-            description: bookToEdit.description || '',
-            rating: bookToEdit.rating || 0,
-        });
-    }, 150);
+    setEditingBook(bookToEdit);
+    formMethods.reset({
+        title: bookToEdit.title,
+        author: bookToEdit.author,
+        pageCount: bookToEdit.pageCount,
+        image: bookToEdit.image,
+        isForChildren: bookToEdit.isForChildren,
+        tags: bookToEdit.tags || [],
+        description: bookToEdit.description || '',
+        rating: bookToEdit.rating || 0,
+    });
   }, [formMethods]);
 
   const handleUpdateBook = async (formData: BookFormData) => {
@@ -102,12 +105,49 @@ export function AllBooksClient() {
   };
 
 
-  const filteredBooks = React.useMemo(() => {
-    return books.filter(book => 
+  const sortedAndFilteredBooks = React.useMemo(() => {
+    let filtered = books.filter(book => 
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (book.author && book.author.toLowerCase().includes(searchTerm.toLowerCase()))
+      (book.author && book.author.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (book.tags && book.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
     );
-  }, [books, searchTerm]);
+
+    if (sortKey) {
+        filtered.sort((a, b) => {
+            const valA = a[sortKey as keyof Book];
+            const valB = b[sortKey as keyof Book];
+            
+            if (valA === undefined || valA === null) return 1;
+            if (valB === undefined || valB === null) return -1;
+            
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return sortDirection === 'asc' ? valA.localeCompare(valB, 'tr') : valB.localeCompare(valA, 'tr');
+            }
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return sortDirection === 'asc' ? valA - valB : valB - valA;
+            }
+            return 0;
+        });
+    }
+
+    return filtered;
+  }, [books, searchTerm, sortKey, sortDirection]);
+
+  const handleSort = (key: SortKey) => {
+      if (sortKey === key) {
+          setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      } else {
+          setSortKey(key);
+          setSortDirection('asc');
+      }
+  }
+
+  const getSortIcon = (key: SortKey) => {
+      if (sortKey !== key) {
+          return <ArrowUpDown className="ml-2 h-4 w-4" />;
+      }
+      return sortDirection === 'asc' ? <ArrowUpDown className="ml-2 h-4 w-4" /> : <ArrowUpDown className="ml-2 h-4 w-4" />; // Could use ArrowUp/Down for more clarity
+  };
 
   return (
     <>
@@ -118,7 +158,7 @@ export function AllBooksClient() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Başlık veya yazar ara..." 
+              placeholder="Başlık, yazar veya raf ara..." 
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -126,34 +166,44 @@ export function AllBooksClient() {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {filteredBooks.map(book => (
-                <div key={book.id} onClick={() => setViewingBook(book)} className="group cursor-pointer">
-                    <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
-                        <Image src={book.image || 'https://placehold.co/300x450.png'} alt={book.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
-                    </Card>
-                    <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
-                    <p className="text-xs text-muted-foreground">{book.author}</p>
-                </div>
-            ))}
-        </div>
+        <Card>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[80px]">Kapak</TableHead>
+                        <TableHead><Button variant="ghost" onClick={() => handleSort('title')}>Başlık {getSortIcon('title')}</Button></TableHead>
+                        <TableHead><Button variant="ghost" onClick={() => handleSort('author')}>Yazar {getSortIcon('author')}</Button></TableHead>
+                        <TableHead className="text-center"><Button variant="ghost" onClick={() => handleSort('pageCount')}>Sayfa {getSortIcon('pageCount')}</Button></TableHead>
+                        <TableHead>Raflar</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {sortedAndFilteredBooks.map(book => (
+                        <TableRow key={book.id} onClick={() => handleOpenEditDialog(book)} className="cursor-pointer">
+                            <TableCell>
+                                <Image src={book.image || 'https://placehold.co/80x120.png'} alt={book.title} width={40} height={60} className="rounded-sm" data-ai-hint="book cover" />
+                            </TableCell>
+                            <TableCell className="font-medium">{book.title}</TableCell>
+                            <TableCell>{book.author}</TableCell>
+                            <TableCell className="text-center">{book.pageCount}</TableCell>
+                            <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                    {book.tags?.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+             {loading && (
+                <p className="text-center text-muted-foreground p-8">Yükleniyor...</p>
+            )}
+            {!loading && sortedAndFilteredBooks.length === 0 && (
+                <div className="text-center text-muted-foreground p-8">Sonuç bulunamadı.</div>
+            )}
+        </Card>
 
-        {loading && (
-            <p className="text-center text-muted-foreground">Yükleniyor...</p>
-        )}
-        {!loading && filteredBooks.length === 0 && (
-            <Card>
-                <CardContent className="p-8 text-center text-muted-foreground">Sonuç bulunamadı.</CardContent>
-            </Card>
-        )}
       </div>
-
-       <BookDetailDialog 
-            book={viewingBook}
-            isOpen={!!viewingBook}
-            onOpenChange={setViewingBook}
-            onEdit={handleOpenEditDialog}
-        />
         
         <Dialog open={!!editingBook} onOpenChange={(open) => !open && setEditingBook(null)}>
             <DialogContent className="sm:max-w-lg">
