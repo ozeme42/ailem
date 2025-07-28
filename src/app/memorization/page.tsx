@@ -23,13 +23,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, CheckCircle, Checkbox } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { Combobox } from "@/components/ui/combobox";
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 // SCHEMAS & TYPES
@@ -849,4 +850,3 @@ function MemorizationItemCard({ item, isCompleted, onProgressChange, onEdit, onD
         </Card>
     );
 }
-
