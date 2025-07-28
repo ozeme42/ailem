@@ -40,8 +40,7 @@ export default function ReadingSessionPage() {
     const [summary, setSummary] = React.useState("");
     const [pagesRead, setPagesRead] = React.useState(0);
     
-    const [showNotes, setShowNotes] = React.useState(false);
-    const [showSummary, setShowSummary] = React.useState(false);
+    const [showExtras, setShowExtras] = React.useState(false);
 
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
     
@@ -109,19 +108,8 @@ export default function ReadingSessionPage() {
 
     return (
         <div className="fixed inset-0 bg-background z-50 overflow-y-auto pb-24">
-            <motion.div
+            <div
                 className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"
-                animate={{
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-                }}
-                transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: 'linear',
-                }}
-                style={{
-                    backgroundSize: '400% 400%',
-                }}
             />
             <div className="relative w-full max-w-4xl mx-auto p-4 md:p-8">
                 <header className="flex items-start gap-4 mb-8">
@@ -143,7 +131,7 @@ export default function ReadingSessionPage() {
                 </header>
                 
                 <main className="flex-grow flex flex-col justify-center items-center gap-8 my-8">
-                     <div className="relative w-full max-w-lg bg-background/80 backdrop-blur-sm rounded-2xl p-1 overflow-hidden">
+                     <div className="relative w-full max-w-lg p-1 overflow-hidden">
                         <svg className="absolute inset-0 w-full h-full" width="100%" height="100%">
                             <defs>
                                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -194,7 +182,7 @@ export default function ReadingSessionPage() {
 
                 <footer className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
                      <AnimatePresence>
-                        {showNotes && (
+                        {showExtras && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -207,7 +195,7 @@ export default function ReadingSessionPage() {
                     </AnimatePresence>
 
                     <AnimatePresence>
-                        {showSummary && (
+                        {showExtras && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -227,11 +215,8 @@ export default function ReadingSessionPage() {
                 
                 <div className="flex justify-between items-center gap-2 mt-4">
                     <div className="flex gap-2">
-                         <Button variant="outline" onClick={() => setShowNotes(!showNotes)}>
-                            <StickyNote className="mr-2 h-5 w-5"/> Not Ekle
-                        </Button>
-                         <Button variant="outline" onClick={() => setShowSummary(!showSummary)}>
-                            <BookText className="mr-2 h-5 w-5"/> Özet Ekle
+                         <Button variant="outline" onClick={() => setShowExtras(!showExtras)}>
+                            <StickyNote className="mr-2 h-5 w-5"/> Not & Özet Ekle
                         </Button>
                     </div>
                     <div className="flex justify-end gap-2">
