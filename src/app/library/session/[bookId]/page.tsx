@@ -109,13 +109,14 @@ export default function ReadingSessionPage() {
 
     return (
         <div className="fixed inset-0 bg-background z-50 flex flex-col overflow-y-auto">
-            <motion.div
-                className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-purple-500/10 to-pink-500/10"
+             <motion.div
+                className="absolute inset-0 bg-gradient-to-tr from-blue-900/10 via-purple-900/10 to-pink-900/10"
+                style={{ backgroundSize: '200% 200%' }}
                 animate={{
                     backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
                 }}
                 transition={{
-                    duration: 20,
+                    duration: 40,
                     ease: "linear",
                     repeat: Infinity,
                 }}
@@ -137,9 +138,22 @@ export default function ReadingSessionPage() {
                 </header>
                 
                 <main className="flex-grow flex flex-col justify-center items-center gap-8">
-                    <div className="text-center">
-                        <p className="text-lg text-muted-foreground">Okuma Süresi</p>
-                        <p className="text-7xl md:text-9xl font-bold font-mono tracking-tighter">{formatDuration(elapsedTime)}</p>
+                    <div className="text-center relative">
+                        <motion.div
+                            className="absolute -inset-4 md:-inset-8 rounded-2xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+                            animate={{
+                                rotate: 360,
+                            }}
+                            transition={{
+                                duration: 10,
+                                ease: "linear",
+                                repeat: Infinity,
+                            }}
+                        />
+                         <div className="relative bg-background/80 backdrop-blur-sm rounded-xl p-4 md:p-8">
+                            <p className="text-lg text-muted-foreground">Okuma Süresi</p>
+                            <p className="text-7xl md:text-9xl font-bold font-mono tracking-tighter">{formatDuration(elapsedTime)}</p>
+                        </div>
                     </div>
                     
                     <Button
