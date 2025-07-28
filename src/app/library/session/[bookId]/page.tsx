@@ -143,7 +143,7 @@ export default function ReadingSessionPage() {
                 </header>
                 
                 <main className="flex-grow flex flex-col justify-center items-center gap-8">
-                     <div className="text-center relative w-full max-w-md bg-background/80 backdrop-blur-sm rounded-2xl p-1 overflow-hidden">
+                     <div className="relative w-full max-w-lg bg-background/80 backdrop-blur-sm rounded-2xl p-1 overflow-hidden">
                         <motion.div
                             className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
                             style={{ originX: 0 }}
@@ -169,7 +169,7 @@ export default function ReadingSessionPage() {
                             transition={{ duration: 4, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 3 }}
                         />
                         
-                        <div className="relative rounded-xl p-4 md:p-8 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10">
+                        <div className="relative rounded-xl p-4 md:p-8 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 h-full flex flex-col justify-center items-center text-center">
                             <p className="text-lg text-muted-foreground">Okuma Süresi</p>
                             <p className="text-7xl md:text-8xl font-bold font-mono">{formatDuration(elapsedTime)}</p>
                         </div>
