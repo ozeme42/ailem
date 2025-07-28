@@ -32,6 +32,7 @@ import { useAuth } from '@/components/auth-provider';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
 import Image from 'next/image';
 import { useMemo, useRef, useState } from 'react';
+import { Combobox } from "./ui/combobox";
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -132,8 +133,12 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
     return sortedShelves;
   }, [existingTags]);
 
+  const mainShelfOptions = useMemo(() => {
+    return Object.keys(hierarchicalShelves).map(shelf => ({ label: shelf, value: shelf }));
+  }, [hierarchicalShelves]);
+
   return (
-    <ScrollArea className="h-[65vh] pr-4">
+    <ScrollArea className="h-full pr-4">
         <div className="space-y-4">
         <FormField control={control} name="title" render={({ field }) => (
             <FormItem><FormLabel>Kitap Adı</FormLabel><FormControl><Input placeholder="Kitabın adını girin..." {...field} /></FormControl><FormMessage /></FormItem>
@@ -179,10 +184,14 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
                     <Card className="p-4 bg-muted/50">
                         <CardTitle className="text-base mb-2">Yeni Raf Ekle</CardTitle>
                         <div className="space-y-2">
-                            <Input
-                                placeholder="Ana Raf Adı (örn: Yazarlar)"
+                             <Combobox
+                                options={mainShelfOptions}
                                 value={newShelfMain}
-                                onChange={(e) => setNewShelfMain(e.target.value)}
+                                onChange={setNewShelfMain}
+                                onCreate={(newValue) => { setNewShelfMain(newValue); }}
+                                placeholder="Ana Raf Adı (örn: Yazarlar)"
+                                notfoundText="Raf bulunamadı."
+                                createText="Yeni raf oluştur:"
                             />
                             <Input
                                 placeholder="Alt Raf Adı (opsiyonel, örn: Dostoyevski)"
