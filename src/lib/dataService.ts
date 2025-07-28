@@ -854,7 +854,6 @@ export const checkAndAwardBadges = async (
 };
 
 export const updateTask = async (id: string, data: Partial<Task>) => {
-    // When updating a task, handle subtasks and other fields
     const taskRef = doc(db, 'tasks', id);
     const updateData = removeUndefined(data);
     return updateDoc(taskRef, updateData);
