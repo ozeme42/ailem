@@ -22,8 +22,7 @@ function formatDuration(seconds: number) {
     return `${h}:${m}:${s}`;
 }
 
-const metronomeSoundUrl = "data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YUReZgA=";
-
+const metronomeSoundUrl = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAC/+//5/wD8/wD8//7/AAACAAEADf/5//L/5f/V/7n/of/a/9T/2//l/+v/6//l/+P/6//5/wD8//r//P/6//b/9f/h/6//wv+z/7T/uf/B/8f/yP/P/9L/1//b/9//4f/i/+P/5f/p/+r/6//r/+3/7f/v/+7/7//w//H/8v/y//T/9P/1//b/9v/3//j/+P/5f/n/+r/7P/t/+7/7v/w//H/8//1//b/9//5//r/+//8//z//P/8//3//f/9//4//v/+P/4//j/+P/5//v/+//7//v/9//7/+v/6//r/+v/7//r/+f/4//j/+P/4//j/9//1//X/8//w//C/8L/w//D/8f/x//L/8//0//T/8//x/+7/6f/o/+j/6f/q/+r/6//q/+v/7P/s/+z/7v/u/+7/7//v//H/8v/z//P/8//y//D/7f/q/+f/4v/e/9v/1//X/9r/2v/c/97/3v/e/9//4f/h/+L/4//k/+T/5f/m/+f/5//p/+n/6v/s/+z/7f/t/+7/7//w//H/8v/y//L/8v/y//H/7v/r/+j/5f/j/9//2//a/9f/1f/U/9T/0//T/9T/1f/X/9f/1v/Z/9r/2v/b/9v/2//d/93/3f/d/93/3v/e/97/3v/f/9//3//f/9//4P/g/+D/4f/h/+L/4v/i/+P/4//k/+T/5f/m/+f/6P/p/+r/6//r/+z/7f/u/+7/7v/v//D/8f/y//P/9P/1//b/9//5//r/+//8//3//v//AAAAAA==";
 
 export default function ReadingSessionPage() {
     const params = useParams();
@@ -80,7 +79,8 @@ export default function ReadingSessionPage() {
         }
 
         if (isMetronomeOn) {
-            const bpm = 60;
+            // Play every 2 seconds for a calming wave effect
+            const bpm = 30;
             const interval = (60 / bpm) * 1000;
             metronomeIntervalRef.current = setInterval(() => {
                 if (metronomeAudioRef.current) {
