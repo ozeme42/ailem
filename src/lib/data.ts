@@ -171,16 +171,16 @@ export interface Goal {
     sectionCount: number;
 }
 
-export interface EzberItem {
+export interface MemorizationItem {
     id: string;
     familyId: string;
     title: string;
-    category: 'Sure' | 'Dua';
+    tags: string[];
     content?: string;
     imageUrl?: string;
 }
 
-export interface EzberProgress {
+export interface MemorizationProgress {
     id: string; // composite key: `${itemId}_${memberId}`
     familyId: string;
     itemId: string;

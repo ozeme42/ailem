@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, EzberItem, EzberProgress } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -230,9 +230,10 @@ export const updateFamilyMemberInFamily = async (familyId: string, memberId: str
     }
 }
 
+export type TagType = "libraryTags" | "memorizationTags";
 
 // Tags (Library Shelves are now per-family)
-export const onTagsUpdate = (callback: (tags: string[]) => void) => {
+export const onTagsUpdate = (tagType: TagType, callback: (tags: string[]) => void) => {
     const auth = getAuth();
     return onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -243,7 +244,7 @@ export const onTagsUpdate = (callback: (tags: string[]) => void) => {
                     if (familyId) {
                         const tagsDocRef = doc(db, 'familyManagement', familyId);
                         return onSnapshot(tagsDocRef, (doc) => {
-                           callback(doc.exists() ? doc.data().libraryTags || [] : []);
+                           callback(doc.exists() ? doc.data()[tagType] || [] : []);
                         });
                     }
                 }
@@ -254,12 +255,60 @@ export const onTagsUpdate = (callback: (tags: string[]) => void) => {
         }
     });
 };
-export const updateTags = async (tags: string[]) => {
+export const updateTags = async (tagType: TagType, tags: string[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     const docRef = doc(db, 'familyManagement', familyId);
-    await setDoc(docRef, { libraryTags: tags }, { merge: true });
+    await setDoc(docRef, { [tagType]: tags }, { merge: true });
 }
+
+export const updateBookTags = async (originalTag: string, newTag: string) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+
+    const q = query(collection(db, 'mediaItems'), where('familyId', '==', familyId), where('tags', 'array-contains-any', [originalTag]));
+    const snapshot = await getDocs(q);
+    
+    const batch = writeBatch(db);
+    snapshot.forEach(docSnap => {
+        const book = docSnap.data() as Book;
+        const newTags = (book.tags || []).map(tag => tag.startsWith(originalTag) ? tag.replace(originalTag, newTag) : tag);
+        batch.update(docSnap.ref, { tags: newTags });
+    });
+    
+    await batch.commit();
+}
+
+type ItemType = 'book' | 'memorization';
+
+export const deleteTag = async (tagType: TagType, tagToDelete: string, itemType: ItemType) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) return;
+
+    // 1. Get all tags and filter out the one to delete
+    const tagsDocRef = doc(db, 'familyManagement', familyId);
+    const tagsDoc = await getDoc(tagsDocRef);
+    const allTags: string[] = tagsDoc.exists() ? (tagsDoc.data()[tagType] || []) : [];
+    const newTags = allTags.filter(tag => !tag.startsWith(tagToDelete));
+    await setDoc(tagsDocRef, { [tagType]: newTags }, { merge: true });
+
+    // 2. Query for all items with the tag and remove it
+    const collectionName = itemType === 'book' ? 'mediaItems' : 'memorizationItems';
+    const q = query(collection(db, collectionName), where("familyId", "==", familyId));
+    const querySnapshot = await getDocs(q);
+
+    const batch = writeBatch(db);
+    querySnapshot.forEach(docSnap => {
+        const item = docSnap.data() as Book | MemorizationItem;
+        if (item.tags?.some(t => t.startsWith(tagToDelete))) {
+            const updatedTags = item.tags.filter(t => !t.startsWith(tagToDelete));
+            batch.update(docSnap.ref, { tags: updatedTags });
+        }
+    });
+
+    await batch.commit();
+};
+
 
 // Tasks
 export const onTasksUpdate = (callback: (tasks: Task[]) => void) => onFamilyDataUpdate<Task>('tasks', callback);
@@ -923,32 +972,32 @@ export const addAmbientSound = async (data: Omit<AmbientSound, 'id' | 'familyId'
 export const deleteAmbientSound = (id: string) => deleteDoc(doc(db, "ambientSounds", id));
 
 // Ezber Takibi
-export const onEzberItemsUpdate = (callback: (items: EzberItem[]) => void, runOnce?: boolean) => onFamilyDataUpdate<EzberItem>('ezberItems', callback, runOnce);
-export const addEzberItem = async (data: Omit<EzberItem, 'id' | 'familyId'>) => {
+export const onMemorizationItemsUpdate = (callback: (items: MemorizationItem[]) => void) => onFamilyDataUpdate<MemorizationItem>('memorizationItems', callback);
+export const addMemorizationItem = async (data: Omit<MemorizationItem, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'ezberItems'), { ...data, familyId });
+    return addDoc(collection(db, 'memorizationItems'), { ...data, familyId });
 };
-export const updateEzberItem = (id: string, data: Partial<Omit<EzberItem, 'id' | 'familyId'>>) => updateDoc(doc(db, 'ezberItems', id), data);
-export const deleteEzberItem = async (id: string) => {
+export const updateMemorizationItem = (id: string, data: Partial<Omit<MemorizationItem, 'id' | 'familyId'>>) => updateDoc(doc(db, 'memorizationItems', id), data);
+export const deleteMemorizationItem = async (id: string) => {
     // Also delete progress associated with this item
-    const q = query(collection(db, 'ezberProgress'), where('itemId', '==', id));
+    const q = query(collection(db, 'memorizationProgress'), where('itemId', '==', id));
     const snapshot = await getDocs(q);
     const batch = writeBatch(db);
     snapshot.forEach(doc => batch.delete(doc.ref));
-    batch.delete(doc(db, 'ezberItems', id));
+    batch.delete(doc(db, 'memorizationItems', id));
     return batch.commit();
 };
 
-export const onEzberProgressUpdate = (callback: (progress: EzberProgress[]) => void, runOnce?: boolean) => onFamilyDataUpdate<EzberProgress>('ezberProgress', callback, runOnce);
-export const updateEzberProgress = async (itemId: string, memberId: string, completed: boolean) => {
+export const onMemorizationProgressUpdate = (callback: (progress: MemorizationProgress[]) => void) => onFamilyDataUpdate<MemorizationProgress>('memorizationProgress', callback);
+export const updateMemorizationProgress = async (itemId: string, memberId: string, completed: boolean) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     
     const progressId = `${itemId}_${memberId}`;
-    const docRef = doc(db, 'ezberProgress', progressId);
+    const docRef = doc(db, 'memorizationProgress', progressId);
 
-    const progressData: EzberProgress = {
+    const progressData: MemorizationProgress = {
         id: progressId,
         familyId,
         itemId,

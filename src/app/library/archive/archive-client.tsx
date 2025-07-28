@@ -29,7 +29,7 @@ import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, onAmbientSoundsUpdate, addAmbientSound, deleteAmbientSound } from '@/lib/dataService';
+import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, onAmbientSoundsUpdate, addAmbientSound, deleteAmbientSound, updateBookTags, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
 import { BookForm, BookFormData } from '@/components/new-book-form';
@@ -96,7 +96,7 @@ export default function ArchiveClient() {
   
   useEffect(() => {
     const unsubscribeBooks = onBooksUpdate(setBooks);
-    const unsubscribeTags = onTagsUpdate(setAllTags);
+    const unsubscribeTags = onTagsUpdate("libraryTags", setAllTags);
     const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
 
     return () => {
@@ -146,7 +146,7 @@ export default function ArchiveClient() {
         }
 
         const newTags = new Set([...allTags, ...(bookData.tags || [])]);
-        await updateTags(Array.from(newTags));
+        await updateTags("libraryTags", Array.from(newTags));
         
         if (editingBook) {
             await updateBook(editingBook.id, bookData);
@@ -280,7 +280,7 @@ export default function ArchiveClient() {
         await addBook(newBook);
       }
 
-      await updateTags(Array.from(allCurrentTags));
+      await updateTags("libraryTags", Array.from(allCurrentTags));
 
       toast({ title: "✅ İçe Aktarma Tamamlandı", description: `${importedBooks.length} kitap başarıyla kütüphaneye eklendi.` });
 
@@ -306,16 +306,12 @@ export default function ArchiveClient() {
       
       try {
         if (editingShelf.isNew) { // Add new shelf
-            await updateTags([...allTags, newShelfName]);
+            await updateTags("libraryTags", [...allTags, newShelfName]);
             toast({ title: "Raf Eklendi", description: `"${newShelfName}" rafı başarıyla oluşturuldu.` });
         } else { // Update existing shelf
-            const booksToUpdate = books.filter(book => (book.tags || []).some(tag => tag.startsWith(editingShelf.originalName)));
-            for(const book of booksToUpdate) {
-                const newTags = (book.tags || []).map(tag => tag.startsWith(editingShelf.originalName) ? tag.replace(editingShelf.originalName, newShelfName) : tag);
-                await updateBook(book.id, { tags: newTags });
-            }
+            await updateBookTags(editingShelf.originalName, newShelfName);
             const newAllTags = allTags.map(tag => tag.startsWith(editingShelf.originalName) ? tag.replace(editingShelf.originalName, newShelfName) : tag);
-            await updateTags(newAllTags);
+            await updateTags("libraryTags", newAllTags);
             toast({ title: "Raf Güncellendi", description: `"${editingShelf.originalName}" rafının adı "${newShelfName}" olarak değiştirildi.` });
         }
       } catch (e) {
@@ -328,12 +324,7 @@ export default function ArchiveClient() {
 
   const handleDeleteShelf = async (shelfName: string) => {
     try {
-        const booksToUpdate = books.filter(book => (book.tags || []).some(tag => tag.startsWith(shelfName)));
-        for(const book of booksToUpdate) {
-            const newTags = (book.tags || []).filter(tag => !tag.startsWith(shelfName));
-            await updateBook(book.id, { tags: newTags });
-        }
-        await updateTags(allTags.filter(tag => !tag.startsWith(shelfName)));
+        await deleteTag("libraryTags", shelfName, "book");
         toast({ title: "Raf Silindi", description: `"${shelfName}" rafı ve alt rafları tüm kitaplardan kaldırıldı.`, variant: 'destructive'});
     } catch(e) {
         toast({ title: "❌ Hata", description: "Raf silinirken bir hata oluştu.", variant: 'destructive'});
