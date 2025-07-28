@@ -470,10 +470,10 @@ function StudyPlanManagement() {
                                     <div key={assignment.id} className="p-3 border rounded-lg flex justify-between items-center">
                                         <div>
                                             <p className="font-semibold">{assignment.topic} <span className="text-sm text-muted-foreground font-normal">({assignment.subject})</span></p>
-                                            <p className="text-sm text-muted-foreground">
-                                                <Badge variant="outline" className="mr-2">{student?.name || '?'}</Badge>
-                                                {format(parseISO(assignment.startDate), 'dd MMM', {locale: tr})} - {format(parseISO(assignment.dueDate), 'dd MMM yyyy', {locale: tr})}
-                                            </p>
+                                            <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                                                <Badge variant="outline">{student?.name || '?'}</Badge>
+                                                <span>{format(parseISO(assignment.startDate), 'dd MMM', {locale: tr})} - {format(parseISO(assignment.dueDate), 'dd MMM yyyy', {locale: tr})}</span>
+                                            </div>
                                         </div>
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
