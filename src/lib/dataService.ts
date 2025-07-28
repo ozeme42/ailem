@@ -5,6 +5,7 @@ import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc,
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, PrayerContent } from './data';
 import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
+import { initialPrayers } from './prayer-data';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -759,6 +760,12 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
         batch.set(docRef, { ...test, familyId, studentId: userId, status: 'Atandı' });
     });
     
+    // Initial Prayers
+    initialPrayers.forEach(prayer => {
+        const docRef = doc(collection(db, 'prayers'));
+        batch.set(docRef, { ...prayer, familyId });
+    });
+    
     // Check if default data has been initialized
     const familyDataRef = doc(db, 'families', familyId);
     batch.update(familyDataRef, { defaultDataInitialized: true });
@@ -856,9 +863,8 @@ export const checkAndAwardBadges = async (
 export const updateTask = async (id: string, data: Partial<Task>) => {
     const taskRef = doc(db, 'tasks', id);
     const updateData = removeUndefined(data);
-    return updateDoc(taskRef, updateData);
+    await updateDoc(taskRef, updateData);
 };
-
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
     // When updating a test, ensure empty/undefined fields are handled correctly for Firestore.
     const updateData = { ...data };
