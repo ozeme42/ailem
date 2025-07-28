@@ -19,6 +19,7 @@ import { BookForm, BookFormData } from '@/components/new-book-form';
 import { useToast } from "@/hooks/use-toast";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 const bookFormSchema = z.object({
   title: z.string().min(2, "Kitap adı en az 2 karakter olmalıdır."),
@@ -119,7 +120,7 @@ export default function AuthorBooksPage() {
           {books.map(book => (
             <div key={book.id} onClick={() => setViewingBook(book)} className="group cursor-pointer">
                 <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 relative">
-                    <Image src={book.image} alt={book.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
+                    <Image src={book.image || 'https://placehold.co/300x450.png'} alt={book.title} width={300} height={450} className="w-full h-auto object-cover aspect-[2/3]" data-ai-hint="book cover" />
                 </Card>
                 <p className="mt-2 text-sm font-semibold truncate group-hover:text-primary">{book.title}</p>
             </div>
