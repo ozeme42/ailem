@@ -495,7 +495,7 @@ export default function Home() {
                 description: `${member?.name} adlı üyenin kitaplığına eklendi.`
             });
         } catch (e) {
-            toast({ title: "Hata", description: "Kitap eklenirken bir sorun oluştu.", variant: 'destructive' });
+            toast({ title: "Hata", description: "Kitap eklenirken bir sorun oluştu.", variant: "destructive" });
         }
     };
 
@@ -509,30 +509,6 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleEditCurrentUser}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  <span>Profili Düzenle</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsMemberFormOpen(true)}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  <span>Üye Ekle</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Çıkış Yap</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
       </header>
 
@@ -978,3 +954,6 @@ export default function Home() {
 
 
 
+
+
+    
