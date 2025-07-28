@@ -122,7 +122,7 @@ export function AllBooksClient() {
             (book.author && book.author.toLowerCase().includes(searchLower));
           
           // Children's book filter
-          const childrenMatch = !showOnlyChildrenBooks || book.isForChildren;
+          const childrenMatch = book.isForChildren === showOnlyChildrenBooks;
 
           // Tags filter
           const tagsMatch = selectedTags.length === 0 || 
