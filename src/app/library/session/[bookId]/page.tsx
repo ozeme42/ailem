@@ -107,22 +107,21 @@ export default function ReadingSessionPage() {
         return <div className="flex h-screen w-screen items-center justify-center">Kitap bulunamadı.</div>;
     }
 
-    const borderAnimation = {
-        hidden: { pathLength: 0, opacity: 0 },
-        visible: {
-            pathLength: 1,
-            opacity: 1,
-            transition: {
-                pathLength: { type: 'spring', duration: 1.5, bounce: 0 },
-                opacity: { duration: 0.01 },
-            },
-        },
-    };
-
     return (
         <div className="fixed inset-0 bg-background z-50 flex flex-col overflow-y-auto">
-            <div
-                className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(128,0,128,0.05),_transparent_40%)]"
+             <motion.div
+                className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"
+                animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: 'linear',
+                }}
+                style={{
+                    backgroundSize: '400% 400%',
+                }}
             />
             <div className="relative flex flex-col h-full w-full max-w-4xl mx-auto p-4 md:p-8">
                 <header className="flex items-start gap-4 mb-8">
@@ -145,7 +144,7 @@ export default function ReadingSessionPage() {
                 
                 <main className="flex-grow flex flex-col justify-center items-center gap-8">
                     <div className="text-center relative p-1 rounded-2xl overflow-hidden w-full max-w-md">
-                        <motion.div
+                         <motion.div
                             className="absolute top-0 left-0 h-1 w-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
                             animate={{ width: ['0%', '100%', '100%', '0%', '0%'] }}
                             transition={{ duration: 4, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1] }}
@@ -166,7 +165,7 @@ export default function ReadingSessionPage() {
                             transition={{ duration: 4, repeat: Infinity, ease: 'linear', times: [0, 0.25, 0.5, 0.75, 1], delay: 3 }}
                          />
                          
-                         <div className="relative bg-background/80 backdrop-blur-sm rounded-xl p-4 md:p-8">
+                         <div className="relative bg-background/80 backdrop-blur-sm rounded-xl p-4 md:p-8 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10">
                             <p className="text-lg text-muted-foreground">Okuma Süresi</p>
                             <p className="text-7xl md:text-9xl font-bold font-mono tracking-tighter">{formatDuration(elapsedTime)}</p>
                         </div>
