@@ -466,32 +466,31 @@ export default function ArchiveClient() {
 
       {/* Add/Edit Book Dialog */}
        <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <FormProvider {...formMethods}>
+          <DialogContent className="sm:max-w-lg flex flex-col">
             <DialogHeader>
               <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
             </DialogHeader>
-            <form
-              onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)}
-              className="flex flex-col min-h-0 flex-grow"
-            >
-              <div className="flex-grow min-h-0">
-                  <ScrollArea className="h-full pr-4">
-                    <div className="py-4">
-                      <BookForm existingTags={allTags} />
-                    </div>
-                  </ScrollArea>
-              </div>
-              <DialogFooter className="pt-4 border-t flex-shrink-0">
-                  <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {editingBook ? 'Kaydet' : 'Ekle'}
-                  </Button>
-              </DialogFooter>
-            </form>
-          </FormProvider>
-        </DialogContent>
+            <FormProvider {...formMethods}>
+              <form
+                id="book-form"
+                onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)}
+                className="flex-grow min-h-0"
+              >
+                <ScrollArea className="h-full pr-4">
+                  <div className="py-4">
+                    <BookForm existingTags={allTags} />
+                  </div>
+                </ScrollArea>
+              </form>
+            </FormProvider>
+            <DialogFooter className="pt-4 border-t flex-shrink-0">
+                <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
+                <Button type="submit" form="book-form" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingBook ? 'Kaydet' : 'Ekle'}
+                </Button>
+            </DialogFooter>
+          </DialogContent>
       </Dialog>
       
        {/* Search Dialog */}
