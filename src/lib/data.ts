@@ -171,6 +171,18 @@ export interface Goal {
     sectionCount: number;
 }
 
+export interface PrayerContent {
+    id: string;
+    familyId: string;
+    title: string;
+    category: 'Namaz Sureleri' | 'Namaz Duaları' | 'Günlük Dualar';
+    arabicText: string;
+    turkishText: string;
+    meaning: string;
+    audioUrl?: string;
+    order: number;
+}
+
 
 // Static data that doesn't change often can remain here.
 // Data that will be managed by the user is now in Firestore.
@@ -459,3 +471,5 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
         isArchived: false,
     }
 ]
+
+    
