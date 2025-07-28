@@ -120,6 +120,8 @@ export interface ReadingSession {
     endTime: string; // ISO Date string
     durationSeconds: number;
     pagesRead: number;
+    notes?: string;
+    summary?: string;
 }
 
 

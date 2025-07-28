@@ -322,7 +322,7 @@ export default function LibraryPage() {
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
                 <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onSaveSession={handleSaveSession} onUpdateStatus={handleUpdateStatus} />)}
+                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} />)}
                 </div>
             </div>
         )}
@@ -371,84 +371,10 @@ export default function LibraryPage() {
   );
 }
 
-function SaveSessionDialog({ book, session, onSave, open, onOpenChange }: { book: BookType, session: { startTime: Date, duration: number }, onSave: (data: { startTime: Date, endTime: Date, pagesRead: number }) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
-    const [pagesRead, setPagesRead] = useState(0);
-
-    const handleSave = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave({ startTime: session.startTime, endTime: new Date(), pagesRead });
-        onOpenChange(false);
-    };
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Okuma Seansını Kaydet</DialogTitle>
-                    <DialogDescription>"{book.title}" için okuma ilerlemeni gir.</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSave} className="py-4 space-y-4">
-                     <div className="text-center p-4 rounded-lg bg-muted">
-                        <p className="text-sm text-muted-foreground">Okuma Süresi</p>
-                        <p className="text-3xl font-bold">{formatDuration(session.duration)}</p>
-                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="pagesRead">Okunan Sayfa Sayısı</Label>
-                        <Input
-                            id="pagesRead"
-                            type="number"
-                            value={pagesRead === 0 ? '' : pagesRead}
-                            onChange={(e) => setPagesRead(Number(e.target.value))}
-                            placeholder="0"
-                            autoFocus
-                        />
-                     </div>
-                <DialogFooter>
-                     <DialogClose asChild>
-                        <Button type="button" variant="secondary">İptal</Button>
-                    </DialogClose>
-                    <Button type="submit">Kaydet</Button>
-                </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-function ReadingBookCard({ book, onSaveSession, onUpdateStatus }: { book: any, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void }) {
-    const [timerRunning, setTimerRunning] = useState(false);
-    const [elapsedTime, setElapsedTime] = useState(0);
-    const [startTime, setStartTime] = useState<Date | null>(null);
-    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void }) {
     const [progressValue, setProgressValue] = useState(book.progress || 0);
     const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    useEffect(() => {
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
-    }, []);
-
-    const startTimer = () => {
-        setStartTime(new Date());
-        setTimerRunning(true);
-        intervalRef.current = setInterval(() => {
-            setElapsedTime(prev => prev + 1);
-        }, 1000);
-    };
-
-    const stopTimer = () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setTimerRunning(false);
-        setIsSaveDialogOpen(true);
-    };
     
-    const handleSave = (data: {startTime: Date, endTime: Date, pagesRead: number}) => {
-        onSaveSession(book, data);
-        setElapsedTime(0);
-    };
-
     const handleProgressSave = () => {
         onUpdateStatus(book.id, 'reading', progressValue);
         setIsProgressDialogOpen(false);
@@ -495,30 +421,17 @@ function ReadingBookCard({ book, onSaveSession, onUpdateStatus }: { book: any, o
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Button variant="outline" size="icon" onClick={timerRunning ? stopTimer : startTimer}>
-                                    {timerRunning ? <Pause/> : <Play/>}
-                                </Button>
+                                <Link href={`/library/session/${book.id}`} passHref>
+                                    <Button variant="outline" size="icon" asChild>
+                                        <a><Timer/></a>
+                                    </Button>
+                                </Link>
                                 <Button variant="secondary" className="w-full" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
                             </div>
-                            {timerRunning && (
-                                <div className="flex items-center justify-center gap-2 p-2 rounded-md bg-muted text-center text-lg font-mono tracking-wider">
-                                    <Timer className="h-5 w-5 animate-pulse text-primary"/>
-                                    <span>{formatDuration(elapsedTime)}</span>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
             </Card>
-            {isSaveDialogOpen && startTime && (
-                <SaveSessionDialog
-                    open={isSaveDialogOpen}
-                    onOpenChange={setIsSaveDialogOpen}
-                    book={book}
-                    session={{ startTime, duration: elapsedTime }}
-                    onSave={handleSave}
-                />
-            )}
         </>
     )
 }
