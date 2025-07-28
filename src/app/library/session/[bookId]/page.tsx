@@ -105,7 +105,7 @@ export default function ReadingSessionPage() {
     }
 
     return (
-        <div className="fixed inset-0 bg-background z-50 flex flex-col">
+        <div className="fixed inset-0 bg-background z-50 flex flex-col overflow-y-auto">
             <motion.div
                 className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-purple-500/10 to-pink-500/10"
                 animate={{
