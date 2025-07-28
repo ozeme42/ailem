@@ -474,22 +474,21 @@ export default function ArchiveClient() {
               <form
                 id="book-form"
                 onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)}
-                className="flex-grow min-h-0"
+                className="flex-1 flex flex-col min-h-0"
               >
-                <ScrollArea className="h-full pr-4">
-                  <div className="py-4">
-                    <BookForm existingTags={allTags} />
-                  </div>
+                <ScrollArea className="flex-1 min-h-0 pr-4">
+                   <BookForm existingTags={allTags} />
                 </ScrollArea>
+
+                <DialogFooter className="pt-4 border-t flex-shrink-0">
+                    <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {editingBook ? 'Kaydet' : 'Ekle'}
+                    </Button>
+                </DialogFooter>
               </form>
             </FormProvider>
-            <DialogFooter className="pt-4 border-t flex-shrink-0">
-                <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
-                <Button type="submit" form="book-form" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingBook ? 'Kaydet' : 'Ekle'}
-                </Button>
-            </DialogFooter>
           </DialogContent>
       </Dialog>
       
