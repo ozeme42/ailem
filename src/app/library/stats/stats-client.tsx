@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Book, User, Library, Star, ArrowDownWideNarrow, ArrowUpWideNarrow } from "lucide-react";
+import { Book, User, Library, Star, ArrowDownWideNarrow, ArrowUpWideNarrow, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/page-header";
@@ -141,6 +141,15 @@ export default function LibraryStatsPage() {
     <>
       <PageHeader title="Kütüphane İstatistikleri 📈" />
       
+      <div className="flex flex-wrap gap-2 mb-8">
+        <Link href="/library/stats/authors">
+            <Button variant="outline">Yazar Sıralaması <ArrowRight className="ml-2 h-4 w-4"/></Button>
+        </Link>
+        <Link href="/library/stats/pages">
+             <Button variant="outline">Sayfa Sayısı Sıralaması <ArrowRight className="ml-2 h-4 w-4"/></Button>
+        </Link>
+      </div>
+      
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -153,18 +162,16 @@ export default function LibraryStatsPage() {
           </CardContent>
         </Card>
         
-        <Link href="/library/stats/authors" className="block h-full">
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Toplam Yazar</CardTitle>
-                    <User className="h-4 w-4 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalAuthors}</div>
-                    <p className="text-xs text-muted-foreground">Farklı yazar sayısı</p>
-                </CardContent>
-            </Card>
-        </Link>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Toplam Yazar</CardTitle>
+                <User className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{stats.totalAuthors}</div>
+                <p className="text-xs text-muted-foreground">Farklı yazar sayısı</p>
+            </CardContent>
+        </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -177,18 +184,16 @@ export default function LibraryStatsPage() {
           </CardContent>
         </Card>
 
-        <Link href="/library/stats/pages" className="block h-full">
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
-                    <Book className="h-4 w-4 text-orange-500" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
-                    <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
-                </CardContent>
-            </Card>
-        </Link>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Toplam Sayfa</CardTitle>
+                <Book className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{stats.totalPages.toLocaleString('tr-TR')}</div>
+                <p className="text-xs text-muted-foreground">Kütüphanedeki toplam sayfa sayısı</p>
+            </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">
