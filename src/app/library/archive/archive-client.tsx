@@ -692,23 +692,25 @@ export default function ArchiveClient() {
 
 
       {/* Add/Edit Book Dialog */}
-      <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
-        <DialogContent className="flex flex-col max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
-          </DialogHeader>
+       <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
           <FormProvider {...formMethods}>
-            <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} id="book-form" className="flex-grow overflow-hidden flex flex-col">
-                <ScrollArea className="flex-grow -mr-6 pr-6 py-1">
-                    <BookForm existingTags={allTags} />
-                </ScrollArea>
-                <DialogFooter className="pt-4 mt-4 border-t flex-shrink-0">
-                    <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {editingBook ? 'Kaydet' : 'Ekle'}
-                    </Button>
-                </DialogFooter>
+            <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} id="book-form" className="flex flex-col max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}</DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="flex-1 py-4 pr-6 -mr-6">
+                <div className="space-y-4">
+                  <BookForm existingTags={allTags} />
+                </div>
+              </ScrollArea>
+              <DialogFooter className="pt-4 border-t flex-shrink-0">
+                  <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingBook ? 'Kaydet' : 'Ekle'}
+                  </Button>
+              </DialogFooter>
             </form>
           </FormProvider>
         </DialogContent>
