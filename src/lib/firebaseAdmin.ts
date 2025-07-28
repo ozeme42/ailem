@@ -11,8 +11,16 @@ export function getFirebaseAdmin() {
   }
 
   try {
+    let credential;
+    if (process.env.FIREBASE_ADMIN_CREDENTIALS_JSON) {
+      credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS_JSON));
+    } else {
+      // Fallback for local development without the env var
+      credential = admin.credential.applicationDefault();
+    }
+
     app = admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
+      credential,
       // Make sure your Storage Bucket URL is available as an environment variable
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
