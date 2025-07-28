@@ -1,6 +1,5 @@
 
 
-
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
