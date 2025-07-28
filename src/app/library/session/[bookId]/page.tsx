@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, BookCheck, StickyNote, BookText, ArrowLeft, Plus, X } from "lucide-react";
+import { Play, Pause, BookCheck, StickyNote, BookText, ArrowLeft, Plus, X, Music } from "lucide-react";
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -41,7 +41,11 @@ export default function ReadingSessionPage() {
     const [pagesRead, setPagesRead] = React.useState(0);
     
     const [showExtras, setShowExtras] = React.useState(false);
-
+    const [isMetronomeOn, setIsMetronomeOn] = React.useState(false);
+    
+    const metronomeAudioRef = React.useRef<HTMLAudioElement | null>(null);
+    const metronomeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+    
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
     
     React.useEffect(() => {
@@ -66,6 +70,38 @@ export default function ReadingSessionPage() {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, [timerRunning, startTime]);
+
+    React.useEffect(() => {
+        // Initialize Audio on client
+        if (typeof window !== 'undefined' && !metronomeAudioRef.current) {
+            metronomeAudioRef.current = new Audio('https://cdn.freesound.org/previews/264/26422_39434-lq.mp3');
+            metronomeAudioRef.current.preload = 'auto';
+        }
+
+        if (isMetronomeOn) {
+            const bpm = 60; // Standard 60 beats per minute
+            const interval = (60 / bpm) * 1000;
+            metronomeIntervalRef.current = setInterval(() => {
+                metronomeAudioRef.current?.play().catch(e => console.error("Error playing audio:", e));
+            }, interval);
+        } else {
+            if (metronomeIntervalRef.current) {
+                clearInterval(metronomeIntervalRef.current);
+            }
+        }
+        
+        // Cleanup on component unmount
+        return () => {
+             if (metronomeIntervalRef.current) {
+                clearInterval(metronomeIntervalRef.current);
+            }
+            if (metronomeAudioRef.current) {
+                metronomeAudioRef.current.pause();
+                metronomeAudioRef.current = null;
+            }
+        }
+
+    }, [isMetronomeOn]);
     
     const handleAddNote = () => {
         if (newNoteText.trim()) {
@@ -151,7 +187,7 @@ export default function ReadingSessionPage() {
                                     <stop offset="100%" stopColor="hsl(var(--primary))" />
                                 </linearGradient>
                             </defs>
-                            <motion.rect
+                             <motion.rect
                                 x="4" y="4"
                                 width="calc(100% - 8px)" height="calc(100% - 8px)"
                                 rx="14"
@@ -161,7 +197,6 @@ export default function ReadingSessionPage() {
                                 strokeWidth="8"
                                 pathLength="1"
                                 strokeDasharray="1"
-                                strokeDashoffset={0}
                                 initial={{ strokeDashoffset: 1 }}
                                 animate={{ strokeDashoffset: 0 }}
                                 transition={{
@@ -180,14 +215,25 @@ export default function ReadingSessionPage() {
                         </div>
                     </div>
                     
-                    <Button
-                        size="lg"
-                        className="rounded-full w-48 h-16 text-xl"
-                        onClick={() => setTimerRunning(!timerRunning)}
-                    >
-                        {timerRunning ? <Pause className="mr-2 h-6 w-6" /> : <Play className="mr-2 h-6 w-6" />}
-                        {timerRunning ? 'Durdur' : 'Devam Et'}
-                    </Button>
+                    <div className="flex items-center gap-4">
+                        <Button
+                            size="lg"
+                            className="rounded-full w-48 h-16 text-xl"
+                            onClick={() => setTimerRunning(!timerRunning)}
+                        >
+                            {timerRunning ? <Pause className="mr-2 h-6 w-6" /> : <Play className="mr-2 h-6 w-6" />}
+                            {timerRunning ? 'Durdur' : 'Devam Et'}
+                        </Button>
+                         <Button
+                            size="icon"
+                            variant={isMetronomeOn ? "default" : "outline"}
+                            className="rounded-full w-16 h-16"
+                            onClick={() => setIsMetronomeOn(!isMetronomeOn)}
+                            aria-label="Toggle Metronome"
+                        >
+                            <Music className="h-7 w-7"/>
+                        </Button>
+                    </div>
                 </main>
 
                 <footer className="space-y-6 pb-4">
@@ -251,3 +297,4 @@ export default function ReadingSessionPage() {
         </div>
     );
 }
+
