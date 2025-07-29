@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -44,15 +44,19 @@ export default function NotebookClient() {
   useEffect(() => {
     if (!notebookId || !user) return;
     const unsubscribe = onNotebookDetailsUpdate(notebookId, (data) => {
-      setDetails(data);
-      if (data && data.notebook.sections.length > 0 && (!activeTab || !data.notebook.sections.some(s => s.id === activeTab))) {
-        setActiveTab(data.notebook.sections[0].id);
-      } else if (data && data.notebook.sections.length === 0) {
-        setActiveTab('');
+      if (data) {
+        setDetails(data);
+        if (data.notebook.sections.length > 0 && (!activeTab || !data.notebook.sections.some(s => s.id === activeTab))) {
+            setActiveTab(data.notebook.sections[0].id);
+        } else if (data.notebook.sections.length === 0) {
+            setActiveTab('');
+        }
+      } else {
+        setDetails(null);
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user]);
+  }, [notebookId, user, activeTab]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -77,10 +81,13 @@ export default function NotebookClient() {
     }
   };
 
-  const handleSaveNote = async (noteId: string, data: Partial<Note>) => {
-    if (!details) return;
+  const handleSaveNote = async (noteId: string) => {
+    if (!details || Object.keys(noteChanges).length === 0) {
+        setEditingNoteId(null);
+        return;
+    };
     try {
-        await updateNoteInSection(details.notebook.id, noteId, data);
+        await updateNoteInSection(details.notebook.id, noteId, noteChanges);
         toast({ title: 'Not Kaydedildi' });
     } catch (error) {
         toast({ title: 'Hata', variant: 'destructive' });
@@ -90,15 +97,6 @@ export default function NotebookClient() {
     }
   };
   
-  const handleNoteBlur = (noteId: string) => {
-    if (noteId === editingNoteId && Object.keys(noteChanges).length > 0) {
-        handleSaveNote(noteId, noteChanges);
-    } else {
-        setEditingNoteId(null);
-        setNoteChanges({});
-    }
-  };
-
   const handleDeleteNote = async (noteId: string) => {
     if(!details) return;
     try {
@@ -159,20 +157,19 @@ export default function NotebookClient() {
         </div>
 
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow overflow-y-auto">
+          <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto mt-4">
             <Button className="w-full mb-4" onClick={handleAddNewNote}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
             </Button>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-4 pb-4">
                 {notes.filter(note => note.sectionId === section.id).map(note => (
                     <StickyNoteCard 
                         key={note.id}
                         note={note}
                         isEditing={editingNoteId === note.id}
-                        onStartEdit={() => { setEditingNoteId(note.id); setNoteChanges({}); }}
-                        onBlur={() => handleNoteBlur(note.id)}
+                        onStartEdit={() => { if (editingNoteId !== note.id) setEditingNoteId(note.id); setNoteChanges({}); }}
+                        onBlur={() => handleSaveNote(note.id)}
                         onUpdate={handleNoteUpdate}
-                        onSave={() => handleSaveNote(note.id, noteChanges)}
                         onDelete={() => handleDeleteNote(note.id)}
                     />
                 ))}
@@ -192,11 +189,10 @@ interface StickyNoteCardProps {
     onStartEdit: () => void;
     onBlur: () => void;
     onUpdate: (key: keyof Note, value: any) => void;
-    onSave: () => void;
     onDelete: () => void;
 }
 
-function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave, onDelete }: StickyNoteCardProps) {
+function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onDelete }: StickyNoteCardProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = React.useState(false);
@@ -236,12 +232,13 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
     
     if (isEditing) {
         return (
-            <div className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
+            <div className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)} onBlur={onBlur}>
                 <Input
                     placeholder="Not Başlığı"
                     defaultValue={note.title}
-                    onBlur={(e) => onUpdate('title', e.target.value)}
+                    onChange={(e) => onUpdate('title', e.target.value)}
                     className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80"
+                    autoFocus
                 />
                  {note.content.map(block => (
                     <div key={block.id} className="group relative">
@@ -249,7 +246,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
                             <Textarea
                                 placeholder="Yazmaya başla..."
                                 defaultValue={block.data}
-                                onBlur={(e) => onUpdate('content', note.content.map(b => b.id === block.id ? {...b, data: e.target.value} : b))}
+                                onChange={(e) => onUpdate('content', note.content.map(b => b.id === block.id ? {...b, data: e.target.value} : b))}
                                 className="text-sm bg-transparent border-0 focus-visible:ring-0"
                             />
                         )}
@@ -267,58 +264,41 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
                         </Button>
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                     </div>
-                    <div className="flex gap-1">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                        <Button variant="ghost" size="sm" onClick={onSave}>Kaydet</Button>
-                    </div>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col", noteColor)} onClick={onStartEdit}>
+        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col min-h-[10rem]", noteColor)} onClick={onStartEdit}>
             {firstImage && (
                 <div className="relative w-full aspect-video">
                     <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image" />
                 </div>
             )}
-            <div className="p-4 flex-grow flex flex-col min-h-[6rem]">
+            <div className="p-4 flex-grow flex flex-col">
                 <h3 className="font-semibold text-lg text-black">{note.title}</h3>
                 {firstText && (
-                  <p className={cn("text-sm text-black/70 mt-2 flex-grow", { "line-clamp-3": firstImage, "line-clamp-none": !firstImage })}>{firstText}</p>
+                  <p className={cn("text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap", { "line-clamp-3": firstImage })}>{firstText}</p>
                 )}
             </div>
              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
                     <Edit className="h-4 w-4"/>
                 </Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                            <Trash2 className="h-4 w-4"/>
-                        </Button>
-                    </AlertDialogTrigger>
-                     <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
+             </div>
         </div>
     );
 }
