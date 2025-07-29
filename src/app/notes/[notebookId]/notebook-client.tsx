@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -54,7 +54,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -113,7 +113,7 @@ export default function NotebookClient() {
   
   const handleNoteUpdate = (key: keyof Note, value: any) => {
     setNoteChanges(prev => ({...prev, [key]: value}));
-  }
+  };
 
   if (!details) {
     return <div>Yükleniyor...</div>;
@@ -279,11 +279,11 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooterComponent>
+                                <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter>
                                     <AlertDialogCancel>İptal</AlertDialogCancel>
                                     <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
-                                </AlertDialogFooterComponent>
+                                </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                         <Button variant="ghost" size="sm" onClick={onSave}>Kaydet</Button>
@@ -294,23 +294,36 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
     }
 
     return (
-        <div className={cn("group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border cursor-pointer", noteColor)} onClick={onStartEdit}>
-            <div className="relative aspect-video bg-muted">
-                {firstImage ? (
-                    <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" data-ai-hint="note image" />
-                ) : (
-                    <div className="p-4">
-                        <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                        <p className="text-sm text-black/70 mt-2 line-clamp-3">{firstText}</p>
-                    </div>
-                )}
-                {firstImage && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-4 flex flex-col justify-end">
-                        <h3 className="font-bold text-white text-lg">{note.title}</h3>
-                        <p className="text-xs text-white/80 line-clamp-2">{firstText}</p>
-                    </div>
-                )}
+        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col", noteColor)} onClick={onStartEdit}>
+            {firstImage && (
+                <div className="relative aspect-video w-full">
+                    <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image" />
+                </div>
+            )}
+            <div className="p-4 flex-grow flex flex-col">
+                <h3 className="font-semibold text-lg text-black">{note.title}</h3>
+                <p className={cn("text-sm text-black/70 mt-2 flex-grow", { "line-clamp-3": firstImage })}>{firstText}</p>
+            </div>
+             <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
+                    <Edit className="h-4 w-4"/>
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                            <Trash2 className="h-4 w-4"/>
+                        </Button>
+                    </AlertDialogTrigger>
+                     <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                            <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     );
 }
+
