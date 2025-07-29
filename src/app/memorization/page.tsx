@@ -630,7 +630,7 @@ function ItemShelf({ items, onEdit, onDelete, memberId, progress }: { items: Mem
       {shelves.map(([shelfName, shelfItems]) => (
         <div key={shelfName}>
           <h2 className="text-xl font-bold mb-4">{shelfName}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {shelfItems.map(item => (
                     <MemorizationItemCard
                         key={item.id}
@@ -779,59 +779,49 @@ interface MemorizationItemCardProps {
 }
 function MemorizationItemCard({ item, isCompleted, onProgressChange, onEdit, onDelete }: MemorizationItemCardProps) {
     return (
-        <Card className="flex flex-col group transition-all hover:shadow-lg hover:-translate-y-1">
-            <CardHeader className="p-0 relative">
-                <Image 
-                    src={item.imageUrl || 'https://placehold.co/400x300.png'} 
-                    alt={item.title} 
-                    width={400} 
-                    height={300} 
-                    className="aspect-video object-cover rounded-t-lg"
-                    data-ai-hint="religious illustration"
-                />
-                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon" className="h-8 w-8">
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={onEdit}><Edit className="mr-2 h-4 w-4"/>Düzenle</DropdownMenuItem>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4"/>Sil
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                        <AlertDialogDescription>"{item.title}" öğesi kalıcı olarak silinecektir.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>İptal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 flex-grow">
-                <CardTitle className="text-lg">{item.title}</CardTitle>
-            </CardContent>
-            <CardFooter className="p-4 border-t">
+        <Card className="flex flex-col group transition-all hover:shadow-md hover:-translate-y-0.5">
+             <Link href={`/memorization/${item.id}`} className="flex-grow">
+                <CardContent className="p-4 flex-grow">
+                    <CardTitle className="text-lg group-hover:text-primary transition-colors">{item.title}</CardTitle>
+                </CardContent>
+            </Link>
+            <CardFooter className="p-4 border-t flex items-center justify-between">
                  <div className="flex items-center space-x-2 w-full cursor-pointer" onClick={() => onProgressChange(!isCompleted)}>
                     <Checkbox id={`check-${item.id}`} checked={isCompleted} className="size-5" />
                     <label
                         htmlFor={`check-${item.id}`}
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                     >
-                        Ezberlendi olarak işaretle
+                        Ezberlendi
                     </label>
                 </div>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={onEdit}><Edit className="mr-2 h-4 w-4"/>Düzenle</DropdownMenuItem>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/>Sil
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                    <AlertDialogDescription>"{item.title}" öğesi kalıcı olarak silinecektir.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </CardFooter>
         </Card>
     );
