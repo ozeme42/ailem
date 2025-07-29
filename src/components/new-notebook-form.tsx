@@ -9,12 +9,12 @@ import { useState, useEffect } from 'react';
 import { Notebook } from '@/lib/data';
 
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
+import { DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter } from './ui/dialog';
 
 const formSchema = z.object({
   title: z.string().min(2, 'Defter adı en az 2 karakter olmalıdır.'),
@@ -57,7 +57,7 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
     <>
     <DialogHeader>
         <DialogTitle>{initialData ? "Defteri Düzenle" : "Yeni Not Defteri"}</DialogTitle>
-        <DialogDescription>Notlarınızı düzenlemek için yeni bir defter oluşturun.</DialogDescription>
+        <DialogDescriptionComponent>Notlarınızı düzenlemek için yeni bir defter oluşturun.</DialogDescriptionComponent>
     </DialogHeader>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
@@ -109,4 +109,3 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
     </>
   );
 }
-
