@@ -428,7 +428,7 @@ function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: 
                             </Dialog>
                              <Link href={`/library/session/${book.id}`}>
                                 <Button size="icon" className="rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                                    <BookOpen className="h-5 w-5"/>
+                                    <Clock className="h-5 w-5"/>
                                 </Button>
                             </Link>
                             <Button variant="secondary" className="flex-1" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
