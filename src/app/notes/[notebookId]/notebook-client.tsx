@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -70,7 +70,7 @@ export default function NotebookClient() {
             title: newSectionName.trim(),
             order: details.notebook.sections.length
         }
-        await updateNotebook(notebookId, { sections: arrayUnion(newSection) });
+        await updateNotebook(notebookId, { sections: [...details.notebook.sections, newSection] });
 
         toast({ title: 'Bölüm Eklendi' });
         setActiveTab(newSection.id);
@@ -195,17 +195,17 @@ export default function NotebookClient() {
         </div>
         
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow">
-            <div className="flex gap-2 mb-4">
-                <Button className="flex-1" onClick={handleAddNewTextNote}>
-                    <StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle
-                </Button>
-                <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()} disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileImage className="mr-2 h-4 w-4" />}
-                     Görsel Not Ekle
-                </Button>
-                <input type="file" ref={imageInputRef} onChange={handleImageFileChange} accept="image/*" className="hidden" />
-            </div>
+          <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto">
+              <div className="flex gap-2 mb-4">
+                  <Button className="flex-1" onClick={handleAddNewTextNote}>
+                      <StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle
+                  </Button>
+                  <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()} disabled={isLoading}>
+                      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileImage className="mr-2 h-4 w-4" />}
+                       Görsel Not Ekle
+                  </Button>
+                  <input type="file" ref={imageInputRef} onChange={handleImageFileChange} accept="image/*" className="hidden" />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {notes.filter(note => note.sectionId === section.id).map(note => (
                     <StickyNoteCard 
@@ -262,20 +262,22 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     }, [isEditing, onSave]);
 
     useEffect(() => {
-        if (isEditing && textareaRef.current) {
-            textareaRef.current.style.height = 'inherit';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        const textarea = textareaRef.current;
+        if (isEditing && textarea) {
+            textarea.style.height = 'inherit';
+            textarea.style.height = `${textarea.scrollHeight}px`;
         }
     }, [isEditing]);
     
     const handleTextUpdate = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        e.target.style.height = 'inherit';
-        e.target.style.height = `${e.target.scrollHeight}px`;
-        
+        const textarea = e.target;
+        textarea.style.height = 'inherit';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+
         const newContent: NoteContentBlock[] = [{
             id: note.content?.[0]?.id || Date.now().toString(),
             type: 'text',
-            data: e.target.value
+            data: textarea.value
         }];
         onUpdate('content', newContent);
     };
@@ -311,11 +313,11 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter>
+                            <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooterComponent>
                                 <AlertDialogCancel>İptal</AlertDialogCancel>
                                 <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
-                            </AlertDialogFooter>
+                            </AlertDialogFooterComponent>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
@@ -324,25 +326,50 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     }
 
     return (
-        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col h-fit", noteColor)} onClick={onStartEdit}>
-            {note.imageUrl && (
-                <div className="relative w-full aspect-video">
-                    <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image"/>
-                </div>
-            )}
-            <div className="p-4 flex-grow flex flex-col min-h-[8rem]">
-                <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                {textContent && (
-                    <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
-                        {textContent}
-                    </p>
+        <Dialog>
+             <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border flex flex-col h-fit", noteColor)}>
+                {note.imageUrl && (
+                    <DialogTrigger asChild>
+                         <div className="relative w-full aspect-video cursor-pointer">
+                            <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image"/>
+                        </div>
+                    </DialogTrigger>
                 )}
+                <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onStartEdit}>
+                    <h3 className="font-semibold text-lg text-black">{note.title}</h3>
+                    {textContent && (
+                        <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
+                            {textContent}
+                        </p>
+                    )}
+                </div>
+                 <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
+                        <Edit className="h-4 w-4"/>
+                    </Button>
+                 </div>
             </div>
-             <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
-                    <Edit className="h-4 w-4"/>
-                </Button>
-             </div>
-        </div>
+            <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>{note.title}</DialogTitle>
+                </DialogHeader>
+                {note.imageUrl ? (
+                     <div className="relative w-full h-[80vh] my-4 rounded-lg overflow-hidden">
+                        <Image
+                            src={note.imageUrl}
+                            alt={note.title}
+                            layout="fill"
+                            objectFit="contain"
+                            className="bg-muted"
+                            data-ai-hint="religious illustration"
+                        />
+                    </div>
+                ): (
+                    <div className="my-4 p-8 text-center bg-muted rounded-lg">
+                        <p className="text-muted-foreground">Bu öğe için bir görsel bulunmuyor.</p>
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
     );
 }
