@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -56,7 +56,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user]);
+  }, [notebookId, user, activeTab]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -158,17 +158,23 @@ export default function NotebookClient() {
         </div>
 
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="flex-grow mt-4 overflow-y-auto">
+          <TabsContent key={section.id} value={section.id} className="mt-4">
             <Button className="w-full mb-4" onClick={handleAddNewNote}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
             </Button>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-4 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {notes.filter(note => note.sectionId === section.id).map(note => (
                     <StickyNoteCard 
                         key={note.id}
                         note={note}
                         isEditing={editingNoteId === note.id}
-                        onStartEdit={() => { if (editingNoteId !== note.id) setEditingNoteId(note.id); setNoteChanges({}); }}
+                        onStartEdit={() => {
+                            if (editingNoteId && editingNoteId !== note.id) {
+                                handleSaveNote(editingNoteId);
+                            }
+                            setEditingNoteId(note.id);
+                            setNoteChanges({});
+                        }}
                         onSave={() => handleSaveNote(note.id)}
                         onUpdate={handleNoteUpdate}
                         onDelete={() => handleDeleteNote(note.id)}
@@ -202,7 +208,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     
     const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
     const firstImage = note.content.find(b => b.type === 'image')?.data;
-    const firstText = note.content.find(b => b.type === 'text')?.data || "";
+    const textBlocks = note.content.filter(b => b.type === 'text');
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -263,7 +269,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                                 placeholder="Yazmaya başla..."
                                 defaultValue={block.data}
                                 onChange={(e) => onUpdate('content', note.content.map(b => b.id === block.id ? {...b, data: e.target.value} : b))}
-                                className="text-sm bg-transparent border-0 focus-visible:ring-0"
+                                className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none"
                             />
                         )}
                         {block.type === 'image' && (
@@ -298,17 +304,17 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     }
 
     return (
-        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col min-h-[10rem]", noteColor)} onClick={onStartEdit}>
+        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col", noteColor)} onClick={onStartEdit}>
             {firstImage && (
-                <div className="relative w-full h-32">
+                <div className="relative w-full aspect-video">
                     <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image" />
                 </div>
             )}
             <div className="p-4 flex-grow flex flex-col">
                 <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                {firstText && (
-                  <p className={cn("text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap", { "line-clamp-3": firstImage })}>{firstText}</p>
-                )}
+                {textBlocks.map(block => (
+                     <p key={block.id} className={cn("text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap")}>{block.data}</p>
+                ))}
             </div>
              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
