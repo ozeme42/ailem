@@ -138,6 +138,12 @@ export default function HabitsPage() {
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingTask ? 'Alışkanlığı Düzenle' : 'Yeni Alışkanlık Ekle'}</DialogTitle>
+              <DialogDescription>
+                {editingTask ? 'Mevcut alışkanlığın ayrıntılarını güncelleyin.' : 'Yeni bir alışkanlık oluşturarak kendinize meydan okuyun.'}
+              </DialogDescription>
+            </DialogHeader>
             <NewTaskForm 
                 familyMembers={familyMembers}
                 onTaskProcessed={() => setIsTaskFormOpen(false)}
