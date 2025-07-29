@@ -371,47 +371,72 @@ export default function LibraryPage() {
 }
 
 function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void }) {
-    const [progressValue, setProgressValue] = useState(book.progress || 0);
+    const [pagesReadInput, setPagesReadInput] = useState("");
     const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
     
     const handleProgressSave = () => {
-        onUpdateStatus(book.id, 'reading', progressValue);
+        const pages = parseInt(pagesReadInput, 10);
+        if (isNaN(pages) || pages <= 0 || !book.pageCount) return;
+        
+        const currentProgressPages = (book.progress || 0) / 100 * book.pageCount;
+        const newTotalPagesRead = currentProgressPages + pages;
+        const newProgressPercent = Math.min(Math.round((newTotalPagesRead / book.pageCount) * 100), 100);
+
+        onUpdateStatus(book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
         setIsProgressDialogOpen(false);
+        setPagesReadInput("");
     }
 
     const pagesRead = Math.round((book.progress || 0) / 100 * (book.pageCount || 0));
 
     return (
-        <>
-            <Card className="overflow-hidden shadow-lg border-border/50">
-                <div className="p-4 flex flex-col sm:flex-row gap-4">
-                    <Image src={book.image} alt={book.title} width={100} height={150} className="w-24 sm:w-28 h-auto rounded-md aspect-[2/3] object-cover shadow-md mx-auto sm:mx-0" data-ai-hint="book cover"/>
-                    <div className="flex-grow flex flex-col min-w-0">
-                         <div className="flex-grow min-w-0">
-                            <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
-                            <p className="text-sm text-muted-foreground truncate">{book.author}</p>
-                            {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+        <Card className="overflow-hidden shadow-lg border-border/50">
+            <div className="p-4 flex flex-col sm:flex-row gap-4">
+                <Image src={book.image} alt={book.title} width={100} height={150} className="w-24 sm:w-28 h-auto rounded-md aspect-[2/3] object-cover shadow-md mx-auto sm:mx-0" data-ai-hint="book cover"/>
+                <div className="flex-grow flex flex-col min-w-0">
+                    <div className="flex-grow min-w-0">
+                        <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{book.author}</p>
+                        {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                    </div>
+                    
+                    <div className="mt-4 space-y-2">
+                        <Progress value={book.progress || 0} className="h-2"/>
+                        <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
+                            <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
+                            <span className="font-semibold text-primary">{book.progress || 0}%</span>
                         </div>
-                        
-                        <div className="mt-4 space-y-2">
-                            <Progress value={book.progress || 0} className="h-2"/>
-                            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
-                                <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
-                                <span className="font-semibold text-primary">{book.progress || 0}%</span>
-                            </div>
-                            <div className="flex gap-2 pt-2">
-                                <Link href={`/library/session/${book.id}`} className="w-full">
-                                    <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                                        <BookOpen className="mr-2 h-4 w-4"/> Okumaya Devam Et
-                                    </Button>
-                                </Link>
-                                <Button variant="secondary" className="w-full" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
-                            </div>
+                        <div className="flex gap-2 pt-2 items-center justify-center">
+                            <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" className="flex-1">İlerleme Gir</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>İlerleme Ekle: {book.title}</DialogTitle>
+                                        <DialogDescription>Kaç sayfa daha okudun?</DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4">
+                                        <Label htmlFor="pagesRead">Okunan Sayfa Sayısı</Label>
+                                        <Input id="pagesRead" type="number" placeholder="Örn: 50" value={pagesReadInput} onChange={(e) => setPagesReadInput(e.target.value)} />
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="ghost" onClick={() => setIsProgressDialogOpen(false)}>İptal</Button>
+                                        <Button onClick={handleProgressSave}>Kaydet</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                             <Link href={`/library/session/${book.id}`}>
+                                <Button size="icon" className="rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                                    <BookOpen className="h-5 w-5"/>
+                                </Button>
+                            </Link>
+                            <Button variant="secondary" className="flex-1" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
                         </div>
                     </div>
                 </div>
-            </Card>
-        </>
+            </div>
+        </Card>
     )
 }
 
