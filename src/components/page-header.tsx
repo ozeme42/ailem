@@ -26,7 +26,7 @@ export function PageHeader({ title, children }: PageHeaderProps) {
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 self-end sm:self-center">
         <Link href="/" className="hidden md:flex">
-            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+            <Button variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-white/20 hover:text-primary-foreground">
                 <Home className="mr-2 h-4 w-4" />
                 Ana Sayfa
             </Button>
