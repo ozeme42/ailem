@@ -11,7 +11,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book, Clock, BookPlay } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book, Clock } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -402,7 +402,7 @@ function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: 
                             <div className="flex gap-2 pt-2">
                                 <Link href={`/library/session/${book.id}`} className="w-full">
                                     <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                                        <BookPlay className="mr-2 h-4 w-4"/> Okumaya Devam Et
+                                        <BookOpen className="mr-2 h-4 w-4"/> Okumaya Devam Et
                                     </Button>
                                 </Link>
                                 <Button variant="secondary" className="w-full" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
