@@ -11,14 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 interface NotebookDetails {
@@ -53,7 +52,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -160,11 +159,10 @@ export default function NotebookClient() {
         </div>
 
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow">
+          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow overflow-y-auto">
             <Button className="w-full mb-4" onClick={handleAddNewNote}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
             </Button>
-            <ScrollArea className="h-[calc(100%-4rem)]">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-4">
                 {notes.filter(note => note.sectionId === section.id).map(note => (
                     <StickyNoteCard 
@@ -179,7 +177,6 @@ export default function NotebookClient() {
                     />
                 ))}
               </div>
-            </ScrollArea>
           </TabsContent>
         ))}
       </Tabs>
@@ -293,14 +290,14 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
     return (
         <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col", noteColor)} onClick={onStartEdit}>
             {firstImage && (
-                <div className="relative w-full" style={{aspectRatio: '16/9'}}>
+                <div className="relative w-full aspect-video">
                     <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image" />
                 </div>
             )}
-            <div className="p-4 flex-grow flex flex-col">
+            <div className="p-4 flex-grow flex flex-col min-h-[6rem]">
                 <h3 className="font-semibold text-lg text-black">{note.title}</h3>
                 {firstText && (
-                  <p className={cn("text-sm text-black/70 mt-2 flex-grow", { "line-clamp-3": firstImage })}>{firstText}</p>
+                  <p className={cn("text-sm text-black/70 mt-2 flex-grow", { "line-clamp-3": firstImage, "line-clamp-none": !firstImage })}>{firstText}</p>
                 )}
             </div>
              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
