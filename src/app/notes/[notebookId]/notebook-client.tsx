@@ -54,7 +54,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -161,7 +161,7 @@ export default function NotebookClient() {
         </div>
 
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="flex-grow min-h-0 mt-4">
+          <TabsContent key={section.id} value={section.id} className="mt-4">
             <div className="h-full flex flex-col">
                 <Button className="w-full mb-4" onClick={handleAddNewNote}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
@@ -326,3 +326,5 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
         </div>
     );
 }
+
+    
