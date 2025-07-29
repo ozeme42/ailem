@@ -5,19 +5,20 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, addSectionToNotebook, addNoteToSection, deleteNoteFromSection, updateNoteInSection } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, addSectionToNotebook, addNoteToSection, deleteNoteFromSection, updateNoteInSection, updateNotebook } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 interface NotebookDetails {
@@ -40,6 +41,8 @@ export default function NotebookClient() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
 
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     if (!notebookId || !user) return;
@@ -61,9 +64,16 @@ export default function NotebookClient() {
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
       try {
-        const newSectionId = await addSectionToNotebook(details.notebook.id, newSectionName.trim());
+        const newSection: NotebookSection = {
+            id: Date.now().toString(),
+            title: newSectionName.trim(),
+            order: details.notebook.sections.length
+        }
+        const updatedSections = [...details.notebook.sections, newSection];
+        await updateNotebook(notebookId, { sections: updatedSections });
+
         toast({ title: 'Bölüm Eklendi' });
-        setActiveTab(newSectionId);
+        setActiveTab(newSection.id);
         setNewSectionName('');
         setIsSectionDialogOpen(false);
       } catch (e) {
@@ -72,14 +82,38 @@ export default function NotebookClient() {
     }
   };
 
-  const handleAddNewNote = async () => {
+  const handleAddNewTextNote = async () => {
     if (!details || !activeTab) return;
     try {
-        await addNoteToSection(details.notebook.id, activeTab, { title: "Yeni Not", content: [{id: Date.now().toString(), type: 'text', data: ''}]});
+        await addNoteToSection(notebookId, activeTab, { title: "Yeni Not", content: [{id: Date.now().toString(), type: 'text', data: ''}], imageUrl: null });
     } catch (error) {
         toast({ title: 'Hata', variant: 'destructive' });
     }
   };
+  
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user || !details || !activeTab) return;
+
+        toast({ title: 'Görsel yükleniyor...' });
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const dataUri = reader.result as string;
+                const destinationPath = `note-images/${user.uid}-${Date.now()}`;
+                const result = await migrateImage({ imageDataUri: dataUri, destinationPath });
+                if (result.success && result.newUrl) {
+                    await addNoteToSection(notebookId, activeTab, { title: "Yeni Görsel Not", content: [], imageUrl: result.newUrl });
+                    toast({ title: 'Görsel Not Eklendi' });
+                } else {
+                    throw new Error(result.error || 'Görsel yüklenemedi.');
+                }
+            };
+        } catch (error: any) {
+            toast({ title: 'Hata', description: error.message, variant: 'destructive' });
+        }
+    }
 
   const handleSaveNote = async (noteId: string) => {
     if (!details || Object.keys(noteChanges).length === 0) {
@@ -88,8 +122,7 @@ export default function NotebookClient() {
         return;
     };
     try {
-        await updateNoteInSection(details.notebook.id, noteId, noteChanges);
-        // toast({ title: 'Not Kaydedildi' }); // Otomatik kaydetme olduğu için her seferinde bildirim göstermeyebiliriz.
+        await updateNoteInSection(notebookId, noteId, noteChanges);
     } catch (error) {
         toast({ title: 'Hata', variant: 'destructive' });
     } finally {
@@ -101,7 +134,7 @@ export default function NotebookClient() {
   const handleDeleteNote = async (noteId: string) => {
     if(!details) return;
     try {
-      await deleteNoteFromSection(details.notebook.id, noteId);
+      await deleteNoteFromSection(notebookId, noteId);
       toast({ title: 'Not Silindi', variant: 'destructive' });
     } catch (error) {
       toast({ title: 'Hata', description: "Not silinirken bir sorun oluştu.", variant: 'destructive' });
@@ -158,10 +191,16 @@ export default function NotebookClient() {
         </div>
         
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="mt-4">
-            <Button className="w-full mb-4" onClick={handleAddNewNote}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
-            </Button>
+          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow">
+            <div className="flex gap-2 mb-4">
+                <Button className="flex-1" onClick={handleAddNewTextNote}>
+                    <StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle
+                </Button>
+                <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()}>
+                    <FileImage className="mr-2 h-4 w-4" /> Görsel Not Ekle
+                </Button>
+                <input type="file" ref={imageInputRef} onChange={handleImageFileChange} accept="image/*" className="hidden" />
+            </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {notes.filter(note => note.sectionId === section.id).map(note => (
                     <StickyNoteCard 
@@ -200,44 +239,12 @@ interface StickyNoteCardProps {
 }
 
 function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDelete }: StickyNoteCardProps) {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const [isLoading, setIsLoading] = React.useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const cardRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     
     const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
-    const firstImage = note.content.find(b => b.type === 'image')?.data;
     
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file && user) {
-            setIsLoading(true);
-            toast({ title: 'Görsel yükleniyor...' });
-            try {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = async () => {
-                    const dataUri = reader.result as string;
-                    const destinationPath = `note-images/${user.uid}-${Date.now()}`;
-                    const result = await migrateImage({ imageDataUri: dataUri, destinationPath });
-                    if (result.success && result.newUrl) {
-                        const newBlock: NoteContentBlock = { id: Date.now().toString(), type: 'image', data: result.newUrl };
-                        const newContent = [...note.content, newBlock];
-                        onUpdate('content', newContent);
-                        toast({ title: 'Görsel Yüklendi' });
-                    } else {
-                        throw new Error(result.error || 'Görsel yüklenemedi.');
-                    }
-                    setIsLoading(false);
-                };
-            } catch (error: any) {
-                toast({ title: 'Hata', description: error.message, variant: 'destructive' });
-                setIsLoading(false);
-            }
-        }
-    }
-    
+    // Auto-save when clicking outside the editing card
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (isEditing && cardRef.current && !cardRef.current.contains(event.target as Node)) {
@@ -250,11 +257,31 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         };
     }, [isEditing, onSave]);
 
-    const handleTextUpdate = (blockId: string, newText: string) => {
-        const newContent = note.content.map(b => 
-            b.id === blockId ? { ...b, data: newText } : b
-        );
-        onUpdate('content', newContent);
+    // Autofocus and resize textarea when editing starts
+    useEffect(() => {
+        if (isEditing && textareaRef.current) {
+            const textarea = textareaRef.current;
+            textarea.focus();
+             // Reset height to shrink on delete, then set to scroll height
+            textarea.style.height = 'inherit';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+    }, [isEditing]);
+    
+    const handleTextUpdate = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const textarea = e.target;
+        // Auto-resize
+        textarea.style.height = 'inherit';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+        
+        // Update content (assuming only one text block for simplicity now)
+        const textBlock = note.content.find(b => b.type === 'text');
+        if (textBlock) {
+             const newContent = note.content.map(b => 
+                b.id === textBlock.id ? { ...b, data: e.target.value } : b
+            );
+            onUpdate('content', newContent);
+        }
     };
     
     if (isEditing) {
@@ -267,30 +294,21 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                     className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80"
                     autoFocus
                 />
-                 {note.content.map(block => (
-                    <div key={block.id} className="group relative">
-                        {block.type === 'text' && (
-                            <Textarea
-                                placeholder="Yazmaya başla..."
-                                defaultValue={block.data}
-                                onBlur={(e) => handleTextUpdate(block.id, e.target.value)}
-                                className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none"
-                            />
-                        )}
-                        {block.type === 'image' && (
-                             <div className="relative">
-                                <Image src={block.data} alt="Not içeriği" width={200} height={150} className="rounded-md object-cover w-full h-auto" data-ai-hint="note image" />
-                             </div>
-                        )}
-                    </div>
-                ))}
-                <div className="flex justify-between items-center mt-2">
-                    <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
-                             {isLoading ? <Loader2 className="animate-spin h-4 w-4"/> : <ImageIcon className="h-4 w-4" />}
-                        </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                    </div>
+                {note.imageUrl && (
+                     <div className="relative aspect-video">
+                        <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="note image" />
+                     </div>
+                )}
+                <Textarea
+                    ref={textareaRef}
+                    placeholder="Yazmaya başla..."
+                    defaultValue={note.content.find(b => b.type === 'text')?.data || ''}
+                    onChange={handleTextUpdate}
+                    onBlur={handleTextUpdate} // Save on blur as well
+                    className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden"
+                    rows={1}
+                />
+                <div className="flex justify-end items-center mt-2">
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
@@ -310,16 +328,16 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
 
     return (
         <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col h-fit", noteColor)} onClick={onStartEdit}>
-            {firstImage && (
+            {note.imageUrl && (
                 <div className="relative w-full aspect-video">
-                    <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image"/>
+                    <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image"/>
                 </div>
             )}
-            <div className="p-4 flex-grow flex flex-col">
+            <div className="p-4 flex-grow flex flex-col min-h-[8rem]">
                 <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                {note.content.filter(b => b.type === 'text').map(block => (
-                     <p key={block.id} className={cn("text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap")}>{block.data}</p>
-                ))}
+                <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
+                    {note.content.find(b => b.type === 'text')?.data}
+                </p>
             </div>
              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
@@ -329,4 +347,3 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </div>
     );
 }
-
