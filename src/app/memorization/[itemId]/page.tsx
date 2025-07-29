@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import Image from "next/image";
 
 export default function MemorizationItemDetailPage() {
     const params = useParams();
@@ -127,6 +128,19 @@ export default function MemorizationItemDetailPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                 </Button>
             </PageHeader>
+            
+            {item.imageUrl && (
+                <div className="relative w-full h-48 my-4 rounded-lg overflow-hidden">
+                    <Image
+                        src={item.imageUrl}
+                        alt={item.title}
+                        layout="fill"
+                        objectFit="cover"
+                        className="bg-muted"
+                        data-ai-hint="religious illustration"
+                    />
+                </div>
+            )}
 
              <div className="flex flex-wrap gap-2 px-4 md:px-0 mb-4">
                 {item.tags?.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
