@@ -13,7 +13,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -114,7 +114,7 @@ export default function MemorizationPage() {
       }
       
       for (const title of titles) {
-        const newItemData: Omit<MemorizationItem, 'id' | 'familyId'> = {
+        const newItemData: Omit<MemorizationItem, 'id' | 'familyId' | 'verses' > = {
             title: title,
             tags: category ? [category] : [],
             imageUrl: '',
@@ -554,7 +554,7 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                        <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
                                         <AlertDialogDescription>"{item.title}" öğesi kalıcı olarak silinecektir.</AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -567,12 +567,12 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                     </DropdownMenu>
                 </CardFooter>
             </Card>
-             <DialogContent className="max-w-3xl">
+             <DialogContent className="max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>{item.title}</DialogTitle>
                 </DialogHeader>
                 {item.imageUrl ? (
-                     <div className="relative w-full h-96 my-4 rounded-lg overflow-hidden">
+                     <div className="relative w-full h-[80vh] my-4 rounded-lg overflow-hidden">
                         <Image
                             src={item.imageUrl}
                             alt={item.title}
