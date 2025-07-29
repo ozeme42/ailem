@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -156,9 +156,9 @@ export default function NotebookClient() {
             </Dialog>
           </TabsList>
         </div>
-
+        
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="mt-4">
+          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow overflow-y-auto">
             <Button className="w-full mb-4" onClick={handleAddNewNote}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
             </Button>
@@ -292,10 +292,10 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter>
+                            <AlertDialogFooterComponent>
                                 <AlertDialogCancel>İptal</AlertDialogCancel>
                                 <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
-                            </AlertDialogFooter>
+                            </AlertDialogFooterComponent>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
@@ -307,7 +307,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col", noteColor)} onClick={onStartEdit}>
             {firstImage && (
                 <div className="relative w-full aspect-video">
-                    <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image" />
+                    <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image"/>
                 </div>
             )}
             <div className="p-4 flex-grow flex flex-col">
@@ -324,3 +324,4 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </div>
     );
 }
+
