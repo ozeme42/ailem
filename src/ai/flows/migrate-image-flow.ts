@@ -7,11 +7,11 @@
  * - MigrateImageOutput - The return type for the migrateImage function.
  */
 
+import 'dotenv/config';
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 import fetch from 'node-fetch';
-import 'dotenv/config';
 
 // Initialize Firebase Admin SDK at the start of the flow execution context
 const admin = getFirebaseAdmin();
@@ -94,7 +94,7 @@ export const migrateImageFlow = ai.defineFlow(
          return { success: false, error: 'DNS çözümleme hatası. İnternet bağlantınızı ve storage.googleapis.com adresine erişiminizi kontrol edin.'};
       }
       if (e.message && (e.message.includes('Could not refresh access token') || e.code === 'auth/internal-error' || e.message.includes('Credential implementation provided no access token'))) {
-         return { success: false, error: 'Firebase kimlik doğrulaması başarısız. Projenizin Cloud Storage API\'sinin etkin ve faturalandırmanın aktif olduğundan emin olun.' };
+         return { success: false, error: 'Firebase kimlik doğrulaması başarısız. Lütfen ortam değişkenlerinizin (FIREBASE_ADMIN_CREDENTIALS_JSON) doğru ayarlandığından ve .env dosyasının yüklendiğinden emin olun.' };
       }
       return { success: false, error: e.message || 'Görsel taşınırken beklenmedik bir sunucu hatası oluştu.' };
     }
