@@ -566,7 +566,7 @@ export default function Home() {
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ListChecks /> İhtiyaçlar</h3>
                     </div>
                 </Link>
-                <Link href="/shopping" className="group block">
+                <Link href="/notes" className="group block">
                     <div className="flex flex-col p-4 rounded-r-xl shadow-lg text-white bg-gradient-to-br from-purple-500 to-fuchsia-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Notebook /> Notlar</h3>
                     </div>
