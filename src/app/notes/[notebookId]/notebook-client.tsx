@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { NoteEditor } from './note-editor';
@@ -51,7 +51,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user]);
+  }, [notebookId, user, activeTab]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -176,7 +176,7 @@ export default function NotebookClient() {
                                     </div>
                                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); handleEditNote(note);}}><Edit className="h-4 w-4"/></Button>
-                                        <AlertDialog onOpenChange={(e) => e.stopPropagation()}>
+                                        <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                         </AlertDialogTrigger>
@@ -214,4 +214,3 @@ export default function NotebookClient() {
     </div>
   );
 }
-
