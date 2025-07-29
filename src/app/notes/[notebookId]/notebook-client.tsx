@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -40,6 +40,7 @@ export default function NotebookClient() {
   
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +96,7 @@ export default function NotebookClient() {
         const file = e.target.files?.[0];
         if (!file || !user || !details || !activeTab) return;
 
+        setIsLoading(true);
         toast({ title: 'Görsel yükleniyor...' });
         try {
             const reader = new FileReader();
@@ -104,14 +106,16 @@ export default function NotebookClient() {
                 const destinationPath = `note-images/${user.uid}-${Date.now()}`;
                 const result = await migrateImage({ imageDataUri: dataUri, destinationPath });
                 if (result.success && result.newUrl) {
-                    await addNoteToSection(notebookId, activeTab, { title: "Yeni Görsel Not", content: [], imageUrl: result.newUrl });
+                    await addNoteToSection(notebookId, activeTab, { title: "Yeni Görsel Not", imageUrl: result.newUrl });
                     toast({ title: 'Görsel Not Eklendi' });
                 } else {
                     throw new Error(result.error || 'Görsel yüklenemedi.');
                 }
+                setIsLoading(false);
             };
         } catch (error: any) {
             toast({ title: 'Hata', description: error.message, variant: 'destructive' });
+            setIsLoading(false);
         }
     }
 
@@ -196,8 +200,9 @@ export default function NotebookClient() {
                 <Button className="flex-1" onClick={handleAddNewTextNote}>
                     <StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle
                 </Button>
-                <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()}>
-                    <FileImage className="mr-2 h-4 w-4" /> Görsel Not Ekle
+                <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileImage className="mr-2 h-4 w-4" />}
+                     Görsel Not Ekle
                 </Button>
                 <input type="file" ref={imageInputRef} onChange={handleImageFileChange} accept="image/*" className="hidden" />
             </div>
@@ -257,22 +262,10 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         };
     }, [isEditing, onSave]);
 
-    // Autofocus and resize textarea when editing starts
-    useEffect(() => {
-        if (isEditing && textareaRef.current) {
-            const textarea = textareaRef.current;
-            textarea.focus();
-             // Reset height to shrink on delete, then set to scroll height
-            textarea.style.height = 'inherit';
-            textarea.style.height = `${textarea.scrollHeight}px`;
-        }
-    }, [isEditing]);
-    
     const handleTextUpdate = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const textarea = e.target;
         // Auto-resize
-        textarea.style.height = 'inherit';
-        textarea.style.height = `${textarea.scrollHeight}px`;
+        e.target.style.height = 'inherit';
+        e.target.style.height = `${e.target.scrollHeight}px`;
         
         // Update content (assuming only one text block for simplicity now)
         const textBlock = note.content.find(b => b.type === 'text');
@@ -303,8 +296,8 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                     ref={textareaRef}
                     placeholder="Yazmaya başla..."
                     defaultValue={note.content.find(b => b.type === 'text')?.data || ''}
-                    onChange={handleTextUpdate}
-                    onBlur={handleTextUpdate} // Save on blur as well
+                    onInput={handleTextUpdate}
+                    onBlur={(e) => onUpdate('content', e.target.value)}
                     className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden"
                     rows={1}
                 />
