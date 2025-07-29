@@ -297,19 +297,17 @@ export default function ReadingSessionPage() {
                      </div>
                 </footer>
                 
-                <div className="flex justify-between items-center gap-2 mt-4">
-                    <div className="flex gap-2">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-4">
+                    <div className="w-full md:w-auto flex justify-between md:justify-start gap-2">
                          <Button variant="outline" onClick={() => setShowExtras(!showExtras)}>
                             <StickyNote className="mr-2 h-5 w-5"/> Not Ekle
                         </Button>
-                    </div>
-                    <div className="flex justify-end gap-2">
                         <Button variant="ghost" onClick={() => router.push('/library')}>İptal Et</Button>
-                        <Button onClick={handleSaveSession} className="bg-green-600 hover:bg-green-700">
-                            <BookCheck className="mr-2 h-5 w-5" />
-                            Oturumu Kaydet
-                        </Button>
                     </div>
+                    <Button onClick={handleSaveSession} className="bg-green-600 hover:bg-green-700 w-full md:w-auto">
+                        <BookCheck className="mr-2 h-5 w-5" />
+                        Oturumu Kaydet
+                    </Button>
                 </div>
             </div>
         </div>
