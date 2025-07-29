@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, CheckCircle2, Calendar, BookOpen, Target, Zap } from "lucide-react";
+import { Users, CheckCircle2, Calendar, BookOpen, Target, Zap, Notebook } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ const menuItems = [
   { href: "/", label: "Ailem", icon: Users },
   { href: "/tasks", label: "Görevler", icon: CheckCircle2 },
   { href: "/habits", label: "Alışkanlıklar", icon: Zap },
-  { href: "/goals", label: "Hedefler", icon: Target },
+  { href: "/notes", label: "Notlar", icon: Notebook },
   { href: "/library", label: "Kütüphane", icon: BookOpen },
 ];
 

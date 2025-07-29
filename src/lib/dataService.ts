@@ -1,9 +1,10 @@
 
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note } from './data';
 import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -1070,3 +1071,22 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
         
     await updateDoc(taskRef, updateData);
 };
+
+// Notes Feature
+export const onNotebooksUpdate = (callback: (notebooks: Notebook[]) => void) => onFamilyDataUpdate<Notebook>('notebooks', callback);
+export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
+    const familyId = await getCurrentFamilyId();
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!familyId || !user) throw new Error("User not authenticated or not in a family");
+
+    const newNotebook: Omit<Notebook, 'id'> = {
+        ...data,
+        familyId,
+        ownerId: user.uid,
+        createdAt: new Date().toISOString(),
+    };
+    return addDoc(collection(db, 'notebooks'), newNotebook);
+};
+export const deleteNotebook = (id: string) => deleteDoc(doc(db, "notebooks", id));
+

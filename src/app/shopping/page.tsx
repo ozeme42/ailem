@@ -69,7 +69,7 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, listType }: {
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Yeni {listType === 'shopping' ? 'Alışveriş Listesi' : 'Not Defteri'} Oluştur</DialogTitle>
+                    <DialogTitle>Yeni {listType === 'shopping' ? 'Alışveriş Listesi' : 'İhtiyaç Listesi'} Oluştur</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onCreate)} className="space-y-4">
@@ -80,7 +80,7 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, listType }: {
                                 <FormItem>
                                     <FormLabel>Liste Adı</FormLabel>
                                     <FormControl>
-                                        <Input placeholder={listType === 'shopping' ? "Haftalık Alışveriş" : "Genel Notlar"} {...field} />
+                                        <Input placeholder={listType === 'shopping' ? "Haftalık Alışveriş" : "Genel İhtiyaçlar"} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -131,7 +131,7 @@ const ListCard = ({ list, colorClass, onClick }: { list: ShoppingList | Shopping
 
     const description = 'items' in list 
         ? (pendingItems > 0 ? `${pendingItems} öğe kaldı` : (totalItems > 0 ? 'Tüm öğeler alındı' : 'Liste boş'))
-        : `${totalItems} not`;
+        : `${totalItems} ihtiyaç`;
 
     return (
         <div onClick={onClick} className={cn("flex items-center gap-4 text-white px-4 min-h-[72px] py-2 cursor-pointer rounded-lg shadow-sm border-0", colorClass)}>
@@ -166,8 +166,8 @@ const EditNoteDialog = ({ note, listName, onSave }: {
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Notu Düzenle</DialogTitle>
-        <DialogDescription>"{listName}" defterindeki notu güncelleyin.</DialogDescription>
+        <DialogTitle>İhtiyacı Düzenle</DialogTitle>
+        <DialogDescription>"{listName}" listesindeki ihtiyacı güncelleyin.</DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSave} className="space-y-4 py-4">
         <Textarea 
@@ -270,7 +270,7 @@ export default function ShoppingPage() {
         toast({ title: "Alışveriş Listesi Oluşturuldu!" });
     } else if (createListType === 'note') {
         await addShoppingNoteList(data.name, data.icon);
-        toast({ title: "Not Defteri Oluşturuldu!" });
+        toast({ title: "İhtiyaç Listesi Oluşturuldu!" });
     }
     setCreateListType(null);
   };
@@ -296,14 +296,14 @@ export default function ShoppingPage() {
       if (newNoteText.trim() && selectedNoteList) {
           await addNoteItemToList(selectedNoteList.id, newNoteText.trim());
           setNewNoteText('');
-          toast({ title: 'Not Eklendi' });
+          toast({ title: 'İhtiyaç Eklendi' });
       }
   };
 
   const handleUpdateNoteSubmit = async (newText: string) => {
     if (editingNote && selectedNoteList) {
       await updateNoteItemInList(selectedNoteList.id, editingNote.id, newText);
-      toast({ title: "Not Güncellendi" });
+      toast({ title: "İhtiyaç Güncellendi" });
       setEditingNote(null);
     }
   };
@@ -324,7 +324,7 @@ export default function ShoppingPage() {
   if (!isLoaded) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Alışveriş & Notlar" />
+        <PageHeader title="Alışveriş & İhtiyaçlar" />
         <Skeleton className="h-12 w-full" />
         <div className="space-y-4 mt-4">
           <Skeleton className="h-16 w-full" />
@@ -450,8 +450,8 @@ export default function ShoppingPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{selectedNoteList.name}" defterini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Defter ve içindeki tüm notlar kalıcı olarak silinecektir.</AlertDialogDescription>
+                            <AlertDialogTitleComponent>"{selectedNoteList.name}" listesini sil?</AlertDialogTitleComponent>
+                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>İptal</AlertDialogCancel>
@@ -463,7 +463,7 @@ export default function ShoppingPage() {
             </div>
           <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
               <form onSubmit={handleAddNote} className="flex items-start gap-2">
-                  <Textarea placeholder="Yeni not..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={1} className="flex-grow" />
+                  <Textarea placeholder="Yeni ihtiyaç..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={1} className="flex-grow" />
                   <Button type="submit">Ekle</Button>
               </form>
               <div className="space-y-2">
@@ -492,7 +492,7 @@ export default function ShoppingPage() {
                                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
-                                      <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu notu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                      <AlertDialogHeader><AlertDialogTitleComponent>İhtiyacı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ihtiyacı kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                                       <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
                                   </AlertDialogContent>
                               </AlertDialog>
@@ -500,7 +500,7 @@ export default function ShoppingPage() {
                       </div>
                   ))}
                   {(selectedNoteList.items || []).length === 0 && (
-                      <p className="text-sm text-center text-muted-foreground pt-8">Bu defterde henüz not yok.</p>
+                      <p className="text-sm text-center text-muted-foreground pt-8">Bu listede henüz ihtiyaç yok.</p>
                   )}
               </div>
           </div>
@@ -510,11 +510,11 @@ export default function ShoppingPage() {
 
   return (
     <div className="space-y-6">
-        <PageHeader title="Alışveriş & Notlar">
+        <PageHeader title="Alışveriş & İhtiyaçlar">
             <Dialog>
                 <DialogTrigger asChild>
                     <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                        <PlusCircle className="size-4 mr-2" /> Yeni Oluştur
+                        <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
@@ -523,7 +523,7 @@ export default function ShoppingPage() {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <Button variant="outline" onClick={() => setCreateListType('shopping')}>Yeni Alışveriş Listesi</Button>
-                        <Button variant="outline" onClick={() => setCreateListType('note')}>Yeni Not Defteri</Button>
+                        <Button variant="outline" onClick={() => setCreateListType('note')}>Yeni İhtiyaç Listesi</Button>
                     </div>
                 </DialogContent>
             </Dialog>
@@ -531,7 +531,7 @@ export default function ShoppingPage() {
       <Tabs defaultValue="lists" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="lists">Alışveriş Listeleri</TabsTrigger>
-              <TabsTrigger value="notes">Not Defterleri</TabsTrigger>
+              <TabsTrigger value="notes">İhtiyaç Listeleri</TabsTrigger>
           </TabsList>
           <TabsContent value="lists" className="p-4 space-y-2 bg-muted/40 rounded-b-lg">
                 {(shoppingLists || []).length > 0 ? (
@@ -545,7 +545,7 @@ export default function ShoppingPage() {
                   <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
                       <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
                       <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
-                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Oluştur"a tıklayın.</p>
+                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
                   </div>
               )}
           </TabsContent>
@@ -560,8 +560,8 @@ export default function ShoppingPage() {
               ) : (
                   <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
                       <Notebook className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                      <p className="mt-4 text-md">Henüz not defteriniz yok.</p>
-                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Oluştur"a tıklayın.</p>
+                      <p className="mt-4 text-md">Henüz ihtiyaç listeniz yok.</p>
+                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
                   </div>
               )}
           </TabsContent>

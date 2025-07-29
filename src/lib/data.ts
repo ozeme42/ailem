@@ -1,5 +1,6 @@
 
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -67,7 +68,7 @@ export interface Task {
   // Streak tracking for daily tasks
   streak?: number;
   bestStreak?: number;
-  lastCompletedDate?: string; // DEPRECATED: Use completedDates instead for daily habits
+  lastCompletedDate?: string; // For compatibility
   completedDates?: string[]; // For daily habits, array of 'yyyy-MM-dd'
 }
 
@@ -189,6 +190,47 @@ export interface MemorizationProgress {
     memberId: string;
     completed: boolean;
     completedAt?: string; // ISO string
+}
+
+// NOTES FEATURE DATA MODELS
+export type NoteContentType = 'text' | 'handwriting' | 'audio' | 'image' | 'file';
+
+export interface NoteContentBlock {
+    id: string;
+    type: NoteContentType;
+    data: string; // URL for files/audio/images, base64 for handwriting, text for text
+    textEquivalent?: string; // For OCR or speech-to-text results
+}
+
+export interface Note {
+    id: string;
+    notebookId: string;
+    sectionId: string;
+    familyId: string;
+    title: string;
+    content: NoteContentBlock[];
+    createdAt: string; // ISO string
+    updatedAt: string; // ISO string
+    tags: string[];
+}
+
+export interface NotebookSection {
+    id: string;
+    title: string;
+    order: number;
+}
+
+export interface Notebook {
+    id: string;
+    familyId: string;
+    ownerId: string; // The user who created it
+    isShared: boolean; // true for family, false for personal
+    title: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    sections: NotebookSection[];
+    createdAt: string; // ISO string
 }
 
 
