@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -56,7 +56,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -84,6 +84,7 @@ export default function NotebookClient() {
   const handleSaveNote = async (noteId: string) => {
     if (!details || Object.keys(noteChanges).length === 0) {
         setEditingNoteId(null);
+        setNoteChanges({});
         return;
     };
     try {
@@ -157,7 +158,7 @@ export default function NotebookClient() {
         </div>
 
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto mt-4">
+          <TabsContent key={section.id} value={section.id} className="flex-grow mt-4 overflow-y-auto">
             <Button className="w-full mb-4" onClick={handleAddNewNote}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
             </Button>
@@ -168,7 +169,7 @@ export default function NotebookClient() {
                         note={note}
                         isEditing={editingNoteId === note.id}
                         onStartEdit={() => { if (editingNoteId !== note.id) setEditingNoteId(note.id); setNoteChanges({}); }}
-                        onBlur={() => handleSaveNote(note.id)}
+                        onSave={() => handleSaveNote(note.id)}
                         onUpdate={handleNoteUpdate}
                         onDelete={() => handleDeleteNote(note.id)}
                     />
@@ -187,16 +188,18 @@ interface StickyNoteCardProps {
     note: Note;
     isEditing: boolean;
     onStartEdit: () => void;
-    onBlur: () => void;
+    onSave: () => void;
     onUpdate: (key: keyof Note, value: any) => void;
     onDelete: () => void;
 }
 
-function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onDelete }: StickyNoteCardProps) {
+function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDelete }: StickyNoteCardProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = React.useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const noteRef = useRef<HTMLDivElement>(null);
+    
     const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
     const firstImage = note.content.find(b => b.type === 'image')?.data;
     const firstText = note.content.find(b => b.type === 'text')?.data || "";
@@ -230,9 +233,22 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onDele
         }
     }
     
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (isEditing && noteRef.current && !noteRef.current.contains(event.target as Node)) {
+                onSave();
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isEditing, onSave]);
+
+    
     if (isEditing) {
         return (
-            <div className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)} onBlur={onBlur}>
+            <div ref={noteRef} className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
                 <Input
                     placeholder="Not Başlığı"
                     defaultValue={note.title}
@@ -266,7 +282,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onDele
                     </div>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
@@ -284,7 +300,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onDele
     return (
         <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col min-h-[10rem]", noteColor)} onClick={onStartEdit}>
             {firstImage && (
-                <div className="relative w-full aspect-video">
+                <div className="relative w-full h-32">
                     <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image" />
                 </div>
             )}
