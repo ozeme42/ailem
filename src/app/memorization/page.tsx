@@ -27,10 +27,10 @@ import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag } from '@/lib/dataService';
+import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag, removeMemorizationProgress } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { Combobox } from "@/components/ui/combobox";
-import { Checkbox } from '@/components/ui/checkbox';
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 
@@ -209,9 +209,17 @@ export default function MemorizationPage() {
         toast({ title: "❌ Hata", description: "Kategori silinirken bir hata oluştu.", variant: 'destructive'});
     }
   };
-  
-  const filteredItems = useMemo(() => {
-    return items.filter(item => {
+
+  const { itemsToShow, allFilteredItems } = useMemo(() => {
+    const memberProgressMap = new Map<string, MemorizationProgress>();
+    progress.filter(p => p.memberId === selectedMember?.id).forEach(p => memberProgressMap.set(p.itemId, p));
+    
+    const memberItemIds = new Set(memberProgressMap.keys());
+    
+    // For the main view, show only items in the member's list.
+    const memberItems = items.filter(item => memberItemIds.has(item.id));
+    
+    const filtered = (view === 'items' ? memberItems : items).filter(item => {
         if (!localSearchQuery) return true;
         const q = localSearchQuery.toLowerCase();
         return (
@@ -219,7 +227,16 @@ export default function MemorizationPage() {
           (item.tags && item.tags.some(tag => tag.toLowerCase().includes(q)))
         );
       });
-  }, [items, localSearchQuery]);
+      
+    return { itemsToShow: filtered, allFilteredItems: items.filter(item => {
+        if (!localSearchQuery) return true;
+        const q = localSearchQuery.toLowerCase();
+        return (
+          item.title.toLowerCase().includes(q) ||
+          (item.tags && item.tags.some(tag => tag.toLowerCase().includes(q)))
+        );
+    }) };
+  }, [items, localSearchQuery, progress, selectedMember, view]);
 
   return (
     <div className="flex flex-col h-full gap-6">
@@ -236,27 +253,37 @@ export default function MemorizationPage() {
           </Button>
       </PageHeader>
       
-      {view === 'items' ? (
-        <div className="flex flex-col flex-grow min-h-0">
-          <div className="flex items-center gap-4 border-b pb-4 mb-4 overflow-x-auto">
-            {familyMembers.map((member) => (
-            <Button
-                key={member.id}
-                variant={selectedMember?.id === member.id ? "default" : "outline"}
-                className={`flex-shrink-0 h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
-                onClick={() => setSelectedMember(member)}
-            >
-                <div 
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" 
-                    style={{ backgroundColor: member.color, color: '#fff' }}
+      <div className="flex flex-col flex-grow min-h-0">
+          {view === 'items' ? (
+              <div className="flex items-center gap-4 border-b pb-4 mb-4 overflow-x-auto">
+                {familyMembers.map((member) => (
+                <Button
+                    key={member.id}
+                    variant={selectedMember?.id === member.id ? "default" : "outline"}
+                    className={`flex-shrink-0 h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
+                    onClick={() => setSelectedMember(member)}
                 >
-                    {member.name.charAt(0).toUpperCase()}
-                </div>
-                <p className="font-bold text-sm">{member.name}</p>
-            </Button>
-            ))}
-         </div>
-          <div className="relative w-full sm:flex-1 mb-4">
+                    <div 
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" 
+                        style={{ backgroundColor: member.color, color: '#fff' }}
+                    >
+                        {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <p className="font-bold text-sm">{member.name}</p>
+                </Button>
+                ))}
+            </div>
+          ) : (
+             <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Yönetim Modu</AlertTitle>
+                <AlertDescription>
+                    Burada tüm ezber öğelerini görebilir ve aile üyelerinin listelerine ekleyebilirsiniz.
+                </AlertDescription>
+             </Alert>
+          )}
+
+          <div className="relative w-full sm:flex-1 my-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Ezber ara (başlık, kategori...)"
@@ -265,23 +292,19 @@ export default function MemorizationPage() {
               onChange={(e) => setLocalSearchQuery(e.target.value)}
             />
           </div>
+
           <div className="flex-grow overflow-y-auto">
              <ItemShelf 
-                items={filteredItems} 
+                items={view === 'items' ? itemsToShow : allFilteredItems}
+                viewMode={view}
                 onEdit={handleOpenForm} 
                 onDelete={handleDeleteItem} 
                 memberId={selectedMember?.id || ''}
+                familyMembers={familyMembers}
                 progress={progress}
               />
           </div>
-        </div>
-      ) : (
-        <ManagementDashboard 
-            allTags={allTags}
-            onOpenShelfDialog={handleOpenShelfDialog}
-            onDeleteShelf={handleDeleteShelf}
-        />
-      )}
+      </div>
 
       {/* Add/Edit Item Dialog */}
        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -326,7 +349,7 @@ export default function MemorizationPage() {
                 <DialogHeader>
                     <DialogTitle>{editingShelf?.isNew ? "Yeni Kategori Ekle" : "Kategoriyi Düzenle"}</DialogTitle>
                 </DialogHeader>
-                <Form {...shelfFormMethods}>
+                <FormProvider {...shelfFormMethods}>
                     <form onSubmit={shelfFormMethods.handleSubmit(handleShelfFormSubmit)} id="shelf-form" className="space-y-4">
                         <FormField
                             control={shelfFormMethods.control}
@@ -342,7 +365,7 @@ export default function MemorizationPage() {
                             )}
                         />
                     </form>
-                </Form>
+                </FormProvider>
                  <DialogFooter>
                     <Button variant="ghost" onClick={() => setEditingShelf(null)}>İptal</Button>
                     <Button type="submit" form="shelf-form">Kaydet</Button>
@@ -579,7 +602,15 @@ const ItemForm = ({ existingTags }: { existingTags: string[] }) => {
 
 
 // ItemShelf COMPONENT
-function ItemShelf({ items, onEdit, onDelete, memberId, progress }: { items: MemorizationItem[], onEdit: (item: MemorizationItem) => void, onDelete: (id: string) => void, memberId: string, progress: MemorizationProgress[] }) {
+function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers, progress }: { 
+    items: MemorizationItem[], 
+    viewMode: 'items' | 'management',
+    onEdit: (item: MemorizationItem) => void, 
+    onDelete: (id: string) => void, 
+    memberId: string, 
+    familyMembers: FamilyMember[],
+    progress: MemorizationProgress[] 
+}) {
   const {toast} = useToast();
   const shelves = useMemo(() => {
     const grouped: Record<string, MemorizationItem[]> = {};
@@ -606,12 +637,23 @@ function ItemShelf({ items, onEdit, onDelete, memberId, progress }: { items: Mem
         toast({ title: "Hata", description: "İlerleme güncellenirken bir sorun oluştu.", variant: "destructive" });
     }
   };
+  
+  const handleAddToMember = async (itemId: string, memberId: string) => {
+       try {
+        await updateMemorizationProgress(itemId, memberId, false);
+        const item = items.find(i => i.id === itemId);
+        const member = familyMembers.find(m => m.id === memberId);
+        toast({ title: "Listeye Eklendi", description: `"${item?.title}" öğesi ${member?.name} adlı üyenin listesine eklendi.` });
+    } catch (error) {
+        toast({ title: "Hata", description: "Listeye eklenirken bir sorun oluştu.", variant: "destructive" });
+    }
+  }
 
   const memberProgressMap = useMemo(() => {
     const map = new Map<string, boolean>();
-    progress.filter(p => p.memberId === memberId).forEach(p => map.set(p.itemId, p.completed));
+    progress.forEach(p => map.set(`${p.itemId}_${p.memberId}`, p.completed));
     return map;
-  }, [progress, memberId]);
+  }, [progress]);
 
 
   if (items.length === 0) {
@@ -619,7 +661,7 @@ function ItemShelf({ items, onEdit, onDelete, memberId, progress }: { items: Mem
       <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed bg-muted/20 p-8 text-center text-muted-foreground">
         <div>
           <Library className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-md font-medium">Bu kategoride gösterilecek öğe yok.</p>
+          <p className="mt-4 text-md font-medium">Gösterilecek öğe yok.</p>
         </div>
       </div>
      );
@@ -635,10 +677,14 @@ function ItemShelf({ items, onEdit, onDelete, memberId, progress }: { items: Mem
                     <MemorizationItemCard
                         key={item.id}
                         item={item}
-                        isCompleted={memberProgressMap.get(item.id) || false}
+                        viewMode={viewMode}
+                        isCompleted={memberProgressMap.get(`${item.id}_${memberId}`) || false}
                         onProgressChange={(completed) => handleProgressChange(item.id, completed)}
                         onEdit={() => onEdit(item)}
                         onDelete={() => onDelete(item.id)}
+                        onAddToMember={handleAddToMember}
+                        familyMembers={familyMembers}
+                        progressMap={memberProgressMap}
                     />
                 ))}
           </div>
@@ -772,12 +818,16 @@ function ManagementDashboard({ allTags, onOpenShelfDialog, onDeleteShelf }: { al
 // MemorizationItemCard
 interface MemorizationItemCardProps {
     item: MemorizationItem;
+    viewMode: 'items' | 'management';
     isCompleted: boolean;
+    familyMembers: FamilyMember[];
+    progressMap: Map<string, boolean>;
     onProgressChange: (isCompleted: boolean) => void;
     onEdit: () => void;
     onDelete: () => void;
+    onAddToMember: (itemId: string, memberId: string) => void;
 }
-function MemorizationItemCard({ item, isCompleted, onProgressChange, onEdit, onDelete }: MemorizationItemCardProps) {
+function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, onEdit, onDelete, onAddToMember, familyMembers, progressMap }: MemorizationItemCardProps) {
     return (
         <Card className="flex flex-col group transition-all hover:shadow-md hover:-translate-y-0.5">
              <Link href={`/memorization/${item.id}`} className="flex-grow">
@@ -786,15 +836,38 @@ function MemorizationItemCard({ item, isCompleted, onProgressChange, onEdit, onD
                 </CardContent>
             </Link>
             <CardFooter className="p-4 border-t flex items-center justify-between">
-                 <div className="flex items-center space-x-2 w-full cursor-pointer" onClick={() => onProgressChange(!isCompleted)}>
-                    <Checkbox id={`check-${item.id}`} checked={isCompleted} className="size-5" />
-                    <label
-                        htmlFor={`check-${item.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                        Ezberlendi
-                    </label>
-                </div>
+                 { viewMode === 'items' ? (
+                     <div className="flex items-center space-x-2 w-full cursor-pointer" onClick={() => onProgressChange(!isCompleted)}>
+                        <Checkbox id={`check-${item.id}`} checked={isCompleted} className="size-5" />
+                        <label
+                            htmlFor={`check-${item.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                            Ezberlendi
+                        </label>
+                    </div>
+                 ) : (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                             <Button variant="outline" size="sm" className="w-full">
+                                <UserPlus className="mr-2 h-4 w-4"/> Listeye Ekle
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                             <DropdownMenuLabel>Kimin Listesine Eklensin?</DropdownMenuLabel>
+                             {familyMembers.map(member => (
+                                <DropdownMenuItem 
+                                    key={member.id} 
+                                    onClick={() => onAddToMember(item.id, member.id)}
+                                    disabled={progressMap.has(`${item.id}_${member.id}`)}
+                                >
+                                    {member.name}
+                                    {progressMap.has(`${item.id}_${member.id}`) && <span className="text-xs text-muted-foreground ml-auto">Ekli</span>}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                 )}
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -826,3 +899,4 @@ function MemorizationItemCard({ item, isCompleted, onProgressChange, onEdit, onD
         </Card>
     );
 }
+

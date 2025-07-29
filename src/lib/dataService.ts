@@ -1007,3 +1007,9 @@ export const updateMemorizationProgress = async (itemId: string, memberId: strin
     };
     return setDoc(docRef, progressData, { merge: true });
 };
+
+export const removeMemorizationProgress = async (itemId: string, memberId: string) => {
+    const progressId = `${itemId}_${memberId}`;
+    const docRef = doc(db, 'memorizationProgress', progressId);
+    return deleteDoc(docRef);
+};
