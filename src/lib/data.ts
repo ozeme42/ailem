@@ -171,18 +171,12 @@ export interface Goal {
     sectionCount: number;
 }
 
-export interface Verse {
-    id: string;
-    text: string;
-}
-
 export interface MemorizationItem {
     id: string;
     familyId: string;
     title: string;
     tags: string[];
     imageUrl?: string;
-    verses?: Verse[];
 }
 
 export interface MemorizationProgress {
@@ -411,9 +405,9 @@ export const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
     { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
 ];
 
-export const initialTasks: Omit<Task, 'id' | 'familyId'>[] = [
-    { title: 'Odanı Topla', assigneeId: "3", points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}] },
-    { title: 'Matematik Ödevi', assigneeId: "4", points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [] },
+export const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId'>[] = [
+    { title: 'Odanı Topla', points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}] },
+    { title: 'Matematik Ödevi', points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [] },
 ];
 
 export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
@@ -473,7 +467,6 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
     {
         title: "LGS Deneme Sınavı 1",
         subject: "Deneme Sınavı",
-        studentId: "4",
         questionCount: 60,
         assignedDate: "01 Ağustos 2024",
         dueDate: "15 Ağustos 2024",

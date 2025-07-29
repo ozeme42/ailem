@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -7,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/components/auth-provider';
 import { useToast } from '@/hooks/use-toast';
-import { addEzberItem, updateEzberItem } from '@/lib/dataService';
+import { addMemorizationItem, updateMemorizationItem } from '@/lib/dataService';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -16,20 +17,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
-import type { EzberItem } from '@/lib/data';
+import type { MemorizationItem } from '@/lib/data';
 import { ScrollArea } from './ui/scroll-area';
 
 const formSchema = z.object({
   title: z.string().min(2, "Başlık en az 2 karakter olmalıdır."),
   category: z.enum(['Sure', 'Dua'], { required_error: "Kategori seçmelisiniz." }),
-  content: z.string().optional(),
   imageUrl: z.string().optional(),
   newImageDataUri: z.string().optional(), // For new image uploads
 });
 
 type NewMemorizationItemFormProps = {
   onFormSubmit: () => void;
-  initialData?: EzberItem | null;
+  initialData?: MemorizationItem | null;
 };
 
 export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemorizationItemFormProps) {
@@ -41,13 +41,21 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: initialData?.title || "",
-      category: initialData?.category || 'Sure',
-      content: initialData?.content || "",
-      imageUrl: initialData?.imageUrl || "",
+      title: "",
+      category: "Sure",
+      imageUrl: "",
       newImageDataUri: "",
     },
   });
+  
+  React.useEffect(() => {
+    form.reset({
+       title: initialData?.title || "",
+       category: (initialData?.tags || [])[0] === 'Dua' ? 'Dua' : 'Sure',
+       imageUrl: initialData?.imageUrl || "",
+       newImageDataUri: "",
+    })
+  }, [initialData, form]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -83,18 +91,17 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
              }
         }
 
-      const itemData = {
+      const itemData: Omit<MemorizationItem, 'id' | 'familyId'> = {
         title: values.title,
-        category: values.category,
-        content: values.content || "",
+        tags: [values.category],
         imageUrl: finalImageUrl,
       };
 
       if (initialData) {
-        await updateEzberItem(initialData.id, itemData);
+        await updateMemorizationItem(initialData.id, itemData);
         toast({ title: 'Başarılı!', description: `"${values.title}" güncellendi.` });
       } else {
-        await addEzberItem(itemData);
+        await addMemorizationItem(itemData);
         toast({ title: 'Başarılı!', description: `"${values.title}" ezber listesine eklendi.` });
       }
 
@@ -111,6 +118,9 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <DialogHeader>
+            <DialogTitle>{initialData ? 'Öğeyi Düzenle' : 'Yeni Öğe Ekle'}</DialogTitle>
+        </DialogHeader>
         <ScrollArea className="h-[60vh] pr-4">
             <div className="space-y-4">
                 <FormField
@@ -141,18 +151,6 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
                     </FormItem>
                 )}
                 />
-                 <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>İçerik (Opsiyonel)</FormLabel>
-                    <FormControl><Textarea placeholder="Sure veya duanın metnini buraya yazabilirsiniz..." {...field} rows={6} /></FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-
                 <FormItem>
                     <FormLabel>Görsel</FormLabel>
                     <FormControl>
@@ -174,12 +172,12 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
                 </FormItem>
             </div>
         </ScrollArea>
-        <div className="pt-4 border-t">
+        <DialogFooter className="pt-4 border-t">
             <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {initialData ? 'Değişiklikleri Kaydet' : 'Oluştur'}
             </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Form>
   );
