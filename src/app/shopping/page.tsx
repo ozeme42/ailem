@@ -18,8 +18,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
-import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, deleteShoppingListItemFromList, clearBoughtItemsFromList, onShoppingNoteListsUpdate, addShoppingNoteList, deleteShoppingNoteList, addNoteItemToList, deleteNoteItemFromList, updateNoteItemInList } from '@/lib/dataService';
-import { type ShoppingList, type ShoppingItem as ShoppingListItemType, type ShoppingNoteList, type ShoppingNoteItem } from '@/lib/data';
+import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, deleteShoppingListItemFromList, clearBoughtItemsFromList } from '@/lib/dataService';
+import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
 
@@ -54,22 +54,21 @@ const createListSchema = z.object({
 
 type CreateListFormData = z.infer<typeof createListSchema>;
 
-const CreateListDialog = ({ isOpen, onOpenChange, onCreate, listType }: {
+const CreateListDialog = ({ isOpen, onOpenChange, onCreate }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (data: CreateListFormData) => void;
-  listType: 'shopping' | 'note';
 }) => {
     const form = useForm<CreateListFormData>({
         resolver: zodResolver(createListSchema),
-        defaultValues: { name: '', icon: listType === 'shopping' ? 'ListChecks' : 'Notebook' },
+        defaultValues: { name: '', icon: 'ShoppingCart' },
     });
     
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Yeni {listType === 'shopping' ? 'Alışveriş Listesi' : 'İhtiyaç Listesi'} Oluştur</DialogTitle>
+                    <DialogTitle>Yeni Alışveriş Listesi Oluştur</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onCreate)} className="space-y-4">
@@ -80,7 +79,7 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, listType }: {
                                 <FormItem>
                                     <FormLabel>Liste Adı</FormLabel>
                                     <FormControl>
-                                        <Input placeholder={listType === 'shopping' ? "Haftalık Alışveriş" : "Genel İhtiyaçlar"} {...field} />
+                                        <Input placeholder={"Haftalık Market Alışverişi"} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -124,22 +123,15 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, listType }: {
 };
 
 const ListCard = ({ list, colorClass, onClick, onDelete }: { 
-    list: ShoppingList | ShoppingNoteList; 
+    list: ShoppingList; 
     colorClass: string; 
     onClick: () => void;
-    onDelete: (id: string, type: 'shopping' | 'note') => void;
+    onDelete: (id: string) => void;
 }) => {
     const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
-    const isShoppingList = 'isBought' in (list.items?.[0] || {});
     const items = list.items || [];
-    
-    let description = "";
-    if (isShoppingList) {
-        const pendingItems = items.filter(item => !(item as ShoppingListItemType).isBought).length;
-        description = pendingItems > 0 ? `${pendingItems} öğe kaldı` : (items.length > 0 ? 'Tüm öğeler alındı' : 'Liste boş');
-    } else {
-        description = `${items.length} ihtiyaç`;
-    }
+    const pendingItems = items.filter(item => !item.isBought).length;
+    const description = pendingItems > 0 ? `${pendingItems} öğe kaldı` : (items.length > 0 ? 'Tüm öğeler alındı' : 'Liste boş');
 
     return (
         <div className="relative group">
@@ -168,7 +160,7 @@ const ListCard = ({ list, colorClass, onClick, onDelete }: {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(list.id, isShoppingList ? 'shopping' : 'note')}>Sil</AlertDialogAction>
+                            <AlertDialogAction onClick={() => onDelete(list.id)}>Sil</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -178,67 +170,24 @@ const ListCard = ({ list, colorClass, onClick, onDelete }: {
 };
 
 
-const EditNoteDialog = ({ note, listName, onSave }: {
-  note: ShoppingNoteItem;
-  listName: string;
-  onSave: (newText: string) => void;
-}) => {
-  const [text, setText] = useState(note.text);
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (text.trim()) {
-        onSave(text);
-    }
-  };
-
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle>İhtiyacı Düzenle</DialogTitle>
-        <DialogDescription>"{listName}" listesindeki ihtiyacı güncelleyin.</DialogDescription>
-      </DialogHeader>
-      <form onSubmit={handleSave} className="space-y-4 py-4">
-        <Textarea 
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={4} 
-          autoFocus
-        />
-        <DialogFooter>
-            <DialogTrigger asChild><Button type="button" variant="ghost">İptal</Button></DialogTrigger>
-            <Button type="submit">Kaydet</Button>
-        </DialogFooter>
-      </form>
-    </>
-  );
-};
-
-
 export default function ShoppingPage() {
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
-  const [noteLists, setNoteLists] = useState<ShoppingNoteList[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
   
-  const [createListType, setCreateListType] = useState<'shopping' | 'note' | null>(null);
+  const [isCreateListOpen, setCreateListOpen] = useState(false);
   const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
-  const [selectedNoteList, setSelectedNoteList] = useState<ShoppingNoteList | null>(null);
   const [selectedListColor, setSelectedListColor] = useState<string>('bg-gray-500');
   const [newItemName, setNewItemName] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [newNoteText, setNewNoteText] = useState('');
-  const [editingNote, setEditingNote] = useState<ShoppingNoteItem | null>(null);
   
   useEffect(() => {
-    const unsubShopping = onShoppingListsUpdate(setShoppingLists);
-    const unsubNotes = onShoppingNoteListsUpdate((notes) => {
-        setNoteLists(notes);
+    const unsubShopping = onShoppingListsUpdate((lists) => {
+        setShoppingLists(lists);
         setIsLoaded(true);
     });
     return () => {
         unsubShopping();
-        unsubNotes();
     }
   }, []);
 
@@ -252,21 +201,10 @@ export default function ShoppingPage() {
       }
     }
   }, [shoppingLists, selectedList]);
-
-  useEffect(() => {
-    if (selectedNoteList && noteLists) {
-      const updatedList = noteLists.find(l => l.id === selectedNoteList.id);
-      if (updatedList) {
-        setSelectedNoteList(updatedList);
-      } else {
-        setSelectedNoteList(null);
-      }
-    }
-  }, [noteLists, selectedNoteList]);
   
   const historicalItems = useMemo(() => {
     const items = new Set<string>();
-    (shoppingLists || []).forEach(list => {
+    shoppingLists.forEach(list => {
       (list.items || []).forEach(item => {
         items.add(item.name);
       });
@@ -294,14 +232,9 @@ export default function ShoppingPage() {
 
 
   const handleCreateList = async (data: CreateListFormData) => {
-    if (createListType === 'shopping') {
-        await addShoppingList(data.name, data.icon);
-        toast({ title: "Alışveriş Listesi Oluşturuldu!" });
-    } else if (createListType === 'note') {
-        await addShoppingNoteList(data.name, data.icon);
-        toast({ title: "İhtiyaç Listesi Oluşturuldu!" });
-    }
-    setCreateListType(null);
+    await addShoppingList(data.name, data.icon);
+    toast({ title: "Alışveriş Listesi Oluşturuldu!" });
+    setCreateListOpen(false);
   };
   
   const handleAddItem = (e: React.FormEvent) => {
@@ -319,23 +252,6 @@ export default function ShoppingPage() {
       setSuggestions([]);
     }
   };
-  
-  const handleAddNote = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (newNoteText.trim() && selectedNoteList) {
-          await addNoteItemToList(selectedNoteList.id, newNoteText.trim());
-          setNewNoteText('');
-          toast({ title: 'İhtiyaç Eklendi' });
-      }
-  };
-
-  const handleUpdateNoteSubmit = async (newText: string) => {
-    if (editingNote && selectedNoteList) {
-      await updateNoteItemInList(selectedNoteList.id, editingNote.id, newText);
-      toast({ title: "İhtiyaç Güncellendi" });
-      setEditingNote(null);
-    }
-  };
 
   const pendingItems = useMemo(() => selectedList?.items.filter(item => !item.isBought) || [], [selectedList]);
   const boughtItems = useMemo(() => selectedList?.items.filter(item => item.isBought) || [], [selectedList]);
@@ -344,29 +260,20 @@ export default function ShoppingPage() {
       setSelectedList(list);
       setSelectedListColor(color);
   };
-
-  const handleSelectNoteList = (list: ShoppingNoteList, color: string) => {
-      setSelectedNoteList(list);
-      setSelectedListColor(color);
-  };
   
-    const handleDeleteList = async (id: string, type: 'shopping' | 'note') => {
-        try {
-            if (type === 'shopping') {
-                await deleteShoppingList(id);
-            } else {
-                await deleteShoppingNoteList(id);
-            }
-            toast({ title: "Liste Silindi", variant: "destructive" });
-        } catch (error) {
-            toast({ title: "Hata", description: "Liste silinirken bir sorun oluştu.", variant: "destructive" });
-        }
-    };
+  const handleDeleteList = async (id: string) => {
+      try {
+          await deleteShoppingList(id);
+          toast({ title: "Liste Silindi", variant: "destructive" });
+      } catch (error) {
+          toast({ title: "Hata", description: "Liste silinirken bir sorun oluştu.", variant: "destructive" });
+      }
+  };
 
   if (!isLoaded) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Alışveriş & İhtiyaçlar" />
+        <PageHeader title="Alışveriş Listeleri" />
         <Skeleton className="h-12 w-full" />
         <div className="space-y-4 mt-4">
           <Skeleton className="h-16 w-full" />
@@ -377,7 +284,6 @@ export default function ShoppingPage() {
   }
 
   if (selectedList) {
-     const Icon = listIcons[selectedList.icon as keyof typeof listIcons] || ShoppingCart;
      return (
         <div className={cn("p-4 rounded-xl", selectedListColor)}>
             <div className="flex items-center justify-between mb-6">
@@ -476,152 +382,36 @@ export default function ShoppingPage() {
      );
   }
 
-  if (selectedNoteList) {
-     const Icon = listIcons[selectedNoteList.icon as keyof typeof listIcons] || Notebook;
-     return (
-        <div className={cn("p-4 rounded-xl", selectedListColor)}>
-           <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-white">{selectedNoteList.name}</h1>
-              <div className='flex items-center gap-2'>
-                <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedNoteList(null)}>
-                  <ArrowLeft className="h-5 w-5 mr-2" /> Geri
-                </Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{selectedNoteList.name}" listesini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => { deleteShoppingNoteList(selectedNoteList.id); setSelectedNoteList(null); }}>Sil</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
-              <form onSubmit={handleAddNote} className="flex items-start gap-2">
-                  <Textarea placeholder="Yeni ihtiyaç..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={1} className="flex-grow" />
-                  <Button type="submit">Ekle</Button>
-              </form>
-              <div className="space-y-2">
-                  {(selectedNoteList.items || []).map(note => (
-                      <div key={note.id} className="p-3 bg-card border rounded-lg flex justify-between items-start gap-2 group">
-                          <p className="text-sm flex-grow whitespace-pre-wrap">{note.text}</p>
-                          <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Dialog onOpenChange={(open) => !open && setEditingNote(null)}>
-                                <DialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNote(note)}>
-                                      <Edit className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                {editingNote?.id === note.id && (
-                                  <DialogContent>
-                                    <EditNoteDialog 
-                                        note={editingNote} 
-                                        listName={selectedNoteList.name}
-                                        onSave={handleUpdateNoteSubmit}
-                                    />
-                                  </DialogContent>
-                                )}
-                              </Dialog>
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                      <AlertDialogHeader><AlertDialogTitleComponent>İhtiyacı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ihtiyacı kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                      <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
-                          </div>
-                      </div>
-                  ))}
-                  {(selectedNoteList.items || []).length === 0 && (
-                      <p className="text-sm text-center text-muted-foreground pt-8">Bu listede henüz ihtiyaç yok.</p>
-                  )}
-              </div>
-          </div>
-        </div>
-     );
-  }
-
   return (
     <div className="space-y-6">
-        <PageHeader title="Alışveriş & İhtiyaçlar">
-            <Dialog>
-                <DialogTrigger asChild>
-                    <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                        <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>Yeni Oluştur</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <Button variant="outline" onClick={() => setCreateListType('shopping')}>Yeni Alışveriş Listesi</Button>
-                        <Button variant="outline" onClick={() => setCreateListType('note')}>Yeni İhtiyaç Listesi</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+        <PageHeader title="Alışveriş Listeleri">
+            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setCreateListOpen(true)}>
+                <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
+            </Button>
         </PageHeader>
-      <Tabs defaultValue="lists" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="lists">Alışveriş Listeleri</TabsTrigger>
-              <TabsTrigger value="notes">İhtiyaç Listeleri</TabsTrigger>
-          </TabsList>
-          <TabsContent value="lists" className="p-4 space-y-2 bg-muted/40 rounded-b-lg">
-                {(shoppingLists || []).length > 0 ? (
-                  (shoppingLists || []).map((list, index) => {
-                  const color = brightColors[index % brightColors.length];
-                  return (
-                      <ListCard 
-                        key={list.id} 
-                        list={list} 
-                        colorClass={cn("bg-gradient-to-br", color.gradient)} 
-                        onClick={() => handleSelectList(list as ShoppingList, cn("bg-gradient-to-br", color.gradient))}
-                        onDelete={handleDeleteList}
-                       />
-                  )
-                  })
-              ) : (
-                  <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
-                      <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                      <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
-                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
-                  </div>
-              )}
-          </TabsContent>
-            <TabsContent value="notes" className="p-4 space-y-2 bg-muted/40 rounded-b-lg">
-              {(noteLists || []).length > 0 ? (
-                  (noteLists || []).map((list, index) => {
-                      const color = brightColors[(index + 3) % brightColors.length]; // Use different colors
-                      return (
-                          <ListCard 
+        <div className="p-4 space-y-2 bg-muted/40 rounded-b-lg">
+            {shoppingLists.length > 0 ? (
+                shoppingLists.map((list, index) => {
+                    const color = brightColors[index % brightColors.length];
+                    return (
+                        <ListCard 
                             key={list.id} 
                             list={list} 
                             colorClass={cn("bg-gradient-to-br", color.gradient)} 
-                            onClick={() => handleSelectNoteList(list as ShoppingNoteList, cn("bg-gradient-to-br", color.gradient))}
+                            onClick={() => handleSelectList(list, cn("bg-gradient-to-br", color.gradient))}
                             onDelete={handleDeleteList}
-                          />
-                      )
-                  })
-              ) : (
-                  <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
-                      <Notebook className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                      <p className="mt-4 text-md">Henüz ihtiyaç listeniz yok.</p>
-                      <p className="text-sm text-muted-foreground">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
-                  </div>
-              )}
-          </TabsContent>
-      </Tabs>
-      <CreateListDialog isOpen={!!createListType} onOpenChange={() => setCreateListType(null)} onCreate={handleCreateList} listType={createListType || 'shopping'}/>
+                        />
+                    )
+                })
+            ) : (
+                <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                    <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
+                    <p className="text-sm text-muted-foreground">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
+                </div>
+            )}
+        </div>
+      <CreateListDialog isOpen={isCreateListOpen} onOpenChange={setCreateListOpen} onCreate={handleCreateList} />
     </div>
   );
 }
-
