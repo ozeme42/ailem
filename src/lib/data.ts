@@ -65,7 +65,8 @@ export interface Task {
 
   // Streak tracking for daily tasks
   streak?: number;
-  lastCompletedDate?: string; // ISO date string
+  lastCompletedDate?: string; // DEPRECATED: Use completedDates instead for daily habits
+  completedDates?: string[]; // For daily habits, array of 'yyyy-MM-dd'
 }
 
 
@@ -420,12 +421,12 @@ export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
             { id: '3', name: 'Yumurta', isBought: false },
         ],
     }
-]
+];
 
 export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
     { title: 'Doktor Randevusu', startDate: '2024-08-20', recurrence: 'one-time' },
     { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
-]
+];
 
 export const initialMealPlan: MealPlan = {
   "2024-08-12": {

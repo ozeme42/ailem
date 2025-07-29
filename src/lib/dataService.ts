@@ -4,7 +4,7 @@ import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress } from './data';
-import { isPast, parseISO, isSameDay, subDays } from 'date-fns';
+import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -1012,4 +1012,16 @@ export const removeMemorizationProgress = async (itemId: string, memberId: strin
     const progressId = `${itemId}_${memberId}`;
     const docRef = doc(db, 'memorizationProgress', progressId);
     return deleteDoc(docRef);
+};
+
+
+export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: boolean) => {
+    if (!task.isRecurring || task.recurrenceType !== 'daily') return;
+
+    const dayKey = format(day, 'yyyy-MM-dd');
+    const updateData = isCompleted
+        ? { completedDates: arrayUnion(dayKey) }
+        : { completedDates: arrayRemove(dayKey) };
+        
+    await updateDoc(doc(db, 'tasks', task.id), updateData);
 };

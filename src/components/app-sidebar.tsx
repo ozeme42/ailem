@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
@@ -16,6 +16,7 @@ export function AppSidebar() {
   const menuItems = [
     { href: "/", label: "Ana Sayfa", icon: Home },
     { href: "/tasks", label: "Görevler", icon: ListTodo },
+    { href: "/habits", label: "Alışkanlıklar", icon: Zap },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },
     { href: "/goals", label: "Yol Haritaları", icon: Target },
@@ -64,7 +65,7 @@ export function AppSidebar() {
                 <Link href={item.href} legacyBehavior={false} passHref>
                     <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith(item.href) && (!item.subItems || pathname === item.href)}
+                    isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/')}
                     tooltip={item.label}
                     >
                     <span>

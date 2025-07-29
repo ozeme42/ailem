@@ -23,6 +23,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Checkbox } from "./ui/checkbox";
+import { usePathname } from "next/navigation";
 
 const subtaskSchema = z.object({
   title: z.string().min(3, "Alt görev başlığı en az 3 karakter olmalıdır."),
@@ -61,6 +62,8 @@ type NewTaskFormProps = {
 
 export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewTaskFormProps) {
   const { toast } = useToast();
+  const pathname = usePathname();
+  const isHabitPage = pathname === '/habits';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -68,7 +71,8 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
       title: "",
       category: "Ev İşleri",
       subtasks: [],
-      isRecurring: false,
+      isRecurring: isHabitPage,
+      recurrenceType: isHabitPage ? 'daily' : undefined,
       recurrenceDays: [],
     },
   });
@@ -102,14 +106,14 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
           subtasks: [],
           assigneeId: undefined,
           dueDate: undefined,
-          isRecurring: false,
-          recurrenceType: undefined,
+          isRecurring: isHabitPage,
+          recurrenceType: isHabitPage ? 'daily' : undefined,
           recurrenceDays: [],
           recurrenceEndDate: undefined,
           totalOccurrences: undefined,
        });
     }
-  }, [taskToEdit, form]);
+  }, [taskToEdit, form, isHabitPage]);
 
   const difficultyPoints = {
     "Kolay": 10,
@@ -134,6 +138,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
             isRecurring: values.isRecurring,
             completedOccurrences: 0,
             streak: 0,
+            completedDates: [],
         };
 
         const taskData: any = { ...baseTaskData };
