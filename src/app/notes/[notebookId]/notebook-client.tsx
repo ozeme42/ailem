@@ -1,23 +1,24 @@
 
-
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { Notebook as NotebookType, NotebookSection, Note } from '@/lib/data';
+import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
 import { onNotebookDetailsUpdate, addSectionToNotebook, addNoteToSection, deleteNoteFromSection, updateNoteInSection } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { NoteEditor } from './note-editor';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
+import { migrateImage } from '@/ai/flows/migrate-image-flow';
+
 
 interface NotebookDetails {
   notebook: NotebookType;
@@ -35,8 +36,10 @@ export default function NotebookClient() {
   const [activeTab, setActiveTab] = useState<string>('');
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
-  const [isNoteEditorOpen, setIsNoteEditorOpen] = useState(false);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
+
 
   useEffect(() => {
     if (!notebookId || !user) return;
@@ -51,7 +54,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user]);
+  }, [notebookId, user, activeTab]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -67,23 +70,37 @@ export default function NotebookClient() {
     }
   };
 
-  const handleSaveNote = async (noteData: Partial<Note>) => {
+  const handleAddNewNote = async () => {
     if (!details || !activeTab) return;
     try {
-      if (editingNote) {
-        await updateNoteInSection(details.notebook.id, editingNote.id, noteData);
-        toast({ title: 'Not Güncellendi' });
-      } else {
-        await addNoteToSection(details.notebook.id, activeTab, noteData);
-        toast({ title: 'Not Eklendi' });
-      }
-      setIsNoteEditorOpen(false);
-      setEditingNote(null);
+        await addNoteToSection(details.notebook.id, activeTab, { title: "Yeni Not", content: [{id: Date.now().toString(), type: 'text', data: ''}]});
     } catch (error) {
-      toast({ title: 'Hata', variant: 'destructive' });
+        toast({ title: 'Hata', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveNote = async (noteId: string, data: Partial<Note>) => {
+    if (!details) return;
+    try {
+        await updateNoteInSection(details.notebook.id, noteId, data);
+        toast({ title: 'Not Kaydedildi' });
+    } catch (error) {
+        toast({ title: 'Hata', variant: 'destructive' });
+    } finally {
+        setEditingNoteId(null);
+        setNoteChanges({});
     }
   };
   
+  const handleNoteBlur = (noteId: string) => {
+    if (noteId === editingNoteId && Object.keys(noteChanges).length > 0) {
+        handleSaveNote(noteId, noteChanges);
+    } else {
+        setEditingNoteId(null);
+        setNoteChanges({});
+    }
+  };
+
   const handleDeleteNote = async (noteId: string) => {
     if(!details) return;
     try {
@@ -93,11 +110,10 @@ export default function NotebookClient() {
       toast({ title: 'Hata', description: "Not silinirken bir sorun oluştu.", variant: 'destructive' });
     }
   };
-
-  const handleEditNote = (note: Note) => {
-    setEditingNote(note);
-    setIsNoteEditorOpen(true);
-  };
+  
+  const handleNoteUpdate = (key: keyof Note, value: any) => {
+    setNoteChanges(prev => ({...prev, [key]: value}));
+  }
 
   if (!details) {
     return <div>Yükleniyor...</div>;
@@ -147,71 +163,155 @@ export default function NotebookClient() {
         {sections.map(section => (
           <TabsContent key={section.id} value={section.id} className="flex-grow min-h-0 mt-4">
             <div className="h-full flex flex-col">
-                <Button className="w-full mb-4" onClick={() => { setEditingNote(null); setIsNoteEditorOpen(true); }}>
+                <Button className="w-full mb-4" onClick={handleAddNewNote}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
                 </Button>
                 <div className="flex-grow overflow-y-auto pr-2 -mr-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {notes.filter(note => note.sectionId === section.id).map(note => {
-                            const firstImage = note.content.find(block => block.type === 'image')?.data;
-                            const firstText = note.content.find(block => block.type === 'text')?.data;
-                            const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
-
-                            return (
-                                <div key={note.id} className={cn("group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border", noteColor)}>
-                                    <div className="relative aspect-video bg-muted cursor-pointer" onClick={() => handleEditNote(note)}>
-                                        {firstImage ? (
-                                            <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" data-ai-hint="note image" />
-                                        ) : (
-                                            <div className="p-4">
-                                                <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                                                <p className="text-sm text-black/70 mt-2 line-clamp-3">{firstText}</p>
-                                            </div>
-                                        )}
-                                        {firstImage && (
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-4 flex flex-col justify-end">
-                                                <h3 className="font-bold text-white text-lg">{note.title}</h3>
-                                                <p className="text-xs text-white/80 line-clamp-2">{firstText}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); handleEditNote(note);}}><Edit className="h-4 w-4"/></Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <DialogTitle>Notu Sil?</DialogTitle>
-                                                    <AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooterComponent>
-                                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteNote(note.id)}>Sil</AlertDialogAction>
-                                                </AlertDialogFooterComponent>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {notes.filter(note => note.sectionId === section.id).map(note => (
+                            <StickyNoteCard 
+                                key={note.id}
+                                note={note}
+                                isEditing={editingNoteId === note.id}
+                                onStartEdit={() => { setEditingNoteId(note.id); setNoteChanges({}); }}
+                                onBlur={() => handleNoteBlur(note.id)}
+                                onUpdate={handleNoteUpdate}
+                                onSave={() => handleSaveNote(note.id, noteChanges)}
+                                onDelete={() => handleDeleteNote(note.id)}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
           </TabsContent>
         ))}
       </Tabs>
-      
-      <Dialog open={isNoteEditorOpen} onOpenChange={setIsNoteEditorOpen}>
-          <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 border-0 bg-transparent shadow-none">
-              <NoteEditor
-                  initialNote={editingNote}
-                  onSave={handleSaveNote}
-                  onCancel={() => setIsNoteEditorOpen(false)}
-              />
-          </DialogContent>
-      </Dialog>
     </div>
   );
 }
+
+
+// STICKY NOTE CARD COMPONENT
+interface StickyNoteCardProps {
+    note: Note;
+    isEditing: boolean;
+    onStartEdit: () => void;
+    onBlur: () => void;
+    onUpdate: (key: keyof Note, value: any) => void;
+    onSave: () => void;
+    onDelete: () => void;
+}
+
+function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave, onDelete }: StickyNoteCardProps) {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = React.useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
+    const firstImage = note.content.find(b => b.type === 'image')?.data;
+    const firstText = note.content.find(b => b.type === 'text')?.data || "";
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && user) {
+            setIsLoading(true);
+            toast({ title: 'Görsel yükleniyor...' });
+            try {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const dataUri = reader.result as string;
+                    const destinationPath = `note-images/${user.uid}-${Date.now()}`;
+                    const result = await migrateImage({ imageDataUri: dataUri, destinationPath });
+                    if (result.success && result.newUrl) {
+                        const newBlock: NoteContentBlock = { id: Date.now().toString(), type: 'image', data: result.newUrl };
+                        const newContent = [...note.content, newBlock];
+                        onUpdate('content', newContent);
+                        toast({ title: 'Görsel Yüklendi' });
+                    } else {
+                        throw new Error(result.error || 'Görsel yüklenemedi.');
+                    }
+                    setIsLoading(false);
+                };
+            } catch (error: any) {
+                toast({ title: 'Hata', description: error.message, variant: 'destructive' });
+                setIsLoading(false);
+            }
+        }
+    }
+    
+    if (isEditing) {
+        return (
+            <div className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
+                <Input
+                    placeholder="Not Başlığı"
+                    defaultValue={note.title}
+                    onBlur={(e) => onUpdate('title', e.target.value)}
+                    className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80"
+                />
+                 {note.content.map(block => (
+                    <div key={block.id} className="group relative">
+                        {block.type === 'text' && (
+                            <Textarea
+                                placeholder="Yazmaya başla..."
+                                defaultValue={block.data}
+                                onBlur={(e) => onUpdate('content', note.content.map(b => b.id === block.id ? {...b, data: e.target.value} : b))}
+                                className="text-sm bg-transparent border-0 focus-visible:ring-0"
+                            />
+                        )}
+                        {block.type === 'image' && (
+                             <div className="relative">
+                                <Image src={block.data} alt="Not içeriği" width={200} height={150} className="rounded-md object-cover w-full h-auto" data-ai-hint="note image" />
+                             </div>
+                        )}
+                    </div>
+                ))}
+                <div className="flex justify-between items-center mt-2">
+                    <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                             {isLoading ? <Loader2 className="animate-spin h-4 w-4"/> : <ImageIcon className="h-4 w-4" />}
+                        </Button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                    </div>
+                    <div className="flex gap-1">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooterComponent>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
+                                </AlertDialogFooterComponent>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        <Button variant="ghost" size="sm" onClick={onSave}>Kaydet</Button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className={cn("group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border cursor-pointer", noteColor)} onClick={onStartEdit}>
+            <div className="relative aspect-video bg-muted">
+                {firstImage ? (
+                    <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" data-ai-hint="note image" />
+                ) : (
+                    <div className="p-4">
+                        <h3 className="font-semibold text-lg text-black">{note.title}</h3>
+                        <p className="text-sm text-black/70 mt-2 line-clamp-3">{firstText}</p>
+                    </div>
+                )}
+                {firstImage && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-4 flex flex-col justify-end">
+                        <h3 className="font-bold text-white text-lg">{note.title}</h3>
+                        <p className="text-xs text-white/80 line-clamp-2">{firstText}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
