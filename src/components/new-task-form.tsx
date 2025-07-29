@@ -179,7 +179,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
   return (
     <Form {...form}>
        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-         <ScrollArea className="flex-grow -mx-6 px-6">
+         <ScrollArea className="flex-grow -mx-6 px-6 min-h-0">
             <div className="space-y-4 pb-4">
                 <FormField
                 control={form.control}
