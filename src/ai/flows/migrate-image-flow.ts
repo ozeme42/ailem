@@ -11,6 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 import fetch from 'node-fetch';
+import 'dotenv/config';
 
 const MigrateImageInputSchema = z.object({
   sourceUrl: z.string().url('A valid URL of the image to migrate.').optional(),
