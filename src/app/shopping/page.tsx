@@ -123,26 +123,55 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, listType }: {
     );
 };
 
-const ListCard = ({ list, colorClass, onClick }: { list: ShoppingList | ShoppingNoteList; colorClass: string; onClick: () => void }) => {
+const ListCard = ({ list, colorClass, onClick, onDelete }: { 
+    list: ShoppingList | ShoppingNoteList; 
+    colorClass: string; 
+    onClick: () => void;
+    onDelete: (id: string, type: 'shopping' | 'note') => void;
+}) => {
     const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
-    const items = 'items' in list ? list.items : [];
-    const pendingItems = items.filter((item: any) => !(item.isBought || item.completed)).length;
-    const totalItems = items.length;
-
-    const description = 'items' in list 
-        ? (pendingItems > 0 ? `${pendingItems} öğe kaldı` : (totalItems > 0 ? 'Tüm öğeler alındı' : 'Liste boş'))
-        : `${totalItems} ihtiyaç`;
+    const isShoppingList = 'isBought' in (list.items?.[0] || {});
+    const items = list.items || [];
+    
+    let description = "";
+    if (isShoppingList) {
+        const pendingItems = items.filter(item => !(item as ShoppingListItemType).isBought).length;
+        description = pendingItems > 0 ? `${pendingItems} öğe kaldı` : (items.length > 0 ? 'Tüm öğeler alındı' : 'Liste boş');
+    } else {
+        description = `${items.length} ihtiyaç`;
+    }
 
     return (
-        <div onClick={onClick} className={cn("flex items-center gap-4 text-white px-4 min-h-[72px] py-2 cursor-pointer rounded-lg shadow-sm border-0", colorClass)}>
-            <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                <Icon className="h-6 w-6" />
+        <div className="relative group">
+            <div onClick={onClick} className={cn("flex items-center gap-4 text-white px-4 min-h-[72px] py-2 cursor-pointer rounded-lg shadow-sm border-0", colorClass)}>
+                <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
+                    <Icon className="h-6 w-6" />
+                </div>
+                <div className="flex flex-col justify-center">
+                    <p className="text-base font-medium leading-normal line-clamp-1">{list.name}</p>
+                    <p className="text-white/80 text-sm font-normal leading-normal line-clamp-2">
+                        {description}
+                    </p>
+                </div>
             </div>
-            <div className="flex flex-col justify-center">
-                <p className="text-base font-medium leading-normal line-clamp-1">{list.name}</p>
-                <p className="text-white/80 text-sm font-normal leading-normal line-clamp-2">
-                    {description}
-                </p>
+             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button variant="destructive" size="icon" className="h-8 w-8 bg-black/30 hover:bg-black/50 border-0" onClick={(e) => e.stopPropagation()}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                            <AlertDialogTitleComponent>"{list.name}" listesini sil?</AlertDialogTitleComponent>
+                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(list.id, isShoppingList ? 'shopping' : 'note')}>Sil</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     );
@@ -321,6 +350,19 @@ export default function ShoppingPage() {
       setSelectedListColor(color);
   };
   
+    const handleDeleteList = async (id: string, type: 'shopping' | 'note') => {
+        try {
+            if (type === 'shopping') {
+                await deleteShoppingList(id);
+            } else {
+                await deleteShoppingNoteList(id);
+            }
+            toast({ title: "Liste Silindi", variant: "destructive" });
+        } catch (error) {
+            toast({ title: "Hata", description: "Liste silinirken bir sorun oluştu.", variant: "destructive" });
+        }
+    };
+
   if (!isLoaded) {
     return (
       <div className="space-y-6">
@@ -538,7 +580,13 @@ export default function ShoppingPage() {
                   (shoppingLists || []).map((list, index) => {
                   const color = brightColors[index % brightColors.length];
                   return (
-                      <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectList(list as ShoppingList, cn("bg-gradient-to-br", color.gradient))} />
+                      <ListCard 
+                        key={list.id} 
+                        list={list} 
+                        colorClass={cn("bg-gradient-to-br", color.gradient)} 
+                        onClick={() => handleSelectList(list as ShoppingList, cn("bg-gradient-to-br", color.gradient))}
+                        onDelete={handleDeleteList}
+                       />
                   )
                   })
               ) : (
@@ -554,7 +602,13 @@ export default function ShoppingPage() {
                   (noteLists || []).map((list, index) => {
                       const color = brightColors[(index + 3) % brightColors.length]; // Use different colors
                       return (
-                          <ListCard key={list.id} list={list} colorClass={cn("bg-gradient-to-br", color.gradient)} onClick={() => handleSelectNoteList(list as ShoppingNoteList, cn("bg-gradient-to-br", color.gradient))} />
+                          <ListCard 
+                            key={list.id} 
+                            list={list} 
+                            colorClass={cn("bg-gradient-to-br", color.gradient)} 
+                            onClick={() => handleSelectNoteList(list as ShoppingNoteList, cn("bg-gradient-to-br", color.gradient))}
+                            onDelete={handleDeleteList}
+                          />
                       )
                   })
               ) : (
@@ -570,3 +624,4 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
