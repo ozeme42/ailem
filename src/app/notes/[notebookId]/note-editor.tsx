@@ -14,6 +14,7 @@ import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { useAuth } from '@/components/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 
 interface NoteEditorProps {
@@ -76,16 +77,18 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
   const handleSave = () => {
     onSave({ title, content: blocks });
   };
+  
+  const noteColorClass = initialNote?.color || 'bg-yellow-100 border-yellow-200';
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={cn("flex flex-col h-full rounded-lg p-4", noteColorClass)}>
       <Input
         placeholder="Not Başlığı"
         value={title}
         onChange={e => setTitle(e.target.value)}
-        className="text-xl font-bold border-0 shadow-none focus-visible:ring-0 px-2 mb-2"
+        className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 px-2 mb-2 bg-transparent placeholder:text-muted-foreground/80"
       />
-      <ScrollArea className="flex-grow border rounded-md p-2">
+      <ScrollArea className="flex-grow bg-background/50 rounded-md p-2">
         <div className="space-y-4">
           {blocks.map(block => (
             <div key={block.id} className="group relative">
@@ -94,7 +97,7 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                     placeholder="Yazmaya başla..."
                     value={block.data}
                     onChange={e => updateBlock(block.id, e.target.value)}
-                    className="min-h-[120px] text-base"
+                    className="min-h-[120px] text-base bg-transparent border-0 focus-visible:ring-0"
                 />
                 )}
                  {block.type === 'image' && (
@@ -114,7 +117,6 @@ export function NoteEditor({ initialNote, onSave, onCancel }: NoteEditorProps) {
                  <Button variant="ghost" size="sm" onClick={() => addBlock('text')}><PlusCircle className="mr-2 h-4 w-4"/> Metin</Button>
                  <Button variant="ghost" size="sm" onClick={() => addBlock('image')}><ImageIcon className="mr-2 h-4 w-4"/> Resim</Button>
                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                 {/* <Button variant="ghost" size="sm" disabled><Mic className="mr-2 h-4 w-4"/> Ses</Button> */}
             </div>
             <div className="flex gap-2">
                 <Button variant="ghost" onClick={onCancel}>İptal</Button>

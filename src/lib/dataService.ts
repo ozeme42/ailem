@@ -2,6 +2,7 @@
 
 
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -1074,6 +1075,13 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
 };
 
 // Notes Feature
+const noteColors = [
+    'bg-yellow-100 border-yellow-200',
+    'bg-blue-100 border-blue-200',
+    'bg-green-100 border-green-200',
+    'bg-pink-100 border-pink-200',
+    'bg-purple-100 border-purple-200',
+];
 export const onNotebooksUpdate = (callback: (notebooks: Notebook[]) => void) => onFamilyDataUpdate<Notebook>('notebooks', callback);
 export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
     const familyId = await getCurrentFamilyId();
@@ -1153,6 +1161,7 @@ export const addNoteToSection = async (notebookId: string, sectionId: string, no
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         tags: [],
+        color: noteColors[Math.floor(Math.random() * noteColors.length)],
     };
     return addDoc(collection(db, 'notes'), newNote);
 };

@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { NoteEditor } from './note-editor';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface NotebookDetails {
   notebook: NotebookType;
@@ -44,14 +45,13 @@ export default function NotebookClient() {
       if (data && data.notebook.sections.length > 0 && !activeTab) {
         setActiveTab(data.notebook.sections[0].id);
       } else if (data && data.notebook.sections.length > 0 && !data.notebook.sections.some(s => s.id === activeTab)) {
-        // If the active tab was deleted, reset to the first one
         setActiveTab(data.notebook.sections[0].id);
       } else if (data && data.notebook.sections.length === 0) {
         setActiveTab('');
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -155,16 +155,17 @@ export default function NotebookClient() {
                         {notes.filter(note => note.sectionId === section.id).map(note => {
                             const firstImage = note.content.find(block => block.type === 'image')?.data;
                             const firstText = note.content.find(block => block.type === 'text')?.data;
+                            const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
 
                             return (
-                                <div key={note.id} className="group relative border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                <div key={note.id} className={cn("group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border", noteColor)}>
                                     <div className="relative aspect-video bg-muted cursor-pointer" onClick={() => handleEditNote(note)}>
                                         {firstImage ? (
                                             <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" data-ai-hint="note image" />
                                         ) : (
                                             <div className="p-4">
-                                                <h3 className="font-semibold text-lg">{note.title}</h3>
-                                                <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{firstText}</p>
+                                                <h3 className="font-semibold text-lg text-black">{note.title}</h3>
+                                                <p className="text-sm text-black/70 mt-2 line-clamp-3">{firstText}</p>
                                             </div>
                                         )}
                                         {firstImage && (
@@ -181,11 +182,14 @@ export default function NotebookClient() {
                                                 <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter>
+                                                <AlertDialogHeader>
+                                                    <DialogTitle>Notu Sil?</DialogTitle>
+                                                    <AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooterComponent>
                                                     <AlertDialogCancel>İptal</AlertDialogCancel>
                                                     <AlertDialogAction onClick={() => handleDeleteNote(note.id)}>Sil</AlertDialogAction>
-                                                </AlertDialogFooter>
+                                                </AlertDialogFooterComponent>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
@@ -200,10 +204,7 @@ export default function NotebookClient() {
       </Tabs>
       
       <Dialog open={isNoteEditorOpen} onOpenChange={setIsNoteEditorOpen}>
-          <DialogContent className="max-w-2xl h-[80vh] flex flex-col">
-              <DialogHeader>
-                  <DialogTitle>{editingNote ? 'Notu Düzenle' : 'Yeni Not Oluştur'}</DialogTitle>
-              </DialogHeader>
+          <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 border-0 bg-transparent shadow-none">
               <NoteEditor
                   initialNote={editingNote}
                   onSave={handleSaveNote}
