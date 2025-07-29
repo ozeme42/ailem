@@ -171,13 +171,18 @@ export interface Goal {
     sectionCount: number;
 }
 
+export interface Verse {
+    id: string;
+    text: string;
+}
+
 export interface MemorizationItem {
     id: string;
     familyId: string;
     title: string;
     tags: string[];
-    content?: string;
     imageUrl?: string;
+    verses?: Verse[];
 }
 
 export interface MemorizationProgress {
@@ -478,5 +483,3 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId'>[] = [
         isArchived: false,
     }
 ]
-
-    
