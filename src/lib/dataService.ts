@@ -312,10 +312,10 @@ export const deleteTag = async (tagType: TagType, tagToDelete: string, itemType:
 
 // Tasks
 export const onTasksUpdate = (callback: (tasks: Task[]) => void) => onFamilyDataUpdate<Task>('tasks', callback);
-export const addTask = async (data: Omit<Task, 'id' | 'familyId'>) => {
+export const addTask = async (data: Omit<Task, 'id' | 'familyId' | 'createdAt'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'tasks'), { ...data, familyId });
+    return addDoc(collection(db, 'tasks'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
 export const deleteTask = (id: string) => deleteDoc(doc(db, "tasks", id));
 
@@ -680,7 +680,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
         { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
     ];
 
-    const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId'>[] = [
+    const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId' | 'createdAt'>[] = [
         { title: 'Odanı Topla', points: 20, dueDate: '2024-08-15', completed: false, category: 'Ev İşleri', subtasks: [{id: 's1', title: 'Yatağını düzelt', completed: true}, {id: 's2', title: 'Oyuncakları topla', completed: false}] },
         { title: 'Matematik Ödevi', points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [] },
     ];
@@ -787,7 +787,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     // Initial Tasks - assign to the new user
     initialTasks.forEach(task => {
         const docRef = doc(collection(db, 'tasks'));
-        batch.set(docRef, { ...task, familyId, assigneeId: userId });
+        batch.set(docRef, { ...task, familyId, assigneeId: userId, createdAt: new Date().toISOString() });
     });
 
     // Initial Shopping List
