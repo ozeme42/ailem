@@ -561,7 +561,7 @@ export default function Home() {
                 </Link>
             </div>
              <div className="grid grid-cols-2">
-                 <Link href="/shopping" className="group block">
+                 <Link href="/needs" className="group block">
                     <div className="flex flex-col p-4 rounded-l-xl shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ListChecks /> İhtiyaçlar</h3>
                     </div>
