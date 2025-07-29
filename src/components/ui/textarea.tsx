@@ -1,37 +1,43 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,
-  React.ComponentProps<'textarea'>
->(({ className, value, ...props }, ref) => {
+  React.ComponentProps<"textarea">
+>(({ className, ...props }, ref) => {
+  const internalRef = React.useRef<HTMLTextAreaElement>(null);
+  const compositeRef = (el: HTMLTextAreaElement) => {
+    if (typeof ref === 'function') {
+      ref(el);
+    } else if (ref) {
+      ref.current = el;
+    }
+    (internalRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+  };
+
+  React.useLayoutEffect(() => {
+    const textarea = internalRef.current;
+    if (textarea) {
+      // Reset height to shrink on delete
+      textarea.style.height = 'inherit';
+      // Set height
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [props.value]); // Recalculate on value change
+
   return (
-    <div className="grid w-full">
-      <textarea
-        className={cn(
-          'col-start-1 row-start-1 resize-none overflow-hidden',
-          'flex min-h-[40px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-          className
-        )}
-        ref={ref}
-        rows={1}
-        value={value}
-        {...props}
-      />
-      {/* This div is a "shadow" element that grows with the content, forcing the grid cell to expand. The textarea then fills the cell. */}
-      <div
-        className={cn(
-          'pointer-events-none col-start-1 row-start-1 invisible whitespace-pre-wrap',
-          'flex min-h-[40px] w-full rounded-md px-3 py-2 text-base md:text-sm',
-           className
-        )}
-      >
-        {/* Add a non-breaking space to ensure the div has height even when empty, matching textarea's min-height */}
-        {value}&nbsp;
-      </div>
-    </div>
+    <textarea
+      className={cn(
+        "flex w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "resize-none overflow-hidden",
+        className
+      )}
+      ref={compositeRef}
+      rows={1}
+      {...props}
+    />
   );
 });
-Textarea.displayName = 'Textarea';
+Textarea.displayName = "Textarea";
 
 export { Textarea };

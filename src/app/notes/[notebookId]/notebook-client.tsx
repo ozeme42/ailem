@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -89,7 +89,7 @@ export default function NotebookClient() {
     };
     try {
         await updateNoteInSection(details.notebook.id, noteId, noteChanges);
-        toast({ title: 'Not Kaydedildi' });
+        // toast({ title: 'Not Kaydedildi' }); // Otomatik kaydetme olduğu için her seferinde bildirim göstermeyebiliriz.
     } catch (error) {
         toast({ title: 'Hata', variant: 'destructive' });
     } finally {
@@ -158,7 +158,7 @@ export default function NotebookClient() {
         </div>
         
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow overflow-y-auto">
+          <TabsContent key={section.id} value={section.id} className="mt-4">
             <Button className="w-full mb-4" onClick={handleAddNewNote}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
             </Button>
@@ -204,12 +204,11 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     const { toast } = useToast();
     const [isLoading, setIsLoading] = React.useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const noteRef = useRef<HTMLDivElement>(null);
+    const cardRef = useRef<HTMLDivElement>(null);
     
     const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
     const firstImage = note.content.find(b => b.type === 'image')?.data;
-    const textBlocks = note.content.filter(b => b.type === 'text');
-
+    
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && user) {
@@ -241,7 +240,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (isEditing && noteRef.current && !noteRef.current.contains(event.target as Node)) {
+            if (isEditing && cardRef.current && !cardRef.current.contains(event.target as Node)) {
                 onSave();
             }
         };
@@ -251,14 +250,20 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         };
     }, [isEditing, onSave]);
 
+    const handleTextUpdate = (blockId: string, newText: string) => {
+        const newContent = note.content.map(b => 
+            b.id === blockId ? { ...b, data: newText } : b
+        );
+        onUpdate('content', newContent);
+    };
     
     if (isEditing) {
         return (
-            <div ref={noteRef} className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
+            <div ref={cardRef} className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
                 <Input
                     placeholder="Not Başlığı"
                     defaultValue={note.title}
-                    onChange={(e) => onUpdate('title', e.target.value)}
+                    onBlur={(e) => onUpdate('title', e.target.value)}
                     className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80"
                     autoFocus
                 />
@@ -268,7 +273,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                             <Textarea
                                 placeholder="Yazmaya başla..."
                                 defaultValue={block.data}
-                                onChange={(e) => onUpdate('content', note.content.map(b => b.id === block.id ? {...b, data: e.target.value} : b))}
+                                onBlur={(e) => handleTextUpdate(block.id, e.target.value)}
                                 className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none"
                             />
                         )}
@@ -292,10 +297,10 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooterComponent>
+                            <AlertDialogFooter>
                                 <AlertDialogCancel>İptal</AlertDialogCancel>
                                 <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
-                            </AlertDialogFooterComponent>
+                            </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
@@ -304,7 +309,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     }
 
     return (
-        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col", noteColor)} onClick={onStartEdit}>
+        <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col h-fit", noteColor)} onClick={onStartEdit}>
             {firstImage && (
                 <div className="relative w-full aspect-video">
                     <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image"/>
@@ -312,7 +317,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
             )}
             <div className="p-4 flex-grow flex flex-col">
                 <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                {textBlocks.map(block => (
+                {note.content.filter(b => b.type === 'text').map(block => (
                      <p key={block.id} className={cn("text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap")}>{block.data}</p>
                 ))}
             </div>
