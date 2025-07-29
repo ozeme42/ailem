@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -9,9 +10,9 @@ import { onNotebookDetailsUpdate, addSectionToNotebook, addNoteToSection, delete
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 
 interface NotebookDetails {
@@ -232,6 +234,13 @@ export default function NotebookClient() {
   );
 }
 
+const noteColors = [
+    { name: 'Sarı', class: 'bg-yellow-100 border-yellow-200 text-yellow-900' },
+    { name: 'Mavi', class: 'bg-blue-100 border-blue-200 text-blue-900' },
+    { name: 'Yeşil', class: 'bg-green-100 border-green-200 text-green-900' },
+    { name: 'Pembe', class: 'bg-pink-100 border-pink-200 text-pink-900' },
+    { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900' },
+];
 
 // STICKY NOTE CARD COMPONENT
 interface StickyNoteCardProps {
@@ -247,7 +256,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     const cardRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
-    const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
+    const noteColor = note.color || 'bg-yellow-100 border-yellow-200 text-yellow-900';
     
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -291,7 +300,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                     placeholder="Not Başlığı"
                     defaultValue={note.title}
                     onBlur={(e) => onUpdate('title', e.target.value)}
-                    className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80 text-black"
+                    className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80"
                     autoFocus
                 />
                 {note.imageUrl && (
@@ -304,16 +313,28 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                     placeholder="Yazmaya başla..."
                     defaultValue={textContent}
                     onInput={handleTextUpdate}
-                    className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden text-black/80"
+                    className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden"
                     rows={1}
                 />
                 <div className="flex justify-end items-center mt-2">
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="h-4 w-4"/></Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2">
+                           <div className="flex gap-1">
+                             {noteColors.map(color => (
+                                <button key={color.name} aria-label={color.name} className={cn("h-6 w-6 rounded-full", color.class)} onClick={() => onUpdate('color', color.class)} />
+                            ))}
+                           </div>
+                        </PopoverContent>
+                     </Popover>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                             <AlertDialogFooterComponent>
                                 <AlertDialogCancel>İptal</AlertDialogCancel>
                                 <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
@@ -336,7 +357,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                     </DialogTrigger>
                 )}
                 <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onStartEdit}>
-                    <h3 className="font-semibold text-lg text-black">{note.title}</h3>
+                    <h3 className="font-semibold text-lg">{note.title}</h3>
                     {textContent && (
                         <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
                             {textContent}

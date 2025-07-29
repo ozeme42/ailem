@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -15,10 +16,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 import { DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter } from './ui/dialog';
+import { cn } from '@/lib/utils';
+
+
+const notebookColors = [
+    { id: 'gray', class: 'from-gray-700 to-gray-900', name: 'Füme' },
+    { id: 'red', class: 'from-red-500 to-rose-500', name: 'Gül' },
+    { id: 'orange', class: 'from-orange-500 to-amber-500', name: 'Kehribar' },
+    { id: 'green', class: 'from-green-500 to-emerald-500', name: 'Zümrüt' },
+    { id: 'teal', class: 'from-teal-500 to-cyan-500', name: 'Turkuaz' },
+    { id: 'blue', class: 'from-blue-500 to-indigo-600', name: 'Çivit' },
+    { id: 'purple', class: 'from-purple-500 to-fuchsia-600', name: 'Menekşe' },
+];
 
 const formSchema = z.object({
   title: z.string().min(2, 'Defter adı en az 2 karakter olmalıdır.'),
   description: z.string().optional(),
+  color: z.string().optional(),
 });
 
 type NewNotebookFormProps = {
@@ -35,6 +49,7 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
+      color: initialData?.color || notebookColors[0].class,
     },
   });
 
@@ -81,6 +96,35 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
             </FormItem>
           )}
         />
+
+        <FormField
+            control={form.control}
+            name="color"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Defter Rengi</FormLabel>
+                    <FormControl>
+                        <div className="grid grid-cols-4 gap-2">
+                            {notebookColors.map(color => (
+                                <button
+                                    key={color.id}
+                                    type="button"
+                                    className={cn(
+                                        "h-12 rounded-md bg-gradient-to-br", 
+                                        color.class,
+                                        field.value === color.class && "ring-2 ring-offset-2 ring-ring"
+                                    )}
+                                    onClick={() => field.onChange(color.class)}
+                                    aria-label={color.name}
+                                />
+                            ))}
+                        </div>
+                    </FormControl>
+                </FormItem>
+            )}
+        />
+
+
         <DialogFooter>
             <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

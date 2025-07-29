@@ -4,6 +4,7 @@
 
 
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -232,7 +233,7 @@ export interface Notebook {
     title: string;
     description?: string;
     icon?: string;
-    color?: string;
+    color?: string; // e.g., 'from-blue-500 to-indigo-600'
     sections: NotebookSection[];
     createdAt: string; // ISO string
 }

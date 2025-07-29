@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { NewNotebookForm } from '@/components/new-notebook-form';
+import { cn } from '@/lib/utils';
 
 export function NotesClient() {
     const { user } = useAuth();
@@ -33,7 +35,7 @@ export function NotesClient() {
         setIsFormOpen(true);
     };
 
-    const handleFormSubmit = async (data: Omit<NotebookType, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
+    const handleFormSubmit = async (data: Omit<Notebook, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
         if (!user) return;
         try {
             if (editingNotebook) {
@@ -96,14 +98,17 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {notebooks.map(notebook => (
-                <Card key={notebook.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
+                <Card key={notebook.id} className={cn(
+                    "group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform border-0 text-white",
+                    notebook.color ? `bg-gradient-to-br ${notebook.color}` : "bg-gradient-to-br from-gray-700 to-gray-900"
+                )}>
                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(notebook); }}>
+                        <Button variant="secondary" size="icon" className="h-7 w-7 bg-white/20 hover:bg-white/30 text-white" onClick={(e) => { e.stopPropagation(); onEdit(notebook); }}>
                             <Edit className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                                <Button variant="destructive" size="icon" className="h-7 w-7 bg-white/20 hover:bg-white/30 text-white" onClick={(e) => e.stopPropagation()}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </AlertDialogTrigger>
@@ -121,16 +126,17 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
                     </div>
                     <Link href={`/notes/${notebook.id}`} className="block flex flex-col h-full">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <span className="text-2xl">{notebook.icon || '🗒️'}</span>
+                            <CardTitle className="flex items-center gap-3 text-xl">
+                                <span className="text-3xl">{notebook.icon || '🗒️'}</span>
                                 {notebook.title}
                             </CardTitle>
-                            <CardDescription>{notebook.description}</CardDescription>
+                            <CardDescription className="text-white/80">{notebook.description}</CardDescription>
                         </CardHeader>
                         <CardFooter className="mt-auto">
-                            <Button variant="ghost" className="w-full justify-start text-muted-foreground">
-                                <ChevronRight className="mr-2 h-4 w-4"/> Defteri Aç
-                            </Button>
+                            <div className="w-full text-sm font-semibold flex items-center justify-between">
+                                <span>Defteri Aç</span>
+                                <ChevronRight className="h-4 w-4"/> 
+                            </div>
                         </CardFooter>
                     </Link>
                 </Card>
