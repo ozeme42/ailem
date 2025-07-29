@@ -402,6 +402,7 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers,
                         onAddToMember={handleAddToMember}
                         familyMembers={familyMembers}
                         progressMap={memberProgressMap}
+                        selectedMemberId={memberId}
                     />
                 ))}
           </div>
@@ -490,12 +491,15 @@ interface MemorizationItemCardProps {
     isCompleted: boolean;
     familyMembers: FamilyMember[];
     progressMap: Map<string, boolean>;
+    selectedMemberId: string;
     onProgressChange: (isCompleted: boolean) => void;
     onEdit: () => void;
     onDelete: () => void;
     onAddToMember: (itemId: string, memberId: string) => void;
 }
-function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, onEdit, onDelete, onAddToMember, familyMembers, progressMap }: MemorizationItemCardProps) {
+function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, onEdit, onDelete, onAddToMember, familyMembers, progressMap, selectedMemberId }: MemorizationItemCardProps) {
+    const isAddedToCurrentMember = progressMap.has(`${item.id}_${selectedMemberId}`);
+    
     return (
         <Dialog>
              <Card className="flex flex-col group transition-all hover:shadow-md hover:-translate-y-0.5">
@@ -504,9 +508,9 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                         <CardTitle className="text-lg group-hover:text-primary transition-colors">{item.title}</CardTitle>
                     </CardContent>
                 </DialogTrigger>
-                <CardFooter className="p-4 border-t flex items-center justify-between">
+                <CardFooter className="p-2 border-t flex items-center justify-between gap-1">
                     { viewMode === 'items' ? (
-                        <div className="flex items-center space-x-2 w-full cursor-pointer" onClick={() => onProgressChange(!isCompleted)}>
+                        <div className="flex items-center space-x-2 w-full cursor-pointer py-1 px-2" onClick={() => onProgressChange(!isCompleted)}>
                             <Checkbox id={`check-${item.id}`} checked={isCompleted} className="size-5" />
                             <label
                                 htmlFor={`check-${item.id}`}
@@ -516,15 +520,26 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                             </label>
                         </div>
                     ) : (
+                        <>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full text-xs" 
+                            onClick={() => onAddToMember(item.id, selectedMemberId)}
+                            disabled={isAddedToCurrentMember}
+                        >
+                            <UserPlus className="mr-1.5 h-3 w-3"/> 
+                            {isAddedToCurrentMember ? 'Listemde' : 'Listeme Ekle'}
+                        </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <UserPlus className="mr-2 h-4 w-4"/> Listeye Ekle
+                                <Button variant="ghost" size="sm">
+                                    <UserPlus className="mr-1 h-3 w-3"/> Diğer
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuLabel>Kimin Listesine Eklensin?</DropdownMenuLabel>
-                                {familyMembers.map(member => (
+                                <DropdownMenuLabel>Başkasının Listesine Ekle</DropdownMenuLabel>
+                                {familyMembers.filter(m => m.id !== selectedMemberId).map(member => (
                                     <DropdownMenuItem 
                                         key={member.id} 
                                         onClick={() => onAddToMember(item.id, member.id)}
@@ -536,10 +551,11 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        </>
                     )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                                 <Edit className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
