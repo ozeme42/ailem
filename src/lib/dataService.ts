@@ -1,8 +1,4 @@
 
-
-
-
-
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -1097,12 +1093,13 @@ export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'crea
     };
     return addDoc(collection(db, 'notebooks'), newNotebook);
 };
+export const updateNotebook = (id: string, data: Partial<Omit<Notebook, 'id' | 'familyId'>>) => updateDoc(doc(db, 'notebooks', id), data);
 export const deleteNotebook = (id: string) => deleteDoc(doc(db, "notebooks", id));
 
 // Fetches a single notebook and its associated notes
 export const onNotebookDetailsUpdate = (
   notebookId: string,
-  callback: (details: { notebook: NotebookType; notes: Note[] } | null) => void
+  callback: (details: { notebook: Notebook; notes: Note[] } | null) => void
 ) => {
   const notebookRef = doc(db, 'notebooks', notebookId);
 
@@ -1111,7 +1108,7 @@ export const onNotebookDetailsUpdate = (
       callback(null);
       return;
     }
-    const notebookData = { id: notebookSnap.id, ...notebookSnap.data() } as NotebookType;
+    const notebookData = { id: notebookSnap.id, ...notebookSnap.data() } as Notebook;
 
     const notesQuery = query(
       collection(db, 'notes'),
@@ -1135,7 +1132,7 @@ export const addSectionToNotebook = async (notebookId: string, title: string) =>
   const notebookSnap = await getDoc(notebookRef);
 
   if (notebookSnap.exists()) {
-    const notebook = notebookSnap.data() as NotebookType;
+    const notebook = notebookSnap.data() as Notebook;
     const newSection: NotebookSection = {
       id: Date.now().toString(),
       title,
@@ -1162,6 +1159,7 @@ export const addNoteToSection = async (notebookId: string, sectionId: string, no
         updatedAt: new Date().toISOString(),
         tags: [],
         color: noteColors[Math.floor(Math.random() * noteColors.length)],
+        imageUrl: noteData.imageUrl || null,
     };
     return addDoc(collection(db, 'notes'), newNote);
 };
