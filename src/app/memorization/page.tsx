@@ -44,13 +44,6 @@ const itemFormSchema = z.object({
 type ItemFormData = z.infer<typeof itemFormSchema>;
 
 
-const bulkAddJsonSchema = z.array(z.object({
-  title: z.string().min(2, "Başlık en az 2 karakter olmalıdır."),
-  tags: z.array(z.string()).optional(),
-  content: z.string().optional(),
-  imageUrl: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
-})).min(1, "En az bir öğe eklemelisiniz.");
-
 const shelfFormSchema = z.object({
     name: z.string().min(1, "Kategori adı boş olamaz."),
 });
@@ -64,7 +57,7 @@ export default function MemorizationPage() {
     const [progress, setProgress] = React.useState<MemorizationProgress[]>([]);
     
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
+    const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<MemorizationItem | null>(null);
     const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
     
@@ -153,40 +146,26 @@ export default function MemorizationPage() {
     }
   };
   
-  const handleBulkImport = async (importedItems: Partial<MemorizationItem>[]) => {
+  const handleBulkImport = async (titles: string[], category: string) => {
     toast({ title: "İçe Aktarma Başlatıldı" });
-    setIsBulkJsonDialogOpen(false);
+    setIsBulkDialogOpen(false);
 
     try {
-      const allCurrentTags = new Set(allTags);
+      if (category && !allTags.includes(category)) {
+          await updateTags("memorizationTags", [...allTags, category]);
+      }
       
-      for (const item of importedItems) {
-        let finalImageUrl = item.imageUrl;
-
-        if (item.imageUrl) {
-          const destinationPath = `memorization-images/${(item.title || "untitled").replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
-          const migrationResult = await migrateImage({ sourceUrl: item.imageUrl, destinationPath });
-
-          if (migrationResult.success && migrationResult.newUrl) {
-            finalImageUrl = migrationResult.newUrl;
-          } else {
-            toast({ title: "⚠️ Görsel Aktarılamadı", description: `"${item.title}" öğesinin görseli aktarılamadı. Hata: ${migrationResult.error}`, variant: 'destructive' });
-          }
-        }
-
-        (item.tags || []).forEach(tag => allCurrentTags.add(tag));
-        
+      for (const title of titles) {
         const newItemData: Omit<MemorizationItem, 'id' | 'familyId'> = {
-            title: item.title || 'İsimsiz',
-            tags: item.tags || [],
-            content: item.content || '',
-            imageUrl: finalImageUrl || 'https://placehold.co/400x300.png',
+            title: title,
+            tags: category ? [category] : [],
+            content: '',
+            imageUrl: '',
         };
         await addMemorizationItem(newItemData);
       }
 
-      await updateTags("memorizationTags", Array.from(allCurrentTags));
-      toast({ title: "✅ İçe Aktarma Tamamlandı", description: `${importedItems.length} öğe başarıyla eklendi.` });
+      toast({ title: "✅ İçe Aktarma Tamamlandı", description: `${titles.length} öğe başarıyla eklendi.` });
 
     } catch (e) {
       toast({ title: "❌ Toplu Ekleme Hatası", description: "Toplu ekleme sırasında bir hata oluştu.", variant: 'destructive' });
@@ -252,7 +231,7 @@ export default function MemorizationPage() {
           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4"/> Yeni Öğe Ekle
           </Button>
-           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setIsBulkJsonDialogOpen(true)}>
+           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setIsBulkDialogOpen(true)}>
             <FilePlus className="mr-2 h-4 w-4"/> Toplu Ekle
           </Button>
       </PageHeader>
@@ -333,8 +312,13 @@ export default function MemorizationPage() {
           </DialogContent>
       </Dialog>
       
-      {/* Bulk Add JSON Dialog */}
-      <BulkAddJsonDialog open={isBulkJsonDialogOpen} onOpenChange={setIsBulkJsonDialogOpen} onImport={handleBulkImport} />
+      {/* Bulk Add Text Dialog */}
+      <BulkAddTextDialog 
+        open={isBulkDialogOpen} 
+        onOpenChange={setIsBulkDialogOpen} 
+        onImport={handleBulkImport}
+        existingTags={allTags}
+      />
 
       {/* Edit Shelf Dialog */}
         <Dialog open={!!editingShelf} onOpenChange={(open) => !open && setEditingShelf(null)}>
@@ -664,63 +648,64 @@ function ItemShelf({ items, onEdit, onDelete, memberId, progress }: { items: Mem
   );
 }
 
-// BULK ADD JSON DIALOG
-function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, onOpenChange: (open: boolean) => void, onImport: (items: Partial<MemorizationItem>[]) => void }) {
-    const [jsonInput, setJsonInput] = useState('');
-    const [error, setError] = useState<string | null>(null);
+
+// BULK ADD TEXT DIALOG
+function BulkAddTextDialog({ open, onOpenChange, onImport, existingTags }: { open: boolean, onOpenChange: (open: boolean) => void, onImport: (titles: string[], category: string) => void, existingTags: string[] }) {
+    const [textInput, setTextInput] = useState('');
+    const [category, setCategory] = useState('');
     const [isImporting, setIsImporting] = useState(false);
+    const { toast } = useToast();
 
     const handleImportClick = () => {
-        setError(null);
-        if (!jsonInput.trim()) return setError("Lütfen geçerli bir JSON verisi girin.");
-
-        try {
-            const parsed = JSON.parse(jsonInput);
-            const result = bulkAddJsonSchema.safeParse(parsed);
-            if (!result.success) {
-                 const formattedErrors = result.error.errors.map(err => `[${err.path.join('.')}] ${err.message}`).join('\n');
-                 setError(`JSON verisi doğrulanamadı:\n${formattedErrors}`);
-                 return;
-            }
-            setIsImporting(true);
-            onImport(result.data).finally(() => setIsImporting(false));
-            setJsonInput('');
-        } catch (e) {
-            setError("Geçersiz JSON formatı. Lütfen veriyi kontrol edin.");
+        if (!category) {
+            toast({ title: "Hata", description: "Lütfen bir kategori seçin veya oluşturun.", variant: "destructive" });
+            return;
         }
+        const titles = textInput.split('\n').map(t => t.trim()).filter(Boolean);
+        if (titles.length === 0) {
+            toast({ title: "Hata", description: "Lütfen en az bir öğe başlığı girin.", variant: "destructive" });
+            return;
+        }
+        
+        setIsImporting(true);
+        onImport(titles, category).finally(() => setIsImporting(false));
+        setTextInput('');
+        setCategory('');
     };
     
-    const exampleJson = `[
-  {
-    "title": "Fatiha Suresi",
-    "tags": ["Namaz Sureleri"],
-    "content": "Elhamdulillâhi rabbil'alemin..."
-  },
-  {
-    "title": "Sübhaneke Duası",
-    "tags": ["Namaz Duaları", "Otururken Okunanlar"],
-    "imageUrl": "https://example.com/image.jpg"
-  }
-]`;
+    const tagOptions = useMemo(() => {
+        return existingTags
+            .filter(tag => !tag.includes('/'))
+            .map(tag => ({ label: tag, value: tag }));
+    }, [existingTags]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Toplu Öğe Ekle (JSON)</DialogTitle>
+                    <DialogTitle>Toplu Öğe Ekle (Metin)</DialogTitle>
+                    <DialogDescription>
+                       Her satıra bir öğe başlığı gelecek şekilde yapıştırın. Tüm öğeler aşağıdaki seçili kategoriye eklenecektir.
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                    <div>
-                         <Label htmlFor="json-input" className="mb-2 block">JSON Verisi</Label>
-                         <Textarea id="json-input" value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} className="h-64 font-mono text-xs" disabled={isImporting} />
-                         {error && <p className="text-sm font-medium text-destructive mt-2 whitespace-pre-wrap">{error}</p>}
-                    </div>
-                    <div>
-                         <Label className="mb-2 block">Örnek Format</Label>
-                         <Card className="bg-muted/50 p-4 h-64 overflow-auto">
-                            <pre className="text-xs font-mono"><code>{exampleJson}</code></pre>
-                         </Card>
-                    </div>
+                <div className="space-y-4 mt-4">
+                     <Combobox
+                        options={tagOptions}
+                        value={category}
+                        onChange={setCategory}
+                        onCreate={setCategory}
+                        placeholder="Kategori seç veya oluştur..."
+                        notfoundText="Kategori bulunamadı."
+                        createText="Yeni kategori oluştur:"
+                    />
+                    <Textarea 
+                      id="text-input" 
+                      value={textInput} 
+                      onChange={(e) => setTextInput(e.target.value)} 
+                      className="h-48 font-mono text-sm" 
+                      placeholder="Fatiha Suresi&#10;Sübhaneke Duası&#10;..."
+                      disabled={isImporting} 
+                    />
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
