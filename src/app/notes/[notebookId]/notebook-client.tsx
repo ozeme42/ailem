@@ -42,12 +42,15 @@ export default function NotebookClient() {
       setDetails(data);
       if (data && data.notebook.sections.length > 0 && !activeTab) {
         setActiveTab(data.notebook.sections[0].id);
+      } else if (data && data.notebook.sections.length > 0 && !data.notebook.sections.some(s => s.id === activeTab)) {
+        // If the active tab was deleted, reset to the first one
+        setActiveTab(data.notebook.sections[0].id);
       } else if (data && data.notebook.sections.length === 0) {
         setActiveTab('');
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
