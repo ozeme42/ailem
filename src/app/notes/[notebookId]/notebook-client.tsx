@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -50,7 +51,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -151,33 +152,46 @@ export default function NotebookClient() {
                 </Button>
                 <div className="flex-grow overflow-y-auto pr-2 -mr-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {notes.filter(note => note.sectionId === section.id).map(note => (
-                            <div key={note.id} className="group relative bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md" onClick={() => handleEditNote(note)}>
-                                <h3 className="font-semibold">{note.title}</h3>
-                                {note.content[0] && (
-                                    <div className="text-sm text-muted-foreground mt-2 line-clamp-3">
-                                    {note.content[0].type === 'text'
-                                        ? note.content[0].data
-                                        : <span className="flex items-center gap-1">[{note.content[0].type.toUpperCase()}]</span>}
+                        {notes.filter(note => note.sectionId === section.id).map(note => {
+                            const firstImage = note.content.find(block => block.type === 'image')?.data;
+                            const firstText = note.content.find(block => block.type === 'text')?.data;
+
+                            return (
+                                <div key={note.id} className="group relative border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="relative aspect-video bg-muted cursor-pointer" onClick={() => handleEditNote(note)}>
+                                        {firstImage ? (
+                                            <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" data-ai-hint="note image" />
+                                        ) : (
+                                            <div className="p-4">
+                                                <h3 className="font-semibold text-lg">{note.title}</h3>
+                                                <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{firstText}</p>
+                                            </div>
+                                        )}
+                                        {firstImage && (
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-4 flex flex-col justify-end">
+                                                <h3 className="font-bold text-white text-lg">{note.title}</h3>
+                                                <p className="text-xs text-white/80 line-clamp-2">{firstText}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); handleEditNote(note);}}><Edit className="h-4 w-4"/></Button>
-                                    <AlertDialog onOpenChange={(e) => e.stopPropagation()}>
-                                      <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteNote(note.id)}>Sil</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
+                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); handleEditNote(note);}}><Edit className="h-4 w-4"/></Button>
+                                        <AlertDialog onOpenChange={(e) => e.stopPropagation()}>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteNote(note.id)}>Sil</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -200,3 +214,4 @@ export default function NotebookClient() {
     </div>
   );
 }
+
