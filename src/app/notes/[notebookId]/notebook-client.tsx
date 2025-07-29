@@ -6,13 +6,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, addSectionToNotebook, addNoteToSection, deleteNoteFromSection, updateNoteInSection, updateNotebook } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -37,8 +37,10 @@ export default function NotebookClient() {
 
   const [details, setDetails] = useState<NotebookDetails | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
+  
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
-  const [newSectionName, setNewSectionName] = useState('');
+  const [editingSection, setEditingSection] = useState<NotebookSection | null>(null);
+  const [sectionName, setSectionName] = useState('');
   
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
@@ -63,26 +65,70 @@ export default function NotebookClient() {
     });
     return () => unsubscribe();
   }, [notebookId, user, activeTab]);
+  
+  const handleOpenSectionDialog = (section: NotebookSection | null) => {
+    setEditingSection(section);
+    setSectionName(section ? section.title : '');
+    setIsSectionDialogOpen(true);
+  };
 
-  const handleAddSection = async () => {
-    if (newSectionName.trim() && details) {
-      try {
+  const handleSaveSection = async () => {
+    if (!sectionName.trim() || !details) return;
+
+    let newSections: NotebookSection[];
+
+    if (editingSection) { // Editing existing section
+        newSections = details.notebook.sections.map(s => 
+            s.id === editingSection.id ? { ...s, title: sectionName.trim() } : s
+        );
+    } else { // Adding new section
         const newSection: NotebookSection = {
             id: Date.now().toString(),
-            title: newSectionName.trim(),
+            title: sectionName.trim(),
             order: details.notebook.sections.length
         }
-        await updateNotebook(notebookId, { sections: [...details.notebook.sections, newSection] });
-
-        toast({ title: 'Bölüm Eklendi' });
+        newSections = [...details.notebook.sections, newSection];
         setActiveTab(newSection.id);
-        setNewSectionName('');
+    }
+    
+    try {
+        await updateNotebook(notebookId, { sections: newSections });
+        toast({ title: editingSection ? 'Bölüm Güncellendi' : 'Bölüm Eklendi' });
         setIsSectionDialogOpen(false);
-      } catch (e) {
+    } catch (e) {
         toast({ title: 'Hata', variant: 'destructive' });
-      }
     }
   };
+  
+  const handleDeleteSection = async (sectionId: string) => {
+    if (!details) return;
+    
+    // Filter out the section to be deleted
+    const newSections = details.notebook.sections.filter(s => s.id !== sectionId);
+    
+    // Find all notes associated with the section
+    const notesToDelete = details.notes.filter(n => n.sectionId === sectionId);
+
+    try {
+        await updateNotebook(notebookId, { sections: newSections });
+
+        // Delete all notes in the section
+        for (const note of notesToDelete) {
+            await deleteNoteFromSection(notebookId, note.id);
+        }
+        
+        toast({ title: 'Bölüm Silindi', description: 'Bölüm ve içindeki tüm notlar silindi.', variant: 'destructive' });
+        
+        // If the active tab was deleted, switch to the first available tab or empty state
+        if (activeTab === sectionId) {
+            setActiveTab(newSections.length > 0 ? newSections[0].id : '');
+        }
+
+    } catch (e) {
+        toast({ title: 'Hata', description: 'Bölüm silinirken bir sorun oluştu.', variant: 'destructive' });
+    }
+  };
+
 
   const handleAddNewTextNote = async () => {
     if (!details || !activeTab) return;
@@ -170,29 +216,46 @@ export default function NotebookClient() {
         <div className="flex-shrink-0">
           <TabsList className="h-auto">
             {sections.map(section => (
-              <TabsTrigger key={section.id} value={section.id}>
-                {section.title}
-              </TabsTrigger>
+               <div key={section.id} className="group relative pr-2">
+                 <TabsTrigger value={section.id} className="pr-8">
+                    {section.title}
+                 </TabsTrigger>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100">
+                           <MoreVertical className="h-4 w-4"/>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}>
+                            <Edit className="mr-2 h-4 w-4"/> Düzenle
+                        </DropdownMenuItem>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/>Sil
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
+                                    <AlertDialogDescription>
+                                        "{section.title}" bölümünü silmek istediğinizden emin misiniz? Bu işlem, bölümdeki tüm notları kalıcı olarak silecektir.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooterComponent>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction>
+                                </AlertDialogFooterComponent>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </DropdownMenuContent>
+                 </DropdownMenu>
+               </div>
             ))}
-            <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="ml-2">
-                        <PlusCircle className="h-4 w-4"/>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Yeni Bölüm Ekle</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <Input placeholder="Bölüm adı" value={newSectionName} onChange={(e) => setNewSectionName(e.target.value)} />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
-                        <Button onClick={handleAddSection}>Ekle</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+             <Button variant="ghost" size="sm" className="ml-2" onClick={() => handleOpenSectionDialog(null)}>
+                <PlusCircle className="h-4 w-4"/>
+            </Button>
           </TabsList>
         </div>
         
@@ -230,6 +293,26 @@ export default function NotebookClient() {
           </TabsContent>
         ))}
       </Tabs>
+      
+      <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm Ekle"}</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <Input 
+                    placeholder="Bölüm adı" 
+                    value={sectionName} 
+                    onChange={(e) => setSectionName(e.target.value)} 
+                    onKeyDown={(e) => { if(e.key === 'Enter') handleSaveSection()}}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
+                <Button onClick={handleSaveSection}>Kaydet</Button>
+            </DialogFooter>
+        </DialogContent>
+     </Dialog>
     </div>
   );
 }
@@ -308,14 +391,16 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                         <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="note image" />
                      </div>
                 )}
-                <Textarea
-                    ref={textareaRef}
-                    placeholder="Yazmaya başla..."
-                    defaultValue={textContent}
-                    onInput={handleTextUpdate}
-                    className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden"
-                    rows={1}
-                />
+                {Array.isArray(note.content) && (
+                  <Textarea
+                      ref={textareaRef}
+                      placeholder="Yazmaya başla..."
+                      defaultValue={textContent}
+                      onInput={handleTextUpdate}
+                      className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden"
+                      rows={1}
+                  />
+                )}
                 <div className="flex justify-end items-center mt-2">
                      <Popover>
                         <PopoverTrigger asChild>
@@ -334,7 +419,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Notu Sil?</AlertDialogTitle><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                             <AlertDialogFooterComponent>
                                 <AlertDialogCancel>İptal</AlertDialogCancel>
                                 <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
@@ -349,14 +434,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     return (
         <Dialog>
              <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border flex flex-col h-fit", noteColor)}>
-                {note.imageUrl && (
-                    <DialogTrigger asChild>
-                         <div className="relative w-full aspect-video cursor-pointer">
-                            <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image"/>
-                        </div>
-                    </DialogTrigger>
-                )}
-                <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onStartEdit}>
+                 <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onStartEdit}>
                     <h3 className="font-semibold text-lg">{note.title}</h3>
                     {textContent && (
                         <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
@@ -364,6 +442,13 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                         </p>
                     )}
                 </div>
+                {note.imageUrl && (
+                    <DialogTrigger asChild>
+                         <div className="relative w-full aspect-video cursor-pointer mt-auto">
+                            <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-b-lg" data-ai-hint="note image"/>
+                        </div>
+                    </DialogTrigger>
+                )}
                  <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
                         <Edit className="h-4 w-4"/>
