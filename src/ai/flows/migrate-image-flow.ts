@@ -13,6 +13,9 @@ import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 import fetch from 'node-fetch';
 import 'dotenv/config';
 
+// Initialize Firebase Admin SDK at the start of the flow execution context
+const admin = getFirebaseAdmin();
+
 const MigrateImageInputSchema = z.object({
   sourceUrl: z.string().url('A valid URL of the image to migrate.').optional(),
   imageDataUri: z.string().optional(),
@@ -45,7 +48,6 @@ export const migrateImageFlow = ai.defineFlow(
   },
   async ({ sourceUrl, imageDataUri, destinationPath }) => {
     try {
-      const admin = getFirebaseAdmin();
       let imageBuffer: Buffer;
       let contentType: string;
 
@@ -85,10 +87,13 @@ export const migrateImageFlow = ai.defineFlow(
 
     } catch (e: any) {
       console.error("Image migration failed:", e);
-      if (e.code === 'storage/unauthorized' || (e.message && e.message.includes('permission-denied'))) {
+      if (e.code === 'storage/unauthorized' || (e.message && (e.message.includes('permission-denied') || e.message.includes('permission denied')))) {
          return { success: false, error: 'Görsel yükleme yetkisi alınamadı. Lütfen Firebase IAM ayarlarınızı kontrol edin (örn: Storage Admin rolü).' };
       }
-      if (e.message && (e.message.includes('Could not refresh access token') || e.code === 'auth/internal-error')) {
+      if (e.code === 'EAI_AGAIN' || (e.message && e.message.includes('EAI_AGAIN'))) {
+         return { success: false, error: 'DNS çözümleme hatası. İnternet bağlantınızı ve storage.googleapis.com adresine erişiminizi kontrol edin.'};
+      }
+      if (e.message && (e.message.includes('Could not refresh access token') || e.code === 'auth/internal-error' || e.message.includes('Credential implementation provided no access token'))) {
          return { success: false, error: 'Firebase kimlik doğrulaması başarısız. Projenizin Cloud Storage API\'sinin etkin ve faturalandırmanın aktif olduğundan emin olun.' };
       }
       return { success: false, error: e.message || 'Görsel taşınırken beklenmedik bir sunucu hatası oluştu.' };
