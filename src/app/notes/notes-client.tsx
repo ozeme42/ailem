@@ -5,7 +5,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType } from '@/lib/data';
-import { onNotebooksUpdate, addNotebook, deleteNotebook } from '@/lib/dataService';
+import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2, Edit, User, Users, ChevronRight, Notebook as NotebookIcon, StickyNote } from 'lucide-react';
@@ -38,7 +38,7 @@ export function NotesClient() {
         if (!user) return;
         try {
             if (editingNotebook) {
-                // Update logic to be added
+                await updateNotebook(editingNotebook.id, data);
                 toast({ title: 'Not Defteri Güncellendi!' });
             } else {
                 await addNotebook(data);
