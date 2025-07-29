@@ -8,13 +8,12 @@ import { Notebook as NotebookType } from '@/lib/data';
 import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Edit, User, Users, ChevronRight, Notebook as NotebookIcon, StickyNote } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, ChevronRight, Notebook as NotebookIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { NewNotebookForm } from '@/components/new-notebook-form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function NotesClient() {
     const { user } = useAuth();
@@ -59,24 +58,11 @@ export function NotesClient() {
             toast({ title: 'Hata', variant: 'destructive' });
         }
     };
-    
-    const { familyNotebooks, personalNotebooks } = useMemo(() => {
-        const family: NotebookType[] = [];
-        const personal: NotebookType[] = [];
-        notebooks.forEach(nb => {
-            if (nb.isShared) {
-                family.push(nb);
-            } else {
-                personal.push(nb);
-            }
-        });
-        return { familyNotebooks: family, personalNotebooks: personal };
-    }, [notebooks]);
 
     return (
         <div className="space-y-6">
             <PageHeader title="Not Defterleri">
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setEditingNotebook(null); setIsFormOpen(open); }}>
                     <DialogTrigger asChild>
                         <Button onClick={() => handleOpenDialog(null)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
@@ -89,18 +75,7 @@ export function NotesClient() {
                 </Dialog>
             </PageHeader>
             
-            <Tabs defaultValue="family" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="family"><Users className="mr-2 h-4 w-4"/> Aile Defterleri</TabsTrigger>
-                    <TabsTrigger value="personal"><User className="mr-2 h-4 w-4"/> Kişisel Defterlerim</TabsTrigger>
-                </TabsList>
-                <TabsContent value="family" className="mt-4">
-                    <NotebookGrid notebooks={familyNotebooks} onEdit={handleOpenDialog} onDelete={handleDeleteNotebook} />
-                </TabsContent>
-                <TabsContent value="personal" className="mt-4">
-                    <NotebookGrid notebooks={personalNotebooks} onEdit={handleOpenDialog} onDelete={handleDeleteNotebook} />
-                </TabsContent>
-            </Tabs>
+            <NotebookGrid notebooks={notebooks} onEdit={handleOpenDialog} onDelete={handleDeleteNotebook} />
         </div>
     );
 }

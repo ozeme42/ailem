@@ -3,6 +3,7 @@
 
 
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -215,6 +216,7 @@ export interface Note {
     updatedAt: string; // ISO string
     color?: string; // e.g. 'bg-yellow-100 border-yellow-200'
     tags?: string[];
+    imageUrl?: string | null;
 }
 
 export interface NotebookSection {
@@ -227,7 +229,6 @@ export interface Notebook {
     id: string;
     familyId: string;
     ownerId: string; // The user who created it
-    isShared: boolean; // true for family, false for personal
     title: string;
     description?: string;
     icon?: string;

@@ -19,7 +19,6 @@ import { DialogHeader, DialogTitle, DialogDescription as DialogDescriptionCompon
 const formSchema = z.object({
   title: z.string().min(2, 'Defter adı en az 2 karakter olmalıdır.'),
   description: z.string().optional(),
-  isShared: z.boolean().default(false),
 });
 
 type NewNotebookFormProps = {
@@ -36,7 +35,6 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
-      isShared: initialData?.isShared || false,
     },
   });
 
@@ -80,21 +78,6 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
               <FormLabel>Açıklama (Opsiyonel)</FormLabel>
               <FormControl><Textarea placeholder="Bu defterin içeriği hakkında kısa bir bilgi..." {...field} /></FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
-          name="isShared"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <FormLabel>Aile ile Paylaş</FormLabel>
-                <FormDescription>Açık olursa tüm aile üyeleri görebilir.</FormDescription>
-              </div>
-              <FormControl>
-                <Switch checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
             </FormItem>
           )}
         />
