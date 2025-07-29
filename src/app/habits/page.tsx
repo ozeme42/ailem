@@ -3,19 +3,81 @@
 
 import * as React from "react";
 import { useAuth } from "@/components/auth-provider";
-import { onTasksUpdate, updateHabitCompletion } from "@/lib/dataService";
-import type { Task } from "@/lib/data";
+import { onTasksUpdate, updateHabitCompletion, updateTask, deleteTask } from "@/lib/dataService";
+import type { Task, FamilyMember, Subtask } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { NewTaskForm } from "@/components/new-task-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Edit, Trash2, MoreVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { HabitTrackerCard } from "@/components/habit-tracker-card";
 import { useToast } from "@/hooks/use-toast";
+import { format, isSameDay, parseISO } from "date-fns";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+
+function HabitListItem({ task, onToggle, onEdit, onDelete }: { task: Task, onToggle: (task: Task) => void, onEdit: (task: Task) => void, onDelete: (id: string) => void }) {
+    const isCompletedToday = task.completedDates ? task.completedDates.includes(format(new Date(), 'yyyy-MM-dd')) : false;
+
+    const frequencyText = {
+        daily: "Günlük",
+        weekly: "Haftalık",
+        monthly: "Aylık"
+    }[task.recurrenceType || "daily"] || "Tek Seferlik";
+    
+    return (
+        <Card className="p-4 flex items-center gap-4">
+            <Checkbox 
+                id={`habit-${task.id}`}
+                checked={isCompletedToday}
+                onCheckedChange={() => onToggle(task)}
+                className="size-6"
+            />
+            <div className="flex-grow">
+                <label htmlFor={`habit-${task.id}`} className="font-semibold text-lg cursor-pointer">{task.title}</label>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                    <span>Mevcut Seri: <strong className="text-foreground">{task.streak || 0} gün</strong></span>
+                    <span>En İyi Seri: <strong className="text-foreground">{task.bestStreak || 0} gün</strong></span>
+                    {task.totalOccurrences && <span>İlerleme: <strong className="text-foreground">{task.completedOccurrences || 0}/{task.totalOccurrences}</strong></span>}
+                    <span>Sıklık: <strong className="text-foreground">{frequencyText}</strong></span>
+                </div>
+            </div>
+            <div className="flex-shrink-0">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                         <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4"/></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(task)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/>Sil
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitleComponent>Alışkanlığı Sil</AlertDialogTitleComponent>
+                                    <AlertDialogDescription>"{task.title}" alışkanlığını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDelete(task.id)}>Evet, Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </Card>
+    );
+}
+
 
 export default function HabitsPage() {
-  const { familyMembers } = useAuth();
+  const { familyMembers, user } = useAuth();
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
@@ -27,17 +89,42 @@ export default function HabitsPage() {
   }, []);
 
   const habitTasks = React.useMemo(() => {
-    return tasks.filter(task => task.isRecurring && task.recurrenceType === 'daily');
-  }, [tasks]);
+    return tasks.filter(task => task.isRecurring && task.recurrenceType === 'daily' && task.assigneeId === user?.uid);
+  }, [tasks, user]);
 
   const handleOpenNewTask = () => {
     setEditingTask(null);
     setIsTaskFormOpen(true);
   };
   
-  const handleToggleDay = async (task: Task, day: Date, isCompleted: boolean) => {
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setIsTaskFormOpen(true);
+  };
+  
+  const handleDeleteTask = async (taskId: string) => {
     try {
-        await updateHabitCompletion(task, day, isCompleted);
+      await deleteTask(taskId);
+      toast({ title: "Alışkanlık Silindi", variant: "destructive" });
+    } catch (e) {
+      toast({
+        title: "Hata",
+        description: "Alışkanlık silinirken bir hata oluştu.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleToggleCompletion = async (task: Task) => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const isCompleted = task.completedDates?.includes(todayStr) || false;
+    
+    try {
+        await updateHabitCompletion(task, new Date(), !isCompleted);
+         toast({
+            title: isCompleted ? "Geri Alındı" : "🎉 Harika İş!",
+            description: `"${task.title}" alışkanlığı için bugünkü ilerlemen kaydedildi.`,
+        });
     } catch (e) {
         console.error("Failed to update habit:", e);
         toast({
@@ -77,17 +164,15 @@ export default function HabitsPage() {
       
       {habitTasks.length > 0 ? (
         <div className="space-y-4">
-            {habitTasks.map(task => {
-                const assignee = familyMembers.find(m => m.id === task.assigneeId);
-                return (
-                    <HabitTrackerCard 
-                        key={task.id}
-                        task={task}
-                        assignee={assignee}
-                        onToggleDay={handleToggleDay}
-                    />
-                )
-            })}
+            {habitTasks.map(task => (
+                <HabitListItem
+                    key={task.id}
+                    task={task}
+                    onToggle={handleToggleCompletion}
+                    onEdit={handleEditTask}
+                    onDelete={handleDeleteTask}
+                />
+            ))}
         </div>
       ) : (
         <Card>

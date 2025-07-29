@@ -65,6 +65,7 @@ export interface Task {
 
   // Streak tracking for daily tasks
   streak?: number;
+  bestStreak?: number;
   lastCompletedDate?: string; // DEPRECATED: Use completedDates instead for daily habits
   completedDates?: string[]; // For daily habits, array of 'yyyy-MM-dd'
 }
