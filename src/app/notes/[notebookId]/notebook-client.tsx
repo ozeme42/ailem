@@ -11,13 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 interface NotebookDetails {
@@ -45,16 +46,14 @@ export default function NotebookClient() {
     if (!notebookId || !user) return;
     const unsubscribe = onNotebookDetailsUpdate(notebookId, (data) => {
       setDetails(data);
-      if (data && data.notebook.sections.length > 0 && !activeTab) {
-        setActiveTab(data.notebook.sections[0].id);
-      } else if (data && data.notebook.sections.length > 0 && !data.notebook.sections.some(s => s.id === activeTab)) {
+      if (data && data.notebook.sections.length > 0 && (!activeTab || !data.notebook.sections.some(s => s.id === activeTab))) {
         setActiveTab(data.notebook.sections[0].id);
       } else if (data && data.notebook.sections.length === 0) {
         setActiveTab('');
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user]);
+  }, [notebookId, user, activeTab]);
 
   const handleAddSection = async () => {
     if (newSectionName.trim() && details) {
@@ -161,28 +160,26 @@ export default function NotebookClient() {
         </div>
 
         {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="mt-4">
-            <div className="h-full flex flex-col">
-                <Button className="w-full mb-4" onClick={handleAddNewNote}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
-                </Button>
-                <div className="flex-grow overflow-y-auto pr-2 -mr-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {notes.filter(note => note.sectionId === section.id).map(note => (
-                            <StickyNoteCard 
-                                key={note.id}
-                                note={note}
-                                isEditing={editingNoteId === note.id}
-                                onStartEdit={() => { setEditingNoteId(note.id); setNoteChanges({}); }}
-                                onBlur={() => handleNoteBlur(note.id)}
-                                onUpdate={handleNoteUpdate}
-                                onSave={() => handleSaveNote(note.id, noteChanges)}
-                                onDelete={() => handleDeleteNote(note.id)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
+          <TabsContent key={section.id} value={section.id} className="mt-4 flex-grow">
+            <Button className="w-full mb-4" onClick={handleAddNewNote}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Yeni Not Ekle
+            </Button>
+            <ScrollArea className="h-[calc(100%-4rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-4">
+                {notes.filter(note => note.sectionId === section.id).map(note => (
+                    <StickyNoteCard 
+                        key={note.id}
+                        note={note}
+                        isEditing={editingNoteId === note.id}
+                        onStartEdit={() => { setEditingNoteId(note.id); setNoteChanges({}); }}
+                        onBlur={() => handleNoteBlur(note.id)}
+                        onUpdate={handleNoteUpdate}
+                        onSave={() => handleSaveNote(note.id, noteChanges)}
+                        onDelete={() => handleDeleteNote(note.id)}
+                    />
+                ))}
+              </div>
+            </ScrollArea>
           </TabsContent>
         ))}
       </Tabs>
@@ -296,13 +293,15 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
     return (
         <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border cursor-pointer flex flex-col", noteColor)} onClick={onStartEdit}>
             {firstImage && (
-                <div className="relative aspect-video w-full">
+                <div className="relative w-full" style={{aspectRatio: '16/9'}}>
                     <Image src={firstImage} alt={note.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="note image" />
                 </div>
             )}
             <div className="p-4 flex-grow flex flex-col">
                 <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                <p className={cn("text-sm text-black/70 mt-2 flex-grow", { "line-clamp-3": firstImage })}>{firstText}</p>
+                {firstText && (
+                  <p className={cn("text-sm text-black/70 mt-2 flex-grow", { "line-clamp-3": firstImage })}>{firstText}</p>
+                )}
             </div>
              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
@@ -326,5 +325,3 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onBlur, onUpdate, onSave
         </div>
     );
 }
-
-    
