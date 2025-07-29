@@ -17,9 +17,19 @@ import { format, isSameDay, parseISO } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+
+const brightColors = [
+    'from-blue-500 to-indigo-600',
+    'from-green-500 to-emerald-600',
+    'from-purple-500 to-violet-600',
+    'from-amber-500 to-orange-600',
+    'from-teal-500 to-cyan-600',
+    'from-rose-500 to-pink-600',
+];
 
 
-function HabitListItem({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task) => void, onDelete: (id: string) => void }) {
+function HabitListItem({ task, onEdit, onDelete, colorClass }: { task: Task, onEdit: (task: Task) => void, onDelete: (id: string) => void, colorClass: string }) {
     
     const frequencyText = {
         daily: "Günlük",
@@ -28,21 +38,27 @@ function HabitListItem({ task, onEdit, onDelete }: { task: Task, onEdit: (task: 
     }[task.recurrenceType || "daily"] || "Tek Seferlik";
     
     return (
-        <Link href={`/habits/${task.id}`} className="block">
-            <Card className="p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors">
+        <Link href={`/habits/${task.id}`} className="block group">
+            <Card className={cn(
+                "p-4 flex items-center gap-4 transition-all duration-300 text-white shadow-lg",
+                "group-hover:shadow-xl group-hover:-translate-y-1",
+                colorClass
+            )}>
                 <div className="flex-grow">
                     <p className="font-semibold text-lg">{task.title}</p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                        <span>Mevcut Seri: <strong className="text-foreground">{task.streak || 0} gün</strong></span>
-                        <span>En İyi Seri: <strong className="text-foreground">{task.bestStreak || 0} gün</strong></span>
-                        {task.totalOccurrences && <span>İlerleme: <strong className="text-foreground">{task.completedOccurrences || 0}/{task.totalOccurrences}</strong></span>}
-                        <span>Sıklık: <strong className="text-foreground">{frequencyText}</strong></span>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/80 mt-1">
+                        <span>Mevcut Seri: <strong className="text-white">{task.streak || 0} gün</strong></span>
+                        <span>En İyi Seri: <strong className="text-white">{task.bestStreak || 0} gün</strong></span>
+                        {task.totalOccurrences && <span>İlerleme: <strong className="text-white">{task.completedOccurrences || 0}/{task.totalOccurrences}</strong></span>}
+                        <span>Sıklık: <strong className="text-white">{frequencyText}</strong></span>
                     </div>
                 </div>
                 <div className="flex-shrink-0">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={(e) => e.preventDefault()}><MoreVertical className="h-4 w-4"/></Button>
+                            <Button variant="ghost" size="icon" onClick={(e) => e.preventDefault()} className="text-white hover:bg-white/20 hover:text-white">
+                                <MoreVertical className="h-4 w-4"/>
+                            </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
                             <DropdownMenuItem onClick={() => onEdit(task)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
@@ -133,12 +149,13 @@ export default function HabitsPage() {
       
       {habitTasks.length > 0 ? (
         <div className="space-y-4">
-            {habitTasks.map(task => (
+            {habitTasks.map((task, index) => (
                 <HabitListItem
                     key={task.id}
                     task={task}
                     onEdit={handleEditTask}
                     onDelete={handleDeleteTask}
+                    colorClass={cn('bg-gradient-to-br', brightColors[index % brightColors.length])}
                 />
             ))}
         </div>
