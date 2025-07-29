@@ -31,7 +31,7 @@ import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMem
 import { useAuth } from '@/components/auth-provider';
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 
 
 // SCHEMAS & TYPES
@@ -243,7 +243,7 @@ export default function MemorizationPage() {
       <PageHeader title="Ezber Takibi">
           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setView(view === 'items' ? 'management' : 'items')}>
               <Settings className="mr-2 h-4 w-4"/>
-              {view === 'items' ? 'Yönetim' : 'Ezberleri Gör'}
+              {view === 'items' ? 'Sureler ve Dualar' : 'Ezberleri Gör'}
           </Button>
           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4"/> Yeni Öğe Ekle
@@ -276,7 +276,7 @@ export default function MemorizationPage() {
           ) : (
              <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Yönetim Modu</AlertTitle>
+                <AlertTitle>Sure ve Dua Kütüphanesi (Yönetim)</AlertTitle>
                 <AlertDescription>
                     Burada tüm ezber öğelerini görebilir ve aile üyelerinin listelerine ekleyebilirsiniz.
                 </AlertDescription>
@@ -623,7 +623,7 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers,
         }
       });
     });
-    return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, 'tr'));
+    return Object.entries(grouped).sort(([a, b]) => a.localeCompare(b, 'tr'));
   }, [items]);
   
   const handleProgressChange = async (itemId: string, isCompleted: boolean) => {
@@ -899,4 +899,3 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
         </Card>
     );
 }
-
