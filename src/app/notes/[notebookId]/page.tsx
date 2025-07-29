@@ -1,25 +1,35 @@
 
-"use client";
-
-import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-
-// This is a placeholder page for notebook details.
-// A more complete implementation would be built here.
+import { Suspense } from 'react';
+import NotebookClient from './notebook-client';
+import { PageHeader } from '@/components/page-header';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function NotebookDetailPage() {
-    const router = useRouter();
+  return (
+    <div className="h-full flex flex-col">
+      <Suspense fallback={<NotebookSkeleton />}>
+        <NotebookClient />
+      </Suspense>
+    </div>
+  );
+}
 
-    return (
-        <div className="space-y-6">
-            <PageHeader title="Not Defteri">
-                 <Button onClick={() => router.back()} variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
-                </Button>
-            </PageHeader>
-            <p>Not defteri detay sayfası buraya gelecek.</p>
+
+function NotebookSkeleton() {
+  return (
+    <>
+      <PageHeader title="Yükleniyor...">
+          <Skeleton className="h-10 w-24" />
+       </PageHeader>
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
         </div>
-    )
+      </div>
+    </>
+  );
 }

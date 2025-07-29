@@ -1,10 +1,11 @@
 
 
 
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock } from './data';
 import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -1090,3 +1091,78 @@ export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'crea
 };
 export const deleteNotebook = (id: string) => deleteDoc(doc(db, "notebooks", id));
 
+// Fetches a single notebook and its associated notes
+export const onNotebookDetailsUpdate = (
+  notebookId: string,
+  callback: (details: { notebook: NotebookType; notes: Note[] } | null) => void
+) => {
+  const notebookRef = doc(db, 'notebooks', notebookId);
+
+  const unsubscribeNotebook = onSnapshot(notebookRef, (notebookSnap) => {
+    if (!notebookSnap.exists()) {
+      callback(null);
+      return;
+    }
+    const notebookData = { id: notebookSnap.id, ...notebookSnap.data() } as NotebookType;
+
+    const notesQuery = query(
+      collection(db, 'notes'),
+      where('notebookId', '==', notebookId)
+    );
+    
+    const unsubscribeNotes = onSnapshot(notesQuery, (notesSnap) => {
+      const notesData = notesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Note)).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+      callback({ notebook: notebookData, notes: notesData });
+    });
+
+    return () => unsubscribeNotes();
+  });
+
+  return () => unsubscribeNotebook();
+};
+
+
+export const addSectionToNotebook = async (notebookId: string, title: string) => {
+  const notebookRef = doc(db, 'notebooks', notebookId);
+  const notebookSnap = await getDoc(notebookRef);
+
+  if (notebookSnap.exists()) {
+    const notebook = notebookSnap.data() as NotebookType;
+    const newSection: NotebookSection = {
+      id: Date.now().toString(),
+      title,
+      order: notebook.sections.length,
+    };
+    await updateDoc(notebookRef, {
+      sections: arrayUnion(newSection),
+    });
+    return newSection.id;
+  }
+};
+
+export const addNoteToSection = async (notebookId: string, sectionId: string, noteData: Partial<Note>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not authenticated");
+
+    const newNote: Omit<Note, 'id'> = {
+        notebookId,
+        sectionId,
+        familyId,
+        title: noteData.title || "Yeni Not",
+        content: noteData.content || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        tags: [],
+    };
+    return addDoc(collection(db, 'notes'), newNote);
+};
+
+export const updateNoteInSection = (notebookId: string, noteId: string, noteData: Partial<Note>) => {
+  const noteRef = doc(db, 'notes', noteId);
+  return updateDoc(noteRef, { ...noteData, updatedAt: new Date().toISOString() });
+};
+
+export const deleteNoteFromSection = (notebookId: string, noteId: string) => {
+  const noteRef = doc(db, 'notes', noteId);
+  return deleteDoc(noteRef);
+};

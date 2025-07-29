@@ -1,6 +1,7 @@
 
 
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -211,7 +212,6 @@ export interface Note {
     content: NoteContentBlock[];
     createdAt: string; // ISO string
     updatedAt: string; // ISO string
-    tags: string[];
 }
 
 export interface NotebookSection {
