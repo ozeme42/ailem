@@ -70,8 +70,7 @@ export default function NotebookClient() {
             title: newSectionName.trim(),
             order: details.notebook.sections.length
         }
-        const updatedSections = [...details.notebook.sections, newSection];
-        await updateNotebook(notebookId, { sections: updatedSections });
+        await updateNotebook(notebookId, { sections: arrayUnion(newSection) });
 
         toast({ title: 'Bölüm Eklendi' });
         setActiveTab(newSection.id);
@@ -86,7 +85,8 @@ export default function NotebookClient() {
   const handleAddNewTextNote = async () => {
     if (!details || !activeTab) return;
     try {
-        await addNoteToSection(notebookId, activeTab, { title: "Yeni Not", content: [{id: Date.now().toString(), type: 'text', data: ''}], imageUrl: null });
+        const newNoteContent: NoteContentBlock[] = [{ id: Date.now().toString(), type: 'text', data: '' }];
+        await addNoteToSection(notebookId, activeTab, { title: "Yeni Not", content: newNoteContent, imageUrl: null });
     } catch (error) {
         toast({ title: 'Hata', variant: 'destructive' });
     }
@@ -103,13 +103,13 @@ export default function NotebookClient() {
             reader.readAsDataURL(file);
             reader.onload = async () => {
                 const dataUri = reader.result as string;
-                const destinationPath = `note-images/${user.uid}-${Date.now()}`;
+                const destinationPath = `note-images/${user.uid}-${Date.now()}.jpg`;
                 const result = await migrateImage({ imageDataUri: dataUri, destinationPath });
                 if (result.success && result.newUrl) {
-                    await addNoteToSection(notebookId, activeTab, { title: "Yeni Görsel Not", imageUrl: result.newUrl });
+                    await addNoteToSection(notebookId, activeTab, { title: "Yeni Görsel Not", imageUrl: result.newUrl, content: [] });
                     toast({ title: 'Görsel Not Eklendi' });
                 } else {
-                    throw new Error(result.error || 'Görsel yüklenemedi.');
+                     throw new Error(result.error || 'Görsel yüklenemedi.');
                 }
                 setIsLoading(false);
             };
@@ -249,7 +249,6 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
     
     const noteColor = note.color || 'bg-yellow-100 border-yellow-200';
     
-    // Auto-save when clicking outside the editing card
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (isEditing && cardRef.current && !cardRef.current.contains(event.target as Node)) {
@@ -262,20 +261,26 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         };
     }, [isEditing, onSave]);
 
+    useEffect(() => {
+        if (isEditing && textareaRef.current) {
+            textareaRef.current.style.height = 'inherit';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [isEditing]);
+    
     const handleTextUpdate = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        // Auto-resize
         e.target.style.height = 'inherit';
         e.target.style.height = `${e.target.scrollHeight}px`;
         
-        // Update content (assuming only one text block for simplicity now)
-        const textBlock = note.content.find(b => b.type === 'text');
-        if (textBlock) {
-             const newContent = note.content.map(b => 
-                b.id === textBlock.id ? { ...b, data: e.target.value } : b
-            );
-            onUpdate('content', newContent);
-        }
+        const newContent: NoteContentBlock[] = [{
+            id: note.content?.[0]?.id || Date.now().toString(),
+            type: 'text',
+            data: e.target.value
+        }];
+        onUpdate('content', newContent);
     };
+
+    const textContent = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
     
     if (isEditing) {
         return (
@@ -284,7 +289,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                     placeholder="Not Başlığı"
                     defaultValue={note.title}
                     onBlur={(e) => onUpdate('title', e.target.value)}
-                    className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80"
+                    className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80 text-black"
                     autoFocus
                 />
                 {note.imageUrl && (
@@ -295,10 +300,9 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
                 <Textarea
                     ref={textareaRef}
                     placeholder="Yazmaya başla..."
-                    defaultValue={note.content.find(b => b.type === 'text')?.data || ''}
+                    defaultValue={textContent}
                     onInput={handleTextUpdate}
-                    onBlur={(e) => onUpdate('content', e.target.value)}
-                    className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden"
+                    className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden text-black/80"
                     rows={1}
                 />
                 <div className="flex justify-end items-center mt-2">
@@ -328,9 +332,11 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
             )}
             <div className="p-4 flex-grow flex flex-col min-h-[8rem]">
                 <h3 className="font-semibold text-lg text-black">{note.title}</h3>
-                <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
-                    {note.content.find(b => b.type === 'text')?.data}
-                </p>
+                {textContent && (
+                    <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
+                        {textContent}
+                    </p>
+                )}
             </div>
              <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
