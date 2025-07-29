@@ -45,12 +45,6 @@ export default function HabitDetailPage() {
 
   const handleToggleDay = async (day: Date) => {
     if (!habit) return;
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    if(isBefore(day, today) && !isSameDay(day, today)) {
-        toast({ title: "Geçmiş değiştirilemez!", description: "Geçmişteki bir günü işaretleyemezsin.", variant: "destructive" });
-        return;
-    }
     
     const dayKey = format(day, 'yyyy-MM-dd');
     const isCompleted = habit.completedDates?.includes(dayKey) || false;
@@ -128,7 +122,11 @@ export default function HabitDetailPage() {
                     const isCurrentMonth = isSameMonth(day, currentMonth);
                     const dayKey = format(day, 'yyyy-MM-dd');
                     const isCompleted = habit.completedDates?.includes(dayKey) || false;
-                    const isSelectable = !isBefore(day, habitStartDate) && !isBefore(new Date(), day);
+                    
+                    const todayForComparison = new Date();
+                    todayForComparison.setHours(23, 59, 59, 999); // Allow marking today
+                    const isSelectable = !isBefore(day, habitStartDate) && day <= todayForComparison;
+
                     const isMissed = isSelectable && !isCompleted && isBefore(day, new Date()) && !isSameDay(day, new Date());
                     
                     return (
