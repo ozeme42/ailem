@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2 } from "lucide-react";
+import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
@@ -15,11 +15,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Recipe, MealPlan } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { onMealPlanUpdate, onRecipesUpdate, addRecipe, updateMealPlan } from "@/lib/dataService";
+import { onMealPlanUpdate, onRecipesUpdate, addRecipe, updateRecipe, deleteRecipe, updateMealPlan } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
 import { NewRecipeForm } from "@/components/new-recipe-form";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
@@ -45,6 +47,7 @@ export default function YemekPlanlamaPage() {
   const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
   const [isRecipeSelectorOpen, setIsRecipeSelectorOpen] = React.useState(false);
   const [isNewRecipeDialogOpen, setIsNewRecipeDialogOpen] = React.useState(false);
+  const [editingRecipe, setEditingRecipe] = React.useState<Recipe | null>(null);
   const [currentMealSelection, setCurrentMealSelection] = React.useState<MealSelection>(null);
 
   React.useEffect(() => {
@@ -66,20 +69,33 @@ export default function YemekPlanlamaPage() {
     return matchesCategory && matchesSearch;
   });
   
-  const handleAddNewRecipe = async (recipeData: Omit<Recipe, 'id' | 'familyId'>) => {
+  const handleSaveRecipe = async (recipeData: Omit<Recipe, 'id' | 'familyId'>) => {
     try {
-        const newRecipeId = await addRecipe(recipeData);
-        toast({ title: "✅ Tarif Eklendi", description: `"${recipeData.title}" başarıyla kütüphaneye eklendi.`});
-        setIsNewRecipeDialogOpen(false);
-        
-        // If we are in the middle of a meal selection, add the new recipe to the plan
-        if (currentMealSelection) {
-            const newRecipe = { ...recipeData, id: newRecipeId };
-            handleSelectRecipe(newRecipe);
+        if (editingRecipe) {
+            await updateRecipe(editingRecipe.id, recipeData);
+            toast({ title: "✅ Tarif Güncellendi", description: `"${recipeData.title}" başarıyla güncellendi.`});
+        } else {
+            const newRecipeId = await addRecipe(recipeData);
+             toast({ title: "✅ Tarif Eklendi", description: `"${recipeData.title}" başarıyla kütüphaneye eklendi.`});
+            // If we are in the middle of a meal selection, add the new recipe to the plan
+            if (currentMealSelection) {
+                const newRecipe = { ...recipeData, id: newRecipeId };
+                handleSelectRecipe(newRecipe);
+            }
         }
-
+        setIsNewRecipeDialogOpen(false);
+        setEditingRecipe(null);
     } catch (e) {
-        toast({ title: "❌ Hata", description: "Tarif eklenirken bir hata oluştu.", variant: 'destructive'});
+        toast({ title: "❌ Hata", description: "Tarif kaydedilirken bir hata oluştu.", variant: 'destructive'});
+    }
+  };
+
+  const handleDeleteRecipe = async (id: string) => {
+    try {
+        await deleteRecipe(id);
+        toast({ title: "Tarif Silindi", variant: "destructive" });
+    } catch(e) {
+        toast({ title: "Hata", description: "Tarif silinirken bir hata oluştu.", variant: "destructive" });
     }
   };
 
@@ -143,15 +159,23 @@ export default function YemekPlanlamaPage() {
     return { mostEaten: sorted, recipeCounts: counts, lastEatenDates: lastDates };
   }, [mealPlan, recipes]);
 
+  const handleOpenNewRecipeDialog = () => {
+    setEditingRecipe(null);
+    setCurrentMealSelection(null);
+    setIsNewRecipeDialogOpen(true);
+  }
+  
+  const handleOpenEditRecipeDialog = (recipe: Recipe) => {
+    setEditingRecipe(recipe);
+    setIsNewRecipeDialogOpen(true);
+  }
+
   return (
     <>
       <PageHeader title="Yemek Planı & Tarifler 🍲">
         <Button 
             variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none"
-            onClick={() => {
-                setCurrentMealSelection(null); // Ensure we are not in selection mode
-                setIsNewRecipeDialogOpen(true);
-            }}
+            onClick={handleOpenNewRecipeDialog}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Tarif Ekle
@@ -283,19 +307,44 @@ export default function YemekPlanlamaPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {filteredRecipes.map(recipe => (
                            <Dialog key={recipe.id}>
-                                <DialogTrigger asChild>
-                                    <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
-                                      <CardHeader className="p-4">
-                                          <div className="flex justify-between items-start">
-                                            <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
-                                            {(recipeCounts.get(recipe.id) || 0) > 0 && (
-                                                <Badge variant="secondary">{recipeCounts.get(recipe.id)}</Badge>
-                                            )}
-                                          </div>
-                                          <CardDescription className="text-xs">{recipe.category}</CardDescription>
-                                      </CardHeader>
-                                    </Card>
-                                </DialogTrigger>
+                                <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground relative">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <MoreVertical className="h-4 w-4"/>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => handleOpenEditRecipeDialog(recipe)}>
+                                                <Edit className="mr-2 h-4 w-4"/> Düzenle
+                                            </DropdownMenuItem>
+                                             <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4"/> Sil
+                                                    </DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>Tarifi Sil</AlertDialogTitle><AlertDialogDescription>"{recipe.title}" tarifini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteRecipe(recipe.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <DialogTrigger asChild>
+                                        <div>
+                                            <CardHeader className="p-4">
+                                            <div className="flex justify-between items-start">
+                                                <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
+                                                {(recipeCounts.get(recipe.id) || 0) > 0 && (
+                                                    <Badge variant="secondary">{recipeCounts.get(recipe.id)}</Badge>
+                                                )}
+                                            </div>
+                                            <CardDescription className="text-xs">{recipe.category}</CardDescription>
+                                            </CardHeader>
+                                        </div>
+                                    </DialogTrigger>
+                                </Card>
                                 <DialogContent className="sm:max-w-md">
                                     <DialogHeader>
                                         <Badge variant="secondary" className="w-fit mb-2">{recipe.category}</Badge>
@@ -347,7 +396,7 @@ export default function YemekPlanlamaPage() {
                     className="w-full"
                     onClick={() => {
                         setIsRecipeSelectorOpen(false); // Close this dialog
-                        setIsNewRecipeDialogOpen(true); // Open the new recipe dialog
+                        handleOpenNewRecipeDialog(); // Open the new recipe dialog
                     }}
                 >
                     <PlusCircle className="mr-2 h-4 w-4" />
@@ -373,16 +422,16 @@ export default function YemekPlanlamaPage() {
           </DialogContent>
       </Dialog>
       
-      {/* New Recipe Dialog */}
-       <Dialog open={isNewRecipeDialogOpen} onOpenChange={setIsNewRecipeDialogOpen}>
+      {/* New/Edit Recipe Dialog */}
+       <Dialog open={isNewRecipeDialogOpen} onOpenChange={(open) => { if (!open) setEditingRecipe(null); setIsNewRecipeDialogOpen(open); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Yeni Tarif Ekle</DialogTitle>
+            <DialogTitle>{editingRecipe ? 'Tarifi Düzenle' : 'Yeni Tarif Ekle'}</DialogTitle>
             <DialogDescription>
-              Yeni tarifi kütüphaneye ekleyin. Kaydedince plana da eklenecektir.
+              {editingRecipe ? 'Mevcut tarifin detaylarını güncelleyin.' : 'Yeni tarifi kütüphaneye ekleyin.'}
             </DialogDescription>
           </DialogHeader>
-          <NewRecipeForm onSubmit={handleAddNewRecipe} />
+          <NewRecipeForm onSubmit={handleSaveRecipe} initialData={editingRecipe} />
         </DialogContent>
       </Dialog>
     </>
