@@ -8,7 +8,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Responsive
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -95,6 +95,7 @@ export default function Home() {
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
   const [books, setBooks] = React.useState<Book[]>([]);
   const [goals, setGoals] = React.useState<Goal[]>([]);
+  const [memorizationItems, setMemorizationItems] = React.useState<MemorizationItem[]>([]);
   const [memorizationProgress, setMemorizationProgress] = React.useState<MemorizationProgress[]>([]);
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
@@ -117,6 +118,7 @@ export default function Home() {
     const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
     const unsubBooks = onBooksUpdate(setBooks);
     const unsubGoals = onGoalsUpdate(setGoals);
+    const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
     const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
     let unsubLibraries = () => {};
     if (familyId) {
@@ -134,6 +136,7 @@ export default function Home() {
       unsubLibraries();
       unsubBooks();
       unsubGoals();
+      unsubMemorizationItems();
       unsubMemorizationProgress();
     };
   }, [familyId]);
@@ -229,58 +232,72 @@ export default function Home() {
       .sort((a, b) => compareAsc(parseISO(a.dueDate), b.dueDate ? parseISO(b.dueDate) : 0));
   }, [tasks]);
   
-  const personalTasksByMember = React.useMemo(() => {
-    const grouped: { [key: string]: { habits: Task[], other: Task[] } } = {};
-    familyMembers.forEach(m => {
-      grouped[m.id] = { habits: [], other: [] };
-    });
+    const memberAssignments = React.useMemo(() => {
+        const assignments: { 
+            [key: string]: { 
+                habits: Task[]; 
+                other: Task[]; 
+                tests: Test[]; 
+                studies: (StudyAssignment & { studyPlanTitle?: string })[];
+                readingBooks: Book[];
+                memorizationItems: MemorizationItem[];
+            } 
+        } = {};
+        
+        familyMembers.forEach(m => {
+            assignments[m.id] = { habits: [], other: [], tests: [], studies: [], readingBooks: [], memorizationItems: [] };
+        });
 
-    tasks
-      .filter(task => !task.completed && task.category === 'Kişisel')
-      .forEach(task => {
-        if (grouped[task.assigneeId]) {
-          if (task.recurrenceType === 'daily') {
-            grouped[task.assigneeId].habits.push(task);
-          } else {
-            grouped[task.assigneeId].other.push(task);
-          }
-        }
-      });
-    return grouped;
-  }, [tasks, familyMembers]);
+        // Personal Tasks
+        tasks.filter(task => !task.completed && task.category === 'Kişisel').forEach(task => {
+            if (assignments[task.assigneeId]) {
+                if (task.recurrenceType === 'daily') {
+                    assignments[task.assigneeId].habits.push(task);
+                } else {
+                    assignments[task.assigneeId].other.push(task);
+                }
+            }
+        });
 
-
-  const educationAssignmentsByStudent = React.useMemo(() => {
-      const grouped: { [key: string]: { tests: Test[], studies: (StudyAssignment & { studyPlanTitle?: string })[] } } = {};
-      const students = familyMembers.filter(m => m.role.includes('Çocuk'));
-      const studentIds = new Set(students.map(s => s.id));
-
-      students.forEach(s => {
-          grouped[s.id] = { tests: [], studies: [] };
-      });
-
-      tests
-        .filter(t => studentIds.has(t.studentId) && t.status === 'Atandı')
-        .forEach(test => {
-            if (grouped[test.studentId]) {
-                grouped[test.studentId].tests.push(test);
+        // Education
+        const students = familyMembers.filter(m => m.role.includes('Çocuk'));
+        const studentIds = new Set(students.map(s => s.id));
+        tests.filter(t => studentIds.has(t.studentId) && t.status === 'Atandı').forEach(test => {
+            if (assignments[test.studentId]) {
+                assignments[test.studentId].tests.push(test);
+            }
+        });
+        studyAssignments.filter(a => studentIds.has(a.studentId) && a.status === 'assigned').forEach(assignment => {
+            if (assignments[assignment.studentId]) {
+                const plan = studyPlans.find(p => p.id === assignment.studyPlanId);
+                assignments[assignment.studentId].studies.push({ ...assignment, studyPlanTitle: plan?.title });
             }
         });
         
-      studyAssignments
-        .filter(a => studentIds.has(a.studentId) && a.status === 'assigned')
-        .forEach(assignment => {
-            if (grouped[assignment.studentId]) {
-                const plan = studyPlans.find(p => p.id === assignment.studyPlanId);
-                grouped[assignment.studentId].studies.push({
-                    ...assignment,
-                    studyPlanTitle: plan?.title,
-                });
+        // Library
+        userLibraries.forEach(lib => {
+            if (assignments[lib.memberId]) {
+                 const memberBooks = lib.books
+                    .filter(b => b.status === 'reading' || b.status === 'to-read')
+                    .map(b => books.find(book => book.id === b.bookId))
+                    .filter((b): b is Book => !!b);
+                assignments[lib.memberId].readingBooks = memberBooks;
             }
         });
-
-      return grouped;
-  }, [tests, studyAssignments, familyMembers, studyPlans]);
+        
+        // Memorization
+        const pendingProgress = memorizationProgress.filter(p => !p.completed);
+        pendingProgress.forEach(prog => {
+            if (assignments[prog.memberId]) {
+                const item = memorizationItems.find(i => i.id === prog.itemId);
+                if (item) {
+                    assignments[prog.memberId].memorizationItems.push(item);
+                }
+            }
+        });
+        
+        return assignments;
+    }, [tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, familyMembers]);
 
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp, fill: member.color }));
@@ -314,21 +331,6 @@ export default function Home() {
   const latestBooks = React.useMemo(() => {
       return [...books].reverse().slice(0, 10);
   }, [books]);
-  
-  const libraryStats = React.useMemo(() => {
-    return familyMembers.map(member => {
-        const memberLibrary = userLibraries.find(lib => lib.memberId === member.id);
-        const toReadCount = memberLibrary ? memberLibrary.books.filter(b => b.status === 'reading' || b.status === 'to-read').length : 0;
-        
-        const toMemorizeCount = memorizationProgress.filter(p => p.memberId === member.id && !p.completed).length;
-
-        return {
-            memberId: member.id,
-            toReadCount,
-            toMemorizeCount,
-        };
-    });
-  }, [familyMembers, userLibraries, memorizationProgress]);
 
    const activeGoals = React.useMemo(() => {
     return goals
@@ -721,11 +723,9 @@ export default function Home() {
         </Link>
         
         {familyMembers.map(member => {
-            const { habits, other } = personalTasksByMember[member.id] || { habits: [], other: [] };
-            const { tests, studies } = educationAssignmentsByStudent[member.id] || { tests: [], studies: [] };
-            const memberLibraryStats = libraryStats.find(s => s.memberId === member.id);
+            const { habits, other, tests, studies, readingBooks, memorizationItems } = memberAssignments[member.id] || {};
             
-            if (habits.length === 0 && other.length === 0 && tests.length === 0 && studies.length === 0) return null;
+            if (!habits?.length && !other?.length && !tests?.length && !studies?.length && !readingBooks?.length && !memorizationItems?.length) return null;
             
             return (
                 <Card key={`personal-tasks-${member.id}`} className="shadow-lg border-t-4" style={{ borderTopColor: member.color }}>
@@ -740,19 +740,19 @@ export default function Home() {
                             </div>
                             <div>
                                 <CardTitle>{member.name}'in Görevleri</CardTitle>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
                                     <span>{habits.length + other.length + tests.length + studies.length} bekleyen görev</span>
-                                    {(memberLibraryStats?.toReadCount ?? 0) > 0 && (
-                                        <div className="flex items-center gap-1.5">
+                                    {readingBooks.length > 0 && (
+                                        <Link href="/library" className="flex items-center gap-1.5 hover:text-primary">
                                             <BookOpen className="w-4 h-4 text-blue-500" />
-                                            <span className="font-semibold">{memberLibraryStats?.toReadCount} kitap</span>
-                                        </div>
+                                            <span className="font-semibold">{readingBooks.length} kitap</span>
+                                        </Link>
                                     )}
-                                    {(memberLibraryStats?.toMemorizeCount ?? 0) > 0 && (
-                                        <div className="flex items-center gap-1.5">
+                                    {memorizationItems.length > 0 && (
+                                        <Link href="/memorization" className="flex items-center gap-1.5 hover:text-primary">
                                             <BrainCircuit className="w-4 h-4 text-purple-500" />
-                                            <span className="font-semibold">{memberLibraryStats?.toMemorizeCount} ezber</span>
-                                        </div>
+                                            <span className="font-semibold">{memorizationItems.length} ezber</span>
+                                        </Link>
                                     )}
                                 </div>
                             </div>
@@ -814,22 +814,56 @@ export default function Home() {
                         )}
                          {(tests.length > 0 || studies.length > 0) && (
                            <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ödevler <Link href="/education" className="group"><ArrowRight className="inline h-3 w-3" /></Link></h4>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ödevler</h4>
                                 <div className="space-y-2">
                                     {tests.map(test => (
-                                        <div key={test.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-red-500/10 text-red-900">
-                                            <GraduationCap className="h-5 w-5 shrink-0" />
-                                            <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
-                                        </div>
+                                        <Link href={`/education/${test.id}`} key={test.id} className="block">
+                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-red-500/10 text-red-900 hover:bg-red-500/20">
+                                                <GraduationCap className="h-5 w-5 shrink-0" />
+                                                <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
+                                            </div>
+                                        </Link>
                                     ))}
                                     {studies.map(study => (
-                                        <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900">
-                                            <BookHeart className="h-5 w-5 shrink-0" />
-                                             <div className="truncate">
-                                                <p className="font-semibold truncate text-sm">{study.topic}</p>
-                                                <p className="text-xs text-blue-800/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
+                                        <Link href="/education/study" key={study.id} className="block">
+                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 hover:bg-blue-500/20">
+                                                <BookHeart className="h-5 w-5 shrink-0" />
+                                                 <div className="truncate">
+                                                    <p className="font-semibold truncate text-sm">{study.topic}</p>
+                                                    <p className="text-xs text-blue-800/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                         {readingBooks.length > 0 && (
+                           <div>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Okunacak Kitaplar</h4>
+                                <div className="space-y-2">
+                                    {readingBooks.map(book => (
+                                         <Link href="/library" key={book.id} className="block">
+                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-500/10 text-amber-900 hover:bg-amber-500/20">
+                                                <BookOpen className="h-5 w-5 shrink-0" />
+                                                <div className="truncate"><p className="font-semibold truncate text-sm">{book.title}</p><p className="text-xs text-amber-800/80 truncate">{book.author}</p></div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                         {memorizationItems.length > 0 && (
+                           <div>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ezberlenecekler</h4>
+                                <div className="space-y-2">
+                                    {memorizationItems.map(item => (
+                                        <Link href="/memorization" key={item.id} className="block">
+                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 text-purple-900 hover:bg-purple-500/20">
+                                                <BrainCircuit className="h-5 w-5 shrink-0" />
+                                                <div className="truncate"><p className="font-semibold truncate text-sm">{item.title}</p></div>
+                                            </div>
+                                        </Link>
                                     ))}
                                 </div>
                             </div>
@@ -939,4 +973,5 @@ export default function Home() {
 
 
     
+
 
