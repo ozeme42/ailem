@@ -140,7 +140,7 @@ export default function CategoryDetailPage() {
   return (
     <div className="space-y-8">
       <PageHeader title={`${student.name} - ${categoryName}`}>
-        <Button onClick={() => router.back()} variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+        <Button onClick={() => router.back()} variant="secondary">
           <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
         </Button>
       </PageHeader>
