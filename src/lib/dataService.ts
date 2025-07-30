@@ -1013,6 +1013,25 @@ export const removeMemorizationProgress = async (itemId: string, memberId: strin
     return deleteDoc(docRef);
 };
 
+export const resetAllMemorizationProgress = async () => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    
+    const q = query(collection(db, 'memorizationProgress'), where('familyId', '==', familyId));
+    const snapshot = await getDocs(q);
+    
+    if (snapshot.empty) {
+        return; // No progress to delete
+    }
+
+    const batch = writeBatch(db);
+    snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+}
+
 
 export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: boolean) => {
     if (!task.isRecurring || task.recurrenceType !== 'daily') return;

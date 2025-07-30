@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -23,11 +23,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, CheckCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, CheckCircle, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag, removeMemorizationProgress } from '@/lib/dataService';
+import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag, removeMemorizationProgress, resetAllMemorizationProgress } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -165,6 +165,15 @@ export default function MemorizationPage() {
         toast({ title: "❌ Hata", description: "Kategori silinirken bir hata oluştu.", variant: 'destructive'});
     }
   };
+  
+  const handleResetProgress = async () => {
+    try {
+        await resetAllMemorizationProgress();
+        toast({ title: "İlerleme Sıfırlandı", description: "Tüm ezber ilerlemeleri başarıyla silindi.", variant: "destructive" });
+    } catch (e) {
+        toast({ title: "❌ Hata", description: "İlerleme sıfırlanırken bir hata oluştu.", variant: 'destructive' });
+    }
+  }
 
   const { itemsToShow, allFilteredItems } = useMemo(() => {
     const memberProgressMap = new Map<string, MemorizationProgress>();
@@ -230,13 +239,34 @@ export default function MemorizationPage() {
                 ))}
             </div>
           ) : (
-             <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Sure ve Dua Kütüphanesi (Yönetim)</AlertTitle>
-                <AlertDescription>
-                    Burada tüm ezber öğelerini görebilir ve aile üyelerinin listelerine ekleyebilirsiniz.
-                </AlertDescription>
-             </Alert>
+             <Card className="mb-4">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                     <div>
+                        <CardTitle>Sure ve Dua Kütüphanesi</CardTitle>
+                        <CardDescription>Burada tüm ezber öğelerini görebilir ve aile üyelerinin listelerine ekleyebilirsiniz.</CardDescription>
+                     </div>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                  <RotateCcw className="mr-2 h-4 w-4"/>
+                                  Tüm Ezber İlerlemesini Sıfırla
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
+                                  <AlertDialogDescription>
+                                      Bu işlem, tüm aile üyelerinin ezber ilerlemesini kalıcı olarak silecektir. Bu işlem geri alınamaz.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooterComponent>
+                                  <AlertDialogCancel>İptal</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleResetProgress}>Evet, Sıfırla</AlertDialogAction>
+                              </AlertDialogFooterComponent>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                </CardHeader>
+             </Card>
           )}
 
           <div className="relative w-full sm:flex-1 my-4">
@@ -255,7 +285,6 @@ export default function MemorizationPage() {
                 viewMode={view}
                 onEdit={handleOpenForm} 
                 onDelete={handleDeleteItem} 
-                memberId={selectedMember?.id || ''}
                 selectedMemberId={selectedMember?.id || ''}
                 familyMembers={familyMembers}
                 progress={progress}
@@ -320,12 +349,11 @@ export default function MemorizationPage() {
 
 
 // ItemShelf COMPONENT
-function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers, progress, selectedMemberId }: { 
+function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress, selectedMemberId }: { 
     items: MemorizationItem[], 
     viewMode: 'items' | 'management',
     onEdit: (item: MemorizationItem) => void, 
     onDelete: (id: string) => void, 
-    memberId: string, 
     selectedMemberId: string,
     familyMembers: FamilyMember[],
     progress: MemorizationProgress[] 
@@ -345,34 +373,48 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers,
     return Object.entries(grouped).sort(([a, b]) => a.localeCompare(b, 'tr'));
   }, [items]);
   
-  const handleProgressChange = async (itemId: string, isCompleted: boolean) => {
-    try {
-        await updateMemorizationProgress(itemId, memberId, isCompleted);
-        const item = items.find(i => i.id === itemId);
-        if(isCompleted) {
-          toast({ title: "🎉 Tebrikler!", description: `"${item?.title}" ezberini tamamladın.` });
+    const memberProgressMap = useMemo(() => {
+        const map = new Map<string, boolean>();
+        progress.forEach(p => map.set(`${p.itemId}_${p.memberId}`, p.completed));
+        return map;
+    }, [progress]);
+    
+    const handleProgressChange = async (itemId: string, isCompleted: boolean) => {
+        try {
+            await updateMemorizationProgress(itemId, selectedMemberId, isCompleted);
+            const item = items.find(i => i.id === itemId);
+            if(isCompleted) {
+            toast({ title: "🎉 Tebrikler!", description: `"${item?.title}" ezberini tamamladın.` });
+            }
+        } catch (error) {
+            toast({ title: "Hata", description: "İlerleme güncellenirken bir sorun oluştu.", variant: "destructive" });
         }
-    } catch (error) {
-        toast({ title: "Hata", description: "İlerleme güncellenirken bir sorun oluştu.", variant: "destructive" });
-    }
-  };
+    };
   
-  const handleAddToMember = async (itemId: string, memberId: string) => {
-       try {
-        await updateMemorizationProgress(itemId, memberId, false);
-        const item = items.find(i => i.id === itemId);
-        const member = familyMembers.find(m => m.id === memberId);
-        toast({ title: "Listeye Eklendi", description: `"${item?.title}" öğesi ${member?.name} adlı üyenin listesine eklendi.` });
-    } catch (error) {
-        toast({ title: "Hata", description: "Listeye eklenirken bir sorun oluştu.", variant: "destructive" });
+    const handleAddToMember = async (itemId: string, memberId: string) => {
+        try {
+            const isAlreadyAdded = memberProgressMap.has(`${itemId}_${memberId}`);
+            if (isAlreadyAdded) {
+                toast({ title: 'Zaten Listede', description: 'Bu öğe zaten seçilen üyenin listesinde.', variant: 'default' });
+                return;
+            }
+            await updateMemorizationProgress(itemId, memberId, false);
+            const item = items.find(i => i.id === itemId);
+            const member = familyMembers.find(m => m.id === memberId);
+            toast({ title: "Listeye Eklendi", description: `"${item?.title}" öğesi ${member?.name} adlı üyenin listesine eklendi.` });
+        } catch (error) {
+            toast({ title: "Hata", description: "Listeye eklenirken bir sorun oluştu.", variant: "destructive" });
+        }
+    };
+    
+    const handleRemoveFromMember = async (itemId: string, memberId: string) => {
+        try {
+            await removeMemorizationProgress(itemId, memberId);
+            toast({ title: "Öğe Kaldırıldı", variant: 'destructive' });
+        } catch (error) {
+             toast({ title: "Hata", description: "Öğe kaldırılırken bir sorun oluştu.", variant: "destructive" });
+        }
     }
-  }
-
-  const memberProgressMap = useMemo(() => {
-    const map = new Map<string, boolean>();
-    progress.forEach(p => map.set(`${p.itemId}_${p.memberId}`, p.completed));
-    return map;
-  }, [progress]);
 
 
   if (items.length === 0) {
@@ -397,11 +439,12 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers,
                         key={item.id}
                         item={item}
                         viewMode={viewMode}
-                        isCompleted={memberProgressMap.get(`${item.id}_${memberId}`) || false}
+                        isCompleted={memberProgressMap.get(`${item.id}_${selectedMemberId}`) || false}
                         onProgressChange={(completed) => handleProgressChange(item.id, completed)}
                         onEdit={() => onEdit(item)}
                         onDelete={() => onDelete(item.id)}
                         onAddToMember={handleAddToMember}
+                        onRemoveFromMember={handleRemoveFromMember}
                         familyMembers={familyMembers}
                         progressMap={memberProgressMap}
                         selectedMemberId={selectedMemberId}
@@ -498,8 +541,9 @@ interface MemorizationItemCardProps {
     onEdit: () => void;
     onDelete: () => void;
     onAddToMember: (itemId: string, memberId: string) => void;
+    onRemoveFromMember: (itemId: string, memberId: string) => void;
 }
-function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, onEdit, onDelete, onAddToMember, familyMembers, progressMap, selectedMemberId }: MemorizationItemCardProps) {
+function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, onEdit, onDelete, onAddToMember, onRemoveFromMember, familyMembers, progressMap, selectedMemberId }: MemorizationItemCardProps) {
     const isAddedToCurrentMember = progressMap.has(`${item.id}_${selectedMemberId}`);
     
     return (
@@ -512,14 +556,19 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                 </DialogTrigger>
                 <CardFooter className="p-2 border-t flex items-center justify-between gap-1">
                     { viewMode === 'items' ? (
-                        <div className="flex items-center space-x-2 w-full cursor-pointer py-1 px-2" onClick={() => onProgressChange(!isCompleted)}>
-                            <Checkbox id={`check-${item.id}`} checked={isCompleted} className="size-5" />
-                            <label
-                                htmlFor={`check-${item.id}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                                Ezberlendi
-                            </label>
+                         <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center space-x-2 cursor-pointer py-1 px-2" onClick={() => onProgressChange(!isCompleted)}>
+                                <Checkbox id={`check-${item.id}`} checked={isCompleted} className="size-5" />
+                                <label
+                                    htmlFor={`check-${item.id}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                >
+                                    Ezberlendi
+                                </label>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onRemoveFromMember(item.id, selectedMemberId)}>
+                                <Trash2 className="h-4 w-4"/>
+                            </Button>
                         </div>
                     ) : (
                         <div className="flex items-center gap-1 w-full">
@@ -574,10 +623,10 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                                         <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
                                         <AlertDialogDescription>"{item.title}" öğesi kalıcı olarak silinecektir.</AlertDialogDescription>
                                     </AlertDialogHeader>
-                                    <AlertDialogFooter>
+                                    <AlertDialogFooterComponent>
                                         <AlertDialogCancel>İptal</AlertDialogCancel>
                                         <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
-                                    </AlertDialogFooter>
+                                    </AlertDialogFooterComponent>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </DropdownMenuContent>
@@ -608,4 +657,3 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
         </Dialog>
     );
 }
-
