@@ -21,12 +21,12 @@ export function PageHeader({ title, children }: PageHeaderProps) {
         "sm:m-0 sm:mb-8 sm:rounded-xl"
     )}>
       <div className="flex items-center gap-4">
-        <SidebarTrigger />
+        <SidebarTrigger variant="secondary" />
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 self-end sm:self-center">
         <Link href="/" className="hidden md:flex">
-            <Button variant="outline">
+            <Button variant="secondary">
                 <Home className="mr-2 h-4 w-4" />
                 Ana Sayfa
             </Button>

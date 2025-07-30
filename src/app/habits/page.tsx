@@ -132,7 +132,7 @@ export default function HabitsPage() {
       <PageHeader title="Alışkanlık Takibi 💪">
         <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={handleOpenNewTask}>
+            <Button variant="secondary" onClick={handleOpenNewTask}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Yeni Alışkanlık Ekle
             </Button>

@@ -106,7 +106,7 @@ const SidebarProvider = React.forwardRef<
       } else {
         setOpen(false)
       }
-    }, [pathname, isMobile])
+    }, [pathname, isMobile, setOpen])
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
@@ -281,7 +281,6 @@ const SidebarTrigger = React.forwardRef<
     <Button
       ref={ref}
       data-sidebar="trigger"
-      variant="ghost"
       size="icon"
       className={cn("h-7 w-7", className)}
       onClick={(event) => {
