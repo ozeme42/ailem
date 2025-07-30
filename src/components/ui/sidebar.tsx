@@ -103,10 +103,8 @@ const SidebarProvider = React.forwardRef<
     React.useEffect(() => {
       if (isMobile) {
         setOpenMobile(false)
-      } else {
-        setOpen(false)
       }
-    }, [pathname, isMobile, setOpen])
+    }, [pathname, isMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
@@ -275,7 +273,15 @@ const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile, setOpen, setOpenMobile } = useSidebar()
+
+  const handleToggle = () => {
+    if (isMobile) {
+      setOpenMobile(true);
+    } else {
+      setOpen(prev => !prev);
+    }
+  };
 
   return (
     <Button
@@ -285,7 +291,7 @@ const SidebarTrigger = React.forwardRef<
       className={cn("h-7 w-7", className)}
       onClick={(event) => {
         onClick?.(event)
-        toggleSidebar()
+        handleToggle()
       }}
       {...props}
     >
