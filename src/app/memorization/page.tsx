@@ -33,6 +33,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 import { NewMemorizationItemForm } from '@/components/new-memorization-item-form';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 // SCHEMAS & TYPES
@@ -401,7 +402,14 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
         }
       });
     });
-    return Object.entries(grouped).sort(([a, b]) => a.localeCompare(b, 'tr'));
+    
+    // Sort items within each shelf alphabetically
+    for (const key in grouped) {
+        grouped[key].sort((a,b) => a.title.localeCompare(b.title, 'tr'));
+    }
+
+    // Sort shelves alphabetically
+    return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, 'tr'));
   }, [items]);
   
     const memberProgressMap = useMemo(() => {
@@ -457,6 +465,44 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
         </div>
       </div>
      );
+  }
+
+  if (viewMode === 'management') {
+    return (
+        <Accordion type="multiple" className="w-full space-y-4">
+            {shelves.map(([shelfName, shelfItems]) => (
+                <AccordionItem key={shelfName} value={shelfName} className="border-b-0">
+                    <Card>
+                        <CardHeader className="p-0">
+                            <AccordionTrigger className="p-4">
+                                <h2 className="text-xl font-bold">{shelfName} ({shelfItems.length})</h2>
+                            </AccordionTrigger>
+                        </CardHeader>
+                        <AccordionContent className="p-4 pt-0">
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {shelfItems.map(item => (
+                                    <MemorizationItemCard
+                                        key={item.id}
+                                        item={item}
+                                        viewMode={viewMode}
+                                        isCompleted={memberProgressMap.get(`${item.id}_${selectedMemberId}`) || false}
+                                        onProgressChange={(completed) => handleProgressChange(item.id, completed)}
+                                        onEdit={() => onEdit(item)}
+                                        onDelete={() => onDelete(item.id)}
+                                        onAddToMember={handleAddToMember}
+                                        onRemoveFromMember={handleRemoveFromMember}
+                                        familyMembers={familyMembers}
+                                        progressMap={memberProgressMap}
+                                        selectedMemberId={selectedMemberId}
+                                    />
+                                ))}
+                            </div>
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+            ))}
+        </Accordion>
+    );
   }
 
   return (
