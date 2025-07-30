@@ -256,10 +256,10 @@ export default function Home() {
             assignments[m.id] = { habits: [], other: [], tests: [], studies: [], readingBooks: [], memorizationItems: [] };
         });
 
-        // Personal Tasks
+        // Personal Tasks & Habits
         tasks.filter(task => !task.completed && task.category === 'Kişisel').forEach(task => {
             if (assignments[task.assigneeId]) {
-                if (task.recurrenceType === 'daily') {
+                if (task.isRecurring) {
                     assignments[task.assigneeId].habits.push(task);
                 } else {
                     assignments[task.assigneeId].other.push(task);
@@ -738,7 +738,7 @@ export default function Home() {
             
             return (
                 <Card key={`personal-tasks-${member.id}`} className="shadow-lg overflow-hidden">
-                    <CardHeader className={cn("text-primary-foreground", `bg-gradient-to-br ${gradient}`)}>
+                    <CardHeader className={cn("text-white", `bg-gradient-to-br ${gradient}`)}>
                         <div className="flex items-center gap-3">
                              <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 bg-white/20"
@@ -751,36 +751,19 @@ export default function Home() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-4">
-                        {habits.length > 0 && (
+                         {habits.length > 0 && (
                             <div>
                                 <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Alışkanlıklar</h4>
-                                <div className="space-y-3">
-                                    {habits.map(task => {
-                                        const isCompletedToday = task.lastCompletedDate ? isToday(parseISO(task.lastCompletedDate)) : false;
-                                        return (
-                                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
-                                            <Button
-                                                variant={isCompletedToday ? "ghost" : "default"}
-                                                size="icon"
-                                                className={cn(
-                                                "w-12 h-12 rounded-full flex-col shrink-0",
-                                                isCompletedToday 
-                                                    ? "bg-background border-2 border-dashed border-muted-foreground/50" 
-                                                    : "bg-primary/90 hover:bg-primary"
-                                                )}
-                                                onClick={() => handleDailyTaskCompletion(task, member)}
-                                                disabled={isCompletedToday}
-                                            >
-                                                {isCompletedToday ? <Check /> : <Flame />}
-                                                <span className="text-xs mt-0.5">{task.streak || 0}</span>
-                                            </Button>
-                                            <div className="flex-grow">
-                                                <label className="font-semibold cursor-pointer">{task.title}</label>
-                                                <p className="text-xs text-muted-foreground">Günlük Görev</p>
+                                <div className="space-y-2">
+                                    {habits.map(task => (
+                                        <Link href="/habits" key={task.id} className="block">
+                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-orange-500/10 text-orange-900 hover:bg-orange-500/20">
+                                                <Flame className="h-5 w-5 shrink-0" />
+                                                <div className="truncate flex-grow"><p className="font-semibold truncate text-sm">{task.title}</p></div>
+                                                <Badge variant="outline" className="border-orange-500/50 bg-transparent">{task.streak || 0} seri</Badge>
                                             </div>
-                                            </div>
-                                        );
-                                    })}
+                                        </Link>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -965,6 +948,7 @@ export default function Home() {
 
 
     
+
 
 
 
