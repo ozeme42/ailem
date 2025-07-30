@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -124,7 +124,7 @@ export default function Home() {
     const unsubTests = onTestsUpdate(setTests);
     const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
     const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
-    const unsubBooks = onBooksUpdate(setBooks);
+    const unsubBooks = onBooksUpdate(setBooks, 'createdAt', 'desc');
     const unsubGoals = onGoalsUpdate(setGoals);
     const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
     const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
@@ -337,7 +337,7 @@ export default function Home() {
 
 
   const latestBooks = React.useMemo(() => {
-      return [...books].reverse().slice(0, 10);
+      return books.slice(0, 10);
   }, [books]);
 
    const activeGoals = React.useMemo(() => {
@@ -948,6 +948,7 @@ export default function Home() {
 
 
     
+
 
 
 

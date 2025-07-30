@@ -1,6 +1,7 @@
 
+
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock } from './data';
 import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
@@ -17,7 +18,13 @@ const getCurrentFamilyId = async (): Promise<string | null> => {
 // Generic CRUD operations
 // These need to be updated to use the familyId from the logged-in user.
 
-const onFamilyDataUpdate = <T>(collectionName: string, callback: (data: T[]) => void, runOnce = false) => {
+const onFamilyDataUpdate = <T>(
+    collectionName: string, 
+    callback: (data: T[]) => void, 
+    runOnce = false,
+    orderByField?: string,
+    orderByDirection?: 'asc' | 'desc'
+) => {
     const auth = getAuth();
     const handler = (user: import('firebase/auth').User | null) => {
         if (user) {
@@ -26,7 +33,12 @@ const onFamilyDataUpdate = <T>(collectionName: string, callback: (data: T[]) => 
                 if (userDoc.exists()) {
                     const familyId = userDoc.data().familyId;
                     if (familyId) {
-                        const q = query(collection(db, collectionName), where("familyId", "==", familyId));
+                        let q;
+                        if (orderByField && orderByDirection) {
+                            q = query(collection(db, collectionName), where("familyId", "==", familyId), orderBy(orderByField, orderByDirection));
+                        } else {
+                            q = query(collection(db, collectionName), where("familyId", "==", familyId));
+                        }
                         const dataUnsubscribe = onSnapshot(q, (snapshot) => {
                             const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
                             callback(items);
@@ -63,11 +75,11 @@ const onFamilyDataUpdate = <T>(collectionName: string, callback: (data: T[]) => 
 
 
 // Books (mediaItems)
-export const onBooksUpdate = (callback: (books: Book[]) => void) => onFamilyDataUpdate<Book>('mediaItems', callback);
-export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
+export const onBooksUpdate = (callback: (books: Book[]) => void, orderByField?: string, orderByDirection?: 'asc' | 'desc') => onFamilyDataUpdate<Book>('mediaItems', callback, false, orderByField, orderByDirection);
+export const addBook = async (data: Omit<Book, 'id' | 'familyId' | 'createdAt'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'mediaItems'), { ...data, familyId });
+    return addDoc(collection(db, 'mediaItems'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
 export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
