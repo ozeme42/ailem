@@ -249,7 +249,7 @@ export default function Home() {
         assignments[m.id] = { habits: [], other: [], tests: [], studies: [], readingBooks: [], memorizationItems: [] };
     });
 
-    // Assign tasks
+    // Assign tasks (Habits and Other)
     tasks.forEach(task => {
         if (assignments[task.assigneeId] && !task.completed) {
             if (task.isRecurring) {
@@ -779,27 +779,22 @@ export default function Home() {
                                 </div>
                             </div>
                         )}
-                        {other.length > 0 && (
-                            <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Diğer Görevler</h4>
-                                <div className="space-y-3">
-                                {other.map(task => (
-                                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
-                                        <Checkbox
-                                            id={`personal-task-${task.id}`}
-                                            onCheckedChange={() => handleTaskCompletion(task, member)}
-                                            className="border-primary"
-                                        />
-                                        <div className="flex-grow">
-                                            <label htmlFor={`personal-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
-                                            <p className="text-xs text-muted-foreground">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                        {memorizationItems.length > 0 && (
+                           <div>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ezberlenecekler</h4>
+                                <div className="space-y-2">
+                                    {memorizationItems.map(item => (
+                                        <Link href="/memorization" key={item.id} className="block">
+                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 text-purple-900 hover:bg-purple-500/20">
+                                                <BrainCircuit className="h-5 w-5 shrink-0" />
+                                                <div className="truncate"><p className="font-semibold truncate text-sm">{item.title}</p></div>
+                                            </div>
+                                        </Link>
+                                    ))}
                                 </div>
                             </div>
                         )}
-                         {(tests.length > 0 || studies.length > 0) && (
+                        {(tests.length > 0 || studies.length > 0) && (
                            <div>
                                 <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ödevler</h4>
                                 <div className="space-y-2">
@@ -825,18 +820,23 @@ export default function Home() {
                                 </div>
                             </div>
                         )}
-                         {memorizationItems.length > 0 && (
-                           <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ezberlenecekler</h4>
-                                <div className="space-y-2">
-                                    {memorizationItems.map(item => (
-                                        <Link href="/memorization" key={item.id} className="block">
-                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 text-purple-900 hover:bg-purple-500/20">
-                                                <BrainCircuit className="h-5 w-5 shrink-0" />
-                                                <div className="truncate"><p className="font-semibold truncate text-sm">{item.title}</p></div>
-                                            </div>
-                                        </Link>
-                                    ))}
+                        {other.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Diğer Görevler</h4>
+                                <div className="space-y-3">
+                                {other.map(task => (
+                                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
+                                        <Checkbox
+                                            id={`personal-task-${task.id}`}
+                                            onCheckedChange={() => handleTaskCompletion(task, member)}
+                                            className="border-primary"
+                                        />
+                                        <div className="flex-grow">
+                                            <label htmlFor={`personal-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
+                                            <p className="text-xs text-muted-foreground">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
+                                        </div>
+                                    </div>
+                                ))}
                                 </div>
                             </div>
                         )}
@@ -956,6 +956,7 @@ export default function Home() {
 
 
     
+
 
 
 
