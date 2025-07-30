@@ -79,7 +79,7 @@ const onFamilyDataUpdate = <T>(
 
 // Books (mediaItems)
 export const onBooksUpdate = (callback: (books: Book[]) => void, orderByField?: string, orderByDirection?: 'asc' | 'desc') => onFamilyDataUpdate<Book>('mediaItems', callback, false, orderByField, orderByDirection);
-export const addBook = async (data: Omit<Book, 'id' | 'familyId' | 'createdAt'>) => {
+export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'mediaItems'), { ...data, familyId, createdAt: new Date().toISOString() });
@@ -1134,11 +1134,11 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
 
 // Notes Feature
 const noteColors = [
-    'bg-yellow-100 border-yellow-200',
-    'bg-blue-100 border-blue-200',
-    'bg-green-100 border-green-200',
-    'bg-pink-100 border-pink-200',
-    'bg-purple-100 border-purple-200',
+    'bg-yellow-100 border-yellow-200 text-yellow-900',
+    'bg-blue-100 border-blue-200 text-blue-900',
+    'bg-green-100 border-green-200 text-green-900',
+    'bg-pink-100 border-pink-200 text-pink-900',
+    'bg-purple-100 border-purple-200 text-purple-900',
 ];
 export const onNotebooksUpdate = (callback: (notebooks: Notebook[]) => void) => onFamilyDataUpdate<Notebook>('notebooks', callback);
 export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
