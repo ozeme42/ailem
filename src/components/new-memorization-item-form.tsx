@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -14,11 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Loader2, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import type { MemorizationItem } from '@/lib/data';
 import { ScrollArea } from './ui/scroll-area';
+import { DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+
 
 const formSchema = z.object({
   title: z.string().min(2, "Başlık en az 2 karakter olmalıdır."),
