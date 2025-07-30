@@ -723,6 +723,7 @@ export default function Home() {
         {familyMembers.map(member => {
             const { habits, other } = personalTasksByMember[member.id] || { habits: [], other: [] };
             const { tests, studies } = educationAssignmentsByStudent[member.id] || { tests: [], studies: [] };
+            const memberLibraryStats = libraryStats.find(s => s.memberId === member.id);
             
             if (habits.length === 0 && other.length === 0 && tests.length === 0 && studies.length === 0) return null;
             
@@ -739,7 +740,21 @@ export default function Home() {
                             </div>
                             <div>
                                 <CardTitle>{member.name}'in Görevleri</CardTitle>
-                                <CardDescription>{habits.length + other.length + tests.length + studies.length} bekleyen görev</CardDescription>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                                    <span>{habits.length + other.length + tests.length + studies.length} bekleyen görev</span>
+                                    {(memberLibraryStats?.toReadCount ?? 0) > 0 && (
+                                        <div className="flex items-center gap-1.5">
+                                            <BookOpen className="w-4 h-4 text-blue-500" />
+                                            <span className="font-semibold">{memberLibraryStats?.toReadCount} kitap</span>
+                                        </div>
+                                    )}
+                                    {(memberLibraryStats?.toMemorizeCount ?? 0) > 0 && (
+                                        <div className="flex items-center gap-1.5">
+                                            <BrainCircuit className="w-4 h-4 text-purple-500" />
+                                            <span className="font-semibold">{memberLibraryStats?.toMemorizeCount} ezber</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
@@ -848,9 +863,8 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {familyMembers.map((member) => {
-            const stats = libraryStats.find(s => s.memberId === member.id);
             return (
-              <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} stats={stats}/>
+              <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} />
             )
           })}
         </div>
@@ -925,3 +939,4 @@ export default function Home() {
 
 
     
+
