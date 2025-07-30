@@ -3,12 +3,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -95,6 +95,7 @@ export default function Home() {
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
   const [books, setBooks] = React.useState<Book[]>([]);
   const [goals, setGoals] = React.useState<Goal[]>([]);
+  const [memorizationProgress, setMemorizationProgress] = React.useState<MemorizationProgress[]>([]);
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
   const [editingBook, setEditingBook] = React.useState<Book | null>(null);
@@ -116,6 +117,7 @@ export default function Home() {
     const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
     const unsubBooks = onBooksUpdate(setBooks);
     const unsubGoals = onGoalsUpdate(setGoals);
+    const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
     let unsubLibraries = () => {};
     if (familyId) {
       unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
@@ -132,6 +134,7 @@ export default function Home() {
       unsubLibraries();
       unsubBooks();
       unsubGoals();
+      unsubMemorizationProgress();
     };
   }, [familyId]);
   
@@ -315,29 +318,17 @@ export default function Home() {
   const libraryStats = React.useMemo(() => {
     return familyMembers.map(member => {
         const memberLibrary = userLibraries.find(lib => lib.memberId === member.id);
-        if (!memberLibrary) {
-            return { memberId: member.id, name: member.name, color: member.color, booksRead: 0, pagesRead: 0 };
-        }
-
-        const finishedBookIds = new Set(
-            memberLibrary.books
-                .filter(b => b.status === 'finished')
-                .map(b => b.bookId)
-        );
-
-        const pagesRead = books
-            .filter(b => finishedBookIds.has(b.id))
-            .reduce((sum, b) => sum + (b.pageCount || 0), 0);
+        const toReadCount = memberLibrary ? memberLibrary.books.filter(b => b.status === 'reading' || b.status === 'to-read').length : 0;
+        
+        const toMemorizeCount = memorizationProgress.filter(p => p.memberId === member.id && !p.completed).length;
 
         return {
             memberId: member.id,
-            name: member.name,
-            color: member.color,
-            booksRead: finishedBookIds.size,
-            pagesRead: pagesRead
+            toReadCount,
+            toMemorizeCount,
         };
     });
-  }, [familyMembers, userLibraries, books]);
+  }, [familyMembers, userLibraries, memorizationProgress]);
 
    const activeGoals = React.useMemo(() => {
     return goals
@@ -502,7 +493,7 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4 p-4 bg-gradient-to-br from-primary to-accent/80 text-primary-foreground rounded-xl shadow-lg">
+      <header className="flex items-center justify-between gap-4 p-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl shadow-lg">
           <div className="flex items-center gap-4">
               <SidebarTrigger />
               <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
@@ -834,32 +825,6 @@ export default function Home() {
         })}
       </section>
 
-      <Card className="shadow-lg bg-gradient-to-br from-pink-500 to-purple-600 text-white">
-        <CardHeader>
-            <CardTitle>Kişisel Kitaplıklar</CardTitle>
-            <CardDescription className="text-white/80">Herkesin okuma ilerlemesi.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            {libraryStats.map(stat => (
-                <div key={stat.memberId} className="flex items-center gap-4 p-3 rounded-lg bg-white/20">
-                    <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shrink-0 border-2 border-white/50" 
-                        style={{ backgroundColor: stat.color, color: '#fff' }}
-                    >
-                        {stat.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-grow">
-                        <p className="font-semibold">{stat.name}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                        <p className="font-bold">{stat.booksRead} <span className="font-normal text-sm text-white/80">kitap</span></p>
-                        <p className="font-bold">{stat.pagesRead.toLocaleString()} <span className="font-normal text-sm text-white/80">sayfa</span></p>
-                    </div>
-                </div>
-            ))}
-        </CardContent>
-      </Card>
-      
       <section>
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
@@ -882,9 +847,12 @@ export default function Home() {
             </Dialog>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {familyMembers.map((member) => (
-            <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} />
-          ))}
+          {familyMembers.map((member) => {
+            const stats = libraryStats.find(s => s.memberId === member.id);
+            return (
+              <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} stats={stats}/>
+            )
+          })}
         </div>
       </section>
 

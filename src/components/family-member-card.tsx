@@ -1,4 +1,5 @@
 
+
 import * as React from "react";
 import Image from "next/image";
 import Link from 'next/link';
@@ -6,12 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { FamilyMember } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
-import { Star, Flame, Crown, Zap, Edit } from "lucide-react";
+import { Star, Flame, Crown, Zap, Edit, BookOpen, BrainCircuit } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface FamilyMemberCardProps {
   member: FamilyMember;
   onEdit: () => void;
+  stats?: {
+      toReadCount?: number;
+      toMemorizeCount?: number;
+  }
 }
 
 const moodEmojis: { [key: string]: string } = {
@@ -32,7 +37,7 @@ const gradientClasses: { [key: string]: string } = {
 };
 
 
-export function FamilyMemberCard({ member, onEdit }: FamilyMemberCardProps) {
+export function FamilyMemberCard({ member, onEdit, stats }: FamilyMemberCardProps) {
   const gradient = gradientClasses[member.role] || 'from-gray-400 to-gray-500';
   
   return (
@@ -87,12 +92,28 @@ export function FamilyMemberCard({ member, onEdit }: FamilyMemberCardProps) {
                 </div>
             </div>
           <CardContent className="p-3 bg-card h-14">
-            <div className="flex justify-center items-center gap-2 h-full">
-              {member.badges.slice(0, 3).map((badge, index) => (
-                <div key={index} className="text-2xl" title={badge}>
-                  {badge}
-                </div>
-              ))}
+            <div className="flex justify-around items-center h-full text-xs text-muted-foreground">
+                {(stats?.toReadCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-1.5">
+                        <BookOpen className="w-4 h-4 text-blue-500" />
+                        <span className="font-semibold">{stats?.toReadCount} kitap</span>
+                    </div>
+                )}
+                 {(stats?.toMemorizeCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-1.5">
+                        <BrainCircuit className="w-4 h-4 text-purple-500" />
+                        <span className="font-semibold">{stats?.toMemorizeCount} ezber</span>
+                    </div>
+                )}
+                 {(stats?.toReadCount ?? 0) === 0 && (stats?.toMemorizeCount ?? 0) === 0 && (
+                    <div className="flex justify-center items-center gap-2 h-full w-full">
+                        {member.badges.slice(0, 3).map((badge, index) => (
+                        <div key={index} className="text-2xl" title={badge}>
+                            {badge}
+                        </div>
+                        ))}
+                    </div>
+                )}
             </div>
           </CardContent>
         </Card>
