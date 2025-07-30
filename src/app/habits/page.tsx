@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from 'next/link';
 import { useAuth } from "@/components/auth-provider";
 import { onTasksUpdate, updateTask, deleteTask } from "@/lib/dataService";
-import type { Task, FamilyMember, Subtask } from "@/lib/data";
+import type { Task, FamilyMember } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { NewTaskForm } from "@/components/new-task-form";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PlusCircle, Edit, Trash2, MoreVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { format, isSameDay, parseISO } from "date-fns";
-import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const brightColors = [
     'from-blue-500 to-indigo-600',
@@ -29,7 +27,7 @@ const brightColors = [
 ];
 
 
-function HabitListItem({ task, onEdit, onDelete, colorClass }: { task: Task, onEdit: (task: Task) => void, onDelete: (id: string) => void, colorClass: string }) {
+function HabitListItem({ task, colorClass }: { task: Task, colorClass: string }) {
     
     const frequencyText = {
         daily: "Günlük",
@@ -53,35 +51,6 @@ function HabitListItem({ task, onEdit, onDelete, colorClass }: { task: Task, onE
                         <span>Sıklık: <strong className="text-white">{frequencyText}</strong></span>
                     </div>
                 </div>
-                <div className="flex-shrink-0">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={(e) => e.preventDefault()} className="text-white hover:bg-white/20 hover:text-white">
-                                <MoreVertical className="h-4 w-4"/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
-                            <DropdownMenuItem onClick={() => onEdit(task)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4"/>Sil
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitleComponent>Alışkanlığı Sil</AlertDialogTitleComponent>
-                                        <AlertDialogDescription>"{task.title}" alışkanlığını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>İptal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onDelete(task.id)}>Evet, Sil</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
             </Card>
         </Link>
     );
@@ -93,40 +62,40 @@ export default function HabitsPage() {
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
+  const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
   const { toast } = useToast();
 
   React.useEffect(() => {
     const unsubscribe = onTasksUpdate(setTasks);
     return () => unsubscribe();
   }, []);
+  
+  React.useEffect(() => {
+    if (familyMembers.length > 0 && !selectedMember) {
+        // Try to select the logged-in user first, otherwise default to the first member
+        const currentUserAsMember = familyMembers.find(m => m.id === user?.uid);
+        setSelectedMember(currentUserAsMember || familyMembers[0]);
+    }
+  }, [familyMembers, selectedMember, user]);
 
-  const habitTasks = React.useMemo(() => {
-    return tasks.filter(task => task.isRecurring);
-  }, [tasks]);
+  const { personalHabits, houseHabits } = React.useMemo(() => {
+    if (!selectedMember) return { personalHabits: [], houseHabits: [] };
+
+    const memberHabits = tasks.filter(task => 
+        task.isRecurring && task.assigneeId === selectedMember.id
+    );
+
+    const personal = memberHabits.filter(task => task.category === 'Kişisel');
+    const house = memberHabits.filter(task => task.category === 'Ev İşleri');
+
+    return { personalHabits: personal, houseHabits: house };
+  }, [tasks, selectedMember]);
 
   const handleOpenNewTask = () => {
     setEditingTask(null);
     setIsTaskFormOpen(true);
   };
   
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task);
-    setIsTaskFormOpen(true);
-  };
-  
-  const handleDeleteTask = async (taskId: string) => {
-    try {
-      await deleteTask(taskId);
-      toast({ title: "Alışkanlık Silindi", variant: "destructive" });
-    } catch (e) {
-      toast({
-        title: "Hata",
-        description: "Alışkanlık silinirken bir hata oluştu.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="space-y-6">
       <PageHeader title="Alışkanlık Takibi 💪">
@@ -153,26 +122,69 @@ export default function HabitsPage() {
         </Dialog>
       </PageHeader>
       
-      {habitTasks.length > 0 ? (
-        <div className="space-y-4">
-            {habitTasks.map((task, index) => (
-                <HabitListItem
-                    key={task.id}
-                    task={task}
-                    onEdit={handleEditTask}
-                    onDelete={handleDeleteTask}
-                    colorClass={cn('bg-gradient-to-br', brightColors[index % brightColors.length])}
-                />
-            ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            <p>Henüz takip edilen bir alışkanlık yok.</p>
-            <p className="text-sm">Yeni bir alışkanlık ekleyerek başlayın.</p>
-          </CardContent>
-        </Card>
-      )}
+      <div className="flex items-center gap-4 border-b pb-4 overflow-x-auto">
+        {familyMembers.map((member) => (
+          <Button
+            key={member.id}
+            variant={selectedMember?.id === member.id ? "default" : "outline"}
+            className={`flex-shrink-0 h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
+            onClick={() => setSelectedMember(member)}
+          >
+            <div 
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" 
+                style={{ backgroundColor: member.color, color: '#fff' }}
+            >
+                {member.name.charAt(0).toUpperCase()}
+            </div>
+            <p className="font-bold text-sm">{member.name}</p>
+          </Button>
+        ))}
+      </div>
+
+       <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="personal">Kişisel ({personalHabits.length})</TabsTrigger>
+              <TabsTrigger value="house">Ev İşleri ({houseHabits.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="personal" className="mt-4">
+                {personalHabits.length > 0 ? (
+                    <div className="space-y-4">
+                        {personalHabits.map((task, index) => (
+                            <HabitListItem
+                                key={task.id}
+                                task={task}
+                                colorClass={cn('bg-gradient-to-br', brightColors[index % brightColors.length])}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <Card>
+                        <CardContent className="p-8 text-center text-muted-foreground">
+                            <p>Bu kategoride takip edilen bir alışkanlık yok.</p>
+                        </CardContent>
+                    </Card>
+                )}
+            </TabsContent>
+            <TabsContent value="house" className="mt-4">
+                 {houseHabits.length > 0 ? (
+                    <div className="space-y-4">
+                        {houseHabits.map((task, index) => (
+                            <HabitListItem
+                                key={task.id}
+                                task={task}
+                                colorClass={cn('bg-gradient-to-br', brightColors[(index + 2) % brightColors.length])} // Offset color
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <Card>
+                        <CardContent className="p-8 text-center text-muted-foreground">
+                            <p>Bu kategoride takip edilen bir alışkanlık yok.</p>
+                        </CardContent>
+                    </Card>
+                )}
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
