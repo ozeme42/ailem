@@ -241,64 +241,61 @@ export default function Home() {
   }, [tasks]);
   
   const memberAssignments = React.useMemo(() => {
+    if (familyMembers.length === 0) return {};
+    
     const assignments: { [key: string]: { habits: Task[]; other: Task[]; tests: Test[]; studies: (StudyAssignment & { studyPlanTitle?: string })[]; readingBooks: Book[]; memorizationItems: MemorizationItem[]; } } = {};
 
     familyMembers.forEach(m => {
         assignments[m.id] = { habits: [], other: [], tests: [], studies: [], readingBooks: [], memorizationItems: [] };
     });
 
-    if (tasks.length > 0) {
-        tasks.forEach(task => {
-            if (assignments[task.assigneeId] && !task.completed) {
-                if (task.isRecurring) {
-                    assignments[task.assigneeId].habits.push(task);
-                } else if (task.category === 'Kişisel') {
-                    assignments[task.assigneeId].other.push(task);
-                }
+    // Assign tasks
+    tasks.forEach(task => {
+        if (assignments[task.assigneeId] && !task.completed) {
+            if (task.isRecurring) {
+                assignments[task.assigneeId].habits.push(task);
+            } else if (task.category === 'Kişisel') {
+                assignments[task.assigneeId].other.push(task);
             }
-        });
-    }
+        }
+    });
 
-    if (tests.length > 0) {
-        tests.forEach(test => {
-            if (assignments[test.studentId] && test.status === 'Atandı') {
-                assignments[test.studentId].tests.push(test);
-            }
-        });
-    }
+    // Assign tests
+    tests.forEach(test => {
+        if (assignments[test.studentId] && test.status === 'Atandı') {
+            assignments[test.studentId].tests.push(test);
+        }
+    });
     
-    if (studyAssignments.length > 0) {
-         studyAssignments.forEach(assignment => {
-            if (assignments[assignment.studentId] && assignment.status === 'assigned') {
-                const plan = studyPlans.find(p => p.id === assignment.studyPlanId);
-                assignments[assignment.studentId].studies.push({ ...assignment, studyPlanTitle: plan?.title });
-            }
-        });
-    }
+    // Assign study topics
+    studyAssignments.forEach(assignment => {
+        if (assignments[assignment.studentId] && assignment.status === 'assigned') {
+            const plan = studyPlans.find(p => p.id === assignment.studyPlanId);
+            assignments[assignment.studentId].studies.push({ ...assignment, studyPlanTitle: plan?.title });
+        }
+    });
     
-    if (userLibraries.length > 0 && books.length > 0) {
-        userLibraries.forEach(lib => {
-            if (assignments[lib.memberId]) {
-                 const memberBooks = lib.books
-                    .filter(b => b.status === 'reading' || b.status === 'to-read')
-                    .map(b => books.find(book => book.id === b.bookId))
-                    .filter((b): b is Book => !!b)
-                    .sort((a, b) => (userLibraries.find(l=>l.memberId === lib.memberId)?.books.find(ub=>ub.bookId===a.id)?.status === 'reading' ? -1 : 1)); // Prioritize reading books
-                assignments[lib.memberId].readingBooks = memberBooks;
-            }
-        });
-    }
+    // Assign books
+    userLibraries.forEach(lib => {
+        if (assignments[lib.memberId]) {
+            const memberBooks = lib.books
+                .filter(b => b.status === 'reading' || b.status === 'to-read')
+                .map(b => books.find(book => book.id === b.bookId))
+                .filter((b): b is Book => !!b)
+                .sort((a, b) => (userLibraries.find(l=>l.memberId === lib.memberId)?.books.find(ub=>ub.bookId===a.id)?.status === 'reading' ? -1 : 1)); // Prioritize reading books
+            assignments[lib.memberId].readingBooks = memberBooks;
+        }
+    });
 
-    if (memorizationProgress.length > 0 && memorizationItems.length > 0) {
-        memorizationProgress.forEach(prog => {
-            if (assignments[prog.memberId] && !prog.completed) {
-                const item = memorizationItems.find(i => i.id === prog.itemId);
-                if (item) {
-                    assignments[prog.memberId].memorizationItems.push(item);
-                }
+    // Assign memorization items
+    memorizationProgress.forEach(prog => {
+        if (assignments[prog.memberId] && !prog.completed) {
+            const item = memorizationItems.find(i => i.id === prog.itemId);
+            if (item) {
+                assignments[prog.memberId].memorizationItems.push(item);
             }
-        });
-    }
+        }
+    });
     
     return assignments;
   }, [tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, familyMembers]);
@@ -767,6 +764,21 @@ export default function Home() {
                                 </div>
                             </div>
                         )}
+                        {readingBooks.length > 0 && (
+                           <div>
+                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Okunacak Kitaplar</h4>
+                                <div className="space-y-2">
+                                    {readingBooks.map(book => (
+                                         <Link href="/library" key={book.id} className="block">
+                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-500/10 text-amber-900 hover:bg-amber-500/20">
+                                                <BookOpen className="h-5 w-5 shrink-0" />
+                                                <div className="truncate"><p className="font-semibold truncate text-sm">{book.title}</p><p className="text-xs text-amber-800/80 truncate">{book.author}</p></div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         {other.length > 0 && (
                             <div>
                                 <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Diğer Görevler</h4>
@@ -807,21 +819,6 @@ export default function Home() {
                                                     <p className="font-semibold truncate text-sm">{study.topic}</p>
                                                     <p className="text-xs text-blue-800/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
                                                 </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                         {readingBooks.length > 0 && (
-                           <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Okunacak Kitaplar</h4>
-                                <div className="space-y-2">
-                                    {readingBooks.map(book => (
-                                         <Link href="/library" key={book.id} className="block">
-                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-500/10 text-amber-900 hover:bg-amber-500/20">
-                                                <BookOpen className="h-5 w-5 shrink-0" />
-                                                <div className="truncate"><p className="font-semibold truncate text-sm">{book.title}</p><p className="text-xs text-amber-800/80 truncate">{book.author}</p></div>
                                             </div>
                                         </Link>
                                     ))}
@@ -959,4 +956,5 @@ export default function Home() {
 
 
     
+
 
