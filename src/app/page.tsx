@@ -240,72 +240,68 @@ export default function Home() {
       .sort((a, b) => compareAsc(parseISO(a.dueDate), b.dueDate ? parseISO(b.dueDate) : 0));
   }, [tasks]);
   
-    const memberAssignments = React.useMemo(() => {
-        const assignments: { 
-            [key: string]: { 
-                habits: Task[]; 
-                other: Task[]; 
-                tests: Test[]; 
-                studies: (StudyAssignment & { studyPlanTitle?: string })[];
-                readingBooks: Book[];
-                memorizationItems: MemorizationItem[];
-            } 
-        } = {};
-        
-        familyMembers.forEach(m => {
-            assignments[m.id] = { habits: [], other: [], tests: [], studies: [], readingBooks: [], memorizationItems: [] };
-        });
+  const memberAssignments = React.useMemo(() => {
+    const assignments: { [key: string]: { habits: Task[]; other: Task[]; tests: Test[]; studies: (StudyAssignment & { studyPlanTitle?: string })[]; readingBooks: Book[]; memorizationItems: MemorizationItem[]; } } = {};
 
-        // Personal Tasks & Habits
-        tasks.filter(task => !task.completed && task.category === 'Kişisel').forEach(task => {
-            if (assignments[task.assigneeId]) {
+    familyMembers.forEach(m => {
+        assignments[m.id] = { habits: [], other: [], tests: [], studies: [], readingBooks: [], memorizationItems: [] };
+    });
+
+    if (tasks.length > 0) {
+        tasks.forEach(task => {
+            if (assignments[task.assigneeId] && !task.completed) {
                 if (task.isRecurring) {
                     assignments[task.assigneeId].habits.push(task);
-                } else {
+                } else if (task.category === 'Kişisel') {
                     assignments[task.assigneeId].other.push(task);
                 }
             }
         });
+    }
 
-        // Education
-        const students = familyMembers.filter(m => m.role.includes('Çocuk'));
-        const studentIds = new Set(students.map(s => s.id));
-        tests.filter(t => studentIds.has(t.studentId) && t.status === 'Atandı').forEach(test => {
-            if (assignments[test.studentId]) {
+    if (tests.length > 0) {
+        tests.forEach(test => {
+            if (assignments[test.studentId] && test.status === 'Atandı') {
                 assignments[test.studentId].tests.push(test);
             }
         });
-        studyAssignments.filter(a => studentIds.has(a.studentId) && a.status === 'assigned').forEach(assignment => {
-            if (assignments[assignment.studentId]) {
+    }
+    
+    if (studyAssignments.length > 0) {
+         studyAssignments.forEach(assignment => {
+            if (assignments[assignment.studentId] && assignment.status === 'assigned') {
                 const plan = studyPlans.find(p => p.id === assignment.studyPlanId);
                 assignments[assignment.studentId].studies.push({ ...assignment, studyPlanTitle: plan?.title });
             }
         });
-        
-        // Library
+    }
+    
+    if (userLibraries.length > 0 && books.length > 0) {
         userLibraries.forEach(lib => {
             if (assignments[lib.memberId]) {
                  const memberBooks = lib.books
                     .filter(b => b.status === 'reading' || b.status === 'to-read')
                     .map(b => books.find(book => book.id === b.bookId))
-                    .filter((b): b is Book => !!b);
+                    .filter((b): b is Book => !!b)
+                    .sort((a, b) => (userLibraries.find(l=>l.memberId === lib.memberId)?.books.find(ub=>ub.bookId===a.id)?.status === 'reading' ? -1 : 1)); // Prioritize reading books
                 assignments[lib.memberId].readingBooks = memberBooks;
             }
         });
-        
-        // Memorization
-        const pendingProgress = memorizationProgress.filter(p => !p.completed);
-        pendingProgress.forEach(prog => {
-            if (assignments[prog.memberId]) {
+    }
+
+    if (memorizationProgress.length > 0 && memorizationItems.length > 0) {
+        memorizationProgress.forEach(prog => {
+            if (assignments[prog.memberId] && !prog.completed) {
                 const item = memorizationItems.find(i => i.id === prog.itemId);
                 if (item) {
                     assignments[prog.memberId].memorizationItems.push(item);
                 }
             }
         });
-        
-        return assignments;
-    }, [tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, familyMembers]);
+    }
+    
+    return assignments;
+  }, [tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, familyMembers]);
 
 
   const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp, fill: member.color }));
@@ -731,10 +727,14 @@ export default function Home() {
         </Link>
         
         {familyMembers.map(member => {
-            const { habits, other, tests, studies, readingBooks, memorizationItems } = memberAssignments[member.id] || {};
-            const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
+            const memberData = memberAssignments[member.id];
+            if (!memberData) return null;
+            const { habits, other, tests, studies, readingBooks, memorizationItems } = memberData;
+            const totalPendingItems = habits.length + other.length + tests.length + studies.length + readingBooks.length + memorizationItems.length;
+
+            if (totalPendingItems === 0) return null;
             
-            if (!habits?.length && !other?.length && !tests?.length && !studies?.length && !readingBooks?.length && !memorizationItems?.length) return null;
+            const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
             
             return (
                 <Card key={`personal-tasks-${member.id}`} className="shadow-lg overflow-hidden">
