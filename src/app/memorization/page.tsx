@@ -256,6 +256,7 @@ export default function MemorizationPage() {
                 onEdit={handleOpenForm} 
                 onDelete={handleDeleteItem} 
                 memberId={selectedMember?.id || ''}
+                selectedMemberId={selectedMember?.id || ''}
                 familyMembers={familyMembers}
                 progress={progress}
               />
@@ -319,12 +320,13 @@ export default function MemorizationPage() {
 
 
 // ItemShelf COMPONENT
-function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers, progress }: { 
+function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers, progress, selectedMemberId }: { 
     items: MemorizationItem[], 
     viewMode: 'items' | 'management',
     onEdit: (item: MemorizationItem) => void, 
     onDelete: (id: string) => void, 
     memberId: string, 
+    selectedMemberId: string,
     familyMembers: FamilyMember[],
     progress: MemorizationProgress[] 
 }) {
@@ -402,7 +404,7 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, memberId, familyMembers,
                         onAddToMember={handleAddToMember}
                         familyMembers={familyMembers}
                         progressMap={memberProgressMap}
-                        selectedMemberId={memberId}
+                        selectedMemberId={selectedMemberId}
                     />
                 ))}
           </div>
@@ -520,38 +522,38 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
                             </label>
                         </div>
                     ) : (
-                        <>
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full text-xs" 
-                            onClick={() => onAddToMember(item.id, selectedMemberId)}
-                            disabled={isAddedToCurrentMember}
-                        >
-                            <UserPlus className="mr-1.5 h-3 w-3"/> 
-                            {isAddedToCurrentMember ? 'Listemde' : 'Listeme Ekle'}
-                        </Button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                    <UserPlus className="mr-1 h-3 w-3"/> Diğer
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuLabel>Başkasının Listesine Ekle</DropdownMenuLabel>
-                                {familyMembers.filter(m => m.id !== selectedMemberId).map(member => (
-                                    <DropdownMenuItem 
-                                        key={member.id} 
-                                        onClick={() => onAddToMember(item.id, member.id)}
-                                        disabled={progressMap.has(`${item.id}_${member.id}`)}
-                                    >
-                                        {member.name}
-                                        {progressMap.has(`${item.id}_${member.id}`) && <span className="text-xs text-muted-foreground ml-auto">Ekli</span>}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        </>
+                        <div className="flex items-center gap-1 w-full">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full text-xs" 
+                                onClick={() => onAddToMember(item.id, selectedMemberId)}
+                                disabled={isAddedToCurrentMember}
+                            >
+                                <UserPlus className="mr-1.5 h-3 w-3"/> 
+                                {isAddedToCurrentMember ? 'Listemde' : 'Listeme Ekle'}
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                        <UserPlus className="h-4 w-4"/>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuLabel>Başkasının Listesine Ekle</DropdownMenuLabel>
+                                    {familyMembers.filter(m => m.id !== selectedMemberId).map(member => (
+                                        <DropdownMenuItem 
+                                            key={member.id} 
+                                            onClick={() => onAddToMember(item.id, member.id)}
+                                            disabled={progressMap.has(`${item.id}_${member.id}`)}
+                                        >
+                                            {member.name}
+                                            {progressMap.has(`${item.id}_${member.id}`) && <span className="text-xs text-muted-foreground ml-auto">Ekli</span>}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -606,3 +608,4 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
         </Dialog>
     );
 }
+
