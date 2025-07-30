@@ -72,7 +72,14 @@ export default function HabitsPage() {
   
   React.useEffect(() => {
     if (familyMembers.length > 0 && !selectedMember) {
-        // Try to select the logged-in user first, otherwise default to the first member
+        // Prioritize selecting a student first
+        const student = familyMembers.find(m => m.role === 'Kız Çocuk' || m.role === 'Erkek Çocuk');
+        if (student) {
+            setSelectedMember(student);
+            return;
+        }
+
+        // Fallback to original logic if no student is found
         const currentUserAsMember = familyMembers.find(m => m.id === user?.uid);
         setSelectedMember(currentUserAsMember || familyMembers[0]);
     }
