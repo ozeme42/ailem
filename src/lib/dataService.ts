@@ -46,6 +46,9 @@ const onFamilyDataUpdate = <T>(
                                 userUnsubscribe();
                                 dataUnsubscribe();
                             }
+                        }, (error) => {
+                             console.error(`Error fetching ${collectionName}:`, error);
+                             callback([]);
                         });
                         if (runOnce) return () => dataUnsubscribe();
                     } else {
@@ -81,7 +84,15 @@ export const addBook = async (data: Omit<Book, 'id' | 'familyId' | 'createdAt'>)
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'mediaItems'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
-export const updateBook = (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => updateDoc(doc(db, 'mediaItems', id), data);
+export const updateBook = async (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => {
+    const bookRef = doc(db, 'mediaItems', id);
+    const bookSnap = await getDoc(bookRef);
+    if (bookSnap.exists() && !bookSnap.data().createdAt) {
+        // If the book doesn't have a creation date, add it.
+        return updateDoc(bookRef, { ...data, createdAt: new Date().toISOString() });
+    }
+    return updateDoc(bookRef, data);
+};
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
 
 // Reading Sessions
@@ -687,8 +698,8 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 
     // Helper data from data.ts
     const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
-        { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false },
-        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
+        { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, createdAt: new Date().toISOString() },
+        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, createdAt: new Date().toISOString() },
     ];
 
     const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId' | 'createdAt'>[] = [
