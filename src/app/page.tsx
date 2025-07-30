@@ -748,7 +748,7 @@ export default function Home() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-4">
-                         {habits.length > 0 && (
+                        {habits.length > 0 && (
                             <div>
                                 <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Alışkanlıklar</h4>
                                 <div className="space-y-2">
@@ -956,5 +956,7 @@ export default function Home() {
 
 
     
+
+
 
 
