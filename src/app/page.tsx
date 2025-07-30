@@ -37,6 +37,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { NewBookForm } from "@/components/new-book-form";
+import { MemberDashboardCard } from "@/components/member-dashboard-card";
 
 
 const familyXpChartConfig = {
@@ -172,136 +173,6 @@ export default function Home() {
       }
   };
 
-  const recentActivities = React.useMemo(() => {
-    const activities: any[] = [];
-
-    // Completed Tasks
-    tasks.filter(t => t.completed).forEach(task => {
-        // NOTE: We don't have a `completedAt` timestamp. We'll use dueDate for sorting.
-        const member = familyMembers.find(m => m.id === task.assigneeId);
-        activities.push({
-            id: `task-${task.id}`,
-            user: member?.name || 'Bilinmeyen',
-            title: `'${task.title}' görevini tamamladı`,
-            date: parseISO(task.dueDate), // Using due date as a proxy for sorting
-            type: 'task',
-        });
-    });
-
-    // Finished Books
-    userLibraries.forEach(lib => {
-        const member = familyMembers.find(m => m.id === lib.memberId);
-        if (member) {
-            lib.books.filter(b => b.status === 'finished' && b.finishedAt).forEach(userBook => {
-                const bookInfo = books.find(b => b.id === userBook.bookId);
-                activities.push({
-                    id: `book-${lib.memberId}-${userBook.bookId}`,
-                    user: member.name,
-                    title: `'${bookInfo?.title || 'bir kitap'}' okumayı bitirdi`,
-                    date: parseISO(userBook.finishedAt!),
-                    type: 'book',
-                });
-            });
-        }
-    });
-
-    // Added Calendar Events
-    calendarEvents.forEach(event => {
-        activities.push({
-            id: `event-${event.id}`,
-            user: 'Sistem', // Or the user who added it, if tracked
-            title: `'${event.title}' etkinliği eklendi`,
-            date: parseISO(event.startDate),
-            type: 'event',
-        });
-    });
-
-    return activities
-        .sort((a, b) => compareDesc(a.date, b.date))
-        .slice(0, 5); // Get latest 5 activities
-
-  }, [tasks, userLibraries, calendarEvents, books, familyMembers]);
-
-  const dailySummary = React.useMemo(() => {
-    const upcomingEventsCount = calendarEvents.filter(e => isFuture(parseISO(e.startDate))).length;
-    const finishedBooksCount = userLibraries.reduce((acc, lib) => {
-        return acc + lib.books.filter(b => b.status === 'finished').length;
-    }, 0);
-
-    return {
-        upcomingEvents: upcomingEventsCount,
-        finishedBooks: finishedBooksCount
-    }
-  }, [calendarEvents, userLibraries]);
-
-  const pendingHouseTasks = React.useMemo(() => {
-    return tasks
-      .filter(task => !task.completed && task.category === 'Ev İşleri')
-      .sort((a, b) => compareAsc(parseISO(a.dueDate), b.dueDate ? parseISO(b.dueDate) : 0));
-  }, [tasks]);
-  
-  const memberAssignments = React.useMemo(() => {
-    if (familyMembers.length === 0) return {};
-    
-    const assignments: { [key: string]: { habits: Task[]; other: Task[]; tests: Test[]; studies: (StudyAssignment & { studyPlanTitle?: string })[]; readingBooks: Book[]; memorizationItems: MemorizationItem[]; } } = {};
-
-    familyMembers.forEach(m => {
-        assignments[m.id] = { habits: [], other: [], tests: [], studies: [], readingBooks: [], memorizationItems: [] };
-    });
-
-    // Assign tasks (Habits and Other)
-    tasks.forEach(task => {
-        if (assignments[task.assigneeId] && !task.completed) {
-            if (task.isRecurring) {
-                assignments[task.assigneeId].habits.push(task);
-            } else if (task.category === 'Kişisel') {
-                assignments[task.assigneeId].other.push(task);
-            }
-        }
-    });
-
-    // Assign tests
-    tests.forEach(test => {
-        if (assignments[test.studentId] && test.status === 'Atandı') {
-            assignments[test.studentId].tests.push(test);
-        }
-    });
-    
-    // Assign study topics
-    studyAssignments.forEach(assignment => {
-        if (assignments[assignment.studentId] && assignment.status === 'assigned') {
-            const plan = studyPlans.find(p => p.id === assignment.studyPlanId);
-            assignments[assignment.studentId].studies.push({ ...assignment, studyPlanTitle: plan?.title });
-        }
-    });
-    
-    // Assign books
-    userLibraries.forEach(lib => {
-        if (assignments[lib.memberId]) {
-            const memberBooks = lib.books
-                .filter(b => b.status === 'reading' || b.status === 'to-read')
-                .map(b => books.find(book => book.id === b.bookId))
-                .filter((b): b is Book => !!b)
-                .sort((a, b) => (userLibraries.find(l=>l.memberId === lib.memberId)?.books.find(ub=>ub.bookId===a.id)?.status === 'reading' ? -1 : 1)); // Prioritize reading books
-            assignments[lib.memberId].readingBooks = memberBooks;
-        }
-    });
-
-    // Assign memorization items
-    memorizationProgress.forEach(prog => {
-        if (assignments[prog.memberId] && !prog.completed) {
-            const item = memorizationItems.find(i => i.id === prog.itemId);
-            if (item) {
-                assignments[prog.memberId].memorizationItems.push(item);
-            }
-        }
-    });
-    
-    return assignments;
-  }, [tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, familyMembers]);
-
-
-  const familyXpData = familyMembers.map(member => ({ name: member.name, xp: member.xp, fill: member.color }));
   const todaysPlan = mealPlan[format(new Date(), 'yyyy-MM-dd')];
 
   const shoppingSummary = React.useMemo(() => {
@@ -388,90 +259,6 @@ export default function Home() {
   const handleEditMember = (member: FamilyMember) => {
       setEditingMember(member);
   }
-  
-  const handleEditCurrentUser = () => {
-    const currentUserMember = familyMembers.find(m => m.id === user?.uid);
-    if (currentUserMember) {
-        setEditingMember(currentUserMember);
-    }
-  }
-
-  const handleTaskCompletion = async (task: Task, assignee: FamilyMember) => {
-    if (!familyId) return;
-    try {
-        await updateTask(task.id, { completed: true });
-        
-        const xpChange = task.points;
-        const completedTasksChange = 1;
-        
-        const newXp = (assignee.xp || 0) + xpChange;
-        const newLevel = Math.floor(newXp / 1000) + 1;
-
-        await updateFamilyMemberInFamily(familyId, assignee.id, {
-            xp: newXp,
-            completedTasks: (assignee.completedTasks || 0) + completedTasksChange,
-            level: newLevel,
-        });
-        
-        await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
-
-        toast({
-            title: "🎉 Görev Tamamlandı!",
-            description: `Harika iş, ${assignee?.name || ''}! ${task.points} XP kazandın.`,
-        });
-    } catch (error) {
-        toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
-    }
-  };
-
-  const handleDailyTaskCompletion = async (task: Task, assignee: FamilyMember) => {
-    if (!familyId) return;
-    
-    const today = new Date();
-    const lastCompleted = task.lastCompletedDate ? parseISO(task.lastCompletedDate) : null;
-    
-    if (lastCompleted && isSameDay(today, lastCompleted)) {
-      toast({
-        title: "✋ Zaten Tamamlandı",
-        description: "Bu görevi bugün için zaten tamamladın.",
-      });
-      return;
-    }
-
-    try {
-      const xpChange = task.points;
-      const newXp = (assignee.xp || 0) + xpChange;
-      const newLevel = Math.floor(newXp / 1000) + 1;
-      let newStreak = task.streak || 0;
-
-      if (lastCompleted && isSameDay(subDays(today, 1), lastCompleted)) {
-        newStreak++; // Consecutive day
-      } else {
-        newStreak = 1; // Streak broken or first time
-      }
-
-      await updateTask(task.id, {
-        lastCompletedDate: today.toISOString(),
-        streak: newStreak,
-      });
-
-      await updateFamilyMemberInFamily(familyId, assignee.id, {
-        xp: newXp,
-        completedTasks: (assignee.completedTasks || 0) + 1,
-        level: newLevel,
-        streak: newStreak > (assignee.streak || 0) ? newStreak : assignee.streak,
-      });
-
-      await checkAndAwardBadges(assignee.id, familyId, { type: 'task_completed', task });
-
-      toast({
-        title: "🎉 Seri Devam Ediyor!",
-        description: `${assignee.name}, ${task.points} XP kazandın! Serin: ${newStreak}`,
-      });
-    } catch (error) {
-      toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive"});
-    }
-  };
   
     const handleOpenEditDialog = React.useCallback((bookToEdit: Book) => {
         setEditingBook(bookToEdit);
@@ -680,170 +467,32 @@ export default function Home() {
 
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Link href="/tasks" className="block transition-transform hover:-translate-y-1 group">
-          <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white h-full">
-            <CardHeader>
-              <CardTitle>Bekleyen Ev İşleri</CardTitle>
-              <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {pendingHouseTasks.length > 0 ? (
-                pendingHouseTasks.map(task => {
-                  const assignee = familyMembers.find(m => m.id === task.assigneeId)
-                  return (
-                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
-                      <Checkbox
-                        id={`home-task-${task.id}`}
-                        onCheckedChange={() => assignee && handleTaskCompletion(task, assignee)}
-                        className="border-white text-white ring-offset-white data-[state=checked]:bg-white data-[state=checked]:text-teal-600"
-                      />
-                      <div className="flex-grow">
-                        <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
-                        <p className="text-xs text-white/80">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
-                      </div>
-                      {assignee && (
-                         <div 
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0" 
-                            style={{ backgroundColor: assignee.color, color: '#fff' }}
-                            title={assignee.name}
-                        >
-                            {assignee.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8 bg-white/10 rounded-lg">
-                  <Check className="mx-auto h-8 w-8 text-white/80" />
-                  <p className="mt-2 text-sm text-white/90">Bekleyen ev işi yok. Harika!</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </Link>
-        
-        {familyMembers.map(member => {
-            const memberData = memberAssignments[member.id];
-            if (!memberData) return null;
-            const { habits, other, tests, studies, readingBooks, memorizationItems } = memberData;
-            const totalPendingItems = habits.length + other.length + tests.length + studies.length + readingBooks.length + memorizationItems.length;
+            <MemberDashboardCard 
+              member={{id: 'house', name: 'Ev İşleri'} as any}
+              tasks={tasks}
+              tests={[]}
+              studyAssignments={[]}
+              studyPlans={[]}
+              userLibraries={[]}
+              books={[]}
+              memorizationItems={[]}
+              memorizationProgress={[]}
+            />
 
-            if (totalPendingItems === 0) return null;
-            
-            const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
-            
-            return (
-                <Card key={`personal-tasks-${member.id}`} className="shadow-lg overflow-hidden">
-                    <CardHeader className={cn("text-white", `bg-gradient-to-br ${gradient}`)}>
-                        <div className="flex items-center gap-3">
-                             <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 bg-white/20"
-                            >
-                                {member.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <CardTitle>{member.name}'in Görevleri</CardTitle>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                        {habits.length > 0 && (
-                            <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Alışkanlıklar</h4>
-                                <div className="space-y-2">
-                                    {habits.map(task => (
-                                        <Link href="/habits" key={task.id} className="block">
-                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-orange-500/10 text-orange-900 hover:bg-orange-500/20">
-                                                <Flame className="h-5 w-5 shrink-0" />
-                                                <div className="truncate flex-grow"><p className="font-semibold truncate text-sm">{task.title}</p></div>
-                                                <Badge variant="outline" className="border-orange-500/50 bg-transparent">{task.streak || 0} seri</Badge>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {readingBooks.length > 0 && (
-                           <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Okunacak Kitaplar</h4>
-                                <div className="space-y-2">
-                                    {readingBooks.map(book => (
-                                         <Link href="/library" key={book.id} className="block">
-                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-500/10 text-amber-900 hover:bg-amber-500/20">
-                                                <BookOpen className="h-5 w-5 shrink-0" />
-                                                <div className="truncate"><p className="font-semibold truncate text-sm">{book.title}</p><p className="text-xs text-amber-800/80 truncate">{book.author}</p></div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {memorizationItems.length > 0 && (
-                           <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ezberlenecekler</h4>
-                                <div className="space-y-2">
-                                    {memorizationItems.map(item => (
-                                        <Link href="/memorization" key={item.id} className="block">
-                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 text-purple-900 hover:bg-purple-500/20">
-                                                <BrainCircuit className="h-5 w-5 shrink-0" />
-                                                <div className="truncate"><p className="font-semibold truncate text-sm">{item.title}</p></div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {(tests.length > 0 || studies.length > 0) && (
-                           <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Ödevler</h4>
-                                <div className="space-y-2">
-                                    {tests.map(test => (
-                                        <Link href={`/education/${test.id}`} key={test.id} className="block">
-                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-red-500/10 text-red-900 hover:bg-red-500/20">
-                                                <GraduationCap className="h-5 w-5 shrink-0" />
-                                                <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                    {studies.map(study => (
-                                        <Link href="/education/study" key={study.id} className="block">
-                                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 hover:bg-blue-500/20">
-                                                <BookHeart className="h-5 w-5 shrink-0" />
-                                                 <div className="truncate">
-                                                    <p className="font-semibold truncate text-sm">{study.topic}</p>
-                                                    <p className="text-xs text-blue-800/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {other.length > 0 && (
-                            <div>
-                                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Diğer Görevler</h4>
-                                <div className="space-y-3">
-                                {other.map(task => (
-                                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
-                                        <Checkbox
-                                            id={`personal-task-${task.id}`}
-                                            onCheckedChange={() => handleTaskCompletion(task, member)}
-                                            className="border-primary"
-                                        />
-                                        <div className="flex-grow">
-                                            <label htmlFor={`personal-task-${task.id}`} className="font-semibold cursor-pointer">{task.title}</label>
-                                            <p className="text-xs text-muted-foreground">{format(parseISO(task.dueDate), "d MMM", { locale: tr })}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )
-        })}
+            {familyMembers.map(member => (
+                <MemberDashboardCard 
+                  key={member.id}
+                  member={member}
+                  tasks={tasks}
+                  tests={tests}
+                  studyAssignments={studyAssignments}
+                  studyPlans={studyPlans}
+                  userLibraries={userLibraries}
+                  books={books}
+                  memorizationItems={memorizationItems}
+                  memorizationProgress={memorizationProgress}
+                />
+            ))}
       </section>
 
       <section>
