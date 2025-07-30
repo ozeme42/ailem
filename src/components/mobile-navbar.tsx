@@ -35,12 +35,12 @@ export function MobileNavbar() {
               <div
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 w-16 h-12 rounded-lg transition-all duration-300 text-muted-foreground",
-                  isActive && "text-white"
+                  isActive && "text-primary-foreground"
                 )}
               >
                 <div className={cn(
                   "w-12 h-8 flex items-center justify-center rounded-lg transition-all duration-300 relative",
-                   isActive && "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg -translate-y-2"
+                   isActive && "bg-primary shadow-lg -translate-y-2"
                 )}>
                     <item.icon className="h-5 w-5" />
                 </div>
