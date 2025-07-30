@@ -688,3 +688,4 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
         </Dialog>
     );
 }
+

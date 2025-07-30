@@ -1004,8 +1004,9 @@ export const updateMemorizationProgress = async (itemId: string, memberId: strin
         completed,
         completedAt: completed ? new Date().toISOString() : undefined,
     };
-    return setDoc(docRef, progressData, { merge: true });
+    return setDoc(docRef, removeUndefined(progressData), { merge: true });
 };
+
 
 export const removeMemorizationProgress = async (itemId: string, memberId: string) => {
     const progressId = `${itemId}_${memberId}`;
