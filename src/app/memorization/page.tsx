@@ -258,7 +258,7 @@ export default function MemorizationPage() {
                       <div className="flex flex-col sm:flex-row gap-2 self-start sm:self-center">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">
+                              <Button variant="secondary" size="sm">
                                   <RotateCcw className="mr-2 h-4 w-4"/>
                                   Tüm İlerlemeyi Sıfırla
                               </Button>
@@ -391,6 +391,7 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
     progress: MemorizationProgress[] 
 }) {
   const {toast} = useToast();
+  
   const shelves = useMemo(() => {
     const grouped: Record<string, MemorizationItem[]> = {};
     items.forEach(item => {
@@ -402,10 +403,29 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
         }
       });
     });
+
+    const extractNumber = (title: string): [number | null, string] => {
+        const match = title.match(/^(\d+)\s*[\.-]?\s*(.*)/);
+        if (match) {
+            return [parseInt(match[1], 10), match[2]];
+        }
+        return [null, title];
+    };
     
-    // Sort items within each shelf alphabetically
+    // Sort items within each shelf numerically then alphabetically
     for (const key in grouped) {
-        grouped[key].sort((a,b) => a.title.localeCompare(b.title, 'tr'));
+        grouped[key].sort((a,b) => {
+            const [numA, titleA] = extractNumber(a.title);
+            const [numB, titleB] = extractNumber(b.title);
+
+            if (numA !== null && numB !== null) {
+                if (numA !== numB) return numA - numB;
+            }
+            if (numA !== null) return -1; // Numbers first
+            if (numB !== null) return 1;
+
+            return titleA.localeCompare(titleB, 'tr');
+        });
     }
 
     // Sort shelves alphabetically
@@ -469,7 +489,7 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
 
   if (viewMode === 'management') {
     return (
-        <Accordion type="multiple" className="w-full space-y-4">
+        <Accordion type="multiple" className="w-full space-y-4" defaultValue={shelves.map(s => s[0])}>
             {shelves.map(([shelfName, shelfItems]) => (
                 <AccordionItem key={shelfName} value={shelfName} className="border-b-0">
                     <Card>
@@ -734,4 +754,3 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
         </Dialog>
     );
 }
-
