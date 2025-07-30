@@ -1030,7 +1030,26 @@ export const resetAllMemorizationProgress = async () => {
     });
     
     await batch.commit();
-}
+};
+
+export const deleteAllMemorizationItems = async () => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    
+    const batch = writeBatch(db);
+
+    // Delete all items
+    const itemsQuery = query(collection(db, 'memorizationItems'), where('familyId', '==', familyId));
+    const itemsSnapshot = await getDocs(itemsQuery);
+    itemsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    // Delete all progress
+    const progressQuery = query(collection(db, 'memorizationProgress'), where('familyId', '==', familyId));
+    const progressSnapshot = await getDocs(progressQuery);
+    progressSnapshot.forEach(doc => batch.delete(doc.ref));
+    
+    await batch.commit();
+};
 
 
 export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: boolean) => {

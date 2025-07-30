@@ -27,7 +27,7 @@ import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag, removeMemorizationProgress, resetAllMemorizationProgress } from '@/lib/dataService';
+import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag, removeMemorizationProgress, resetAllMemorizationProgress, deleteAllMemorizationItems } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -175,6 +175,15 @@ export default function MemorizationPage() {
     }
   }
 
+  const handleDeleteAllItems = async () => {
+    try {
+        await deleteAllMemorizationItems();
+        toast({ title: "Kütüphane Temizlendi", description: "Tüm sureler, dualar ve ilerleme kayıtları silindi.", variant: "destructive" });
+    } catch (e) {
+        toast({ title: "❌ Hata", description: "Kütüphane temizlenirken bir hata oluştu.", variant: 'destructive' });
+    }
+  }
+
   const { itemsToShow, allFilteredItems } = useMemo(() => {
     const memberProgressMap = new Map<string, MemorizationProgress>();
     progress.filter(p => p.memberId === selectedMember?.id).forEach(p => memberProgressMap.set(p.itemId, p));
@@ -245,11 +254,12 @@ export default function MemorizationPage() {
                         <CardTitle>Sure ve Dua Kütüphanesi</CardTitle>
                         <CardDescription>Burada tüm ezber öğelerini görebilir ve aile üyelerinin listelerine ekleyebilirsiniz.</CardDescription>
                      </div>
-                      <AlertDialog>
+                      <div className="flex flex-col sm:flex-row gap-2 self-start sm:self-center">
+                        <AlertDialog>
                           <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
+                              <Button variant="outline" size="sm">
                                   <RotateCcw className="mr-2 h-4 w-4"/>
-                                  Tüm Ezber İlerlemesini Sıfırla
+                                  Tüm İlerlemeyi Sıfırla
                               </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -264,7 +274,28 @@ export default function MemorizationPage() {
                                   <AlertDialogAction onClick={handleResetProgress}>Evet, Sıfırla</AlertDialogAction>
                               </AlertDialogFooterComponent>
                           </AlertDialogContent>
-                      </AlertDialog>
+                        </AlertDialog>
+                         <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                  <Trash2 className="mr-2 h-4 w-4"/>
+                                  Tüm Sureleri ve Duaları Sil
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
+                                  <AlertDialogDescription>
+                                      Bu işlem, tüm sure ve dua listesini kalıcı olarak silecektir. Bu işlem geri alınamaz.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooterComponent>
+                                  <AlertDialogCancel>İptal</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleDeleteAllItems}>Evet, Hepsini Sil</AlertDialogAction>
+                              </AlertDialogFooterComponent>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                 </CardHeader>
              </Card>
           )}
@@ -408,12 +439,12 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
     };
     
     const handleRemoveFromMember = async (itemId: string, memberId: string) => {
-        try {
-            await removeMemorizationProgress(itemId, memberId);
-            toast({ title: "Öğe Kaldırıldı", variant: 'destructive' });
-        } catch (error) {
-             toast({ title: "Hata", description: "Öğe kaldırılırken bir sorun oluştu.", variant: "destructive" });
-        }
+       try {
+          await removeMemorizationProgress(itemId, memberId);
+          toast({ title: "Öğe Kaldırıldı", variant: 'destructive' });
+      } catch (error) {
+           toast({ title: "Hata", description: "Öğe kaldırılırken bir sorun oluştu.", variant: "destructive" });
+      }
     }
 
 
