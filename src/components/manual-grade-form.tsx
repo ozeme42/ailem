@@ -118,7 +118,9 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     }
   
   if (isTextGrading || isMistakePoolGrading) {
-    const questions = isMistakePoolGrading ? mistakeQuestions : Object.entries(test.studentTextAnswers!);
+    const questions = isMistakePoolGrading 
+        ? mistakeQuestions 
+        : Object.entries(test.studentTextAnswers!).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10));
 
     return (
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -244,4 +246,3 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
       </div>
   );
 }
-
