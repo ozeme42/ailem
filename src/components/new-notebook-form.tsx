@@ -110,9 +110,9 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
                                     key={color.id}
                                     type="button"
                                     className={cn(
-                                        "h-12 rounded-md bg-gradient-to-br", 
+                                        "h-12 rounded-md bg-gradient-to-br transition-all", 
                                         color.class,
-                                        field.value === color.class && "ring-2 ring-offset-2 ring-ring"
+                                        field.value === color.class ? "ring-2 ring-offset-2 ring-ring ring-offset-background" : "hover:scale-105"
                                     )}
                                     onClick={() => field.onChange(color.class)}
                                     aria-label={color.name}

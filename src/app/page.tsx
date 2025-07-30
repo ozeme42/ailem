@@ -69,7 +69,7 @@ function ModeToggle() {
           variant="ghost" 
           size="icon" 
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="rounded-full p-2 transition-colors hover:bg-white/20 text-primary-foreground"
+          className="rounded-full"
           aria-label="Toggle theme"
       >
           <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -504,7 +504,7 @@ export default function Home() {
     <div className="space-y-6">
       <header className="flex items-center justify-between gap-4 p-4 bg-gradient-to-br from-primary to-accent/80 text-primary-foreground rounded-xl shadow-lg">
           <div className="flex items-center gap-4">
-              <SidebarTrigger className="text-primary-foreground hover:bg-white/20 hover:text-primary-foreground" />
+              <SidebarTrigger />
               <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
           </div>
           <div className="flex items-center gap-2">

@@ -66,7 +66,7 @@ export function NotesClient() {
             <PageHeader title="Not Defterleri">
                 <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setEditingNotebook(null); setIsFormOpen(open); }}>
                     <DialogTrigger asChild>
-                        <Button onClick={() => handleOpenDialog(null)}>
+                        <Button>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Yeni Defter Oluştur
                         </Button>
@@ -103,12 +103,12 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
                     notebook.color ? `bg-gradient-to-br ${notebook.color}` : "bg-gradient-to-br from-gray-700 to-gray-900"
                 )}>
                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white/20" onClick={(e) => { e.stopPropagation(); onEdit(notebook); }}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(notebook); }}>
                             <Edit className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-white/20" onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </AlertDialogTrigger>

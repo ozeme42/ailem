@@ -21,7 +21,7 @@ export function PageHeader({ title, children }: PageHeaderProps) {
         "sm:m-0 sm:mb-8 sm:rounded-xl"
     )}>
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="text-primary-foreground hover:bg-white/20" />
+        <SidebarTrigger />
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 self-end sm:self-center">
