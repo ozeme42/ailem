@@ -79,6 +79,14 @@ function ModeToggle() {
   )
 }
 
+const roleGradients: { [key: string]: string } = {
+    Baba: "from-blue-500 to-indigo-600",
+    Anne: "from-pink-500 to-purple-600",
+    'Kız Çocuk': "from-purple-400 to-violet-500",
+    'Erkek Çocuk': "from-teal-400 to-cyan-500",
+    Bebek: "from-yellow-400 to-orange-500",
+};
+
 export default function Home() {
   const { user, familyId, familyMembers, loading, logout } = useAuth();
   const { toast } = useToast();
@@ -724,41 +732,25 @@ export default function Home() {
         
         {familyMembers.map(member => {
             const { habits, other, tests, studies, readingBooks, memorizationItems } = memberAssignments[member.id] || {};
+            const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
             
             if (!habits?.length && !other?.length && !tests?.length && !studies?.length && !readingBooks?.length && !memorizationItems?.length) return null;
             
             return (
-                <Card key={`personal-tasks-${member.id}`} className="shadow-lg border-t-4" style={{ borderTopColor: member.color }}>
-                    <CardHeader>
+                <Card key={`personal-tasks-${member.id}`} className="shadow-lg overflow-hidden">
+                    <CardHeader className={cn("text-primary-foreground", `bg-gradient-to-br ${gradient}`)}>
                         <div className="flex items-center gap-3">
                              <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0" 
-                                style={{ backgroundColor: member.color }}
-                                title={member.name}
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 bg-white/20"
                             >
                                 {member.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
                                 <CardTitle>{member.name}'in Görevleri</CardTitle>
-                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
-                                    <span>{habits.length + other.length + tests.length + studies.length} bekleyen görev</span>
-                                    {readingBooks.length > 0 && (
-                                        <Link href="/library" className="flex items-center gap-1.5 hover:text-primary">
-                                            <BookOpen className="w-4 h-4 text-blue-500" />
-                                            <span className="font-semibold">{readingBooks.length} kitap</span>
-                                        </Link>
-                                    )}
-                                    {memorizationItems.length > 0 && (
-                                        <Link href="/memorization" className="flex items-center gap-1.5 hover:text-primary">
-                                            <BrainCircuit className="w-4 h-4 text-purple-500" />
-                                            <span className="font-semibold">{memorizationItems.length} ezber</span>
-                                        </Link>
-                                    )}
-                                </div>
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 pt-4">
                         {habits.length > 0 && (
                             <div>
                                 <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Alışkanlıklar</h4>
@@ -973,5 +965,6 @@ export default function Home() {
 
 
     
+
 
 
