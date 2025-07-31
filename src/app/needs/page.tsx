@@ -218,7 +218,6 @@ export default function NeedsPage() {
       if (newNoteText.trim() && selectedNoteList) {
           await addNoteItemToList(selectedNoteList.id, newNoteText.trim());
           setNewNoteText('');
-          toast({ title: 'İhtiyaç Eklendi' });
       }
   };
 
@@ -250,73 +249,79 @@ export default function NeedsPage() {
 
   if (selectedNoteList) {
      return (
-        <div className={cn("p-4 rounded-xl", selectedListColor)}>
-           <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-white">{selectedNoteList.name}</h1>
-              <div className='flex items-center gap-2'>
-                <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedNoteList(null)}>
-                  <ArrowLeft className="h-5 w-5 mr-2" /> Geri
-                </Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{selectedNoteList.name}" listesini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => { deleteShoppingNoteList(selectedNoteList.id); setSelectedNoteList(null); }}>Sil</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
+        <div className="relative h-full flex flex-col">
+            <header className={cn("p-4 rounded-t-xl", selectedListColor)}>
+              <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-bold text-white">{selectedNoteList.name}</h1>
+                  <div className='flex items-center gap-2'>
+                    <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedNoteList(null)}>
+                      <ArrowLeft className="h-5 w-5 mr-2" /> Geri
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitleComponent>"{selectedNoteList.name}" listesini sil?</AlertDialogTitleComponent>
+                                <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => { deleteShoppingNoteList(selectedNoteList.id); setSelectedNoteList(null); }}>Sil</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+            </header>
+
+            <main className="flex-grow p-4 bg-background rounded-b-xl border-x border-b overflow-y-auto pb-24">
+                <div className="space-y-2">
+                    {(selectedNoteList.items || []).map(note => (
+                        <div key={note.id} className="p-3 bg-card border rounded-lg flex justify-between items-start gap-2 group">
+                            <p className="text-sm flex-grow whitespace-pre-wrap">{note.text}</p>
+                            <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Dialog onOpenChange={(open) => !open && setEditingNote(null)}>
+                                    <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNote(note)}>
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
+                                    </DialogTrigger>
+                                    {editingNote?.id === note.id && (
+                                    <DialogContent>
+                                        <EditNoteDialog 
+                                            note={editingNote} 
+                                            listName={selectedNoteList.name}
+                                            onSave={handleUpdateNoteSubmit}
+                                        />
+                                    </DialogContent>
+                                    )}
+                                </Dialog>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitleComponent>İhtiyacı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ihtiyacı kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
+                    ))}
+                    {(selectedNoteList.items || []).length === 0 && (
+                        <p className="text-sm text-center text-muted-foreground pt-8">Bu listede henüz ihtiyaç yok.</p>
+                    )}
+                </div>
+            </main>
+
+            <footer className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t">
               <form onSubmit={handleAddNote} className="flex items-start gap-2">
-                  <Textarea placeholder="Yeni ihtiyaç..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={1} className="flex-grow" />
+                  <Input placeholder="Yeni ihtiyaç..." value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} className="flex-grow" />
                   <Button type="submit">Ekle</Button>
               </form>
-              <div className="space-y-2">
-                  {(selectedNoteList.items || []).map(note => (
-                      <div key={note.id} className="p-3 bg-card border rounded-lg flex justify-between items-start gap-2 group">
-                          <p className="text-sm flex-grow whitespace-pre-wrap">{note.text}</p>
-                          <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Dialog onOpenChange={(open) => !open && setEditingNote(null)}>
-                                <DialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNote(note)}>
-                                      <Edit className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                {editingNote?.id === note.id && (
-                                  <DialogContent>
-                                    <EditNoteDialog 
-                                        note={editingNote} 
-                                        listName={selectedNoteList.name}
-                                        onSave={handleUpdateNoteSubmit}
-                                    />
-                                  </DialogContent>
-                                )}
-                              </Dialog>
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                      <AlertDialogHeader><AlertDialogTitleComponent>İhtiyacı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ihtiyacı kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                      <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteNoteItemFromList(selectedNoteList.id, note.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
-                          </div>
-                      </div>
-                  ))}
-                  {(selectedNoteList.items || []).length === 0 && (
-                      <p className="text-sm text-center text-muted-foreground pt-8">Bu listede henüz ihtiyaç yok.</p>
-                  )}
-              </div>
-          </div>
+            </footer>
         </div>
      );
   }

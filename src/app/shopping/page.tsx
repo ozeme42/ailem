@@ -285,51 +285,35 @@ export default function ShoppingPage() {
 
   if (selectedList) {
      return (
-        <div className={cn("p-4 rounded-xl", selectedListColor)}>
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
-                 <div className='flex items-center gap-2'>
-                  <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Geri
-                  </Button>
-                  <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                          <AlertDialogHeader>
-                              <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                              <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                              <AlertDialogCancel>İptal</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
-                          </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
+        <div className="relative h-full flex flex-col">
+            <header className={cn("p-4 rounded-t-xl", selectedListColor)}>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
+                    <div className='flex items-center gap-2'>
+                        <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Geri
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
+                                    <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </div>
-            </div>
-            <div className="flex-grow p-4 space-y-4 bg-background rounded-lg border">
-                <form onSubmit={handleAddItem} className="flex gap-2 relative">
-                    <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
-                    <Button type="submit"><Plus className="h-5 w-5" /></Button>
-
-                     {suggestions.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-md shadow-lg">
-                           {suggestions.map((s, i) => (
-                               <button
-                                   key={i}
-                                   type="button"
-                                   onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
-                                   className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
-                               >
-                                   {s}
-                               </button>
-                           ))}
-                        </div>
-                    )}
-                </form>
+            </header>
+            
+            <main className="flex-grow p-4 bg-background rounded-b-xl border-x border-b overflow-y-auto pb-24">
                 <Tabs defaultValue="pending">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="pending">Alınacaklar ({pendingItems.length})</TabsTrigger>
@@ -377,7 +361,31 @@ export default function ShoppingPage() {
                          )}
                     </TabsContent>
                 </Tabs>
-            </div>
+            </main>
+
+             <footer className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t">
+                <form onSubmit={handleAddItem} className="flex gap-2 relative">
+                    {suggestions.length > 0 && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-background border rounded-lg shadow-lg">
+                           <div className="flex flex-wrap gap-2">
+                             {suggestions.map((s, i) => (
+                               <Button
+                                   key={i}
+                                   type="button"
+                                   variant="secondary"
+                                   size="sm"
+                                   onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
+                               >
+                                   {s}
+                               </Button>
+                           ))}
+                           </div>
+                        </div>
+                    )}
+                    <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
+                    <Button type="submit"><Plus className="h-5 w-5" /></Button>
+                </form>
+            </footer>
         </div>
      );
   }
