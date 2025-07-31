@@ -4,48 +4,16 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, CheckCircle2, Calendar, BookOpen, Target, Zap, Notebook } from "lucide-react";
+import { Users, CheckCircle2, Calendar, BookOpen, Target, Zap, Notebook, GraduationCap } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-
-const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 64 64"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      {...props}
-    >
-        <g stroke="currentColor">
-            <rect x="8" y="20" width="6" height="30" fill="currentColor" />
-            <polygon points="8,20 11,10 14,20" fill="currentColor" />
-            <line x1="8" y1="30" x2="14" y2="30"/>
-            <line x1="8" y1="38" x2="14" y2="38"/>
-            <line x1="8" y1="46" x2="14" y2="46"/>
-
-            <rect x="50" y="20" width="6" height="30" fill="currentColor" />
-            <polygon points="50,20 53,10 56,20" fill="currentColor" />
-            <line x1="50" y1="30" x2="56" y2="30"/>
-            <line x1="50" y1="38" x2="56" y2="38"/>
-            <line x1="50" y1="46" x2="56" y2="46"/>
-
-            <rect x="20" y="30" width="24" height="20" fill="currentColor" />
-            <path d="M20 30 Q32 15 44 30" fill="currentColor" stroke="currentColor" />
-
-            <rect x="30" y="40" width="4" height="10" fill="hsl(var(--background))" stroke="none"/>
-        </g>
-    </svg>
-);
 
 const menuItems = [
   { href: "/", label: "Ailem", icon: Users },
   { href: "/tasks", label: "Görevler", icon: CheckCircle2 },
   { href: "/habits", label: "Alışkanlıklar", icon: Zap },
-  { href: "/prayers", label: "Namaz", icon: MosqueIcon },
+  { href: "/education", label: "Eğitim", icon: GraduationCap },
   { href: "/library", label: "Kütüphane", icon: BookOpen },
 ];
 
