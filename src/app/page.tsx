@@ -125,7 +125,7 @@ export default function Home() {
     const unsubTests = onTestsUpdate(setTests);
     const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
     const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
-    const unsubBooks = onBooksUpdate(setBooks, 'createdAt', 'desc');
+    const unsubBooks = onBooksUpdate(setBooks);
     const unsubGoals = onGoalsUpdate(setGoals);
     const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
     const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
@@ -201,7 +201,9 @@ export default function Home() {
 
 
   const latestBooks = React.useMemo(() => {
-      return books.slice(0, 10);
+      return [...books]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 10);
   }, [books]);
 
    const activeGoals = React.useMemo(() => {
