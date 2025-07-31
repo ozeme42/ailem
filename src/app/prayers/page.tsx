@@ -5,7 +5,7 @@ import * as React from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { onPrayerProgressUpdate, updatePrayerProgress } from "@/lib/dataService";
+import { onSinglePrayerProgressUpdate, updatePrayerProgress } from "@/lib/dataService";
 import type { PrayerProgress, FamilyMember } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { startOfWeek, addDays, format, subWeeks, addWeeks, isSameDay, parseISO } from 'date-fns';
@@ -46,7 +46,7 @@ export default function PrayerTrackerPage() {
     React.useEffect(() => {
         if (!selectedMember) return;
 
-        const unsub = onPrayerProgressUpdate(selectedMember.id, (progress) => {
+        const unsub = onSinglePrayerProgressUpdate(selectedMember.id, (progress) => {
             setPrayerProgress(progress);
         });
 
@@ -55,12 +55,12 @@ export default function PrayerTrackerPage() {
 
     const handlePrayerToggle = async (dayKey: string, prayerName: string) => {
         if (!selectedMember) return;
-
-        // 1. Get a deep copy of all current completions, or an empty object.
+    
+        // 1. Get a deep copy of all current completions to avoid mutation issues.
         const allCompletions = JSON.parse(JSON.stringify(prayerProgress?.completions || {}));
-
+    
         // 2. Get the specific completions for the day being modified.
-        const dayCompletions = allCompletions[dayKey] || [];
+        const dayCompletions: string[] = allCompletions[dayKey] || [];
         
         // 3. Determine the new completion status for the specific prayer.
         const isCompleted = dayCompletions.includes(prayerName);
@@ -70,18 +70,18 @@ export default function PrayerTrackerPage() {
             
         // 4. Update the copy of all completions with the new list for the modified day.
         allCompletions[dayKey] = newDayCompletions;
-
-        // 5. Create the new state for optimistic update.
+    
+        // 5. Create the new state for optimistic UI update.
         const newProgressState: PrayerProgress = {
             id: prayerProgress?.id || `${selectedMember.id}`,
             memberId: prayerProgress?.memberId || selectedMember.id,
             familyId: prayerProgress?.familyId || '', 
             completions: allCompletions,
         };
-
+    
         // 6. Optimistic UI update
         setPrayerProgress(newProgressState);
-    
+        
         try {
             // 7. Update the database with the new, complete completions object.
             await updatePrayerProgress(selectedMember.id, allCompletions);
@@ -92,7 +92,7 @@ export default function PrayerTrackerPage() {
                 variant: "destructive"
             });
             // Revert UI on error by re-fetching or using original state.
-            // For now, we rely on the onSnapshot listener to correct it.
+            // The onSnapshot listener will eventually correct it, but this could be improved.
             console.error("Failed to update prayer progress:", error);
         }
     };
