@@ -17,13 +17,13 @@ import { Heart } from "lucide-react";
 const prayerTimes = ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"];
 
 const dayLabels = [
-    "Pazartesi",
-    "Salı",
-    "Çarşamba",
-    "Perşembe",
-    "Cuma",
-    "Cumartesi",
-    "Pazar"
+    { full: "Pazartesi", short: "Pzt" },
+    { full: "Salı", short: "Sal" },
+    { full: "Çarşamba", short: "Çar" },
+    { full: "Perşembe", short: "Per" },
+    { full: "Cuma", short: "Cum" },
+    { full: "Cumartesi", short: "Cmt" },
+    { full: "Pazar", short: "Paz" }
 ];
 
 export default function PrayerTrackerPage() {
@@ -113,7 +113,10 @@ export default function PrayerTrackerPage() {
                             <div key={dayKey} className="grid grid-cols-6 gap-2 items-center bg-white/80 dark:bg-gray-800/80 p-1.5 rounded-lg shadow-inner">
                                 <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-full py-2 px-3 flex items-center justify-center shadow-md">
                                     <div className="size-4 rounded-full bg-white/50 mr-2 border-2 border-white/80"></div>
-                                    <span>{dayLabels[dayIndex]}</span>
+                                    <span>
+                                        <span className="hidden md:inline">{dayLabels[dayIndex].full}</span>
+                                        <span className="md:hidden">{dayLabels[dayIndex].short}</span>
+                                    </span>
                                 </div>
                                 {prayerTimes.map(prayer => {
                                     const isCompleted = completions.includes(prayer);
@@ -125,7 +128,7 @@ export default function PrayerTrackerPage() {
                                         >
                                             <Heart className={cn(
                                                 "size-10 transition-all text-gray-400/50 hover:scale-110",
-                                                isCompleted && "text-red-500 fill-red-500"
+                                                isCompleted && "text-red-500 fill-current"
                                             )} />
                                         </div>
                                     )
