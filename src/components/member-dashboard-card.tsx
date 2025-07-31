@@ -47,10 +47,10 @@ export function MemberDashboardCard({
     memorizationProgress,
 }: MemberDashboardCardProps) {
     const { toast } = useToast();
-    const { familyId } = useAuth();
+    const { familyId, familyMembers } = useAuth();
     
     const { habits, otherTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
-        // Habits: All recurring tasks for the member.
+        // Habits: All recurring tasks for the member, regardless of completion status.
         const habits = tasks.filter(t => t.assigneeId === member.id && t.isRecurring);
 
         // Other Tasks: One-time, personal tasks that are NOT completed
@@ -64,15 +64,25 @@ export function MemberDashboardCard({
 
         const memberLib = userLibraries.find(lib => lib.memberId === member.id);
         const readingBookEntries = memberLib?.books.filter(b => b.status === 'to-read' || b.status === 'reading') || [];
-        const readingBooks = readingBookEntries
-            .map(b => books.find(book => book.id === b.bookId))
-            .filter((b): b is BookType => !!b)
-            .sort((a,b) => (memberLib?.books.find(ub => ub.bookId === a.id)?.status === 'reading' ? -1 : 1)) || [];
+        const readingBooksData = readingBookEntries
+            .map(libraryBook => {
+                const bookDetail = books.find(book => book.id === libraryBook.bookId);
+                return bookDetail ? { ...bookDetail, libraryStatus: libraryBook.status } : null;
+            })
+            .filter((b): b is BookType & { libraryStatus: 'reading' | 'to-read' } => !!b)
+            .sort((a, b) => (a.libraryStatus === 'reading' ? -1 : 1)); // Prioritize 'reading' books
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === member.id && !p.completed).map(p => p.itemId));
-        const pendingMemorization = memorizationItems.filter(item => memberProgress.has(item.id));
+        const pendingMemorizationData = memorizationItems.filter(item => memberProgress.has(item.id));
 
-        return { habits, otherTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization };
+        return { 
+            habits, 
+            otherTasks, 
+            pendingTests, 
+            pendingStudies, 
+            readingBooks: readingBooksData, 
+            pendingMemorization: pendingMemorizationData 
+        };
     }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress]);
 
     const handleTaskCompletion = async (task: Task) => {
