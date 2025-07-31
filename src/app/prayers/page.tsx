@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { onPrayerProgressUpdate, updatePrayerProgress } from "@/lib/dataService";
 import type { PrayerProgress, FamilyMember } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { startOfWeek, addDays, format, isSameDay } from 'date-fns';
+import { startOfWeek, addDays, format, isSameDay, subWeeks, addWeeks } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
-import { Heart } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
 
 const prayerTimes = ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"];
 
@@ -30,10 +30,10 @@ export default function PrayerTrackerPage() {
     const { familyMembers } = useAuth();
     const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
     const [prayerProgress, setPrayerProgress] = React.useState<PrayerProgress | null>(null);
+    const [currentDate, setCurrentDate] = React.useState(new Date());
     const { toast } = useToast();
-
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
     React.useEffect(() => {
@@ -51,7 +51,7 @@ export default function PrayerTrackerPage() {
         return () => unsub();
     }, [selectedMember]);
 
-    const handlePrayerToggle = (dayKey: string, prayerName: string) => {
+    const handlePrayerToggle = async (dayKey: string, prayerName: string) => {
         if (!selectedMember) return;
         
         const currentCompletions = prayerProgress?.completions?.[dayKey] || [];
@@ -60,22 +60,21 @@ export default function PrayerTrackerPage() {
             ? currentCompletions.filter(p => p !== prayerName)
             : [...currentCompletions, prayerName];
             
-        updatePrayerProgress(selectedMember.id, dayKey, newCompletions)
-            .then(() => {
-                if (!isCompleted) {
-                    toast({
-                        title: "✨ Tebrikler!",
-                        description: `${selectedMember.name}, ${prayerName} namazını kıldı.`,
-                    });
-                }
-            })
-            .catch(() => {
+        try {
+            await updatePrayerProgress(selectedMember.id, dayKey, newCompletions);
+            if (!isCompleted) {
                 toast({
-                    title: "Hata",
-                    description: "Bir sorun oluştu.",
-                    variant: "destructive"
+                    title: "✨ Tebrikler!",
+                    description: `${selectedMember.name}, ${prayerName} namazını kıldı.`,
                 });
+            }
+        } catch (error) {
+            toast({
+                title: "Hata",
+                description: "Bir sorun oluştu.",
+                variant: "destructive"
             });
+        }
     };
     
     return (
@@ -89,16 +88,26 @@ export default function PrayerTrackerPage() {
                 </h1>
             </header>
             
-             <div className="flex items-center justify-center gap-4 mb-4 text-purple-800 dark:text-purple-200 font-semibold">
+             <div className="flex flex-col items-center justify-center gap-4 mb-4 text-purple-800 dark:text-purple-200 font-semibold">
                 <div className="flex gap-1">
                     <Heart className="size-6 text-red-500 fill-red-500"/>
                     <Heart className="size-6 text-black fill-black"/>
                 </div>
                 <p>Kıldığın namazları kırmızıya, kılamadıklarını siyaha boya.</p>
             </div>
-            
+
             <div className="flex-grow flex items-center justify-center">
                  <div className="w-full max-w-4xl p-4 bg-yellow-400 dark:bg-yellow-600 rounded-xl shadow-2xl border-4 border-yellow-500 dark:border-yellow-700">
+                     <div className="flex items-center justify-center gap-4 mb-4">
+                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => subWeeks(d, 1))}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addWeeks(d, 1))}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+
                     <div className="grid grid-cols-6 gap-2 text-center text-white font-bold mb-2">
                         <div></div> {/* Empty corner */}
                         {prayerTimes.map(time => (
@@ -164,4 +173,3 @@ export default function PrayerTrackerPage() {
          </div>
     );
 }
-
