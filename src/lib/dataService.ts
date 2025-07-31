@@ -26,50 +26,68 @@ const onFamilyDataUpdate = <T>(
     orderByDirection?: 'desc' | 'asc'
 ): (() => void) => {
     const auth = getAuth();
-    let dataUnsubscribe: (() => void) | null = null;
-    let authUnsubscribe: (() => void) | null = null;
+    let unsubscribe: Unsubscribe | null = null;
 
-    const cleanup = () => {
-        if (dataUnsubscribe) dataUnsubscribe();
-        if (authUnsubscribe) authUnsubscribe();
-    };
-
-    authUnsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (dataUnsubscribe) dataUnsubscribe(); // Unsubscribe from previous listener
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+        // Clean up previous listener if it exists
+        if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = null;
+        }
 
         if (user) {
             try {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
-                if (userDoc.exists()) {
-                    const familyId = userDoc.data().familyId;
-                    if (familyId) {
-                        let q = query(collection(db, collectionName), where("familyId", "==", familyId));
-                        if (orderByField) {
-                            q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
-                        }
+                const familyId = userDoc.exists() ? userDoc.data().familyId : null;
 
-                        dataUnsubscribe = onSnapshot(q, (snapshot) => {
-                            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+                if (familyId) {
+                    let q = query(collection(db, collectionName), where("familyId", "==", familyId));
+                    if (orderByField) {
+                        q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
+                    }
+
+                    unsubscribe = onSnapshot(q, (snapshot) => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+                        if (typeof callback === 'function') {
                             callback(items);
-                            if (runOnce) {
-                                cleanup();
-                            }
-                        }, (error) => {
-                            console.error(`Error fetching ${collectionName}:`, error);
+                        }
+                        if (runOnce && unsubscribe) {
+                            unsubscribe();
+                            unsubscribe = null;
+                        }
+                    }, (error) => {
+                        console.error(`Error fetching ${collectionName}:`, error);
+                        if (typeof callback === 'function') {
                             callback([]);
-                        });
-                        return; // Exit after setting up listener
+                        }
+                    });
+                } else {
+                    // User has no familyId, provide empty data
+                     if (typeof callback === 'function') {
+                        callback([]);
                     }
                 }
             } catch (error) {
                 console.error("Error getting user document:", error);
+                 if (typeof callback === 'function') {
+                    callback([]);
+                }
+            }
+        } else {
+            // No user logged in, provide empty data
+            if (typeof callback === 'function') {
+                callback([]);
             }
         }
-        // If no user, no familyId, or error, callback with empty array
-        callback([]);
     });
 
-    return cleanup;
+    // Return a function that cleans up both listeners
+    return () => {
+        authUnsubscribe();
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    };
 };
 
 
