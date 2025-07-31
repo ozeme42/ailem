@@ -144,8 +144,8 @@ export default function PrayerTrackerPage() {
                                             onClick={() => handlePrayerToggle(dayKey, prayer)}
                                         >
                                             <Heart className={cn(
-                                                "size-10 transition-all text-gray-400/50 hover:scale-110",
-                                                isCompleted && "text-red-500 fill-current"
+                                                "size-10 transition-all hover:scale-110",
+                                                isCompleted ? "text-red-500 fill-red-500" : "text-gray-400/50"
                                             )} />
                                         </div>
                                     )
