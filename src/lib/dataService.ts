@@ -27,8 +27,9 @@ const onFamilyDataUpdate = <T>(
 ): (() => void) => {
     const auth = getAuth();
     let unsubscribe: Unsubscribe | null = null;
+    let authUnsubscribe: Unsubscribe | null = null;
 
-    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+    const setupListener = async (user: import('firebase/auth').User | null) => {
         // Clean up previous listener if it exists
         if (unsubscribe) {
             unsubscribe();
@@ -52,8 +53,7 @@ const onFamilyDataUpdate = <T>(
                             callback(items);
                         }
                         if (runOnce && unsubscribe) {
-                            unsubscribe();
-                            unsubscribe = null;
+                            cleanup();
                         }
                     }, (error) => {
                         console.error(`Error fetching ${collectionName}:`, error);
@@ -62,7 +62,6 @@ const onFamilyDataUpdate = <T>(
                         }
                     });
                 } else {
-                    // User has no familyId, provide empty data
                      if (typeof callback === 'function') {
                         callback([]);
                     }
@@ -74,20 +73,20 @@ const onFamilyDataUpdate = <T>(
                 }
             }
         } else {
-            // No user logged in, provide empty data
             if (typeof callback === 'function') {
                 callback([]);
             }
         }
-    });
-
-    // Return a function that cleans up both listeners
-    return () => {
-        authUnsubscribe();
-        if (unsubscribe) {
-            unsubscribe();
-        }
     };
+    
+    authUnsubscribe = onAuthStateChanged(auth, setupListener);
+
+    const cleanup = () => {
+        if (authUnsubscribe) authUnsubscribe();
+        if (unsubscribe) unsubscribe();
+    };
+
+    return cleanup;
 };
 
 
