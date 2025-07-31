@@ -6,6 +6,7 @@
 
 
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -94,7 +95,7 @@ export interface Book {
   author?: string; 
   image: string;
   type: "Kitap";
-  tags: string[];
+  tags?: string[];
   rating: number;
   description: string;
   pageCount?: number;
