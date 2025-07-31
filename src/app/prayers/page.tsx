@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { onPrayerProgressUpdate, updatePrayerProgress } from "@/lib/dataService";
 import type { PrayerProgress, FamilyMember } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { startOfWeek, addDays, format, subWeeks, addWeeks } from 'date-fns';
+import { startOfWeek, addDays, format, subWeeks, addWeeks, isSameDay, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
@@ -56,22 +56,26 @@ export default function PrayerTrackerPage() {
     const handlePrayerToggle = async (dayKey: string, prayerName: string) => {
         if (!selectedMember) return;
     
+        const originalProgress = prayerProgress;
+    
+        // Optimistic UI update
         const currentCompletions = prayerProgress?.completions?.[dayKey] || [];
         const isCompleted = currentCompletions.includes(prayerName);
         const newCompletions = isCompleted
             ? currentCompletions.filter(p => p !== prayerName)
             : [...currentCompletions, prayerName];
     
-        // Optimistic UI update
-        const newProgressState = {
-            ...prayerProgress,
+        // Correctly update the state without overwriting other days
+        const newProgressState: PrayerProgress = {
             id: prayerProgress?.id || `${selectedMember.id}`,
+            memberId: prayerProgress?.memberId || selectedMember.id,
+            familyId: prayerProgress?.familyId || '', // This should be filled from auth context ideally
             completions: {
                 ...(prayerProgress?.completions || {}),
                 [dayKey]: newCompletions,
             },
         };
-        setPrayerProgress(newProgressState as PrayerProgress);
+        setPrayerProgress(newProgressState);
     
         try {
             await updatePrayerProgress(selectedMember.id, dayKey, newCompletions);
@@ -88,7 +92,7 @@ export default function PrayerTrackerPage() {
                 variant: "destructive"
             });
             // Revert UI on error
-            setPrayerProgress(prayerProgress);
+            setPrayerProgress(originalProgress);
         }
     };
     
@@ -156,7 +160,7 @@ export default function PrayerTrackerPage() {
                                         >
                                             <Heart 
                                                 className={cn("size-10 transition-all hover:scale-110", isCompleted ? "text-red-500" : "text-gray-400/50")} 
-                                                fill={isCompleted ? 'currentColor' : 'none'}
+                                                style={{ fill: isCompleted ? 'currentColor' : 'none' }}
                                             />
                                         </div>
                                     )
