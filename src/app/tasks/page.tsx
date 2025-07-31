@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -176,7 +177,7 @@ export default function TasksPage() {
                           <span>{member.xp.toLocaleString()} XP</span>
                         </div>
                       </div>
-                      <Badge variant="secondary">Lvl {member.level}</Badge>
+                      <Badge variant="secondary">Seviye {member.level}</Badge>
                     </li>
                   ))}
               </ul>
