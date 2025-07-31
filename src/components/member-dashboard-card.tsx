@@ -14,6 +14,7 @@ import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, U
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan } from '@/lib/data';
+import { Progress } from './ui/progress';
 
 interface MemberDashboardCardProps {
     member: FamilyMember;
@@ -64,19 +65,15 @@ export function MemberDashboardCard({
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
         
         const memberLib = userLibraries.find(lib => lib.memberId === memberId);
-        let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read' })[] = [];
+        let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read', progress?: number })[] = [];
         if (memberLib?.books) {
-            const readingBookIds = new Set(
-                memberLib.books
-                    .filter(b => b.status === 'reading' || b.status === 'to-read')
-                    .map(b => b.bookId)
-            );
-            readingBooksData = books
-                .filter(book => readingBookIds.has(book.id))
-                .map(book => {
-                    const libEntry = memberLib.books.find(b => b.bookId === book.id)!;
-                    return { ...book, libraryStatus: libEntry.status as 'reading' | 'to-read' };
-                });
+            readingBooksData = memberLib.books
+                .filter(libBook => libBook.status === 'reading' || libBook.status === 'to-read')
+                .map(libBook => {
+                    const bookDetail = books.find(b => b.id === libBook.bookId);
+                    return bookDetail ? { ...bookDetail, libraryStatus: libBook.status, progress: libBook.progress } : null;
+                })
+                .filter(Boolean) as (BookType & { libraryStatus: 'reading' | 'to-read', progress?: number })[];
         }
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === memberId && !p.completed).map(p => p.itemId));
@@ -188,14 +185,26 @@ export function MemberDashboardCard({
                  {readingBooks.length > 0 && (
                    <div>
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><BookOpen className="h-4 w-4 text-amber-600"/> Okunacak Kitaplar</h4>
-                        <div className="space-y-2">
-                            {readingBooks.slice(0, 2).map(book => (
+                        <div className="space-y-3">
+                            {readingBooks.slice(0, 2).map(book => {
+                                const pagesRead = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
+                                return (
                                  <Link href="/library" key={book.id} className="block">
-                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-500/10 text-amber-900 hover:bg-amber-500/20">
+                                    <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-amber-500/10 text-amber-900 hover:bg-amber-500/20">
                                         <div className="truncate"><p className="font-semibold truncate text-sm">{book.title}</p><p className="text-xs text-amber-800/80 truncate">{book.author}</p></div>
+                                        {book.libraryStatus === 'reading' && book.progress !== undefined && (
+                                            <div>
+                                                <Progress value={book.progress} className="h-1.5" indicatorClassName="bg-amber-500"/>
+                                                {book.pageCount ? (
+                                                     <p className="text-xs text-amber-800/80 mt-1 text-right">{pagesRead} / {book.pageCount} sayfa</p>
+                                                ) : (
+                                                    <p className="text-xs text-amber-800/80 mt-1 text-right">%{book.progress.toFixed(0)}</p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </Link>
-                            ))}
+                            )})}
                         </div>
                     </div>
                 )}
