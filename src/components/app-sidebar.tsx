@@ -22,6 +22,7 @@ const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
       strokeLinejoin="round"
       {...props}
     >
+      {/* Kendi SVG ikon kodunuzu aşağıdaki <path> etiketlerinin yerine yapıştırın. Örnek: <path d="..." /> */}
       <path d="M4 22h16" />
       <path d="M5 22V10" />
       <path d="M19 22V10" />
