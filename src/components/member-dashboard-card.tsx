@@ -52,8 +52,10 @@ export function MemberDashboardCard({
     const { habits, otherTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
         const memberId = member.id;
 
-        const habits = tasks.filter(t => t.assigneeId === memberId && t.isRecurring);
-        const otherTasks = tasks.filter(t => t.assigneeId === memberId && !t.isRecurring && !t.completed && t.category === 'Kişisel');
+        const memberTasks = tasks.filter(t => t.assigneeId === memberId);
+        const habits = memberTasks.filter(t => t.isRecurring);
+        const otherTasks = memberTasks.filter(t => !t.isRecurring && !t.completed && t.category === 'Kişisel');
+        
         const pendingTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
         
         const pendingStudies = studyAssignments
@@ -62,22 +64,18 @@ export function MemberDashboardCard({
         
         const memberLib = userLibraries.find(lib => lib.memberId === memberId);
         let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read' })[] = [];
-        
-        if (memberLib && memberLib.books && memberLib.books.length > 0) {
+        if (memberLib?.books) {
             const readingBookIds = new Set(
                 memberLib.books
                     .filter(b => b.status === 'reading' || b.status === 'to-read')
                     .map(b => b.bookId)
             );
-
-            if (readingBookIds.size > 0) {
-                readingBooksData = books
-                    .filter(book => readingBookIds.has(book.id))
-                    .map(book => {
-                        const libEntry = memberLib.books.find(b => b.bookId === book.id)!;
-                        return { ...book, libraryStatus: libEntry.status as 'reading' | 'to-read' };
-                    });
-            }
+            readingBooksData = books
+                .filter(book => readingBookIds.has(book.id))
+                .map(book => {
+                    const libEntry = memberLib.books.find(b => b.bookId === book.id)!;
+                    return { ...book, libraryStatus: libEntry.status as 'reading' | 'to-read' };
+                });
         }
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === memberId && !p.completed).map(p => p.itemId));
@@ -261,5 +259,3 @@ export function MemberDashboardCard({
         </Card>
     );
 }
-
-    
