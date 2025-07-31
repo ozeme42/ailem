@@ -45,7 +45,6 @@ const formSchema = z.object({
   title: z.string().min(3, { message: "Başlık en az 3 karakter olmalıdır." }),
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   dueDate: z.date({ required_error: "Lütfen bir bitiş tarihi seçin." }),
-  category: z.enum(['Ev İşleri', 'Kişisel'], { required_error: "Lütfen bir kategori seçin." }),
   subtasks: z.array(subtaskSchema).optional(),
   
   isRecurring: z.boolean().default(false),
@@ -70,7 +69,6 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      category: "Ev İşleri",
       subtasks: [],
       isRecurring: isHabitPage,
       recurrenceType: isHabitPage ? 'daily' : undefined,
@@ -92,7 +90,6 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
         title: taskToEdit.title,
         assigneeId: taskToEdit.assigneeId,
         dueDate: new Date(taskToEdit.dueDate),
-        category: taskToEdit.category === 'Ev İşleri' || taskToEdit.category === 'Kişisel' ? taskToEdit.category : 'Ev İşleri',
         subtasks: (taskToEdit.subtasks || []).map(st => ({ title: st.title })),
         isRecurring: taskToEdit.isRecurring || false,
         recurrenceType: taskToEdit.recurrenceType,
@@ -103,7 +100,6 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
     } else {
        form.reset({
           title: "",
-          category: "Ev İşleri",
           subtasks: [],
           assigneeId: undefined,
           dueDate: undefined,
@@ -128,7 +124,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
             title: values.title,
             assigneeId: values.assigneeId,
             dueDate: format(values.dueDate, "yyyy-MM-dd"),
-            category: values.category,
+            category: 'Görev' as const,
             points: 25, // Defaulting to 25 points as difficulty is removed
             completed: false,
             subtasks: (values.subtasks || []).map(st => ({
@@ -190,27 +186,6 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                 <FormControl>
                   <Input placeholder="Örn: Odanı topla" {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kategori</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Bir kategori seçin" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Ev İşleri">Ev İşleri</SelectItem>
-                    <SelectItem value="Kişisel">Kişisel</SelectItem>
-                  </SelectContent>
-                </Select>
                 <FormMessage />
               </FormItem>
             )}

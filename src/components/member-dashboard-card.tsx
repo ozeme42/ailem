@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users } from 'lucide-react';
+import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan } from '@/lib/data';
@@ -51,12 +51,12 @@ export function MemberDashboardCard({
     const { toast } = useToast();
     const { familyId, familyMembers } = useAuth();
     
-    const { habits, otherTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
+    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
         const memberId = member.id;
 
         const memberTasks = tasks.filter(t => t.assigneeId === memberId);
         const habits = memberTasks.filter(t => t.isRecurring);
-        const otherTasks = memberTasks.filter(t => !t.isRecurring && !t.completed && t.category === 'Kişisel');
+        const otherTasks = memberTasks.filter(t => !t.isRecurring && !t.completed);
         
         const pendingTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
         
@@ -81,7 +81,7 @@ export function MemberDashboardCard({
 
         return { 
             habits, 
-            otherTasks, 
+            pendingTasks: otherTasks, 
             pendingTests, 
             pendingStudies, 
             readingBooks: readingBooksData, 
@@ -111,15 +111,15 @@ export function MemberDashboardCard({
     };
     
     if (member.id === 'house') {
-        const houseTasks = tasks.filter(t => t.category === 'Ev İşleri' && !t.completed);
+        const houseTasks = tasks.filter(t => (t.category === 'Ev İşleri' || t.category === 'Görev') && !t.completed);
         if (houseTasks.length === 0) return null;
         
         return (
              <Link href="/tasks" className="block transition-transform hover:-translate-y-1 group">
                 <Card className="shadow-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white h-full">
                     <CardHeader>
-                    <CardTitle className='flex items-center gap-2'><Users/> Ev İşleri</CardTitle>
-                    <CardDescription className="text-white/80">Ailenin genel ev işleri ve sorumlulukları.</CardDescription>
+                    <CardTitle className='flex items-center gap-2'><Users/> Ev Görevleri</CardTitle>
+                    <CardDescription className="text-white/80">Ailenin genel görevleri ve sorumlulukları.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
                     {houseTasks.slice(0, 3).map(task => {
@@ -143,7 +143,7 @@ export function MemberDashboardCard({
 
     const allPendingItems = [
         ...habits,
-        ...otherTasks,
+        ...pendingTasks,
         ...pendingTests,
         ...pendingStudies,
         ...readingBooks,
@@ -246,12 +246,12 @@ export function MemberDashboardCard({
                         </div>
                     </div>
                 )}
-                {otherTasks.length > 0 && (
+                {pendingTasks.length > 0 && (
                     <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Diğer Görevler</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><ListChecks className="h-4 w-4 text-blue-600"/> Bekleyen Görevler</h4>
                         <div className="space-y-3">
-                        {otherTasks.slice(0, 2).map(task => (
-                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
+                        {pendingTasks.slice(0, 2).map(task => (
+                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10">
                                 <Checkbox
                                     id={`personal-task-${task.id}-${member.id}`}
                                     onCheckedChange={() => handleTaskCompletion(task)}

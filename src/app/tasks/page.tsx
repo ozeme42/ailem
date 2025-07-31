@@ -2,7 +2,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { PlusCircle, Search, Star, Mic, Filter, ChevronDown, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
@@ -53,28 +52,19 @@ export default function TasksPage() {
   const leaderboard = [...familyMembers].sort((a,b) => b.xp - a.xp);
 
   const {
-    pendingHouseTasks,
-    completedHouseTasks,
-    pendingPersonalTasks,
-    completedPersonalTasks
+    pendingTasks,
+    completedTasks,
   } = React.useMemo(() => {
     const filteredTasks = tasks.filter(task => {
-      const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (getAssignee(task.assigneeId) && getAssignee(task.assigneeId)!.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      const categoryMatch = task.category === 'Ev İşleri' || task.category === 'Kişisel';
-      return searchMatch && categoryMatch;
+        const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (getAssignee(task.assigneeId) && getAssignee(task.assigneeId)!.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        return searchMatch && (task.category === 'Ev İşleri' || task.category === 'Kişisel' || task.category === 'Görev');
     });
 
-    const houseTasks = filteredTasks.filter((task) => task.category === 'Ev İşleri');
-    const personalTasks = filteredTasks.filter((task) => task.category === 'Kişisel');
-    
     return {
-      pendingHouseTasks: houseTasks.filter(t => !t.completed),
-      completedHouseTasks: houseTasks.filter(t => t.completed),
-      pendingPersonalTasks: personalTasks.filter(t => !t.completed),
-      completedPersonalTasks: personalTasks.filter(t => t.completed),
+        pendingTasks: filteredTasks.filter(t => !t.completed),
+        completedTasks: filteredTasks.filter(t => t.completed)
     };
-
   }, [tasks, searchTerm, familyMembers]);
 
   
@@ -109,7 +99,7 @@ export default function TasksPage() {
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder={"Görev, sorumlu veya kategori ara..."}
+                placeholder={"Görev veya sorumlu ara..."}
                 className="pl-10 pr-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -127,73 +117,39 @@ export default function TasksPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Kategoriye Göre</DropdownMenuLabel>
+                <DropdownMenuLabel>Sorumluya Göre</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                 <DropdownMenuCheckboxItem>Ev İşleri</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Kişisel</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Okul</DropdownMenuCheckboxItem>
+                {familyMembers.map(member => (
+                    <DropdownMenuCheckboxItem key={member.id}>{member.name}</DropdownMenuCheckboxItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          <Tabs defaultValue="Ev İşleri" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="Ev İşleri">Ev İşleri ({pendingHouseTasks.length + completedHouseTasks.length})</TabsTrigger>
-              <TabsTrigger value="Kişisel">Kişisel ({pendingPersonalTasks.length + completedPersonalTasks.length})</TabsTrigger>
-            </TabsList>
-            <TabsContent value="Ev İşleri" className="mt-4">
-                <Tabs defaultValue="pending">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="pending">Devam Eden ({pendingHouseTasks.length})</TabsTrigger>
-                        <TabsTrigger value="completed">Tamamlananlar ({completedHouseTasks.length})</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="pending" className="mt-4 space-y-3">
-                        {pendingHouseTasks.length > 0 ? (
-                            pendingHouseTasks.map((task) => (
-                            <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
-                            ))
-                        ) : (
-                            <Card><CardContent className="p-8 text-center text-muted-foreground">Devam eden ev işi yok.</CardContent></Card>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="completed" className="mt-4 space-y-3">
-                        {completedHouseTasks.length > 0 ? (
-                            completedHouseTasks.map((task) => (
-                            <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
-                            ))
-                        ) : (
-                            <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan ev işi yok.</CardContent></Card>
-                        )}
-                    </TabsContent>
-                </Tabs>
-            </TabsContent>
-            <TabsContent value="Kişisel" className="mt-4">
-               <Tabs defaultValue="pending">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="pending">Devam Eden ({pendingPersonalTasks.length})</TabsTrigger>
-                        <TabsTrigger value="completed">Tamamlananlar ({completedPersonalTasks.length})</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="pending" className="mt-4 space-y-3">
-                        {pendingPersonalTasks.length > 0 ? (
-                            pendingPersonalTasks.map((task) => (
-                            <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
-                            ))
-                        ) : (
-                            <Card><CardContent className="p-8 text-center text-muted-foreground">Devam eden kişisel görev yok.</CardContent></Card>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="completed" className="mt-4 space-y-3">
-                        {completedPersonalTasks.length > 0 ? (
-                            completedPersonalTasks.map((task) => (
-                            <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
-                            ))
-                        ) : (
-                            <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan kişisel görev yok.</CardContent></Card>
-                        )}
-                    </TabsContent>
-                </Tabs>
-            </TabsContent>
-          </Tabs>
+            <Tabs defaultValue="pending" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="pending">Devam Eden ({pendingTasks.length})</TabsTrigger>
+                    <TabsTrigger value="completed">Tamamlananlar ({completedTasks.length})</TabsTrigger>
+                </TabsList>
+                <TabsContent value="pending" className="mt-4 space-y-3">
+                    {pendingTasks.length > 0 ? (
+                        pendingTasks.map((task) => (
+                        <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
+                        ))
+                    ) : (
+                        <Card><CardContent className="p-8 text-center text-muted-foreground">Devam eden görev yok.</CardContent></Card>
+                    )}
+                </TabsContent>
+                <TabsContent value="completed" className="mt-4 space-y-3">
+                    {completedTasks.length > 0 ? (
+                        completedTasks.map((task) => (
+                        <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
+                        ))
+                    ) : (
+                        <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>
+                    )}
+                </TabsContent>
+            </Tabs>
         </div>
 
         <aside className="space-y-6">
