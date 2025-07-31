@@ -10,24 +10,26 @@ import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
 
 const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       {...props}
     >
-        <path d="M2 12a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v8H2v-8Z"/>
-        <path d="M5 20V8"/>
-        <path d="M19 20V8"/>
-        <path d="M12 4v4"/>
-        <path d="M10 4h4"/>
-        <path d="M15.2 2.2a2 2 0 0 1 2.6 2.6l-1.4 1.4"/>
+      <path d="M4 22h16" />
+      <path d="M5 22V10" />
+      <path d="M19 22V10" />
+      <path d="M12 4a4.5 4.5 0 0 1 4.5 4.5V10H7.5V8.5A4.5 4.5 0 0 1 12 4z" />
+      <path d="M2 10h3" />
+      <path d="M19 10h3" />
+      <path d="M3 10V7a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v3" />
+      <path d="M18 10V7a1 1 0 0 0-1-1h-1a1 1 0 0 0-1 1v3" />
     </svg>
 );
 
