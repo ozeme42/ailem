@@ -62,18 +62,14 @@ export function MemberDashboardCard({
             .filter(sa => sa.studentId === member.id && sa.status === 'assigned')
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
 
-        // Reading Books: Find the member's library, get book IDs that are 'reading' or 'to-read', then get full book details.
         const memberLib = userLibraries.find(lib => lib.memberId === member.id);
         let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read' })[] = [];
         if (memberLib) {
-            const readingBookEntries = memberLib.books.filter(b => b.status === 'to-read' || b.status === 'reading');
-            readingBooksData = readingBookEntries
-                .map(libraryBook => {
-                    const bookDetail = books.find(book => book.id === libraryBook.bookId);
-                    return bookDetail ? { ...bookDetail, libraryStatus: libraryBook.status } : null;
-                })
-                .filter((b): b is BookType & { libraryStatus: 'reading' | 'to-read' } => !!b)
-                .sort((a, b) => (a.libraryStatus === 'reading' ? -1 : 1)); // Prioritize 'reading' books
+            const readingBookEntries = memberLib.books.filter(b => b.status === 'reading' || b.status === 'to-read');
+            readingBooksData = readingBookEntries.map(libraryBook => {
+                const bookDetail = books.find(book => book.id === libraryBook.bookId);
+                return bookDetail ? { ...bookDetail, libraryStatus: libraryBook.status } : null;
+            }).filter((b): b is (BookType & { libraryStatus: 'reading' | 'to-read' }) => b !== null);
         }
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === member.id && !p.completed).map(p => p.itemId));
