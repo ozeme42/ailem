@@ -87,15 +87,6 @@ export const migrateImageFlow = ai.defineFlow(
 
     } catch (e: any) {
       console.error("Image migration failed:", e);
-      if (e.code === 'storage/unauthorized' || (e.message && (e.message.includes('permission-denied') || e.message.includes('permission denied')))) {
-         return { success: false, error: 'Görsel yükleme yetkisi alınamadı. Lütfen Firebase IAM ayarlarınızı kontrol edin (örn: Storage Admin rolü).' };
-      }
-      if (e.code === 'EAI_AGAIN' || (e.message && e.message.includes('EAI_AGAIN'))) {
-         return { success: false, error: 'DNS çözümleme hatası. İnternet bağlantınızı ve storage.googleapis.com adresine erişiminizi kontrol edin.'};
-      }
-      if (e.message && (e.message.includes('Could not refresh access token') || e.code === 'auth/internal-error' || e.message.includes('Credential implementation provided no access token'))) {
-         return { success: false, error: 'Firebase kimlik doğrulaması başarısız. Lütfen ortam değişkenlerinizin (FIREBASE_ADMIN_CREDENTIALS_JSON) doğru ayarlandığından ve .env dosyasının yüklendiğinden emin olun.' };
-      }
       return { success: false, error: e.message || 'Görsel taşınırken beklenmedik bir sunucu hatası oluştu.' };
     }
   }

@@ -11,22 +11,16 @@ export function getFirebaseAdmin() {
   }
 
   try {
-    let credential;
-    if (process.env.FIREBASE_ADMIN_CREDENTIALS_JSON) {
-      credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS_JSON));
-    } else {
-      // Fallback for local development without the env var
-      credential = admin.credential.applicationDefault();
-    }
-
+    // In a Google Cloud environment like App Hosting, credentials are automatically discovered.
+    // This is the recommended approach over using a service account JSON file.
+    // The service account used by App Hosting needs "Storage Admin" IAM role for this to work.
     app = admin.initializeApp({
-      credential,
-      // Make sure your Storage Bucket URL is available as an environment variable
+      credential: admin.credential.applicationDefault(),
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } catch (error: any) {
     console.error('Firebase admin initialization error', error.stack);
-    throw new Error('Could not initialize Firebase Admin SDK.');
+    throw new Error('Could not initialize Firebase Admin SDK. Ensure the service account has necessary permissions.');
   }
 
   return admin;
