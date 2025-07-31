@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isBefore, parseISO, isSameDay, getDay, subWeeks, addWeeks } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isBefore, parseISO, isSameDay, getDay, subWeeks, addWeeks, isToday } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Check, X, Pencil, CheckSquare } from "lucide-react";
 
@@ -244,3 +244,4 @@ export default function HabitDetailPage() {
   );
 }
 
+    
