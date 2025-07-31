@@ -25,7 +25,11 @@ const badgeDefinitions: { [key: string]: { name: string; description: string } }
     '🚀': { name: 'Süper Kahraman', description: '50 görev tamamladın!' },
     '🏆': { name: 'Efsane', description: '100 görev tamamladın!' },
     '💪': { name: 'Güçlü', description: 'Zor seviyede bir görev tamamladın!' },
+    
+    // Alışkanlık & Seri Rozetleri
     '📅': { name: 'Azimli', description: '7 günlük görev serisi yakaladın!' },
+    '🧡': { name: 'Ateşli Seri', description: '7 günlük alışkanlık serisi yakaladın!' },
+    '❤️‍🔥': { name: 'İstikrar Abidesi', description: '30 günlük alışkanlık serisi yakaladın!'},
 
     // Eğitim Rozetleri
     '🎓': { name: 'Bilge', description: 'İlk sınavını tamamladın!' },
@@ -39,6 +43,22 @@ const badgeDefinitions: { [key: string]: { name: string; description: string } }
     '📚': { name: 'Koleksiyoner', description: '10 kitap bitirdin!' },
     '🏛️': { name: 'Kütüphaneci', description: '25 kitap bitirdin!' },
     ' marathon': { name: 'Maratoncu', description: '500 sayfadan uzun bir kitap bitirdin!' },
+    '🧐': { name: 'Sayfa Canavarı', description: 'Toplam 5000 sayfa okudun!'},
+    '🎭': { name: 'Türlerin Efendisi', description: '5 farklı türde kitap okudun!'},
+
+    // Namaz Rozetleri
+    '🕌': { name: 'İlk Vakit', description: 'İlk namazını işaretledin!'},
+    '🌙': { name: 'Namaz Müdavimi', description: '7 gün boyunca namazlarını takip ettin!'},
+    '🌟': { name: 'Günün Yıldızı', description: 'Bir günde 5 vakit namazı tamamladın!'},
+
+    // Ezber Rozetleri
+    '💡': { name: 'İlk Işık', description: 'İlk ezberini tamamladın!'},
+    '🧠+': { name: 'Hafıza Şampiyonu', description: '10 ezber tamamladın!'},
+    '👑': { name: 'Hafız-ı Kelam', description: 'Bir kategorideki tüm ezberleri tamamladın!'},
+
+    // Yol Haritası Rozetleri
+    '🗺️': { name: 'Yolun Başında', description: 'İlk yol haritası bölümünü tamamladın!'},
+    '🏁': { name: 'Hedef Avcısı', description: 'Bir yol haritasını tamamen bitirdin!'},
 };
 
 export default function ProfileClient() {
