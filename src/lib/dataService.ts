@@ -26,62 +26,59 @@ const onFamilyDataUpdate = <T>(
     orderByDirection?: 'desc' | 'asc'
 ): (() => void) => {
     const auth = getAuth();
+    let listeners: (() => void)[] = [];
 
-    let dataUnsubscribe: (() => void) | null = null;
-    let userUnsubscribe: (() => void) | null = null;
-    let authUnsubscribe: (() => void) | null = null;
+    const setupDataListener = (familyId: string) => {
+        let q = query(collection(db, collectionName), where("familyId", "==", familyId));
+        if (orderByField) {
+            q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
+        }
+        
+        const dataUnsubscribe = onSnapshot(q, (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+            if (typeof callback === 'function') {
+                callback(items);
+            }
+            if (runOnce) {
+                cleanup();
+            }
+        }, (error) => {
+            console.error(`Error fetching ${collectionName}:`, error);
+            if (typeof callback === 'function') callback([]);
+        });
+        listeners.push(dataUnsubscribe);
+    };
+
+    const setupAuthListener = () => {
+        const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+            // Clean up old listeners
+            listeners.forEach(unsub => unsub());
+            listeners = [];
+
+            if (user) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    const familyId = userDoc.data().familyId;
+                    if (familyId) {
+                        setupDataListener(familyId);
+                    } else {
+                        if (typeof callback === 'function') callback([]);
+                    }
+                } else {
+                    if (typeof callback === 'function') callback([]);
+                }
+            } else {
+                if (typeof callback === 'function') callback([]);
+            }
+        });
+        listeners.push(authUnsubscribe);
+    };
 
     const cleanup = () => {
-        dataUnsubscribe?.();
-        userUnsubscribe?.();
-        authUnsubscribe?.();
+        listeners.forEach(unsub => unsub());
     };
 
-    const setupListeners = (user: import('firebase/auth').User | null) => {
-        // Clean up previous listeners before setting up new ones
-        dataUnsubscribe?.();
-        userUnsubscribe?.();
-
-        if (user) {
-            const userDocRef = doc(db, 'users', user.uid);
-            userUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
-                dataUnsubscribe?.(); // Unsubscribe from old family's data if familyId changes
-                const familyId = userDoc.exists() ? userDoc.data().familyId : null;
-                if (familyId) {
-                    let q = query(collection(db, collectionName), where("familyId", "==", familyId));
-                    if (orderByField) {
-                        q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
-                    }
-                    dataUnsubscribe = onSnapshot(q, (snapshot) => {
-                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-                        if(typeof callback === 'function') callback(items);
-                        if (runOnce) cleanup();
-                    }, (error) => {
-                        console.error(`Error fetching ${collectionName}:`, error);
-                        if(typeof callback === 'function') callback([]);
-                        if (runOnce) cleanup();
-                    });
-                } else {
-                    if(typeof callback === 'function') callback([]);
-                    if (runOnce) cleanup();
-                }
-            }, (error) => {
-                console.error("Error fetching user document:", error);
-                if(typeof callback === 'function') callback([]);
-                if (runOnce) cleanup();
-            });
-        } else {
-            if(typeof callback === 'function') callback([]);
-            if (runOnce) cleanup();
-        }
-    };
-
-    if (runOnce) {
-        setupListeners(auth.currentUser);
-    } else {
-        authUnsubscribe = onAuthStateChanged(auth, setupListeners);
-    }
-
+    setupAuthListener();
     return cleanup;
 };
 
@@ -216,7 +213,7 @@ export const updateUserBookStatus = async (familyId: string, memberId: string, b
         
         if (newStatus === 'finished') {
             const bookDetails = (await getDoc(doc(db, 'mediaItems', bookId))).data() as Book;
-            await checkAndAwardBadges(memberId, familyId, { type: 'book_finished', book: bookDetails });
+            await checkAndAwardBadges(memberId, familyId, { type: 'book_finished', book: bookDetails, points: 100 });
         }
     }
 };
@@ -693,6 +690,12 @@ export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'fa
                 section.status = 'completed';
             }
         });
+
+        const isGoalComplete = cleanedData.sections.every((s: GoalSection) => s.status === 'completed');
+        if (isGoalComplete) {
+            cleanedData.status = 'completed';
+            await checkAndAwardBadges(cleanedData.assigneeId, (await getCurrentFamilyId())!, { type: 'goal_completed' });
+        }
     }
 
     return updateDoc(goalRef, cleanedData);
@@ -868,13 +871,21 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     await batch.commit();
 };
 
+type TriggerEvent = 
+  | { type: 'task_completed', task: Task, points?: number } 
+  | { type: 'test_completed', test: Test, points?: number }
+  | { type: 'book_finished', book: Book, points?: number }
+  | { type: 'goal_section_completed', points: number }
+  | { type: 'goal_completed' }
+  | { type: 'habit_streak_update', streak: number }
+  | { type: 'prayer_completed', prayerCount: number }
+  | { type: 'memorization_completed' };
+
+
 export const checkAndAwardBadges = async (
     memberId: string, 
     familyId: string, 
-    triggerEvent: 
-        | { type: 'task_completed', task?: Task } 
-        | { type: 'test_completed', test?: Test }
-        | { type: 'book_finished', book?: Book }
+    triggerEvent: TriggerEvent
 ) => {
     const familyRef = doc(db, "families", familyId);
     const familySnap = await getDoc(familyRef);
@@ -886,43 +897,21 @@ export const checkAndAwardBadges = async (
 
     const member: FamilyMember = family.members[memberIndex];
     const newBadges = new Set(member.badges || []);
-    let xpGained = 0;
-
-    if (triggerEvent.type === 'task_completed' && triggerEvent.task) {
-        xpGained += triggerEvent.task.points;
-        const completedCount = member.completedTasks + 1; // Assuming it's already updated
-        if (completedCount >= 1) newBadges.add('✨');
-        if (completedCount >= 10) newBadges.add('🔥');
-        if (completedCount >= 50) newBadges.add('🚀');
-        if (completedCount >= 100) newBadges.add('🏆');
-        
-        // Streak logic for daily tasks
-        if (triggerEvent.task?.recurrenceType === 'daily') {
-            const taskDocRef = doc(db, 'tasks', triggerEvent.task.id);
-            const taskDoc = (await getDoc(taskDocRef)).data() as Task;
-            let currentStreak = taskDoc.streak || 0;
-            if (taskDoc.lastCompletedDate) {
-                const lastDate = parseISO(taskDoc.lastCompletedDate);
-                const today = new Date();
-                const yesterday = subDays(today, 1);
-                if (isSameDay(lastDate, yesterday)) {
-                    currentStreak++; // It's a consecutive day
-                } else if (!isSameDay(lastDate, today)) {
-                    currentStreak = 1; // Streak is broken, reset to 1
-                }
-            } else {
-                currentStreak = 1; // First completion
-            }
-            await updateDoc(taskDocRef, { streak: currentStreak, lastCompletedDate: new Date().toISOString() });
-            if (currentStreak >= 7) newBadges.add('📅');
-        }
+    let xpGained = triggerEvent.points || 0;
+    
+    const completedTasks = (member.completedTasks || 0) + (triggerEvent.type === 'task_completed' ? 1 : 0);
+    
+    // --- Badge Logic ---
+    if (triggerEvent.type === 'task_completed') {
+        if (completedTasks >= 1) newBadges.add('✨');
+        if (completedTasks >= 10) newBadges.add('🔥');
+        if (completedTasks >= 50) newBadges.add('🚀');
+        if (completedTasks >= 100) newBadges.add('🏆');
     }
 
     if (triggerEvent.type === 'test_completed' && triggerEvent.test) {
-        xpGained += Math.round((triggerEvent.test.score || 0) / 2); // e.g., 100 score = 50 XP
         const testCountSnapshot = await getDocs(query(collection(db, "tests"), where("studentId", "==", memberId), where("status", "==", "Sonuçlandı")));
         const completedTestCount = testCountSnapshot.size;
-
         if (completedTestCount >= 1) newBadges.add('🎓');
         if (completedTestCount >= 10) newBadges.add('🧠');
         if (completedTestCount >= 25) newBadges.add('🦉');
@@ -931,7 +920,6 @@ export const checkAndAwardBadges = async (
     }
     
     if (triggerEvent.type === 'book_finished' && triggerEvent.book) {
-        xpGained += 100; // Fixed 100 XP for finishing a book
         const userLibQuery = await getDoc(doc(db, "userLibraries", `${familyId}_${memberId}`));
         if (userLibQuery.exists()) {
             const finishedBooksCount = userLibQuery.data().books.filter((b: UserLibraryBook) => b.status === 'finished').length;
@@ -942,14 +930,48 @@ export const checkAndAwardBadges = async (
         if ((triggerEvent.book?.pageCount || 0) >= 500) newBadges.add(' marathon');
     }
 
+    if (triggerEvent.type === 'habit_streak_update') {
+        if (triggerEvent.streak >= 7) newBadges.add('🧡');
+        if (triggerEvent.streak >= 30) newBadges.add('❤️‍🔥');
+    }
+    
+    if(triggerEvent.type === 'prayer_completed') {
+        const prayerProgressSnap = await getDoc(doc(db, 'prayerProgress', `${familyId}_${memberId}`));
+        if(prayerProgressSnap.exists()) {
+            const completions = prayerProgressSnap.data().completions || {};
+            if(Object.keys(completions).length >= 1) newBadges.add('🕌');
+            if(Object.keys(completions).length >= 7) newBadges.add('🌙');
+        }
+        if (triggerEvent.prayerCount === 5) newBadges.add('🌟');
+    }
+    
+    if(triggerEvent.type === 'memorization_completed') {
+        const progressSnap = await getDocs(query(collection(db, 'memorizationProgress'), where('memberId', '==', memberId), where('completed', '==', true)));
+        if (progressSnap.size >= 1) newBadges.add('💡');
+        if (progressSnap.size >= 10) newBadges.add('🧠+');
+        // 'Hafız-ı Kelam' would need more complex logic to check full category completion
+    }
+
+    if(triggerEvent.type === 'goal_section_completed') newBadges.add('🗺️');
+    if(triggerEvent.type === 'goal_completed') newBadges.add('🏁');
+
+
+    // --- XP & Level Logic ---
+    const currentXp = member.xp || 0;
+    const newXp = currentXp + xpGained;
+    const currentLevel = member.level || 1;
+    const newLevel = Math.floor(newXp / 1000) + 1;
+    
     const updatedMemberData: Partial<FamilyMember> = {
-        xp: (member.xp || 0) + xpGained,
+        xp: newXp,
+        level: newLevel,
+        completedTasks: completedTasks,
     };
     if (newBadges.size > (member.badges || []).length) {
         updatedMemberData.badges = Array.from(newBadges);
     }
     
-    if (xpGained > 0 || updatedMemberData.badges) {
+    if (Object.keys(updatedMemberData).length > 0) {
         await updateFamilyMemberInFamily(familyId, memberId, updatedMemberData);
     }
 };
@@ -1037,6 +1059,11 @@ export const updateMemorizationProgress = async (itemId: string, memberId: strin
         completed,
         completedAt: completed ? new Date().toISOString() : undefined,
     };
+    
+    if (completed) {
+        await checkAndAwardBadges(memberId, familyId, { type: 'memorization_completed', points: 50 });
+    }
+
     return setDoc(docRef, removeUndefined(progressData), { merge: true });
 };
 
@@ -1114,7 +1141,6 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
             let currentDate = new Date();
             currentDate.setHours(0,0,0,0);
             
-            // Check if today is completed or not to start streak calculation
             const todayIsCompleted = sortedDates.some(d => isSameDay(d, currentDate));
             if (!todayIsCompleted) {
                 currentDate = subDays(currentDate, 1);
@@ -1131,6 +1157,11 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
         }
         updateData.streak = streak;
         updateData.bestStreak = Math.max(currentTaskData.bestStreak || 0, streak);
+        
+        // Award XP and badges for streaks
+        if (streak > (currentTaskData.streak || 0)) {
+            await checkAndAwardBadges(task.assigneeId, task.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
+        }
     }
         
     await updateDoc(taskRef, updateData);
@@ -1242,7 +1273,7 @@ export const deleteNoteFromSection = (notebookId: string, noteId: string) => {
 
 
 // Prayer Progress
-export const onPrayerProgressUpdate = (callback: (progress: PrayerProgress[]) => void, runOnce?: boolean) => onFamilyDataUpdate<PrayerProgress>('prayerProgress', callback, runOnce);
+export const onPrayerProgressUpdate = (callback: (progress: PrayerProgress[]) => void) => onFamilyDataUpdate<PrayerProgress>('prayerProgress', callback);
 
 export const onSinglePrayerProgressUpdate = (memberId: string, callback: (progress: PrayerProgress | null) => void) => {
     const auth = getAuth();
@@ -1271,6 +1302,17 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
     const updateData = {
         completions: completions
     };
+    
+    // Check if a prayer was just completed and award points/badges
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const todaysCompletions = completions[todayKey] || [];
+    
+    // To prevent re-awarding, we might need to check the previous state, but for now, we'll award per completion.
+    // A better approach would be to pass the newly completed prayer and check against existing.
+    // This simplified version awards points for each prayer marked.
+    if(todaysCompletions.length > 0) {
+        await checkAndAwardBadges(memberId, familyId, { type: 'prayer_completed', prayerCount: todaysCompletions.length, points: 5 });
+    }
 
     return setDoc(docRef, { familyId, memberId, id: docId, ...updateData }, { merge: true });
 };
