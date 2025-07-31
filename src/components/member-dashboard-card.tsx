@@ -50,7 +50,7 @@ export function MemberDashboardCard({
     const { familyId, familyMembers } = useAuth();
     
     const { habits, otherTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
-        // Habits: All recurring tasks for the member, regardless of completion status.
+        // Habits: All recurring tasks for the member.
         const habits = tasks.filter(t => t.assigneeId === member.id && t.isRecurring);
 
         // Other Tasks: One-time, personal tasks that are NOT completed
@@ -62,15 +62,19 @@ export function MemberDashboardCard({
             .filter(sa => sa.studentId === member.id && sa.status === 'assigned')
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
 
+        // Reading Books: Find the member's library, get book IDs that are 'reading' or 'to-read', then get full book details.
         const memberLib = userLibraries.find(lib => lib.memberId === member.id);
-        const readingBookEntries = memberLib?.books.filter(b => b.status === 'to-read' || b.status === 'reading') || [];
-        const readingBooksData = readingBookEntries
-            .map(libraryBook => {
-                const bookDetail = books.find(book => book.id === libraryBook.bookId);
-                return bookDetail ? { ...bookDetail, libraryStatus: libraryBook.status } : null;
-            })
-            .filter((b): b is BookType & { libraryStatus: 'reading' | 'to-read' } => !!b)
-            .sort((a, b) => (a.libraryStatus === 'reading' ? -1 : 1)); // Prioritize 'reading' books
+        let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read' })[] = [];
+        if (memberLib) {
+            const readingBookEntries = memberLib.books.filter(b => b.status === 'to-read' || b.status === 'reading');
+            readingBooksData = readingBookEntries
+                .map(libraryBook => {
+                    const bookDetail = books.find(book => book.id === libraryBook.bookId);
+                    return bookDetail ? { ...bookDetail, libraryStatus: libraryBook.status } : null;
+                })
+                .filter((b): b is BookType & { libraryStatus: 'reading' | 'to-read' } => !!b)
+                .sort((a, b) => (a.libraryStatus === 'reading' ? -1 : 1)); // Prioritize 'reading' books
+        }
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === member.id && !p.completed).map(p => p.itemId));
         const pendingMemorizationData = memorizationItems.filter(item => memberProgress.has(item.id));
