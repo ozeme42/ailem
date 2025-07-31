@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isSameMonth, isToday, isBefore, parseISO, isSameDay } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isSameMonth, isToday, isBefore, parseISO, isSameDay, getDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Check, X, Pencil } from "lucide-react";
 
@@ -18,6 +18,16 @@ import { cn } from "@/lib/utils";
 import { updateHabitCompletion } from "@/lib/dataService";
 import { Skeleton } from "@/components/ui/skeleton";
 
+
+const dayIndexToId: { [key: number]: string } = {
+  1: 'Mon',
+  2: 'Tue',
+  3: 'Wed',
+  4: 'Thu',
+  5: 'Fri',
+  6: 'Sat',
+  0: 'Sun',
+};
 
 export default function HabitDetailPage() {
   const params = useParams();
@@ -125,7 +135,20 @@ export default function HabitDetailPage() {
                     
                     const todayForComparison = new Date();
                     todayForComparison.setHours(23, 59, 59, 999); // Allow marking today
-                    const isSelectable = !isBefore(day, habitStartDate) && day <= todayForComparison;
+                    
+                    let isSelectable = !isBefore(day, habitStartDate) && day <= todayForComparison;
+
+                    if (habit.recurrenceType === 'weekly' && habit.recurrenceDays && habit.recurrenceDays.length > 0) {
+                      const dayId = dayIndexToId[getDay(day)];
+                      if (!habit.recurrenceDays.includes(dayId)) {
+                        isSelectable = false;
+                      }
+                    } else if (habit.recurrenceType === 'monthly') {
+                      const habitStartDay = parseISO(habit.startDate).getDate();
+                      if (day.getDate() !== habitStartDay) {
+                        isSelectable = false;
+                      }
+                    }
 
                     const isMissed = isSelectable && !isCompleted && isBefore(day, new Date()) && !isSameDay(day, new Date());
                     

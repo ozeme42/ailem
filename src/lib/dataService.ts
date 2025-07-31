@@ -1077,7 +1077,7 @@ export const deleteAllMemorizationItems = async () => {
 
 
 export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: boolean) => {
-    if (!task.isRecurring || task.recurrenceType !== 'daily') return;
+    if (!task.isRecurring) return;
 
     const taskRef = doc(db, 'tasks', task.id);
     const dayKey = format(day, 'yyyy-MM-dd');
@@ -1093,25 +1093,30 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
     if (isCompleted) {
         completedDates.add(dayKey);
         
-        // Recalculate streak
-        let streak = 0;
-        let d = new Date(day);
-        while (completedDates.has(format(d, 'yyyy-MM-dd'))) {
-            streak++;
-            d = subDays(d, 1);
+        // Recalculate streak only for daily habits for now
+        if (task.recurrenceType === 'daily') {
+            let streak = 0;
+            let d = new Date(day);
+            while (completedDates.has(format(d, 'yyyy-MM-dd'))) {
+                streak++;
+                d = subDays(d, 1);
+            }
+            newStreak = streak;
         }
-        newStreak = streak;
 
     } else {
         completedDates.delete(dayKey);
+        
         // If today was part of the streak, the streak is now 0.
         // A more complex logic would be to find the new latest streak, but this is simpler.
         // We'll stick to a simpler logic.
         // If the user uncompletes today, their streak is broken.
         // What if they uncomplete yesterday? Their streak is also broken.
-        const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-        if(dayKey === format(new Date(), 'yyyy-MM-dd') || dayKey === yesterdayKey) {
-            newStreak = 0; // Simple reset. A more robust implementation would recalculate.
+        if (task.recurrenceType === 'daily') {
+            const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+            if(dayKey === format(new Date(), 'yyyy-MM-dd') || dayKey === yesterdayKey) {
+                newStreak = 0; // Simple reset. A more robust implementation would recalculate.
+            }
         }
     }
 
