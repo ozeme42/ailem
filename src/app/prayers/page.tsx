@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { startOfWeek, addDays, format, isSameDay, subWeeks, addWeeks } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
-import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, HeartHandshake } from "lucide-react";
 
 const prayerTimes = ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"];
 
@@ -143,15 +143,11 @@ export default function PrayerTrackerPage() {
                                             className="flex justify-center items-center cursor-pointer"
                                             onClick={() => handlePrayerToggle(dayKey, prayer)}
                                         >
-                                            <Heart 
-                                                className={cn(
-                                                    "size-10 transition-all hover:scale-110",
-                                                    isCompleted ? "text-red-500" : "text-gray-400/50"
-                                                )} 
-                                                style={{
-                                                  fill: isCompleted ? '#ef4444' : 'transparent'
-                                                }}
-                                            />
+                                            {isCompleted ? (
+                                                <HeartHandshake className="size-10 transition-all hover:scale-110 text-red-500" />
+                                            ) : (
+                                                <Heart className="size-10 transition-all hover:scale-110 text-gray-400/50" />
+                                            )}
                                         </div>
                                     )
                                 })}
