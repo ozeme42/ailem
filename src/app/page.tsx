@@ -470,13 +470,13 @@ export default function Home() {
             <MemberDashboardCard 
               member={{id: 'house', name: 'Ev İşleri'} as any}
               tasks={tasks}
-              tests={[]}
-              studyAssignments={[]}
-              studyPlans={[]}
-              userLibraries={[]}
-              books={[]}
-              memorizationItems={[]}
-              memorizationProgress={[]}
+              tests={tests}
+              studyAssignments={studyAssignments}
+              studyPlans={studyPlans}
+              userLibraries={userLibraries}
+              books={books}
+              memorizationItems={memorizationItems}
+              memorizationProgress={memorizationProgress}
             />
 
             {familyMembers.map(member => (

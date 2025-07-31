@@ -50,7 +50,7 @@ export function MemberDashboardCard({
     const { familyId } = useAuth();
     
     const { habits, otherTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
-        // Habits: All recurring tasks for the member (completed or not)
+        // Habits: All recurring tasks for the member.
         const habits = tasks.filter(t => t.assigneeId === member.id && t.isRecurring);
 
         // Other Tasks: One-time, personal tasks that are NOT completed
@@ -63,11 +63,11 @@ export function MemberDashboardCard({
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
 
         const memberLib = userLibraries.find(lib => lib.memberId === member.id);
-        const readingBooks = memberLib?.books
-            .filter(b => b.status === 'to-read' || b.status === 'reading')
+        const readingBookEntries = memberLib?.books.filter(b => b.status === 'to-read' || b.status === 'reading') || [];
+        const readingBooks = readingBookEntries
             .map(b => books.find(book => book.id === b.bookId))
             .filter((b): b is BookType => !!b)
-            .sort((a,b) => (memberLib.books.find(ub => ub.bookId === a.id)?.status === 'reading' ? -1 : 1)) || [];
+            .sort((a,b) => (memberLib?.books.find(ub => ub.bookId === a.id)?.status === 'reading' ? -1 : 1)) || [];
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === member.id && !p.completed).map(p => p.itemId));
         const pendingMemorization = memorizationItems.filter(item => memberProgress.has(item.id));
