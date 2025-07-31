@@ -143,10 +143,15 @@ export default function PrayerTrackerPage() {
                                             className="flex justify-center items-center cursor-pointer"
                                             onClick={() => handlePrayerToggle(dayKey, prayer)}
                                         >
-                                            <Heart className={cn(
-                                                "size-10 transition-all hover:scale-110",
-                                                isCompleted ? "text-red-500 fill-red-500" : "text-gray-400/50"
-                                            )} />
+                                            <Heart 
+                                                className={cn(
+                                                    "size-10 transition-all hover:scale-110",
+                                                    isCompleted ? "text-red-500" : "text-gray-400/50"
+                                                )} 
+                                                style={{
+                                                  fill: isCompleted ? '#ef4444' : 'transparent'
+                                                }}
+                                            />
                                         </div>
                                     )
                                 })}
