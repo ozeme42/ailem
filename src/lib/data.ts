@@ -1,12 +1,4 @@
 
-
-
-
-
-
-
-
-
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -96,7 +88,7 @@ export interface Book {
   image: string;
   type: "Kitap";
   tags?: string[];
-  rating: number;
+  rating?: number;
   description: string;
   pageCount?: number;
   isForChildren?: boolean;
@@ -453,8 +445,8 @@ export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
 
 // Initial data for Firestore (if needed for a setup script)
 export const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
-    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false },
-    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true },
+    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, readers: [] },
+    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, readers: [] },
 ];
 
 export const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId' | 'createdAt'>[] = [
@@ -481,7 +473,7 @@ export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
 
 export const initialMealPlan: MealPlan = {
   "2024-08-12": { // This key needs to be dynamic based on current week, but for initial setup it's fine
-    "Kahvaltı": initialRecipes[0] as Recipe, // Casting here for initial setup
+    "Kahvaltı": initialRecipes[0] as Recipe,
     "Akşam Yemeği": initialRecipes[1] as Recipe,
   },
 };
