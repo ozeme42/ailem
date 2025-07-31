@@ -135,13 +135,13 @@ const ListCard = ({ list, colorClass, onClick, onDelete }: {
 
     return (
         <div className="relative group">
-            <div onClick={onClick} className={cn("flex items-center gap-3 text-white px-3 py-2 cursor-pointer rounded-lg shadow-sm border-0", colorClass)}>
-                <div className="bg-white/20 text-white flex items-center justify-center rounded-md shrink-0 size-10">
-                    <Icon className="h-5 w-5" />
+            <div onClick={onClick} className={cn("flex items-center gap-4 text-white px-4 py-3 cursor-pointer rounded-xl shadow-lg border-0", colorClass)}>
+                <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
+                    <Icon className="h-6 w-6" />
                 </div>
                 <div className="flex flex-col justify-center min-w-0">
-                    <p className="text-base font-medium leading-tight truncate">{list.name}</p>
-                    <p className="text-white/80 text-xs font-normal truncate">
+                    <p className="text-lg font-bold leading-tight truncate">{list.name}</p>
+                    <p className="text-white/80 text-sm font-normal truncate">
                         {description}
                     </p>
                 </div>
@@ -285,8 +285,8 @@ export default function ShoppingPage() {
 
   if (selectedList) {
      return (
-        <div className="relative h-full flex flex-col">
-            <header className={cn("p-4 rounded-t-xl", selectedListColor)}>
+        <div className="relative h-full flex flex-col -mx-4 sm:mx-0">
+            <header className={cn("p-4 sm:rounded-t-xl", selectedListColor)}>
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
                     <div className='flex items-center gap-2'>
@@ -313,7 +313,7 @@ export default function ShoppingPage() {
                 </div>
             </header>
             
-            <main className="flex-grow p-4 bg-background rounded-b-xl border-x border-b overflow-y-auto pb-24">
+            <main className="flex-grow p-4 bg-background sm:rounded-b-xl sm:border-x sm:border-b overflow-y-auto pb-28">
                 <Tabs defaultValue="pending">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="pending">Alınacaklar ({pendingItems.length})</TabsTrigger>
@@ -397,7 +397,7 @@ export default function ShoppingPage() {
                 <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
             </Button>
         </PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 -mx-4 sm:mx-0">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
                     const color = brightColors[index % brightColors.length];
