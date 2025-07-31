@@ -21,25 +21,21 @@ const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
       {...props}
     >
         <g stroke="currentColor">
-            {/* Sol Minare */}
             <rect x="8" y="20" width="6" height="30" fill="currentColor" />
             <polygon points="8,20 11,10 14,20" fill="currentColor" />
             <line x1="8" y1="30" x2="14" y2="30" />
             <line x1="8" y1="38" x2="14" y2="38" />
             <line x1="8" y1="46" x2="14" y2="46" />
 
-            {/* Sağ Minare */}
             <rect x="50" y="20" width="6" height="30" fill="currentColor" />
             <polygon points="50,20 53,10 56,20" fill="currentColor" />
             <line x1="50" y1="30" x2="56" y2="30" />
             <line x1="50" y1="38" x2="56" y2="38" />
             <line x1="50" y1="46" x2="56" y2="46" />
 
-            {/* Ana Bina */}
             <rect x="20" y="30" width="24" height="20" fill="currentColor" />
             <path d="M20 30 Q32 15 44 30" fill="currentColor" stroke="currentColor" />
 
-            {/* Kapı - Kapının içini arka plan rengi yapmak için farklı bir renk kullanalım (veya temaya göre ayarlanabilir) */}
             <rect x="30" y="40" width="4" height="10" fill="hsl(var(--background))" stroke="none"/>
         </g>
     </svg>
