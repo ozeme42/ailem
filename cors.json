@@ -1,6 +1,6 @@
 [
     {
-      "origin": ["https://6000-firebase-studio-1752942593865.cluster-ombtxv25tbd6yrjpp3lukp6zhc.cloudworkstations.dev"],
+      "origin": ["https://studio--ailem-app.us-central1.hosted.app"],
       "method": ["GET", "PUT", "POST", "DELETE"],
       "maxAgeSeconds": 3600
     }

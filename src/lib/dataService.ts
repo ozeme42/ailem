@@ -19,60 +19,70 @@ const getCurrentFamilyId = async (): Promise<string | null> => {
 // These need to be updated to use the familyId from the logged-in user.
 
 const onFamilyDataUpdate = <T>(
-    collectionName: string, 
-    callback: (data: T[]) => void, 
+    collectionName: string,
+    callback: (data: T[]) => void,
     runOnce = false,
     orderByField?: string,
-    orderByDirection?: 'asc' | 'desc'
-) => {
+    orderByDirection?: 'desc' | 'asc'
+): (() => void) => {
     const auth = getAuth();
-    const handler = (user: import('firebase/auth').User | null) => {
+
+    let dataUnsubscribe: (() => void) | null = null;
+    let userUnsubscribe: (() => void) | null = null;
+    let authUnsubscribe: (() => void) | null = null;
+
+    const cleanup = () => {
+        dataUnsubscribe?.();
+        userUnsubscribe?.();
+        authUnsubscribe?.();
+    };
+
+    const setupListeners = (user: import('firebase/auth').User | null) => {
+        // Clean up previous listeners before setting up new ones
+        dataUnsubscribe?.();
+        userUnsubscribe?.();
+
         if (user) {
             const userDocRef = doc(db, 'users', user.uid);
-            const userUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
-                if (userDoc.exists()) {
-                    const familyId = userDoc.data().familyId;
-                    if (familyId) {
-                        let q;
-                        if (orderByField && orderByDirection) {
-                            q = query(collection(db, collectionName), where("familyId", "==", familyId), orderBy(orderByField, orderByDirection));
-                        } else {
-                            q = query(collection(db, collectionName), where("familyId", "==", familyId));
-                        }
-                        const dataUnsubscribe = onSnapshot(q, (snapshot) => {
-                            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-                            callback(items);
-                            if (runOnce) {
-                                userUnsubscribe();
-                                dataUnsubscribe();
-                            }
-                        }, (error) => {
-                             console.error(`Error fetching ${collectionName}:`, error);
-                             callback([]);
-                        });
-                        if (runOnce) return () => dataUnsubscribe();
-                    } else {
-                        callback([]);
-                        if (runOnce) userUnsubscribe();
+            userUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
+                dataUnsubscribe?.(); // Unsubscribe from old family's data if familyId changes
+                const familyId = userDoc.exists() ? userDoc.data().familyId : null;
+                if (familyId) {
+                    let q = query(collection(db, collectionName), where("familyId", "==", familyId));
+                    if (orderByField) {
+                        q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
                     }
+                    dataUnsubscribe = onSnapshot(q, (snapshot) => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+                        if(typeof callback === 'function') callback(items);
+                        if (runOnce) cleanup();
+                    }, (error) => {
+                        console.error(`Error fetching ${collectionName}:`, error);
+                        if(typeof callback === 'function') callback([]);
+                        if (runOnce) cleanup();
+                    });
                 } else {
-                    callback([]);
-                    if (runOnce) userUnsubscribe();
+                    if(typeof callback === 'function') callback([]);
+                    if (runOnce) cleanup();
                 }
+            }, (error) => {
+                console.error("Error fetching user document:", error);
+                if(typeof callback === 'function') callback([]);
+                if (runOnce) cleanup();
             });
-            if (runOnce) return () => userUnsubscribe();
         } else {
-            callback([]);
+            if(typeof callback === 'function') callback([]);
+            if (runOnce) cleanup();
         }
-        return () => {}; // Return an empty unsubscribe function
     };
 
     if (runOnce) {
-        handler(auth.currentUser);
-        return () => {};
+        setupListeners(auth.currentUser);
+    } else {
+        authUnsubscribe = onAuthStateChanged(auth, setupListeners);
     }
 
-    return onAuthStateChanged(auth, handler);
+    return cleanup;
 };
 
 
@@ -1232,7 +1242,7 @@ export const deleteNoteFromSection = (notebookId: string, noteId: string) => {
 
 
 // Prayer Progress
-export const onPrayerProgressUpdate = (callback: (progress: PrayerProgress[]) => void) => onFamilyDataUpdate<PrayerProgress>('prayerProgress', callback);
+export const onPrayerProgressUpdate = (callback: (progress: PrayerProgress[]) => void, runOnce?: boolean) => onFamilyDataUpdate<PrayerProgress>('prayerProgress', callback, runOnce);
 
 export const onSinglePrayerProgressUpdate = (memberId: string, callback: (progress: PrayerProgress | null) => void) => {
     const auth = getAuth();
