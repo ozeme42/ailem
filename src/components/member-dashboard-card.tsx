@@ -13,8 +13,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily } from '@/lib/dataService';
-import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan } from '@/lib/data';
+import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress } from '@/lib/data';
 import { Progress } from './ui/progress';
+import { format } from 'date-fns';
 
 interface MemberDashboardCardProps {
     member: FamilyMember;
@@ -26,6 +27,7 @@ interface MemberDashboardCardProps {
     books: BookType[];
     memorizationItems: MemorizationItem[];
     memorizationProgress: MemorizationProgress[];
+    prayerProgress: PrayerProgress[];
 }
 
 const roleGradients: { [key: string]: string } = {
@@ -47,11 +49,12 @@ export function MemberDashboardCard({
     books,
     memorizationItems,
     memorizationProgress,
+    prayerProgress,
 }: MemberDashboardCardProps) {
     const { toast } = useToast();
     const { familyId, familyMembers } = useAuth();
     
-    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
+    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers } = React.useMemo(() => {
         const memberId = member.id;
 
         const memberTasks = tasks.filter(t => t.assigneeId === memberId);
@@ -78,6 +81,16 @@ export function MemberDashboardCard({
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === memberId && !p.completed).map(p => p.itemId));
         const pendingMemorizationData = memorizationItems.filter(item => memberProgress.has(item.id));
+        
+        const todayKey = format(new Date(), 'yyyy-MM-dd');
+        const memberPrayerData = prayerProgress.find(p => p.memberId === member.id);
+        const todaysCompletions = memberPrayerData?.completions?.[todayKey] || [];
+        const prayerTimes = ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"];
+        const todaysPrayersData = prayerTimes.map(prayer => ({
+            name: prayer,
+            completed: todaysCompletions.includes(prayer),
+        }));
+
 
         return { 
             habits, 
@@ -85,9 +98,10 @@ export function MemberDashboardCard({
             pendingTests, 
             pendingStudies, 
             readingBooks: readingBooksData, 
-            pendingMemorization: pendingMemorizationData 
+            pendingMemorization: pendingMemorizationData,
+            todaysPrayers: todaysPrayersData,
         };
-    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress]);
+    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, prayerProgress]);
 
     const handleTaskCompletion = async (task: Task) => {
         if (!familyId || !member) return;
@@ -147,10 +161,11 @@ export function MemberDashboardCard({
         ...pendingTests,
         ...pendingStudies,
         ...readingBooks,
-        ...pendingMemorization
+        ...pendingMemorization,
+        ...todaysPrayers,
     ];
 
-    if (allPendingItems.length === 0) return null;
+    if (allPendingItems.filter(item => 'title' in item || 'topic' in item || 'name' in item).length === 0 && todaysPrayers.filter(p => !p.completed).length === 0) return null;
     
     const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
 
@@ -167,6 +182,23 @@ export function MemberDashboardCard({
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-4 flex-grow">
+                {member.role.includes('Çocuk') && (
+                    <div>
+                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Check className="h-4 w-4 text-green-600"/> Bugünkü Namazlar</h4>
+                        <Link href="/prayers">
+                            <div className="p-2.5 rounded-lg bg-green-500/10 text-green-900 flex justify-around items-center gap-1">
+                                {todaysPrayers.map(prayer => (
+                                    <div key={prayer.name} className="flex flex-col items-center gap-1">
+                                        <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", prayer.completed ? 'bg-green-500 border-green-600' : 'bg-background border-muted-foreground/50')}>
+                                            {prayer.completed && <Check className="h-3 w-3 text-white" />}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">{prayer.name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </Link>
+                    </div>
+                )}
                 {habits.length > 0 && (
                     <div>
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500"/> Alışkanlıklar</h4>

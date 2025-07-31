@@ -8,7 +8,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Responsive
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -106,6 +106,8 @@ export default function Home() {
   const [goals, setGoals] = React.useState<Goal[]>([]);
   const [memorizationItems, setMemorizationItems] = React.useState<MemorizationItem[]>([]);
   const [memorizationProgress, setMemorizationProgress] = React.useState<MemorizationProgress[]>([]);
+  const [prayerProgress, setPrayerProgress] = React.useState<PrayerProgress[]>([]);
+
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
   const [editingBook, setEditingBook] = React.useState<Book | null>(null);
@@ -129,6 +131,8 @@ export default function Home() {
     const unsubGoals = onGoalsUpdate(setGoals);
     const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
     const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
+    const unsubPrayerProgress = onPrayerProgressUpdate(setPrayerProgress);
+
     let unsubLibraries = () => {};
     if (familyId) {
       unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
@@ -147,6 +151,7 @@ export default function Home() {
       unsubGoals();
       unsubMemorizationItems();
       unsubMemorizationProgress();
+      unsubPrayerProgress();
     };
   }, [familyId]);
   
@@ -485,6 +490,7 @@ export default function Home() {
               books={books}
               memorizationItems={memorizationItems}
               memorizationProgress={memorizationProgress}
+              prayerProgress={prayerProgress}
             />
 
             {familyMembers.map(member => (
@@ -499,6 +505,7 @@ export default function Home() {
                   books={books}
                   memorizationItems={memorizationItems}
                   memorizationProgress={memorizationProgress}
+                  prayerProgress={prayerProgress}
                 />
             ))}
       </section>
