@@ -93,10 +93,9 @@ export default function PrayerTrackerPage() {
             
              <div className="flex flex-col items-center justify-center gap-4 mb-4 text-purple-800 dark:text-purple-200 font-semibold">
                 <div className="flex gap-1">
-                    <Heart className="size-6 text-red-500 fill-red-500"/>
-                    <Heart className="size-6 text-black fill-black"/>
+                    <Heart className="size-6 text-red-500 fill-current"/>
                 </div>
-                <p>Kıldığın namazları kırmızıya, kılamadıklarını siyaha boya.</p>
+                <p>Kıldığın namazların kalbini kırmızıya boya.</p>
             </div>
 
             <div className="flex-grow flex items-center justify-center">
@@ -143,11 +142,10 @@ export default function PrayerTrackerPage() {
                                             className="flex justify-center items-center cursor-pointer"
                                             onClick={() => handlePrayerToggle(dayKey, prayer)}
                                         >
-                                            {isCompleted ? (
-                                                <HeartHandshake className="size-10 transition-all hover:scale-110 text-red-500" />
-                                            ) : (
-                                                <Heart className="size-10 transition-all hover:scale-110 text-gray-400/50" />
-                                            )}
+                                            <Heart className={cn(
+                                                "size-10 transition-all hover:scale-110",
+                                                isCompleted ? "text-red-500 fill-current" : "text-gray-400/50"
+                                            )} />
                                         </div>
                                     )
                                 })}
