@@ -2,14 +2,13 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { onPrayerProgressUpdate, updatePrayerProgress } from "@/lib/dataService";
 import type { PrayerProgress, FamilyMember } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { startOfWeek, addDays, format, isSameDay, subWeeks, addWeeks } from 'date-fns';
+import { startOfWeek, addDays, format, subWeeks, addWeeks } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
@@ -56,13 +55,24 @@ export default function PrayerTrackerPage() {
 
     const handlePrayerToggle = async (dayKey: string, prayerName: string) => {
         if (!selectedMember) return;
-        
+    
         const currentCompletions = prayerProgress?.completions?.[dayKey] || [];
         const isCompleted = currentCompletions.includes(prayerName);
-        const newCompletions = isCompleted 
+        const newCompletions = isCompleted
             ? currentCompletions.filter(p => p !== prayerName)
             : [...currentCompletions, prayerName];
-            
+    
+        // Optimistic UI update
+        const newProgressState = {
+            ...prayerProgress,
+            id: prayerProgress?.id || `${selectedMember.id}`,
+            completions: {
+                ...(prayerProgress?.completions || {}),
+                [dayKey]: newCompletions,
+            },
+        };
+        setPrayerProgress(newProgressState as PrayerProgress);
+    
         try {
             await updatePrayerProgress(selectedMember.id, dayKey, newCompletions);
             if (!isCompleted) {
@@ -74,9 +84,11 @@ export default function PrayerTrackerPage() {
         } catch (error) {
             toast({
                 title: "Hata",
-                description: "Bir sorun oluştu.",
+                description: "Bir sorun oluştu, lütfen tekrar deneyin.",
                 variant: "destructive"
             });
+            // Revert UI on error
+            setPrayerProgress(prayerProgress);
         }
     };
     
