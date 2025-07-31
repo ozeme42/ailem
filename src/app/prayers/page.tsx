@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { startOfWeek, addDays, format, isSameDay, subWeeks, addWeeks } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
-import { Heart, ChevronLeft, ChevronRight, HeartHandshake } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
 
 const prayerTimes = ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"];
 
@@ -57,21 +57,11 @@ export default function PrayerTrackerPage() {
     const handlePrayerToggle = async (dayKey: string, prayerName: string) => {
         if (!selectedMember) return;
         
-        // Optimistic UI update
         const currentCompletions = prayerProgress?.completions?.[dayKey] || [];
         const isCompleted = currentCompletions.includes(prayerName);
         const newCompletions = isCompleted 
             ? currentCompletions.filter(p => p !== prayerName)
             : [...currentCompletions, prayerName];
-
-        const newProgressState = {
-            ...(prayerProgress || { id: `${selectedMember.id}`, familyId: '', memberId: selectedMember.id, completions: {} }),
-            completions: {
-                ...(prayerProgress?.completions || {}),
-                [dayKey]: newCompletions
-            }
-        };
-        setPrayerProgress(newProgressState as PrayerProgress);
             
         try {
             await updatePrayerProgress(selectedMember.id, dayKey, newCompletions);
@@ -82,8 +72,6 @@ export default function PrayerTrackerPage() {
                 });
             }
         } catch (error) {
-            // Revert UI on error
-            setPrayerProgress(prayerProgress);
             toast({
                 title: "Hata",
                 description: "Bir sorun oluştu.",
@@ -154,11 +142,9 @@ export default function PrayerTrackerPage() {
                                             className="flex justify-center items-center cursor-pointer"
                                             onClick={() => handlePrayerToggle(dayKey, prayer)}
                                         >
-                                            <Heart className={cn(
-                                                "size-10 transition-all hover:scale-110",
-                                                isCompleted ? "text-red-500" : "text-gray-400/50"
-                                            )} 
-                                            fill={isCompleted ? 'currentColor' : 'none'}
+                                            <Heart 
+                                                className={cn("size-10 transition-all hover:scale-110", isCompleted ? "text-red-500" : "text-gray-400/50")} 
+                                                fill={isCompleted ? 'currentColor' : 'none'}
                                             />
                                         </div>
                                     )
