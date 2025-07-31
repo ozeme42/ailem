@@ -52,42 +52,33 @@ export function MemberDashboardCard({
     const { habits, otherTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization } = React.useMemo(() => {
         const memberId = member.id;
 
-        // Habits: All recurring tasks for the member. isRecurring is the key.
         const habits = tasks.filter(t => t.assigneeId === memberId && t.isRecurring);
-
-        // Other Tasks: One-time, personal tasks that are NOT completed
         const otherTasks = tasks.filter(t => t.assigneeId === memberId && !t.isRecurring && !t.completed && t.category === 'Kişisel');
-
         const pendingTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
         
         const pendingStudies = studyAssignments
             .filter(sa => sa.studentId === memberId && sa.status === 'assigned')
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
         
-        // --- START OF THE CRITICAL FIX ---
-        // Find the specific library for the current member
         const memberLib = userLibraries.find(lib => lib.memberId === memberId);
         let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read' })[] = [];
         
         if (memberLib && memberLib.books && memberLib.books.length > 0) {
-            // Get IDs of books that are 'reading' or 'to-read'
             const readingBookIds = new Set(
                 memberLib.books
                     .filter(b => b.status === 'reading' || b.status === 'to-read')
                     .map(b => b.bookId)
             );
 
-            // Filter the main `books` list to get full details
             if (readingBookIds.size > 0) {
                 readingBooksData = books
                     .filter(book => readingBookIds.has(book.id))
                     .map(book => {
-                        const libEntry = memberLib.books.find(b => b.bookId === book.id);
-                        return { ...book, libraryStatus: libEntry!.status as 'reading' | 'to-read' };
+                        const libEntry = memberLib.books.find(b => b.bookId === book.id)!;
+                        return { ...book, libraryStatus: libEntry.status as 'reading' | 'to-read' };
                     });
             }
         }
-        // --- END OF THE CRITICAL FIX ---
             
         const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === memberId && !p.completed).map(p => p.itemId));
         const pendingMemorizationData = memorizationItems.filter(item => memberProgress.has(item.id));
@@ -270,3 +261,5 @@ export function MemberDashboardCard({
         </Card>
     );
 }
+
+    
