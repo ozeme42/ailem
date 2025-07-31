@@ -95,6 +95,7 @@ export interface Book {
   isForChildren?: boolean;
   readers?: string[]; // Array of member IDs who have this in their library
   createdAt?: string;
+  status?: 'in-library' | 'wishlist';
 }
 
 export type BookReadingStatus = 'to-read' | 'reading' | 'finished';
@@ -457,8 +458,8 @@ export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
 
 // Initial data for Firestore (if needed for a setup script)
 export const initialBooks: Omit<Book, 'id' | 'familyId' | 'createdAt'>[] = [
-    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, readers: [] },
-    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, readers: [] },
+    { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, readers: [], status: 'in-library' },
+    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, readers: [], status: 'in-library' },
 ];
 
 export const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId' | 'createdAt'>[] = [

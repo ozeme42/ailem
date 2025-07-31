@@ -23,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import Image from 'next/image';
 import { useMemo, useRef, useState } from 'react';
 import { Combobox } from "./ui/combobox";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -37,6 +38,7 @@ const bookFormSchema = z.object({
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
   rating: z.number().optional(),
+  status: z.enum(['in-library', 'wishlist']).default('in-library'),
 });
 export type BookFormData = z.infer<typeof bookFormSchema>;
 
@@ -129,6 +131,40 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
 
   return (
     <div className="space-y-4">
+        <FormField
+          control={control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Ekleme Yeri</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <FormItem>
+                    <FormControl>
+                        <RadioGroupItem value="in-library" id="in-library" className="sr-only" />
+                    </FormControl>
+                    <Label htmlFor="in-library" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                        Kitaplık
+                    </Label>
+                  </FormItem>
+                  <FormItem>
+                     <FormControl>
+                        <RadioGroupItem value="wishlist" id="wishlist" className="sr-only" />
+                    </FormControl>
+                    <Label htmlFor="wishlist" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                        Alınacaklar Listesi
+                    </Label>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField control={control} name="title" render={({ field }) => (
             <FormItem><FormLabel>Kitap Adı</FormLabel><FormControl><Input placeholder="Kitabın adını girin..." {...field} /></FormControl><FormMessage /></FormItem>
         )} />

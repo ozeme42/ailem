@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -25,7 +26,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, Music } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, Music, BookUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -48,6 +49,7 @@ const bookFormSchema = z.object({
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
   rating: z.number().optional(),
+  status: z.enum(['in-library', 'wishlist']).default('in-library'),
 });
 
 const bulkAddJsonSchema = z.array(z.object({
@@ -116,7 +118,8 @@ export default function ArchiveClient() {
         isForChildren: initialData?.isForChildren || false,
         tags: initialData?.tags || [],
         description: initialData?.description || '',
-        rating: initialData?.rating || 0
+        rating: initialData?.rating || 0,
+        status: initialData?.status || 'in-library'
     });
     setIsAddBookDialogOpen(true);
   }, [formMethods]);
@@ -237,7 +240,7 @@ export default function ArchiveClient() {
         }
     }
     
-    handleOpenAddDialog({ ...book, image: finalImageUrl });
+    handleOpenAddDialog({ ...book, image: finalImageUrl, status: 'wishlist' });
   };
   
   const handleBulkImport = async (importedBooks: Partial<Book>[]) => {
@@ -272,6 +275,7 @@ export default function ArchiveClient() {
           description: '',
           isForChildren: false,
           readers: [],
+          status: 'in-library',
           ...book,
           image: finalImageUrl || 'https://placehold.co/300x450.png',
           tags: book.tags || [],
@@ -330,10 +334,20 @@ export default function ArchiveClient() {
         toast({ title: "❌ Hata", description: "Raf silinirken bir hata oluştu.", variant: 'destructive'});
     }
   };
+  
+  const handleMoveToLibrary = async (book: Book) => {
+    try {
+        await updateBook(book.id, { status: 'in-library' });
+        toast({ title: "Kitaplığa Taşındı", description: `"${book.title}" artık kütüphanenizde.`});
+    } catch (e) {
+        toast({ title: "Hata", description: "Kitap taşınırken bir hata oluştu.", variant: "destructive" });
+    }
+  };
 
-  const { adultBooks, childrenBooks } = useMemo(() => {
+  const { adultBooks, childrenBooks, wishlistBooks } = useMemo(() => {
     const adults: Book[] = [];
     const children: Book[] = [];
+    const wishlist: Book[] = [];
     
     const sourceBooks = books.filter(book => {
       if (!localSearchQuery) return true;
@@ -345,8 +359,17 @@ export default function ArchiveClient() {
       );
     });
 
-    sourceBooks.forEach(book => (book.isForChildren ? children.push(book) : adults.push(book)));
-    return { adultBooks: adults, childrenBooks: children };
+    sourceBooks.forEach(book => {
+        if (book.status === 'wishlist') {
+            wishlist.push(book);
+        } else if (book.isForChildren) {
+            children.push(book);
+        } else {
+            adults.push(book);
+        }
+    });
+
+    return { adultBooks: adults, childrenBooks: children, wishlistBooks: wishlist };
   }, [books, localSearchQuery]);
 
   return (
@@ -384,9 +407,10 @@ export default function ArchiveClient() {
       {view === 'books' ? (
         <Tabs defaultValue="adults" onValueChange={setActiveTab} className="flex flex-col flex-grow min-h-0">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <TabsList className="grid w-full sm:w-auto grid-cols-2">
-              <TabsTrigger value="adults">Yetişkin Kitapları ({adultBooks.length})</TabsTrigger>
-              <TabsTrigger value="children">Çocuk Kitapları ({childrenBooks.length})</TabsTrigger>
+            <TabsList className="grid w-full sm:w-auto grid-cols-3">
+              <TabsTrigger value="adults">Yetişkin ({adultBooks.length})</TabsTrigger>
+              <TabsTrigger value="children">Çocuk ({childrenBooks.length})</TabsTrigger>
+              <TabsTrigger value="wishlist">Alınacaklar ({wishlistBooks.length})</TabsTrigger>
             </TabsList>
             <div className="relative w-full sm:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -404,6 +428,9 @@ export default function ArchiveClient() {
           </TabsContent>
           <TabsContent value="children" className="mt-6 flex-grow overflow-y-auto">
               <BookShelf books={childrenBooks} onViewDetails={setViewingBook} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
+          </TabsContent>
+           <TabsContent value="wishlist" className="mt-6 flex-grow overflow-y-auto">
+              <BookShelf books={wishlistBooks} onViewDetails={setViewingBook} onEdit={handleOpenAddDialog} onDelete={handleDeleteBook} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} isWishlist={true} onMoveToLibrary={handleMoveToLibrary}/>
           </TabsContent>
         </Tabs>
       ) : (
@@ -623,7 +650,7 @@ export default function ArchiveClient() {
 }
 
 // BookShelf COMPONENT
-function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onViewDetails }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void, onAddToLibrary: (bookId: string, memberId: string) => void, familyMembers: any[], onViewDetails: (book: Book) => void }) {
+function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onViewDetails, isWishlist = false, onMoveToLibrary }: { books: Book[], onEdit: (book: Book) => void, onDelete: (id: string) => void, onAddToLibrary: (bookId: string, memberId: string) => void, familyMembers: any[], onViewDetails: (book: Book) => void, isWishlist?: boolean, onMoveToLibrary?: (book: Book) => void }) {
   const shelves = useMemo(() => {
     const grouped: Record<string, Book[]> = {};
     books.forEach(book => {
@@ -676,6 +703,12 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
                             </div>
                           </div>
                            <CardContent className="p-2 flex-grow flex flex-col justify-end">
+                            {isWishlist && onMoveToLibrary ? (
+                                <Button size="sm" variant="secondary" className="w-full text-xs" onClick={(e) => { e.stopPropagation(); onMoveToLibrary(book);}}>
+                                    <BookUp className="mr-1.5 h-3.5 w-3.5"/>
+                                    Kitaplığa Taşı
+                                </Button>
+                            ) : (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button size="sm" variant="secondary" className="w-full text-xs" onClick={(e) => e.stopPropagation()}>
@@ -693,6 +726,7 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
                                         ))}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                            )}
                            </CardContent>
                           <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); onEdit(book)}}><Edit className="h-4 w-4"/></Button>
