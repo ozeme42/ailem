@@ -1248,7 +1248,7 @@ export const onPrayerProgressUpdate = (memberId: string, callback: (progress: Pr
     });
 };
 
-export const updatePrayerProgress = async (memberId: string, dayKey: string, completions: string[]) => {
+export const updatePrayerProgress = async (memberId: string, completions: PrayerProgress['completions']) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
 
@@ -1256,7 +1256,7 @@ export const updatePrayerProgress = async (memberId: string, dayKey: string, com
     const docRef = doc(db, 'prayerProgress', docId);
     
     const updateData = {
-        [`completions.${dayKey}`]: completions
+        completions: completions
     };
 
     return setDoc(docRef, { familyId, memberId, id: docId, ...updateData }, { merge: true });

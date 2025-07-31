@@ -55,12 +55,9 @@ export default function PrayerTrackerPage() {
 
     const handlePrayerToggle = async (dayKey: string, prayerName: string) => {
         if (!selectedMember) return;
-    
-        const originalProgress = prayerProgress;
-        
-        // --- THIS IS THE CRITICAL FIX ---
-        // 1. Get a copy of all completions, or an empty object if none exist.
-        const allCompletions = { ...(prayerProgress?.completions || {}) };
+
+        // 1. Get a deep copy of all current completions, or an empty object.
+        const allCompletions = JSON.parse(JSON.stringify(prayerProgress?.completions || {}));
 
         // 2. Get the specific completions for the day being modified.
         const dayCompletions = allCompletions[dayKey] || [];
@@ -68,34 +65,35 @@ export default function PrayerTrackerPage() {
         // 3. Determine the new completion status for the specific prayer.
         const isCompleted = dayCompletions.includes(prayerName);
         const newDayCompletions = isCompleted
-            ? dayCompletions.filter(p => p !== prayerName)
+            ? dayCompletions.filter((p: string) => p !== prayerName)
             : [...dayCompletions, prayerName];
             
         // 4. Update the copy of all completions with the new list for the modified day.
         allCompletions[dayKey] = newDayCompletions;
 
-        // 5. Create the new state for optimistic update, using the full, correct completions object.
+        // 5. Create the new state for optimistic update.
         const newProgressState: PrayerProgress = {
             id: prayerProgress?.id || `${selectedMember.id}`,
             memberId: prayerProgress?.memberId || selectedMember.id,
             familyId: prayerProgress?.familyId || '', 
-            completions: allCompletions, // Use the correctly updated full object
+            completions: allCompletions,
         };
 
         // 6. Optimistic UI update
         setPrayerProgress(newProgressState);
     
         try {
-            // 7. Update the database with the new completions for the specific day.
-            await updatePrayerProgress(selectedMember.id, dayKey, newDayCompletions);
+            // 7. Update the database with the new, complete completions object.
+            await updatePrayerProgress(selectedMember.id, allCompletions);
         } catch (error) {
             toast({
                 title: "Hata",
                 description: "Bir sorun oluştu, lütfen tekrar deneyin.",
                 variant: "destructive"
             });
-            // 8. Revert UI on error
-            setPrayerProgress(originalProgress);
+            // Revert UI on error by re-fetching or using original state.
+            // For now, we rely on the onSnapshot listener to correct it.
+            console.error("Failed to update prayer progress:", error);
         }
     };
     
