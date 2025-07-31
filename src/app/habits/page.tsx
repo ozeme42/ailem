@@ -14,7 +14,6 @@ import { PlusCircle, Edit, Trash2, MoreVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const brightColors = [
@@ -85,17 +84,12 @@ export default function HabitsPage() {
     }
   }, [familyMembers, selectedMember, user]);
 
-  const { personalHabits, houseHabits } = React.useMemo(() => {
-    if (!selectedMember) return { personalHabits: [], houseHabits: [] };
+  const memberHabits = React.useMemo(() => {
+    if (!selectedMember) return [];
 
-    const memberHabits = tasks.filter(task => 
+    return tasks.filter(task => 
         task.isRecurring && task.assigneeId === selectedMember.id
     );
-
-    const personal = memberHabits.filter(task => task.category === 'Kişisel');
-    const house = memberHabits.filter(task => task.category === 'Ev İşleri');
-
-    return { personalHabits: personal, houseHabits: house };
   }, [tasks, selectedMember]);
 
   const handleOpenNewTask = () => {
@@ -148,50 +142,25 @@ export default function HabitsPage() {
         ))}
       </div>
 
-       <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="personal">Kişisel ({personalHabits.length})</TabsTrigger>
-              <TabsTrigger value="house">Ev İşleri ({houseHabits.length})</TabsTrigger>
-            </TabsList>
-            <TabsContent value="personal" className="mt-4">
-                {personalHabits.length > 0 ? (
-                    <div className="space-y-4">
-                        {personalHabits.map((task, index) => (
-                            <HabitListItem
-                                key={task.id}
-                                task={task}
-                                colorClass={cn('bg-gradient-to-br', brightColors[index % brightColors.length])}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <Card>
-                        <CardContent className="p-8 text-center text-muted-foreground">
-                            <p>Bu kategoride takip edilen bir alışkanlık yok.</p>
-                        </CardContent>
-                    </Card>
-                )}
-            </TabsContent>
-            <TabsContent value="house" className="mt-4">
-                 {houseHabits.length > 0 ? (
-                    <div className="space-y-4">
-                        {houseHabits.map((task, index) => (
-                            <HabitListItem
-                                key={task.id}
-                                task={task}
-                                colorClass={cn('bg-gradient-to-br', brightColors[(index + 2) % brightColors.length])} // Offset color
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <Card>
-                        <CardContent className="p-8 text-center text-muted-foreground">
-                            <p>Bu kategoride takip edilen bir alışkanlık yok.</p>
-                        </CardContent>
-                    </Card>
-                )}
-            </TabsContent>
-        </Tabs>
+       <div className="mt-4">
+            {memberHabits.length > 0 ? (
+                <div className="space-y-4">
+                    {memberHabits.map((task, index) => (
+                        <HabitListItem
+                            key={task.id}
+                            task={task}
+                            colorClass={cn('bg-gradient-to-br', brightColors[index % brightColors.length])}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                        <p>Bu üyenin takip ettiği bir alışkanlık yok.</p>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
     </div>
   );
 }
