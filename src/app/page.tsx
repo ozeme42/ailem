@@ -240,6 +240,30 @@ export default function Home() {
       });
   }, [goals, familyMembers]);
 
+  const currentlyReadingBooks = React.useMemo(() => {
+    const readingList: { book: Book, member: FamilyMember, progress: number }[] = [];
+
+    userLibraries.forEach(lib => {
+      const member = familyMembers.find(m => m.id === lib.memberId);
+      if (!member) return;
+
+      lib.books.forEach(libBook => {
+        if (libBook.status === 'reading') {
+          const bookDetail = books.find(b => b.id === libBook.bookId);
+          if (bookDetail) {
+            readingList.push({
+              book: bookDetail,
+              member: member,
+              progress: libBook.progress || 0
+            });
+          }
+        }
+      });
+    });
+
+    return readingList;
+  }, [userLibraries, books, familyMembers]);
+
 
   if (loading) {
     return (
@@ -414,6 +438,35 @@ export default function Home() {
             </Link>
         </div>
       
+      {currentlyReadingBooks.length > 0 && (
+          <Card className="shadow-lg bg-gradient-to-br from-rose-400 to-amber-500 text-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><BookHeart /> Şu An Okunanlar</CardTitle>
+              <CardDescription className="text-white/80">Ailenin okuma serüvenleri.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {currentlyReadingBooks.map(({ book, member, progress }) => (
+                <div key={`${book.id}-${member.id}`} className="p-3 bg-white/20 rounded-lg flex items-center gap-4">
+                  <Image src={book.image || 'https://placehold.co/100x150.png'} alt={book.title} width={40} height={60} className="rounded object-cover aspect-[2/3]" data-ai-hint="book cover" />
+                  <div className="flex-grow">
+                    <p className="font-bold">{book.title}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: member.color, color: '#fff' }}>
+                        {member.name.charAt(0)}
+                      </div>
+                      <p className="text-sm text-white/90">{member.name}</p>
+                    </div>
+                  </div>
+                  <div className="w-24 shrink-0">
+                    <Progress value={progress} className="h-2 bg-white/30" indicatorClassName="bg-white" />
+                    <p className="text-xs text-right mt-1 text-white/90">{progress}%</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+      )}
+
       <Card className="shadow-lg bg-gradient-to-br from-indigo-500 to-blue-600 text-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Target /> Yol Haritaları</CardTitle>
