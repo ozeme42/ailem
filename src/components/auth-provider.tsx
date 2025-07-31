@@ -40,52 +40,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let familyUnsubscribe: Unsubscribe | null = null;
+    let userUnsubscribe: Unsubscribe | null = null;
 
     const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (familyUnsubscribe) {
-        familyUnsubscribe();
-        familyUnsubscribe = null;
-      }
-      
+      // Clean up previous listeners
+      if (userUnsubscribe) userUnsubscribe();
+      if (familyUnsubscribe) familyUnsubscribe();
+
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
-            if (userDoc.exists()) {
-                const userData = userDoc.data() as User;
-                setUser(userData);
-                setFamilyId(userData.familyId || null);
+        userUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
+          if (familyUnsubscribe) familyUnsubscribe(); // Clean up old family listener on user doc change
 
-                if (userData.familyId) {
-                    // Trigger one-time migration for orphan books
-                    migrateOrphanBooks(userData.familyId);
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as User;
+            setUser(userData);
+            setFamilyId(userData.familyId || null);
 
-                    const familyDocRef = doc(db, 'families', userData.familyId);
-                    familyUnsubscribe = onSnapshot(familyDocRef, (doc) => {
-                        if (doc.exists()) {
-                            setFamilyMembers(doc.data().members || []);
-                        } else {
-                            setFamilyMembers([]);
-                        }
-                        setLoading(false);
-                    });
-                } else {
-                    setFamilyMembers([]);
-                    setLoading(false);
-                }
-            } else {
-                // Document doesn't exist, log out the user.
-                setUser(null); 
-                setFamilyId(null);
+            if (userData.familyId) {
+              migrateOrphanBooks(userData.familyId);
+              const familyDocRef = doc(db, 'families', userData.familyId);
+              familyUnsubscribe = onSnapshot(familyDocRef, (doc) => {
+                setFamilyMembers(doc.exists() ? doc.data().members || [] : []);
                 setLoading(false);
+              }, () => setLoading(false));
+            } else {
+              setFamilyMembers([]);
+              setLoading(false);
             }
-        }, (error) => {
-             console.error("Error fetching user data:", error);
+          } else {
+            setUser(null);
+            setFamilyId(null);
+            setLoading(false);
+          }
+        }, () => {
              setUser(null);
              setFamilyId(null);
              setFamilyMembers([]);
              setLoading(false);
         });
-        return () => userUnsubscribe();
       } else {
         setUser(null);
         setFamilyId(null);
@@ -96,9 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       authUnsubscribe();
-      if (familyUnsubscribe) {
-        familyUnsubscribe();
-      }
+      if (userUnsubscribe) userUnsubscribe();
+      if (familyUnsubscribe) familyUnsubscribe();
     };
   }, [auth]);
 
@@ -138,7 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         uid: firebaseUser.uid,
         email: firebaseUser.email!,
         name,
-        familyId: null, // familyId is null initially
+        role,
+        familyId: null,
     };
     
     const userDocRef = doc(db, 'users', firebaseUser.uid);

@@ -6,6 +6,7 @@ export interface User {
     uid: string;
     email: string;
     name: string;
+    role: 'Anne' | 'Baba';
     familyId: string | null;
 }
 
