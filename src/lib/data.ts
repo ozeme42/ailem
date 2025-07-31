@@ -1,4 +1,5 @@
 
+
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
 
 export interface User {
@@ -46,7 +47,7 @@ export interface Task {
   points: number;
   dueDate: string; // For one-time tasks, or the start date for recurring tasks
   completed: boolean; // For one-time tasks or for each instance of a recurring task
-  category: 'Ev İşleri' | 'Okul' | 'Kişisel' | 'Aile';
+  category: 'Ev İşleri' | 'Okul' | 'Kişisel' | 'Aile' | 'Görev';
   subtasks?: Subtask[];
   notes?: string;
   photo?: string;
@@ -84,15 +85,16 @@ export interface Book {
   id: string;
   familyId: string;
   title: string;
-  author?: string; 
+  author: string | undefined; 
   image: string;
   type: "Kitap";
-  tags?: string[];
-  rating?: number;
+  tags?: string[] | undefined;
+  rating: number | undefined;
   description: string;
   pageCount?: number;
   isForChildren?: boolean;
   readers?: string[]; // Array of member IDs who have this in their library
+  createdAt?: string;
 }
 
 export type BookReadingStatus = 'to-read' | 'reading' | 'finished';
@@ -189,6 +191,16 @@ export interface MemorizationProgress {
     completed: boolean;
     completedAt?: string; // ISO string
 }
+
+export interface PrayerProgress {
+    id: string; // Should be memberId
+    familyId: string;
+    memberId: string;
+    completions: {
+        [date: string]: string[]; // date is 'YYYY-MM-DD', value is array of prayer names
+    };
+}
+
 
 // NOTES FEATURE DATA MODELS
 export type NoteContentType = 'text' | 'handwriting' | 'audio' | 'image' | 'file';
@@ -444,7 +456,7 @@ export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
 ];
 
 // Initial data for Firestore (if needed for a setup script)
-export const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
+export const initialBooks: Omit<Book, 'id' | 'familyId' | 'createdAt'>[] = [
     { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, readers: [] },
     { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, readers: [] },
 ];

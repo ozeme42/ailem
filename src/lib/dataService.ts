@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress } from './data';
 import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -78,7 +78,7 @@ const onFamilyDataUpdate = <T>(
 
 
 // Books (mediaItems)
-export const onBooksUpdate = (callback: (books: Book[]) => void, orderByField?: string, orderByDirection?: 'asc' | 'desc') => onFamilyDataUpdate<Book>('mediaItems', callback, false, orderByField, orderByDirection);
+export const onBooksUpdate = (callback: (books: Book[]) => void, runOnce = false) => onFamilyDataUpdate<Book>('mediaItems', callback, runOnce);
 export const addBook = async (data: Omit<Book, 'id' | 'familyId' | 'createdAt'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
@@ -1082,51 +1082,46 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
     const taskRef = doc(db, 'tasks', task.id);
     const dayKey = format(day, 'yyyy-MM-dd');
     
-    // Get latest task data to calculate streak correctly
     const taskSnap = await getDoc(taskRef);
     if (!taskSnap.exists()) return;
     const currentTaskData = taskSnap.data() as Task;
     const completedDates = new Set(currentTaskData.completedDates || []);
 
-    let newStreak = currentTaskData.streak || 0;
-    
     if (isCompleted) {
         completedDates.add(dayKey);
-        
-        // Recalculate streak only for daily habits for now
-        if (task.recurrenceType === 'daily') {
-            let streak = 0;
-            let d = new Date(day);
-            while (completedDates.has(format(d, 'yyyy-MM-dd'))) {
-                streak++;
-                d = subDays(d, 1);
-            }
-            newStreak = streak;
-        }
-
     } else {
         completedDates.delete(dayKey);
-        
-        // If today was part of the streak, the streak is now 0.
-        // A more complex logic would be to find the new latest streak, but this is simpler.
-        // We'll stick to a simpler logic.
-        // If the user uncompletes today, their streak is broken.
-        // What if they uncomplete yesterday? Their streak is also broken.
-        if (task.recurrenceType === 'daily') {
-            const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-            if(dayKey === format(new Date(), 'yyyy-MM-dd') || dayKey === yesterdayKey) {
-                newStreak = 0; // Simple reset. A more robust implementation would recalculate.
-            }
-        }
     }
-
-    const newBestStreak = Math.max(currentTaskData.bestStreak || 0, newStreak);
-
+    
     const updateData: Partial<Task> = {
         completedDates: Array.from(completedDates),
-        streak: newStreak,
-        bestStreak: newBestStreak,
     };
+
+    if (task.recurrenceType === 'daily') {
+        let streak = 0;
+        const sortedDates = Array.from(completedDates).sort().map(d => parseISO(d));
+        if (sortedDates.length > 0) {
+            let currentDate = new Date();
+            currentDate.setHours(0,0,0,0);
+            
+            // Check if today is completed or not to start streak calculation
+            const todayIsCompleted = sortedDates.some(d => isSameDay(d, currentDate));
+            if (!todayIsCompleted) {
+                currentDate = subDays(currentDate, 1);
+            }
+
+            for (let i = sortedDates.length - 1; i >= 0; i--) {
+                if (isSameDay(sortedDates[i], currentDate)) {
+                    streak++;
+                    currentDate = subDays(currentDate, 1);
+                } else if (sortedDates[i] < currentDate) {
+                    break;
+                }
+            }
+        }
+        updateData.streak = streak;
+        updateData.bestStreak = Math.max(currentTaskData.bestStreak || 0, streak);
+    }
         
     await updateDoc(taskRef, updateData);
 };
@@ -1233,4 +1228,36 @@ export const updateNoteInSection = (notebookId: string, noteId: string, noteData
 export const deleteNoteFromSection = (notebookId: string, noteId: string) => {
   const noteRef = doc(db, 'notes', noteId);
   return deleteDoc(noteRef);
+};
+
+
+// Prayer Progress
+export const onPrayerProgressUpdate = (memberId: string, callback: (progress: PrayerProgress | null) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const familyId = await getCurrentFamilyId();
+            if (familyId) {
+                const docRef = doc(db, 'prayerProgress', `${familyId}_${memberId}`);
+                return onSnapshot(docRef, (doc) => {
+                    callback(doc.exists() ? { id: doc.id, ...doc.data() } as PrayerProgress : null);
+                });
+            }
+        }
+        callback(null);
+    });
+};
+
+export const updatePrayerProgress = async (memberId: string, dayKey: string, completions: string[]) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+
+    const docId = `${familyId}_${memberId}`;
+    const docRef = doc(db, 'prayerProgress', docId);
+    
+    const updateData = {
+        [`completions.${dayKey}`]: completions
+    };
+
+    return setDoc(docRef, { familyId, memberId, id: docId, ...updateData }, { merge: true });
 };
