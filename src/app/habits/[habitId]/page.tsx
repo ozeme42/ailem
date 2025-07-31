@@ -144,7 +144,7 @@ export default function HabitDetailPage() {
                         isSelectable = false;
                       }
                     } else if (habit.recurrenceType === 'monthly') {
-                      const habitStartDay = parseISO(habit.startDate).getDate();
+                      const habitStartDay = parseISO(habit.dueDate).getDate();
                       if (day.getDate() !== habitStartDay) {
                         isSelectable = false;
                       }
