@@ -12,34 +12,18 @@ import { cn } from "@/lib/utils";
 import { startOfWeek, addDays, format, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
-import { Check, Sun, Moon, CloudSun, Sunset, Sparkles } from "lucide-react";
+import { Heart } from "lucide-react";
 
-const prayerTimes = [
-    { name: "Sabah", icon: <Sun className="size-4" /> },
-    { name: "Öğle", icon: <CloudSun className="size-4" /> },
-    { name: "İkindi", icon: <CloudSun className="size-4 opacity-80" /> },
-    { name: "Akşam", icon: <Sunset className="size-4" /> },
-    { name: "Yatsı", icon: <Moon className="size-4" /> }
-];
+const prayerTimes = ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"];
 
-const dayColors = [
-    'bg-green-200/50',   // Pazartesi
-    'bg-purple-200/50',  // Salı
-    'bg-red-200/50',     // Çarşamba
-    'bg-blue-200/50',    // Perşembe
-    'bg-orange-200/50',  // Cuma
-    'bg-yellow-200/50',  // Cumartesi
-    'bg-pink-200/50'     // Pazar
-];
-
-const dayPathClasses = [
-    { container: 'flex-row', item: '' }, // Pazartesi
-    { container: 'flex-row-reverse', item: 'ml-auto' }, // Salı
-    { container: 'flex-row', item: '' }, // Çarşamba
-    { container: 'flex-row-reverse', item: 'ml-auto' }, // Perşembe
-    { container: 'flex-row', item: '' }, // Cuma
-    { container: 'flex-row-reverse', item: 'ml-auto' }, // Cumartesi
-    { container: 'flex-row', item: '' }  // Pazar
+const dayLabels = [
+    "Pazartesi",
+    "Salı",
+    "Çarşamba",
+    "Perşembe",
+    "Cuma",
+    "Cumartesi",
+    "Pazar"
 ];
 
 export default function PrayerTrackerPage() {
@@ -93,17 +77,75 @@ export default function PrayerTrackerPage() {
                 });
             });
     };
-
+    
     return (
-        <div className="h-full flex flex-col">
-            <PageHeader title="Namaz Çizelgem" />
+         <div className="h-full flex flex-col bg-gradient-to-b from-lime-300 via-yellow-200 to-yellow-300 dark:from-lime-900 dark:to-yellow-800 p-4">
+            <header className="text-center my-4">
+                <h1 className="text-5xl font-extrabold text-white" style={{
+                    textShadow: '3px 3px 0px #c026d3, 6px 6px 0px #a21caf',
+                    fontFamily: "'Arial Black', sans-serif",
+                }}>
+                    Haftalık Namaz Tablom
+                </h1>
+            </header>
             
-            <div className="flex items-center justify-center gap-4 border-b pb-4 mb-4 overflow-x-auto">
+             <div className="flex items-center justify-center gap-4 mb-4 text-purple-800 dark:text-purple-200 font-semibold">
+                <div className="flex gap-1">
+                    <Heart className="size-6 text-red-500 fill-red-500"/>
+                    <Heart className="size-6 text-black fill-black"/>
+                </div>
+                <p>Kıldığın namazları kırmızıya, kılamadıklarını siyaha boya.</p>
+            </div>
+            
+            <div className="flex-grow flex items-center justify-center">
+                 <div className="w-full max-w-4xl p-4 bg-yellow-400 dark:bg-yellow-600 rounded-xl shadow-2xl border-4 border-yellow-500 dark:border-yellow-700">
+                    <div className="grid grid-cols-6 gap-2 text-center text-white font-bold mb-2">
+                        <div></div> {/* Empty corner */}
+                        {prayerTimes.map(time => (
+                            <div key={time} className="p-1">{time}</div>
+                        ))}
+                    </div>
+                    <div className="space-y-2">
+                    {weekDays.map((day, dayIndex) => {
+                        const dayKey = format(day, 'yyyy-MM-dd');
+                        const completions = prayerProgress?.completions?.[dayKey] || [];
+                        return(
+                            <div key={dayKey} className="grid grid-cols-6 gap-2 items-center bg-white/80 dark:bg-gray-800/80 p-1.5 rounded-lg shadow-inner">
+                                <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-full py-2 px-3 flex items-center justify-center shadow-md">
+                                    <div className="size-4 rounded-full bg-white/50 mr-2 border-2 border-white/80"></div>
+                                    <span>{dayLabels[dayIndex]}</span>
+                                </div>
+                                {prayerTimes.map(prayer => {
+                                    const isCompleted = completions.includes(prayer);
+                                    return (
+                                        <div 
+                                            key={prayer} 
+                                            className="flex justify-center items-center cursor-pointer"
+                                            onClick={() => handlePrayerToggle(dayKey, prayer)}
+                                        >
+                                            <Heart className={cn(
+                                                "size-10 transition-all text-gray-400/50 hover:scale-110",
+                                                isCompleted && "text-red-500 fill-red-500"
+                                            )} />
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )
+                    })}
+                    </div>
+                 </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 mt-8 pb-4 overflow-x-auto">
                 {familyMembers.filter(m => m.role.includes("Çocuk")).map((member) => (
                     <Button
                         key={member.id}
-                        variant={selectedMember?.id === member.id ? "default" : "outline"}
-                        className={`h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 shrink-0 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
+                        variant={selectedMember?.id === member.id ? "default" : "secondary"}
+                        className={cn(
+                            "h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 shrink-0 shadow-lg border-2",
+                             selectedMember?.id === member.id && "scale-110 border-primary"
+                        )}
                         onClick={() => setSelectedMember(member)}
                     >
                         <div 
@@ -116,60 +158,7 @@ export default function PrayerTrackerPage() {
                     </Button>
                 ))}
             </div>
-
-            <div className="flex-grow w-full max-w-4xl mx-auto p-4 rounded-lg bg-sky-100 dark:bg-sky-900/50 relative overflow-hidden">
-                <Image src="https://placehold.co/800x600.png" data-ai-hint="mosque sky" alt="background" layout="fill" objectFit="cover" className="opacity-20 z-0"/>
-                <div className="relative z-10 space-y-2">
-                    <div className="flex justify-between items-center mb-4">
-                        <Image src="https://placehold.co/100x100.png" data-ai-hint="girl praying" alt="Girl praying" width={80} height={80} className="w-20 h-auto"/>
-                         <div className="text-center">
-                            <Image src="https://placehold.co/150x100.png" data-ai-hint="kaaba illustration" alt="Kaaba" width={120} height={80} className="mx-auto"/>
-                         </div>
-                        <Image src="https://placehold.co/100x100.png" data-ai-hint="boy praying" alt="Boy praying" width={80} height={80} className="w-20 h-auto"/>
-                    </div>
-
-                    {weekDays.map((day, dayIndex) => {
-                        const dayKey = format(day, 'yyyy-MM-dd');
-                        const completions = prayerProgress?.completions?.[dayKey] || [];
-                        const pathConfig = dayPathClasses[dayIndex % dayPathClasses.length];
-                        const isLeftAligned = pathConfig.container === 'flex-row';
-                        
-                        return (
-                            <div key={dayKey} className={cn("flex items-center gap-4", isLeftAligned ? 'flex-row' : 'flex-row-reverse')}>
-                                <div className="px-2 py-1 bg-slate-700 text-white text-sm font-bold rounded-full z-20 w-28 text-center">
-                                    {format(day, 'EEEE', { locale: tr })}
-                                </div>
-                                <div className={cn("flex-1 flex items-center gap-1 p-2 rounded-lg", dayColors[dayIndex], pathConfig.container)}>
-                                    {prayerTimes.map((prayer, prayerIndex) => {
-                                        const isCompleted = completions.includes(prayer.name);
-                                        return (
-                                            <div key={prayer.name} className={cn("flex-1 min-w-0", pathConfig.item)}>
-                                                <div 
-                                                    className={cn(
-                                                        "flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-full cursor-pointer transition-all duration-300",
-                                                        isCompleted ? "bg-white scale-110 shadow-lg" : "bg-white/50 hover:bg-white/80",
-                                                        isSameDay(day, today) && !isCompleted && "animate-pulse border-2 border-primary"
-                                                    )}
-                                                    onClick={() => handlePrayerToggle(dayKey, prayer.name)}
-                                                >
-                                                    {isCompleted ? (
-                                                        <Check className="size-8 text-green-500"/>
-                                                    ) : (
-                                                        <>
-                                                            {prayer.icon}
-                                                            <span className="text-xs font-semibold text-slate-700">{prayer.name}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
-        </div>
+         </div>
     );
 }
+
