@@ -4,10 +4,32 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Flame } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
+
+const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M4 22h16" />
+      <path d="M8 22V8" />
+      <path d="M16 22V8" />
+      <path d="M12 22V4" />
+      <path d="M4 8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4" />
+    </svg>
+);
+
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -17,7 +39,7 @@ export function AppSidebar() {
     { href: "/", label: "Ana Sayfa", icon: Home },
     { href: "/tasks", label: "Görevler", icon: ListTodo },
     { href: "/habits", label: "Alışkanlıklar", icon: Zap },
-    { href: "/prayers", label: "Namaz Takibi", icon: Flame },
+    { href: "/prayers", label: "Namaz Takibi", icon: MosqueIcon },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },
     { href: "/goals", label: "Yol Haritaları", icon: Target },
