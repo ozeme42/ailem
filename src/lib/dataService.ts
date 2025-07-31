@@ -26,59 +26,49 @@ const onFamilyDataUpdate = <T>(
     orderByDirection?: 'desc' | 'asc'
 ): (() => void) => {
     const auth = getAuth();
-    let listeners: (() => void)[] = [];
+    let dataUnsubscribe: (() => void) | null = null;
+    let authUnsubscribe: (() => void) | null = null;
 
-    const setupDataListener = (familyId: string) => {
-        let q = query(collection(db, collectionName), where("familyId", "==", familyId));
-        if (orderByField) {
-            q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
-        }
-        
-        const dataUnsubscribe = onSnapshot(q, (snapshot) => {
-            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-            if (typeof callback === 'function') {
-                callback(items);
-            }
-            if (runOnce) {
-                cleanup();
-            }
-        }, (error) => {
-            console.error(`Error fetching ${collectionName}:`, error);
-            if (typeof callback === 'function') callback([]);
-        });
-        listeners.push(dataUnsubscribe);
+    const cleanup = () => {
+        if (dataUnsubscribe) dataUnsubscribe();
+        if (authUnsubscribe) authUnsubscribe();
     };
 
-    const setupAuthListener = () => {
-        const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
-            // Clean up old listeners
-            listeners.forEach(unsub => unsub());
-            listeners = [];
+    authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (dataUnsubscribe) dataUnsubscribe(); // Unsubscribe from previous listener
 
-            if (user) {
+        if (user) {
+            try {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
                 if (userDoc.exists()) {
                     const familyId = userDoc.data().familyId;
                     if (familyId) {
-                        setupDataListener(familyId);
-                    } else {
-                        if (typeof callback === 'function') callback([]);
+                        let q = query(collection(db, collectionName), where("familyId", "==", familyId));
+                        if (orderByField) {
+                            q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
+                        }
+
+                        dataUnsubscribe = onSnapshot(q, (snapshot) => {
+                            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+                            callback(items);
+                            if (runOnce) {
+                                cleanup();
+                            }
+                        }, (error) => {
+                            console.error(`Error fetching ${collectionName}:`, error);
+                            callback([]);
+                        });
+                        return; // Exit after setting up listener
                     }
-                } else {
-                    if (typeof callback === 'function') callback([]);
                 }
-            } else {
-                if (typeof callback === 'function') callback([]);
+            } catch (error) {
+                console.error("Error getting user document:", error);
             }
-        });
-        listeners.push(authUnsubscribe);
-    };
+        }
+        // If no user, no familyId, or error, callback with empty array
+        callback([]);
+    });
 
-    const cleanup = () => {
-        listeners.forEach(unsub => unsub());
-    };
-
-    setupAuthListener();
     return cleanup;
 };
 
@@ -1285,9 +1275,12 @@ export const onSinglePrayerProgressUpdate = (memberId: string, callback: (progre
                 return onSnapshot(docRef, (doc) => {
                     callback(doc.exists() ? { id: doc.id, ...doc.data() } as PrayerProgress : null);
                 });
+            } else {
+                 callback(null);
             }
+        } else {
+            callback(null);
         }
-        callback(null);
     });
 };
 
@@ -1298,21 +1291,28 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     const docId = `${familyId}_${memberId}`;
     const docRef = doc(db, 'prayerProgress', docId);
+
+    const docSnap = await getDoc(docRef);
+    const existingCompletions = docSnap.exists() ? docSnap.data().completions : {};
+
+    const updatedCompletions = { ...existingCompletions, ...completions };
     
     const updateData = {
-        completions: completions
+        familyId,
+        memberId,
+        id: docId,
+        completions: updatedCompletions
     };
     
-    // Check if a prayer was just completed and award points/badges
     const todayKey = format(new Date(), 'yyyy-MM-dd');
-    const todaysCompletions = completions[todayKey] || [];
+    const todaysCompletions = updatedCompletions[todayKey] || [];
     
-    // To prevent re-awarding, we might need to check the previous state, but for now, we'll award per completion.
-    // A better approach would be to pass the newly completed prayer and check against existing.
-    // This simplified version awards points for each prayer marked.
     if(todaysCompletions.length > 0) {
-        await checkAndAwardBadges(memberId, familyId, { type: 'prayer_completed', prayerCount: todaysCompletions.length, points: 5 });
+        const previousCompletions = existingCompletions[todayKey] || [];
+        if (todaysCompletions.length > previousCompletions.length) {
+             await checkAndAwardBadges(memberId, familyId, { type: 'prayer_completed', prayerCount: todaysCompletions.length, points: 5 });
+        }
     }
 
-    return setDoc(docRef, { familyId, memberId, id: docId, ...updateData }, { merge: true });
+    return setDoc(docRef, updateData, { merge: true });
 };
