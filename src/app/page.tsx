@@ -205,6 +205,8 @@ export default function Home() {
       .sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
         return dateB - dateA;
       })
       .slice(0, 10);
@@ -451,24 +453,29 @@ export default function Home() {
               <CardDescription className="text-white/80">Ailenin okuma serüvenleri.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {currentlyReadingBooks.map(({ book, member, progress }) => (
-                <div key={`${book.id}-${member.id}`} className="p-3 bg-white/20 rounded-lg flex items-center gap-4">
-                  <Image src={book.image || 'https://placehold.co/100x150.png'} alt={book.title} width={40} height={60} className="rounded object-cover aspect-[2/3]" data-ai-hint="book cover" />
-                  <div className="flex-grow">
-                    <p className="font-bold">{book.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: member.color, color: '#fff' }}>
-                        {member.name.charAt(0)}
-                      </div>
-                      <p className="text-sm text-white/90">{member.name}</p>
+              {currentlyReadingBooks.map(({ book, member, progress }) => {
+                const pagesRead = Math.round((progress / 100) * (book.pageCount || 0));
+                return (
+                    <div key={`${book.id}-${member.id}`} className="p-3 bg-white/20 rounded-lg flex items-center gap-4">
+                    <Image src={book.image || 'https://placehold.co/100x150.png'} alt={book.title} width={40} height={60} className="rounded object-cover aspect-[2/3]" data-ai-hint="book cover" />
+                    <div className="flex-grow">
+                        <p className="font-bold">{book.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: member.color, color: '#fff' }}>
+                            {member.name.charAt(0)}
+                        </div>
+                        <p className="text-sm text-white/90">{member.name}</p>
+                        </div>
                     </div>
-                  </div>
-                  <div className="w-24 shrink-0">
-                    <Progress value={progress} className="h-2 bg-white/30" indicatorClassName="bg-white" />
-                    <p className="text-xs text-right mt-1 text-white/90">{progress}%</p>
-                  </div>
-                </div>
-              ))}
+                    <div className="w-28 shrink-0 text-right">
+                        <Progress value={progress} className="h-2 bg-white/30" indicatorClassName="bg-white" />
+                        <p className="text-xs mt-1 text-white/90">
+                            {book.pageCount ? `${pagesRead} / ${book.pageCount} sayfa` : `${progress}%`}
+                        </p>
+                    </div>
+                    </div>
+                )
+            })}
             </CardContent>
           </Card>
       )}
