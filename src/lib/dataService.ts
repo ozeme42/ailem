@@ -1232,7 +1232,9 @@ export const deleteNoteFromSection = (notebookId: string, noteId: string) => {
 
 
 // Prayer Progress
-export const onPrayerProgressUpdate = (memberId: string, callback: (progress: PrayerProgress | null) => void) => {
+export const onPrayerProgressUpdate = (callback: (progress: PrayerProgress[]) => void) => onFamilyDataUpdate<PrayerProgress>('prayerProgress', callback);
+
+export const onSinglePrayerProgressUpdate = (memberId: string, callback: (progress: PrayerProgress | null) => void) => {
     const auth = getAuth();
     return onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -1247,6 +1249,7 @@ export const onPrayerProgressUpdate = (memberId: string, callback: (progress: Pr
         callback(null);
     });
 };
+
 
 export const updatePrayerProgress = async (memberId: string, completions: PrayerProgress['completions']) => {
     const familyId = await getCurrentFamilyId();
