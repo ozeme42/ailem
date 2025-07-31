@@ -24,7 +24,6 @@ const badgeDefinitions: { [key: string]: { name: string; description: string } }
     '🔥': { name: 'Görev Ustası', description: '10 görev tamamladın!' },
     '🚀': { name: 'Süper Kahraman', description: '50 görev tamamladın!' },
     '🏆': { name: 'Efsane', description: '100 görev tamamladın!' },
-    '💪': { name: 'Güçlü', description: 'Zor seviyede bir görev tamamladın!' },
     
     // Alışkanlık & Seri Rozetleri
     '📅': { name: 'Azimli', description: '7 günlük görev serisi yakaladın!' },
