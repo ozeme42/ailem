@@ -11,26 +11,37 @@ import { Button } from "./ui/button";
 
 const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
       width="24"
       height="24"
-      viewBox="0 0 24 24"
+      viewBox="0 0 64 64"
+      xmlns="http://www.w3.org/2000/svg"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       {...props}
     >
-      {/* Kendi SVG ikon kodunuzu aşağıdaki <path> etiketlerinin yerine yapıştırın. Örnek: <path d="..." /> */}
-      <path d="M4 22h16" />
-      <path d="M5 22V10" />
-      <path d="M19 22V10" />
-      <path d="M12 4a4.5 4.5 0 0 1 4.5 4.5V10H7.5V8.5A4.5 4.5 0 0 1 12 4z" />
-      <path d="M2 10h3" />
-      <path d="M19 10h3" />
-      <path d="M3 10V7a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v3" />
-      <path d="M18 10V7a1 1 0 0 0-1-1h-1a1 1 0 0 0-1 1v3" />
+        <g stroke="currentColor">
+            {/* Sol Minare */}
+            <rect x="8" y="20" width="6" height="30" fill="currentColor" />
+            <polygon points="8,20 11,10 14,20" fill="currentColor" />
+            <line x1="8" y1="30" x2="14" y2="30" />
+            <line x1="8" y1="38" x2="14" y2="38" />
+            <line x1="8" y1="46" x2="14" y2="46" />
+
+            {/* Sağ Minare */}
+            <rect x="50" y="20" width="6" height="30" fill="currentColor" />
+            <polygon points="50,20 53,10 56,20" fill="currentColor" />
+            <line x1="50" y1="30" x2="56" y2="30" />
+            <line x1="50" y1="38" x2="56" y2="38" />
+            <line x1="50" y1="46" x2="56" y2="46" />
+
+            {/* Ana Bina */}
+            <rect x="20" y="30" width="24" height="20" fill="currentColor" />
+            <path d="M20 30 Q32 15 44 30" fill="currentColor" stroke="currentColor" />
+
+            {/* Kapı - Kapının içini arka plan rengi yapmak için farklı bir renk kullanalım (veya temaya göre ayarlanabilir) */}
+            <rect x="30" y="40" width="4" height="10" fill="hsl(var(--background))" stroke="none"/>
+        </g>
     </svg>
 );
 
