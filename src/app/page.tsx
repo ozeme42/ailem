@@ -201,9 +201,13 @@ export default function Home() {
 
 
   const latestBooks = React.useMemo(() => {
-      return [...books]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 10);
+    return [...books]
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      })
+      .slice(0, 10);
   }, [books]);
 
    const activeGoals = React.useMemo(() => {
