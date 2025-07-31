@@ -57,41 +57,44 @@ export default function PrayerTrackerPage() {
         if (!selectedMember) return;
     
         const originalProgress = prayerProgress;
-    
-        // Optimistic UI update
-        const currentCompletions = prayerProgress?.completions?.[dayKey] || [];
-        const isCompleted = currentCompletions.includes(prayerName);
-        const newCompletions = isCompleted
-            ? currentCompletions.filter(p => p !== prayerName)
-            : [...currentCompletions, prayerName];
-    
-        // Correctly update the state without overwriting other days
+        
+        // --- THIS IS THE CRITICAL FIX ---
+        // 1. Get a copy of all completions, or an empty object if none exist.
+        const allCompletions = { ...(prayerProgress?.completions || {}) };
+
+        // 2. Get the specific completions for the day being modified.
+        const dayCompletions = allCompletions[dayKey] || [];
+        
+        // 3. Determine the new completion status for the specific prayer.
+        const isCompleted = dayCompletions.includes(prayerName);
+        const newDayCompletions = isCompleted
+            ? dayCompletions.filter(p => p !== prayerName)
+            : [...dayCompletions, prayerName];
+            
+        // 4. Update the copy of all completions with the new list for the modified day.
+        allCompletions[dayKey] = newDayCompletions;
+
+        // 5. Create the new state for optimistic update, using the full, correct completions object.
         const newProgressState: PrayerProgress = {
             id: prayerProgress?.id || `${selectedMember.id}`,
             memberId: prayerProgress?.memberId || selectedMember.id,
-            familyId: prayerProgress?.familyId || '', // This should be filled from auth context ideally
-            completions: {
-                ...(prayerProgress?.completions || {}),
-                [dayKey]: newCompletions,
-            },
+            familyId: prayerProgress?.familyId || '', 
+            completions: allCompletions, // Use the correctly updated full object
         };
+
+        // 6. Optimistic UI update
         setPrayerProgress(newProgressState);
     
         try {
-            await updatePrayerProgress(selectedMember.id, dayKey, newCompletions);
-            if (!isCompleted) {
-                toast({
-                    title: "✨ Tebrikler!",
-                    description: `${selectedMember.name}, ${prayerName} namazını kıldı.`,
-                });
-            }
+            // 7. Update the database with the new completions for the specific day.
+            await updatePrayerProgress(selectedMember.id, dayKey, newDayCompletions);
         } catch (error) {
             toast({
                 title: "Hata",
                 description: "Bir sorun oluştu, lütfen tekrar deneyin.",
                 variant: "destructive"
             });
-            // Revert UI on error
+            // 8. Revert UI on error
             setPrayerProgress(originalProgress);
         }
     };
