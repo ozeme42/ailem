@@ -135,13 +135,13 @@ const ListCard = ({ list, colorClass, onClick, onDelete }: {
 
     return (
         <div className="relative group">
-            <div onClick={onClick} className={cn("flex items-center gap-4 text-white px-4 min-h-[72px] py-2 cursor-pointer rounded-lg shadow-sm border-0", colorClass)}>
-                <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                    <Icon className="h-6 w-6" />
+            <div onClick={onClick} className={cn("flex items-center gap-3 text-white px-3 py-2 cursor-pointer rounded-lg shadow-sm border-0", colorClass)}>
+                <div className="bg-white/20 text-white flex items-center justify-center rounded-md shrink-0 size-10">
+                    <Icon className="h-5 w-5" />
                 </div>
-                <div className="flex flex-col justify-center">
-                    <p className="text-base font-medium leading-normal line-clamp-1">{list.name}</p>
-                    <p className="text-white/80 text-sm font-normal leading-normal line-clamp-2">
+                <div className="flex flex-col justify-center min-w-0">
+                    <p className="text-base font-medium leading-tight truncate">{list.name}</p>
+                    <p className="text-white/80 text-xs font-normal truncate">
                         {description}
                     </p>
                 </div>
@@ -149,7 +149,7 @@ const ListCard = ({ list, colorClass, onClick, onDelete }: {
              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                         <Button variant="destructive" size="icon" className="h-8 w-8 bg-black/30 hover:bg-black/50 border-0" onClick={(e) => e.stopPropagation()}>
+                         <Button variant="destructive" size="icon" className="h-7 w-7 bg-black/30 hover:bg-black/50 border-0" onClick={(e) => e.stopPropagation()}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </AlertDialogTrigger>
@@ -389,7 +389,7 @@ export default function ShoppingPage() {
                 <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
             </Button>
         </PageHeader>
-        <div className="p-4 space-y-2 bg-muted/40 rounded-b-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
                     const color = brightColors[index % brightColors.length];
@@ -404,7 +404,7 @@ export default function ShoppingPage() {
                     )
                 })
             ) : (
-                <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
+                <div className="md:col-span-2 text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
                     <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
                     <p className="text-sm text-muted-foreground">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
