@@ -3,9 +3,9 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isSameMonth, isToday, isBefore, parseISO, isSameDay, getDay } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isBefore, parseISO, isSameDay, getDay, subWeeks, addWeeks } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Check, X, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Pencil, CheckSquare } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { updateHabitCompletion } from "@/lib/dataService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 const dayIndexToId: { [key: number]: string } = {
@@ -29,6 +30,18 @@ const dayIndexToId: { [key: number]: string } = {
   0: 'Sun',
 };
 
+const dayIdToName: { [key: string]: string } = {
+  Mon: 'Pazartesi',
+  Tue: 'Salı',
+  Wed: 'Çarşamba',
+  Thu: 'Perşembe',
+  Fri: 'Cuma',
+  Sat: 'Cumartesi',
+  Sun: 'Pazar',
+};
+
+const orderedWeekDays: (keyof typeof dayIdToName)[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export default function HabitDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -36,7 +49,7 @@ export default function HabitDetailPage() {
   
   const [habit, setHabit] = React.useState<Task | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [currentMonth, setCurrentMonth] = React.useState(new Date());
+  const [currentDate, setCurrentDate] = React.useState(new Date());
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -67,21 +80,6 @@ export default function HabitDetailPage() {
   }
 
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const endDate = addDays(startDate, 41); // 6 weeks
-
-  const days = [];
-  let day = startDate;
-
-  while (day <= endDate) {
-    days.push(day);
-    day = addDays(day, 1);
-  }
-  
-  const weekHeaderDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
-
   if (loading) {
     return (
         <div className="space-y-6">
@@ -94,9 +92,83 @@ export default function HabitDetailPage() {
   if (!habit) {
     return <PageHeader title="Alışkanlık Bulunamadı" />;
   }
-  
-  const habitStartDate = habit.createdAt ? parseISO(habit.createdAt) : new Date(0);
 
+  if (habit.recurrenceType === 'weekly' && habit.recurrenceDays && habit.recurrenceDays.length > 0) {
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const weekEnd = addDays(weekStart, 6);
+    
+    const relevantWeekDays = orderedWeekDays
+        .filter(dayId => habit.recurrenceDays?.includes(dayId))
+        .map(dayId => {
+            const dayIndex = orderedWeekDays.indexOf(dayId);
+            const date = addDays(weekStart, dayIndex);
+            const isCompleted = habit.completedDates?.includes(format(date, 'yyyy-MM-dd')) || false;
+            const isPastOrToday = isBefore(date, addDays(new Date(), 1));
+            return { date, name: dayIdToName[dayId], isCompleted, isPastOrToday };
+        });
+
+    return (
+      <div className="space-y-6">
+        <PageHeader title={habit.title}>
+            <Button onClick={() => router.back()} variant="outline">
+            <ChevronLeft className="mr-2 h-4 w-4" /> Geri
+            </Button>
+        </PageHeader>
+        <Card>
+           <CardHeader className="flex flex-row items-center justify-between">
+             <div>
+                <CardTitle className="capitalize">{format(weekStart, 'd MMMM', { locale: tr })} - {format(weekEnd, 'd MMMM yyyy', { locale: tr })}</CardTitle>
+                <CardDescription>Haftalık alışkanlık takibi</CardDescription>
+             </div>
+             <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => subWeeks(d, 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                 <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addWeeks(d, 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+           </CardHeader>
+           <CardContent className="space-y-3">
+            {relevantWeekDays.map(day => (
+                <div 
+                    key={day.date.toString()}
+                    onClick={() => day.isPastOrToday && handleToggleDay(day.date)}
+                    className={cn(
+                        "p-4 border rounded-lg flex items-center justify-between cursor-pointer transition-colors",
+                        day.isCompleted && "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-800",
+                        !day.isPastOrToday && "opacity-50 cursor-not-allowed",
+                        day.isPastOrToday && "hover:bg-muted/50"
+                    )}
+                >
+                    <div className="flex flex-col">
+                        <p className="font-semibold">{day.name}</p>
+                        <p className="text-sm text-muted-foreground">{format(day.date, 'd MMMM', { locale: tr })}</p>
+                    </div>
+                    {day.isCompleted 
+                        ? <CheckSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
+                        : <div className="h-6 w-6 w-6 border-2 rounded bg-background" />
+                    }
+                </div>
+            ))}
+           </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // --- Fallback to monthly calendar for other types ---
+  const monthStart = startOfMonth(currentDate);
+  const endDate = addDays(startOfWeek(monthStart, { weekStartsOn: 1 }), 41); // 6 weeks
+  const days = [];
+  let day = startOfWeek(monthStart, { weekStartsOn: 1 });
+  while (day <= endDate) {
+    days.push(day);
+    day = addDays(day, 1);
+  }
+  const weekHeaderDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
+  const habitStartDate = habit.dueDate ? parseISO(habit.dueDate) : new Date(0);
 
   return (
     <div className="space-y-6">
@@ -109,14 +181,14 @@ export default function HabitDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
              <div>
-                <CardTitle className="capitalize">{format(currentMonth, 'MMMM yyyy', { locale: tr })}</CardTitle>
+                <CardTitle className="capitalize">{format(currentDate, 'MMMM yyyy', { locale: tr })}</CardTitle>
              </div>
              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                <Button variant="outline" size="icon" onClick={() => setCurrentDate(m => subMonths(m, 1))}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
-                 <Button variant="outline" onClick={() => setCurrentMonth(new Date())}>Bugün</Button>
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                 <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentDate(m => addMonths(m, 1))}>
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
@@ -129,23 +201,18 @@ export default function HabitDetailPage() {
                     </div>
                 ))}
                 {days.map((day, index) => {
-                    const isCurrentMonth = isSameMonth(day, currentMonth);
+                    const isCurrentMonth = isSameDay(addDays(monthStart, day.getDate() - monthStart.getDate()), day);
+
                     const dayKey = format(day, 'yyyy-MM-dd');
                     const isCompleted = habit.completedDates?.includes(dayKey) || false;
                     
                     const todayForComparison = new Date();
-                    todayForComparison.setHours(23, 59, 59, 999); // Allow marking today
+                    todayForComparison.setHours(23, 59, 59, 999);
                     
                     let isSelectable = !isBefore(day, habitStartDate) && day <= todayForComparison;
 
-                    if (habit.recurrenceType === 'weekly' && habit.recurrenceDays && habit.recurrenceDays.length > 0) {
-                      const dayId = dayIndexToId[getDay(day)];
-                      if (!habit.recurrenceDays.includes(dayId)) {
-                        isSelectable = false;
-                      }
-                    } else if (habit.recurrenceType === 'monthly') {
-                      const habitStartDay = parseISO(habit.dueDate).getDate();
-                      if (day.getDate() !== habitStartDay) {
+                    if (habit.recurrenceType === 'monthly') {
+                      if (day.getDate() !== habitStartDate.getDate()) {
                         isSelectable = false;
                       }
                     }
@@ -176,3 +243,4 @@ export default function HabitDetailPage() {
     </div>
   );
 }
+
