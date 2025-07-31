@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, FC, useRef } from 'react';
@@ -321,7 +322,7 @@ export default function LibraryPage() {
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
                 <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} />)}
+                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} />)}
                 </div>
             </div>
         )}
@@ -370,7 +371,7 @@ export default function LibraryPage() {
   );
 }
 
-function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void }) {
+function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     const [pagesReadInput, setPagesReadInput] = useState("");
     const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
     
@@ -431,7 +432,21 @@ function ReadingBookCard({ book, onUpdateStatus }: { book: any, onUpdateStatus: 
                                     <Clock className="h-5 w-5"/>
                                 </Button>
                             </Link>
-                            <Button variant="secondary" className="flex-1" onClick={() => onUpdateStatus(book.id, 'finished', 100)}>Bitir</Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10">
+                                        <MoreVertical className="h-5 w-5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
+                                        <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
+                                        <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
                 </div>
@@ -468,25 +483,29 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
 
 function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
-        <Card className="overflow-hidden flex flex-col group text-center transition-all hover:shadow-md hover:-translate-y-1">
+        <Card className="overflow-hidden flex flex-col group text-center transition-all hover:shadow-md hover:-translate-y-1 relative">
             <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3]" data-ai-hint="book cover"/>
             <div className="p-2 flex flex-col flex-grow">
                 <p className="font-semibold text-sm leading-tight flex-grow line-clamp-2" title={book.title}>{book.title}</p>
                 <p className="text-xs text-muted-foreground truncate">{book.author}</p>
             </div>
-            <CardFooter className="p-2 bg-muted/50 mt-auto">
-                {book.status === 'to-read' && (
-                    <Button className="w-full" size="sm" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                        <BookUp className="mr-2 h-4 w-4" /> Başla
-                    </Button>
-                )}
-                {book.status === 'finished' && (
-                     <div className="w-full text-center text-xs text-muted-foreground space-y-1">
-                        <p className="font-medium text-green-600 flex items-center justify-center gap-1"><CheckSquare size={14}/>Tamamlandı</p>
-                        {book.finishedAt && <p>Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}</p>}
-                    </div>
-                )}
-            </CardFooter>
+             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="icon" className="h-7 w-7">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                            <BookUp className="mr-2 h-4 w-4"/> Okumaya Başla
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
+                            <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         </Card>
     )
 }

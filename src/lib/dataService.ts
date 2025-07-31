@@ -79,12 +79,12 @@ const onFamilyDataUpdate = <T>(
 
 // Books (mediaItems)
 export const onBooksUpdate = (callback: (books: Book[]) => void, orderByField?: string, orderByDirection?: 'asc' | 'desc') => onFamilyDataUpdate<Book>('mediaItems', callback, false, orderByField, orderByDirection);
-export const addBook = async (data: Omit<Book, 'id' | 'familyId'>) => {
+export const addBook = async (data: Omit<Book, 'id' | 'familyId' | 'createdAt'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'mediaItems'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
-export const updateBook = async (id: string, data: Partial<Omit<Book, 'id' | 'familyId'>>) => {
+export const updateBook = async (id: string, data: Partial<Omit<Book, 'id' | 'familyId' | 'createdAt'>>) => {
     const bookRef = doc(db, 'mediaItems', id);
     const bookSnap = await getDoc(bookRef);
     if (bookSnap.exists() && !bookSnap.data().createdAt) {
@@ -697,9 +697,9 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     const batch = writeBatch(db);
 
     // Helper data from data.ts
-    const initialBooks: Omit<Book, 'id' | 'familyId'>[] = [
-        { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, createdAt: new Date().toISOString() },
-        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, createdAt: new Date().toISOString() },
+    const initialBooks: Omit<Book, 'id' | 'familyId' | 'createdAt'>[] = [
+        { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, readers: [] },
+        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, readers: [] },
     ];
 
     const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId' | 'createdAt'>[] = [
@@ -793,7 +793,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     // Initial Books
     initialBooks.forEach(book => {
         const docRef = doc(collection(db, 'mediaItems'));
-        batch.set(docRef, { ...book, familyId });
+        batch.set(docRef, { ...book, familyId, createdAt: new Date().toISOString() });
     });
     
     // Initial Family Management Doc
@@ -1106,18 +1106,12 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
         completedDates.delete(dayKey);
         // If today was part of the streak, the streak is now 0.
         // A more complex logic would be to find the new latest streak, but this is simpler.
-        if (isSameDay(day, new Date())) {
-            newStreak = 0;
-        } else {
-            // If an old day is un-checked, the current streak might not be affected.
-            // For simplicity, we only break the streak if today or yesterday is unchecked.
-            // Recalculating the whole streak is more complex. We'll stick to a simpler logic.
-            // If the user uncompletes today, their streak is broken.
-            // What if they uncomplete yesterday? Their streak is also broken.
-             const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-             if(dayKey === format(new Date(), 'yyyy-MM-dd') || dayKey === yesterdayKey) {
-                 newStreak = 0; // Simple reset. A more robust implementation would recalculate.
-             }
+        // We'll stick to a simpler logic.
+        // If the user uncompletes today, their streak is broken.
+        // What if they uncomplete yesterday? Their streak is also broken.
+        const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+        if(dayKey === format(new Date(), 'yyyy-MM-dd') || dayKey === yesterdayKey) {
+            newStreak = 0; // Simple reset. A more robust implementation would recalculate.
         }
     }
 
