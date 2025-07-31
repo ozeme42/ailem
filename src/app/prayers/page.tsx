@@ -132,15 +132,14 @@ export default function PrayerTrackerPage() {
                         const dayKey = format(day, 'yyyy-MM-dd');
                         const completions = prayerProgress?.completions?.[dayKey] || [];
                         const pathConfig = dayPathClasses[dayIndex % dayPathClasses.length];
+                        const isLeftAligned = pathConfig.container === 'flex-row';
                         
                         return (
-                            <div key={dayKey} className={cn("relative py-2")}>
-                                <div className={cn("absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-700 text-white text-sm font-bold rounded-full z-20", 
-                                  pathConfig.container === 'flex-row' ? 'left-0' : 'right-0'
-                                )}>
+                            <div key={dayKey} className={cn("flex items-center gap-4", isLeftAligned ? 'flex-row' : 'flex-row-reverse')}>
+                                <div className="px-2 py-1 bg-slate-700 text-white text-sm font-bold rounded-full z-20 w-28 text-center">
                                     {format(day, 'EEEE', { locale: tr })}
                                 </div>
-                                <div className={cn("flex items-center gap-1 p-2 rounded-lg", dayColors[dayIndex], pathConfig.container)}>
+                                <div className={cn("flex-1 flex items-center gap-1 p-2 rounded-lg", dayColors[dayIndex], pathConfig.container)}>
                                     {prayerTimes.map((prayer, prayerIndex) => {
                                         const isCompleted = completions.includes(prayer.name);
                                         return (
