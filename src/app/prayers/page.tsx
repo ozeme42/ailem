@@ -34,6 +34,7 @@ export default function PrayerTrackerPage() {
     const { toast } = useToast();
     
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const weekEnd = addDays(weekStart, 6);
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
     React.useEffect(() => {
@@ -45,9 +46,11 @@ export default function PrayerTrackerPage() {
 
     React.useEffect(() => {
         if (!selectedMember) return;
+
         const unsub = onPrayerProgressUpdate(selectedMember.id, (progress) => {
             setPrayerProgress(progress);
         });
+
         return () => unsub();
     }, [selectedMember]);
 
@@ -98,14 +101,19 @@ export default function PrayerTrackerPage() {
 
             <div className="flex-grow flex items-center justify-center">
                  <div className="w-full max-w-4xl p-4 bg-yellow-400 dark:bg-yellow-600 rounded-xl shadow-2xl border-4 border-yellow-500 dark:border-yellow-700">
-                     <div className="flex items-center justify-center gap-4 mb-4">
-                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => subWeeks(d, 1))}>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
-                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addWeeks(d, 1))}>
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+                        <div className="flex items-center gap-2">
+                           <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => subWeeks(d, 1))}>
+                               <ChevronLeft className="h-4 w-4" />
+                           </Button>
+                           <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
+                           <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addWeeks(d, 1))}>
+                               <ChevronRight className="h-4 w-4" />
+                           </Button>
+                        </div>
+                        <p className="font-semibold text-center text-lg text-purple-900 dark:text-purple-100">
+                           {format(weekStart, 'd MMMM', { locale: tr })} - {format(weekEnd, 'd MMMM yyyy', { locale: tr })}
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-6 gap-2 text-center text-white font-bold mb-2">
