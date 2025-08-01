@@ -56,22 +56,17 @@ export default function PrayerTrackerPage() {
     const handlePrayerToggle = async (dayKey: string, prayerName: string) => {
         if (!selectedMember) return;
     
-        // 1. Get a deep copy of all current completions to avoid mutation issues.
         const allCompletions = JSON.parse(JSON.stringify(prayerProgress?.completions || {}));
     
-        // 2. Get the specific completions for the day being modified.
         const dayCompletions: string[] = allCompletions[dayKey] || [];
         
-        // 3. Determine the new completion status for the specific prayer.
         const isCompleted = dayCompletions.includes(prayerName);
         const newDayCompletions = isCompleted
             ? dayCompletions.filter((p: string) => p !== prayerName)
             : [...dayCompletions, prayerName];
             
-        // 4. Update the copy of all completions with the new list for the modified day.
         allCompletions[dayKey] = newDayCompletions;
     
-        // 5. Create the new state for optimistic UI update.
         const newProgressState: PrayerProgress = {
             id: prayerProgress?.id || `${selectedMember.id}`,
             memberId: prayerProgress?.memberId || selectedMember.id,
@@ -79,11 +74,9 @@ export default function PrayerTrackerPage() {
             completions: allCompletions,
         };
     
-        // 6. Optimistic UI update
         setPrayerProgress(newProgressState);
         
         try {
-            // 7. Update the database with the new, complete completions object.
             await updatePrayerProgress(selectedMember.id, allCompletions);
         } catch (error) {
             toast({
@@ -91,8 +84,6 @@ export default function PrayerTrackerPage() {
                 description: "Bir sorun oluştu, lütfen tekrar deneyin.",
                 variant: "destructive"
             });
-            // Revert UI on error by re-fetching or using original state.
-            // The onSnapshot listener will eventually correct it, but this could be improved.
             console.error("Failed to update prayer progress:", error);
         }
     };
@@ -145,7 +136,6 @@ export default function PrayerTrackerPage() {
                         return(
                             <div key={dayKey} className="grid grid-cols-6 gap-2 items-center bg-white/80 dark:bg-gray-800/80 p-1.5 rounded-lg shadow-inner">
                                 <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-full py-2 px-3 flex items-center justify-center shadow-md">
-                                    <div className="size-4 rounded-full bg-white/50 mr-2 border-2 border-white/80"></div>
                                     <span>
                                         <span className="hidden md:inline">{dayLabels[dayIndex].full}</span>
                                         <span className="md:hidden">{dayLabels[dayIndex].short}</span>
