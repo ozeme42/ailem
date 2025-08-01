@@ -22,6 +22,7 @@ import { useAuth } from '@/components/auth-provider';
 import { NewVideoForm, VideoFormData } from '@/components/new-video-form';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const shelfFormSchema = z.object({
