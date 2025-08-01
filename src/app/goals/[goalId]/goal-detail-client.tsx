@@ -142,12 +142,15 @@ export default function GoalDetailClient() {
                  <Card>
                     <CardHeader>
                         <CardTitle>Genel İlerleme</CardTitle>
+                        <CardDescription>
+                           Sıradaki: {goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} {totalCompletedUnits + 1}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                          <div>
                             <Progress value={overallProgress} className="h-2" />
-                            <p className="text-sm mt-2 text-right font-medium text-primary">
-                                {totalCompletedUnits} / {goal.totalUnits} {goal.unitName} tamamlandı
+                             <p className="text-sm mt-2 text-right font-medium text-primary">
+                                {goal.totalUnits} {goal.unitName}'dan {totalCompletedUnits} tanesi tamamlandı.
                             </p>
                         </div>
                         {goal.status !== 'completed' && (

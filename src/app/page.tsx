@@ -451,22 +451,34 @@ export default function Home() {
                 </div>
                 
                 <div className="mt-4 space-y-4">
-                    {goal.currentSection && !goal.isVideoGoal && (
+                    {goal.isVideoGoal ? (
                         <div>
-                            <div className="flex justify-between text-xs text-white/80 mb-1">
-                                <span>{goal.currentSection.title}</span>
-                                <span>{goal.currentSection.completedUnits || 0}/{goal.currentSection.sectionTotalUnits} {goal.unitName}</span>
+                             <div className="flex justify-between text-xs text-white/80 mb-1">
+                                <span>Sıradaki: {goal.unitName} {goal.totalCompletedUnits + 1}</span>
+                                <span>{goal.totalCompletedUnits}/{goal.totalUnits}</span>
                             </div>
-                            <Progress value={goal.sectionProgress || 0} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
+                            <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
                         </div>
+                    ) : (
+                       goal.currentSection && (
+                        <>
+                            <div>
+                                <div className="flex justify-between text-xs text-white/80 mb-1">
+                                    <span>{goal.currentSection.title}</span>
+                                    <span>{goal.currentSection.completedUnits || 0}/{goal.currentSection.sectionTotalUnits} {goal.unitName}</span>
+                                </div>
+                                <Progress value={goal.sectionProgress || 0} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
+                            </div>
+                            <div>
+                                <div className="flex justify-between text-xs text-white/80 mb-1">
+                                    <span>Genel İlerleme</span>
+                                    <span>{Math.round(goal.overallProgress)}%</span>
+                                </div>
+                                <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
+                            </div>
+                        </>
+                       )
                     )}
-                    <div>
-                        <div className="flex justify-between text-xs text-white/80 mb-1">
-                            <span>{goal.isVideoGoal ? goal.title : "Genel İlerleme"} ({goal.totalCompletedUnits}/{goal.totalUnits} {goal.unitName})</span>
-                            <span>{Math.round(goal.overallProgress)}%</span>
-                        </div>
-                        <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
-                    </div>
                 </div>
               </div>
             ))
