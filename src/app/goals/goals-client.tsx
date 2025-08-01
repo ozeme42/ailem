@@ -13,9 +13,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from '@/components/ui/progress';
-import { PlusCircle, Target, Trash2, Edit } from 'lucide-react';
+import { PlusCircle, Target, Trash2, Edit, Youtube } from 'lucide-react';
 import { NewGoalForm } from '@/components/new-goal-form';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function GoalsClient() {
     const { user, familyMembers } = useAuth();
@@ -76,6 +77,13 @@ export default function GoalsClient() {
         return "Tüm hedefler tamamlandı!";
     };
 
+    const getGoalIcon = (goal: Goal) => {
+        if (goal.platform === 'YouTube') {
+            return <Youtube className="h-6 w-6 text-red-500" />;
+        }
+        return <Target className="h-6 w-6 text-primary" />;
+    };
+
     return (
         <div className="space-y-6">
             <PageHeader title="Yol Haritaları">
@@ -87,12 +95,6 @@ export default function GoalsClient() {
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-xl">
-                        <DialogHeader>
-                            <DialogTitle>{editingGoal ? 'Yol Haritasını Düzenle' : 'Yeni Yol Haritası'}</DialogTitle>
-                            <DialogDescription>
-                                {editingGoal ? 'Mevcut hedefin detaylarını değiştir.' : 'Büyük bir hedef belirle ve ona ulaşmak için adımlarını planla.'}
-                            </DialogDescription>
-                        </DialogHeader>
                         <NewGoalForm
                             familyMembers={familyMembers}
                             onCreate={handleFormSubmit}
@@ -148,7 +150,10 @@ export default function GoalsClient() {
                             <Link href={`/goals/${goal.id}`} className="block flex flex-col h-full">
                                 <CardHeader>
                                     <div className="flex justify-between items-start gap-2">
-                                        <CardTitle>{goal.title}</CardTitle>
+                                        <div className="flex-grow flex items-center gap-3">
+                                            {getGoalIcon(goal)}
+                                            <CardTitle>{goal.title}</CardTitle>
+                                        </div>
                                         {assignee && (
                                             <div
                                                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"

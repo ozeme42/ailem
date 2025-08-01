@@ -174,6 +174,9 @@ export interface Goal {
     totalUnits: number;
     unitName: string;
     sectionCount: number;
+    // For video playlists
+    videoUrl?: string;
+    platform?: 'YouTube' | 'Other';
 }
 
 export interface MemorizationItem {
