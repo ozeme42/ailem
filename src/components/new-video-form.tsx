@@ -22,7 +22,6 @@ import { useAuth } from "./auth-provider";
 // SCHEMAS & TYPES
 const formSchema = z.object({
   title: z.string().min(2, "Liste adı en az 2 karakter olmalıdır."),
-  assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   url: z.string().url("Geçerli bir YouTube URL'si girin.").optional().or(z.literal('')),
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
@@ -31,14 +30,13 @@ const formSchema = z.object({
 export type VideoFormData = z.infer<typeof formSchema>;
 
 type NewVideoListFormProps = {
-  onSubmit: (data: Omit<Video, 'id' | 'familyId' | 'platform' | 'createdAt' | 'completedVideos'>) => void;
+  onSubmit: (data: Omit<Video, 'id' | 'familyId' | 'platform' | 'createdAt' | 'completedVideos' | 'assigneeId' | 'thumbnail'>) => void;
   initialData?: Video | null;
   existingTags: string[];
 };
 
 export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoListFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { familyMembers } = useAuth();
 
   const formMethods = useForm<VideoFormData>({
     resolver: zodResolver(formSchema),
@@ -68,7 +66,7 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoLi
         if (urlObj.hostname === 'youtu.be') {
             videoId = urlObj.pathname.slice(1);
         } else if (urlObj.hostname.includes('youtube.com')) {
-            videoId = urlObj.searchParams.get('v');
+            videoId = urlObj.searchParams.get('v') || urlObj.searchParams.get('list');
         }
     } catch(e) {
         return null;
@@ -79,9 +77,8 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoLi
 
   const handleFormSubmit = async (data: VideoFormData) => {
     setIsSubmitting(true);
-    const thumbnail = getYouTubeThumbnail(data.url || '');
     try {
-      await onSubmit({ ...data, thumbnail });
+      await onSubmit({ ...data });
     } finally {
       setIsSubmitting(false);
     }
@@ -98,28 +95,6 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoLi
              <FormField control={formMethods.control} name="title" render={({ field }) => (
                 <FormItem><FormLabel>Liste/Ders Adı</FormLabel><FormControl><Input placeholder="Ders başlığını girin..." {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-             <FormField
-                control={formMethods.control}
-                name="assigneeId"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Sorumlu Kişi</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Bu hedef kimin için?" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {familyMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                            {member.name}
-                            </SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
              <FormField control={formMethods.control} name="totalVideos" render={({ field }) => (
                 <FormItem><FormLabel>Toplam Video Sayısı</FormLabel><FormControl><Input type="number" placeholder="25" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
@@ -161,7 +136,7 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoLi
         <div className="pt-4 border-t flex-shrink-0">
           <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? 'Kaydet' : 'Video Ekle'}
+            {initialData ? 'Kaydet' : 'Video Listesi Ekle'}
           </Button>
         </div>
       </form>

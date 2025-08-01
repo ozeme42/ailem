@@ -69,14 +69,34 @@ export function VideosClient() {
     setIsFormOpen(true);
   }, []);
 
-  const handleAddOrUpdateVideo = async (formData: VideoFormData) => {
+  const getYouTubeThumbnail = (url: string) => {
+    if (!url) return null;
+    let videoId;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v') || urlObj.searchParams.get('list');
+        }
+    } catch(e) {
+        return null;
+    }
+
+    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+  }
+
+  const handleAddOrUpdateVideo = async (formData: Omit<VideoFormData, "assigneeId">) => {
     if (!selectedMemberId) return;
     setIsSubmitting(true);
+    
+    const thumbnail = getYouTubeThumbnail(formData.url || '');
 
     const videoData: Omit<Video, 'id' | 'familyId' | 'createdAt' | 'completedVideos'> = {
         ...formData,
         platform: 'YouTube',
-        assigneeId: selectedMemberId
+        assigneeId: selectedMemberId,
+        thumbnail: thumbnail,
     };
     
     try {
