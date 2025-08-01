@@ -6,7 +6,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { onGoalsUpdate, addGoal, deleteGoal, updateGoal } from '@/lib/dataService';
-import type { Goal } from '@/lib/data';
+import type { Goal, FamilyMember } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,7 @@ export default function GoalsClient() {
     const [goals, setGoals] = React.useState<Goal[]>([]);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingGoal, setEditingGoal] = React.useState<Goal | null>(null);
+    const [selectedMemberId, setSelectedMemberId] = React.useState<string | 'all'>('all');
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -63,19 +64,20 @@ export default function GoalsClient() {
     };
 
     const calculateOverallProgress = (goal: Goal) => {
-        if (!goal.totalUnits) return 0;
+        if (!goal.totalUnits || goal.totalUnits === 0) return 0;
         const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
         return (totalCompletedUnits / goal.totalUnits) * 100;
     };
     
     const getNextStepTitle = (goal: Goal) => {
         const isVideoGoal = goal.platform === 'YouTube';
+        const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
         
+        if (totalCompletedUnits >= goal.totalUnits) {
+             return "Tüm hedefler tamamlandı!";
+        }
+
         if (isVideoGoal) {
-            const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
-            if (totalCompletedUnits >= goal.totalUnits) {
-                return "Tüm hedefler tamamlandı!";
-            }
              return `Sıradaki: Video ${totalCompletedUnits + 1}`;
         }
         
@@ -94,26 +96,12 @@ export default function GoalsClient() {
         return <Target className="h-6 w-6 text-primary" />;
     };
 
-    const goalsByMember = React.useMemo(() => {
-        const grouped: { [key: string]: Goal[] } = {};
-        goals.forEach(goal => {
-            const assigneeId = goal.assigneeId || 'unassigned';
-            if (!grouped[assigneeId]) {
-                grouped[assigneeId] = [];
-            }
-            grouped[assigneeId].push(goal);
-        });
-        
-        const sortedMemberIds = [...familyMembers.map(m => m.id), 'unassigned'];
-        const sortedGrouped: { [key: string]: Goal[] } = {};
-        sortedMemberIds.forEach(id => {
-            if (grouped[id]) {
-                sortedGrouped[id] = grouped[id];
-            }
-        });
-
-        return sortedGrouped;
-    }, [goals, familyMembers]);
+    const filteredGoals = React.useMemo(() => {
+        if (selectedMemberId === 'all') {
+            return goals;
+        }
+        return goals.filter(goal => goal.assigneeId === selectedMemberId);
+    }, [goals, selectedMemberId]);
 
 
     return (
@@ -136,92 +124,97 @@ export default function GoalsClient() {
                 </Dialog>
             </PageHeader>
             
-             <div className="space-y-8">
-                {Object.keys(goalsByMember).length > 0 ? (
-                    Object.entries(goalsByMember).map(([memberId, memberGoals]) => {
-                        const member = familyMembers.find(m => m.id === memberId);
-                        if (!member && memberId !== 'unassigned') return null;
+            <div className="flex items-center gap-2 border-b pb-4 overflow-x-auto">
+                 <Button
+                    variant={selectedMemberId === 'all' ? "default" : "outline"}
+                    className="flex-shrink-0 h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200"
+                    onClick={() => setSelectedMemberId('all')}
+                >
+                   Tümü
+                </Button>
+                {familyMembers.map((member) => (
+                <Button
+                    key={member.id}
+                    variant={selectedMemberId === member.id ? "default" : "outline"}
+                    className="flex-shrink-0 h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200"
+                    onClick={() => setSelectedMemberId(member.id)}
+                >
+                    <div 
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" 
+                        style={{ backgroundColor: member.color, color: '#fff' }}
+                    >
+                        {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <p className="font-bold text-sm">{member.name}</p>
+                </Button>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredGoals.length > 0 ? (
+                    filteredGoals.map(goal => {
+                        const progress = calculateOverallProgress(goal);
+                        const assignee = familyMembers.find(m => m.id === goal.assigneeId);
+                        const isVideoGoal = goal.platform === 'YouTube';
+                        const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
+                        const totalSections = goal.sections.length;
+                        const completedSections = goal.sections.filter(s => s.status === 'completed').length;
 
                         return (
-                            <section key={memberId}>
-                                <div className="flex items-center gap-3 mb-4">
-                                     {member ? (
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ backgroundColor: member.color, color: '#fff' }} title={member.name}>
-                                            {member.name.charAt(0).toUpperCase()}
-                                        </div>
-                                    ) : (
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 bg-muted text-muted-foreground">
-                                            <User className="h-4 w-4"/>
-                                        </div>
-                                    )}
-                                    <h2 className="text-xl font-bold">{member?.name || 'Atanmamış'}</h2>
+                            <Card key={goal.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
+                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleOpenDialog(goal); }}><Edit className="h-4 w-4" /></Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                <AlertDialogDescription>"{goal.title}" yol haritasını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteGoal(goal.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                     {memberGoals.map(goal => {
-                                        const progress = calculateOverallProgress(goal);
-                                        const assignee = familyMembers.find(m => m.id === goal.assigneeId);
-                                        const isVideoGoal = goal.platform === 'YouTube';
-                                        const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
-                                        const totalSections = goal.sections.length;
-                                        const completedSections = goal.sections.filter(s => s.status === 'completed').length;
-
-                                        return (
-                                            <Card key={goal.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
-                                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                    <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleOpenDialog(goal); }}><Edit className="h-4 w-4" /></Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
-                                                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                                <AlertDialogDescription>"{goal.title}" yol haritasını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteGoal(goal.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                                <Link href={`/goals/${goal.id}`} className="block flex flex-col h-full">
-                                                    <CardHeader>
-                                                        <div className="flex justify-between items-start gap-2">
-                                                            <div className="flex-grow flex items-center gap-3"><CardTitle>{goal.title}</CardTitle></div>
-                                                        </div>
-                                                        <CardDescription>{goal.description}</CardDescription>
-                                                    </CardHeader>
-                                                    <CardContent className="flex-grow space-y-3">
-                                                        <div className="space-y-1 text-sm"><p className="text-muted-foreground">{getNextStepTitle(goal)}</p></div>
-                                                        <div className="text-sm">
-                                                            {isVideoGoal ? (
-                                                                <><p className="text-muted-foreground">İzlenen Video:</p><p className="font-medium">{totalCompletedUnits} / {goal.totalUnits} video</p></>
-                                                            ) : (
-                                                                <><p className="text-muted-foreground">Bölüm İlerlemesi:</p><p className="font-medium">{completedSections} / {totalSections} Bölüm Tamamlandı</p></>
-                                                            )}
-                                                        </div>
-                                                    </CardContent>
-                                                    <CardFooter className="flex flex-col items-start">
-                                                        <div className="flex justify-between w-full text-xs text-muted-foreground mb-1">
-                                                            <span>Genel İlerleme</span>
-                                                            <span>{Math.round(progress)}%</span>
-                                                        </div>
-                                                        <Progress value={progress} className="w-full h-2" />
-                                                    </CardFooter>
-                                                </Link>
-                                            </Card>
-                                        )
-                                    })}
-                                </div>
-                            </section>
+                                <Link href={`/goals/${goal.id}`} className="block flex flex-col h-full">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start gap-2">
+                                            <div className="flex-grow flex items-center gap-3"><CardTitle>{goal.title}</CardTitle></div>
+                                        </div>
+                                        <CardDescription>{goal.description}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow space-y-3">
+                                        <div className="space-y-1 text-sm"><p className="text-muted-foreground">{getNextStepTitle(goal)}</p></div>
+                                        <div className="text-sm">
+                                            {isVideoGoal ? (
+                                                <><p className="text-muted-foreground">İzlenen Video:</p><p className="font-medium">{totalCompletedUnits} / {goal.totalUnits} video</p></>
+                                            ) : (
+                                                <><p className="text-muted-foreground">Bölüm İlerlemesi:</p><p className="font-medium">{completedSections} / {totalSections} Bölüm Tamamlandı</p></>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="flex flex-col items-start">
+                                        <div className="flex justify-between w-full text-xs text-muted-foreground mb-1">
+                                            <span>Genel İlerleme</span>
+                                            <span>{Math.round(progress)}%</span>
+                                        </div>
+                                        <Progress value={progress} className="w-full h-2" />
+                                    </CardFooter>
+                                </Link>
+                            </Card>
                         )
                     })
                 ) : (
-                    <Card className="text-center p-12">
-                        <Target className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-semibold">Henüz yol haritası yok</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Yeni bir hedef oluşturarak başlayın.
-                        </p>
-                    </Card>
+                    <div className="md:col-span-2 lg:col-span-3">
+                        <Card className="text-center p-12">
+                            <Target className="mx-auto h-12 w-12 text-muted-foreground" />
+                            <h3 className="mt-4 text-lg font-semibold">Yol haritası yok</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Filtreyle eşleşen hedef bulunamadı veya hiç hedef oluşturulmadı.
+                            </p>
+                        </Card>
+                    </div>
                 )}
-             </div>
+            </div>
         </div>
     );
 }
