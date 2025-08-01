@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -16,13 +15,8 @@ import { cn } from "@/lib/utils";
 import { format, addDays, startOfWeek, isToday, isBefore } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
-
-const habitColors = [
-  'text-sky-600', 'text-sky-600', 'text-sky-600', 'text-sky-600',
-  'text-rose-600', 'text-rose-600',
-  'text-amber-600', 'text-amber-600',
-  'text-violet-600', 'text-violet-600', 'text-violet-600'
-];
+import Link from "next/link";
+import { HabitTrackerCard } from "@/components/habit-tracker-card";
 
 export default function HabitsPage() {
   const { familyMembers, user } = useAuth();
@@ -43,7 +37,7 @@ export default function HabitsPage() {
   
   React.useEffect(() => {
     if (familyMembers.length > 0 && !selectedMember) {
-        const student = familyMembers.find(m => m.role === 'Kız Çocuk' || m.role === 'Erkek Çocuk');
+        const student = familyMembers.find(m => m.role.includes('Çocuk'));
         setSelectedMember(student || familyMembers.find(m => m.id === user?.uid) || familyMembers[0]);
     }
   }, [familyMembers, selectedMember, user]);
@@ -58,18 +52,16 @@ export default function HabitsPage() {
     setIsTaskFormOpen(true);
   };
   
-  const handleToggleDay = async (task: Task, day: Date) => {
-      const dayKey = format(day, 'yyyy-MM-dd');
-      const isCompleted = task.completedDates?.includes(dayKey) || false;
+  const handleToggleDay = async (task: Task, day: Date, isCompleted: boolean) => {
       try {
-          await updateHabitCompletion(task, day, !isCompleted);
+          await updateHabitCompletion(task, day, isCompleted);
       } catch(e) {
           toast({ title: 'Hata', description: 'İşaretleme sırasında bir sorun oluştu.', variant: 'destructive'});
       }
   }
 
   const today = new Date();
-  const weekDates = Array.from({length: 5}).map((_, i) => addDays(today, -i)).reverse();
+  const weekDates = Array.from({length: 7}).map((_, i) => addDays(startOfWeek(today, {weekStartsOn: 1}), i));
 
   if (isLoading) {
       return (
@@ -84,7 +76,6 @@ export default function HabitsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Alışkanlıklar 💪">
-        <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none"><Filter className="mr-2"/> Filtrele</Button>
         <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
           <DialogTrigger asChild>
             <Button variant="secondary" onClick={handleOpenNewTask}>
@@ -127,51 +118,23 @@ export default function HabitsPage() {
         ))}
       </div>
 
-       <div className="overflow-x-auto">
-         <div className="grid w-full min-w-[500px]" style={{gridTemplateColumns: '1fr repeat(5, 56px)'}}>
-            <div className="text-sm font-semibold text-muted-foreground p-2">Alışkanlık</div>
-             {weekDates.map(date => (
-                <div key={date.toISOString()} className="text-center text-sm font-semibold text-muted-foreground p-2">
-                    <p className="capitalize">{format(date, 'EEE', {locale: tr})}</p>
-                    <p>{format(date, 'd')}</p>
-                </div>
-            ))}
-            
-            {memberHabits.map((habit, index) => {
-                const color = habitColors[index % habitColors.length];
-                const completedDates = new Set(habit.completedDates || []);
-                return (
-                    <React.Fragment key={habit.id}>
-                        <div className="p-2 border-t flex items-center gap-2">
-                             <div className={cn('w-2 h-2 rounded-full', color.replace('text-', 'bg-'))}></div>
-                             <p className="font-medium text-sm truncate">{habit.title}</p>
-                        </div>
-                        {weekDates.map(date => {
-                             const dateKey = format(date, 'yyyy-MM-dd');
-                             const isCompleted = completedDates.has(dateKey);
-                             const isPastOrToday = isBefore(date, addDays(new Date(), 1));
-                             return (
-                                 <div 
-                                    key={date.toISOString()}
-                                    className="p-2 border-t flex items-center justify-center"
-                                >
-                                    {isPastOrToday ? (
-                                        <button onClick={() => handleToggleDay(habit, date)} className="w-8 h-8 flex items-center justify-center">
-                                            {isCompleted ? (
-                                                <Check className={cn("h-5 w-5", color)} />
-                                            ) : (
-                                                <X className="h-5 w-5 text-muted-foreground/50" />
-                                            )}
-                                        </button>
-                                    ) : null}
-                                </div>
-                            )
-                        })}
-                    </React.Fragment>
-                )
-            })}
-         </div>
-      </div>
+       <div className="space-y-4">
+        {memberHabits.length > 0 ? (
+          memberHabits.map((habit) => (
+            <Link href={`/habits/${habit.id}`} key={habit.id}>
+                <HabitTrackerCard 
+                  task={habit} 
+                  assignee={familyMembers.find(m => m.id === habit.assigneeId)} 
+                  onToggleDay={handleToggleDay}
+                />
+            </Link>
+          ))
+        ) : (
+          <div className="text-center p-8 border-2 border-dashed rounded-lg">
+            <p className="text-muted-foreground">{selectedMember?.name} için gösterilecek alışkanlık yok.</p>
+          </div>
+        )}
+       </div>
     </div>
   );
 }
