@@ -8,13 +8,13 @@ import { getGoal, updateGoal } from '@/lib/dataService';
 import type { Goal, GoalSection } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ArrowLeft, Check, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
@@ -163,9 +163,9 @@ export default function GoalDetailClient() {
                                 <DialogContent>
                                     <DialogHeader>
                                         <DialogTitle>İlerleme Ekle: {goal.title}</DialogTitle>
-                                        <DialogDescription>
+                                        <DialogDescriptionComponent>
                                             Bu hedef için ne kadar ilerlediğini gir. (Örn: izlenen video sayısı)
-                                        </DialogDescription>
+                                        </DialogDescriptionComponent>
                                     </DialogHeader>
                                     <Form {...progressForm}>
                                         <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
@@ -230,9 +230,9 @@ export default function GoalDetailClient() {
                                                     <DialogContent>
                                                         <DialogHeader>
                                                             <DialogTitle>İlerleme Ekle: {section.title}</DialogTitle>
-                                                            <DialogDescription>
+                                                            <DialogDescriptionComponent>
                                                                 Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
-                                                            </DialogDescription>
+                                                            </DialogDescriptionComponent>
                                                         </DialogHeader>
                                                         <Form {...progressForm}>
                                                             <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
