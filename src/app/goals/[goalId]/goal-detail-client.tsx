@@ -170,9 +170,9 @@ export default function GoalDetailClient() {
                                                 </DialogTrigger>
                                                 <DialogContent>
                                                     <DialogHeader>
-                                                        <DialogTitle>İlerleme Ekle: {section.title}</DialogTitle>
+                                                        <DialogTitle>İlerleme Ekle: {goal.title}</DialogTitle>
                                                         <DialogDescription>
-                                                            Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
+                                                            Bu hedef için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <Form {...progressForm}>

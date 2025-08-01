@@ -67,6 +67,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   
   const sectionCount = form.watch('sectionCount');
   const goalType = form.watch('goalType');
+  const goalTitle = form.watch('title');
 
   React.useEffect(() => {
     if (goalType === 'video') {
@@ -80,7 +81,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   React.useEffect(() => {
     if (initialData) {
         form.reset({
-            goalType: initialData.platform ? 'video' : 'book',
+            goalType: initialData.platform === 'YouTube' ? 'video' : 'book',
             title: initialData.title,
             description: initialData.description || "",
             assigneeId: initialData.assigneeId,
@@ -108,10 +109,13 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
   React.useEffect(() => {
     const currentSections = form.getValues('sections');
     const newSections = Array.from({ length: sectionCount || 0 }, (_, i) => {
-      return currentSections[i] || { title: `Bölüm ${i + 1}` };
+        if(goalType === 'video'){
+            return { title: goalTitle || 'Video Listesi' };
+        }
+        return currentSections[i] || { title: `Bölüm ${i + 1}` };
     });
     replace(newSections);
-  }, [sectionCount, replace, form]);
+  }, [sectionCount, replace, form, goalType, goalTitle]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const totalUnits = values.totalUnits;
