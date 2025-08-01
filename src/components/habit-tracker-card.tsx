@@ -2,13 +2,13 @@
 "use client";
 
 import * as React from "react";
-import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
+import { format, addDays, startOfWeek, isSameDay, parseISO, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Task, FamilyMember } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Flame } from "lucide-react";
+import { Flame, Check } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 interface HabitTrackerCardProps {
@@ -28,51 +28,34 @@ export function HabitTrackerCard({ task, assignee, onToggleDay }: HabitTrackerCa
   
   const streak = React.useMemo(() => {
     if (!task.completedDates || task.completedDates.length === 0) return 0;
-    const sortedDates = task.completedDates.map(d => parseISO(d)).sort((a,b) => b.getTime() - a.getTime());
-
+    
+    // Create a set of date strings for efficient lookup
+    const completedDateSet = new Set(task.completedDates);
     let currentStreak = 0;
-    let today = new Date();
-    today.setHours(0,0,0,0);
+    
+    // Start checking from today
+    let checkDate = new Date();
+    checkDate.setHours(0, 0, 0, 0);
 
-    // Check if today is completed
-    const todayCompleted = sortedDates.some(d => isSameDay(d, today));
-    if (todayCompleted) {
-        currentStreak = 1;
-        let lastDate = today;
-        for (let i = 0; i < sortedDates.length; i++) {
-            const date = sortedDates[i];
-            const expectedPrevious = addDays(lastDate, -1);
-            if(isSameDay(date, expectedPrevious)) {
-                if (i > 0 && isSameDay(sortedDates[i-1], date)) continue; // skip duplicates
-                currentStreak++;
-                lastDate = date;
-            } else if (!isSameDay(date, lastDate)) {
-                 break;
-            }
-        }
-    } else { // Check for streak ending yesterday
-        let lastDate = addDays(today, -1);
-        const yesterdayCompleted = sortedDates.some(d => isSameDay(d, lastDate));
-        if (yesterdayCompleted) {
-            currentStreak = 1;
-             for (let i = 0; i < sortedDates.length; i++) {
-                const date = sortedDates[i];
-                if (isSameDay(date, lastDate)) continue;
+    // If today is not completed, start checking from yesterday
+    if (!completedDateSet.has(format(checkDate, 'yyyy-MM-dd'))) {
+        checkDate = subDays(checkDate, 1);
+    }
 
-                const expectedPrevious = addDays(lastDate, -1);
-                if(isSameDay(date, expectedPrevious)) {
-                    currentStreak++;
-                    lastDate = date;
-                } else {
-                    break;
-                }
-            }
+    // Iterate backwards from checkDate
+    while (true) {
+        const dateKey = format(checkDate, 'yyyy-MM-dd');
+        if (completedDateSet.has(dateKey)) {
+            currentStreak++;
+            checkDate = subDays(checkDate, 1);
+        } else {
+            break; // Streak is broken
         }
     }
 
-
     return currentStreak;
   }, [task.completedDates]);
+
 
   return (
     <Card>
@@ -91,7 +74,7 @@ export function HabitTrackerCard({ task, assignee, onToggleDay }: HabitTrackerCa
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-center gap-1 md:gap-2">
+        <div className="flex items-center justify-between gap-1">
           {weekDays.map(day => {
             const dayKey = format(day, 'yyyy-MM-dd');
             const isCompleted = completedDates.has(dayKey);
@@ -99,17 +82,18 @@ export function HabitTrackerCard({ task, assignee, onToggleDay }: HabitTrackerCa
                 <TooltipProvider key={dayKey}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className={cn(
-                                    "h-14 w-14 md:h-16 md:w-16 flex-col border-2",
-                                    isCompleted ? "bg-green-500/20 border-green-500/50 text-green-700 dark:text-green-300" : ""
-                                )}
+                             <div 
+                                className="flex flex-col items-center gap-2 cursor-pointer"
                                 onClick={() => onToggleDay(task, day, !isCompleted)}
-                            >
-                                <span className="font-bold text-lg">{format(day, 'd')}</span>
-                                <span className="text-xs capitalize">{format(day, 'EEE', { locale: tr })}</span>
-                            </Button>
+                             >
+                                <div className={cn(
+                                    "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all",
+                                    isCompleted ? "bg-green-500 border-green-600" : "bg-muted border-muted-foreground/30 hover:border-primary"
+                                )}>
+                                    {isCompleted && <Check className="h-6 w-6 text-white"/>}
+                                </div>
+                                <span className="text-xs capitalize font-medium text-muted-foreground">{format(day, 'EEE', { locale: tr })}</span>
+                            </div>
                         </TooltipTrigger>
                         <TooltipContent>
                            <p>{format(day, 'd MMMM yyyy', { locale: tr })}</p>
