@@ -81,26 +81,26 @@ export function VideosClient() {
     setIsFormOpen(true);
   }, []);
 
-  const getYouTubeThumbnail = (url: string) => {
-    if (!url) return null;
-    let videoId;
-    try {
-        const urlObj = new URL(url);
-        if (urlObj.hostname === 'youtu.be') {
-            videoId = urlObj.pathname.slice(1);
-        } else if (urlObj.hostname.includes('youtube.com')) {
-            videoId = urlObj.searchParams.get('v') || urlObj.searchParams.get('list');
-        }
-    } catch(e) {
-        return null;
-    }
-
-    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
-  }
-
   const handleAddOrUpdateVideo = async (formData: VideoFormData) => {
     setIsSubmitting(true);
     
+    const getYouTubeThumbnail = (url: string) => {
+      if (!url) return null;
+      let videoId;
+      try {
+          const urlObj = new URL(url);
+          if (urlObj.hostname === 'youtu.be') {
+              videoId = urlObj.pathname.slice(1);
+          } else if (urlObj.hostname.includes('youtube.com')) {
+              videoId = urlObj.searchParams.get('v') || urlObj.searchParams.get('list');
+          }
+      } catch(e) {
+          return null;
+      }
+  
+      return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+    }
+
     const thumbnail = getYouTubeThumbnail(formData.url || '');
 
     const videoData: Omit<Video, 'id' | 'familyId' | 'createdAt' | 'completedVideos'> = {
@@ -391,14 +391,14 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
       <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed bg-muted/20 p-8 text-center text-muted-foreground">
         <div>
           <Youtube className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-md font-medium">Bu kategoride gösterilecek video yok.</p>
+          <p className="mt-4 text-md font-medium">Bu kişiye atanmış video yok.</p>
         </div>
       </div>
      );
   }
 
   return (
-    <Accordion type="multiple" defaultValue={shelves.map(s => s[0])} className="w-full space-y-4">
+    <Accordion type="multiple" className="w-full space-y-4">
       {shelves.map(([shelfName, shelfVideos], index) => {
           const color = brightColors[index % brightColors.length];
           return (
