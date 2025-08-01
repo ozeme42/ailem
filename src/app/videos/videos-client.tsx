@@ -86,8 +86,7 @@ export function VideosClient() {
     return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
   }
 
-  const handleAddOrUpdateVideo = async (formData: Omit<VideoFormData, "assigneeId">) => {
-    if (!selectedMemberId) return;
+  const handleAddOrUpdateVideo = async (formData: VideoFormData) => {
     setIsSubmitting(true);
     
     const thumbnail = getYouTubeThumbnail(formData.url || '');
@@ -95,7 +94,6 @@ export function VideosClient() {
     const videoData: Omit<Video, 'id' | 'familyId' | 'createdAt' | 'completedVideos'> = {
         ...formData,
         platform: 'YouTube',
-        assigneeId: selectedMemberId,
         thumbnail: thumbnail,
     };
     
@@ -275,6 +273,7 @@ export function VideosClient() {
               onSubmit={handleAddOrUpdateVideo}
               initialData={editingVideo}
               existingTags={allTags}
+              familyMembers={familyMembers}
             />
           </DialogContent>
       </Dialog>

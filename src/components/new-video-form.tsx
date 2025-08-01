@@ -6,7 +6,7 @@ import * as React from "react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Video } from '@/lib/data';
+import { Video, FamilyMember } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import { useAuth } from "./auth-provider";
 // SCHEMAS & TYPES
 const formSchema = z.object({
   title: z.string().min(2, "Liste adı en az 2 karakter olmalıdır."),
+  assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   url: z.string().url("Geçerli bir YouTube URL'si girin.").optional().or(z.literal('')),
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
@@ -30,12 +31,13 @@ const formSchema = z.object({
 export type VideoFormData = z.infer<typeof formSchema>;
 
 type NewVideoListFormProps = {
-  onSubmit: (data: Omit<Video, 'id' | 'familyId' | 'platform' | 'createdAt' | 'completedVideos' | 'assigneeId' | 'thumbnail'>) => void;
+  onSubmit: (data: VideoFormData) => void;
   initialData?: Video | null;
   existingTags: string[];
+  familyMembers: FamilyMember[];
 };
 
-export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoListFormProps) {
+export function NewVideoForm({ onSubmit, initialData, existingTags, familyMembers }: NewVideoListFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const formMethods = useForm<VideoFormData>({
@@ -78,7 +80,7 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoLi
   const handleFormSubmit = async (data: VideoFormData) => {
     setIsSubmitting(true);
     try {
-      await onSubmit({ ...data });
+      await onSubmit(data);
     } finally {
       setIsSubmitting(false);
     }
@@ -92,6 +94,30 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoLi
       <form onSubmit={formMethods.handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0 h-full">
         <ScrollArea className="flex-1 min-h-0">
           <div className="pr-6 py-4 space-y-4">
+             <FormField
+                control={formMethods.control}
+                name="assigneeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sorumlu Kişi</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Birini seçin" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {familyMembers.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
              <FormField control={formMethods.control} name="title" render={({ field }) => (
                 <FormItem><FormLabel>Liste/Ders Adı</FormLabel><FormControl><Input placeholder="Ders başlığını girin..." {...field} /></FormControl><FormMessage /></FormItem>
             )} />
