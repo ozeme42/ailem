@@ -6,17 +6,19 @@ import * as React from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { onBooksUpdate, addReadingSession, updateUserBookStatus, onAmbientSoundsUpdate } from "@/lib/dataService";
-import type { Book, ReadingSession, AmbientSound } from "@/lib/data";
+import { onBooksUpdate, addReadingSession, updateUserBookStatus, onAmbientSoundsUpdate, onSingleUserLibraryUpdate } from "@/lib/dataService";
+import type { Book, ReadingSession, AmbientSound, UserLibrary } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, BookCheck, StickyNote, ArrowLeft, Plus, X, Music } from "lucide-react";
+import { Play, Pause, BookCheck, StickyNote, ArrowLeft, Plus, X, Music, Edit } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -33,6 +35,7 @@ export default function ReadingSessionPage() {
     const bookId = params.bookId as string;
 
     const [book, setBook] = React.useState<Book | null>(null);
+    const [userLibrary, setUserLibrary] = React.useState<UserLibrary | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [ambientSounds, setAmbientSounds] = React.useState<AmbientSound[]>([]);
 
@@ -41,7 +44,7 @@ export default function ReadingSessionPage() {
     const [timerRunning, setTimerRunning] = React.useState(true);
     const [notesList, setNotesList] = React.useState<string[]>([]);
     const [newNoteText, setNewNoteText] = React.useState("");
-    const [pagesRead, setPagesRead] = React.useState(0);
+    const [pagesReadInput, setPagesReadInput] = React.useState(0);
     
     const [showExtras, setShowExtras] = React.useState(false);
     const [selectedSoundId, setSelectedSoundId] = React.useState<string | null>(null);
@@ -56,11 +59,17 @@ export default function ReadingSessionPage() {
           setIsLoading(false);
         });
         const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
+        let unsubscribeLibrary = () => {};
+        if (user) {
+            unsubscribeLibrary = onSingleUserLibraryUpdate(user.uid, setUserLibrary);
+        }
+
         return () => {
             unsubscribeBooks();
             unsubscribeSounds();
+            unsubscribeLibrary();
         };
-    }, [bookId]);
+    }, [bookId, user]);
 
     React.useEffect(() => {
         if (timerRunning) {
@@ -79,11 +88,8 @@ export default function ReadingSessionPage() {
     React.useEffect(() => {
         if (audioRef.current) {
             const sound = ambientSounds.find(s => s.id === selectedSoundId);
-
-            // Stop any currently playing sound first
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
-            
             if (sound) {
                 audioRef.current.src = sound.url;
                 audioRef.current.loop = sound.loop;
@@ -93,12 +99,9 @@ export default function ReadingSessionPage() {
     }, [selectedSoundId, ambientSounds]);
 
      React.useEffect(() => {
-        // Create audio element on mount
         audioRef.current = new Audio();
         audioRef.current.preload = 'auto';
-
         return () => {
-            // Cleanup on unmount
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current = null;
@@ -130,21 +133,29 @@ export default function ReadingSessionPage() {
             startTime: startTime.toISOString(),
             endTime: new Date().toISOString(),
             durationSeconds: durationSeconds,
-            pagesRead: pagesRead,
+            pagesRead: pagesReadInput,
             notes: notesList.join('\n---\n'),
         };
 
         await addReadingSession(newSession);
 
-        if (book.pageCount && pagesRead > 0) {
-            const currentProgressPages = ((book as any).progress || 0) / 100 * book.pageCount;
-            const newTotalPagesRead = currentProgressPages + pagesRead;
+        if (book.pageCount && pagesReadInput > 0) {
+            const libraryBook = userLibrary?.books.find(b => b.bookId === book.id);
+            const currentProgressPages = libraryBook?.progress ? (libraryBook.progress / 100 * book.pageCount) : 0;
+            const newTotalPagesRead = currentProgressPages + pagesReadInput;
             const newProgressPercent = Math.min(Math.round((newTotalPagesRead / book.pageCount) * 100), 100);
-            await updateUserBookStatus(familyId, user.uid, book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
+            const newStatus = newProgressPercent >= 100 ? 'finished' : 'reading';
+            await updateUserBookStatus(familyId, user.uid, book.id, newStatus, newProgressPercent);
         }
         
-        toast({ title: "Okuma Oturumu Kaydedildi!", description: `${formatDuration(durationSeconds)} boyunca ${pagesRead} sayfa okudun.` });
+        toast({ title: "Okuma Oturumu Kaydedildi!", description: `${formatDuration(durationSeconds)} boyunca ${pagesReadInput} sayfa okudun.` });
         router.push('/library');
+    };
+
+    const handleProgressChange = async (newProgressPercent: number) => {
+        if (!familyId || !user || !book) return;
+        const newStatus = newProgressPercent >= 100 ? 'finished' : 'reading';
+        await updateUserBookStatus(familyId, user.uid, book.id, newStatus, newProgressPercent);
     };
 
     if (isLoading) {
@@ -154,6 +165,11 @@ export default function ReadingSessionPage() {
     if (!book) {
         return <div className="flex h-screen w-screen items-center justify-center">Kitap bulunamadı.</div>;
     }
+
+    const libraryBook = userLibrary?.books.find(b => b.bookId === book.id);
+    const currentProgressPercent = libraryBook?.progress || 0;
+    const pagesRead = book.pageCount ? Math.round((currentProgressPercent / 100) * book.pageCount) : 0;
+
 
     return (
         <div className="relative overflow-y-auto pb-24">
@@ -253,8 +269,23 @@ export default function ReadingSessionPage() {
                         </DropdownMenu>
                     </div>
                 </main>
+                
+                 {book.pageCount && (
+                    <div className="space-y-2 mt-4">
+                        <div className="flex justify-between items-baseline">
+                            <Label>İlerleme</Label>
+                            <span className="text-sm font-medium text-muted-foreground">{pagesRead} / {book.pageCount} sayfa ({currentProgressPercent.toFixed(0)}%)</span>
+                        </div>
+                        <Slider
+                            value={[currentProgressPercent]}
+                            max={100}
+                            step={1}
+                            onValueChange={(value) => handleProgressChange(value[0])}
+                        />
+                    </div>
+                )}
 
-                <footer className="space-y-6 pb-4">
+                <footer className="space-y-6 pb-4 mt-8">
                      <AnimatePresence>
                         {showExtras && (
                             <motion.div
@@ -292,8 +323,8 @@ export default function ReadingSessionPage() {
                     </AnimatePresence>
                      
                      <div>
-                        <Label htmlFor="pagesRead">Okunan Sayfa Sayısı</Label>
-                        <Input id="pagesRead" type="number" placeholder="0" value={pagesRead === 0 ? '' : pagesRead} onChange={(e) => setPagesRead(Number(e.target.value))} className="bg-background/50"/>
+                        <Label htmlFor="pagesRead">Bu Oturumda Okunan Sayfa Sayısı</Label>
+                        <Input id="pagesRead" type="number" placeholder="0" value={pagesReadInput === 0 ? '' : pagesReadInput} onChange={(e) => setPagesReadInput(Number(e.target.value))} className="bg-background/50"/>
                      </div>
                 </footer>
                 

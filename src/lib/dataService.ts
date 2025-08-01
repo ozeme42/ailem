@@ -151,6 +151,27 @@ export const onUserLibrariesUpdate = (familyId: string, callback: (libraries: Us
     });
 };
 
+export const onSingleUserLibraryUpdate = (memberId: string, callback: (library: UserLibrary | null) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const familyId = await getCurrentFamilyId();
+            if (familyId) {
+                const libraryId = `${familyId}_${memberId}`;
+                const docRef = doc(db, 'userLibraries', libraryId);
+                return onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        callback({ id: docSnap.id, ...docSnap.data() } as UserLibrary);
+                    } else {
+                        callback(null);
+                    }
+                });
+            }
+        }
+        callback(null);
+    });
+};
+
 
 export const addBookToMemberLibrary = async (familyId: string, memberId: string, bookId: string) => {
     const libraryId = `${familyId}_${memberId}`;
