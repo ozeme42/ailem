@@ -494,19 +494,6 @@ export default function Home() {
 
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <MemberDashboardCard 
-              member={{id: 'house', name: 'Ev İşleri'} as any}
-              tasks={tasks}
-              tests={tests}
-              studyAssignments={studyAssignments}
-              studyPlans={studyPlans}
-              userLibraries={userLibraries}
-              books={books}
-              memorizationItems={memorizationItems}
-              memorizationProgress={memorizationProgress}
-              prayerProgress={prayerProgress}
-            />
-
             {familyMembers.map(member => (
                 <MemberDashboardCard 
                   key={member.id}
