@@ -71,7 +71,7 @@ export default function GoalDetailClient() {
 
     const progressForm = useForm<z.infer<typeof progressFormSchema>>({
         resolver: zodResolver(progressFormSchema),
-        defaultValues: { progress: undefined },
+        defaultValues: { progress: '' as any },
     });
 
     React.useEffect(() => {
@@ -112,7 +112,7 @@ export default function GoalDetailClient() {
             setGoal(prev => prev ? {...prev, sections: newSections, status: newGoalStatus} : null);
             toast({ title: "İlerleme Kaydedildi!", description: `${values.progress} ${goal.unitName} eklendi.` });
             setEditingSection(null);
-            progressForm.reset();
+            progressForm.reset({ progress: '' as any });
         } catch(e) {
             toast({ title: "Hata", variant: 'destructive' });
         }
@@ -162,7 +162,7 @@ export default function GoalDetailClient() {
                                             </p>
                                         </div>
                                         {section.status !== 'completed' && (
-                                            <Dialog open={editingSection?.id === section.id} onOpenChange={(open) => {if (!open) { setEditingSection(null); progressForm.reset(); }}}>
+                                            <Dialog open={editingSection?.id === section.id} onOpenChange={(open) => {if (!open) { setEditingSection(null); progressForm.reset({ progress: '' as any }); }}}>
                                                 <DialogTrigger asChild>
                                                     <Button variant="outline" className="w-full" onClick={() => setEditingSection(section)}>
                                                         <PlusCircle className="mr-2 h-4 w-4" /> İlerleme Ekle
