@@ -147,7 +147,7 @@ export default function GoalDetailClient() {
                          <div>
                             <Progress value={overallProgress} className="h-2" />
                             <p className="text-sm mt-2 text-right font-medium text-primary">
-                                {totalCompletedUnits} / {goal.totalUnits} {goal.unitName}
+                                {totalCompletedUnits} / {goal.totalUnits} {goal.unitName} tamamlandı
                             </p>
                         </div>
                         {goal.status !== 'completed' && (
