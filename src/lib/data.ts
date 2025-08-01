@@ -105,7 +105,7 @@ export interface UserLibraryBook {
     status: BookReadingStatus;
     progress?: number; // 0-100 for 'reading' status
     addedAt: string; // ISO Date string
-    startedAt?: string; // ISO Date string, set when status becomes 'reading' for the first time
+    startedAt?: string; // ISO Date string, set when status becomes 'finished'
     finishedAt?: string; // ISO Date string, set when status becomes 'finished'
 }
 
@@ -252,12 +252,15 @@ export interface Video {
     id: string;
     familyId: string;
     title: string;
-    url: string;
+    url?: string;
     platform: 'YouTube' | 'Other';
     tags?: string[]; // For categories
     description?: string;
     thumbnail?: string; // We can try to auto-fetch this later or let user add it
     createdAt?: string;
+    totalVideos: number;
+    completedVideos: number;
+    assigneeId: string;
 }
 
 

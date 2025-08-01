@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import * as React from "react";
-import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Video } from '@/lib/data';
@@ -12,45 +13,53 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, PlusCircle, Youtube, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { useMemo } from 'react';
 import { Combobox } from "./ui/combobox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useAuth } from "./auth-provider";
 
 // SCHEMAS & TYPES
 const formSchema = z.object({
-  title: z.string().min(2, "Video adı en az 2 karakter olmalıdır."),
-  url: z.string().url("Geçerli bir YouTube URL'si girin."),
+  title: z.string().min(2, "Liste adı en az 2 karakter olmalıdır."),
+  assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
+  url: z.string().url("Geçerli bir YouTube URL'si girin.").optional().or(z.literal('')),
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
+  totalVideos: z.coerce.number().min(1, "Video sayısı en az 1 olmalıdır."),
 });
 export type VideoFormData = z.infer<typeof formSchema>;
 
-type NewVideoFormProps = {
-  onSubmit: (data: Omit<Video, 'id' | 'familyId' | 'platform' | 'createdAt'>) => void;
+type NewVideoListFormProps = {
+  onSubmit: (data: Omit<Video, 'id' | 'familyId' | 'platform' | 'createdAt' | 'completedVideos'>) => void;
   initialData?: Video | null;
   existingTags: string[];
 };
 
-export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoFormProps) {
+export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoListFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { familyMembers } = useAuth();
 
   const formMethods = useForm<VideoFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+    defaultValues: {
       title: "",
       url: "",
       tags: [],
       description: "",
+      totalVideos: 10,
     },
   });
-
+  
   React.useEffect(() => {
     if (initialData) {
-      formMethods.reset(initialData);
+      formMethods.reset({
+          ...initialData,
+          tags: initialData.tags || [],
+      });
     }
   }, [initialData, formMethods]);
-  
+
   const getYouTubeThumbnail = (url: string) => {
     if (!url) return null;
     let videoId;
@@ -70,7 +79,7 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoFo
 
   const handleFormSubmit = async (data: VideoFormData) => {
     setIsSubmitting(true);
-    const thumbnail = getYouTubeThumbnail(data.url);
+    const thumbnail = getYouTubeThumbnail(data.url || '');
     try {
       await onSubmit({ ...data, thumbnail });
     } finally {
@@ -79,29 +88,54 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoFo
   };
   
   const watchedUrl = formMethods.watch('url');
-  const thumbnail = getYouTubeThumbnail(watchedUrl);
+  const thumbnail = getYouTubeThumbnail(watchedUrl || '');
 
   return (
-    <FormProvider {...formMethods}>
+    <Form {...formMethods}>
       <form onSubmit={formMethods.handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0 h-full">
         <ScrollArea className="flex-1 min-h-0">
           <div className="pr-6 py-4 space-y-4">
              <FormField control={formMethods.control} name="title" render={({ field }) => (
-                <FormItem><FormLabel>Video/Ders Adı</FormLabel><FormControl><Input placeholder="Video başlığını girin..." {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Liste/Ders Adı</FormLabel><FormControl><Input placeholder="Ders başlığını girin..." {...field} /></FormControl><FormMessage /></FormItem>
             )} />
+             <FormField
+                control={formMethods.control}
+                name="assigneeId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Sorumlu Kişi</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Bu hedef kimin için?" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {familyMembers.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                            {member.name}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField control={formMethods.control} name="totalVideos" render={({ field }) => (
+                <FormItem><FormLabel>Toplam Video Sayısı</FormLabel><FormControl><Input type="number" placeholder="25" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
              <FormField control={formMethods.control} name="url" render={({ field }) => (
                 <FormItem>
-                    <FormLabel>YouTube URL</FormLabel>
+                    <FormLabel>YouTube URL (Opsiyonel)</FormLabel>
                     <div className="relative">
                         <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} className="pl-10" />
+                        <Input placeholder="https://www.youtube.com/playlist?list=..." {...field} className="pl-10" />
                     </div>
                     <FormMessage />
                     {thumbnail && <Image src={thumbnail} alt="Video thumbnail" width={480} height={360} className="mt-2 rounded-md aspect-video object-cover w-full" data-ai-hint="youtube thumbnail"/>}
                 </FormItem>
             )} />
              <FormField control={formMethods.control} name="description" render={({ field }) => (
-                <FormItem><FormLabel>Açıklama (Opsiyonel)</FormLabel><FormControl><Textarea placeholder="Video hakkında kısa bilgi..." {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Açıklama (Opsiyonel)</FormLabel><FormControl><Textarea placeholder="Video listesi hakkında kısa bilgi..." {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             
              <FormField
@@ -109,7 +143,7 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoFo
                 name="tags"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Kategori/Konu</FormLabel>
+                        <FormLabel>Kategori</FormLabel>
                         <Combobox
                             options={existingTags.map(t => ({ label: t, value: t }))}
                             value={field.value?.[0] || ""}
@@ -131,6 +165,6 @@ export function NewVideoForm({ onSubmit, initialData, existingTags }: NewVideoFo
           </Button>
         </div>
       </form>
-    </FormProvider>
+    </Form>
   );
 }

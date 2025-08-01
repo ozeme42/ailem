@@ -1,13 +1,13 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Video } from '@/lib/data';
+import { Video, FamilyMember } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -15,13 +15,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, PlusCircle, Search, Trash2, Library, Edit, Settings, Youtube, ExternalLink } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2, PlusCircle, Search, Trash2, Library, Edit, Settings, Youtube, ExternalLink, Folder, Plus, List } from 'lucide-react';
 import { onVideosUpdate, onTagsUpdate, addVideo, updateVideo, deleteVideo, updateTags, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { NewVideoForm, VideoFormData } from '@/components/new-video-form';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Progress } from '@/components/ui/progress';
 
 
 const shelfFormSchema = z.object({
@@ -32,7 +32,7 @@ type ShelfFormData = z.infer<typeof shelfFormSchema>;
 
 // VIDEOS CLIENT COMPONENT
 export function VideosClient() {
-  const { user } = useAuth();
+  const { user, familyMembers } = useAuth();
   const [videos, setVideos] = useState<Video[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -42,6 +42,7 @@ export function VideosClient() {
   
   const [view, setView] = useState<'videos' | 'management'>('videos');
   const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const { toast } = useToast();
   const shelfFormMethods = useForm<ShelfFormData>({ resolver: zodResolver(shelfFormSchema) });
@@ -56,16 +57,25 @@ export function VideosClient() {
     };
   }, [user]);
 
+  useEffect(() => {
+      if (familyMembers.length > 0 && !selectedMemberId) {
+          setSelectedMemberId(familyMembers[0].id);
+      }
+  }, [familyMembers, selectedMemberId]);
+
   const handleOpenForm = useCallback((initialData: Video | null = null) => {
     setEditingVideo(initialData);
     setIsFormOpen(true);
   }, []);
 
   const handleAddOrUpdateVideo = async (formData: VideoFormData) => {
+    if (!selectedMemberId) return;
     setIsSubmitting(true);
-    const videoData = {
+
+    const videoData: Omit<Video, 'id' | 'familyId' | 'createdAt' | 'completedVideos'> = {
         ...formData,
-        platform: 'YouTube' as const,
+        platform: 'YouTube',
+        assigneeId: selectedMemberId
     };
     
     try {
@@ -76,7 +86,7 @@ export function VideosClient() {
             await updateVideo(editingVideo.id, videoData);
             toast({ title: "Video Güncellendi" });
         } else {
-            await addVideo(videoData);
+            await addVideo({ ...videoData, completedVideos: 0 });
             toast({ title: "Video Eklendi" });
         }
         setIsFormOpen(false);
@@ -113,11 +123,10 @@ export function VideosClient() {
       }
       
       try {
-        if (editingShelf.isNew) { // Add new shelf
+        if (editingShelf.isNew) {
             await updateTags("videoTags", [...allTags, newShelfName]);
             toast({ title: "Kategori Eklendi"});
-        } else { // Update existing shelf
-            // Note: This does not automatically update the tags in all videos. A more complex migration would be needed.
+        } else {
             const newAllTags = allTags.map(tag => tag === editingShelf.originalName ? newShelfName : tag);
             await updateTags("videoTags", newAllTags);
             toast({ title: "Kategori Güncellendi" });
@@ -139,7 +148,9 @@ export function VideosClient() {
   };
   
   const filteredVideos = useMemo(() => {
+    if (!selectedMemberId) return [];
     return videos.filter(video => {
+      if(video.assigneeId !== selectedMemberId) return false;
       if (!localSearchQuery) return true;
       const q = localSearchQuery.toLowerCase();
       return (
@@ -147,7 +158,7 @@ export function VideosClient() {
         (video.tags && video.tags.some(tag => tag.toLowerCase().includes(q)))
       );
     });
-  }, [videos, localSearchQuery]);
+  }, [videos, localSearchQuery, selectedMemberId]);
 
   return (
     <div className="flex flex-col h-full gap-6">
@@ -157,20 +168,23 @@ export function VideosClient() {
               {view === 'videos' ? 'Kategorileri Yönet' : 'Videoları Gör'}
           </Button>
           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => handleOpenForm(null)}>
-            <PlusCircle className="mr-2 h-4 w-4"/> Yeni Video Ekle
+            <PlusCircle className="mr-2 h-4 w-4"/> Yeni Video Listesi Ekle
           </Button>
       </PageHeader>
       
       {view === 'videos' ? (
         <div className="flex flex-col flex-grow min-h-0 gap-4">
-            <div className="relative w-full sm:flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Video veya kategori ara..."
-                className="pl-10"
-                value={localSearchQuery}
-                onChange={(e) => setLocalSearchQuery(e.target.value)}
-              />
+            <div className="flex items-center gap-4 border-b pb-4 overflow-x-auto">
+              {familyMembers.map((member) => (
+                <Button
+                  key={member.id}
+                  variant={selectedMemberId === member.id ? "default" : "outline"}
+                  className="flex-shrink-0"
+                  onClick={() => setSelectedMemberId(member.id)}
+                >
+                  {member.name}
+                </Button>
+              ))}
             </div>
             <div className="flex-grow overflow-y-auto">
               <VideoShelf videos={filteredVideos} onEdit={handleOpenForm} onDelete={handleDeleteVideo} />
@@ -234,7 +248,7 @@ export function VideosClient() {
        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="sm:max-w-lg flex flex-col h-full max-h-[90vh]">
             <DialogHeader>
-                <DialogTitle>{editingVideo ? 'Videoyu Düzenle' : 'Yeni Video Ekle'}</DialogTitle>
+                <DialogTitle>{editingVideo ? 'Video Listesini Düzenle' : 'Yeni Video Listesi Ekle'}</DialogTitle>
             </DialogHeader>
             <NewVideoForm 
               onSubmit={handleAddOrUpdateVideo}
@@ -277,6 +291,53 @@ export function VideosClient() {
   );
 }
 
+function VideoList({ video, onEdit, onDelete }: { video: Video, onEdit: (video: Video) => void, onDelete: (id: string) => void}) {
+    const [completed, setCompleted] = useState(video.completedVideos || 0);
+    const progress = video.totalVideos > 0 ? (completed / video.totalVideos) * 100 : 0;
+
+    const handleProgressChange = (increment: number) => {
+        const newCompleted = Math.max(0, Math.min(video.totalVideos, completed + increment));
+        setCompleted(newCompleted);
+    };
+
+    const handleBlur = async () => {
+        if (completed !== video.completedVideos) {
+            await updateVideo(video.id, { completedVideos: completed });
+        }
+    };
+
+    return (
+        <Card className="p-4">
+            <div className="flex justify-between items-start gap-2">
+                <div className="flex-grow">
+                    <CardTitle className="text-base">{video.title}</CardTitle>
+                    <CardDescription>{video.tags?.join(', ')}</CardDescription>
+                </div>
+                 <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(video)}><Edit className="h-4 w-4" /></Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Listeyi Sil</AlertDialogTitle><AlertDialogDescription>"{video.title}" listesini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(video.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </div>
+            <div className="mt-4 space-y-2">
+                <Progress value={progress} />
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>{completed} / {video.totalVideos} video</span>
+                     <div className="flex items-center gap-1">
+                        <Button size="sm" variant="outline" onClick={() => handleProgressChange(-1)} onBlur={handleBlur}>-</Button>
+                        <Button size="sm" variant="outline" onClick={() => handleProgressChange(1)} onBlur={handleBlur}>+</Button>
+                    </div>
+                </div>
+            </div>
+        </Card>
+    )
+}
+
 // VideoShelf COMPONENT
 function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (video: Video) => void, onDelete: (id: string) => void }) {
   const shelves = useMemo(() => {
@@ -299,57 +360,32 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
         <div>
           <Youtube className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 text-md font-medium">Bu kategoride gösterilecek video yok.</p>
-          <p className="text-sm">Yeni bir video ekleyerek başlayabilirsiniz.</p>
         </div>
       </div>
      );
   }
 
   return (
-    <div className="space-y-8">
+    <Accordion type="multiple" defaultValue={shelves.map(s => s[0])} className="w-full space-y-4">
       {shelves.map(([shelfName, shelfVideos]) => (
-        <div key={shelfName}>
-          <h2 className="text-xl font-bold mb-4">{shelfName}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {shelfVideos.map(video => (
-                   <Card key={video.id} className="group relative overflow-hidden flex flex-col cursor-pointer">
-                      <div className="relative">
-                        <Link href={video.url} target="_blank" rel="noopener noreferrer">
-                           <Image 
-                              src={video.thumbnail || `https://placehold.co/480x360.png`} 
-                              alt={video.title} 
-                              width={480} 
-                              height={360} 
-                              className="w-full h-auto object-cover aspect-video transition-transform duration-300 group-hover:scale-105"
-                              data-ai-hint="youtube thumbnail" 
-                           />
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
-                                <p className="font-bold text-sm text-white line-clamp-2" title={video.title}>{video.title}</p>
-                           </div>
-                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Youtube className="h-8 w-8 text-white"/>
-                           </div>
-                        </Link>
-                      </div>
-                       <CardFooter className="p-2 mt-auto border-t">
-                             <div className="flex justify-end w-full gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(video)}><Edit className="h-4 w-4"/></Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Videoyu Sil</AlertDialogTitle><AlertDialogDescription>"{video.title}" videosunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(video.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                       </CardFooter>
-                  </Card>
-                ))}
-          </div>
-        </div>
+        <AccordionItem key={shelfName} value={shelfName} className="border-none">
+             <Card>
+                <CardHeader className="p-0">
+                    <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline">
+                        <Folder className="h-6 w-6 text-primary" />
+                        <span className="text-lg font-semibold">{shelfName} ({shelfVideos.length})</span>
+                    </AccordionTrigger>
+                </CardHeader>
+                <AccordionContent className="p-4 pt-0">
+                     <div className="space-y-3">
+                         {shelfVideos.map(video => (
+                            <VideoList key={video.id} video={video} onEdit={onEdit} onDelete={onDelete} />
+                         ))}
+                    </div>
+                </AccordionContent>
+             </Card>
+        </AccordionItem>
       ))}
-    </div>
+    </Accordion>
   );
 }
