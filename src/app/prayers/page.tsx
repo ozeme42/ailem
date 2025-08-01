@@ -89,7 +89,7 @@ export default function PrayerTrackerPage() {
     };
     
     return (
-         <div className="h-full flex flex-col bg-gradient-to-b from-lime-300 via-yellow-200 to-yellow-300 dark:from-lime-900 dark:to-yellow-800 p-4">
+         <div className="h-full flex flex-col bg-gradient-to-b from-lime-300 via-yellow-200 to-yellow-300 dark:from-lime-900 dark:to-yellow-800 px-0 sm:px-4 py-4">
             <header className="text-center my-4">
                 <h1 className="text-5xl font-extrabold text-white" style={{
                     textShadow: '3px 3px 0px #c026d3, 6px 6px 0px #a21caf',
@@ -107,7 +107,7 @@ export default function PrayerTrackerPage() {
             </div>
 
             <div className="flex-grow flex items-center justify-center">
-                 <div className="w-full max-w-4xl p-4 bg-yellow-400 dark:bg-yellow-600 rounded-xl shadow-2xl border-4 border-yellow-500 dark:border-yellow-700">
+                 <div className="w-full max-w-4xl p-2 sm:p-4 bg-yellow-400 dark:bg-yellow-600 rounded-xl shadow-2xl border-4 border-yellow-500 dark:border-yellow-700">
                      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
                         <div className="flex items-center gap-2">
                            <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => subWeeks(d, 1))}>
@@ -126,7 +126,7 @@ export default function PrayerTrackerPage() {
                     <div className="grid grid-cols-6 gap-2 text-center text-white font-bold mb-2">
                         <div></div> {/* Empty corner */}
                         {prayerTimes.map(time => (
-                            <div key={time} className="p-1">{time}</div>
+                            <div key={time} className="p-1 text-xs sm:text-base">{time}</div>
                         ))}
                     </div>
                     <div className="space-y-2">
@@ -135,11 +135,8 @@ export default function PrayerTrackerPage() {
                         const completions = prayerProgress?.completions?.[dayKey] || [];
                         return(
                             <div key={dayKey} className="grid grid-cols-6 gap-2 items-center bg-white/80 dark:bg-gray-800/80 p-1.5 rounded-lg shadow-inner">
-                                <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-full py-2 px-3 flex items-center justify-center shadow-md">
-                                    <span>
-                                        <span className="hidden md:inline">{dayLabels[dayIndex].full}</span>
-                                        <span className="md:hidden">{dayLabels[dayIndex].short}</span>
-                                    </span>
+                                <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-full py-2 px-2 text-sm flex items-center justify-center shadow-md">
+                                    <span>{dayLabels[dayIndex].full}</span>
                                 </div>
                                 {prayerTimes.map(prayer => {
                                     const isCompleted = completions.includes(prayer);
@@ -150,7 +147,7 @@ export default function PrayerTrackerPage() {
                                             onClick={() => handlePrayerToggle(dayKey, prayer)}
                                         >
                                             <Heart 
-                                                className={cn("size-10 transition-all hover:scale-110", isCompleted ? "text-red-500" : "text-gray-400/50")} 
+                                                className={cn("size-8 sm:size-10 transition-all hover:scale-110", isCompleted ? "text-red-500" : "text-gray-400/50")} 
                                                 style={{ fill: isCompleted ? 'currentColor' : 'none' }}
                                             />
                                         </div>
