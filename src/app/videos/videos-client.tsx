@@ -21,6 +21,7 @@ import { Loader2, PlusCircle, Search, Trash2, Library, Edit, Settings, Youtube, 
 import { onVideosUpdate, onTagsUpdate, addVideo, updateVideo, deleteVideo, updateTags, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { NewVideoForm, VideoFormData } from '@/components/new-video-form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 
 const shelfFormSchema = z.object({
@@ -249,22 +250,24 @@ export function VideosClient() {
                 <DialogHeader>
                     <DialogTitle>{editingShelf?.isNew ? "Yeni Kategori Ekle" : "Kategoriyi Düzenle"}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={shelfFormMethods.handleSubmit(handleShelfFormSubmit)} id="shelf-form" className="space-y-4">
-                     <FormField
-                        control={shelfFormMethods.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Kategori Adı</FormLabel>
-                                <FormControl>
-                                    <Input {...field} placeholder="örn: Matematik Dersleri"/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </form>
-                 <DialogFooter>
+                <Form {...shelfFormMethods}>
+                    <form onSubmit={shelfFormMethods.handleSubmit(handleShelfFormSubmit)} id="shelf-form" className="space-y-4">
+                         <FormField
+                            control={shelfFormMethods.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Kategori Adı</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} placeholder="örn: Matematik Dersleri"/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </form>
+                </Form>
+                <DialogFooter>
                     <Button variant="ghost" onClick={() => setEditingShelf(null)}>İptal</Button>
                     <Button type="submit" form="shelf-form">Kaydet</Button>
                 </DialogFooter>
@@ -350,4 +353,3 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
     </div>
   );
 }
-
