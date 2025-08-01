@@ -462,7 +462,7 @@ export default function Home() {
                     )}
                     <div>
                         <div className="flex justify-between text-xs text-white/80 mb-1">
-                             <span>Genel İlerleme ({goal.totalCompletedUnits}/{goal.totalUnits} {goal.unitName})</span>
+                            <span>{goal.isVideoGoal ? goal.title : "Genel İlerleme"} ({goal.totalCompletedUnits}/{goal.totalUnits} {goal.unitName})</span>
                             <span>{Math.round(goal.overallProgress)}%</span>
                         </div>
                         <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
