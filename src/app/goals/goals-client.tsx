@@ -68,7 +68,17 @@ export default function GoalsClient() {
         return (totalCompletedUnits / goal.totalUnits) * 100;
     };
     
-    const getNextSectionTitle = (goal: Goal) => {
+    const getNextStepTitle = (goal: Goal) => {
+        const isVideoGoal = goal.platform === 'YouTube';
+        
+        if (isVideoGoal) {
+            const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
+            if (totalCompletedUnits >= goal.totalUnits) {
+                return "Tüm hedefler tamamlandı!";
+            }
+            return `Sıradaki: ${goal.unitName.charAt(0).toUpperCase() + goal.unitName.slice(1)} ${totalCompletedUnits + 1}`;
+        }
+        
         for (const section of goal.sections.sort((a, b) => a.order - b.order)) {
             if (section.status !== 'completed') {
                 return `Sıradaki Bölüm: ${section.title}`;
@@ -171,7 +181,7 @@ export default function GoalsClient() {
                                 </CardHeader>
                                 <CardContent className="flex-grow space-y-3">
                                      <div className="space-y-1 text-sm">
-                                        <p className="text-muted-foreground">{getNextSectionTitle(goal)}</p>
+                                        <p className="text-muted-foreground">{getNextStepTitle(goal)}</p>
                                     </div>
                                     <div className="text-sm">
                                         {isVideoGoal ? (
