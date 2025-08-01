@@ -26,11 +26,9 @@ const onFamilyDataUpdate = <T>(
     orderByDirection?: 'desc' | 'asc'
 ): (() => void) => {
     const auth = getAuth();
-    let unsubscribe: Unsubscribe | null = null;
-    let authUnsubscribe: Unsubscribe | null = null;
-
-    const setupListener = async (user: import('firebase/auth').User | null) => {
-        // Clean up previous listener if it exists
+    let unsubscribe: ReturnType<typeof onSnapshot> | null = null;
+    
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
         if (unsubscribe) {
             unsubscribe();
             unsubscribe = null;
@@ -47,46 +45,37 @@ const onFamilyDataUpdate = <T>(
                         q = query(q, orderBy(orderByField, orderByDirection || 'asc'));
                     }
 
-                    unsubscribe = onSnapshot(q, (snapshot) => {
+                    if (runOnce) {
+                        const snapshot = await getDocs(q);
                         const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-                        if (typeof callback === 'function') {
+                        callback(items);
+                    } else {
+                        unsubscribe = onSnapshot(q, (snapshot) => {
+                            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
                             callback(items);
-                        }
-                        if (runOnce && unsubscribe) {
-                            cleanup();
-                        }
-                    }, (error) => {
-                        console.error(`Error fetching ${collectionName}:`, error);
-                        if (typeof callback === 'function') {
+                        }, (error) => {
+                            console.error(`Error fetching ${collectionName}:`, error);
                             callback([]);
-                        }
-                    });
-                } else {
-                     if (typeof callback === 'function') {
-                        callback([]);
+                        });
                     }
+                } else {
+                    callback([]);
                 }
             } catch (error) {
                 console.error("Error getting user document:", error);
-                 if (typeof callback === 'function') {
-                    callback([]);
-                }
-            }
-        } else {
-            if (typeof callback === 'function') {
                 callback([]);
             }
+        } else {
+            callback([]);
+        }
+    });
+
+    return () => {
+        authUnsubscribe();
+        if (unsubscribe) {
+            unsubscribe();
         }
     };
-    
-    authUnsubscribe = onAuthStateChanged(auth, setupListener);
-
-    const cleanup = () => {
-        if (authUnsubscribe) authUnsubscribe();
-        if (unsubscribe) unsubscribe();
-    };
-
-    return cleanup;
 };
 
 
