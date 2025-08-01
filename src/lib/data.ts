@@ -248,6 +248,18 @@ export interface Notebook {
     createdAt: string; // ISO string
 }
 
+export interface Video {
+    id: string;
+    familyId: string;
+    title: string;
+    url: string;
+    platform: 'YouTube' | 'Other';
+    tags?: string[]; // For categories
+    description?: string;
+    thumbnail?: string; // We can try to auto-fetch this later or let user add it
+    createdAt?: string;
+}
+
 
 
 // Static data that doesn't change often can remain here.

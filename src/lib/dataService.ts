@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, ShoppingNoteList, ShoppingNoteItem, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video } from './data';
 import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -97,6 +97,17 @@ export const updateBook = async (id: string, data: Partial<Omit<Book, 'id' | 'fa
     return updateDoc(bookRef, data);
 };
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
+
+// Videos
+export const onVideosUpdate = (callback: (videos: Video[]) => void, runOnce = false) => onFamilyDataUpdate<Video>('videos', callback, runOnce);
+export const addVideo = async (data: Omit<Video, 'id' | 'familyId' | 'createdAt'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'videos'), { ...data, familyId, createdAt: new Date().toISOString() });
+};
+export const updateVideo = (id: string, data: Partial<Omit<Video, 'id' | 'familyId'>>) => updateDoc(doc(db, 'videos', id), data);
+export const deleteVideo = (id: string) => deleteDoc(doc(db, "videos", id));
+
 
 // Reading Sessions
 export const onReadingSessionsUpdate = (callback: (sessions: ReadingSession[]) => void) => onFamilyDataUpdate<ReadingSession>('readingSessions', callback);
@@ -276,7 +287,7 @@ export const updateFamilyMemberInFamily = async (familyId: string, memberId: str
     }
 }
 
-export type TagType = "libraryTags" | "memorizationTags";
+export type TagType = "libraryTags" | "memorizationTags" | "videoTags";
 
 // Tags (Library Shelves are now per-family)
 export const onTagsUpdate = (tagType: TagType, callback: (tags: string[]) => void) => {
@@ -325,7 +336,7 @@ export const updateBookTags = async (originalTag: string, newTag: string) => {
     await batch.commit();
 }
 
-type ItemType = 'book' | 'memorization';
+type ItemType = 'book' | 'memorization' | 'video';
 
 export const deleteTag = async (tagType: TagType, tagToDelete: string, itemType: ItemType) => {
     const familyId = await getCurrentFamilyId();
@@ -339,13 +350,20 @@ export const deleteTag = async (tagType: TagType, tagToDelete: string, itemType:
     await setDoc(tagsDocRef, { [tagType]: newTags }, { merge: true });
 
     // 2. Query for all items with the tag and remove it
-    const collectionName = itemType === 'book' ? 'mediaItems' : 'memorizationItems';
+    let collectionName;
+    if (itemType === 'book') {
+        collectionName = 'mediaItems';
+    } else if (itemType === 'memorization') {
+        collectionName = 'memorizationItems';
+    } else {
+        collectionName = 'videos';
+    }
     const q = query(collection(db, collectionName), where("familyId", "==", familyId));
     const querySnapshot = await getDocs(q);
 
     const batch = writeBatch(db);
     querySnapshot.forEach(docSnap => {
-        const item = docSnap.data() as Book | MemorizationItem;
+        const item = docSnap.data() as Book | MemorizationItem | Video;
         if (item.tags?.some(t => t.startsWith(tagToDelete))) {
             const updatedTags = item.tags.filter(t => !t.startsWith(tagToDelete));
             batch.update(docSnap.ref, { tags: updatedTags });
