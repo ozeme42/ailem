@@ -19,6 +19,7 @@ import { Alert, AlertTitle } from "./ui/alert";
 import { AlertTriangle, Trash2, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 
 
 const sectionSchema = z.object({
@@ -143,6 +144,12 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
 
   return (
     <Form {...form}>
+       <DialogHeader>
+        <DialogTitle>{initialData ? "Yol Haritasını Düzenle" : "Yeni Yol Haritası Oluştur"}</DialogTitle>
+        <DialogDescription>
+          {initialData ? "Mevcut hedefin ayrıntılarını güncelleyin." : "Yeni bir okuma veya izleme hedefi oluşturun."}
+        </DialogDescription>
+      </DialogHeader>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <ScrollArea className="h-[65vh] pr-4">
             <div className="space-y-4">
