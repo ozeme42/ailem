@@ -23,12 +23,24 @@ import { NewVideoForm, VideoFormData } from '@/components/new-video-form';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 
 const shelfFormSchema = z.object({
     name: z.string().min(1, "Kategori adı boş olamaz."),
 });
 type ShelfFormData = z.infer<typeof shelfFormSchema>;
+
+const brightColors = [
+    { id: 'blue-indigo', name: 'Mavi', gradient: 'from-blue-500 to-indigo-600' },
+    { id: 'teal-green', name: 'Açık Yeşil', gradient: 'from-teal-400 to-green-500' },
+    { id: 'amber-orange', name: 'Turuncu', gradient: 'from-amber-400 to-orange-500' },
+    { id: 'rose-red', name: 'Gül Kurusu', gradient: 'from-rose-400 to-red-500' },
+    { id: 'cyan-sky', name: 'Camgöbeği', gradient: 'from-cyan-400 to-sky-500' },
+    { id: 'violet-purple', name: 'Menekşe', gradient: 'from-violet-500 to-purple-600' },
+    { id: 'pink-fuchsia', name: 'Pembe', gradient: 'from-pink-500 to-fuchsia-500' },
+    { id: 'lime-emerald', name: 'Fıstık Yeşili', gradient: 'from-lime-400 to-emerald-500'},
+];
 
 
 // VIDEOS CLIENT COMPONENT
@@ -387,25 +399,28 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
 
   return (
     <Accordion type="multiple" defaultValue={shelves.map(s => s[0])} className="w-full space-y-4">
-      {shelves.map(([shelfName, shelfVideos]) => (
-        <AccordionItem key={shelfName} value={shelfName} className="border-none">
-             <Card>
-                <CardHeader className="p-0">
-                    <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline">
-                        <Folder className="h-6 w-6 text-primary" />
-                        <span className="text-lg font-semibold">{shelfName} ({shelfVideos.length})</span>
-                    </AccordionTrigger>
-                </CardHeader>
-                <AccordionContent className="p-4 pt-0">
-                     <div className="space-y-3">
-                         {shelfVideos.map(video => (
-                            <VideoList key={video.id} video={video} onEdit={onEdit} onDelete={onDelete} />
-                         ))}
-                    </div>
-                </AccordionContent>
-             </Card>
-        </AccordionItem>
-      ))}
+      {shelves.map(([shelfName, shelfVideos], index) => {
+          const color = brightColors[index % brightColors.length];
+          return (
+             <AccordionItem key={shelfName} value={shelfName} className="border-none">
+                 <Card className={cn("bg-gradient-to-br text-white border-0", color.gradient)}>
+                    <CardHeader className="p-0">
+                        <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline">
+                            <Folder className="h-6 w-6 text-white" />
+                            <span className="text-lg font-semibold">{shelfName} ({shelfVideos.length})</span>
+                        </AccordionTrigger>
+                    </CardHeader>
+                    <AccordionContent className="p-4 pt-0">
+                        <div className="space-y-3 bg-card text-card-foreground rounded-lg p-3">
+                             {shelfVideos.map(video => (
+                                <VideoList key={video.id} video={video} onEdit={onEdit} onDelete={onDelete} />
+                             ))}
+                        </div>
+                    </AccordionContent>
+                 </Card>
+            </AccordionItem>
+          )
+      })}
     </Accordion>
   );
 }
