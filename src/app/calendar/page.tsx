@@ -38,7 +38,7 @@ export default function CalendarPage() {
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | null>(null);
   const { toast } = useToast();
-  const [viewMode, setViewMode] = React.useState<'month' | 'week'>('month');
+  const [viewMode, setViewMode] = React.useState<'month' | 'week'>('week');
 
   React.useEffect(() => {
     const unsubscribeEvents = onCalendarEventsUpdate(setCalendarEvents);
