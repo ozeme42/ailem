@@ -108,6 +108,9 @@ export default function GoalsClient() {
                 {goals.map(goal => {
                     const progress = calculateOverallProgress(goal);
                     const assignee = familyMembers.find(m => m.id === goal.assigneeId);
+                    
+                    const isVideoGoal = goal.platform === 'YouTube';
+                    const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
                     const totalSections = goal.sections.length;
                     const completedSections = goal.sections.filter(s => s.status === 'completed').length;
 
@@ -171,8 +174,17 @@ export default function GoalsClient() {
                                         <p className="text-muted-foreground">{getNextSectionTitle(goal)}</p>
                                     </div>
                                     <div className="text-sm">
-                                        <p className="text-muted-foreground">Bölüm İlerlemesi:</p>
-                                        <p className="font-medium">{completedSections} / {totalSections} Bölüm Tamamlandı</p>
+                                        {isVideoGoal ? (
+                                            <>
+                                                <p className="text-muted-foreground">İzlenen Video:</p>
+                                                <p className="font-medium">{totalCompletedUnits} / {goal.totalUnits} video</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="text-muted-foreground">Bölüm İlerlemesi:</p>
+                                                <p className="font-medium">{completedSections} / {totalSections} Bölüm Tamamlandı</p>
+                                            </>
+                                        )}
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex flex-col items-start">
