@@ -256,7 +256,7 @@ export default function CalendarPage() {
                      <div className={cn("border-b border-r p-2 flex", dayEvents.length > 0 && 'cursor-pointer hover:bg-muted/50', viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'h-24 flex-row gap-4')}>
                         <div className={cn(viewMode === 'week' && 'w-24 text-center border-r pr-4')}>
                             <span className={cn(`font-semibold`, isToday(day) ? 'text-primary' : 'text-foreground', !isSameMonth(day, currentDate) && 'text-muted-foreground/50')}>
-                              {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM')}
+                              {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM', { locale: tr })}
                             </span>
                              {viewMode === 'week' && <span className="block text-xs capitalize">{format(day, 'EEE', {locale: tr})}</span>}
                         </div>
