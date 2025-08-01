@@ -115,7 +115,7 @@ export default function Home() {
 
   const progressForm = useForm<z.infer<typeof progressFormSchema>>({
       resolver: zodResolver(progressFormSchema),
-      defaultValues: { progress: undefined },
+      defaultValues: { progress: '' as any },
   });
 
 
@@ -172,7 +172,7 @@ export default function Home() {
           await updateGoal(goal.id, { sections: newSections });
           toast({ title: "İlerleme Kaydedildi!", description: `${values.progress} ${goal.unitName} eklendi.` });
           setEditingGoal(null);
-          progressForm.reset();
+          progressForm.reset({ progress: '' as any });
       } catch(e) {
           toast({ title: "Hata", variant: 'destructive' });
       }
@@ -222,6 +222,7 @@ export default function Home() {
     return goals
       .filter(goal => goal.status === 'in-progress')
       .map(goal => {
+        const isVideoGoal = goal.platform === 'YouTube';
         const sortedSections = [...(goal.sections || [])].sort((a, b) => a.order - b.order);
         let currentSection: GoalSection | null = null;
         
@@ -249,7 +250,8 @@ export default function Home() {
           totalCompletedUnits,
           overallProgress,
           sectionProgress,
-          assignee: familyMembers.find(m => m.id === goal.assigneeId)
+          assignee: familyMembers.find(m => m.id === goal.assigneeId),
+          isVideoGoal,
         };
       });
   }, [goals, familyMembers]);
@@ -449,7 +451,7 @@ export default function Home() {
                 </div>
                 
                 <div className="mt-4 space-y-4">
-                    {goal.currentSection && (
+                    {goal.currentSection && !goal.isVideoGoal && (
                         <div>
                             <div className="flex justify-between text-xs text-white/80 mb-1">
                                 <span>{goal.currentSection.title}</span>
@@ -567,7 +569,7 @@ export default function Home() {
             familyMembers={familyMembers}
         />
 
-      <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset(); }}}>
+      <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
           <DialogContent>
               <DialogHeader>
                   <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
