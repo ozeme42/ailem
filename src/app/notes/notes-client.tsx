@@ -1,14 +1,14 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
-import { Notebook as NotebookType } from '@/lib/data';
-import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook } from '@/lib/dataService';
+import { Notebook as NotebookType, Note } from '@/lib/data';
+import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook, onNotesUpdate } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Edit, ChevronRight, Notebook as NotebookIcon, Search } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, ChevronRight, Notebook as NotebookIcon, Search, StickyNote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -20,15 +20,20 @@ import { Input } from '@/components/ui/input';
 export function NotesClient() {
     const { user } = useAuth();
     const [notebooks, setNotebooks] = useState<NotebookType[]>([]);
+    const [allNotes, setAllNotes] = useState<Note[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingNotebook, setEditingNotebook] = useState<NotebookType | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const { toast } = useToast();
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!user) return;
-        const unsubscribe = onNotebooksUpdate(setNotebooks);
-        return () => unsubscribe();
+        const unsubscribeNotebooks = onNotebooksUpdate(setNotebooks);
+        const unsubscribeNotes = onNotesUpdate(setAllNotes);
+        return () => {
+            unsubscribeNotebooks();
+            unsubscribeNotes();
+        };
     }, [user]);
     
     const handleOpenDialog = (notebook: NotebookType | null) => {
@@ -62,16 +67,17 @@ export function NotesClient() {
         }
     };
     
-    const filteredNotebooks = useMemo(() => {
+    const filteredNotes = useMemo(() => {
         if (!searchTerm) {
-            return notebooks;
+            return [];
         }
         const lowercasedTerm = searchTerm.toLowerCase();
-        return notebooks.filter(notebook =>
-            notebook.title.toLowerCase().includes(lowercasedTerm) ||
-            (notebook.description && notebook.description.toLowerCase().includes(lowercasedTerm))
-        );
-    }, [searchTerm, notebooks]);
+        return allNotes.filter(note => {
+             const contentText = Array.isArray(note.content) ? note.content.find(b => b.type === 'text')?.data || '' : '';
+             return note.title.toLowerCase().includes(lowercasedTerm) ||
+                    contentText.toLowerCase().includes(lowercasedTerm)
+        });
+    }, [searchTerm, allNotes]);
 
 
     return (
@@ -90,17 +96,21 @@ export function NotesClient() {
                 </Dialog>
             </PageHeader>
             
-            <div className="relative w-full sm:max-w-xs">
+            <div className="relative w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Defterlerde ara..."
+                placeholder="Tüm notlarda ara..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <NotebookGrid notebooks={filteredNotebooks} onEdit={handleOpenDialog} onDelete={handleDeleteNotebook} />
+            {searchTerm ? (
+                <SearchResults notes={filteredNotes} notebooks={notebooks} />
+            ) : (
+                <NotebookGrid notebooks={notebooks} onEdit={handleOpenDialog} onDelete={handleDeleteNotebook} />
+            )}
         </div>
     );
 }
@@ -112,7 +122,7 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
                 <NotebookIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">Boşluk...</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Aradığınız kriterlere uygun not defteri yok veya hiç defter oluşturulmadı.
+                    Henüz hiç not defteri oluşturulmadı.
                 </p>
             </Card>
         )
@@ -167,3 +177,50 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
         </div>
     );
 }
+
+
+function SearchResults({ notes, notebooks }: { notes: Note[], notebooks: NotebookType[] }) {
+    if (notes.length === 0) {
+        return (
+             <Card className="text-center p-12">
+                <Search className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">Sonuç Yok</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Aradığınız terime uygun not bulunamadı.
+                </p>
+            </Card>
+        );
+    }
+    
+    const getNotebookTitle = (notebookId: string) => {
+        return notebooks.find(n => n.id === notebookId)?.title || "Bilinmeyen Defter";
+    };
+
+    return (
+        <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Arama Sonuçları ({notes.length})</h2>
+            {notes.map(note => {
+                 const contentText = Array.isArray(note.content) ? note.content.find(b => b.type === 'text')?.data || '' : '';
+                 return (
+                    <Link href={`/notes/${note.notebookId}`} key={note.id}>
+                        <Card className="hover:bg-muted/50 cursor-pointer">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <StickyNote className="h-5 w-5 text-primary" />
+                                    {note.title}
+                                </CardTitle>
+                                <CardDescription>
+                                    <span className="font-semibold">{getNotebookTitle(note.notebookId)}</span> defterinde
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{contentText}</p>
+                            </CardContent>
+                        </Card>
+                    </Link>
+                )
+            })}
+        </div>
+    )
+}
+

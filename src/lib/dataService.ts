@@ -1213,6 +1213,7 @@ const noteColors = [
     'bg-purple-100 border-purple-200 text-purple-900',
 ];
 export const onNotebooksUpdate = (callback: (notebooks: Notebook[]) => void) => onFamilyDataUpdate<Notebook>('notebooks', callback);
+export const onNotesUpdate = (callback: (notes: Note[]) => void) => onFamilyDataUpdate<Note>('notes', callback);
 export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
     const familyId = await getCurrentFamilyId();
     const auth = getAuth();
