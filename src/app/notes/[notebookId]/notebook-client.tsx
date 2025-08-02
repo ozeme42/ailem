@@ -392,7 +392,7 @@ export default function NotebookClient() {
                                     <TabsTrigger
                                         value={section.id}
                                         className={cn(
-                                            "pr-8 text-white bg-gradient-to-br transition-all text-xs px-2 py-1 sm:text-sm sm:px-3 sm:py-1.5",
+                                            "pr-8 text-white bg-gradient-to-br transition-all text-xs px-2 py-1.5 sm:text-sm sm:px-3 sm:py-1.5",
                                             section.color,
                                             isActive 
                                                 ? "ring-2 ring-offset-2 ring-ring opacity-100" 
@@ -437,7 +437,7 @@ export default function NotebookClient() {
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative px-0 sm:px-4">
                     <div className="space-y-4" key={activeTab}>
-                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
+                        <Accordion type="multiple" className="w-full space-y-4">
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
                                 if (!folderNotes || folderNotes.length === 0) {
