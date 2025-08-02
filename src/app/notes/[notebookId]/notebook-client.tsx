@@ -343,7 +343,7 @@ export default function NotebookClient() {
   const currentSection = sections.find(s => s.id === activeTab);
 
   return (
-    <div className="h-full flex flex-col px-0 sm:px-4">
+    <div className="h-full flex flex-col sm:px-4">
       <PageHeader title={notebook.title}>
         <Button onClick={() => router.push('/notes')} className="bg-white/20 text-white hover:bg-white/30 border-none">
           <ArrowLeft className="mr-2 h-4 w-4" /> Defterler
@@ -406,9 +406,9 @@ export default function NotebookClient() {
             const folderOrder = ['Genel Notlar', ...(section.folders || [])];
 
             return (
-              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative px-0 sm:px-4">
+              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative sm:px-4">
                     <div className="space-y-4 -mx-4 sm:mx-0">
-                        <Accordion type="multiple" className="w-full space-y-4">
+                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
                                 if (!folderNotes || folderNotes.length === 0) {
@@ -416,9 +416,9 @@ export default function NotebookClient() {
                                 }
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg sm:rounded-xl">
-                                        <div className={cn("flex items-center text-white p-0 w-full rounded-t-lg sm:rounded-t-xl", `bg-gradient-to-br ${colorClass}`)}>
-                                            <div className="p-4 flex-grow flex items-center gap-4">
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-none sm:rounded-xl">
+                                        <div className={cn("flex items-center text-white p-0 w-full rounded-none sm:rounded-t-xl", `bg-gradient-to-br ${colorClass}`)}>
+                                            <AccordionTrigger className="p-4 flex-grow flex items-center gap-4 text-left hover:no-underline group">
                                                 <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                     <Folder className="h-6 w-6"/>
                                                 </div>
@@ -428,7 +428,7 @@ export default function NotebookClient() {
                                                         {folderNotes?.length || 0} not
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </AccordionTrigger>
                                              <div className="flex items-center pr-2">
                                                 <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => {e.stopPropagation(); handleAddNewNote(folderName === 'Genel Notlar' ? '' : folderName)}}>
                                                     <Plus className="h-5 w-5"/>
@@ -452,12 +452,9 @@ export default function NotebookClient() {
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 )}
-                                                <AccordionTrigger className="p-2 hover:no-underline group">
-                                                    <ChevronDown className="h-5 w-5 text-white/70 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                                </AccordionTrigger>
                                              </div>
                                         </div>
-                                        <AccordionContent className="p-4 bg-background rounded-b-lg sm:rounded-b-xl border-x border-b">
+                                        <AccordionContent className="p-4 bg-background rounded-b-none sm:rounded-b-xl border-x border-b">
                                             {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                             {folderNotes?.map(note => (
