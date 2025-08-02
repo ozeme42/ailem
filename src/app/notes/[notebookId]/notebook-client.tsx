@@ -408,7 +408,7 @@ export default function NotebookClient() {
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative sm:px-4">
                     <div className="space-y-4 -mx-4 sm:mx-0" key={activeTab}>
-                        <Accordion type="multiple" className="w-full space-y-4">
+                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
                                 if (!folderNotes || folderNotes.length === 0) {
@@ -417,8 +417,8 @@ export default function NotebookClient() {
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
                                     <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-none sm:rounded-xl">
-                                        <div className={cn("flex items-center text-white p-0 w-full rounded-none sm:rounded-t-xl", `bg-gradient-to-br ${colorClass}`)}>
-                                             <AccordionTrigger className="p-4 flex-grow flex items-center gap-4 text-left hover:no-underline group">
+                                         <div className={cn("flex items-center text-white p-0 w-full rounded-none sm:rounded-t-xl", `bg-gradient-to-br ${colorClass}`)}>
+                                            <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                                 <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                     <Folder className="h-6 w-6"/>
                                                 </div>
@@ -565,6 +565,21 @@ function StickyNoteCard({ note, onOpenDialog, onDelete }: StickyNoteCardProps) {
             )}
             <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onOpenDialog(); }}><Edit className="h-4 w-4"/></Button>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                            <AlertDialogTitleComponent>Notu Sil</AlertDialogTitleComponent>
+                            <AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooterComponent>
+                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                            <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
+                        </AlertDialogFooterComponent>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </Card>
     );
