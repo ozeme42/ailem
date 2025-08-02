@@ -401,7 +401,7 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <Accordion type="multiple" className="w-full space-y-4">
+                   <Accordion type="multiple" className="w-full space-y-4 -mx-4 sm:mx-0">
                     {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
@@ -410,19 +410,17 @@ export default function NotebookClient() {
                         const colorClass = folderColors[folderIndex % folderColors.length];
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-lg bg-background">
-                                <div className="flex items-center">
-                                    <AccordionTrigger className={cn("flex-grow p-0 hover:no-underline text-white bg-gradient-to-r", colorClass)}>
-                                        <div className='flex items-center justify-between p-4 w-full'>
-                                            <div className="flex items-center gap-2">
-                                                <Folder className="h-5 w-5"/>
-                                                <h3 className="text-lg font-semibold">{folderName}</h3>
-                                            </div>
+                                 <div className={cn("relative flex items-center bg-gradient-to-r text-white", colorClass)}>
+                                    <AccordionTrigger className="flex-grow p-4 hover:no-underline pr-12">
+                                        <div className="flex items-center gap-2">
+                                            <Folder className="h-5 w-5"/>
+                                            <h3 className="text-lg font-semibold">{folderName}</h3>
                                         </div>
                                     </AccordionTrigger>
                                      {folderName !== "Genel Notlar" && (
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0 mx-2" onClick={(e) => e.stopPropagation()}>
+                                                <Button variant="ghost" size="icon" className="absolute top-1/2 right-2 -translate-y-1/2 h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0" onClick={(e) => e.stopPropagation()}>
                                                     <Trash2 className="h-4 w-4"/>
                                                 </Button>
                                             </AlertDialogTrigger>
