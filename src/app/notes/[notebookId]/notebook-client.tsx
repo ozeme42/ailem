@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -411,26 +412,26 @@ export default function NotebookClient() {
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card className='bg-background'>
                                     <CardHeader className="p-0">
-                                      <div className={cn("relative flex items-center p-4 rounded-t-lg bg-gradient-to-r text-white", colorClass)}>
-                                          <AccordionTrigger className="flex-grow p-0 hover:no-underline" asChild>
-                                            <div className="flex items-center gap-2 cursor-pointer">
-                                              <Folder className="h-5 w-5"/>
-                                              <h3 className="text-lg font-semibold">{folderName}</h3>
-                                            </div>
-                                          </AccordionTrigger>
-                                          {folderName !== "Genel Notlar" && (
-                                              <AlertDialog>
-                                                  <AlertDialogTrigger asChild>
-                                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => e.stopPropagation()}>
-                                                          <Trash2 className="h-4 w-4"/>
-                                                      </Button>
-                                                  </AlertDialogTrigger>
-                                                  <AlertDialogContent>
-                                                      <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
-                                                      <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                                  </AlertDialog>
-                                          )}
-                                      </div>
+                                        <div className="flex items-center p-4 rounded-t-lg">
+                                            <AccordionTrigger className={cn("flex-grow p-0 hover:no-underline text-white rounded-md bg-gradient-to-r", colorClass)}>
+                                                <div className='flex items-center gap-2 p-4 w-full'>
+                                                    <Folder className="h-5 w-5"/>
+                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
+                                                </div>
+                                            </AccordionTrigger>
+                                            {folderName !== "Genel Notlar" && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => e.stopPropagation()}>
+                                                            <Trash2 className="h-4 w-4"/>
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                                    </AlertDialog>
+                                            )}
+                                        </div>
                                     </CardHeader>
                                      <AccordionContent className="p-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
