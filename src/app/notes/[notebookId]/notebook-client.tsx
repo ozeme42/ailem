@@ -268,7 +268,7 @@ export default function NotebookClient() {
                 {sections.map(section => (
                  <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                     <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && section.color.replace('bg-', 'data-[state=active]:bg-'))}>
+                     <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && section.color && section.color.replace('bg-', 'data-[state=active]:bg-'))}>
                         {section.title}
                      </TabsTrigger>
                      <DropdownMenu>
@@ -442,3 +442,5 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
+    
