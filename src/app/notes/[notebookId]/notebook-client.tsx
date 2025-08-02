@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -323,17 +324,19 @@ export default function NotebookClient() {
                         return (
                             <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                     <AccordionTrigger className="p-4 hover:no-underline">
+                                    <div className="flex items-center p-4">
+                                     <AccordionTrigger className="p-0 hover:no-underline flex-grow">
                                         <div className="flex items-center gap-2">
                                             <Folder className="h-5 w-5 text-muted-foreground"/>
                                             <h3 className="text-lg font-semibold">{folderName}</h3>
                                         </div>
-                                         {folderName !== 'Genel Notlar' && (
-                                             <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                            </AlertDialog>
-                                         )}
                                      </AccordionTrigger>
+                                     {folderName !== 'Genel Notlar' && (
+                                         <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                        </AlertDialog>
+                                     )}
+                                     </div>
                                      <AccordionContent className="px-4 pb-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
