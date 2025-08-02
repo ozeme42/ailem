@@ -346,8 +346,8 @@ export default function NotebookClient() {
       </PageHeader>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col min-h-0">
-        <div className="flex-shrink-0">
-           <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center border-b">
+        <div className="flex-shrink-0 border-b overflow-x-auto">
+           <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center">
              <TabsList className="h-auto bg-transparent p-0 border-none">
                 {sections.map(section => {
                     const isActive = activeTab === section.id;
@@ -404,8 +404,8 @@ export default function NotebookClient() {
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
                                     <CardHeader className="p-0">
-                                        <div className="flex items-center">
-                                            <AccordionTrigger className={cn("p-4 hover:no-underline rounded-t-lg flex-grow", folderColors[folderIndex % folderColors.length])}>
+                                        <div className={cn("flex items-center rounded-t-lg", folderColors[folderIndex % folderColors.length])}>
+                                            <AccordionTrigger className="p-4 hover:no-underline flex-grow">
                                                 <div className="flex items-center gap-2">
                                                     <Folder className="h-5 w-5"/>
                                                     <h3 className="text-lg font-semibold">{folderName}</h3>
@@ -424,9 +424,9 @@ export default function NotebookClient() {
                                             )}
                                          </div>
                                      </CardHeader>
-                                     <AccordionContent className="px-4 pb-4">
+                                     <AccordionContent className="p-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                         {folderNotes?.map(note => (
                                             <StickyNoteCard 
                                                 key={note.id} note={note} isEditing={editingNoteId === note.id}
@@ -574,4 +574,3 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
-
