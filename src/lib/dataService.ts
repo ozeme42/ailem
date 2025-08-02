@@ -1269,6 +1269,7 @@ export const addSectionToNotebook = async (notebookId: string, title: string) =>
       id: Date.now().toString(),
       title,
       order: notebook.sections.length,
+      color: noteColors[notebook.sections.length % noteColors.length], // Assign a color cyclically
     };
     await updateDoc(notebookRef, {
       sections: arrayUnion(newSection),
@@ -1277,7 +1278,7 @@ export const addSectionToNotebook = async (notebookId: string, title: string) =>
   }
 };
 
-export const addNoteToSection = async (notebookId: string, sectionId: string, noteData: Partial<Note>) => {
+export const addNoteToSection = async (notebookId: string, sectionId: string, noteData: Partial<Omit<Note, 'id'| 'notebookId'|'sectionId'|'familyId'|'createdAt'|'updatedAt'>>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not authenticated");
 
@@ -1292,6 +1293,7 @@ export const addNoteToSection = async (notebookId: string, sectionId: string, no
         tags: [],
         color: noteColors[Math.floor(Math.random() * noteColors.length)],
         imageUrl: noteData.imageUrl || null,
+        folder: noteData.folder,
     };
     return addDoc(collection(db, 'notes'), newNote);
 };

@@ -25,7 +25,7 @@ import { Reorder } from "framer-motion";
 import { TabsContent } from '@radix-ui/react-tabs';
 import { Combobox } from '@/components/ui/combobox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 
 interface NotebookDetails {
@@ -41,13 +41,13 @@ const noteColors = [
 ];
 
 const folderColors = [
-    'bg-yellow-100 border-yellow-200 text-yellow-900',
-    'bg-blue-100 border-blue-200 text-blue-900',
-    'bg-green-100 border-green-200 text-green-900',
-    'bg-pink-100 border-pink-200 text-pink-900',
-    'bg-purple-100 border-purple-200 text-purple-900',
-    'bg-orange-100 border-orange-200 text-orange-900',
-    'bg-teal-100 border-teal-200 text-teal-900',
+    'bg-yellow-200/50 border-yellow-300 text-yellow-900',
+    'bg-blue-200/50 border-blue-300 text-blue-900',
+    'bg-green-200/50 border-green-300 text-green-900',
+    'bg-pink-200/50 border-pink-300 text-pink-900',
+    'bg-purple-200/50 border-purple-300 text-purple-900',
+    'bg-orange-200/50 border-orange-300 text-orange-900',
+    'bg-teal-200/50 border-teal-300 text-teal-900',
 ];
 
 
@@ -75,6 +75,7 @@ export default function NotebookClient() {
 
 
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const noteImageInputRef = useRef<HTMLInputElement>(null);
 
 
   useEffect(() => {
@@ -177,19 +178,48 @@ export default function NotebookClient() {
   };
 
 
-  const handleAddNewNote = async (folder?: string) => {
+  const handleAddNewNote = async (folder?: string, imageUrl?: string | null) => {
     if (!details || !activeTab) return;
     try {
         await addNoteToSection(notebookId, activeTab, { 
           title: "Yeni Not", 
-          content: [{ id: Date.now().toString(), type: 'text', data: '' }], 
-          imageUrl: null, 
+          content: imageUrl ? [] : [{ id: Date.now().toString(), type: 'text', data: '' }], 
+          imageUrl: imageUrl || null, 
           folder: folder 
         });
     } catch (error) {
         toast({ title: 'Hata', variant: 'destructive' });
     }
   };
+  
+  const handleImageNoteAdd = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    toast({ title: 'Görsel yükleniyor...' });
+    setIsLoading(true);
+
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = async () => {
+        const imageDataUri = reader.result as string;
+        const destinationPath = `notes-images/${user?.uid}-${Date.now()}.jpg`;
+        const migrationResult = await migrateImage({ imageDataUri, destinationPath });
+
+        if (migrationResult.success && migrationResult.newUrl) {
+          await handleAddNewNote(undefined, migrationResult.newUrl);
+          toast({ title: 'Görsel not eklendi!' });
+        } else {
+          throw new Error(migrationResult.error || 'Bilinmeyen bir görsel yükleme hatası.');
+        }
+      };
+    } catch(e: any) {
+       toast({ title: 'Hata', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  }
   
    const handleAddNewFolder = async () => {
     if (!newFolderName.trim() || !details || !activeTab) return;
@@ -261,6 +291,35 @@ export default function NotebookClient() {
     setNoteChanges(prev => ({...prev, [key]: value}));
   };
 
+  const handleNoteImageUpdate = async (event: React.ChangeEvent<HTMLInputElement>, noteId: string) => {
+    const file = event.target.files?.[0];
+    if (!file || !editingNoteId) return;
+
+    setIsLoading(true);
+    toast({ title: 'Görsel yükleniyor...' });
+    
+    try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = async () => {
+            const imageDataUri = reader.result as string;
+            const destinationPath = `notes-images/${user?.uid}-${noteId}-${Date.now()}.jpg`;
+            const migrationResult = await migrateImage({ imageDataUri, destinationPath });
+
+            if (migrationResult.success && migrationResult.newUrl) {
+                await updateNoteInSection(notebookId, noteId, { imageUrl: migrationResult.newUrl });
+                toast({ title: 'Görsel güncellendi!' });
+            } else {
+                throw new Error(migrationResult.error || 'Bilinmeyen bir görsel yükleme hatası.');
+            }
+        };
+    } catch(e: any) {
+        toast({ title: 'Hata', description: e.message, variant: 'destructive' });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   if (!details) {
     return <div>Yükleniyor...</div>;
   }
@@ -281,16 +340,17 @@ export default function NotebookClient() {
              <TabsList className="h-auto bg-transparent p-0 border-none">
                 {sections.map(section => {
                     const isActive = activeTab === section.id;
-                    const sectionColorClass = section.color || 'bg-gray-200';
-                    
                     return (
                         <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                            <TabsTrigger 
+                             <TabsTrigger 
                                 value={section.id} 
-                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${sectionColorClass}`)}
+                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${section.color}`)}
+                                style={isActive ? { } : { '--section-color': `var(--${section.color?.replace('bg-', 'color-')})` } as React.CSSProperties}
                             >
-                                {section.title}
+                                <span style={{ color: isActive ? 'white' : `hsl(var(--${section.color?.split('-')[1]}-900))` }}>
+                                  {section.title}
+                                </span>
                             </TabsTrigger>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -330,6 +390,11 @@ export default function NotebookClient() {
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4">
                   <div className="flex gap-2 mb-4">
                       <Button className="flex-1" onClick={() => handleAddNewNote()}><StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle</Button>
+                       <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageNoteAdd} />
+                      <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()} disabled={isLoading}>
+                          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileImage className="mr-2 h-4 w-4" />}
+                          Görsel Notu Ekle
+                      </Button>
                       <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}><DialogTrigger asChild><Button variant="secondary" className="flex-1"><FolderPlus className="mr-2 h-4 w-4" /> Yeni Klasör</Button></DialogTrigger>
                         <DialogContent><DialogHeader><DialogTitle>Yeni Klasör Oluştur</DialogTitle></DialogHeader><Input placeholder="Klasör adı" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNewFolder()}/><DialogFooter><Button onClick={handleAddNewFolder}>Oluştur</Button></DialogFooter></DialogContent>
                       </Dialog>
@@ -341,14 +406,29 @@ export default function NotebookClient() {
                             if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
                         }
                         return (
-                            <AccordionItem key={folderName} value={folderName} className="border-b-0">
+                             <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                     <AccordionTrigger className={cn("p-4 hover:no-underline rounded-t-lg", folderColors[folderIndex % folderColors.length])}>
-                                         <div className="flex items-center gap-2">
-                                             <Folder className="h-5 w-5"/>
-                                             <h3 className="text-lg font-semibold">{folderName}</h3>
+                                     <CardHeader className="p-0">
+                                         <div className="flex items-center">
+                                            <AccordionTrigger className={cn("p-4 hover:no-underline rounded-t-lg flex-grow", folderColors[folderIndex % folderColors.length])}>
+                                                <div className="flex items-center gap-2">
+                                                    <Folder className="h-5 w-5"/>
+                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
+                                                </div>
+                                            </AccordionTrigger>
+                                            {folderName !== 'Genel Notlar' && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="mr-2 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
                                          </div>
-                                     </AccordionTrigger>
+                                     </CardHeader>
                                      <AccordionContent className="px-4 pb-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4">
@@ -357,6 +437,7 @@ export default function NotebookClient() {
                                                 key={note.id} note={note} isEditing={editingNoteId === note.id}
                                                 onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
                                                 onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
+                                                onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
                                             />
                                         ))}
                                         </div>
@@ -376,7 +457,7 @@ export default function NotebookClient() {
                 <Input placeholder="Bölüm adı" value={sectionFormData.title} onChange={(e) => setSectionFormData(prev => ({ ...prev, title: e.target.value }))} onKeyDown={(e) => { if(e.key === 'Enter') handleSaveSection()}} />
                 <div className="flex flex-wrap gap-2">
                     {noteColors.map(color => (
-                        <button key={color.name} aria-label={color.name} className={cn("h-8 w-8 rounded-full", color.class, sectionFormData.color === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => setSectionFormData(prev => ({...prev, color: color.class}))}/>
+                        <button key={color.name} aria-label={color.name} className={cn("h-8 w-8 rounded-full bg-gradient-to-br", color.class, sectionFormData.color === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => setSectionFormData(prev => ({...prev, color: color.class}))}/>
                     ))}
                 </div>
             </div>
@@ -397,11 +478,13 @@ interface StickyNoteCardProps {
     onUpdate: (key: keyof Note, value: any) => void;
     onDelete: () => void;
     sectionFolders: string[];
+    onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDelete, sectionFolders }: StickyNoteCardProps) {
+function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDelete, sectionFolders, onImageChange }: StickyNoteCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
     
     const noteColor = note.color || 'bg-yellow-100 border-yellow-200 text-yellow-900';
     
@@ -439,7 +522,10 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
             <div ref={cardRef} className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
                 <Input placeholder="Not Başlığı" defaultValue={note.title} onBlur={(e) => onUpdate('title', e.target.value)} className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80" autoFocus />
                 {note.imageUrl && ( <div className="relative aspect-video"><Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="note image" /></div> )}
-                {Array.isArray(note.content) && ( <Textarea ref={textareaRef} placeholder="Yazmaya başla..." defaultValue={textContent} onInput={handleTextUpdate} className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden" rows={1} />)}
+                <Textarea ref={textareaRef} placeholder="Yazmaya başla..." defaultValue={textContent} onInput={handleTextUpdate} className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden" rows={1} />
+                <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()}><ImageIcon className="mr-2 h-4 w-4"/> Resim Ekle/Değiştir</Button>
+                <input type="file" accept="image/*" ref={imageInputRef} onChange={onImageChange} className="hidden" />
+
                 <div className='pt-2 mt-2 border-t'>
                     <Combobox options={folderOptions} value={note.folder || ''} onChange={(val) => onUpdate('folder', val)} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.'/>
                 </div>
