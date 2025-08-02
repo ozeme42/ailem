@@ -349,7 +349,7 @@ export default function NotebookClient() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col min-h-0">
         <div className="flex-shrink-0 border-b">
            <ScrollArea className="w-full">
-            <div className="flex items-center pb-2">
+            <div className="flex items-center p-2">
                 <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center">
                     <TabsList className="h-auto bg-transparent p-0 border-none">
                         {sections.map(section => {
@@ -402,9 +402,9 @@ export default function NotebookClient() {
             const folderOrder = ['Genel Notlar', ...(section.folders || [])];
 
             return (
-              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                    <div className="space-y-4">
-                        <Accordion type="multiple" className="w-full space-y-4">
+              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative px-0 sm:px-4">
+                    <div className="space-y-4 -mx-4 sm:mx-0">
+                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={['Genel Notlar']}>
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
                                 if (!folderNotes || folderNotes.length === 0) {
@@ -412,10 +412,10 @@ export default function NotebookClient() {
                                 }
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg sm:rounded-xl">
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-xl">
                                         <div className="flex flex-col">
-                                           <div className={cn("flex items-center text-white p-0 w-full rounded-t-lg", `bg-gradient-to-br ${colorClass}`)}>
-                                                <AccordionTrigger className="flex-1 justify-start p-4 hover:no-underline group">
+                                           <div className={cn("flex items-center text-white p-0 w-full sm:rounded-t-lg", `bg-gradient-to-br ${colorClass}`)}>
+                                                <AccordionTrigger className="flex-1 justify-between p-4 hover:no-underline group">
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                             <Folder className="h-6 w-6"/>
@@ -427,26 +427,29 @@ export default function NotebookClient() {
                                                             </p>
                                                         </div>
                                                     </div>
+                                                     <div className="flex items-center gap-1">
+                                                        {folderName !== 'Genel Notlar' && (
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20">
+                                                                        <Trash2 className="h-4 w-4"/>
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent>
+                                                                        <AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooterComponent>
+                                                                        <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction>
+                                                                    </AlertDialogFooterComponent>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        )}
+                                                        <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                                     </div>
                                                 </AccordionTrigger>
-                                                 {folderName !== 'Genel Notlar' && (
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="mr-2 shrink-0 text-white/70 hover:text-white hover:bg-white/20">
-                                                                <Trash2 className="h-4 w-4"/>
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent>
-                                                                <AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooterComponent>
-                                                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction>
-                                                            </AlertDialogFooterComponent>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                 )}
                                             </div>
                                             <AccordionContent className="p-4 bg-background sm:rounded-b-lg">
                                                 {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
