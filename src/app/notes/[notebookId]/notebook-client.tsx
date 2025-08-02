@@ -356,7 +356,7 @@ export default function NotebookClient() {
                             const isActive = activeTab === section.id;
                             const colorClass = section.color || 'from-gray-500 to-gray-600';
                             return (
-                                <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 cursor-grab">
+                                <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2" style={{cursor: 'grab'}}>
                                     <TabsTrigger
                                         value={section.id}
                                         style={{ '--section-color': section.color } as React.CSSProperties}
@@ -403,22 +403,23 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
+                   <Accordion type="multiple" className="w-full space-y-4">
                     {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
                             if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
                         }
-                        const folderColor = folderColors[folderIndex % folderColors.length];
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card className='bg-background'>
                                      <CardHeader className="p-0">
-                                        <AccordionTrigger className={cn("hover:no-underline p-4 rounded-t-lg", "bg-gradient-to-r text-white", section.color)}>
-                                            <div className="flex items-center gap-2">
-                                                <Folder className="h-5 w-5"/>
-                                                <h3 className="text-lg font-semibold">{folderName}</h3>
-                                            </div>
+                                        <div className="flex items-center p-4 rounded-t-lg bg-gradient-to-r text-white" style={{'--tw-gradient-from': 'hsl(var(--primary))', '--tw-gradient-to': 'hsl(var(--accent))'} as React.CSSProperties}>
+                                            <AccordionTrigger className="hover:no-underline flex-grow p-0">
+                                                <div className="flex items-center gap-2">
+                                                    <Folder className="h-5 w-5"/>
+                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
+                                                </div>
+                                            </AccordionTrigger>
                                              {folderName !== "Genel Notlar" && (
                                                  <AlertDialog>
                                                     <AlertDialogTrigger asChild>
@@ -432,7 +433,7 @@ export default function NotebookClient() {
                                                     </AlertDialogContent>
                                                 </AlertDialog>
                                             )}
-                                        </AccordionTrigger>
+                                        </div>
                                     </CardHeader>
                                      <AccordionContent className="p-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
@@ -589,3 +590,6 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
 
 
 
+
+
+    
