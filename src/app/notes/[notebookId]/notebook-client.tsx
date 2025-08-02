@@ -409,44 +409,42 @@ export default function NotebookClient() {
                         }
                         const colorClass = folderColors[folderIndex % folderColors.length];
                         return (
-                             <AccordionItem key={folderName} value={folderName} className="border-b-0">
-                                <Card className='bg-background'>
-                                    <CardHeader className="p-0">
-                                        <div className="flex items-center p-4 rounded-t-lg">
-                                            <AccordionTrigger className={cn("flex-grow p-0 hover:no-underline text-white rounded-md bg-gradient-to-r", colorClass)}>
-                                                <div className='flex items-center gap-2 p-4 w-full'>
-                                                    <Folder className="h-5 w-5"/>
-                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
-                                                </div>
-                                            </AccordionTrigger>
-                                            {folderName !== "Genel Notlar" && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => e.stopPropagation()}>
-                                                            <Trash2 className="h-4 w-4"/>
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                                    </AlertDialog>
-                                            )}
+                             <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-lg bg-background">
+                                <div className="flex items-center">
+                                    <AccordionTrigger className={cn("flex-grow p-0 hover:no-underline text-white bg-gradient-to-r", colorClass)}>
+                                        <div className='flex items-center justify-between p-4 w-full'>
+                                            <div className="flex items-center gap-2">
+                                                <Folder className="h-5 w-5"/>
+                                                <h3 className="text-lg font-semibold">{folderName}</h3>
+                                            </div>
                                         </div>
-                                    </CardHeader>
-                                     <AccordionContent className="p-4">
-                                        {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                        {folderNotes?.map(note => (
-                                            <StickyNoteCard 
-                                                key={note.id} note={note} isEditing={editingNoteId === note.id}
-                                                onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
-                                                onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
-                                                onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
-                                            />
-                                        ))}
-                                        </div>
-                                     </AccordionContent>
-                                </Card>
+                                    </AccordionTrigger>
+                                     {folderName !== "Genel Notlar" && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0 mx-2" onClick={(e) => e.stopPropagation()}>
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
+                                </div>
+                                 <AccordionContent className="p-4">
+                                    {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {folderNotes?.map(note => (
+                                        <StickyNoteCard 
+                                            key={note.id} note={note} isEditing={editingNoteId === note.id}
+                                            onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
+                                            onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
+                                            onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
+                                        />
+                                    ))}
+                                    </div>
+                                 </AccordionContent>
                             </AccordionItem>
                         )
                     })}
