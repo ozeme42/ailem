@@ -23,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Reorder } from "framer-motion";
 import { TabsContent } from '@radix-ui/react-tabs';
 import { Combobox } from '@/components/ui/combobox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 interface NotebookDetails {
@@ -312,37 +313,43 @@ export default function NotebookClient() {
                         <DialogContent><DialogHeader><DialogTitle>Yeni Klasör Oluştur</DialogTitle></DialogHeader><Input placeholder="Klasör adı" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNewFolder()}/><DialogFooter><Button onClick={handleAddNewFolder}>Oluştur</Button></DialogFooter></DialogContent>
                       </Dialog>
                   </div>
-                  <div className="space-y-6">
+                   <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                     {folderOrder.map(folderName => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
                             if (folderName === 'Genel Notlar') return null; // Don't show empty general notes section
                         }
                         return (
-                            <div key={folderName}>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Folder className="h-5 w-5 text-muted-foreground"/>
-                                    <h3 className="text-lg font-semibold">{folderName}</h3>
-                                     {folderName !== 'Genel Notlar' && (
-                                         <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                        </AlertDialog>
-                                     )}
-                                </div>
-                                {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {folderNotes?.map(note => (
-                                    <StickyNoteCard 
-                                        key={note.id} note={note} isEditing={editingNoteId === note.id}
-                                        onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
-                                        onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
-                                    />
-                                ))}
-                                </div>
-                            </div>
+                            <AccordionItem key={folderName} value={folderName} className="border-b-0">
+                                <Card>
+                                     <AccordionTrigger className="p-4 hover:no-underline">
+                                        <div className="flex items-center gap-2">
+                                            <Folder className="h-5 w-5 text-muted-foreground"/>
+                                            <h3 className="text-lg font-semibold">{folderName}</h3>
+                                        </div>
+                                         {folderName !== 'Genel Notlar' && (
+                                             <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                            </AlertDialog>
+                                         )}
+                                     </AccordionTrigger>
+                                     <AccordionContent className="px-4 pb-4">
+                                        {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {folderNotes?.map(note => (
+                                            <StickyNoteCard 
+                                                key={note.id} note={note} isEditing={editingNoteId === note.id}
+                                                onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
+                                                onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
+                                            />
+                                        ))}
+                                        </div>
+                                     </AccordionContent>
+                                </Card>
+                            </AccordionItem>
                         )
                     })}
-                  </div>
+                   </Accordion>
               </TabsContent>
         )})}
       </Tabs>
@@ -442,5 +449,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
+    
 
     
