@@ -404,7 +404,7 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <div className="space-y-4 -mx-4 sm:mx-0">
+                   <div className="-mx-4 sm:mx-0">
                     <Accordion type="multiple" className="w-full space-y-4">
                         {folderOrder.map((folderName, folderIndex) => {
                             const folderNotes = notesByFolder[folderName];
@@ -413,11 +413,11 @@ export default function NotebookClient() {
                             }
                             const colorClass = folderColors[folderIndex % folderColors.length];
                             return (
-                                <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden">
-                                     <div className={cn("flex flex-col sm:rounded-lg", `bg-gradient-to-br ${colorClass}`)}>
+                                <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-lg">
+                                     <div className={cn("flex flex-col", `bg-gradient-to-br ${colorClass}`)}>
                                         <div className="flex items-center text-white p-2">
-                                            <AccordionTrigger className="flex-1 justify-start p-0">
-                                                <div className="flex items-center gap-4 text-white p-0 cursor-pointer w-full">
+                                            <AccordionTrigger className="flex-1 justify-start p-0 hover:no-underline">
+                                                 <div className="flex items-center gap-4 text-white p-0 cursor-pointer w-full">
                                                     <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                         <Folder className="h-6 w-6"/>
                                                     </div>
@@ -432,7 +432,7 @@ export default function NotebookClient() {
                                              {folderName !== "Genel Notlar" && (
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0">
                                                             <Trash2 className="h-4 w-4"/>
                                                         </Button>
                                                     </AlertDialogTrigger>
