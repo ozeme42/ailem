@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -83,6 +83,7 @@ export default function NotebookClient() {
   
   const [sections, setSections] = React.useState<NotebookSection[]>([]);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<{ oldName: string; sectionId: string } | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
 
 
@@ -238,6 +239,10 @@ export default function NotebookClient() {
     
     const currentSection = details.notebook.sections.find(s => s.id === activeTab);
     if (!currentSection) return;
+    if((currentSection.folders || []).includes(newFolderName.trim())) {
+      toast({ title: 'Bu klasör zaten mevcut', variant: 'destructive'});
+      return;
+    }
 
     const updatedFolders = [...(currentSection.folders || []), newFolderName.trim()];
     const updatedSections = details.notebook.sections.map(s => 
@@ -253,6 +258,31 @@ export default function NotebookClient() {
         toast({ title: 'Hata', variant: 'destructive' });
     }
   };
+  
+  const handleOpenFolderDialog = (folder: { oldName: string; sectionId: string } | null) => {
+    if (folder) {
+        setNewFolderName(folder.oldName);
+        setEditingFolder(folder);
+    } else {
+        setNewFolderName('');
+        setEditingFolder(null);
+    }
+    setIsFolderDialogOpen(true);
+  };
+  
+  const handleUpdateFolder = async () => {
+    if (!editingFolder || !newFolderName.trim() || !details) return;
+
+    try {
+      await updateNotebookFolder(notebookId, editingFolder.sectionId, editingFolder.oldName, newFolderName);
+      toast({ title: 'Klasör Güncellendi'});
+      setIsFolderDialogOpen(false);
+      setEditingFolder(null);
+    } catch (error) {
+       toast({ title: 'Hata', description: "Klasör güncellenemedi.", variant: 'destructive' });
+    }
+  }
+
 
   const handleDeleteFolder = async (folderToDelete: string) => {
       if (!details || !activeTab) return;
@@ -266,6 +296,8 @@ export default function NotebookClient() {
 
       try {
           await updateNotebook(notebookId, { sections: updatedSections });
+          // Note: Notes within the folder are not deleted, they become 'un-foldered'.
+          // A more complex migration could be implemented if needed.
           toast({ title: "Klasör Silindi", variant: 'destructive' });
       } catch (e) {
           toast({ title: 'Hata', variant: 'destructive' });
@@ -337,6 +369,7 @@ export default function NotebookClient() {
   }
 
   const { notebook, notes } = details;
+  const currentSection = sections.find(s => s.id === activeTab);
 
   return (
     <div className="h-full flex flex-col px-0 sm:px-4">
@@ -403,8 +436,8 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative px-0 sm:px-4">
-                    <div className="space-y-4 -mx-4 sm:mx-0">
-                        <Accordion type="multiple" className="w-full space-y-4">
+                    <div className="space-y-4" key={activeTab}>
+                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
                                 if (!folderNotes || folderNotes.length === 0) {
@@ -412,8 +445,8 @@ export default function NotebookClient() {
                                 }
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-xl">
-                                        <div className={cn("flex items-center text-white p-0 w-full sm:rounded-t-lg", `bg-gradient-to-br ${colorClass}`)}>
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg">
+                                        <div className={cn("flex items-center text-white p-0 w-full rounded-t-lg", `bg-gradient-to-br ${colorClass}`)}>
                                             <AccordionTrigger className="flex-1 justify-between p-4 hover:no-underline group">
                                                 <div className="flex items-center gap-4 text-left">
                                                     <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
@@ -427,27 +460,32 @@ export default function NotebookClient() {
                                                     </div>
                                                 </div>
                                             </AccordionTrigger>
-                                            {folderName !== 'Genel Notlar' && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="shrink-0 mr-2 text-white/70 hover:text-white hover:bg-white/20">
-                                                            <Trash2 className="h-4 w-4"/>
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent>
-                                                            <AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooterComponent>
-                                                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction>
-                                                        </AlertDialogFooterComponent>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            )}
+                                             <div className="flex items-center pr-2">
+                                                <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={() => handleAddNewNote(folderName === 'Genel Notlar' ? '' : folderName)}>
+                                                    <Plus className="h-5 w-5"/>
+                                                </Button>
+                                                {folderName !== 'Genel Notlar' && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20">
+                                                                <MoreVertical className="h-4 w-4"/>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <DropdownMenuItem onClick={() => handleOpenFolderDialog({oldName: folderName, sectionId: section.id})}><Edit className="mr-2 h-4 w-4"/>Düzenle</DropdownMenuItem>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription></AlertDialogHeader>
+                                                                    <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                             </div>
                                         </div>
-                                        <AccordionContent className="p-4 bg-background sm:rounded-b-lg">
+                                        <AccordionContent className="p-4 bg-background rounded-b-lg border-x border-b">
                                             {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                             {folderNotes?.map(note => (
@@ -473,13 +511,13 @@ export default function NotebookClient() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" sideOffset={12}>
-                                <DropdownMenuItem onClick={() => handleAddNewNote()}>
+                                <DropdownMenuItem onClick={() => handleAddNewNote(currentSection?.folders?.[0] || '')}>
                                     <StickyNote className="mr-2 h-4 w-4"/> Metin Notu Ekle
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
                                     <FileImage className="mr-2 h-4 w-4"/> Görsel Notu Ekle
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setIsFolderDialogOpen(true)}>
+                                <DropdownMenuItem onClick={() => handleOpenFolderDialog(null)}>
                                     <FolderPlus className="mr-2 h-4 w-4"/> Yeni Klasör
                                 </DropdownMenuItem>
                                  <DropdownMenuItem onClick={() => handleOpenSectionDialog(null)}>
@@ -489,7 +527,22 @@ export default function NotebookClient() {
                        </DropdownMenu>
                        <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageNoteAdd} />
                        <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
-                         <DialogContent><DialogHeader><DialogTitle>Yeni Klasör Oluştur</DialogTitle></DialogHeader><Input placeholder="Klasör adı" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNewFolder()}/><DialogFooter><Button onClick={handleAddNewFolder}>Oluştur</Button></DialogFooter></DialogContent>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{editingFolder ? "Klasörü Düzenle" : "Yeni Klasör Oluştur"}</DialogTitle>
+                            </DialogHeader>
+                            <Input 
+                                placeholder="Klasör adı" 
+                                value={newFolderName} 
+                                onChange={e => setNewFolderName(e.target.value)} 
+                                onKeyDown={e => e.key === 'Enter' && (editingFolder ? handleUpdateFolder() : handleAddNewFolder())}
+                            />
+                            <DialogFooter>
+                                <Button onClick={editingFolder ? handleUpdateFolder : handleAddNewFolder}>
+                                    {editingFolder ? 'Güncelle' : 'Oluştur'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
                        </Dialog>
                    </div>
               </TabsContent>

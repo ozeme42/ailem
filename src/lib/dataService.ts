@@ -1230,6 +1230,42 @@ export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'crea
 export const updateNotebook = (id: string, data: Partial<Omit<Notebook, 'id' | 'familyId'>>) => updateDoc(doc(db, 'notebooks', id), data);
 export const deleteNotebook = (id: string) => deleteDoc(doc(db, "notebooks", id));
 
+export const updateNotebookFolder = async (notebookId: string, sectionId: string, oldName: string, newName: string) => {
+  const familyId = await getCurrentFamilyId();
+  if (!familyId) return;
+
+  const notebookRef = doc(db, 'notebooks', notebookId);
+  const notebookSnap = await getDoc(notebookRef);
+
+  if (notebookSnap.exists()) {
+    const notebook = notebookSnap.data() as Notebook;
+    const updatedSections = notebook.sections.map(section => {
+      if (section.id === sectionId) {
+        const updatedFolders = (section.folders || []).map(f => f === oldName ? newName : f);
+        return { ...section, folders: updatedFolders };
+      }
+      return section;
+    });
+
+    const batch = writeBatch(db);
+    batch.update(notebookRef, { sections: updatedSections });
+
+    const notesQuery = query(
+      collection(db, 'notes'),
+      where('notebookId', '==', notebookId),
+      where('sectionId', '==', sectionId),
+      where('folder', '==', oldName)
+    );
+    const notesSnapshot = await getDocs(notesQuery);
+    notesSnapshot.forEach(noteDoc => {
+      batch.update(noteDoc.ref, { folder: newName });
+    });
+
+    await batch.commit();
+  }
+};
+
+
 // Fetches a single notebook and its associated notes
 export const onNotebookDetailsUpdate = (
   notebookId: string,
