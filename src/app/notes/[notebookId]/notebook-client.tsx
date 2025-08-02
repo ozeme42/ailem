@@ -314,7 +314,7 @@ export default function NotebookClient() {
                         <DialogContent><DialogHeader><DialogTitle>Yeni Klasör Oluştur</DialogTitle></DialogHeader><Input placeholder="Klasör adı" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNewFolder()}/><DialogFooter><Button onClick={handleAddNewFolder}>Oluştur</Button></DialogFooter></DialogContent>
                       </Dialog>
                   </div>
-                   <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
+                   <Accordion type="multiple" className="w-full space-y-4">
                     {folderOrder.map(folderName => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
@@ -450,7 +450,3 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
-
-    
-
-    
