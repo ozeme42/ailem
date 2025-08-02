@@ -42,13 +42,13 @@ const noteColors = [
 ];
 
 const folderColors = [
-    'bg-yellow-200/50 border-yellow-300 text-yellow-900',
-    'bg-blue-200/50 border-blue-300 text-blue-900',
-    'bg-green-200/50 border-green-300 text-green-900',
-    'bg-pink-200/50 border-pink-300 text-pink-900',
-    'bg-purple-200/50 border-purple-300 text-purple-900',
-    'bg-orange-200/50 border-orange-300 text-orange-900',
-    'bg-teal-200/50 border-teal-300 text-teal-900',
+    'text-yellow-600',
+    'text-blue-600',
+    'text-green-600',
+    'text-pink-600',
+    'text-purple-600',
+    'text-orange-600',
+    'text-teal-600',
 ];
 
 const notebookColors = [
@@ -360,6 +360,7 @@ export default function NotebookClient() {
                                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
                                     <TabsTrigger
                                         value={section.id}
+                                        style={{ '--section-color': section.color } as React.CSSProperties}
                                         className={cn(
                                             "pr-8 text-white bg-gradient-to-br transition-all",
                                             colorClass,
@@ -403,7 +404,7 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <Accordion type="multiple" className="w-full space-y-4">
+                   <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                     {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
@@ -411,29 +412,35 @@ export default function NotebookClient() {
                         }
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
-                                <Card>
-                                    <CardHeader className={cn("p-0 rounded-t-lg")}>
-                                        <AccordionTrigger className="p-4 hover:no-underline">
-                                            <div className="flex items-center justify-between w-full">
+                                <Card className='bg-muted/30'>
+                                    <CardHeader className="p-0">
+                                         <div className="flex items-center p-4">
+                                            <AccordionTrigger className="hover:no-underline flex-grow">
                                                 <div className="flex items-center gap-2">
                                                     <Folder className={cn("h-5 w-5", folderColors[folderIndex % folderColors.length])}/>
                                                     <h3 className="text-lg font-semibold">{folderName}</h3>
                                                 </div>
-                                                {folderName !== 'Genel Notlar' && (
-                                                     <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/70 hover:text-destructive shrink-0" onClick={(e) => e.stopPropagation()}>
-                                                                <Trash2 className="w-4 h-4"/>
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
-                                                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                )}
-                                            </div>
-                                        </AccordionTrigger>
+                                            </AccordionTrigger>
+                                            {folderName !== 'Genel Notlar' && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/70 hover:text-destructive shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                            <Trash2 className="w-4 h-4"/>
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent>
+                                                            <AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooterComponent>
+                                                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction>
+                                                        </AlertDialogFooterComponent>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
+                                        </div>
                                      </CardHeader>
                                      <AccordionContent className="p-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
@@ -585,5 +592,6 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
 
 
