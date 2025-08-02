@@ -1104,6 +1104,8 @@ export const updateMemorizationProgress = async (itemId: string, memberId: strin
 
 
 export const removeMemorizationProgress = async (itemId: string, memberId: string) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
     const progressId = `${itemId}_${memberId}`;
     const docRef = doc(db, 'memorizationProgress', progressId);
     return deleteDoc(docRef);
@@ -1303,7 +1305,7 @@ export const updateNoteInSection = (notebookId: string, noteId: string, noteData
   return updateDoc(noteRef, { ...noteData, updatedAt: new Date().toISOString() });
 };
 
-export const deleteNoteFromSection = (notebookId: string, noteId: string) => {
+export const deleteNoteFromSection = (noteId: string) => {
   const noteRef = doc(db, 'notes', noteId);
   return deleteDoc(noteRef);
 };

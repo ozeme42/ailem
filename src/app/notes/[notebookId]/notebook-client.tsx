@@ -10,7 +10,7 @@ import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNote
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, GripVertical, FolderPlus, Folder } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, GripVertical, FolderPlus, Folder, Plus } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -357,11 +357,9 @@ export default function NotebookClient() {
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
                              <TabsTrigger 
                                 value={section.id} 
-                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${colorClass}`)}
+                                className={cn("pr-8 data-[state=active]:text-white", isActive && `bg-gradient-to-br ${colorClass}`)}
                             >
-                                <span className={cn(isActive ? "text-white" : `text-foreground`)}>
-                                  {section.title}
-                                </span>
+                                {section.title}
                             </TabsTrigger>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -398,18 +396,7 @@ export default function NotebookClient() {
             const folderOrder = ['Genel Notlar', ...(section.folders || [])];
 
             return (
-              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4">
-                  <div className="flex gap-2 mb-4">
-                      <Button className="flex-1" onClick={() => handleAddNewNote()}><StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle</Button>
-                       <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageNoteAdd} />
-                      <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()} disabled={isLoading}>
-                          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileImage className="mr-2 h-4 w-4" />}
-                          Görsel Notu Ekle
-                      </Button>
-                      <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}><DialogTrigger asChild><Button variant="secondary" className="flex-1"><FolderPlus className="mr-2 h-4 w-4" /> Yeni Klasör</Button></DialogTrigger>
-                        <DialogContent><DialogHeader><DialogTitle>Yeni Klasör Oluştur</DialogTitle></DialogHeader><Input placeholder="Klasör adı" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNewFolder()}/><DialogFooter><Button onClick={handleAddNewFolder}>Oluştur</Button></DialogFooter></DialogContent>
-                      </Dialog>
-                  </div>
+              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
                    <Accordion type="multiple" className="w-full space-y-4">
                     {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
@@ -419,8 +406,8 @@ export default function NotebookClient() {
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                     <CardHeader className="p-0">
-                                         <div className="flex items-center">
+                                    <CardHeader className="p-0">
+                                        <div className="flex items-center">
                                             <AccordionTrigger className={cn("p-4 hover:no-underline rounded-t-lg flex-grow", folderColors[folderIndex % folderColors.length])}>
                                                 <div className="flex items-center gap-2">
                                                     <Folder className="h-5 w-5"/>
@@ -458,6 +445,31 @@ export default function NotebookClient() {
                         )
                     })}
                    </Accordion>
+
+                    <div className="fixed bottom-24 right-8 z-10 md:bottom-8">
+                       <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button className="rounded-full w-16 h-16 shadow-lg" size="icon">
+                                    <Plus className="h-8 w-8" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={12}>
+                                <DropdownMenuItem onClick={() => handleAddNewNote()}>
+                                    <StickyNote className="mr-2 h-4 w-4"/> Metin Notu Ekle
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
+                                    <FileImage className="mr-2 h-4 w-4"/> Görsel Notu Ekle
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setIsFolderDialogOpen(true)}>
+                                    <FolderPlus className="mr-2 h-4 w-4"/> Yeni Klasör
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                       </DropdownMenu>
+                       <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageNoteAdd} />
+                       <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+                         <DialogContent><DialogHeader><DialogTitle>Yeni Klasör Oluştur</DialogTitle></DialogHeader><Input placeholder="Klasör adı" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNewFolder()}/><DialogFooter><Button onClick={handleAddNewFolder}>Oluştur</Button></DialogFooter></DialogContent>
+                       </Dialog>
+                   </div>
               </TabsContent>
         )})}
       </Tabs>
@@ -562,4 +574,5 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
 
