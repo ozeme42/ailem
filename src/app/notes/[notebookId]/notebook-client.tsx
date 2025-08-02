@@ -280,16 +280,19 @@ export default function NotebookClient() {
            <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center border-b">
              <TabsList className="h-auto bg-transparent p-0 border-none">
                 {sections.map(section => {
-                    const textColorClass = section.color ? (noteColors.find(c => c.class === section.color)?.color || 'var(--foreground)') : 'var(--foreground)';
-                    const activeClass = activeTab === section.id ? section.color : '';
-
+                    const isActive = activeTab === section.id;
+                    const sectionColorClass = section.color || 'bg-gray-100 border-gray-200 text-gray-900';
+                    const activeClass = isActive ? sectionColorClass.replace('text-', 'data-[state=active]:text-') : '';
+                    
                     return (
                         <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
                             <TabsTrigger 
                                 value={section.id} 
-                                className="pr-8"
-                                style={{ color: activeTab === section.id ? textColorClass : 'hsl(var(--muted-foreground))' }}
+                                className={cn(
+                                    "pr-8",
+                                    isActive && sectionColorClass
+                                )}
                             >
                                 {section.title}
                             </TabsTrigger>
@@ -481,5 +484,6 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
 
 
