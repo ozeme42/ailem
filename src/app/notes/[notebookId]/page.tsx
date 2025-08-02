@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 
 export default function NotebookDetailPage() {
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col px-0 sm:px-4">
       <Suspense fallback={<NotebookSkeleton />}>
         <NotebookClient />
       </Suspense>

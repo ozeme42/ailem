@@ -341,7 +341,7 @@ export default function NotebookClient() {
   return (
     <div className="h-full flex flex-col">
       <PageHeader title={notebook.title}>
-        <Button onClick={() => router.push('/notes')} variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+        <Button onClick={() => router.push('/notes')} className="bg-white/20 text-white hover:bg-white/30 border-none">
           <ArrowLeft className="mr-2 h-4 w-4" /> Defterler
         </Button>
       </PageHeader>
@@ -359,8 +359,7 @@ export default function NotebookClient() {
                                     <TabsTrigger
                                         value={section.id}
                                         className={cn(
-                                            "pr-8 text-white bg-gradient-to-br transition-all",
-                                            "text-xs px-2.5 py-1.5 sm:text-sm sm:px-3 sm:py-1.5",
+                                            "pr-8 text-white bg-gradient-to-br transition-all text-xs px-2.5 py-1.5 sm:text-sm sm:px-3 sm:py-1.5",
                                             section.color,
                                             isActive 
                                                 ? "ring-2 ring-offset-2 ring-ring opacity-100" 
@@ -404,20 +403,19 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <div className="-mx-4 sm:mx-0">
-                    <Accordion type="multiple" className="w-full space-y-4">
-                        {folderOrder.map((folderName, folderIndex) => {
-                            const folderNotes = notesByFolder[folderName];
-                            if (!folderNotes || folderNotes.length === 0) {
-                                if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
-                            }
-                            const colorClass = folderColors[folderIndex % folderColors.length];
-                            return (
-                                <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-lg">
-                                     <div className={cn("flex flex-col", `bg-gradient-to-br ${colorClass}`)}>
-                                        <div className="flex items-center text-white p-2">
-                                            <AccordionTrigger className="flex-1 justify-start p-0 hover:no-underline">
-                                                 <div className="flex items-center gap-4 text-white p-0 cursor-pointer w-full">
+                    <div className="space-y-4">
+                        <Accordion type="multiple" className="w-full space-y-4">
+                            {folderOrder.map((folderName, folderIndex) => {
+                                const folderNotes = notesByFolder[folderName];
+                                if (!folderNotes || folderNotes.length === 0) {
+                                    if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
+                                }
+                                const colorClass = folderColors[folderIndex % folderColors.length];
+                                return (
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg sm:rounded-xl">
+                                         <div className="flex flex-col">
+                                            <AccordionTrigger className="hover:no-underline p-0">
+                                                <div className={cn("flex items-center gap-4 text-white p-4 cursor-pointer w-full", `bg-gradient-to-br ${colorClass}`)}>
                                                     <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                         <Folder className="h-6 w-6"/>
                                                     </div>
@@ -429,39 +427,25 @@ export default function NotebookClient() {
                                                     </div>
                                                 </div>
                                             </AccordionTrigger>
-                                             {folderName !== "Genel Notlar" && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0">
-                                                            <Trash2 className="h-4 w-4"/>
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                                </AlertDialog>
-                                            )}
+                                            <AccordionContent className="p-4 bg-background">
+                                                {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                {folderNotes?.map(note => (
+                                                    <StickyNoteCard 
+                                                        key={note.id} note={note} isEditing={editingNoteId === note.id}
+                                                        onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
+                                                        onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
+                                                        onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
+                                                    />
+                                                ))}
+                                                </div>
+                                            </AccordionContent>
                                         </div>
-                                        <AccordionContent className="p-4 bg-background sm:rounded-b-lg">
-                                            {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                            {folderNotes?.map(note => (
-                                                <StickyNoteCard 
-                                                    key={note.id} note={note} isEditing={editingNoteId === note.id}
-                                                    onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
-                                                    onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
-                                                    onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
-                                                />
-                                            ))}
-                                            </div>
-                                        </AccordionContent>
-                                    </div>
-                                </AccordionItem>
-                            )
-                        })}
-                    </Accordion>
-                   </div>
-
+                                    </AccordionItem>
+                                )
+                            })}
+                        </Accordion>
+                    </div>
                     <div className="fixed bottom-24 right-8 z-10 md:bottom-8">
                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
