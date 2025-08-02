@@ -357,7 +357,7 @@ export default function NotebookClient() {
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
                              <TabsTrigger
                                 value={section.id}
-                                className={cn("pr-8 data-[state=active]:text-white", isActive && `bg-gradient-to-br ${colorClass}`)}
+                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${colorClass}`)}
                             >
                                 {section.title}
                             </TabsTrigger>
@@ -379,9 +379,6 @@ export default function NotebookClient() {
                     )
                 })}
              </TabsList>
-             <Button variant="ghost" size="sm" className="ml-2" onClick={() => handleOpenSectionDialog(null)}>
-                <Plus className="h-4 w-4"/>
-            </Button>
            </Reorder.Group>
         </div>
         
@@ -462,6 +459,9 @@ export default function NotebookClient() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setIsFolderDialogOpen(true)}>
                                     <FolderPlus className="mr-2 h-4 w-4"/> Yeni Klasör
+                                </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={() => handleOpenSectionDialog(null)}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Yeni Bölüm Ekle
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                        </DropdownMenu>
@@ -574,6 +574,4 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
-
-
 
