@@ -40,6 +40,17 @@ const noteColors = [
     { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900' },
 ];
 
+const folderColors = [
+    'bg-yellow-100 border-yellow-200 text-yellow-900',
+    'bg-blue-100 border-blue-200 text-blue-900',
+    'bg-green-100 border-green-200 text-green-900',
+    'bg-pink-100 border-pink-200 text-pink-900',
+    'bg-purple-100 border-purple-200 text-purple-900',
+    'bg-orange-100 border-orange-200 text-orange-900',
+    'bg-teal-100 border-teal-200 text-teal-900',
+];
+
+
 export default function NotebookClient() {
   const params = useParams();
   const router = useRouter();
@@ -268,28 +279,31 @@ export default function NotebookClient() {
         <div className="flex-shrink-0">
            <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center border-b">
              <TabsList className="h-auto bg-transparent p-0 border-none">
-                {sections.map(section => (
-                 <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
-                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                     <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && section.color.replace(/text-(.*)-(\d+)/, 'data-[state=active]:text-foreground'))}>
-                        {section.title}
-                     </TabsTrigger>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100">
-                               <MoreVertical className="h-4 w-4"/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
-                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{section.title}" bölümünü silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                            </AlertDialog>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                   </Reorder.Item>
-                ))}
+                {sections.map(section => {
+                    const textColorClass = section.color ? section.color.match(/text-[a-z]+-\d+/)?.[0] : 'text-foreground';
+                    return (
+                        <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
+                            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
+                            <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && textColorClass)}>
+                                {section.title}
+                            </TabsTrigger>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100">
+                                    <MoreVertical className="h-4 w-4"/>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
+                                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{section.title}" bölümünü silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                    </AlertDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </Reorder.Item>
+                    )
+                })}
              </TabsList>
              <Button variant="ghost" size="sm" className="ml-2" onClick={() => handleOpenSectionDialog(null)}>
                 <PlusCircle className="h-4 w-4"/>
@@ -316,39 +330,38 @@ export default function NotebookClient() {
                       </Dialog>
                   </div>
                    <Accordion type="multiple" className="w-full space-y-4">
-                    {folderOrder.map(folderName => {
+                    {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
-                            if (folderName === 'Genel Notlar') return null; // Don't show empty general notes section if there are other folders
-                             if (folderName !== 'Genel Notlar' && Object.keys(notesByFolder).length > 1 && (!notesByFolder['Genel Notlar'] || notesByFolder['Genel Notlar'].length === 0)) return null;
+                            if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
                         }
                         return (
                             <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                     <CardHeader className="p-0">
-                                        <div className="flex items-center">
-                                            <AccordionTrigger className={cn("p-4 hover:no-underline flex-grow", section.color)}>
-                                                <div className="flex items-center gap-2">
-                                                    <Folder className="h-5 w-5"/>
-                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
-                                                </div>
-                                            </AccordionTrigger>
-                                            {folderName !== 'Genel Notlar' && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 mr-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            )}
-                                        </div>
-                                     </CardHeader>
+                                     <div className="flex items-center">
+                                         <AccordionTrigger className={cn("p-4 hover:no-underline flex-grow", folderColors[folderIndex % folderColors.length])}>
+                                             <div className="flex items-center gap-2">
+                                                 <Folder className="h-5 w-5"/>
+                                                 <h3 className="text-lg font-semibold">{folderName}</h3>
+                                             </div>
+                                         </AccordionTrigger>
+                                         {folderName !== 'Genel Notlar' && (
+                                            <div className="pr-2">
+                                                 <AlertDialog>
+                                                     <AlertDialogTrigger asChild>
+                                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                     </AlertDialogTrigger>
+                                                     <AlertDialogContent>
+                                                         <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader>
+                                                         <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
+                                                     </AlertDialogContent>
+                                                 </AlertDialog>
+                                            </div>
+                                         )}
+                                     </div>
                                      <AccordionContent className="px-4 pb-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4">
                                         {folderNotes?.map(note => (
                                             <StickyNoteCard 
                                                 key={note.id} note={note} isEditing={editingNoteId === note.id}
@@ -462,3 +475,4 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
