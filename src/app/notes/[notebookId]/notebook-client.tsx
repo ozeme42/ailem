@@ -339,7 +339,7 @@ export default function NotebookClient() {
   const { notebook, notes } = details;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col px-0 sm:px-4">
       <PageHeader title={notebook.title}>
         <Button onClick={() => router.push('/notes')} className="bg-white/20 text-white hover:bg-white/30 border-none">
           <ArrowLeft className="mr-2 h-4 w-4" /> Defterler
@@ -403,7 +403,7 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                    <div className="space-y-4">
+                    <div className="space-y-4 -mx-4 sm:mx-0">
                         <Accordion type="multiple" className="w-full space-y-4">
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
@@ -412,11 +412,11 @@ export default function NotebookClient() {
                                 }
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg sm:rounded-xl">
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-xl">
                                         <div className="flex flex-col">
-                                             <div className="flex items-center justify-between bg-card rounded-lg sm:rounded-xl">
+                                            <div className="flex items-center justify-between bg-card">
                                                 <AccordionTrigger className="flex-1 justify-start p-0 hover:no-underline group">
-                                                    <div className={cn("flex items-center gap-4 text-white p-4 cursor-pointer w-full", `bg-gradient-to-br ${colorClass}`)}>
+                                                    <div className={cn("flex items-center gap-4 text-white p-4 cursor-pointer w-full sm:rounded-t-lg", `bg-gradient-to-br ${colorClass}`)}>
                                                         <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                             <Folder className="h-6 w-6"/>
                                                         </div>
@@ -449,7 +449,7 @@ export default function NotebookClient() {
                                                     </AlertDialog>
                                                  )}
                                             </div>
-                                            <AccordionContent className="p-4 bg-background">
+                                            <AccordionContent className="p-4 bg-background sm:rounded-b-lg">
                                                 {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                                 {folderNotes?.map(note => (
