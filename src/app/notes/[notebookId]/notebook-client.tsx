@@ -401,7 +401,7 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <Accordion type="multiple" className="w-full space-y-4 -mx-4 sm:mx-0">
+                   <div className="space-y-4 -mx-4 sm:mx-0">
                     {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
@@ -410,17 +410,24 @@ export default function NotebookClient() {
                         const colorClass = folderColors[folderIndex % folderColors.length];
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-lg bg-background">
-                                 <div className={cn("relative flex items-center bg-gradient-to-r text-white", colorClass)}>
-                                    <AccordionTrigger className="flex-grow p-4 hover:no-underline pr-12">
-                                        <div className="flex items-center gap-2">
-                                            <Folder className="h-5 w-5"/>
-                                            <h3 className="text-lg font-semibold">{folderName}</h3>
+                                 <div className={cn("flex items-center text-white bg-gradient-to-br", colorClass)}>
+                                    <AccordionTrigger className="flex-grow hover:no-underline text-left">
+                                        <div className="flex items-center gap-4 px-4 py-3">
+                                             <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
+                                                <Folder className="h-6 w-6"/>
+                                            </div>
+                                            <div className="flex flex-col justify-center min-w-0">
+                                                <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
+                                                <p className="text-white/80 text-sm font-normal truncate">
+                                                    {folderNotes?.length || 0} not
+                                                </p>
+                                            </div>
                                         </div>
                                     </AccordionTrigger>
                                      {folderName !== "Genel Notlar" && (
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="absolute top-1/2 right-2 -translate-y-1/2 h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                <Button variant="ghost" size="icon" className="mr-2 h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0" onClick={(e) => e.stopPropagation()}>
                                                     <Trash2 className="h-4 w-4"/>
                                                 </Button>
                                             </AlertDialogTrigger>
@@ -446,7 +453,7 @@ export default function NotebookClient() {
                             </AccordionItem>
                         )
                     })}
-                   </Accordion>
+                   </div>
 
                     <div className="fixed bottom-24 right-8 z-10 md:bottom-8">
                        <DropdownMenu>
