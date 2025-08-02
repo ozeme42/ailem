@@ -10,7 +10,7 @@ import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNote
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, GripVertical } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Reorder } from "framer-motion";
 
 
 interface NotebookDetails {
@@ -45,6 +46,8 @@ export default function NotebookClient() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  const [sections, setSections] = React.useState<NotebookSection[]>([]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,18 +56,40 @@ export default function NotebookClient() {
     if (!notebookId || !user) return;
     const unsubscribe = onNotebookDetailsUpdate(notebookId, (data) => {
       if (data) {
-        setDetails(data);
-        if (data.notebook.sections.length > 0 && (!activeTab || !data.notebook.sections.some(s => s.id === activeTab))) {
-            setActiveTab(data.notebook.sections[0].id);
-        } else if (data.notebook.sections.length === 0) {
+        const sortedSections = data.notebook.sections.sort((a, b) => a.order - b.order);
+        setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
+        setSections(sortedSections);
+
+        if (sortedSections.length > 0 && (!activeTab || !sortedSections.some(s => s.id === activeTab))) {
+            setActiveTab(sortedSections[0].id);
+        } else if (sortedSections.length === 0) {
             setActiveTab('');
         }
       } else {
         setDetails(null);
+        setSections([]);
       }
     });
     return () => unsubscribe();
   }, [notebookId, user, activeTab]);
+
+  const handleReorderSections = async (newOrder: NotebookSection[]) => {
+    setSections(newOrder);
+    const sectionsToUpdate = newOrder.map((section, index) => ({
+      ...section,
+      order: index,
+    }));
+    try {
+      await updateNotebook(notebookId, { sections: sectionsToUpdate });
+      toast({ title: 'Bölüm sırası güncellendi' });
+    } catch (e) {
+      toast({ title: 'Hata', description: 'Bölüm sırası güncellenirken bir hata oluştu.', variant: 'destructive' });
+      // Revert to original order on error
+      if (details) {
+        setSections(details.notebook.sections);
+      }
+    }
+  };
   
   const handleOpenSectionDialog = (section: NotebookSection | null) => {
     setEditingSection(section);
@@ -202,7 +227,6 @@ export default function NotebookClient() {
   }
 
   const { notebook, notes } = details;
-  const sections = notebook.sections.sort((a, b) => a.order - b.order);
 
   return (
     <div className="h-full flex flex-col">
@@ -214,49 +238,52 @@ export default function NotebookClient() {
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col min-h-0">
         <div className="flex-shrink-0">
-          <TabsList className="h-auto">
-            {sections.map(section => (
-               <div key={section.id} className="group relative pr-2">
-                 <TabsTrigger value={section.id} className="pr-8">
-                    {section.title}
-                 </TabsTrigger>
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100">
-                           <MoreVertical className="h-4 w-4"/>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}>
-                            <Edit className="mr-2 h-4 w-4"/> Düzenle
-                        </DropdownMenuItem>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4"/>Sil
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
-                                    <AlertDialogDescription>
-                                        "{section.title}" bölümünü silmek istediğinizden emin misiniz? Bu işlem, bölümdeki tüm notları kalıcı olarak silecektir.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooterComponent>
-                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction>
-                                </AlertDialogFooterComponent>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </DropdownMenuContent>
-                 </DropdownMenu>
-               </div>
-            ))}
+           <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center border-b">
+             <TabsList className="h-auto">
+                {sections.map(section => (
+                 <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
+                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
+                     <TabsTrigger value={section.id} className="pr-8">
+                        {section.title}
+                     </TabsTrigger>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100">
+                               <MoreVertical className="h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}>
+                                <Edit className="mr-2 h-4 w-4"/> Düzenle
+                            </DropdownMenuItem>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4"/>Sil
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
+                                        <AlertDialogDescription>
+                                            "{section.title}" bölümünü silmek istediğinizden emin misiniz? Bu işlem, bölümdeki tüm notları kalıcı olarak silecektir.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooterComponent>
+                                        <AlertDialogCancel>İptal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction>
+                                    </AlertDialogFooterComponent>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                   </Reorder.Item>
+                ))}
+             </TabsList>
              <Button variant="ghost" size="sm" className="ml-2" onClick={() => handleOpenSectionDialog(null)}>
                 <PlusCircle className="h-4 w-4"/>
             </Button>
-          </TabsList>
+           </Reorder.Group>
         </div>
         
         {sections.map(section => (
@@ -479,3 +506,4 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
