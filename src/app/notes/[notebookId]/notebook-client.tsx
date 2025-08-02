@@ -341,7 +341,7 @@ export default function NotebookClient() {
   return (
     <div className="h-full flex flex-col">
       <PageHeader title={notebook.title}>
-        <Button onClick={() => router.push('/notes')} variant="outline">
+        <Button onClick={() => router.push('/notes')} variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
           <ArrowLeft className="mr-2 h-4 w-4" /> Defterler
         </Button>
       </PageHeader>
@@ -403,21 +403,35 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <Accordion type="multiple" className="w-full space-y-4">
+                   <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                     {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
                             if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
                         }
+                        const folderColor = folderColors[folderIndex % folderColors.length];
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
-                                <Card className='bg-muted/30'>
+                                <Card className='bg-background'>
                                      <CardHeader className="p-0">
-                                        <AccordionTrigger className={cn("hover:no-underline p-4", "bg-gradient-to-r text-white rounded-t-lg", section.color)}>
+                                        <AccordionTrigger className={cn("hover:no-underline p-4 rounded-t-lg", "bg-gradient-to-r text-white", section.color)}>
                                             <div className="flex items-center gap-2">
                                                 <Folder className="h-5 w-5"/>
                                                 <h3 className="text-lg font-semibold">{folderName}</h3>
                                             </div>
+                                             {folderName !== "Genel Notlar" && (
+                                                 <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:text-white hover:bg-white/20" onClick={(e) => e.stopPropagation()}>
+                                                            <Trash2 className="h-4 w-4"/>
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
                                         </AccordionTrigger>
                                     </CardHeader>
                                      <AccordionContent className="p-4">
@@ -570,6 +584,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
 
 
 
