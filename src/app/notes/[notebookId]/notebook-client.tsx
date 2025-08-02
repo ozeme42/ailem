@@ -24,6 +24,7 @@ import { Reorder } from "framer-motion";
 import { TabsContent } from '@radix-ui/react-tabs';
 import { Combobox } from '@/components/ui/combobox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Card } from '@/components/ui/card';
 
 
 interface NotebookDetails {
