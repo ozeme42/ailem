@@ -12,7 +12,7 @@ import { PlusCircle, Trash2, Edit, ChevronRight, Notebook as NotebookIcon, Searc
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter, CardContent } from '@/components/ui/card';
 import { NewNotebookForm } from '@/components/new-notebook-form';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -133,7 +133,7 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
             {notebooks.map(notebook => (
                 <Card key={notebook.id} className={cn(
                     "group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform border-0 text-white",
-                    notebook.color ? `bg-gradient-to-br ${notebook.color}` : "bg-gradient-to-br from-gray-700 to-gray-900"
+                    notebook.color ? `bg-gradient-to-br ${notebook.color}` : "bg-gradient-to-br from-gray-700 to-gray-800"
                 )}>
                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:text-white hover:bg-white/20" onClick={(e) => { e.stopPropagation(); onEdit(notebook); }}>
@@ -223,4 +223,5 @@ function SearchResults({ notes, notebooks }: { notes: Note[], notebooks: Noteboo
         </div>
     )
 }
+
 
