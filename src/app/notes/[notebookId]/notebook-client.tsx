@@ -346,40 +346,48 @@ export default function NotebookClient() {
       </PageHeader>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col min-h-0">
-        <div className="flex-shrink-0 border-b overflow-x-auto">
-           <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center">
-             <TabsList className="h-auto bg-transparent p-0 border-none">
-                {sections.map(section => {
-                    const isActive = activeTab === section.id;
-                    const colorClass = section.color || 'from-gray-500 to-gray-600';
-                    return (
-                        <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
-                            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                             <TabsTrigger
-                                value={section.id}
-                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${colorClass}`)}
-                            >
-                                {section.title}
-                            </TabsTrigger>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100">
-                                    <MoreVertical className="h-4 w-4"/>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
-                                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{section.title}" bölümünü silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                    </AlertDialog>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </Reorder.Item>
-                    )
-                })}
-             </TabsList>
-           </Reorder.Group>
+        <div className="flex-shrink-0 border-b">
+           <ScrollArea className="w-full">
+            <div className="flex items-center pb-2">
+                <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center">
+                    <TabsList className="h-auto bg-transparent p-0 border-none">
+                        {sections.map(section => {
+                            const isActive = activeTab === section.id;
+                            const colorClass = section.color || 'from-gray-500 to-gray-600';
+                            return (
+                                <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
+                                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
+                                    <TabsTrigger
+                                        value={section.id}
+                                        className={cn(
+                                            "pr-8 text-white bg-gradient-to-br transition-all",
+                                            colorClass,
+                                            isActive ? "opacity-100 ring-2 ring-offset-2 ring-ring" : "opacity-70 hover:opacity-90"
+                                        )}
+                                    >
+                                        {section.title}
+                                    </TabsTrigger>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 text-white hover:text-white hover:bg-white/20">
+                                            <MoreVertical className="h-4 w-4"/>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
+                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{section.title}" bölümünü silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </Reorder.Item>
+                            )
+                        })}
+                    </TabsList>
+                </Reorder.Group>
+            </div>
+           </ScrollArea>
         </div>
         
         {sections.map(section => {
@@ -403,26 +411,13 @@ export default function NotebookClient() {
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                    <CardHeader className="p-0">
-                                        <div className={cn("flex items-center rounded-t-lg", folderColors[folderIndex % folderColors.length])}>
-                                            <AccordionTrigger className="p-4 hover:no-underline flex-grow">
-                                                <div className="flex items-center gap-2">
-                                                    <Folder className="h-5 w-5"/>
-                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
-                                                </div>
-                                            </AccordionTrigger>
-                                            {folderName !== 'Genel Notlar' && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="mr-2 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            )}
-                                         </div>
+                                    <CardHeader className={cn("p-0 rounded-t-lg", folderColors[folderIndex % folderColors.length])}>
+                                        <AccordionTrigger className="p-4 hover:no-underline">
+                                            <div className="flex items-center gap-2">
+                                                <Folder className="h-5 w-5"/>
+                                                <h3 className="text-lg font-semibold">{folderName}</h3>
+                                            </div>
+                                        </AccordionTrigger>
                                      </CardHeader>
                                      <AccordionContent className="p-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
@@ -574,3 +569,4 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
