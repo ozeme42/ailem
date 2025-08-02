@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -9,19 +8,21 @@ import { Notebook as NotebookType } from '@/lib/data';
 import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Edit, ChevronRight, Notebook as NotebookIcon } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, ChevronRight, Notebook as NotebookIcon, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { NewNotebookForm } from '@/components/new-notebook-form';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 export function NotesClient() {
     const { user } = useAuth();
     const [notebooks, setNotebooks] = useState<NotebookType[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingNotebook, setEditingNotebook] = useState<NotebookType | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -60,6 +61,18 @@ export function NotesClient() {
             toast({ title: 'Hata', variant: 'destructive' });
         }
     };
+    
+    const filteredNotebooks = useMemo(() => {
+        if (!searchTerm) {
+            return notebooks;
+        }
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return notebooks.filter(notebook =>
+            notebook.title.toLowerCase().includes(lowercasedTerm) ||
+            (notebook.description && notebook.description.toLowerCase().includes(lowercasedTerm))
+        );
+    }, [searchTerm, notebooks]);
+
 
     return (
         <div className="space-y-6">
@@ -77,7 +90,17 @@ export function NotesClient() {
                 </Dialog>
             </PageHeader>
             
-            <NotebookGrid notebooks={notebooks} onEdit={handleOpenDialog} onDelete={handleDeleteNotebook} />
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Defterlerde ara..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <NotebookGrid notebooks={filteredNotebooks} onEdit={handleOpenDialog} onDelete={handleDeleteNotebook} />
         </div>
     );
 }
@@ -89,7 +112,7 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
                 <NotebookIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">Boşluk...</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Bu alanda hiç not defteri yok.
+                    Aradığınız kriterlere uygun not defteri yok veya hiç defter oluşturulmadı.
                 </p>
             </Card>
         )
