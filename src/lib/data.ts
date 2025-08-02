@@ -228,12 +228,15 @@ export interface Note {
     color?: string; // e.g. 'bg-yellow-100 border-yellow-200'
     tags?: string[];
     imageUrl?: string | null;
+    folder?: string;
 }
 
 export interface NotebookSection {
     id: string;
     title: string;
     order: number;
+    color: string;
+    folders?: string[];
 }
 
 export interface Notebook {
@@ -456,6 +459,26 @@ export interface AmbientSound {
     name: string;
     url: string; // Public URL to the audio file in Firebase Storage
     loop: boolean;
+}
+export interface PomodoroProject {
+    id: string;
+    familyId: string;
+    memberId: string;
+    title: string;
+    color: string;
+    targetTimeSeconds: number; // e.g., 3 hours = 10800 seconds
+    trackedTimeSeconds: number;
+    sourceType?: 'task' | 'habit' | 'book' | 'test' | 'goal' | 'memorization' | 'video' | 'custom';
+    sourceId?: string;
+    createdAt: string;
+}
+export interface PomodoroSession {
+    id: string;
+    familyId: string;
+    projectId: string;
+    startTime: string; // ISO string
+    endTime: string; // ISO string
+    durationSeconds: number;
 }
 // This data is now only for initial setup
 // ... (rest of the initial data remains the same)

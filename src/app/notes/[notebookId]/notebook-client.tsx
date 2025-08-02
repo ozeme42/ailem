@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -9,8 +8,8 @@ import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } fro
 import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection } from '@/lib/dataService';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, GripVertical } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, GripVertical, FolderPlus, Folder } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -22,12 +21,21 @@ import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Reorder } from "framer-motion";
+import { TabsContent } from '@radix-ui/react-tabs';
+import { Combobox } from '@/components/ui/combobox';
 
 
 interface NotebookDetails {
   notebook: NotebookType;
   notes: Note[];
 }
+const noteColors = [
+    { name: 'Sarı', class: 'bg-yellow-100 border-yellow-200 text-yellow-900' },
+    { name: 'Mavi', class: 'bg-blue-100 border-blue-200 text-blue-900' },
+    { name: 'Yeşil', class: 'bg-green-100 border-green-200 text-green-900' },
+    { name: 'Pembe', class: 'bg-pink-100 border-pink-200 text-pink-900' },
+    { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900' },
+];
 
 export default function NotebookClient() {
   const params = useParams();
@@ -41,13 +49,16 @@ export default function NotebookClient() {
   
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<NotebookSection | null>(null);
-  const [sectionName, setSectionName] = useState('');
+  const [sectionFormData, setSectionFormData] = useState({ title: '', color: noteColors[0].class });
   
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
   const [isLoading, setIsLoading] = useState(false);
   
   const [sections, setSections] = React.useState<NotebookSection[]>([]);
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,7 +67,7 @@ export default function NotebookClient() {
     if (!notebookId || !user) return;
     const unsubscribe = onNotebookDetailsUpdate(notebookId, (data) => {
       if (data) {
-        const sortedSections = data.notebook.sections.sort((a, b) => a.order - b.order);
+        const sortedSections = (data.notebook.sections || []).sort((a, b) => a.order - b.order);
         setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
         setSections(sortedSections);
 
@@ -84,7 +95,6 @@ export default function NotebookClient() {
       toast({ title: 'Bölüm sırası güncellendi' });
     } catch (e) {
       toast({ title: 'Hata', description: 'Bölüm sırası güncellenirken bir hata oluştu.', variant: 'destructive' });
-      // Revert to original order on error
       if (details) {
         setSections(details.notebook.sections);
       }
@@ -93,26 +103,32 @@ export default function NotebookClient() {
   
   const handleOpenSectionDialog = (section: NotebookSection | null) => {
     setEditingSection(section);
-    setSectionName(section ? section.title : '');
+    setSectionFormData({
+      title: section ? section.title : '',
+      color: section ? section.color : noteColors[Math.floor(Math.random() * noteColors.length)].class
+    });
     setIsSectionDialogOpen(true);
   };
 
   const handleSaveSection = async () => {
-    if (!sectionName.trim() || !details) return;
+    if (!sectionFormData.title.trim() || !details) return;
 
     let newSections: NotebookSection[];
+    const { title, color } = sectionFormData;
 
-    if (editingSection) { // Editing existing section
+    if (editingSection) {
         newSections = details.notebook.sections.map(s => 
-            s.id === editingSection.id ? { ...s, title: sectionName.trim() } : s
+            s.id === editingSection.id ? { ...s, title: title.trim(), color } : s
         );
-    } else { // Adding new section
+    } else {
         const newSection: NotebookSection = {
             id: Date.now().toString(),
-            title: sectionName.trim(),
-            order: details.notebook.sections.length
+            title: title.trim(),
+            color: color,
+            order: details.notebook.sections.length,
+            folders: [],
         }
-        newSections = [...details.notebook.sections, newSection];
+        newSections = [...(details.notebook.sections || []), newSection];
         setActiveTab(newSection.id);
     }
     
@@ -128,23 +144,15 @@ export default function NotebookClient() {
   const handleDeleteSection = async (sectionId: string) => {
     if (!details) return;
     
-    // Filter out the section to be deleted
-    const newSections = details.notebook.sections.filter(s => s.id !== sectionId);
-    
-    // Find all notes associated with the section
+    const newSections = (details.notebook.sections || []).filter(s => s.id !== sectionId);
     const notesToDelete = details.notes.filter(n => n.sectionId === sectionId);
 
     try {
         await updateNotebook(notebookId, { sections: newSections });
-
-        // Delete all notes in the section
         for (const note of notesToDelete) {
             await deleteNoteFromSection(notebookId, note.id);
         }
-        
-        toast({ title: 'Bölüm Silindi', description: 'Bölüm ve içindeki tüm notlar silindi.', variant: 'destructive' });
-        
-        // If the active tab was deleted, switch to the first available tab or empty state
+        toast({ title: 'Bölüm Silindi', variant: 'destructive' });
         if (activeTab === sectionId) {
             setActiveTab(newSections.length > 0 ? newSections[0].id : '');
         }
@@ -155,42 +163,59 @@ export default function NotebookClient() {
   };
 
 
-  const handleAddNewTextNote = async () => {
+  const handleAddNewNote = async (folder?: string) => {
     if (!details || !activeTab) return;
     try {
-        const newNoteContent: NoteContentBlock[] = [{ id: Date.now().toString(), type: 'text', data: '' }];
-        await addNoteToSection(notebookId, activeTab, { title: "Yeni Not", content: newNoteContent, imageUrl: null });
+        await addNoteToSection(notebookId, activeTab, { 
+          title: "Yeni Not", 
+          content: [{ id: Date.now().toString(), type: 'text', data: '' }], 
+          imageUrl: null, 
+          folder: folder 
+        });
     } catch (error) {
         toast({ title: 'Hata', variant: 'destructive' });
     }
   };
   
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !user || !details || !activeTab) return;
+   const handleAddNewFolder = async () => {
+    if (!newFolderName.trim() || !details || !activeTab) return;
+    
+    const currentSection = details.notebook.sections.find(s => s.id === activeTab);
+    if (!currentSection) return;
 
-        setIsLoading(true);
-        toast({ title: 'Görsel yükleniyor...' });
-        try {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const dataUri = reader.result as string;
-                const destinationPath = `note-images/${user.uid}-${Date.now()}.jpg`;
-                const result = await migrateImage({ imageDataUri: dataUri, destinationPath });
-                if (result.success && result.newUrl) {
-                    await addNoteToSection(notebookId, activeTab, { title: "Yeni Görsel Not", imageUrl: result.newUrl, content: [] });
-                    toast({ title: 'Görsel Not Eklendi' });
-                } else {
-                     throw new Error(result.error || 'Görsel yüklenemedi.');
-                }
-                setIsLoading(false);
-            };
-        } catch (error: any) {
-            toast({ title: 'Hata', description: error.message, variant: 'destructive' });
-            setIsLoading(false);
-        }
+    const updatedFolders = [...(currentSection.folders || []), newFolderName.trim()];
+    const updatedSections = details.notebook.sections.map(s => 
+        s.id === activeTab ? { ...s, folders: updatedFolders } : s
+    );
+
+    try {
+        await updateNotebook(notebookId, { sections: updatedSections });
+        toast({ title: "Klasör Eklendi" });
+        setNewFolderName('');
+        setIsFolderDialogOpen(false);
+    } catch (e) {
+        toast({ title: 'Hata', variant: 'destructive' });
     }
+  };
+
+  const handleDeleteFolder = async (folderToDelete: string) => {
+      if (!details || !activeTab) return;
+      const currentSection = details.notebook.sections.find(s => s.id === activeTab);
+      if (!currentSection) return;
+
+      const updatedFolders = (currentSection.folders || []).filter(f => f !== folderToDelete);
+       const updatedSections = details.notebook.sections.map(s => 
+          s.id === activeTab ? { ...s, folders: updatedFolders } : s
+      );
+
+      try {
+          await updateNotebook(notebookId, { sections: updatedSections });
+          toast({ title: "Klasör Silindi", variant: 'destructive' });
+      } catch (e) {
+          toast({ title: 'Hata', variant: 'destructive' });
+      }
+  }
+
 
   const handleSaveNote = async (noteId: string) => {
     if (!details || Object.keys(noteChanges).length === 0) {
@@ -239,11 +264,11 @@ export default function NotebookClient() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col min-h-0">
         <div className="flex-shrink-0">
            <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center border-b">
-             <TabsList className="h-auto">
+             <TabsList className="h-auto bg-transparent p-0 border-none">
                 {sections.map(section => (
                  <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                     <TabsTrigger value={section.id} className="pr-8">
+                     <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && section.color.replace('bg-', 'data-[state=active]:bg-'))}>
                         {section.title}
                      </TabsTrigger>
                      <DropdownMenu>
@@ -253,27 +278,10 @@ export default function NotebookClient() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}>
-                                <Edit className="mr-2 h-4 w-4"/> Düzenle
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4"/>Sil
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
-                                        <AlertDialogDescription>
-                                            "{section.title}" bölümünü silmek istediğinizden emin misiniz? Bu işlem, bölümdeki tüm notları kalıcı olarak silecektir.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooterComponent>
-                                        <AlertDialogCancel>İptal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction>
-                                    </AlertDialogFooterComponent>
-                                </AlertDialogContent>
+                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
+                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{section.title}" bölümünü silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
                             </AlertDialog>
                         </DropdownMenuContent>
                      </DropdownMenu>
@@ -286,71 +294,76 @@ export default function NotebookClient() {
            </Reorder.Group>
         </div>
         
-        {sections.map(section => (
-          <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto">
-              <div className="flex gap-2 mb-4">
-                  <Button className="flex-1" onClick={handleAddNewTextNote}>
-                      <StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle
-                  </Button>
-                  <Button variant="secondary" className="flex-1" onClick={() => imageInputRef.current?.click()} disabled={isLoading}>
-                      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileImage className="mr-2 h-4 w-4" />}
-                       Görsel Not Ekle
-                  </Button>
-                  <input type="file" ref={imageInputRef} onChange={handleImageFileChange} accept="image/*" className="hidden" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {notes.filter(note => note.sectionId === section.id).map(note => (
-                    <StickyNoteCard 
-                        key={note.id}
-                        note={note}
-                        isEditing={editingNoteId === note.id}
-                        onStartEdit={() => {
-                            if (editingNoteId && editingNoteId !== note.id) {
-                                handleSaveNote(editingNoteId);
-                            }
-                            setEditingNoteId(note.id);
-                            setNoteChanges({});
-                        }}
-                        onSave={() => handleSaveNote(note.id)}
-                        onUpdate={handleNoteUpdate}
-                        onDelete={() => handleDeleteNote(note.id)}
-                    />
-                ))}
-              </div>
-          </TabsContent>
-        ))}
+        {sections.map(section => {
+            const sectionNotes = notes.filter(note => note.sectionId === section.id);
+            const notesByFolder = sectionNotes.reduce((acc, note) => {
+                const folderKey = note.folder || "Genel Notlar";
+                if (!acc[folderKey]) acc[folderKey] = [];
+                acc[folderKey].push(note);
+                return acc;
+            }, {} as Record<string, Note[]>);
+            const folderOrder = ['Genel Notlar', ...(section.folders || [])];
+
+            return (
+              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4">
+                  <div className="flex gap-2 mb-4">
+                      <Button className="flex-1" onClick={() => handleAddNewNote()}><StickyNote className="mr-2 h-4 w-4" /> Metin Notu Ekle</Button>
+                      <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}><DialogTrigger asChild><Button variant="secondary" className="flex-1"><FolderPlus className="mr-2 h-4 w-4" /> Yeni Klasör</Button></DialogTrigger>
+                        <DialogContent><DialogHeader><DialogTitle>Yeni Klasör Oluştur</DialogTitle></DialogHeader><Input placeholder="Klasör adı" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNewFolder()}/><DialogFooter><Button onClick={handleAddNewFolder}>Oluştur</Button></DialogFooter></DialogContent>
+                      </Dialog>
+                  </div>
+                  <div className="space-y-6">
+                    {folderOrder.map(folderName => {
+                        const folderNotes = notesByFolder[folderName];
+                        if (!folderNotes || folderNotes.length === 0) {
+                            if (folderName === 'Genel Notlar') return null; // Don't show empty general notes section
+                        }
+                        return (
+                            <div key={folderName}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Folder className="h-5 w-5 text-muted-foreground"/>
+                                    <h3 className="text-lg font-semibold">{folderName}</h3>
+                                     {folderName !== 'Genel Notlar' && (
+                                         <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                        </AlertDialog>
+                                     )}
+                                </div>
+                                {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {folderNotes?.map(note => (
+                                    <StickyNoteCard 
+                                        key={note.id} note={note} isEditing={editingNoteId === note.id}
+                                        onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
+                                        onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
+                                    />
+                                ))}
+                                </div>
+                            </div>
+                        )
+                    })}
+                  </div>
+              </TabsContent>
+        )})}
       </Tabs>
       
       <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm Ekle"}</DialogTitle>
-            </DialogHeader>
+        <DialogContent><DialogHeader><DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm Ekle"}</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
-                <Input 
-                    placeholder="Bölüm adı" 
-                    value={sectionName} 
-                    onChange={(e) => setSectionName(e.target.value)} 
-                    onKeyDown={(e) => { if(e.key === 'Enter') handleSaveSection()}}
-                />
+                <Input placeholder="Bölüm adı" value={sectionFormData.title} onChange={(e) => setSectionFormData(prev => ({ ...prev, title: e.target.value }))} onKeyDown={(e) => { if(e.key === 'Enter') handleSaveSection()}} />
+                <div className="flex flex-wrap gap-2">
+                    {noteColors.map(color => (
+                        <button key={color.name} aria-label={color.name} className={cn("h-8 w-8 rounded-full", color.class, sectionFormData.color === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => setSectionFormData(prev => ({...prev, color: color.class}))}/>
+                    ))}
+                </div>
             </div>
-            <DialogFooter>
-                <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
-                <Button onClick={handleSaveSection}>Kaydet</Button>
-            </DialogFooter>
+            <DialogFooter><Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button><Button onClick={handleSaveSection}>Kaydet</Button></DialogFooter>
         </DialogContent>
      </Dialog>
     </div>
   );
 }
 
-const noteColors = [
-    { name: 'Sarı', class: 'bg-yellow-100 border-yellow-200 text-yellow-900' },
-    { name: 'Mavi', class: 'bg-blue-100 border-blue-200 text-blue-900' },
-    { name: 'Yeşil', class: 'bg-green-100 border-green-200 text-green-900' },
-    { name: 'Pembe', class: 'bg-pink-100 border-pink-200 text-pink-900' },
-    { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900' },
-];
 
 // STICKY NOTE CARD COMPONENT
 interface StickyNoteCardProps {
@@ -360,9 +373,10 @@ interface StickyNoteCardProps {
     onSave: () => void;
     onUpdate: (key: keyof Note, value: any) => void;
     onDelete: () => void;
+    sectionFolders: string[];
 }
 
-function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDelete }: StickyNoteCardProps) {
+function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDelete, sectionFolders }: StickyNoteCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
@@ -375,9 +389,7 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isEditing, onSave]);
 
     useEffect(() => {
@@ -386,73 +398,31 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
             textarea.style.height = 'inherit';
             textarea.style.height = `${textarea.scrollHeight}px`;
         }
-    }, [isEditing]);
+    }, [isEditing, note.content]);
     
     const handleTextUpdate = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const textarea = e.target;
         textarea.style.height = 'inherit';
         textarea.style.height = `${textarea.scrollHeight}px`;
-
-        const newContent: NoteContentBlock[] = [{
-            id: note.content?.[0]?.id || Date.now().toString(),
-            type: 'text',
-            data: textarea.value
-        }];
+        const newContent: NoteContentBlock[] = [{ id: note.content?.[0]?.id || Date.now().toString(), type: 'text', data: textarea.value }];
         onUpdate('content', newContent);
     };
 
     const textContent = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
+    const folderOptions = [{label: 'Genel Notlar', value: ''}, ...sectionFolders.map(f => ({ label: f, value: f }))];
     
     if (isEditing) {
         return (
             <div ref={cardRef} className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
-                <Input
-                    placeholder="Not Başlığı"
-                    defaultValue={note.title}
-                    onBlur={(e) => onUpdate('title', e.target.value)}
-                    className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80"
-                    autoFocus
-                />
-                {note.imageUrl && (
-                     <div className="relative aspect-video">
-                        <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="note image" />
-                     </div>
-                )}
-                {Array.isArray(note.content) && (
-                  <Textarea
-                      ref={textareaRef}
-                      placeholder="Yazmaya başla..."
-                      defaultValue={textContent}
-                      onInput={handleTextUpdate}
-                      className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden"
-                      rows={1}
-                  />
-                )}
+                <Input placeholder="Not Başlığı" defaultValue={note.title} onBlur={(e) => onUpdate('title', e.target.value)} className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80" autoFocus />
+                {note.imageUrl && ( <div className="relative aspect-video"><Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="note image" /></div> )}
+                {Array.isArray(note.content) && ( <Textarea ref={textareaRef} placeholder="Yazmaya başla..." defaultValue={textContent} onInput={handleTextUpdate} className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden" rows={1} />)}
+                <div className='pt-2 mt-2 border-t'>
+                    <Combobox options={folderOptions} value={note.folder || ''} onChange={(val) => onUpdate('folder', val)} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.'/>
+                </div>
                 <div className="flex justify-end items-center mt-2">
-                     <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="h-4 w-4"/></Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2">
-                           <div className="flex gap-1">
-                             {noteColors.map(color => (
-                                <button key={color.name} aria-label={color.name} className={cn("h-6 w-6 rounded-full", color.class)} onClick={() => onUpdate('color', color.class)} />
-                            ))}
-                           </div>
-                        </PopoverContent>
-                     </Popover>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitleComponent>Notu Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooterComponent>
-                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction>
-                            </AlertDialogFooterComponent>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                     <Popover><PopoverTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="h-4 w-4"/></Button></PopoverTrigger><PopoverContent className="w-auto p-2"><div className="flex gap-1">{noteColors.map(color => (<button key={color.name} aria-label={color.name} className={cn("h-6 w-6 rounded-full", color.class)} onClick={() => onUpdate('color', color.class)} />))}</div></PopoverContent></Popover>
+                     <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Notu Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent></AlertDialog>
                 </div>
             </div>
         )
@@ -463,47 +433,12 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
              <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border flex flex-col h-fit", noteColor)}>
                  <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onStartEdit}>
                     <h3 className="font-semibold text-lg">{note.title}</h3>
-                    {textContent && (
-                        <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">
-                            {textContent}
-                        </p>
-                    )}
+                    {textContent && ( <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">{textContent}</p> )}
                 </div>
-                {note.imageUrl && (
-                    <DialogTrigger asChild>
-                         <div className="relative w-full aspect-video cursor-pointer mt-auto">
-                            <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-b-lg" data-ai-hint="note image"/>
-                        </div>
-                    </DialogTrigger>
-                )}
-                 <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}>
-                        <Edit className="h-4 w-4"/>
-                    </Button>
-                 </div>
+                {note.imageUrl && ( <DialogTrigger asChild><div className="relative w-full aspect-video cursor-pointer mt-auto"><Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-b-lg" data-ai-hint="note image"/></div></DialogTrigger> )}
+                 <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}><Edit className="h-4 w-4"/></Button></div>
             </div>
-            <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>{note.title}</DialogTitle>
-                </DialogHeader>
-                {note.imageUrl ? (
-                     <div className="relative w-full h-[80vh] my-4 rounded-lg overflow-hidden">
-                        <Image
-                            src={note.imageUrl}
-                            alt={note.title}
-                            layout="fill"
-                            objectFit="contain"
-                            className="bg-muted"
-                            data-ai-hint="religious illustration"
-                        />
-                    </div>
-                ): (
-                    <div className="my-4 p-8 text-center bg-muted rounded-lg">
-                        <p className="text-muted-foreground">Bu öğe için bir görsel bulunmuyor.</p>
-                    </div>
-                )}
-            </DialogContent>
+            <DialogContent className="max-w-4xl"><DialogHeader><DialogTitle>{note.title}</DialogTitle></DialogHeader>{note.imageUrl ? ( <div className="relative w-full h-[80vh] my-4 rounded-lg overflow-hidden"><Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="contain" className="bg-muted" data-ai-hint="religious illustration"/></div> ): ( <div className="my-4 p-8 text-center bg-muted rounded-lg"><p className="text-muted-foreground">Bu öğe için bir görsel bulunmuyor.</p></div> )}</DialogContent>
         </Dialog>
     );
 }
-
