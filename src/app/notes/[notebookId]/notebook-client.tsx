@@ -355,8 +355,8 @@ export default function NotebookClient() {
                     return (
                         <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                             <TabsTrigger 
-                                value={section.id} 
+                             <TabsTrigger
+                                value={section.id}
                                 className={cn("pr-8 data-[state=active]:text-white", isActive && `bg-gradient-to-br ${colorClass}`)}
                             >
                                 {section.title}
@@ -380,7 +380,7 @@ export default function NotebookClient() {
                 })}
              </TabsList>
              <Button variant="ghost" size="sm" className="ml-2" onClick={() => handleOpenSectionDialog(null)}>
-                <PlusCircle className="h-4 w-4"/>
+                <Plus className="h-4 w-4"/>
             </Button>
            </Reorder.Group>
         </div>
@@ -574,5 +574,6 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
 
 
