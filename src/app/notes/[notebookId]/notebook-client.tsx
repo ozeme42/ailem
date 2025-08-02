@@ -281,18 +281,14 @@ export default function NotebookClient() {
              <TabsList className="h-auto bg-transparent p-0 border-none">
                 {sections.map(section => {
                     const isActive = activeTab === section.id;
-                    const sectionColorClass = section.color || 'bg-gray-100 border-gray-200 text-gray-900';
-                    const activeClass = isActive ? sectionColorClass.replace('text-', 'data-[state=active]:text-') : '';
+                    const sectionColorClass = section.color || 'bg-gray-200';
                     
                     return (
                         <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
                             <TabsTrigger 
                                 value={section.id} 
-                                className={cn(
-                                    "pr-8",
-                                    isActive && sectionColorClass
-                                )}
+                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${sectionColorClass}`)}
                             >
                                 {section.title}
                             </TabsTrigger>
@@ -347,27 +343,12 @@ export default function NotebookClient() {
                         return (
                             <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                     <div className="flex items-center">
-                                         <AccordionTrigger className={cn("p-4 hover:no-underline flex-grow", folderColors[folderIndex % folderColors.length])}>
-                                             <div className="flex items-center gap-2">
-                                                 <Folder className="h-5 w-5"/>
-                                                 <h3 className="text-lg font-semibold">{folderName}</h3>
-                                             </div>
-                                         </AccordionTrigger>
-                                         {folderName !== 'Genel Notlar' && (
-                                            <div className="pr-2">
-                                                 <AlertDialog>
-                                                     <AlertDialogTrigger asChild>
-                                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                     </AlertDialogTrigger>
-                                                     <AlertDialogContent>
-                                                         <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader>
-                                                         <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                                     </AlertDialogContent>
-                                                 </AlertDialog>
-                                            </div>
-                                         )}
-                                     </div>
+                                     <AccordionTrigger className={cn("p-4 hover:no-underline rounded-t-lg", folderColors[folderIndex % folderColors.length])}>
+                                         <div className="flex items-center gap-2">
+                                             <Folder className="h-5 w-5"/>
+                                             <h3 className="text-lg font-semibold">{folderName}</h3>
+                                         </div>
+                                     </AccordionTrigger>
                                      <AccordionContent className="px-4 pb-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4">
@@ -484,6 +465,4 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
-
-
 

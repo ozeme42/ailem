@@ -20,13 +20,14 @@ import { cn } from '@/lib/utils';
 
 
 const notebookColors = [
-    { id: 'gray', class: 'from-gray-700 to-gray-900', name: 'Füme' },
     { id: 'red', class: 'from-red-500 to-rose-500', name: 'Gül' },
     { id: 'orange', class: 'from-orange-500 to-amber-500', name: 'Kehribar' },
     { id: 'green', class: 'from-green-500 to-emerald-500', name: 'Zümrüt' },
     { id: 'teal', class: 'from-teal-500 to-cyan-500', name: 'Turkuaz' },
     { id: 'blue', class: 'from-blue-500 to-indigo-600', name: 'Çivit' },
-    { id: 'purple', class: 'from-purple-500 to-fuchsia-600', name: 'Menekşe' },
+    { id: 'purple', class: 'from-purple-600 to-fuchsia-700', name: 'Menekşe' },
+    { id: 'pink', class: 'from-pink-500 to-fuchsia-500', name: 'Fuşya' },
+    { id: 'gray', class: 'from-gray-600 to-gray-800', name: 'Füme' },
 ];
 
 const formSchema = z.object({
