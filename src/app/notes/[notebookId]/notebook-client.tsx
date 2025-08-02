@@ -33,11 +33,11 @@ interface NotebookDetails {
   notes: Note[];
 }
 const noteColors = [
-    { name: 'Sarı', class: 'bg-yellow-100 border-yellow-200 text-yellow-900' },
-    { name: 'Mavi', class: 'bg-blue-100 border-blue-200 text-blue-900' },
-    { name: 'Yeşil', class: 'bg-green-100 border-green-200 text-green-900' },
-    { name: 'Pembe', class: 'bg-pink-100 border-pink-200 text-pink-900' },
-    { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900' },
+    { name: 'Sarı', class: 'bg-yellow-100 border-yellow-200 text-yellow-900', color: '#78350f' },
+    { name: 'Mavi', class: 'bg-blue-100 border-blue-200 text-blue-900', color: '#1e40af' },
+    { name: 'Yeşil', class: 'bg-green-100 border-green-200 text-green-900', color: '#15803d'},
+    { name: 'Pembe', class: 'bg-pink-100 border-pink-200 text-pink-900', color: '#9d174d' },
+    { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900', color: '#6b21a8' },
 ];
 
 const folderColors = [
@@ -280,11 +280,17 @@ export default function NotebookClient() {
            <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center border-b">
              <TabsList className="h-auto bg-transparent p-0 border-none">
                 {sections.map(section => {
-                    const textColorClass = section.color ? section.color.match(/text-[a-z]+-\d+/)?.[0] : 'text-foreground';
+                    const textColorClass = section.color ? (noteColors.find(c => c.class === section.color)?.color || 'var(--foreground)') : 'var(--foreground)';
+                    const activeClass = activeTab === section.id ? section.color : '';
+
                     return (
                         <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                            <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && textColorClass)}>
+                            <TabsTrigger 
+                                value={section.id} 
+                                className="pr-8"
+                                style={{ color: activeTab === section.id ? textColorClass : 'hsl(var(--muted-foreground))' }}
+                            >
                                 {section.title}
                             </TabsTrigger>
                             <DropdownMenu>
@@ -475,4 +481,5 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
 
