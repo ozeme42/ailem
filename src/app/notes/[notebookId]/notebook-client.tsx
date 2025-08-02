@@ -359,9 +359,9 @@ export default function NotebookClient() {
                                     <TabsTrigger
                                         value={section.id}
                                         className={cn(
-                                            "pr-8 text-white bg-gradient-to-br transition-all",
+                                            "pr-8 text-white bg-gradient-to-br transition-all opacity-80 hover:opacity-100",
                                             section.color,
-                                            isActive ? "opacity-100 ring-2 ring-offset-2 ring-ring" : "opacity-70 hover:opacity-90"
+                                            isActive && "opacity-100 ring-2 ring-offset-2 ring-ring"
                                         )}
                                     >
                                         {section.title}
@@ -402,57 +402,59 @@ export default function NotebookClient() {
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
                    <div className="space-y-4 -mx-4 sm:mx-0">
-                    {folderOrder.map((folderName, folderIndex) => {
-                        const folderNotes = notesByFolder[folderName];
-                        if (!folderNotes || folderNotes.length === 0) {
-                            if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
-                        }
-                        const colorClass = folderColors[folderIndex % folderColors.length];
-                        return (
-                             <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-lg bg-background">
-                                 <div className={cn("flex items-center text-white bg-gradient-to-br", colorClass)}>
-                                    <AccordionTrigger className="flex-grow hover:no-underline text-left">
-                                        <div className="flex items-center gap-4 px-4 py-3">
-                                             <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                                                <Folder className="h-6 w-6"/>
+                    <Accordion type="multiple" className="w-full space-y-4">
+                        {folderOrder.map((folderName, folderIndex) => {
+                            const folderNotes = notesByFolder[folderName];
+                            if (!folderNotes || folderNotes.length === 0) {
+                                if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
+                            }
+                            const colorClass = folderColors[folderIndex % folderColors.length];
+                            return (
+                                <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-lg bg-background">
+                                     <CardHeader className={cn("flex flex-row items-center p-0", `bg-gradient-to-br ${colorClass}`)}>
+                                        <AccordionTrigger className="flex-grow hover:no-underline text-left text-white px-4 py-3">
+                                            <div className="flex items-center gap-4">
+                                                 <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
+                                                    <Folder className="h-6 w-6"/>
+                                                </div>
+                                                <div className="flex flex-col justify-center min-w-0">
+                                                    <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
+                                                    <p className="text-white/80 text-sm font-normal truncate">
+                                                        {folderNotes?.length || 0} not
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col justify-center min-w-0">
-                                                <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
-                                                <p className="text-white/80 text-sm font-normal truncate">
-                                                    {folderNotes?.length || 0} not
-                                                </p>
-                                            </div>
+                                        </AccordionTrigger>
+                                         {folderName !== "Genel Notlar" && (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="mr-2 h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                        <Trash2 className="h-4 w-4"/>
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </CardHeader>
+                                     <AccordionContent className="p-4">
+                                        {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {folderNotes?.map(note => (
+                                            <StickyNoteCard 
+                                                key={note.id} note={note} isEditing={editingNoteId === note.id}
+                                                onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
+                                                onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
+                                                onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
+                                            />
+                                        ))}
                                         </div>
-                                    </AccordionTrigger>
-                                     {folderName !== "Genel Notlar" && (
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="mr-2 h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                                    <Trash2 className="h-4 w-4"/>
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                        </AlertDialog>
-                                    )}
-                                </div>
-                                 <AccordionContent className="p-4">
-                                    {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {folderNotes?.map(note => (
-                                        <StickyNoteCard 
-                                            key={note.id} note={note} isEditing={editingNoteId === note.id}
-                                            onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
-                                            onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
-                                            onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
-                                        />
-                                    ))}
-                                    </div>
-                                 </AccordionContent>
-                            </AccordionItem>
-                        )
-                    })}
+                                     </AccordionContent>
+                                </AccordionItem>
+                            )
+                        })}
+                    </Accordion>
                    </div>
 
                     <div className="fixed bottom-24 right-8 z-10 md:bottom-8">
