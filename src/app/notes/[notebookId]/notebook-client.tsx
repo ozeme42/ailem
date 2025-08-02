@@ -26,6 +26,7 @@ import { TabsContent } from '@radix-ui/react-tabs';
 import { Combobox } from '@/components/ui/combobox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 interface NotebookDetails {
@@ -411,11 +412,26 @@ export default function NotebookClient() {
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                    <CardHeader className={cn("p-0 rounded-t-lg", folderColors[folderIndex % folderColors.length])}>
+                                    <CardHeader className={cn("p-0 rounded-t-lg")}>
                                         <AccordionTrigger className="p-4 hover:no-underline">
-                                            <div className="flex items-center gap-2">
-                                                <Folder className="h-5 w-5"/>
-                                                <h3 className="text-lg font-semibold">{folderName}</h3>
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-2">
+                                                    <Folder className={cn("h-5 w-5", folderColors[folderIndex % folderColors.length])}/>
+                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
+                                                </div>
+                                                {folderName !== 'Genel Notlar' && (
+                                                     <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/70 hover:text-destructive shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                                <Trash2 className="w-4 h-4"/>
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                )}
                                             </div>
                                         </AccordionTrigger>
                                      </CardHeader>
@@ -569,4 +585,5 @@ function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDele
         </Dialog>
     );
 }
+
 
