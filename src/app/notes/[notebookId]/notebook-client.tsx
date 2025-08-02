@@ -25,7 +25,7 @@ import { Reorder } from "framer-motion";
 import { TabsContent } from '@radix-ui/react-tabs';
 import { Combobox } from '@/components/ui/combobox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 
 
 interface NotebookDetails {
@@ -271,7 +271,7 @@ export default function NotebookClient() {
                 {sections.map(section => (
                  <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
-                     <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && section.color && section.color.replace('bg-', 'data-[state=active]:bg-'))}>
+                     <TabsTrigger value={section.id} className={cn("pr-8", activeTab === section.id && section.color.replace(/text-(.*)-(\d+)/, 'data-[state=active]:text-foreground'))}>
                         {section.title}
                      </TabsTrigger>
                      <DropdownMenu>
@@ -319,24 +319,33 @@ export default function NotebookClient() {
                     {folderOrder.map(folderName => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
-                            if (folderName === 'Genel Notlar') return null; // Don't show empty general notes section
+                            if (folderName === 'Genel Notlar') return null; // Don't show empty general notes section if there are other folders
+                             if (folderName !== 'Genel Notlar' && Object.keys(notesByFolder).length > 1 && (!notesByFolder['Genel Notlar'] || notesByFolder['Genel Notlar'].length === 0)) return null;
                         }
                         return (
                             <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card>
-                                    <div className="flex items-center p-4">
-                                     <AccordionTrigger className="p-0 hover:no-underline flex-grow">
-                                        <div className="flex items-center gap-2">
-                                            <Folder className="h-5 w-5 text-muted-foreground"/>
-                                            <h3 className="text-lg font-semibold">{folderName}</h3>
+                                     <CardHeader className="p-0">
+                                        <div className="flex items-center">
+                                            <AccordionTrigger className={cn("p-4 hover:no-underline flex-grow", section.color)}>
+                                                <div className="flex items-center gap-2">
+                                                    <Folder className="h-5 w-5"/>
+                                                    <h3 className="text-lg font-semibold">{folderName}</h3>
+                                                </div>
+                                            </AccordionTrigger>
+                                            {folderName !== 'Genel Notlar' && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 mr-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
                                         </div>
-                                     </AccordionTrigger>
-                                     {folderName !== 'Genel Notlar' && (
-                                         <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? Notlarınız silinmeyecek, "Genel Notlar"a taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                        </AlertDialog>
-                                     )}
-                                     </div>
+                                     </CardHeader>
                                      <AccordionContent className="px-4 pb-4">
                                         {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground pl-8'>Bu klasör boş.</p>}
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
