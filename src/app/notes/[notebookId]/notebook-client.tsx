@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { z } from 'zod';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
 import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
@@ -28,8 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
 
 
 interface NotebookDetails {
@@ -407,8 +407,8 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative sm:px-4">
-                    <div className="space-y-4 -mx-4 sm:mx-0">
-                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
+                    <div className="space-y-4 -mx-4 sm:mx-0" key={activeTab}>
+                        <Accordion type="multiple" className="w-full space-y-4">
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
                                 if (!folderNotes || folderNotes.length === 0) {
@@ -418,7 +418,7 @@ export default function NotebookClient() {
                                 return (
                                     <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-none sm:rounded-xl">
                                         <div className={cn("flex items-center text-white p-0 w-full rounded-none sm:rounded-t-xl", `bg-gradient-to-br ${colorClass}`)}>
-                                            <AccordionTrigger className="p-4 flex-grow flex items-center gap-4 text-left hover:no-underline group">
+                                             <AccordionTrigger className="p-4 flex-grow flex items-center gap-4 text-left hover:no-underline group">
                                                 <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                     <Folder className="h-6 w-6"/>
                                                 </div>
@@ -554,9 +554,9 @@ function StickyNoteCard({ note, onOpenDialog, onDelete }: StickyNoteCardProps) {
 
     return (
         <Card className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border flex flex-col h-fit", noteColor)}>
-            <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onOpenDialog}>
-                <h3 className="font-semibold text-lg">{note.title}</h3>
-                {textContent && (<p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap line-clamp-4">{textContent}</p>)}
+            <div className="p-3 sm:p-4 flex-grow flex flex-col min-h-[6rem] sm:min-h-[8rem] cursor-pointer" onClick={onOpenDialog}>
+                <h3 className="font-semibold text-sm sm:text-lg">{note.title}</h3>
+                {textContent && (<p className="text-xs sm:text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap line-clamp-3 sm:line-clamp-4">{textContent}</p>)}
             </div>
             {note.imageUrl && (
                 <div className="mt-auto aspect-video w-full relative cursor-pointer" onClick={onOpenDialog}>
