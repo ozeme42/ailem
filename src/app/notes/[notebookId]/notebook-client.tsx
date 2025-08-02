@@ -33,11 +33,11 @@ interface NotebookDetails {
   notes: Note[];
 }
 const noteColors = [
-    { name: 'Sarı', class: 'bg-yellow-100 border-yellow-200 text-yellow-900', color: '#78350f' },
-    { name: 'Mavi', class: 'bg-blue-100 border-blue-200 text-blue-900', color: '#1e40af' },
-    { name: 'Yeşil', class: 'bg-green-100 border-green-200 text-green-900', color: '#15803d'},
-    { name: 'Pembe', class: 'bg-pink-100 border-pink-200 text-pink-900', color: '#9d174d' },
-    { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900', color: '#6b21a8' },
+    { name: 'Sarı', class: 'bg-yellow-100 border-yellow-200 text-yellow-900', color: 'hsl(48, 96%, 58%)' },
+    { name: 'Mavi', class: 'bg-blue-100 border-blue-200 text-blue-900', color: 'hsl(217, 91%, 60%)' },
+    { name: 'Yeşil', class: 'bg-green-100 border-green-200 text-green-900', color: 'hsl(142, 71%, 45%)' },
+    { name: 'Pembe', class: 'bg-pink-100 border-pink-200 text-pink-900', color: 'hsl(330, 84%, 60%)' },
+    { name: 'Mor', class: 'bg-purple-100 border-purple-200 text-purple-900', color: 'hsl(262, 83%, 58%)' },
 ];
 
 const folderColors = [
@@ -48,6 +48,17 @@ const folderColors = [
     'bg-purple-200/50 border-purple-300 text-purple-900',
     'bg-orange-200/50 border-orange-300 text-orange-900',
     'bg-teal-200/50 border-teal-300 text-teal-900',
+];
+
+const notebookColors = [
+    { id: 'red', class: 'from-red-500 to-rose-500', name: 'Gül' },
+    { id: 'orange', class: 'from-orange-500 to-amber-500', name: 'Kehribar' },
+    { id: 'green', class: 'from-green-500 to-emerald-500', name: 'Zümrüt' },
+    { id: 'teal', class: 'from-teal-500 to-cyan-500', name: 'Turkuaz' },
+    { id: 'blue', class: 'from-blue-500 to-indigo-600', name: 'Çivit' },
+    { id: 'purple', class: 'from-purple-600 to-fuchsia-700', name: 'Menekşe' },
+    { id: 'pink', class: 'from-pink-500 to-fuchsia-500', name: 'Fuşya' },
+    { id: 'gray', class: 'from-gray-600 to-gray-800', name: 'Füme' },
 ];
 
 
@@ -63,7 +74,7 @@ export default function NotebookClient() {
   
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<NotebookSection | null>(null);
-  const [sectionFormData, setSectionFormData] = useState({ title: '', color: noteColors[0].class });
+  const [sectionFormData, setSectionFormData] = useState({ title: '', color: notebookColors[0].class });
   
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
@@ -120,7 +131,7 @@ export default function NotebookClient() {
     setEditingSection(section);
     setSectionFormData({
       title: section ? section.title : '',
-      color: section ? section.color : noteColors[Math.floor(Math.random() * noteColors.length)].class
+      color: section ? section.color : notebookColors[Math.floor(Math.random() * notebookColors.length)].class
     });
     setIsSectionDialogOpen(true);
   };
@@ -258,7 +269,7 @@ export default function NotebookClient() {
       } catch (e) {
           toast({ title: 'Hata', variant: 'destructive' });
       }
-  }
+  };
 
 
   const handleSaveNote = async (noteId: string) => {
@@ -340,15 +351,15 @@ export default function NotebookClient() {
              <TabsList className="h-auto bg-transparent p-0 border-none">
                 {sections.map(section => {
                     const isActive = activeTab === section.id;
+                    const colorClass = section.color || 'from-gray-500 to-gray-600';
                     return (
                         <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2 flex items-center">
                             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
                              <TabsTrigger 
                                 value={section.id} 
-                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${section.color}`)}
-                                style={isActive ? { } : { '--section-color': `var(--${section.color?.replace('bg-', 'color-')})` } as React.CSSProperties}
+                                className={cn("pr-8", isActive && `bg-gradient-to-br text-white ${colorClass}`)}
                             >
-                                <span style={{ color: isActive ? 'white' : `hsl(var(--${section.color?.split('-')[1]}-900))` }}>
+                                <span className={cn(isActive ? "text-white" : `text-foreground`)}>
                                   {section.title}
                                 </span>
                             </TabsTrigger>
@@ -423,7 +434,7 @@ export default function NotebookClient() {
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar silinmez, "Genel Notlar" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
                                             )}
@@ -456,7 +467,7 @@ export default function NotebookClient() {
             <div className="grid gap-4 py-4">
                 <Input placeholder="Bölüm adı" value={sectionFormData.title} onChange={(e) => setSectionFormData(prev => ({ ...prev, title: e.target.value }))} onKeyDown={(e) => { if(e.key === 'Enter') handleSaveSection()}} />
                 <div className="flex flex-wrap gap-2">
-                    {noteColors.map(color => (
+                    {notebookColors.map(color => (
                         <button key={color.name} aria-label={color.name} className={cn("h-8 w-8 rounded-full bg-gradient-to-br", color.class, sectionFormData.color === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => setSectionFormData(prev => ({...prev, color: color.class}))}/>
                     ))}
                 </div>
