@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, FolderPlus, Folder, ChevronDown } from 'lucide-react';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,9 @@ import { Combobox } from '@/components/ui/combobox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useForm } from 'react-hook-form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 
 interface NotebookDetails {
@@ -77,19 +80,15 @@ export default function NotebookClient() {
   const [editingSection, setEditingSection] = useState<NotebookSection | null>(null);
   const [sectionFormData, setSectionFormData] = useState({ title: '', color: notebookColors[0].class });
   
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [noteChanges, setNoteChanges] = useState<Partial<Note>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
   
   const [sections, setSections] = React.useState<NotebookSection[]>([]);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [editingFolder, setEditingFolder] = useState<{ oldName: string; sectionId: string } | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
-
+  const [isLoading, setIsLoading] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const noteImageInputRef = useRef<HTMLInputElement>(null);
-
 
   useEffect(() => {
     if (!notebookId || !user) return;
@@ -191,18 +190,23 @@ export default function NotebookClient() {
   };
 
 
+  const handleOpenNoteDialog = (note: Note | null) => {
+    setEditingNote(note);
+  };
+
   const handleAddNewNote = async (folder?: string, imageUrl?: string | null) => {
-    if (!details || !activeTab) return;
-    try {
-        await addNoteToSection(notebookId, activeTab, { 
-          title: "Yeni Not", 
-          content: imageUrl ? [] : [{ id: Date.now().toString(), type: 'text', data: '' }], 
-          imageUrl: imageUrl || null, 
-          folder: folder 
-        });
-    } catch (error) {
-        toast({ title: 'Hata', variant: 'destructive' });
-    }
+    handleOpenNoteDialog({ 
+        id: '', // Temporary ID
+        notebookId,
+        sectionId: activeTab,
+        familyId: details?.notebook.familyId || '',
+        title: "Yeni Not", 
+        content: imageUrl ? [] : [{ id: Date.now().toString(), type: 'text', data: '' }],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        imageUrl: imageUrl || null, 
+        folder: folder 
+    });
   };
   
   const handleImageNoteAdd = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -231,6 +235,7 @@ export default function NotebookClient() {
        toast({ title: 'Hata', description: e.message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
+      event.target.value = ''; // Reset input
     }
   }
   
@@ -304,20 +309,19 @@ export default function NotebookClient() {
       }
   };
 
-
-  const handleSaveNote = async (noteId: string) => {
-    if (!details || Object.keys(noteChanges).length === 0) {
-        setEditingNoteId(null);
-        setNoteChanges({});
-        return;
-    };
+  const handleSaveNote = async (noteData: Partial<Note>) => {
     try {
-        await updateNoteInSection(notebookId, noteId, noteChanges);
+      if (editingNote?.id) {
+        await updateNoteInSection(notebookId, editingNote.id, noteData);
+        toast({ title: "Not Güncellendi" });
+      } else {
+        await addNoteToSection(notebookId, activeTab, noteData);
+        toast({ title: "Not Eklendi" });
+      }
     } catch (error) {
-        toast({ title: 'Hata', variant: 'destructive' });
+      toast({ title: 'Hata', variant: 'destructive' });
     } finally {
-        setEditingNoteId(null);
-        setNoteChanges({});
+      handleOpenNoteDialog(null);
     }
   };
   
@@ -328,39 +332,6 @@ export default function NotebookClient() {
       toast({ title: 'Not Silindi', variant: 'destructive' });
     } catch (error) {
       toast({ title: 'Hata', description: "Not silinirken bir sorun oluştu.", variant: 'destructive' });
-    }
-  };
-  
-  const handleNoteUpdate = (key: keyof Note, value: any) => {
-    setNoteChanges(prev => ({...prev, [key]: value}));
-  };
-
-  const handleNoteImageUpdate = async (event: React.ChangeEvent<HTMLInputElement>, noteId: string) => {
-    const file = event.target.files?.[0];
-    if (!file || !editingNoteId) return;
-
-    setIsLoading(true);
-    toast({ title: 'Görsel yükleniyor...' });
-    
-    try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onloadend = async () => {
-            const imageDataUri = reader.result as string;
-            const destinationPath = `notes-images/${user?.uid}-${noteId}-${Date.now()}.jpg`;
-            const migrationResult = await migrateImage({ imageDataUri, destinationPath });
-
-            if (migrationResult.success && migrationResult.newUrl) {
-                await updateNoteInSection(noteId, { imageUrl: migrationResult.newUrl });
-                toast({ title: 'Görsel güncellendi!' });
-            } else {
-                throw new Error(migrationResult.error || 'Bilinmeyen bir görsel yükleme hatası.');
-            }
-        };
-    } catch(e: any) {
-        toast({ title: 'Hata', description: e.message, variant: 'destructive' });
-    } finally {
-        setIsLoading(false);
     }
   };
 
@@ -436,7 +407,7 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative px-0 sm:px-4">
-                    <div className="space-y-4" key={activeTab}>
+                    <div className="space-y-4 -mx-4 sm:mx-0">
                         <Accordion type="multiple" className="w-full space-y-4">
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
@@ -445,29 +416,27 @@ export default function NotebookClient() {
                                 }
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg">
-                                        <div className={cn("flex items-center text-white p-0 w-full rounded-t-lg", `bg-gradient-to-br ${colorClass}`)}>
-                                            <AccordionTrigger className="flex-1 justify-between p-4 hover:no-underline group">
-                                                <div className="flex items-center gap-4 text-left">
-                                                    <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                                                        <Folder className="h-6 w-6"/>
-                                                    </div>
-                                                    <div className="flex flex-col justify-center min-w-0">
-                                                        <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
-                                                        <p className="text-white/80 text-sm font-normal truncate">
-                                                            {folderNotes?.length || 0} not
-                                                        </p>
-                                                    </div>
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg sm:rounded-xl">
+                                        <div className={cn("flex items-center text-white p-0 w-full rounded-t-lg sm:rounded-t-xl", `bg-gradient-to-br ${colorClass}`)}>
+                                            <div className="p-4 flex-grow flex items-center gap-4">
+                                                <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
+                                                    <Folder className="h-6 w-6"/>
                                                 </div>
-                                            </AccordionTrigger>
+                                                <div className="flex flex-col justify-center min-w-0">
+                                                    <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
+                                                    <p className="text-white/80 text-sm font-normal truncate">
+                                                        {folderNotes?.length || 0} not
+                                                    </p>
+                                                </div>
+                                            </div>
                                              <div className="flex items-center pr-2">
-                                                <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={() => handleAddNewNote(folderName === 'Genel Notlar' ? '' : folderName)}>
+                                                <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => {e.stopPropagation(); handleAddNewNote(folderName === 'Genel Notlar' ? '' : folderName)}}>
                                                     <Plus className="h-5 w-5"/>
                                                 </Button>
                                                 {folderName !== 'Genel Notlar' && (
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20">
+                                                            <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => e.stopPropagation()}>
                                                                 <MoreVertical className="h-4 w-4"/>
                                                             </Button>
                                                         </DropdownMenuTrigger>
@@ -483,17 +452,19 @@ export default function NotebookClient() {
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 )}
+                                                <AccordionTrigger className="p-2 hover:no-underline group">
+                                                    <ChevronDown className="h-5 w-5 text-white/70 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                                </AccordionTrigger>
                                              </div>
                                         </div>
-                                        <AccordionContent className="p-4 bg-background rounded-b-lg border-x border-b">
+                                        <AccordionContent className="p-4 bg-background rounded-b-lg sm:rounded-b-xl border-x border-b">
                                             {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                             {folderNotes?.map(note => (
                                                 <StickyNoteCard 
-                                                    key={note.id} note={note} isEditing={editingNoteId === note.id}
-                                                    onStartEdit={() => { if (editingNoteId && editingNoteId !== note.id) handleSaveNote(editingNoteId); setEditingNoteId(note.id); setNoteChanges({});}}
-                                                    onSave={() => handleSaveNote(note.id)} onUpdate={handleNoteUpdate} onDelete={() => handleDeleteNote(note.id)} sectionFolders={section.folders || []}
-                                                    onImageChange={(e) => handleNoteImageUpdate(e, note.id)}
+                                                    key={note.id} note={note}
+                                                    onOpenDialog={() => handleOpenNoteDialog(note)}
+                                                    onDelete={() => handleDeleteNote(note.id)}
                                                 />
                                             ))}
                                             </div>
@@ -562,6 +533,12 @@ export default function NotebookClient() {
             <DialogFooter><Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button><Button onClick={handleSaveSection}>Kaydet</Button></DialogFooter>
         </DialogContent>
      </Dialog>
+     <NoteEditForm 
+        note={editingNote} 
+        sectionFolders={currentSection?.folders || []}
+        onOpenChange={(open) => {if (!open) setEditingNote(null)}}
+        onSave={handleSaveNote}
+     />
     </div>
   );
 }
@@ -570,84 +547,114 @@ export default function NotebookClient() {
 // STICKY NOTE CARD COMPONENT
 interface StickyNoteCardProps {
     note: Note;
-    isEditing: boolean;
-    onStartEdit: () => void;
-    onSave: () => void;
-    onUpdate: (key: keyof Note, value: any) => void;
+    onOpenDialog: () => void;
     onDelete: () => void;
-    sectionFolders: string[];
-    onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-function StickyNoteCard({ note, isEditing, onStartEdit, onSave, onUpdate, onDelete, sectionFolders, onImageChange }: StickyNoteCardProps) {
-    const cardRef = useRef<HTMLDivElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const imageInputRef = useRef<HTMLInputElement>(null);
-    
+function StickyNoteCard({ note, onOpenDialog, onDelete }: StickyNoteCardProps) {
     const noteColor = note.color || 'bg-yellow-100 border-yellow-200 text-yellow-900';
-    
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (isEditing && cardRef.current && !cardRef.current.contains(event.target as Node)) {
-                onSave();
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isEditing, onSave]);
-
-    useEffect(() => {
-        const textarea = textareaRef.current;
-        if (isEditing && textarea) {
-            textarea.style.height = 'inherit';
-            textarea.style.height = `${textarea.scrollHeight}px`;
-        }
-    }, [isEditing, note.content]);
-    
-    const handleTextUpdate = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const textarea = e.target;
-        textarea.style.height = 'inherit';
-        textarea.style.height = `${textarea.scrollHeight}px`;
-        const newContent: NoteContentBlock[] = [{ id: note.content?.[0]?.id || Date.now().toString(), type: 'text', data: textarea.value }];
-        onUpdate('content', newContent);
-    };
-
     const textContent = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
-    const folderOptions = [{label: 'Genel Notlar', value: ''}, ...sectionFolders.map(f => ({ label: f, value: f }))];
-    
-    if (isEditing) {
-        return (
-            <div ref={cardRef} className={cn("rounded-lg shadow-lg border p-3 flex flex-col gap-2 h-fit", noteColor)}>
-                <Input placeholder="Not Başlığı" defaultValue={note.title} onBlur={(e) => onUpdate('title', e.target.value)} className="text-base font-bold border-0 shadow-none focus-visible:ring-0 px-2 bg-transparent placeholder:text-muted-foreground/80" autoFocus />
-                {note.imageUrl && ( <div className="relative aspect-video"><Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="note image" /></div> )}
-                <Textarea ref={textareaRef} placeholder="Yazmaya başla..." defaultValue={textContent} onInput={handleTextUpdate} className="text-sm bg-transparent border-0 focus-visible:ring-0 p-2 resize-none overflow-hidden" rows={1} />
-                <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()}><ImageIcon className="mr-2 h-4 w-4"/> Resim Ekle/Değiştir</Button>
-                <input type="file" accept="image/*" ref={imageInputRef} onChange={onImageChange} className="hidden" />
-
-                <div className='pt-2 mt-2 border-t'>
-                    <Combobox options={folderOptions} value={note.folder || ''} onChange={(val) => onUpdate('folder', val)} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.'/>
-                </div>
-                <div className="flex justify-end items-center mt-2">
-                     <Popover><PopoverTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><Palette className="h-4 w-4"/></Button></PopoverTrigger><PopoverContent className="w-auto p-2"><div className="flex gap-1">{noteColors.map(color => (<button key={color.name} aria-label={color.name} className={cn("h-6 w-6 rounded-full", color.class)} onClick={() => onUpdate('color', color.class)} />))}</div></PopoverContent></Popover>
-                     <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Notu Sil?</AlertDialogTitleComponent><AlertDialogDescription>"{note.title}" notunu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent></AlertDialog>
-                </div>
-            </div>
-        )
-    }
 
     return (
-        <Dialog>
-             <div className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border flex flex-col h-fit", noteColor)}>
-                 <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onStartEdit}>
-                    <h3 className="font-semibold text-lg">{note.title}</h3>
-                    {textContent && ( <p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap">{textContent}</p> )}
-                </div>
-                {note.imageUrl && ( <DialogTrigger asChild><div className="relative w-full aspect-video cursor-pointer mt-auto"><Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-b-lg" data-ai-hint="note image"/></div></DialogTrigger> )}
-                 <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onStartEdit(); }}><Edit className="h-4 w-4"/></Button></div>
+        <Card className={cn("group relative rounded-lg shadow-sm hover:shadow-md transition-shadow border flex flex-col h-fit", noteColor)}>
+            <div className="p-4 flex-grow flex flex-col min-h-[8rem] cursor-pointer" onClick={onOpenDialog}>
+                <h3 className="font-semibold text-lg">{note.title}</h3>
+                {textContent && (<p className="text-sm text-black/70 mt-2 flex-grow whitespace-pre-wrap line-clamp-4">{textContent}</p>)}
             </div>
-            <DialogContent className="max-w-4xl"><DialogHeader><DialogTitle>{note.title}</DialogTitle></DialogHeader>{note.imageUrl ? ( <div className="relative w-full h-[80vh] my-4 rounded-lg overflow-hidden"><Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="contain" className="bg-muted" data-ai-hint="religious illustration"/></div> ): ( <div className="my-4 p-8 text-center bg-muted rounded-lg"><p className="text-muted-foreground">Bu öğe için bir görsel bulunmuyor.</p></div> )}</DialogContent>
-        </Dialog>
+            {note.imageUrl && (
+                <div className="mt-auto aspect-video w-full relative cursor-pointer" onClick={onOpenDialog}>
+                    <Image src={note.imageUrl} alt={note.title} layout="fill" objectFit="cover" className="rounded-b-lg" data-ai-hint="note image"/>
+                </div>
+            )}
+            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onOpenDialog(); }}><Edit className="h-4 w-4"/></Button>
+            </div>
+        </Card>
     );
 }
 
-    
+// NOTE EDIT FORM
+const noteFormSchema = z.object({
+  title: z.string().min(2, "Başlık en az 2 karakter olmalıdır.").default(""),
+  content: z.string().optional().default(""),
+  color: z.string().optional(),
+  folder: z.string().optional(),
+});
+
+type NoteFormData = z.infer<typeof noteFormSchema>;
+
+interface NoteEditFormProps {
+  note: Note | null;
+  onOpenChange: (open: boolean) => void;
+  onSave: (data: Partial<Note>) => void;
+  sectionFolders: string[];
+}
+
+function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFormProps) {
+  const form = useForm<NoteFormData>();
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (note) {
+      form.reset({
+        title: note.title,
+        content: Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '',
+        color: note.color,
+        folder: note.folder || ''
+      });
+    }
+  }, [note, form]);
+
+  const handleFormSubmit = (data: NoteFormData) => {
+    if (!note) return;
+    setIsLoading(true);
+    const updatedContent: NoteContentBlock[] = [{ id: note.content?.[0]?.id || Date.now().toString(), type: 'text', data: data.content || '' }];
+    onSave({
+        title: data.title,
+        content: updatedContent,
+        color: data.color,
+        folder: data.folder,
+    });
+    setIsLoading(false);
+  };
+  
+  const folderOptions = [{label: 'Genel Notlar', value: ''}, ...sectionFolders.map(f => ({ label: f, value: f }))];
+
+  if (!note) return null;
+
+  return (
+    <Dialog open={!!note} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+            <DialogHeader>
+              <DialogTitle>{note.id ? "Notu Düzenle" : "Yeni Not Oluştur"}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <FormField name="title" control={form.control} render={({ field }) => (
+                <FormItem><FormLabel>Başlık</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )}/>
+              <FormField name="content" control={form.control} render={({ field }) => (
+                <FormItem><FormLabel>İçerik</FormLabel><FormControl><Textarea {...field} rows={8} /></FormControl><FormMessage /></FormItem>
+              )}/>
+              <FormField name="folder" control={form.control} render={({ field }) => (
+                <FormItem><FormLabel>Klasör</FormLabel><FormControl><Combobox options={folderOptions} value={field.value || ''} onChange={field.onChange} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.'/></FormControl><FormMessage /></FormItem>
+              )}/>
+              <FormField name="color" control={form.control} render={({ field }) => (
+                <FormItem><FormLabel>Renk</FormLabel><FormControl>
+                    <div className="flex gap-2">
+                        {noteColors.map(color => (<button type="button" key={color.name} aria-label={color.name} className={cn("h-7 w-7 rounded-full", color.class, field.value === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => field.onChange(color.class)} />))}
+                    </div>
+                </FormControl><FormMessage /></FormItem>
+              )}/>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="ghost">İptal</Button></DialogClose>
+              <Button type="submit" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Kaydet</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
