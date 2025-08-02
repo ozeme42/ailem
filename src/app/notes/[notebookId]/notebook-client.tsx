@@ -10,7 +10,7 @@ import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNote
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, FolderPlus, Folder } from 'lucide-react';
+import { Plus, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, FolderPlus, Folder, ChevronDown } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -413,20 +413,42 @@ export default function NotebookClient() {
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
                                     <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg sm:rounded-xl">
-                                         <div className="flex flex-col">
-                                            <AccordionTrigger className="hover:no-underline p-0">
-                                                <div className={cn("flex items-center gap-4 text-white p-4 cursor-pointer w-full", `bg-gradient-to-br ${colorClass}`)}>
-                                                    <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                                                        <Folder className="h-6 w-6"/>
+                                        <div className="flex flex-col">
+                                             <div className="flex items-center justify-between bg-card rounded-lg sm:rounded-xl">
+                                                <AccordionTrigger className="flex-1 justify-start p-0 hover:no-underline group">
+                                                    <div className={cn("flex items-center gap-4 text-white p-4 cursor-pointer w-full", `bg-gradient-to-br ${colorClass}`)}>
+                                                        <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
+                                                            <Folder className="h-6 w-6"/>
+                                                        </div>
+                                                        <div className="flex flex-col justify-center min-w-0 text-left">
+                                                            <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
+                                                            <p className="text-white/80 text-sm font-normal truncate">
+                                                                {folderNotes?.length || 0} not
+                                                            </p>
+                                                        </div>
+                                                        <ChevronDown className="h-5 w-5 ml-auto text-white/70 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                                                     </div>
-                                                    <div className="flex flex-col justify-center min-w-0 text-left">
-                                                        <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
-                                                        <p className="text-white/80 text-sm font-normal truncate">
-                                                            {folderNotes?.length || 0} not
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </AccordionTrigger>
+                                                </AccordionTrigger>
+                                                 {folderName !== 'Genel Notlar' && (
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="ml-auto mr-2 shrink-0">
+                                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent>
+                                                                <AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooterComponent>
+                                                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction>
+                                                            </AlertDialogFooterComponent>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                 )}
+                                            </div>
                                             <AccordionContent className="p-4 bg-background">
                                                 {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
