@@ -10,7 +10,7 @@ import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNote
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, GripVertical, FolderPlus, Folder, Plus } from 'lucide-react';
+import { Plus, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FileImage, Palette, MoreVertical, FolderPlus, Folder } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -42,13 +42,13 @@ const noteColors = [
 ];
 
 const folderColors = [
-    'text-yellow-600',
-    'text-blue-600',
-    'text-green-600',
-    'text-pink-600',
-    'text-purple-600',
-    'text-orange-600',
-    'text-teal-600',
+    'from-yellow-500 to-amber-500',
+    'from-blue-500 to-indigo-500',
+    'from-green-500 to-emerald-500',
+    'from-pink-500 to-rose-500',
+    'from-purple-500 to-violet-500',
+    'from-orange-500 to-red-500',
+    'from-teal-500 to-cyan-500',
 ];
 
 const notebookColors = [
@@ -354,15 +354,13 @@ export default function NotebookClient() {
                     <TabsList className="h-auto bg-transparent p-0 border-none">
                         {sections.map(section => {
                             const isActive = activeTab === section.id;
-                            const colorClass = section.color || 'from-gray-500 to-gray-600';
                             return (
                                 <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2" style={{cursor: 'grab'}}>
                                     <TabsTrigger
                                         value={section.id}
-                                        style={{ '--section-color': section.color } as React.CSSProperties}
                                         className={cn(
                                             "pr-8 text-white bg-gradient-to-br transition-all",
-                                            colorClass,
+                                            section.color,
                                             isActive ? "opacity-100 ring-2 ring-offset-2 ring-ring" : "opacity-70 hover:opacity-90"
                                         )}
                                     >
@@ -403,17 +401,18 @@ export default function NotebookClient() {
 
             return (
               <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                   <Accordion type="multiple" className="w-full space-y-4">
+                   <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                     {folderOrder.map((folderName, folderIndex) => {
                         const folderNotes = notesByFolder[folderName];
                         if (!folderNotes || folderNotes.length === 0) {
                             if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
                         }
+                        const colorClass = folderColors[folderIndex % folderColors.length];
                         return (
                              <AccordionItem key={folderName} value={folderName} className="border-b-0">
                                 <Card className='bg-background'>
                                      <CardHeader className="p-0">
-                                        <div className="flex items-center p-4 rounded-t-lg bg-gradient-to-r text-white" style={{'--tw-gradient-from': 'hsl(var(--primary))', '--tw-gradient-to': 'hsl(var(--accent))'} as React.CSSProperties}>
+                                        <div className={cn("flex items-center p-4 rounded-t-lg bg-gradient-to-r text-white", colorClass)}>
                                             <AccordionTrigger className="hover:no-underline flex-grow p-0">
                                                 <div className="flex items-center gap-2">
                                                     <Folder className="h-5 w-5"/>
@@ -472,7 +471,7 @@ export default function NotebookClient() {
                                     <FolderPlus className="mr-2 h-4 w-4"/> Yeni Klasör
                                 </DropdownMenuItem>
                                  <DropdownMenuItem onClick={() => handleOpenSectionDialog(null)}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Yeni Bölüm Ekle
+                                    <Plus className="mr-2 h-4 w-4" /> Yeni Bölüm Ekle
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                        </DropdownMenu>
