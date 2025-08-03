@@ -21,7 +21,7 @@ import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateShoppingListItems, GenerateShoppingListOutput } from '@/ai/flows/generate-shopping-list-flow';
+import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
 import { Loader2 } from 'lucide-react';
 
 
@@ -245,7 +245,6 @@ export default function ShoppingPage() {
         setIsAiProcessing(true);
         try {
             const aiResult = await generateShoppingListItems(itemToAdd.trim());
-            const batchId = Date.now().toString();
             for (const item of aiResult.items) {
                 await addShoppingListItemToList(selectedList.id, item);
             }
@@ -317,7 +316,7 @@ export default function ShoppingPage() {
   if (selectedList) {
      return (
         <div className="relative h-full flex flex-col -mx-4 sm:mx-0">
-            <header className={cn("p-4 sm:rounded-t-xl flex-shrink-0 bg-background border-b")}>
+             <header className={cn("p-4 sm:rounded-t-xl flex-shrink-0 bg-background border-b")}>
               <div className="flex items-center justify-between">
                   <h1 className="text-2xl font-bold text-foreground">{selectedList.name}</h1>
                   <div className='flex items-center gap-2'>
@@ -353,29 +352,26 @@ export default function ShoppingPage() {
               </div>
             </header>
             
-            <Tabs defaultValue="list" className="flex-grow flex flex-col min-h-0 bg-background sm:rounded-b-xl">
+            <Tabs defaultValue="list" className="flex-grow flex flex-col min-h-0 bg-muted/30 sm:rounded-b-xl">
                 <TabsList className="grid w-full grid-cols-2 flex-shrink-0 rounded-none sm:rounded-t-none">
                     <TabsTrigger value="list">Liste</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({Object.values(boughtItemsByCategory).flat().length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="list" className="flex-grow overflow-y-auto p-0 mt-0">
+                <TabsContent value="list" className="flex-grow overflow-y-auto mt-0">
                     <div className="space-y-4">
                         {Object.keys(pendingItemsByCategory).length > 0 ? Object.entries(pendingItemsByCategory).map(([category, items]) => {
-                           if (category === 'Diğer' && items.length === 0) return null;
                            return(
-                            <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0">
+                            <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0 bg-background">
                                 {category !== 'Diğer' && (
                                   <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
                                 )}
                                 <CardContent className="p-0">
                                     <div className="flex flex-col">
-                                        {items.map((item, index) => (
-                                            <div 
-                                                key={item.id} 
-                                                className="flex items-center p-3 gap-3 border-b first:border-t"
-                                            >
-                                                <Checkbox id={item.id} checked={false} className="size-5" onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, true)} />
-                                                <label htmlFor={item.id} className="font-medium cursor-pointer">{item.name}</label>
+                                        {items.map((item) => (
+                                            <div key={item.id} className="flex items-center p-3 gap-4 border-b group">
+                                                <Checkbox id={item.id} checked={false} className="size-6 rounded-md" onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, true)} />
+                                                <label htmlFor={item.id} className="font-medium cursor-pointer flex-grow">{item.name}</label>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive/70 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><Trash2 className="h-4 w-4"/></Button>
                                             </div>
                                         ))}
                                     </div>
@@ -390,9 +386,9 @@ export default function ShoppingPage() {
                         )}
                     </div>
                 </TabsContent>
-                <TabsContent value="bought" className="flex-grow overflow-y-auto p-0 mt-0">
+                <TabsContent value="bought" className="flex-grow overflow-y-auto mt-0">
                     {Object.keys(boughtItemsByCategory).length > 0 && (
-                        <div className="flex justify-end p-4">
+                        <div className="flex justify-end p-4 bg-background">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -404,23 +400,18 @@ export default function ShoppingPage() {
                     )}
                     <div className="space-y-4">
                         {Object.keys(boughtItemsByCategory).length > 0 ? Object.entries(boughtItemsByCategory).map(([category, items]) => {
-                           if (category === 'Diğer' && items.length === 0) return null;
                            return(
-                             <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0">
+                             <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0 bg-background">
                                 {category !== 'Diğer' && (
                                   <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
                                 )}
                                 <CardContent className="p-0">
                                      <div className="flex flex-col">
                                         {items.map((item) => (
-                                            <div key={item.id} className="flex items-center p-3 gap-3 border-b first:border-t">
-                                                <Checkbox
-                                                    id={item.id}
-                                                    checked={true}
-                                                    className="size-5"
-                                                    onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, false)}
-                                                />
-                                                <label htmlFor={item.id} className="font-medium cursor-pointer line-through text-muted-foreground">{item.name}</label>
+                                            <div key={item.id} className="flex items-center p-3 gap-4 border-b group">
+                                                <Checkbox id={item.id} checked={true} className="size-6 rounded-md" onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, false)}/>
+                                                <label htmlFor={item.id} className="font-medium cursor-pointer flex-grow line-through text-muted-foreground">{item.name}</label>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive/70 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><Trash2 className="h-4 w-4"/></Button>
                                             </div>
                                         ))}
                                     </div>
@@ -445,7 +436,7 @@ export default function ShoppingPage() {
                 <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
             </Button>
         </PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 -mx-4 sm:mx-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
                     const color = brightColors[index % brightColors.length];
