@@ -280,14 +280,7 @@ export default function ShoppingPage() {
         'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11,
     };
     
-    const grouped = items.filter(item => !item.isBought).reduce((acc, item) => {
-        const category = item.category || 'Diğer';
-        if (!acc[category]) acc[category] = [];
-        acc[category].push(item);
-        return acc;
-    }, {} as Record<string, ShoppingListItemType[]>);
-    
-    const boughtGrouped = items.filter(item => item.isBought).reduce((acc, item) => {
+    const grouped = items.reduce((acc, item) => {
         const category = item.category || 'Diğer';
         if (!acc[category]) acc[category] = [];
         acc[category].push(item);
@@ -310,7 +303,7 @@ export default function ShoppingPage() {
     });
 
     return {
-      pendingItems: sortGrouped({...grouped, ...boughtGrouped}),
+      pendingItems: sortGrouped(grouped),
       boughtItems: sortedBought,
     };
   }, [selectedList]);
@@ -345,33 +338,35 @@ export default function ShoppingPage() {
   if (selectedList) {
      return (
         <div className="relative h-full flex flex-col">
-            <div className='flex-shrink-0 -mx-4 sm:mx-0'>
+            <div className='flex-shrink-0'>
                 <PageHeader title={selectedList.name}>
-                    <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
-                        <ArrowLeft className="h-5 w-5 mr-2" /> Geri
-                    </Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                                <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="flex items-center gap-2">
+                         <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
+                            <ArrowLeft className="h-5 w-5 mr-2" /> Geri
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
+                                    <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </PageHeader>
                  <div className='p-4 -mt-8'>
                     <form onSubmit={handleAddItem} className="relative w-full">
                         <Input 
                             value={newItemName} 
                             onChange={(e) => setNewItemName(e.target.value)} 
-                            placeholder="Yeni öğe ekle..." 
+                            placeholder="Yeni öğe ekle (örn: 2 kilo domates, 1 paket süt)" 
                             className="bg-background peer"
                             disabled={isAiProcessing}
                         />
@@ -393,12 +388,12 @@ export default function ShoppingPage() {
                 </div>
             </div>
             
-            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0">
-                <TabsList className="grid w-full grid-cols-2 rounded-none flex-shrink-0">
-                    <TabsTrigger value="pending">Liste</TabsTrigger>
+            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
+                <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                    <TabsTrigger value="pending">Alınacaklar</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-background overflow-y-auto">
+                <TabsContent value="pending" className="flex-grow bg-background overflow-y-auto -mx-4 sm:mx-0">
                     <div className="mt-2">
                         {pendingItems.length === 0 ? (
                            <div className="text-center py-16 text-muted-foreground">
@@ -433,11 +428,11 @@ export default function ShoppingPage() {
                         )}
                     </div>
                 </TabsContent>
-                <TabsContent value="bought" className="flex-grow bg-background overflow-y-auto">
+                <TabsContent value="bought" className="flex-grow bg-background overflow-y-auto -mx-4 sm:mx-0">
                     {boughtItems.length > 0 && (
                         <div className="p-4 flex justify-end border-b">
                             <AlertDialog>
-                                <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Tümünü Kalıcı Sil</Button></AlertDialogTrigger>
+                                <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Kalıcı Sil</Button></AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Tüm alınan öğeler kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
                                     <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
