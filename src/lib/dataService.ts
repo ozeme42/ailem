@@ -483,7 +483,7 @@ export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLis
 export const addShoppingListItemToList = async (listId: string, itemData: { name: string; category?: string; quantity?: string; }) => {
     const listRef = doc(db, "shoppingLists", listId);
     
-    const newItem: ShoppingItem = { 
+    const newItem: Partial<ShoppingItem> = { 
         id: Date.now().toString(), 
         name: `${itemData.quantity || ''} ${itemData.name}`.trim(), 
         isBought: false, 
@@ -491,6 +491,11 @@ export const addShoppingListItemToList = async (listId: string, itemData: { name
         category: itemData.category || 'Diğer',
         quantity: itemData.quantity,
     };
+    
+    // Ensure quantity is not undefined before sending to Firestore
+    if (newItem.quantity === undefined) {
+        delete newItem.quantity;
+    }
     
     await updateDoc(listRef, {
         items: arrayUnion(newItem)
