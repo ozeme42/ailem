@@ -326,37 +326,13 @@ export default function ShoppingPage() {
     });
 
      return (
-        <div className="relative h-full flex flex-col">
-            <div className={cn(
-                "flex flex-col items-start gap-4 p-4",
-                "-m-4 mb-4",
-                "sm:m-0 sm:mb-8 sm:rounded-xl"
-            )}>
+        <div className="flex flex-col h-full">
+             <PageHeader title={selectedList.name}>
                 <div className="w-full flex items-center justify-between gap-4">
-                    <h1 className="text-3xl font-bold tracking-tight">{selectedList.name}</h1>
-                    <div className="flex items-center gap-2">
-                        <Button variant="secondary" onClick={() => setSelectedList(null)}>
+                     <Button variant="secondary" onClick={() => setSelectedList(null)}>
                         <ArrowLeft className="h-5 w-5 mr-2" /> Geri
-                        </Button>
-                        <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                </div>
-                <div className="w-full">
-                    <form onSubmit={handleAddItem} className="relative w-full">
+                     </Button>
+                     <form onSubmit={handleAddItem} className="relative flex-grow max-w-lg">
                         <Input 
                             value={newItemName} 
                             onChange={(e) => setNewItemName(e.target.value)} 
@@ -380,26 +356,26 @@ export default function ShoppingPage() {
                     )}
                     </form>
                 </div>
-            </div>
+             </PageHeader>
             
-            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0">
+            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                 <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                     <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-card rounded-b-lg">
+                <TabsContent value="pending" className="flex-grow">
                     {sortedCategories.length === 0 ? (
                        <div className="text-center py-16 text-muted-foreground">
                             <ShoppingCart className="mx-auto h-12 w-12" />
                             <p className="mt-4">Listeniz boş.</p>
                         </div>
                     ) : (
-                        <div className="bg-card rounded-b-lg shadow-sm divide-y divide-border">
+                        <div className="divide-y divide-border">
                             {sortedCategories.map(([category, items]) => (
-                                <React.Fragment key={category}>
+                                <div key={category}>
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base p-3 bg-muted/50">{category}</h3>}
                                     {items.map((item) => (
-                                        <div key={item.id} className="flex items-center gap-4 p-3 group bg-card">
+                                        <div key={item.id} className="flex items-center gap-4 p-3 group">
                                             <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList!.id, item.id, !!checked)} className="size-6 rounded-md" />
                                             <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                             {item.isBought && (
@@ -409,18 +385,18 @@ export default function ShoppingPage() {
                                             )}
                                         </div>
                                     ))}
-                                </React.Fragment>
+                                </div>
                             ))}
                         </div>
                     )}
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow bg-blue-50 dark:bg-card rounded-b-lg p-4">
+                 <TabsContent value="bought" className="flex-grow">
                     {boughtItems.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground">
                             <p>Henüz alınan bir ürün yok.</p>
                         </div>
                     ) : (
-                    <div className="bg-background rounded-lg shadow-sm border">
+                    <div>
                         <div className="flex justify-end p-2 border-b">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
