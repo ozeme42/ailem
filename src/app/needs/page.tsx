@@ -305,14 +305,14 @@ export default function NeedsPage() {
                 </form>
             </PageHeader>
             
-            <div className='-mx-4 sm:mx-0 flex-grow min-h-0'>
+             <div className="-mx-4 sm:mx-0 flex-grow min-h-0">
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col h-full">
                     <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                         <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-card px-4 rounded-b-lg">
-                         <div className="divide-y divide-blue-100 dark:divide-border/50">
+                        <div className="divide-y divide-blue-100 dark:divide-border/50">
                             {sortedCategories.map(([category, items]) => (
                                 <div key={category}>
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
@@ -337,13 +337,13 @@ export default function NeedsPage() {
                             ))}
                         </div>
                     </TabsContent>
-                    <TabsContent value="bought" className="flex-grow bg-blue-50 dark:bg-card px-4 rounded-b-lg">
+                    <TabsContent value="bought" className="flex-grow bg-blue-50 dark:bg-card rounded-b-lg">
                         {boughtItems.length === 0 ? (
                         <div className="text-center py-16 text-muted-foreground">
                                 <p>Henüz alınan bir ürün yok.</p>
                             </div>
                         ) : (
-                        <div>
+                        <div className="px-4">
                             <div className="flex justify-end p-2 border-b">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
@@ -378,7 +378,7 @@ export default function NeedsPage() {
                 <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
             </Button>
         </PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 -mx-4 sm:mx-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
                     const color = brightColors[index % brightColors.length];
@@ -404,4 +404,3 @@ export default function NeedsPage() {
     </div>
   );
 }
-
