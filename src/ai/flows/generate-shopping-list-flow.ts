@@ -17,6 +17,7 @@ export type GenerateShoppingListInput = z.infer<typeof GenerateShoppingListInput
 const ShoppingItemSchema = z.object({
   name: z.string().describe('The name of the shopping item.'),
   quantity: z.string().optional().describe('The quantity or amount of the item.'),
+  category: z.string().describe("The category of the shopping item (e.g., 'Meyve ve Sebze', 'Süt Ürünleri', 'Temizlik', 'Diğer')."),
 });
 
 const GenerateShoppingListOutputSchema = z.object({
@@ -30,7 +31,22 @@ const generatePrompt = ai.definePrompt({
   output: { schema: GenerateShoppingListOutputSchema },
   prompt: `You are an expert at parsing shopping lists from natural language.
     Analyze the user's request and extract each item into a structured format.
-    For each item, identify the name and quantity if available.
+    For each item, identify the name, quantity if available, and a relevant category.
+    
+    Possible categories include, but are not limited to:
+    - Meyve ve Sebze
+    - Süt Ürünleri
+    - Et ve Tavuk Ürünleri
+    - Unlu Mamüller
+    - Temel Gıda
+    - Atıştırmalık
+    - İçecekler
+    - Dondurulmuş Gıdalar
+    - Temizlik Ürünleri
+    - Kişisel Bakım
+    - Bebek Ürünleri
+    - Diğer
+
     User request: {{{prompt}}}
     `,
 });

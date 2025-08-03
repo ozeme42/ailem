@@ -12,18 +12,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Textarea } from '@/components/ui/textarea';
 import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, deleteShoppingListItemFromList, clearBoughtItemsFromList } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const brightColors = [
     { id: 'blue-indigo', name: 'Mavi', gradient: 'from-blue-500 to-indigo-600' },
@@ -254,8 +251,32 @@ export default function ShoppingPage() {
     }
   };
 
-  const pendingItems = useMemo(() => selectedList?.items?.filter(item => !item.isBought) || [], [selectedList]);
-  const boughtItems = useMemo(() => selectedList?.items?.filter(item => item.isBought) || [], [selectedList]);
+  const { itemsByCategory } = useMemo(() => {
+    if (!selectedList) return { itemsByCategory: {} };
+
+    const grouped: { [key: string]: ShoppingListItemType[] } = {};
+    const sortedItems = [...(selectedList.items || [])].sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    sortedItems.forEach(item => {
+      const category = item.category || 'Diğer';
+      if (!grouped[category]) {
+        grouped[category] = [];
+      }
+      grouped[category].push(item);
+    });
+
+    for(const category in grouped) {
+        grouped[category].sort((a, b) => {
+            if (a.isBought !== b.isBought) {
+                return a.isBought ? 1 : -1;
+            }
+            return (b.createdAt || '').localeCompare(a.createdAt || '');
+        });
+    }
+
+    return { itemsByCategory: grouped };
+  }, [selectedList]);
+
   
   const handleSelectList = (list: ShoppingList, color: string) => {
       setSelectedList(list);
@@ -296,73 +317,59 @@ export default function ShoppingPage() {
                     </Button>
                   </div>
                 </div>
+                <div className="mt-4 relative">
+                  <form onSubmit={handleAddItem} className="flex gap-2">
+                      <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer bg-white/90 text-gray-800 placeholder:text-gray-500"/>
+                      <Button type="submit" variant="secondary"><Plus className="h-5 w-5" /></Button>
+                  </form>
+                  {suggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-background border rounded-lg shadow-lg z-10">
+                        <div className="flex flex-wrap gap-2">
+                          {suggestions.map((s, i) => (
+                            <Button
+                                key={i}
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
+                            >
+                                {s}
+                            </Button>
+                        ))}
+                        </div>
+                      </div>
+                  )}
+              </div>
             </header>
 
-            <div className="p-4 bg-background flex-shrink-0 border-b relative">
-                <form onSubmit={handleAddItem} className="flex gap-2">
-                    <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
-                    <Button type="submit"><Plus className="h-5 w-5" /></Button>
-                </form>
-                {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mx-4 mt-2 p-2 bg-background border rounded-lg shadow-lg z-10">
-                       <div className="flex flex-wrap gap-2">
-                         {suggestions.map((s, i) => (
-                           <Button
-                               key={i}
-                               type="button"
-                               variant="secondary"
-                               size="sm"
-                               onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
-                           >
-                               {s}
-                           </Button>
-                       ))}
-                       </div>
-                    </div>
-                )}
-            </div>
-
             <main className="flex-grow p-4 bg-background sm:rounded-b-xl sm:border-x sm:border-b overflow-y-auto">
-                <div className="space-y-2">
-                     <h3 className="font-semibold text-lg">Alınacaklar ({pendingItems.length})</h3>
-                     {pendingItems.map((item) => (
-                        <div 
-                            key={item.id} 
-                            className="flex items-center p-3 group cursor-pointer bg-card border rounded-lg"
-                            onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)}
-                        >
-                            <Checkbox id={item.id} checked={item.isBought} className="size-5 pointer-events-none" />
-                            <Label htmlFor={item.id} className="ml-3 font-medium cursor-pointer">{item.name}</Label>
-                            <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100" onClick={(e) => {e.stopPropagation(); deleteShoppingListItemFromList(selectedList.id, item.id)}}><X className="h-4 w-4" /></Button>
-                        </div>
-                     ))}
-                     {pendingItems.length === 0 && (
-                        <p className="text-sm text-center text-muted-foreground py-4">Tüm ihtiyaçlar alınmış! 🎉</p>
-                     )}
-                </div>
-
-                {boughtItems.length > 0 && (
-                    <Accordion type="single" collapsible className="w-full mt-6">
-                        <AccordionItem value="item-1">
-                            <AccordionTrigger>Alınanlar ({boughtItems.length})</AccordionTrigger>
-                            <AccordionContent className="space-y-2">
-                                <Button variant="outline" size="sm" onClick={() => clearBoughtItemsFromList(selectedList.id)} className="w-full">
-                                    Alınanları Temizle
-                                </Button>
-                                {boughtItems.map((item) => (
+                <div className="space-y-6">
+                    {Object.keys(itemsByCategory).length > 0 ? Object.entries(itemsByCategory).map(([category, items]) => (
+                        <Card key={category}>
+                            <CardHeader>
+                                <CardTitle>{category}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {items.map(item => (
                                     <div 
                                         key={item.id} 
-                                        className="flex items-center p-3 group cursor-pointer bg-card border rounded-lg bg-muted/50"
+                                        className="flex items-center p-2.5 group cursor-pointer bg-muted/50 border rounded-lg"
                                         onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)}
                                     >
                                         <Checkbox id={item.id} checked={item.isBought} className="size-5 pointer-events-none" />
-                                        <Label htmlFor={item.id} className="ml-3 font-medium cursor-pointer line-through text-muted-foreground">{item.name}</Label>
+                                        <Label htmlFor={item.id} className={cn("ml-3 font-medium cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</Label>
                                     </div>
                                 ))}
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                )}
+                            </CardContent>
+                        </Card>
+                    )) : (
+                         <div className="text-center py-16 text-muted-foreground">
+                            <ShoppingCart className="mx-auto h-12 w-12" />
+                            <p className="mt-4">Listeniz boş.</p>
+                            <p className="text-sm">Yukarıdaki alandan yeni ürünler ekleyin.</p>
+                        </div>
+                    )}
+                </div>
             </main>
         </div>
      );

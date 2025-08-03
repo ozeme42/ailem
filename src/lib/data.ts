@@ -418,6 +418,7 @@ export interface ShoppingItem {
   name: string;
   isBought: boolean;
   createdAt?: string; // ISO Date String
+  category?: string;
 }
 
 export interface ShoppingList {
