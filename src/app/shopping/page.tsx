@@ -20,7 +20,6 @@ import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShopping
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
 import { Loader2 } from 'lucide-react';
 
@@ -327,8 +326,8 @@ export default function ShoppingPage() {
     });
 
      return (
-        <div className="relative h-full flex flex-col">
-            <PageHeader title={selectedList.name}>
+        <div className="relative h-full flex flex-col -mx-4 sm:mx-0">
+             <PageHeader title={selectedList.name}>
                  <div className="flex flex-col gap-4">
                     <div className="flex w-full items-center justify-between gap-4">
                         <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
@@ -341,7 +340,7 @@ export default function ShoppingPage() {
                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                                    <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                                    <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>İptal</AlertDialogCancel>
@@ -376,19 +375,19 @@ export default function ShoppingPage() {
                  </div>
             </PageHeader>
             
-            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
+            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0">
                 <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                     <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-card p-4 rounded-b-lg">
+                <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-card rounded-b-lg">
                     {sortedCategories.length === 0 ? (
                        <div className="text-center py-16 text-muted-foreground">
                             <ShoppingCart className="mx-auto h-12 w-12" />
                             <p className="mt-4">Listeniz boş.</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-border/50 bg-background rounded-lg shadow-sm border">
+                        <div className="bg-background rounded-lg shadow-sm border divide-y divide-border/50">
                             {sortedCategories.map(([category, items]) => (
                                 <React.Fragment key={category}>
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base p-3 bg-muted/50">{category}</h3>}
@@ -408,7 +407,7 @@ export default function ShoppingPage() {
                         </div>
                     )}
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow bg-blue-50 dark:bg-card p-4 rounded-b-lg">
+                 <TabsContent value="bought" className="flex-grow bg-blue-50 dark:bg-card rounded-b-lg">
                     {boughtItems.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground">
                             <p>Henüz alınan bir ürün yok.</p>
@@ -448,7 +447,7 @@ export default function ShoppingPage() {
                 <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
             </Button>
         </PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 -mx-4 sm:mx-0">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
                     const color = brightColors[index % brightColors.length];
