@@ -272,7 +272,8 @@ export default function ShoppingPage() {
     const pendingGrouped: { [key: string]: ShoppingListItemType[] } = {};
     const boughtGrouped: { [key: string]: ShoppingListItemType[] } = {};
     
-    const allItems = [...(selectedList.items || [])];
+    // Sort items by creation date first to ensure consistent order
+    const allItems = [...(selectedList.items || [])].sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
     allItems.forEach(item => {
         const category = item.category || 'Diğer';
@@ -284,10 +285,6 @@ export default function ShoppingPage() {
             pendingGrouped[category].push(item);
         }
     });
-
-    Object.values(pendingGrouped).forEach(arr => arr.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
-    Object.values(boughtGrouped).forEach(arr => arr.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
-
 
     return { pendingItemsByCategory: pendingGrouped, boughtItemsByCategory: boughtGrouped };
   }, [selectedList]);
@@ -331,8 +328,8 @@ export default function ShoppingPage() {
                       <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                     </Button>
                   </div>
-                </div>
-                <div className="mt-4 relative">
+              </div>
+              <div className="mt-4 relative">
                   <form onSubmit={handleAddItem} className="flex gap-2">
                       <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Birden fazla öğe ekleyebilirsiniz..." className="peer bg-white/90 text-gray-800 placeholder:text-gray-500" disabled={isAiProcessing}/>
                       <Button type="submit" variant="secondary" disabled={isAiProcessing}>
@@ -368,13 +365,18 @@ export default function ShoppingPage() {
                     <div className="space-y-6">
                         {Object.keys(pendingItemsByCategory).length > 0 ? Object.entries(pendingItemsByCategory).map(([category, items]) => (
                             <Card key={category}>
-                                <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
+                                {category !== 'Diğer' && (
+                                  <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
+                                )}
                                 <CardContent className="p-0">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 border-t">
+                                    <div className="flex flex-col">
                                         {items.map((item, index) => (
                                             <div 
                                                 key={item.id} 
-                                                className={cn("flex items-center p-3 group cursor-pointer gap-3", index % 2 === 0 && 'sm:border-r')}
+                                                className={cn(
+                                                    "flex items-center p-3 group cursor-pointer gap-3",
+                                                    index > 0 && "border-t" // Add border to all but the first item
+                                                )}
                                                 onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, true)}
                                             >
                                                 <Checkbox id={item.id} checked={false} className="size-5 pointer-events-none" />
@@ -408,11 +410,13 @@ export default function ShoppingPage() {
                     <div className="space-y-6">
                         {Object.keys(boughtItemsByCategory).length > 0 ? Object.entries(boughtItemsByCategory).map(([category, items]) => (
                             <Card key={category}>
-                                <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
+                                {category !== 'Diğer' && (
+                                  <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
+                                )}
                                 <CardContent className="p-0">
-                                     <div className="grid grid-cols-1 sm:grid-cols-2 border-t">
+                                     <div className="flex flex-col">
                                         {items.map((item, index) => (
-                                            <div key={item.id} className={cn("flex items-center p-3 group cursor-pointer gap-3", index % 2 === 0 && 'sm:border-r')}>
+                                            <div key={item.id} className={cn("flex items-center p-3 group cursor-pointer gap-3", index > 0 && "border-t")}>
                                                 <Checkbox
                                                     id={item.id}
                                                     checked={true}
