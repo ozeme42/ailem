@@ -250,7 +250,6 @@ export default function ShoppingPage() {
                 await addShoppingListItemToList(selectedList.id, item);
             }
         } else {
-            // If AI returns nothing, add the item directly.
             await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim() });
         }
     } catch (error) {
@@ -268,15 +267,8 @@ export default function ShoppingPage() {
     setSuggestions([]);
   };
 
-  const { pendingItems, boughtItems } = useMemo(() => {
+  const { boughtItems } = useMemo(() => {
     if (!selectedList) return { pendingItems: [], boughtItems: [] };
-    
-    const allPending = (selectedList.items || []).sort((a, b) => {
-        if (a.isBought !== b.isBought) {
-            return a.isBought ? 1 : -1;
-        }
-        return a.name.localeCompare(b.name, 'tr');
-    });
     
     const allArchived = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -285,7 +277,6 @@ export default function ShoppingPage() {
     });
 
     return {
-      pendingItems: allPending,
       boughtItems: allArchived,
     };
   }, [selectedList]);
@@ -387,36 +378,38 @@ export default function ShoppingPage() {
             
             <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                 <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                    <TabsTrigger value="pending">Alınacaklar ({pendingItems.length})</TabsTrigger>
+                    <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-sky-900/20 p-4 space-y-4">
-                        {pendingItems.length === 0 && (
-                        <div className="text-center py-16 text-muted-foreground">
-                                <ShoppingCart className="mx-auto h-12 w-12" />
-                                <p className="mt-4">Listeniz boş.</p>
+                 <TabsContent value="pending" className="flex-grow bg-card -mx-4 sm:mx-0 p-4 rounded-b-lg">
+                    {sortedCategories.length === 0 && (
+                       <div className="text-center py-16 text-muted-foreground">
+                            <ShoppingCart className="mx-auto h-12 w-12" />
+                            <p className="mt-4">Listeniz boş.</p>
+                        </div>
+                    )}
+                    <div className="space-y-4">
+                    {sortedCategories.map(([category, items]) => (
+                        <div key={category}>
+                                <h3 className={cn("font-semibold text-base mb-2", category === 'Diğer' && 'hidden')}>{category}</h3>
+                            <div className="rounded-lg shadow-sm border divide-y divide-border/50">
+                                {items.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-2 p-2 group bg-background">
+                                        <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md" />
+                                        <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                        {item.isBought && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                        )}
-                        {sortedCategories.map(([category, items]) => (
-                            <div key={category}>
-                                 <h3 className={cn("font-semibold text-base mb-2", category === 'Diğer' && 'hidden')}>{category}</h3>
-                                <div className="bg-background rounded-lg shadow-sm border divide-y divide-border/50">
-                                    {items.map((item, index) => (
-                                        <div key={item.id} className="flex items-center gap-2 p-2 group">
-                                            <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md" />
-                                            <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
-                                            {item.isBought && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
-                                                    <Trash2 className="h-4 w-4"/>
-                                                </Button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
+                        </div>
+                    ))}
+                    </div>
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow p-4 bg-blue-50 dark:bg-sky-900/20">
+                 <TabsContent value="bought" className="flex-grow bg-card -mx-4 sm:mx-0 p-4 rounded-b-lg">
                      <Card>
                         <CardContent className="p-0">
                             {boughtItems.length > 0 && (
