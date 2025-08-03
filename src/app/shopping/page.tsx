@@ -254,19 +254,8 @@ export default function ShoppingPage() {
     }
   };
 
-  const sortItems = (items: ShoppingListItemType[]) => {
-      return items.sort((a, b) => {
-          if (a.createdAt && b.createdAt) {
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          }
-          if (a.createdAt) return -1;
-          if (b.createdAt) return 1;
-          return 0;
-      });
-  };
-
-  const pendingItems = useMemo(() => sortItems(selectedList?.items.filter(item => !item.isBought) || []), [selectedList]);
-  const boughtItems = useMemo(() => sortItems(selectedList?.items.filter(item => item.isBought) || []), [selectedList]);
+  const pendingItems = useMemo(() => selectedList?.items.filter(item => !item.isBought) || [], [selectedList]);
+  const boughtItems = useMemo(() => selectedList?.items.filter(item => item.isBought) || [], [selectedList]);
   
   const handleSelectList = (list: ShoppingList, color: string) => {
       setSelectedList(list);
