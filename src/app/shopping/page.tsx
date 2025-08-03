@@ -270,11 +270,8 @@ export default function ShoppingPage() {
     setSuggestions([]);
   };
 
-  const { pendingItems, boughtItems } = useMemo(() => {
-    if (!selectedList) return { pendingItems: [], boughtItems: [] };
-    
-    const items = (selectedList.items || []).filter(item => !item.isBought);
-    const bought = (selectedList.items || []).filter(item => item.isBought);
+  const { pendingItems, boughtItems, completedItems } = useMemo(() => {
+    if (!selectedList) return { pendingItems: [], boughtItems: [], completedItems: [] };
     
     const categoryOrder: { [key: string]: number } = {
         'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
@@ -298,11 +295,8 @@ export default function ShoppingPage() {
     }
 
     const allItems = selectedList.items || [];
-    const pending = allItems.filter(item => !item.isBought);
-    const completed = allItems.filter(item => item.isBought);
     
-    const groupedPending = groupItems(pending);
-    const groupedCompleted = groupItems(completed);
+    const groupedPending = groupItems(allItems);
     
     const allArchived = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -311,9 +305,9 @@ export default function ShoppingPage() {
     });
 
     return {
-      pendingItems: groupItems(pending),
+      pendingItems: groupedPending,
       boughtItems: allArchived,
-      completedItems: groupItems(completed),
+      completedItems: [],
     };
   }, [selectedList]);
 
@@ -345,11 +339,15 @@ export default function ShoppingPage() {
   }
 
   if (selectedList) {
+     const allPendingItems = selectedList.items || [];
+     const isBoughtItems = allPendingItems.filter(i => i.isBought);
+     const notBoughtItems = allPendingItems.filter(i => !i.isBought);
+
      return (
         <div className="relative h-full flex flex-col">
             <div className='flex-shrink-0'>
                 <PageHeader title={selectedList.name}>
-                    <div className="flex items-center gap-2">
+                    <div className="w-full flex items-center justify-between">
                          <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
                             <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                         </Button>
@@ -369,7 +367,7 @@ export default function ShoppingPage() {
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
-                    <form onSubmit={handleAddItem} className="relative w-full mt-4">
+                     <form onSubmit={handleAddItem} className="relative w-full mt-4">
                         <Input 
                             value={newItemName} 
                             onChange={(e) => setNewItemName(e.target.value)} 
@@ -397,75 +395,70 @@ export default function ShoppingPage() {
             
             <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                 <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                    <TabsTrigger value="pending">Alınacaklar</TabsTrigger>
+                    <TabsTrigger value="pending">Alınacaklar ({notBoughtItems.length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-background overflow-y-auto -mx-4 sm:mx-0">
-                    <div className="mt-2">
-                         {(selectedList.items || []).filter(i => i.isBought).length > 0 && (
-                            <div className="p-4 flex justify-end border-b">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>İşaretlileri Arşivle</Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Tüm işaretli öğeler "Alınanlar" sekmesine taşınacaktır.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Arşivle</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        )}
-                        {pendingItems.length === 0 && (selectedList.items || []).filter(i => i.isBought).length === 0 ? (
+                 <TabsContent value="pending" className="flex-grow bg-muted/50 overflow-y-auto -mx-4 sm:mx-0 p-4 rounded-b-lg">
+                    <div className="mt-2 space-y-4">
+                        {notBoughtItems.length === 0 && isBoughtItems.length === 0 && (
                            <div className="text-center py-16 text-muted-foreground">
                                 <ShoppingCart className="mx-auto h-12 w-12" />
                                 <p className="mt-4">Listeniz boş.</p>
                             </div>
-                        ) : (
-                            pendingItems.map(([category, items], catIndex) => (
-                                <div key={category}>
-                                     {category !== 'Diğer' && (
-                                        <CardHeader className="px-4 py-3 border-b border-t bg-muted/50">
-                                            <CardTitle className="text-base">{category}</CardTitle>
-                                        </CardHeader>
-                                    )}
-                                    <CardContent className="p-0">
-                                         {items.map((item, itemIndex) => (
-                                            <div key={item.id} className="flex items-center gap-2 px-4 py-1 group border-b">
-                                                <div className="py-2 pr-4 cursor-pointer" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
-                                                    <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md"  />
-                                                </div>
-                                                <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
-                                            </div>
-                                        ))}
-                                    </CardContent>
-                                </div>
-                            ))
                         )}
-                         {(selectedList.items || []).filter(i => i.isBought).length > 0 && (
-                            <div className="p-4 border-t mt-4">
-                                <h3 className="font-semibold mb-2">İşaretlenenler</h3>
-                                { (selectedList.items || []).filter(i => i.isBought).map((item) => (
-                                     <div key={item.id} className="flex items-center gap-2 px-4 py-1 group border-b">
-                                        <div className="py-2 pr-4 cursor-pointer" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
-                                            <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md"  />
+                        {pendingItems.filter(([_, items]) => items.some(i => !i.isBought)).map(([category, items]) => (
+                            <div key={category}>
+                                <CardHeader className="px-0 py-3">
+                                    <CardTitle className="text-base">{category}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-0 space-y-2">
+                                    {items.filter(i => !i.isBought).map((item) => (
+                                        <div key={item.id} className="flex items-center gap-2 p-2 group bg-card border rounded-lg shadow-sm">
+                                            <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md" />
+                                            <label htmlFor={item.id} className="font-medium flex-grow cursor-pointer">{item.name}</label>
                                         </div>
+                                    ))}
+                                </CardContent>
+                            </div>
+                        ))}
+                         {isBoughtItems.length > 0 && (
+                            <div className="pt-4 border-t mt-4">
+                                <h3 className="font-semibold mb-2 text-muted-foreground">İşaretlenenler</h3>
+                                <div className="space-y-2">
+                                { isBoughtItems.map((item) => (
+                                     <div key={item.id} className="flex items-center gap-2 p-2 group bg-card border rounded-lg shadow-sm">
+                                        <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md"  />
                                         <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
                                             <Trash2 className="h-4 w-4"/>
                                         </Button>
                                     </div>
                                 )) }
+                                </div>
                             </div>
                         )}
                     </div>
                 </TabsContent>
-                <TabsContent value="bought" className="flex-grow bg-background overflow-y-auto -mx-4 sm:mx-0">
-                     <div className="mt-2">
+                 <TabsContent value="bought" className="flex-grow bg-muted/50 overflow-y-auto -mx-4 sm:mx-0 p-4 rounded-b-lg">
+                     <div className="mt-2 space-y-2">
+                         {boughtItems.length > 0 && (
+                            <div className="flex justify-end mb-4">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Tüm alınan öğeler kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Temizle</AlertDialogAction></AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        )}
                         {boughtItems.length === 0 ? (
                            <div className="text-center py-16 text-muted-foreground">
                                 <p>Henüz alınan bir ürün yok.</p>
                             </div>
                         ) : (
                             boughtItems.map((item) => (
-                                <div key={item.id} className="flex items-center gap-4 px-4 py-3 bg-background border-t group">
+                                <div key={item.id} className="flex items-center gap-4 p-3 bg-card border rounded-lg group">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList.id, item.id)}><Repeat className="h-4 w-4"/></Button>
                                     <p className="font-medium flex-grow line-through text-muted-foreground">{item.name}</p>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}><Trash2 className="h-4 w-4"/></Button>
@@ -512,3 +505,4 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
