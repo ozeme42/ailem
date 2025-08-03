@@ -178,7 +178,6 @@ export default function ShoppingPage() {
   
   const [isCreateListOpen, setCreateListOpen] = useState(false);
   const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
-  const [selectedListColor, setSelectedListColor] = useState<string>('bg-gray-500');
   const [newItemName, setNewItemName] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -284,20 +283,13 @@ export default function ShoppingPage() {
             pendingGrouped[category].push(item);
         }
     });
-    
-    // Sort items within each category
-    const sortItems = (items: ShoppingListItemType[]) => items.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-    
-    Object.keys(pendingGrouped).forEach(key => sortItems(pendingGrouped[key]));
-    Object.keys(boughtGrouped).forEach(key => sortItems(boughtGrouped[key]));
 
     return { pendingItemsByCategory: pendingGrouped, boughtItemsByCategory: boughtGrouped };
   }, [selectedList]);
 
   
-  const handleSelectList = (list: ShoppingList, color: string) => {
+  const handleSelectList = (list: ShoppingList) => {
       setSelectedList(list);
-      setSelectedListColor(color);
   };
   
   const handleDeleteList = async (id: string) => {
@@ -325,18 +317,18 @@ export default function ShoppingPage() {
   if (selectedList) {
      return (
         <div className="relative h-full flex flex-col -mx-4 sm:mx-0">
-            <header className={cn("p-4 sm:rounded-t-xl flex-shrink-0", selectedListColor)}>
+            <header className={cn("p-4 sm:rounded-t-xl flex-shrink-0 bg-background border-b")}>
               <div className="flex items-center justify-between">
-                  <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
+                  <h1 className="text-2xl font-bold text-foreground">{selectedList.name}</h1>
                   <div className='flex items-center gap-2'>
-                    <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
+                    <Button variant="ghost" className="text-foreground hover:bg-muted" onClick={() => setSelectedList(null)}>
                       <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                     </Button>
                   </div>
               </div>
               <div className="mt-4 relative">
                   <form onSubmit={handleAddItem} className="flex gap-2">
-                      <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Birden fazla öğe ekleyebilirsiniz..." className="peer bg-white/90 text-gray-800 placeholder:text-gray-500" disabled={isAiProcessing}/>
+                      <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Birden fazla öğe ekleyebilirsiniz..." className="peer" disabled={isAiProcessing}/>
                       <Button type="submit" variant="secondary" disabled={isAiProcessing}>
                         {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
                       </Button>
@@ -361,15 +353,17 @@ export default function ShoppingPage() {
               </div>
             </header>
             
-            <Tabs defaultValue="list" className="flex-grow flex flex-col min-h-0 bg-background sm:rounded-b-xl sm:border-x sm:border-b">
-                <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+            <Tabs defaultValue="list" className="flex-grow flex flex-col min-h-0 bg-background sm:rounded-b-xl">
+                <TabsList className="grid w-full grid-cols-2 flex-shrink-0 rounded-none sm:rounded-t-none">
                     <TabsTrigger value="list">Liste</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({Object.values(boughtItemsByCategory).flat().length})</TabsTrigger>
                 </TabsList>
                 <TabsContent value="list" className="flex-grow overflow-y-auto p-0 mt-0">
-                    <div className="space-y-6">
-                        {Object.keys(pendingItemsByCategory).length > 0 ? Object.entries(pendingItemsByCategory).map(([category, items]) => (
-                            <Card key={category} className="rounded-none shadow-none border-x-0">
+                    <div className="space-y-4">
+                        {Object.keys(pendingItemsByCategory).length > 0 ? Object.entries(pendingItemsByCategory).map(([category, items]) => {
+                           if (category === 'Diğer' && items.length === 0) return null;
+                           return(
+                            <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0">
                                 {category !== 'Diğer' && (
                                   <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
                                 )}
@@ -378,17 +372,16 @@ export default function ShoppingPage() {
                                         {items.map((item, index) => (
                                             <div 
                                                 key={item.id} 
-                                                className="flex items-center p-3 group cursor-pointer gap-3 border-b"
-                                                onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, true)}
+                                                className="flex items-center p-3 gap-3 border-b first:border-t"
                                             >
-                                                <Checkbox id={item.id} checked={false} className="size-5 pointer-events-none" />
+                                                <Checkbox id={item.id} checked={false} className="size-5" onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, true)} />
                                                 <label htmlFor={item.id} className="font-medium cursor-pointer">{item.name}</label>
                                             </div>
                                         ))}
                                     </div>
                                 </CardContent>
                             </Card>
-                        )) : (
+                        )}) : (
                             <div className="text-center py-16 text-muted-foreground">
                                 <ShoppingCart className="mx-auto h-12 w-12" />
                                 <p className="mt-4">Listeniz boş.</p>
@@ -409,21 +402,23 @@ export default function ShoppingPage() {
                             </AlertDialog>
                         </div>
                     )}
-                    <div className="space-y-6">
-                        {Object.keys(boughtItemsByCategory).length > 0 ? Object.entries(boughtItemsByCategory).map(([category, items]) => (
-                            <Card key={category} className="rounded-none shadow-none border-x-0">
+                    <div className="space-y-4">
+                        {Object.keys(boughtItemsByCategory).length > 0 ? Object.entries(boughtItemsByCategory).map(([category, items]) => {
+                           if (category === 'Diğer' && items.length === 0) return null;
+                           return(
+                             <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0">
                                 {category !== 'Diğer' && (
                                   <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
                                 )}
                                 <CardContent className="p-0">
                                      <div className="flex flex-col">
-                                        {items.map((item, index) => (
-                                            <div key={item.id} className="flex items-center p-3 group cursor-pointer gap-3 border-b">
+                                        {items.map((item) => (
+                                            <div key={item.id} className="flex items-center p-3 gap-3 border-b first:border-t">
                                                 <Checkbox
                                                     id={item.id}
                                                     checked={true}
                                                     className="size-5"
-                                                    onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, false)}
+                                                    onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, false)}
                                                 />
                                                 <label htmlFor={item.id} className="font-medium cursor-pointer line-through text-muted-foreground">{item.name}</label>
                                             </div>
@@ -431,7 +426,7 @@ export default function ShoppingPage() {
                                     </div>
                                 </CardContent>
                             </Card>
-                        )) : (
+                        )}) : (
                             <div className="text-center py-16 text-muted-foreground">
                                 <p>Henüz alınmış ürün yok.</p>
                             </div>
@@ -459,7 +454,7 @@ export default function ShoppingPage() {
                             key={list.id} 
                             list={list} 
                             colorClass={cn("bg-gradient-to-br", color.gradient)} 
-                            onClick={() => handleSelectList(list, cn("bg-gradient-to-br", color.gradient))}
+                            onClick={() => handleSelectList(list)}
                             onDelete={handleDeleteList}
                         />
                     )
