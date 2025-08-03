@@ -326,7 +326,7 @@ export default function ShoppingPage() {
     });
 
      return (
-        <div className="relative h-full flex flex-col -mx-4 sm:mx-0">
+        <div className="relative h-full flex flex-col">
              <PageHeader title={selectedList.name}>
                  <div className="flex flex-col gap-4">
                     <div className="flex w-full items-center justify-between gap-4">
@@ -380,7 +380,7 @@ export default function ShoppingPage() {
                     <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-card rounded-b-lg">
+                <TabsContent value="pending" className="flex-grow bg-card rounded-b-lg p-4">
                     {sortedCategories.length === 0 ? (
                        <div className="text-center py-16 text-muted-foreground">
                             <ShoppingCart className="mx-auto h-12 w-12" />
@@ -390,9 +390,9 @@ export default function ShoppingPage() {
                         <div className="bg-background rounded-lg shadow-sm border divide-y divide-border/50">
                             {sortedCategories.map(([category, items]) => (
                                 <React.Fragment key={category}>
-                                    {category !== 'Diğer' && <h3 className="font-semibold text-base p-3 bg-muted/50">{category}</h3>}
+                                    <h3 className="font-semibold text-base p-3 bg-muted/50">{category}</h3>
                                     {items.map((item, index) => (
-                                        <div key={item.id} className="flex items-center gap-2 p-2 group">
+                                        <div key={item.id} className="flex items-center gap-4 p-3 group">
                                             <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList!.id, item.id, !!checked)} className="size-6 rounded-md" />
                                             <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                             {item.isBought && (
@@ -407,7 +407,7 @@ export default function ShoppingPage() {
                         </div>
                     )}
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow bg-blue-50 dark:bg-card rounded-b-lg">
+                 <TabsContent value="bought" className="flex-grow bg-card rounded-b-lg p-4">
                     {boughtItems.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground">
                             <p>Henüz alınan bir ürün yok.</p>
@@ -473,3 +473,4 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
