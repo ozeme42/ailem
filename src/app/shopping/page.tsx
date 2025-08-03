@@ -238,7 +238,7 @@ export default function ShoppingPage() {
     setCreateListOpen(false);
   };
   
-  const handleAddItem = async (e?: React.FormEvent, itemName?: string) => {
+ const handleAddItem = async (e?: React.FormEvent, itemName?: string) => {
     e?.preventDefault();
     const itemToAdd = itemName || newItemName;
     if (!itemToAdd.trim() || !selectedList) return;
@@ -251,12 +251,11 @@ export default function ShoppingPage() {
                 await addShoppingListItemToList(selectedList.id, item);
             }
         } else {
-            // Fallback if AI returns nothing or fails
-            await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim() });
+            await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim(), category: 'Diğer' });
         }
     } catch (error) {
-        console.error("AI processing error:", error);
-        await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim() });
+        console.error("AI processing error, adding item directly:", error);
+        await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim(), category: 'Diğer' });
     } finally {
         setNewItemName('');
         setIsAiProcessing(false);
@@ -270,13 +269,13 @@ export default function ShoppingPage() {
     setSuggestions([]);
   };
 
-  const { pendingItems, boughtItems, completedItems } = useMemo(() => {
-    if (!selectedList) return { pendingItems: [], boughtItems: [], completedItems: [] };
+  const { pendingItems, boughtItems } = useMemo(() => {
+    if (!selectedList) return { pendingItems: [], boughtItems: [] };
     
     const categoryOrder: { [key: string]: number } = {
         'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
         'Temel Gıda': 5, 'Atıştırmalık': 6, 'İçecekler': 7, 'Dondurulmuş Gıdalar': 8,
-        'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11,
+        'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11, 'Diğer': 99
     };
     
     const groupItems = (itemsToGroup: ShoppingListItemType[]) => {
@@ -288,14 +287,11 @@ export default function ShoppingPage() {
       }, {} as Record<string, ShoppingListItemType[]>);
 
       return Object.entries(grouped).sort(([catA], [catB]) => {
-          if(catA === 'Diğer') return 1;
-          if(catB === 'Diğer') return -1;
           return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
       });
     }
 
     const allItems = selectedList.items || [];
-    
     const groupedPending = groupItems(allItems);
     
     const allArchived = (selectedList.boughtItems || []).sort((a,b) => {
@@ -307,7 +303,6 @@ export default function ShoppingPage() {
     return {
       pendingItems: groupedPending,
       boughtItems: allArchived,
-      completedItems: [],
     };
   }, [selectedList]);
 
@@ -398,48 +393,37 @@ export default function ShoppingPage() {
                     <TabsTrigger value="pending">Alınacaklar ({notBoughtItems.length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="pending" className="flex-grow bg-muted/50 overflow-y-auto -mx-4 sm:mx-0 p-4 rounded-b-lg">
+                 <TabsContent value="pending" className="flex-grow bg-muted overflow-y-auto -mx-4 sm:mx-0 p-4 rounded-b-lg">
                     <div className="mt-2 space-y-4">
-                        {notBoughtItems.length === 0 && isBoughtItems.length === 0 && (
+                        {allPendingItems.length === 0 && (
                            <div className="text-center py-16 text-muted-foreground">
                                 <ShoppingCart className="mx-auto h-12 w-12" />
                                 <p className="mt-4">Listeniz boş.</p>
                             </div>
                         )}
-                        {pendingItems.filter(([_, items]) => items.some(i => !i.isBought)).map(([category, items]) => (
+                        {pendingItems.map(([category, items]) => (
                             <div key={category}>
                                 <CardHeader className="px-0 py-3">
                                     <CardTitle className="text-base">{category}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-0 space-y-2">
-                                    {items.filter(i => !i.isBought).map((item) => (
+                                    {items.map((item) => (
                                         <div key={item.id} className="flex items-center gap-2 p-2 group bg-card border rounded-lg shadow-sm">
                                             <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md" />
-                                            <label htmlFor={item.id} className="font-medium flex-grow cursor-pointer">{item.name}</label>
+                                            <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                            {item.isBought && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            )}
                                         </div>
                                     ))}
                                 </CardContent>
                             </div>
                         ))}
-                         {isBoughtItems.length > 0 && (
-                            <div className="pt-4 border-t mt-4">
-                                <h3 className="font-semibold mb-2 text-muted-foreground">İşaretlenenler</h3>
-                                <div className="space-y-2">
-                                { isBoughtItems.map((item) => (
-                                     <div key={item.id} className="flex items-center gap-2 p-2 group bg-card border rounded-lg shadow-sm">
-                                        <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md"  />
-                                        <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
-                                            <Trash2 className="h-4 w-4"/>
-                                        </Button>
-                                    </div>
-                                )) }
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow bg-muted/50 overflow-y-auto -mx-4 sm:mx-0 p-4 rounded-b-lg">
+                 <TabsContent value="bought" className="flex-grow bg-muted overflow-y-auto -mx-4 sm:mx-0 p-4 rounded-b-lg">
                      <div className="mt-2 space-y-2">
                          {boughtItems.length > 0 && (
                             <div className="flex justify-end mb-4">
@@ -505,4 +489,3 @@ export default function ShoppingPage() {
     </div>
   );
 }
-
