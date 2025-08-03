@@ -365,7 +365,7 @@ export default function ShoppingPage() {
                         <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="pending" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20 rounded-b-lg">
+                    <TabsContent value="pending" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
                         <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
                             {sortedCategories.map(([category, items]) => (
                                 <div key={category} className="px-4">
@@ -374,7 +374,7 @@ export default function ShoppingPage() {
                                       {items.map((item, index) => (
                                           <div key={item.id} className="flex items-center gap-4 py-3 group">
                                               <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => moveItemToBought(selectedList!.id, item.id)} className="size-6 rounded-md" />
-                                              <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                              <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                               <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                   <AlertDialog>
                                                       <AlertDialogTrigger asChild>
@@ -413,7 +413,7 @@ export default function ShoppingPage() {
                             {boughtItems.map((item) => (
                                 <div key={item.id} className="flex items-center gap-4 py-3 group">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList.id, item.id)}><Repeat className="h-4 w-4"/></Button>
-                                    <p className="font-medium flex-grow line-through text-muted-foreground">{item.name}</p>
+                                    <p className="font-semibold flex-grow line-through text-muted-foreground">{item.name}</p>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}><Trash2 className="h-4 w-4"/></Button>
                                 </div>
                             ))}
