@@ -250,7 +250,7 @@ export default function ShoppingPage() {
                 await addShoppingListItemToList(selectedList.id, item);
             }
         } else {
-            // If AI returns nothing, add the item directly with a default category.
+            // If AI returns nothing, add the item directly.
             await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim() });
         }
     } catch (error) {
@@ -390,7 +390,7 @@ export default function ShoppingPage() {
                     <TabsTrigger value="pending">Alınacaklar ({pendingItems.length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-sky-900/20 space-y-4 p-4">
+                 <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-sky-900/20 p-4 space-y-4">
                         {pendingItems.length === 0 && (
                         <div className="text-center py-16 text-muted-foreground">
                                 <ShoppingCart className="mx-auto h-12 w-12" />
@@ -399,7 +399,7 @@ export default function ShoppingPage() {
                         )}
                         {sortedCategories.map(([category, items]) => (
                             <div key={category}>
-                                <h3 className="font-semibold text-base mb-2">{category}</h3>
+                                 <h3 className={cn("font-semibold text-base mb-2", category === 'Diğer' && 'hidden')}>{category}</h3>
                                 <div className="bg-background rounded-lg shadow-sm border divide-y divide-border/50">
                                     {items.map((item, index) => (
                                         <div key={item.id} className="flex items-center gap-2 p-2 group">
