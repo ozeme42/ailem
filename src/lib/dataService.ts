@@ -486,7 +486,7 @@ export const addShoppingListItemToList = async (listId: string, itemName: string
 
     if (listSnap.exists()) {
         const currentItems = listSnap.data().items || [];
-        const newItem: ShoppingItem = { id: Date.now().toString(), name: itemName, isBought: false };
+        const newItem: ShoppingItem = { id: Date.now().toString(), name: itemName, isBought: false, createdAt: new Date().toISOString() };
         const newItems = [newItem, ...currentItems];
         await updateDoc(listRef, { items: newItems });
     }
@@ -766,9 +766,9 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
             name: 'Haftalık Market Alışverişi',
             icon: 'ShoppingCart',
             items: [
-                { id: '1', name: 'Süt', isBought: true },
-                { id: '2', name: 'Ekmek', isBought: true },
-                { id: '3', name: 'Yumurta', isBought: false },
+                { id: '1', name: 'Süt', isBought: true, createdAt: new Date().toISOString() },
+                { id: '2', name: 'Ekmek', isBought: true, createdAt: new Date().toISOString() },
+                { id: '3', name: 'Yumurta', isBought: false, createdAt: new Date().toISOString() },
             ],
         }
     ];

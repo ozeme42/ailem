@@ -417,6 +417,7 @@ export interface ShoppingItem {
   id: string;
   name: string;
   isBought: boolean;
+  createdAt?: string; // ISO Date String
 }
 
 export interface ShoppingList {
@@ -513,9 +514,9 @@ export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
         name: 'Haftalık Market Alışverişi',
         icon: 'ShoppingCart',
         items: [
-            { id: '1', name: 'Süt', isBought: true },
-            { id: '2', name: 'Ekmek', isBought: true },
-            { id: '3', name: 'Yumurta', isBought: false },
+            { id: '1', name: 'Süt', isBought: true, createdAt: new Date().toISOString() },
+            { id: '2', name: 'Ekmek', isBought: true, createdAt: new Date().toISOString() },
+            { id: '3', name: 'Yumurta', isBought: false, createdAt: new Date().toISOString() },
         ],
     }
 ];
