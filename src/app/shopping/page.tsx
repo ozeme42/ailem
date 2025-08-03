@@ -334,29 +334,27 @@ export default function ShoppingPage() {
                     <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20 self-start" onClick={() => setSelectedList(null)}>
                         <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                     </Button>
-                    <div className="relative w-full">
-                        <form onSubmit={handleAddItem} className="flex gap-2">
-                            <Input 
-                                value={newItemName} 
-                                onChange={(e) => setNewItemName(e.target.value)} 
-                                placeholder="Yeni öğe ekle..." 
-                                className="bg-white/20 border-white/30 placeholder:text-white/80 text-white peer"
-                                disabled={isAiProcessing}
-                            />
-                            <Button type="submit" variant="secondary" disabled={isAiProcessing}>
-                                {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-                            </Button>
-                        </form>
-                        {suggestions.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-background border rounded-lg shadow-lg z-10">
-                                <div className="flex flex-wrap gap-2">
-                                {suggestions.map((s, i) => (
-                                    <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
-                                ))}
-                                </div>
+                    <form onSubmit={handleAddItem} className="relative w-full">
+                        <Input 
+                            value={newItemName} 
+                            onChange={(e) => setNewItemName(e.target.value)} 
+                            placeholder="Yeni öğe ekle..." 
+                            className="bg-white/20 border-white/30 placeholder:text-white/80 text-white peer"
+                            disabled={isAiProcessing}
+                        />
+                        <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
+                            {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
+                        </Button>
+                    </form>
+                    {suggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-background border rounded-lg shadow-lg z-10 w-full">
+                            <div className="flex flex-wrap gap-2">
+                            {suggestions.map((s, i) => (
+                                <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
+                            ))}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </PageHeader>
             
@@ -382,25 +380,16 @@ export default function ShoppingPage() {
                                     )}
                                     <CardContent className="p-0">
                                          {items.map((item, index) => (
-                                            <div key={item.id} className={cn("flex items-center gap-2 px-4 py-2 group", (category !== 'Diğer' || index > 0) ? 'border-t' : '', item.isBought && 'bg-muted/30')}>
+                                            <div key={item.id} className={cn("flex items-center gap-2 px-4 py-2 group border-b", item.isBought && 'bg-muted/30')}>
                                                 <div className="py-2 pr-2" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
                                                     <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md"  />
                                                 </div>
                                                 <label htmlFor={item.id} className={cn("font-medium flex-grow", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                                 {item.isBought && (
-                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 opacity-0 group-hover:opacity-100" onClick={() => moveItemToBought(selectedList.id, item.id)}>
-                                                        <ShoppingCart className="h-4 w-4"/>
+                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
+                                                        <Trash2 className="h-4 w-4"/>
                                                      </Button>
                                                 )}
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100"><Trash2 className="h-4 w-4"/></Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitleComponent>İhtiyacı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ihtiyacı kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, false)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
                                             </div>
                                         ))}
                                     </CardContent>
@@ -475,3 +464,4 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
