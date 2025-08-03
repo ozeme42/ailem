@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -269,8 +268,10 @@ export default function ShoppingPage() {
     setSuggestions([]);
   };
 
-  const { boughtItems } = useMemo(() => {
+  const { pendingItems, boughtItems } = useMemo(() => {
     if (!selectedList) return { pendingItems: [], boughtItems: [] };
+    
+    const allPending = (selectedList.items || []).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
     
     const allArchived = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -279,6 +280,7 @@ export default function ShoppingPage() {
     });
 
     return {
+      pendingItems: allPending,
       boughtItems: allArchived,
     };
   }, [selectedList]);
@@ -311,12 +313,7 @@ export default function ShoppingPage() {
   }
 
   if (selectedList) {
-     const allPendingItems = selectedList.items || [];
-     const isBoughtItems = allPendingItems.filter(i => i.isBought);
-     const notBoughtItems = allPendingItems.filter(i => !i.isBought);
-     
-     const groupedPendingItems = (allPendingItems || [])
-        .reduce((acc, item) => {
+    const groupedPendingItems = (pendingItems || []).reduce((acc, item) => {
             const category = item.category || 'Diğer';
             if (!acc[category]) acc[category] = [];
             acc[category].push(item);
@@ -335,7 +332,7 @@ export default function ShoppingPage() {
 
      return (
         <div className="relative h-full flex flex-col">
-             <PageHeader title={selectedList.name}>
+            <PageHeader title={selectedList.name}>
                 <div className="w-full flex flex-col gap-4">
                     <div className="w-full flex items-center justify-between">
                         <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
@@ -357,7 +354,7 @@ export default function ShoppingPage() {
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
-                    <form onSubmit={handleAddItem} className="relative w-full">
+                     <form onSubmit={handleAddItem} className="relative w-full">
                         <Input 
                             value={newItemName} 
                             onChange={(e) => setNewItemName(e.target.value)} 
@@ -385,11 +382,11 @@ export default function ShoppingPage() {
             
             <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                 <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                    <TabsTrigger value="pending">Alınacaklar ({allPendingItems.length})</TabsTrigger>
+                    <TabsTrigger value="pending">Alınacaklar ({pendingItems.length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="pending" className="flex-grow p-4 -mx-4 sm:mx-0 sm:rounded-b-lg bg-blue-50 dark:bg-sky-900/20 space-y-4">
-                        {allPendingItems.length === 0 && (
+                 <TabsContent value="pending" className="flex-grow p-4 -mx-4 sm:mx-0 sm:rounded-b-xl bg-blue-50 dark:bg-sky-900/20 space-y-4">
+                        {pendingItems.length === 0 && (
                         <div className="text-center py-16 text-muted-foreground">
                                 <ShoppingCart className="mx-auto h-12 w-12" />
                                 <p className="mt-4">Listeniz boş.</p>
@@ -397,14 +394,14 @@ export default function ShoppingPage() {
                         )}
                         {sortedCategories.map(([category, items]) => (
                             <div key={category}>
-                                <h3 className="font-semibold text-base mb-2">{category}</h3>
-                                <div className="space-y-2">
-                                    {items.map((item) => (
-                                        <div key={item.id} className="flex items-center gap-2 p-2 group bg-background border rounded-lg shadow-sm">
+                                {category !== 'Diğer' && <h3 className="font-semibold text-base mb-2">{category}</h3>}
+                                <div className="divide-y divide-border/50 bg-background rounded-lg shadow-sm border">
+                                    {items.map((item, index) => (
+                                        <div key={item.id} className="flex items-center gap-2 p-2 group">
                                             <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md" />
                                             <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                             {item.isBought && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
                                                     <Trash2 className="h-4 w-4"/>
                                                 </Button>
                                             )}
@@ -414,7 +411,7 @@ export default function ShoppingPage() {
                             </div>
                         ))}
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow p-4 -mx-4 sm:mx-0 sm:rounded-b-lg bg-blue-50 dark:bg-sky-900/20">
+                 <TabsContent value="bought" className="flex-grow p-4 -mx-4 sm:mx-0 sm:rounded-b-xl bg-blue-50 dark:bg-sky-900/20">
                      <div className="space-y-2">
                          {boughtItems.length > 0 && (
                             <div className="flex justify-end mb-4">
@@ -432,13 +429,15 @@ export default function ShoppingPage() {
                                 <p>Henüz alınan bir ürün yok.</p>
                             </div>
                         ) : (
-                            boughtItems.map((item) => (
-                                <div key={item.id} className="flex items-center gap-4 p-3 bg-background border rounded-lg group">
+                            <div className="divide-y divide-border/50 bg-background rounded-lg shadow-sm border">
+                            {boughtItems.map((item) => (
+                                <div key={item.id} className="flex items-center gap-4 p-3 group">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList.id, item.id)}><Repeat className="h-4 w-4"/></Button>
                                     <p className="font-medium flex-grow line-through text-muted-foreground">{item.name}</p>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}><Trash2 className="h-4 w-4"/></Button>
                                 </div>
-                            ))
+                            ))}
+                            </div>
                         )}
                     </div>
                 </TabsContent>
