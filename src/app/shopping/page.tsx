@@ -271,7 +271,7 @@ export default function ShoppingPage() {
     const categoryOrder: { [key: string]: number } = {
         'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
         'Temel Gıda': 5, 'Atıştırmalık': 6, 'İçecekler': 7, 'Dondurulmuş Gıdalar': 8,
-        'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11, 'Diğer': 99,
+        'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11,
     };
     
     const grouped = items.reduce((acc, item) => {
@@ -281,9 +281,11 @@ export default function ShoppingPage() {
         return acc;
     }, {} as Record<string, ShoppingListItemType[]>);
 
-    const sortedGrouped = Object.entries(grouped).sort(([catA], [catB]) => 
-        (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99)
-    );
+    const sortedGrouped = Object.entries(grouped).sort(([catA], [catB]) => {
+        if(catA === 'Diğer') return 1;
+        if(catB === 'Diğer') return -1;
+        return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
+    });
 
     const sortedBought = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -328,7 +330,7 @@ export default function ShoppingPage() {
      return (
         <div className="relative h-full flex flex-col">
             <PageHeader title={selectedList.name}>
-                 <div className="flex flex-col items-end gap-2 w-full max-w-xs md:max-w-sm">
+                <div className="flex flex-col items-end gap-2 w-full max-w-xs md:max-w-sm">
                     <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20 self-start" onClick={() => setSelectedList(null)}>
                         <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                     </Button>
@@ -356,25 +358,10 @@ export default function ShoppingPage() {
                         )}
                     </div>
                 </div>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon" className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </PageHeader>
             
             <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
-                <TabsList className="grid w-full grid-cols-2 rounded-none bg-muted/30 -mx-4 sm:mx-0 px-4 sm:rounded-t-lg">
+                <TabsList className="grid w-full grid-cols-2 bg-muted/30 -mx-4 sm:mx-0 px-4 sm:rounded-t-lg">
                     <TabsTrigger value="pending">Liste</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
@@ -388,15 +375,15 @@ export default function ShoppingPage() {
                         ) : (
                             pendingItems.map(([category, items]) => (
                                 <Card key={category} className="mb-4 shadow-none border-x-0 rounded-none bg-transparent">
-                                    {category !== 'Diğer' && (
+                                     {category !== 'Diğer' && (
                                         <CardHeader className="p-3 bg-muted/50">
                                             <CardTitle className="text-base">{category}</CardTitle>
                                         </CardHeader>
                                     )}
                                     <CardContent className="p-0">
                                          {items.map((item, index) => (
-                                            <div key={item.id} className={cn("flex items-center gap-4 px-4 py-2 group", category !== 'Diğer' || index > 0 ? 'border-t' : '', item.isBought && 'bg-muted/30')}>
-                                                <div className="p-2" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
+                                            <div key={item.id} className={cn("flex items-center gap-2 px-4 py-2 group", (category !== 'Diğer' || index > 0) ? 'border-t' : '', item.isBought && 'bg-muted/30')}>
+                                                <div className="py-2 pr-2" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
                                                     <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md"  />
                                                 </div>
                                                 <label htmlFor={item.id} className={cn("font-medium flex-grow", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
@@ -405,6 +392,15 @@ export default function ShoppingPage() {
                                                         <ShoppingCart className="h-4 w-4"/>
                                                      </Button>
                                                 )}
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100"><Trash2 className="h-4 w-4"/></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader><AlertDialogTitleComponent>İhtiyacı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ihtiyacı kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, false)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </div>
                                         ))}
                                     </CardContent>
@@ -479,4 +475,3 @@ export default function ShoppingPage() {
     </div>
   );
 }
-
