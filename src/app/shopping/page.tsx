@@ -254,8 +254,8 @@ export default function ShoppingPage() {
     }
   };
 
-  const pendingItems = useMemo(() => selectedList?.items.filter(item => !item.isBought) || [], [selectedList]);
-  const boughtItems = useMemo(() => selectedList?.items.filter(item => item.isBought) || [], [selectedList]);
+  const pendingItems = useMemo(() => selectedList?.items?.filter(item => !item.isBought) || [], [selectedList]);
+  const boughtItems = useMemo(() => selectedList?.items?.filter(item => item.isBought) || [], [selectedList]);
   
   const handleSelectList = (list: ShoppingList, color: string) => {
       setSelectedList(list);
@@ -298,7 +298,31 @@ export default function ShoppingPage() {
                 </div>
             </header>
 
-            <main className="flex-grow p-4 bg-background sm:rounded-b-xl sm:border-x sm:border-b overflow-y-auto pb-40">
+            <div className="p-4 bg-background flex-shrink-0 border-b relative">
+                <form onSubmit={handleAddItem} className="flex gap-2">
+                    <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
+                    <Button type="submit"><Plus className="h-5 w-5" /></Button>
+                </form>
+                {suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mx-4 mt-2 p-2 bg-background border rounded-lg shadow-lg z-10">
+                       <div className="flex flex-wrap gap-2">
+                         {suggestions.map((s, i) => (
+                           <Button
+                               key={i}
+                               type="button"
+                               variant="secondary"
+                               size="sm"
+                               onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
+                           >
+                               {s}
+                           </Button>
+                       ))}
+                       </div>
+                    </div>
+                )}
+            </div>
+
+            <main className="flex-grow p-4 bg-background sm:rounded-b-xl sm:border-x sm:border-b overflow-y-auto">
                 <div className="space-y-2">
                      <h3 className="font-semibold text-lg">Alınacaklar ({pendingItems.length})</h3>
                      {pendingItems.map((item) => (
@@ -340,30 +364,6 @@ export default function ShoppingPage() {
                     </Accordion>
                 )}
             </main>
-
-            <footer className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t">
-                <form onSubmit={handleAddItem} className="flex gap-2 relative">
-                    {suggestions.length > 0 && (
-                        <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-background border rounded-lg shadow-lg">
-                           <div className="flex flex-wrap gap-2">
-                             {suggestions.map((s, i) => (
-                               <Button
-                                   key={i}
-                                   type="button"
-                                   variant="secondary"
-                                   size="sm"
-                                   onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
-                               >
-                                   {s}
-                               </Button>
-                           ))}
-                           </div>
-                        </div>
-                    )}
-                    <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Yeni öğe ekle..." className="peer"/>
-                    <Button type="submit"><Plus className="h-5 w-5" /></Button>
-                </form>
-            </footer>
         </div>
      );
   }
