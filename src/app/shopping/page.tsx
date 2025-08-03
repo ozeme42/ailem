@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, clearBoughtItemsFromList, moveItemToBought, moveItemToPending, deleteShoppingListItemFromList } from '@/lib/dataService';
+import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, clearBoughtItemsFromList, deleteShoppingListItemFromList, toggleShoppingListItemStatusInList, moveItemToBought } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
@@ -359,21 +359,21 @@ export default function ShoppingPage() {
                 </form>
             </PageHeader>
             
-            <div className={cn("flex-grow flex flex-col min-h-0", "-mx-4 sm:mx-0")}>
+             <div className={cn("flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                     <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                         <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
-                        <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
+                        <div className="divide-y divide-yellow-200 dark:divide-yellow-800/50">
                             {sortedCategories.map(([category, items]) => (
                                 <div key={category} className="px-4">
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
                                     <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
                                       {items.map((item, index) => (
                                           <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                              <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => moveItemToBought(selectedList!.id, item.id)} className="size-6 rounded-md" />
+                                              <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md" />
                                               <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                               <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                   <AlertDialog>
@@ -381,8 +381,8 @@ export default function ShoppingPage() {
                                                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                                       </AlertDialogTrigger>
                                                       <AlertDialogContent>
-                                                          <AlertDialogHeader><AlertDialogTitleComponent>İhtiyacı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ihtiyacı kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                          <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                          <AlertDialogHeader><AlertDialogTitleComponent>Alınanlara Taşı</AlertDialogTitleComponent><AlertDialogDescription>Bu ürünü kalıcı olarak "Alınanlar" listesine taşımak istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                          <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => moveItemToBought(selectedList!.id, item.id)}>Taşı</AlertDialogAction></AlertDialogFooter>
                                                       </AlertDialogContent>
                                                   </AlertDialog>
                                               </div>

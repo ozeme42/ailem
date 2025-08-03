@@ -483,10 +483,9 @@ export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLis
 export const addShoppingListItemToList = async (listId: string, itemData: { name: string; category?: string; quantity?: string; }) => {
     const listRef = doc(db, "shoppingLists", listId);
     
-    const newItem: Partial<ShoppingItem> = { 
+    const newItem: Omit<ShoppingItem, 'isBought'> = { 
         id: Date.now().toString(), 
         name: `${itemData.quantity || ''} ${itemData.name}`.trim(), 
-        isBought: false, 
         createdAt: new Date().toISOString(),
         category: itemData.category || 'Diğer',
         quantity: itemData.quantity,
@@ -498,8 +497,20 @@ export const addShoppingListItemToList = async (listId: string, itemData: { name
     }
     
     await updateDoc(listRef, {
-        items: arrayUnion(newItem)
+        items: arrayUnion({ ...newItem, isBought: false })
     });
+};
+
+export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string) => {
+    const listRef = doc(db, "shoppingLists", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingList;
+        const newItems = (list.items || []).map(item =>
+            item.id === itemId ? { ...item, isBought: !item.isBought } : item
+        );
+        await updateDoc(listRef, { items: newItems });
+    }
 };
 
 export const moveItemToBought = async (listId: string, itemId: string) => {
