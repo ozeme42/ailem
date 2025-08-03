@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -11,7 +12,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,10 +34,6 @@ const brightColors = [
     { id: 'violet-purple', name: 'Menekşe', gradient: 'from-violet-500 to-purple-600' },
     { id: 'pink-fuchsia', name: 'Pembe', gradient: 'from-pink-500 to-fuchsia-500' },
     { id: 'lime-emerald', name: 'Fıstık Yeşili', gradient: 'from-lime-400 to-emerald-500'},
-    { id: 'slate-gray', name: 'Füme', gradient: 'from-slate-700 to-gray-800' },
-    { id: 'dark-green', name: 'Koyu Yeşil', gradient: 'from-green-700 to-emerald-900' },
-    { id: 'dark-blue', name: 'Koyu Mavi', gradient: 'from-blue-800 to-indigo-900' },
-    { id: 'dark-purple', name: 'Koyu Mor', gradient: 'from-purple-800 to-violet-900' },
 ];
 
 const listIcons = {
@@ -264,26 +260,27 @@ export default function ShoppingPage() {
     setSuggestions([]);
   };
 
-  const { pendingItemsByCategory, boughtItemsByCategory } = useMemo(() => {
-    if (!selectedList) return { pendingItemsByCategory: {}, boughtItemsByCategory: {} };
+  const { itemsByCategory, hasBoughtItems } = useMemo(() => {
+    if (!selectedList) return { itemsByCategory: {}, hasBoughtItems: false };
 
-    const pendingGrouped: { [key: string]: ShoppingListItemType[] } = {};
-    const boughtGrouped: { [key: string]: ShoppingListItemType[] } = {};
-    
-    const allItems = [...(selectedList.items || [])];
+    const grouped: { [key: string]: ShoppingListItemType[] } = {};
+    let boughtItemsExist = false;
 
-    allItems.forEach(item => {
-        const category = item.category || 'Diğer';
-        if (item.isBought) {
-            if (!boughtGrouped[category]) boughtGrouped[category] = [];
-            boughtGrouped[category].push(item);
-        } else {
-            if (!pendingGrouped[category]) pendingGrouped[category] = [];
-            pendingGrouped[category].push(item);
-        }
+    // Use a stable sort to keep manually added items at the top if they lack creation date
+    const allItems = [...(selectedList.items || [])].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // Newest first
     });
 
-    return { pendingItemsByCategory: pendingGrouped, boughtItemsByCategory: boughtGrouped };
+    allItems.forEach(item => {
+        if(item.isBought) boughtItemsExist = true;
+        const category = item.category || 'Diğer';
+        if (!grouped[category]) grouped[category] = [];
+        grouped[category].push(item);
+    });
+
+    return { itemsByCategory: grouped, hasBoughtItems: boughtItemsExist };
   }, [selectedList]);
 
   
@@ -325,8 +322,8 @@ export default function ShoppingPage() {
                     </Button>
                   </div>
               </div>
-              <div className="mt-4 relative">
-                  <form onSubmit={handleAddItem} className="flex gap-2">
+                <div className="relative">
+                  <form onSubmit={handleAddItem} className="flex gap-2 mt-4">
                       <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Birden fazla öğe ekleyebilirsiniz..." className="peer" disabled={isAiProcessing}/>
                       <Button type="submit" variant="secondary" disabled={isAiProcessing}>
                         {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
@@ -350,28 +347,34 @@ export default function ShoppingPage() {
                       </div>
                   )}
               </div>
+              {hasBoughtItems && (
+                <div className="flex justify-end pt-4">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Tüm alınan öğeler kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+              )}
             </header>
             
-            <Tabs defaultValue="list" className="flex-grow flex flex-col min-h-0 bg-muted/30 sm:rounded-b-xl">
-                <TabsList className="grid w-full grid-cols-2 flex-shrink-0 rounded-none sm:rounded-t-none">
-                    <TabsTrigger value="list">Liste</TabsTrigger>
-                    <TabsTrigger value="bought">Alınanlar ({Object.values(boughtItemsByCategory).flat().length})</TabsTrigger>
-                </TabsList>
-                <TabsContent value="list" className="flex-grow overflow-y-auto mt-0">
+             <main className="flex-grow bg-muted/30 sm:rounded-b-xl overflow-y-auto">
                     <div className="space-y-4">
-                        {Object.keys(pendingItemsByCategory).length > 0 ? Object.entries(pendingItemsByCategory).map(([category, items]) => {
+                        {Object.keys(itemsByCategory).length > 0 ? Object.entries(itemsByCategory).map(([category, items]) => {
                            return(
-                            <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0 bg-background">
-                                {category !== 'Diğer' && (
-                                  <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
-                                )}
+                            <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0 bg-background first:rounded-t-none">
+                                <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
                                 <CardContent className="p-0">
                                     <div className="flex flex-col">
                                         {items.map((item) => (
-                                            <div key={item.id} className="flex items-center p-3 gap-4 border-b group">
-                                                <Checkbox id={item.id} checked={false} className="size-6 rounded-md" onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, true)} />
-                                                <label htmlFor={item.id} className="font-medium cursor-pointer flex-grow">{item.name}</label>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive/70 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><Trash2 className="h-4 w-4"/></Button>
+                                            <div key={item.id} className="flex items-center p-3 gap-4 border-b group last:border-b-0">
+                                                <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md" onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} />
+                                                <label htmlFor={item.id} className={cn("font-medium cursor-pointer flex-grow", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                                 {item.isBought && (
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><Trash2 className="h-4 w-4"/></Button>
+                                                 )}
                                             </div>
                                         ))}
                                     </div>
@@ -385,46 +388,7 @@ export default function ShoppingPage() {
                             </div>
                         )}
                     </div>
-                </TabsContent>
-                <TabsContent value="bought" className="flex-grow overflow-y-auto mt-0">
-                    {Object.keys(boughtItemsByCategory).length > 0 && (
-                        <div className="flex justify-end p-4 bg-background">
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Tüm alınan öğeler kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    )}
-                    <div className="space-y-4">
-                        {Object.keys(boughtItemsByCategory).length > 0 ? Object.entries(boughtItemsByCategory).map(([category, items]) => {
-                           return(
-                             <Card key={category} className="rounded-none shadow-none border-x-0 border-t-0 bg-background">
-                                {category !== 'Diğer' && (
-                                  <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
-                                )}
-                                <CardContent className="p-0">
-                                     <div className="flex flex-col">
-                                        {items.map((item) => (
-                                            <div key={item.id} className="flex items-center p-3 gap-4 border-b group">
-                                                <Checkbox id={item.id} checked={true} className="size-6 rounded-md" onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, false)}/>
-                                                <label htmlFor={item.id} className="font-medium cursor-pointer flex-grow line-through text-muted-foreground">{item.name}</label>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive/70 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id)}><Trash2 className="h-4 w-4"/></Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}) : (
-                            <div className="text-center py-16 text-muted-foreground">
-                                <p>Henüz alınmış ürün yok.</p>
-                            </div>
-                        )}
-                    </div>
-                </TabsContent>
-            </Tabs>
+                </main>
         </div>
      );
   }
@@ -454,7 +418,7 @@ export default function ShoppingPage() {
                 <div className="md:col-span-2 text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
                     <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
-                    <p className="text-sm text-muted-foreground">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
+                    <p className="text-sm">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
                 </div>
             )}
         </div>
@@ -462,3 +426,4 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
