@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, clearBoughtItemsFromList, moveItemToBought, moveItemToPending } from '@/lib/dataService';
+import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, toggleShoppingListItemStatusInList, clearBoughtItemsFromList, moveItemToBought, moveItemToPending, deleteShoppingListItemFromList } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
@@ -327,10 +327,10 @@ export default function ShoppingPage() {
     });
 
      return (
-        <div className="flex flex-col h-full">
+        <div className="relative h-full flex flex-col">
              <PageHeader title={selectedList.name}>
                 <div className="w-full flex items-center justify-between gap-4">
-                     <Button variant="secondary" onClick={() => setSelectedList(null)}>
+                     <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
                         <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                      </Button>
                 </div>
@@ -338,11 +338,11 @@ export default function ShoppingPage() {
                     <Input 
                         value={newItemName} 
                         onChange={(e) => setNewItemName(e.target.value)} 
-                        placeholder="Yeni öğe ekle (örn: 2 kilo domates, 1 paket süt)" 
-                        className="peer"
+                        placeholder="Yeni öğe ekle (örn: 2 kilo domates, 1 paket süt)"
+                        className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus-visible:ring-offset-0 focus-visible:ring-white"
                         disabled={isAiProcessing}
                     />
-                    <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
+                    <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3 bg-white/30 hover:bg-white/40">
                         {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
                     </Button>
                     {suggestions.length > 0 && (
@@ -426,7 +426,7 @@ export default function ShoppingPage() {
   return (
     <div className="space-y-6">
         <PageHeader title="Alışveriş Listeleri">
-            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setCreateListOpen(true)}>
+            <Button variant="secondary" onClick={() => setCreateListOpen(true)}>
                 <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
             </Button>
         </PageHeader>

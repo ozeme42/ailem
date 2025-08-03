@@ -22,8 +22,8 @@ export function PageHeader({ title, children }: PageHeaderProps) {
     )}>
       <div className="w-full flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-            <SidebarTrigger variant="secondary" />
-            <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+            <SidebarTrigger />
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h1>
         </div>
          <div className="hidden md:flex">
              <Link href="/" className="hidden md:flex">
