@@ -180,7 +180,7 @@ export default function ShoppingPage() {
   
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate((lists) => {
-        setShoppingLists(lists);
+        setShoppingLists(lists.sort((a,b) => a.name.localeCompare(b.name, 'tr')));
         setIsLoaded(true);
     });
     return () => {
@@ -240,22 +240,28 @@ export default function ShoppingPage() {
   const handleAddItem = async (e?: React.FormEvent, itemName?: string) => {
       e?.preventDefault();
       const itemToAdd = itemName || newItemName;
-      if (itemToAdd.trim() && selectedList) {
-          setIsAiProcessing(true);
-          try {
-              const aiResult = await generateShoppingListItems(itemToAdd.trim());
+      if (!itemToAdd.trim() || !selectedList) return;
+      
+      setIsAiProcessing(true);
+      try {
+          const aiResult = await generateShoppingListItems(itemToAdd.trim());
+          if (aiResult?.items?.length > 0) {
               for (const item of aiResult.items) {
                   await addShoppingListItemToList(selectedList.id, item);
               }
-          } catch (error) {
-              console.error("AI processing error:", error);
+          } else {
+              // Fallback if AI returns nothing or fails
               await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim() });
-          } finally {
-              setNewItemName('');
-              setIsAiProcessing(false);
           }
+      } catch (error) {
+          console.error("AI processing error:", error);
+          await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim() });
+      } finally {
+          setNewItemName('');
+          setIsAiProcessing(false);
       }
   };
+
 
   const handleSuggestionClick = (suggestion: string) => {
     handleAddItem(undefined, suggestion);
@@ -274,7 +280,7 @@ export default function ShoppingPage() {
         'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11,
     };
     
-    const grouped = items.reduce((acc, item) => {
+    const grouped = items.filter(item => !item.isBought).reduce((acc, item) => {
         const category = item.category || 'Diğer';
         if (!acc[category]) acc[category] = [];
         acc[category].push(item);
@@ -287,7 +293,7 @@ export default function ShoppingPage() {
         return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
     });
 
-    const sortedBought = (selectedList.boughtItems || []).sort((a,b) => {
+    const sortedBought = (selectedList.items || []).filter(item => item.isBought).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
@@ -329,25 +335,27 @@ export default function ShoppingPage() {
   if (selectedList) {
      return (
         <div className="relative h-full flex flex-col">
-            <div className={cn("p-4 sm:rounded-t-xl -m-4 sm:m-0 mb-0", "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg")}>
-                 <div className="flex flex-col items-start gap-4">
-                     <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
-                        <ArrowLeft className="h-5 w-5 mr-2" /> Geri
-                    </Button>
-                    <div className="w-full">
-                      <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
-                       <form onSubmit={handleAddItem} className="relative w-full mt-2">
-                          <Input 
-                              value={newItemName} 
-                              onChange={(e) => setNewItemName(e.target.value)} 
-                              placeholder="Yeni öğe ekle..." 
-                              className="bg-white/20 border-white/30 placeholder:text-white/80 text-white peer"
-                              disabled={isAiProcessing}
-                          />
-                          <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
-                              {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
-                          </Button>
-                      </form>
+            <header className={cn(
+              "p-4 sm:rounded-t-xl text-primary-foreground shadow-lg -mx-4 sm:mx-0", 
+              "bg-gradient-to-r from-primary to-accent"
+            )}>
+                 <Button variant="ghost" className="mb-2 text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
+                    <ArrowLeft className="h-5 w-5 mr-2" /> Geri
+                </Button>
+                <div className="flex flex-col items-start gap-4">
+                    <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
+                    <form onSubmit={handleAddItem} className="relative w-full">
+                        <Input 
+                            value={newItemName} 
+                            onChange={(e) => setNewItemName(e.target.value)} 
+                            placeholder="Yeni öğe ekle..." 
+                            className="bg-white/20 border-white/30 placeholder:text-white/80 text-white peer"
+                            disabled={isAiProcessing}
+                        />
+                        <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
+                            {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
+                        </Button>
+                    </form>
                       {suggestions.length > 0 && (
                           <div className="relative w-full">
                             <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-background border rounded-lg shadow-lg z-10">
@@ -359,16 +367,15 @@ export default function ShoppingPage() {
                             </div>
                           </div>
                       )}
-                    </div>
-                 </div>
-            </div>
+                </div>
+            </header>
             
-            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
-                <TabsList className="grid w-full grid-cols-2 bg-muted/30">
+            <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0">
+                <TabsList className="grid w-full grid-cols-2 rounded-none">
                     <TabsTrigger value="pending">Liste</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-muted/30 overflow-y-auto pb-28">
+                <TabsContent value="pending" className="flex-grow bg-background overflow-y-auto pb-28">
                     <div className="mt-2">
                         {pendingItems.length === 0 ? (
                            <div className="text-center py-16 text-muted-foreground">
@@ -376,17 +383,17 @@ export default function ShoppingPage() {
                                 <p className="mt-4">Listeniz boş.</p>
                             </div>
                         ) : (
-                            pendingItems.map(([category, items]) => (
-                                <Card key={category} className="mb-4 shadow-none border-x-0 rounded-none bg-transparent">
+                            pendingItems.map(([category, items], catIndex) => (
+                                <div key={category} className="mb-2">
                                      {category !== 'Diğer' && (
-                                        <CardHeader className="p-3 bg-card border-y">
+                                        <CardHeader className="p-3 border-b border-t">
                                             <CardTitle className="text-base">{category}</CardTitle>
                                         </CardHeader>
                                     )}
-                                    <CardContent className="p-0 bg-card">
-                                         {items.map((item) => (
-                                            <div key={item.id} className="flex items-center gap-2 px-4 py-2 group border-b">
-                                                <div className="py-2 pr-2" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
+                                    <CardContent className="p-0">
+                                         {items.map((item, itemIndex) => (
+                                            <div key={item.id} className="flex items-center gap-2 px-4 py-1 group border-b">
+                                                <div className="py-2 pr-4" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
                                                     <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md"  />
                                                 </div>
                                                 <label htmlFor={item.id} className={cn("font-medium flex-grow", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
@@ -398,7 +405,7 @@ export default function ShoppingPage() {
                                             </div>
                                         ))}
                                     </CardContent>
-                                </Card>
+                                </div>
                             ))
                         )}
                     </div>

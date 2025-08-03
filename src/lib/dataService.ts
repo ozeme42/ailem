@@ -471,7 +471,7 @@ export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: 
 
 
 // Shopping Lists
-export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback);
+export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback, false, 'name');
 export const addShoppingList = async (title: string, icon: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
@@ -557,7 +557,16 @@ export const deleteShoppingListItemFromList = async (listId: string, itemId: str
 
 export const clearBoughtItemsFromList = async (listId: string) => {
     const listRef = doc(db, "shoppingLists", listId);
-    await updateDoc(listRef, { boughtItems: [] });
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingList;
+        const itemsToClear = list.items.filter(item => item.isBought);
+        if (itemsToClear.length > 0) {
+            await updateDoc(listRef, {
+                items: arrayRemove(...itemsToClear)
+            });
+        }
+    }
 };
 
 
