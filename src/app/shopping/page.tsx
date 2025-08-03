@@ -271,7 +271,12 @@ export default function ShoppingPage() {
   const { pendingItems, boughtItems } = useMemo(() => {
     if (!selectedList) return { pendingItems: [], boughtItems: [] };
     
-    const allPending = (selectedList.items || []).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+    const allPending = (selectedList.items || []).sort((a, b) => {
+        if (a.isBought !== b.isBought) {
+            return a.isBought ? 1 : -1;
+        }
+        return a.name.localeCompare(b.name, 'tr');
+    });
     
     const allArchived = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -313,7 +318,7 @@ export default function ShoppingPage() {
   }
 
   if (selectedList) {
-    const groupedPendingItems = (pendingItems || []).reduce((acc, item) => {
+    const groupedPendingItems = (selectedList.items || []).reduce((acc, item) => {
             const category = item.category || 'Diğer';
             if (!acc[category]) acc[category] = [];
             acc[category].push(item);
@@ -385,7 +390,7 @@ export default function ShoppingPage() {
                     <TabsTrigger value="pending">Alınacaklar ({pendingItems.length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="pending" className="flex-grow p-4 -mx-4 sm:mx-0 sm:rounded-b-xl bg-blue-50 dark:bg-sky-900/20 space-y-4">
+                 <TabsContent value="pending" className="flex-grow bg-blue-50 dark:bg-sky-900/20 space-y-4 p-4">
                         {pendingItems.length === 0 && (
                         <div className="text-center py-16 text-muted-foreground">
                                 <ShoppingCart className="mx-auto h-12 w-12" />
@@ -394,8 +399,8 @@ export default function ShoppingPage() {
                         )}
                         {sortedCategories.map(([category, items]) => (
                             <div key={category}>
-                                {category !== 'Diğer' && <h3 className="font-semibold text-base mb-2">{category}</h3>}
-                                <div className="divide-y divide-border/50 bg-background rounded-lg shadow-sm border">
+                                <h3 className="font-semibold text-base mb-2">{category}</h3>
+                                <div className="bg-background rounded-lg shadow-sm border divide-y divide-border/50">
                                     {items.map((item, index) => (
                                         <div key={item.id} className="flex items-center gap-2 p-2 group">
                                             <Checkbox id={item.id} checked={item.isBought} onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} className="size-6 rounded-md" />
@@ -411,35 +416,37 @@ export default function ShoppingPage() {
                             </div>
                         ))}
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow p-4 -mx-4 sm:mx-0 sm:rounded-b-xl bg-blue-50 dark:bg-sky-900/20">
-                     <div className="space-y-2">
-                         {boughtItems.length > 0 && (
-                            <div className="flex justify-end mb-4">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Tüm alınan öğeler kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Temizle</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        )}
-                        {boughtItems.length === 0 ? (
-                        <div className="text-center py-16 text-muted-foreground">
-                                <p>Henüz alınan bir ürün yok.</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-border/50 bg-background rounded-lg shadow-sm border">
-                            {boughtItems.map((item) => (
-                                <div key={item.id} className="flex items-center gap-4 p-3 group">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList.id, item.id)}><Repeat className="h-4 w-4"/></Button>
-                                    <p className="font-medium flex-grow line-through text-muted-foreground">{item.name}</p>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}><Trash2 className="h-4 w-4"/></Button>
+                 <TabsContent value="bought" className="flex-grow p-4 bg-blue-50 dark:bg-sky-900/20">
+                     <Card>
+                        <CardContent className="p-0">
+                            {boughtItems.length > 0 && (
+                                <div className="flex justify-end p-4">
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Tüm alınan öğeler kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Temizle</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
-                            ))}
-                            </div>
-                        )}
-                    </div>
+                            )}
+                            {boughtItems.length === 0 ? (
+                            <div className="text-center py-16 text-muted-foreground">
+                                    <p>Henüz alınan bir ürün yok.</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-border/50">
+                                {boughtItems.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-4 p-3 group">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList.id, item.id)}><Repeat className="h-4 w-4"/></Button>
+                                        <p className="font-medium flex-grow line-through text-muted-foreground">{item.name}</p>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}><Trash2 className="h-4 w-4"/></Button>
+                                    </div>
+                                ))}
+                                </div>
+                            )}
+                        </CardContent>
+                     </Card>
                 </TabsContent>
             </Tabs>
         </div>
@@ -479,4 +486,3 @@ export default function ShoppingPage() {
     </div>
   );
 }
-
