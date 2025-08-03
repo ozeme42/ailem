@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -17,12 +17,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, clearBoughtItemsFromList, deleteShoppingListItemFromList, toggleShoppingListItemStatusInList, moveItemToBought } from '@/lib/dataService';
+import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, clearBoughtItemsFromList, deleteShoppingListItemFromList, toggleShoppingListItemStatusInList, moveItemToBought, moveItemToPending } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
-import { Loader2 } from 'lucide-react';
 
 
 const brightColors = [
