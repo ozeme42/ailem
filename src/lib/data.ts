@@ -419,6 +419,7 @@ export interface ShoppingItem {
   isBought: boolean;
   createdAt?: string; // ISO Date String
   category?: string;
+  quantity?: string;
 }
 
 export interface ShoppingList {
@@ -427,19 +428,7 @@ export interface ShoppingList {
   name: string;
   icon: string;
   items: ShoppingItem[];
-}
-
-export interface ShoppingNoteItem {
-    id: string;
-    text: string;
-}
-
-export interface ShoppingNoteList {
-    id: string;
-    familyId: string;
-    name: string;
-    icon: string;
-    items: ShoppingNoteItem[];
+  boughtItems?: ShoppingItem[];
 }
 
 
