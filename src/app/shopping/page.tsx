@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +23,6 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateShoppingListItems, GenerateShoppingListOutput } from '@/ai/flows/generate-shopping-list-flow';
 import { Loader2 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const brightColors = [
@@ -272,8 +272,7 @@ export default function ShoppingPage() {
     const pendingGrouped: { [key: string]: ShoppingListItemType[] } = {};
     const boughtGrouped: { [key: string]: ShoppingListItemType[] } = {};
     
-    // Sort items by creation date first to ensure consistent order
-    const allItems = [...(selectedList.items || [])].sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    const allItems = [...(selectedList.items || [])];
 
     allItems.forEach(item => {
         const category = item.category || 'Diğer';
@@ -285,6 +284,12 @@ export default function ShoppingPage() {
             pendingGrouped[category].push(item);
         }
     });
+    
+    // Sort items within each category
+    const sortItems = (items: ShoppingListItemType[]) => items.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    
+    Object.keys(pendingGrouped).forEach(key => sortItems(pendingGrouped[key]));
+    Object.keys(boughtGrouped).forEach(key => sortItems(boughtGrouped[key]));
 
     return { pendingItemsByCategory: pendingGrouped, boughtItemsByCategory: boughtGrouped };
   }, [selectedList]);
@@ -361,10 +366,10 @@ export default function ShoppingPage() {
                     <TabsTrigger value="list">Liste</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({Object.values(boughtItemsByCategory).flat().length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="list" className="flex-grow overflow-y-auto p-4 mt-0">
+                <TabsContent value="list" className="flex-grow overflow-y-auto p-0 mt-0">
                     <div className="space-y-6">
                         {Object.keys(pendingItemsByCategory).length > 0 ? Object.entries(pendingItemsByCategory).map(([category, items]) => (
-                            <Card key={category}>
+                            <Card key={category} className="rounded-none shadow-none border-x-0">
                                 {category !== 'Diğer' && (
                                   <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
                                 )}
@@ -373,10 +378,7 @@ export default function ShoppingPage() {
                                         {items.map((item, index) => (
                                             <div 
                                                 key={item.id} 
-                                                className={cn(
-                                                    "flex items-center p-3 group cursor-pointer gap-3",
-                                                    index > 0 && "border-t" // Add border to all but the first item
-                                                )}
+                                                className="flex items-center p-3 group cursor-pointer gap-3 border-b"
                                                 onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, true)}
                                             >
                                                 <Checkbox id={item.id} checked={false} className="size-5 pointer-events-none" />
@@ -395,9 +397,9 @@ export default function ShoppingPage() {
                         )}
                     </div>
                 </TabsContent>
-                <TabsContent value="bought" className="flex-grow overflow-y-auto p-4 mt-0">
+                <TabsContent value="bought" className="flex-grow overflow-y-auto p-0 mt-0">
                     {Object.keys(boughtItemsByCategory).length > 0 && (
-                        <div className="flex justify-end mb-4">
+                        <div className="flex justify-end p-4">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -409,14 +411,14 @@ export default function ShoppingPage() {
                     )}
                     <div className="space-y-6">
                         {Object.keys(boughtItemsByCategory).length > 0 ? Object.entries(boughtItemsByCategory).map(([category, items]) => (
-                            <Card key={category}>
+                            <Card key={category} className="rounded-none shadow-none border-x-0">
                                 {category !== 'Diğer' && (
                                   <CardHeader className="py-3 px-4"><CardTitle className="text-base">{category}</CardTitle></CardHeader>
                                 )}
                                 <CardContent className="p-0">
                                      <div className="flex flex-col">
                                         {items.map((item, index) => (
-                                            <div key={item.id} className={cn("flex items-center p-3 group cursor-pointer gap-3", index > 0 && "border-t")}>
+                                            <div key={item.id} className="flex items-center p-3 group cursor-pointer gap-3 border-b">
                                                 <Checkbox
                                                     id={item.id}
                                                     checked={true}
