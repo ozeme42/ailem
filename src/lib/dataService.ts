@@ -475,27 +475,25 @@ export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void)
 export const addShoppingList = async (title: string, icon: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'shoppingLists'), { name: title, icon: icon, items: [], familyId });
+    return addDoc(collection(db, 'shoppingLists'), { name: title, icon: icon, items: [], boughtItems: [], familyId });
 };
 export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
 export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
 
 export const addShoppingListItemToList = async (listId: string, itemData: { name: string; category?: string; quantity?: string; }) => {
     const listRef = doc(db, "shoppingLists", listId);
-    const listSnap = await getDoc(listRef);
-
-    if (listSnap.exists()) {
-        const currentItems = listSnap.data().items || [];
-        const newItem: ShoppingItem = { 
-            id: Date.now().toString(), 
-            name: itemData.name, 
-            isBought: false, 
-            createdAt: new Date().toISOString(),
-            category: itemData.category || 'Diğer',
-        };
-        const newItems = [newItem, ...currentItems];
-        await updateDoc(listRef, { items: newItems });
-    }
+    
+    const newItem: ShoppingItem = { 
+        id: Date.now().toString(), 
+        name: itemData.name, 
+        isBought: false, 
+        createdAt: new Date().toISOString(),
+        category: itemData.category || 'Diğer',
+    };
+    
+    await updateDoc(listRef, {
+        items: arrayUnion(newItem)
+    });
 };
 
 export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string, newStatus: boolean) => {
@@ -507,25 +505,59 @@ export const toggleShoppingListItemStatusInList = async (listId: string, itemId:
         await updateDoc(listRef, { items: newItems });
     }
 };
-export const deleteShoppingListItemFromList = async (listId: string, itemId: string) => {
+
+export const moveItemToBought = async (listId: string, itemId: string) => {
     const listRef = doc(db, "shoppingLists", listId);
     const listSnap = await getDoc(listRef);
     if (listSnap.exists()) {
         const list = listSnap.data() as ShoppingList;
-        const itemToRemove = list.items.find(item => item.id === itemId);
-        if (itemToRemove) {
-            await updateDoc(listRef, { items: arrayRemove(itemToRemove) });
+        const itemToMove = list.items.find(item => item.id === itemId);
+        if (itemToMove) {
+            const updatedItem = { ...itemToMove, isBought: true };
+            const newItems = list.items.filter(item => item.id !== itemId);
+            const newBoughtItems = [updatedItem, ...(list.boughtItems || [])];
+            await updateDoc(listRef, { items: newItems, boughtItems: newBoughtItems });
         }
     }
 };
-export const clearBoughtItemsFromList = async (listId: string) => {
+
+export const moveItemToPending = async (listId: string, itemId: string) => {
     const listRef = doc(db, "shoppingLists", listId);
     const listSnap = await getDoc(listRef);
     if (listSnap.exists()) {
         const list = listSnap.data() as ShoppingList;
-        const newItems = list.items.filter(item => !item.isBought);
-        await updateDoc(listRef, { items: newItems });
+        const itemToMove = (list.boughtItems || []).find(item => item.id === itemId);
+        if (itemToMove) {
+            const updatedItem = { ...itemToMove, isBought: false };
+            const newBoughtItems = (list.boughtItems || []).filter(item => item.id !== itemId);
+            const newItems = [updatedItem, ...list.items];
+            await updateDoc(listRef, { items: newItems, boughtItems: newBoughtItems });
+        }
     }
+};
+
+export const deleteShoppingListItemFromList = async (listId: string, itemId: string, fromBought: boolean) => {
+    const listRef = doc(db, "shoppingLists", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingList;
+        if (fromBought) {
+            const itemToRemove = (list.boughtItems || []).find(item => item.id === itemId);
+            if (itemToRemove) {
+                await updateDoc(listRef, { boughtItems: arrayRemove(itemToRemove) });
+            }
+        } else {
+             const itemToRemove = list.items.find(item => item.id === itemId);
+             if (itemToRemove) {
+                await updateDoc(listRef, { items: arrayRemove(itemToRemove) });
+            }
+        }
+    }
+};
+
+export const clearBoughtItemsFromList = async (listId: string) => {
+    const listRef = doc(db, "shoppingLists", listId);
+    await updateDoc(listRef, { boughtItems: [] });
 };
 
 
@@ -776,6 +808,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
                 { id: '2', name: 'Ekmek', isBought: true, createdAt: new Date().toISOString() },
                 { id: '3', name: 'Yumurta', isBought: false, createdAt: new Date().toISOString() },
             ],
+            boughtItems: [],
         }
     ];
 
