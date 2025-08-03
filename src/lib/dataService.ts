@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteList, ShoppingNoteItem } from './data';
 import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -549,6 +549,46 @@ export const deleteShoppingListItemFromList = async (listId: string, itemId: str
 export const clearBoughtItemsFromList = async (listId: string) => {
     const listRef = doc(db, "shoppingLists", listId);
     await updateDoc(listRef, { boughtItems: [] });
+};
+
+// Shopping Notes (for Needs page)
+export const onShoppingNotesUpdate = (callback: (lists: ShoppingNoteList[]) => void) => onFamilyDataUpdate<ShoppingNoteList>('shoppingNotes', callback, false, 'name');
+export const addShoppingNoteList = async (name: string, icon: string) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'shoppingNotes'), { name, icon, items: [], familyId });
+};
+export const deleteShoppingNoteList = (id: string) => deleteDoc(doc(db, 'shoppingNotes', id));
+
+export const addShoppingNoteItemToList = async (listId: string, itemName: string) => {
+    const listRef = doc(db, "shoppingNotes", listId);
+    const newItem: ShoppingNoteItem = { id: Date.now().toString(), name: itemName, completed: false };
+    await updateDoc(listRef, { items: arrayUnion(newItem) });
+};
+
+export const deleteShoppingNoteItemFromList = async (listId: string, itemId: string) => {
+    const listRef = doc(db, "shoppingNotes", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingNoteList;
+        const items = list.items || [];
+        const itemToRemove = items.find(item => item.id === itemId);
+        if (itemToRemove) {
+            await updateDoc(listRef, { items: arrayRemove(itemToRemove) });
+        }
+    }
+};
+
+export const toggleShoppingNoteItemStatusInList = async (listId: string, itemId: string) => {
+    const listRef = doc(db, "shoppingNotes", listId);
+    const listSnap = await getDoc(listRef);
+    if (listSnap.exists()) {
+        const list = listSnap.data() as ShoppingNoteList;
+        const newItems = (list.items || []).map(item => 
+            item.id === itemId ? { ...item, completed: !item.completed } : item
+        );
+        await updateDoc(listRef, { items: newItems });
+    }
 };
 
 

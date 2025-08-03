@@ -431,6 +431,20 @@ export interface ShoppingList {
   boughtItems?: ShoppingItem[];
 }
 
+// Separate data structure for Needs page
+export interface ShoppingNoteItem {
+  id: string;
+  name: string;
+  completed: boolean;
+}
+export interface ShoppingNoteList {
+  id: string;
+  familyId: string;
+  name: string;
+  icon: string;
+  items: ShoppingNoteItem[];
+}
+
 
 // This data is now only for initial setup
 // ... (rest of the initial data remains the same)
@@ -508,6 +522,7 @@ export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
             { id: '2', name: 'Ekmek', isBought: true, createdAt: new Date().toISOString() },
             { id: '3', name: 'Yumurta', isBought: false, createdAt: new Date().toISOString() },
         ],
+        boughtItems: [],
     }
 ];
 
