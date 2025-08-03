@@ -287,7 +287,7 @@ export const updateFamilyMemberInFamily = async (familyId: string, memberId: str
     }
 }
 
-export type TagType = "libraryTags" | "memorizationTags" | "videoTags";
+type TagType = "libraryTags" | "memorizationTags" | "videoTags";
 
 // Tags (Library Shelves are now per-family)
 export const onTagsUpdate = (tagType: TagType, callback: (tags: string[]) => void) => {
@@ -480,24 +480,30 @@ export const addShoppingList = async (title: string, icon: string) => {
 export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
 export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
 
-export const addShoppingListItemToList = async (listId: string, itemName: string) => {
+export const addShoppingListItemToList = async (listId: string, itemData: { name: string; category?: string; quantity?: string; }) => {
     const listRef = doc(db, "shoppingLists", listId);
     const listSnap = await getDoc(listRef);
 
     if (listSnap.exists()) {
         const currentItems = listSnap.data().items || [];
-        const newItem: ShoppingItem = { id: Date.now().toString(), name: itemName, isBought: false, createdAt: new Date().toISOString() };
+        const newItem: ShoppingItem = { 
+            id: Date.now().toString(), 
+            name: itemData.name, 
+            isBought: false, 
+            createdAt: new Date().toISOString(),
+            category: itemData.category || 'Diğer',
+        };
         const newItems = [newItem, ...currentItems];
         await updateDoc(listRef, { items: newItems });
     }
 };
 
-export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string) => {
+export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string, newStatus: boolean) => {
     const listRef = doc(db, "shoppingLists", listId);
     const listSnap = await getDoc(listRef);
     if (listSnap.exists()) {
         const list = listSnap.data() as ShoppingList;
-        const newItems = list.items.map(item => item.id === itemId ? { ...item, isBought: !item.isBought } : item);
+        const newItems = list.items.map(item => item.id === itemId ? { ...item, isBought: newStatus } : item);
         await updateDoc(listRef, { items: newItems });
     }
 };
