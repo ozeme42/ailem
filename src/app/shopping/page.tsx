@@ -286,21 +286,31 @@ export default function ShoppingPage() {
         acc[category].push(item);
         return acc;
     }, {} as Record<string, ShoppingListItemType[]>);
+    
+    const boughtGrouped = items.filter(item => item.isBought).reduce((acc, item) => {
+        const category = item.category || 'Diğer';
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(item);
+        return acc;
+    }, {} as Record<string, ShoppingListItemType[]>);
 
-    const sortedGrouped = Object.entries(grouped).sort(([catA], [catB]) => {
-        if(catA === 'Diğer') return 1;
-        if(catB === 'Diğer') return -1;
-        return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
-    });
 
-    const sortedBought = (selectedList.items || []).filter(item => item.isBought).sort((a,b) => {
+    const sortGrouped = (groupedItems: Record<string, ShoppingListItemType[]>) => {
+        return Object.entries(groupedItems).sort(([catA], [catB]) => {
+            if(catA === 'Diğer') return 1;
+            if(catB === 'Diğer') return -1;
+            return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
+        });
+    }
+
+    const sortedBought = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
     });
 
     return {
-      pendingItems: sortedGrouped,
+      pendingItems: sortGrouped({...grouped, ...boughtGrouped}),
       boughtItems: sortedBought,
     };
   }, [selectedList]);
@@ -335,28 +345,40 @@ export default function ShoppingPage() {
   if (selectedList) {
      return (
         <div className="relative h-full flex flex-col">
-            <header className={cn(
-              "p-4 sm:rounded-t-xl text-primary-foreground shadow-lg -mx-4 sm:mx-0", 
-              "bg-gradient-to-r from-primary to-accent"
-            )}>
-                 <Button variant="ghost" className="mb-2 text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
-                    <ArrowLeft className="h-5 w-5 mr-2" /> Geri
-                </Button>
-                <div className="flex flex-col items-start gap-4">
-                    <h1 className="text-2xl font-bold text-white">{selectedList.name}</h1>
+            <div className='flex-shrink-0 -mx-4 sm:mx-0'>
+                <PageHeader title={selectedList.name}>
+                    <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
+                        <ArrowLeft className="h-5 w-5 mr-2" /> Geri
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
+                                <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm ihtiyaçlar kalıcı olarak silinecektir.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </PageHeader>
+                 <div className='p-4 -mt-8'>
                     <form onSubmit={handleAddItem} className="relative w-full">
                         <Input 
                             value={newItemName} 
                             onChange={(e) => setNewItemName(e.target.value)} 
                             placeholder="Yeni öğe ekle..." 
-                            className="bg-white/20 border-white/30 placeholder:text-white/80 text-white peer"
+                            className="bg-background peer"
                             disabled={isAiProcessing}
                         />
                         <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
                             {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
                         </Button>
-                    </form>
-                      {suggestions.length > 0 && (
+                         {suggestions.length > 0 && (
                           <div className="relative w-full">
                             <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-background border rounded-lg shadow-lg z-10">
                                 <div className="flex flex-wrap gap-2">
@@ -367,15 +389,16 @@ export default function ShoppingPage() {
                             </div>
                           </div>
                       )}
+                    </form>
                 </div>
-            </header>
+            </div>
             
             <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0">
-                <TabsList className="grid w-full grid-cols-2 rounded-none">
+                <TabsList className="grid w-full grid-cols-2 rounded-none flex-shrink-0">
                     <TabsTrigger value="pending">Liste</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-background overflow-y-auto pb-28">
+                <TabsContent value="pending" className="flex-grow bg-background overflow-y-auto">
                     <div className="mt-2">
                         {pendingItems.length === 0 ? (
                            <div className="text-center py-16 text-muted-foreground">
@@ -384,21 +407,21 @@ export default function ShoppingPage() {
                             </div>
                         ) : (
                             pendingItems.map(([category, items], catIndex) => (
-                                <div key={category} className="mb-2">
+                                <div key={category}>
                                      {category !== 'Diğer' && (
-                                        <CardHeader className="p-3 border-b border-t">
+                                        <CardHeader className="px-4 py-3 border-b border-t bg-muted/50">
                                             <CardTitle className="text-base">{category}</CardTitle>
                                         </CardHeader>
                                     )}
                                     <CardContent className="p-0">
                                          {items.map((item, itemIndex) => (
                                             <div key={item.id} className="flex items-center gap-2 px-4 py-1 group border-b">
-                                                <div className="py-2 pr-4" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
+                                                <div className="py-2 pr-4 cursor-pointer" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
                                                     <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md"  />
                                                 </div>
-                                                <label htmlFor={item.id} className={cn("font-medium flex-grow", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                                <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                                 {item.isBought && (
-                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
+                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
                                                         <Trash2 className="h-4 w-4"/>
                                                      </Button>
                                                 )}
