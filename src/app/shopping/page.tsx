@@ -268,20 +268,13 @@ export default function ShoppingPage() {
     
     const items = selectedList.items || [];
     
-    // Sort items by creation date, newest first
-    const sortedItems = items.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-    });
-
     const categoryOrder: { [key: string]: number } = {
         'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
         'Temel Gıda': 5, 'Atıştırmalık': 6, 'İçecekler': 7, 'Dondurulmuş Gıdalar': 8,
         'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11, 'Diğer': 99,
     };
     
-    const grouped = sortedItems.filter(item => !item.isBought).reduce((acc, item) => {
+    const grouped = items.reduce((acc, item) => {
         const category = item.category || 'Diğer';
         if (!acc[category]) acc[category] = [];
         acc[category].push(item);
@@ -335,7 +328,7 @@ export default function ShoppingPage() {
      return (
         <div className="relative h-full flex flex-col">
             <PageHeader title={selectedList.name}>
-                <div className="relative w-full max-w-xs md:max-w-sm">
+                 <div className="relative w-full max-w-xs md:max-w-sm">
                     <form onSubmit={handleAddItem} className="flex gap-2">
                         <Input 
                             value={newItemName} 
@@ -365,22 +358,11 @@ export default function ShoppingPage() {
             
             <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                 <TabsList className="grid w-full grid-cols-2 rounded-none bg-muted/30 -mx-4 sm:mx-0 px-4 sm:rounded-t-lg">
-                    <TabsTrigger value="pending">Alınacaklar</TabsTrigger>
+                    <TabsTrigger value="pending">Liste</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="flex-grow bg-background overflow-y-auto pb-28 -mx-4 sm:mx-0 sm:border-x sm:border-b sm:rounded-b-lg">
+                <TabsContent value="pending" className="flex-grow bg-card overflow-y-auto pb-28 -mx-4 sm:mx-0 sm:border-x sm:border-b sm:rounded-b-lg">
                     <div className="mt-2">
-                       {pendingItems.length > 0 && (
-                            <div className="p-4 flex justify-end">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent><AlertDialogDescription>Alındı olarak işaretlenmiş tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => clearBoughtItemsFromList(selectedList.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        )}
                         {pendingItems.length === 0 ? (
                            <div className="text-center py-16 text-muted-foreground">
                                 <ShoppingCart className="mx-auto h-12 w-12" />
@@ -388,7 +370,7 @@ export default function ShoppingPage() {
                             </div>
                         ) : (
                             pendingItems.map(([category, items]) => (
-                                <Card key={category} className="mb-4 shadow-none border-x-0 rounded-none">
+                                <Card key={category} className="mb-4 shadow-none border-x-0 rounded-none bg-transparent">
                                     {category !== 'Diğer' && (
                                         <CardHeader className="p-3 bg-muted/50">
                                             <CardTitle className="text-base">{category}</CardTitle>
@@ -396,8 +378,10 @@ export default function ShoppingPage() {
                                     )}
                                     <CardContent className="p-0">
                                          {items.map((item, index) => (
-                                            <div key={item.id} className={cn("flex items-center gap-4 px-4 py-3 bg-background", index > 0 || category === 'Diğer' ? 'border-t' : '')}>
-                                                <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md" onCheckedChange={(checked) => toggleShoppingListItemStatusInList(selectedList.id, item.id, !!checked)} />
+                                            <div key={item.id} className={cn("flex items-center gap-4 px-4 py-2", category !== 'Diğer' || index > 0 ? 'border-t' : '')}>
+                                                <div className="p-2" onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}>
+                                                    <Checkbox id={item.id} checked={item.isBought} className="size-6 rounded-md"  />
+                                                </div>
                                                 <label htmlFor={item.id} className={cn("font-medium flex-grow", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                                 {item.isBought && (
                                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, false)}><Trash2 className="h-4 w-4"/></Button>
