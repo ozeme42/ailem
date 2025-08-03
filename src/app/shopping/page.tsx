@@ -263,7 +263,6 @@ export default function ShoppingPage() {
     }
 };
 
-
   const handleSuggestionClick = (suggestion: string) => {
     handleAddItem(undefined, suggestion);
     setNewItemName('');
@@ -293,7 +292,7 @@ export default function ShoppingPage() {
     }
 
     const allItems = selectedList.items || [];
-    const groupedPending = groupItems(allItems.filter(item => !item.isBought));
+    const groupedPending = groupItems(allItems);
     
     const allArchived = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -339,7 +338,7 @@ export default function ShoppingPage() {
      const isBoughtItems = allPendingItems.filter(i => i.isBought);
      const notBoughtItems = allPendingItems.filter(i => !i.isBought);
      
-     const groupedPendingItems = (selectedList.items || [])
+     const groupedPendingItems = (notBoughtItems || [])
         .reduce((acc, item) => {
             const category = item.category || 'Diğer';
             if (!acc[category]) acc[category] = [];
@@ -360,49 +359,51 @@ export default function ShoppingPage() {
      return (
         <div className="relative h-full flex flex-col">
             <PageHeader title={selectedList.name}>
-                <div className="w-full flex items-center justify-between">
-                    <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
-                        <ArrowLeft className="h-5 w-5 mr-2" /> Geri
-                    </Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
-                                <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-                 <form onSubmit={handleAddItem} className="relative w-full mt-4">
-                    <Input 
-                        value={newItemName} 
-                        onChange={(e) => setNewItemName(e.target.value)} 
-                        placeholder="Yeni öğe ekle (örn: 2 kilo domates, 1 paket süt)" 
-                        className="bg-background/20 text-primary-foreground placeholder:text-primary-foreground/70 peer"
-                        disabled={isAiProcessing}
-                    />
-                    <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
-                        {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
-                    </Button>
-                     {suggestions.length > 0 && (
-                      <div className="relative w-full">
-                        <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-background border rounded-lg shadow-lg z-10">
-                            <div className="flex flex-wrap gap-2">
-                            {suggestions.map((s, i) => (
-                                <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
-                            ))}
+                <div className="w-full flex flex-col gap-4">
+                    <div className="w-full flex items-center justify-between">
+                        <Button variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0" onClick={() => setSelectedList(null)}>
+                            <ArrowLeft className="h-5 w-5 mr-2" /> Geri
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" className="bg-white/20 hover:bg-white/30 border-0"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitleComponent>"{selectedList.name}" listesini sil?</AlertDialogTitleComponent>
+                                    <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => { deleteShoppingList(selectedList.id); setSelectedList(null); }}>Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                    <form onSubmit={handleAddItem} className="relative w-full">
+                        <Input 
+                            value={newItemName} 
+                            onChange={(e) => setNewItemName(e.target.value)} 
+                            placeholder="Yeni öğe ekle (örn: 2 kilo domates, 1 paket süt)" 
+                            className="bg-background/20 text-primary-foreground placeholder:text-primary-foreground/70 peer"
+                            disabled={isAiProcessing}
+                        />
+                        <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
+                            {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
+                        </Button>
+                        {suggestions.length > 0 && (
+                        <div className="relative w-full">
+                            <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-background border rounded-lg shadow-lg z-10">
+                                <div className="flex flex-wrap gap-2">
+                                {suggestions.map((s, i) => (
+                                    <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
+                                ))}
+                                </div>
                             </div>
                         </div>
-                      </div>
-                  )}
-                </form>
+                    )}
+                    </form>
+                </div>
             </PageHeader>
             
             <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
@@ -410,10 +411,10 @@ export default function ShoppingPage() {
                     <TabsTrigger value="pending">Alınacaklar ({notBoughtItems.length})</TabsTrigger>
                     <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="pending" className="flex-grow -mx-4 sm:mx-0 p-4 rounded-b-lg bg-muted">
+                 <TabsContent value="pending" className="flex-grow -mx-4 sm:mx-0 p-4 rounded-b-lg bg-blue-50 dark:bg-sky-900/20">
                     <Card>
                         <CardContent className="p-4 space-y-4">
-                            {allPendingItems.length === 0 && (
+                            {notBoughtItems.length === 0 && (
                             <div className="text-center py-16 text-muted-foreground">
                                     <ShoppingCart className="mx-auto h-12 w-12" />
                                     <p className="mt-4">Listeniz boş.</p>
@@ -440,7 +441,7 @@ export default function ShoppingPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="bought" className="flex-grow -mx-4 sm:mx-0 p-4 rounded-b-lg bg-muted">
+                 <TabsContent value="bought" className="flex-grow -mx-4 sm:mx-0 p-4 rounded-b-lg bg-blue-50 dark:bg-sky-900/20">
                      <Card>
                         <CardContent className="p-4 space-y-2">
                              {boughtItems.length > 0 && (
