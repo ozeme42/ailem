@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Task } from "@/lib/data";
-import { onSnapshot, doc } from "firebase/firestore";
+import { onSnapshot, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -68,16 +68,14 @@ export default function HabitDetailPage() {
 
   const handleToggleDay = async (day: Date) => {
     if (!habit) return;
-    
-    const dayKey = format(day, 'yyyy-MM-dd');
-    const isCompleted = habit.completedDates?.includes(dayKey) || false;
-
+    const isCompleted = habit.completedDates?.includes(format(day, 'yyyy-MM-dd')) || false;
     try {
-        await updateHabitCompletion(habit, day, !isCompleted);
+        await updateHabitCompletion(habit.id, day, !isCompleted);
     } catch (e) {
+        console.error("Error in handleToggleDay:", e);
         toast({ title: "Hata", description: "İşaretleme sırasında bir sorun oluştu.", variant: "destructive"});
     }
-  }
+  };
 
 
   if (loading) {
@@ -108,7 +106,7 @@ export default function HabitDetailPage() {
             
             const todayForComparison = new Date();
             todayForComparison.setHours(23, 59, 59, 999);
-            const isSelectable = isBefore(date, todayForComparison) && !isBefore(date, subDays(habitStartDate, 1));
+            const isSelectable = !isBefore(date, subDays(habitStartDate, 1));
             
             return { date, name: dayIdToName[dayId], isCompleted, isSelectable };
         });
@@ -213,7 +211,7 @@ export default function HabitDetailPage() {
                     const todayForComparison = new Date();
                     todayForComparison.setHours(23, 59, 59, 999);
                     
-                    let isSelectable = !isBefore(day, subDays(habitStartDate,1)) && day <= todayForComparison;
+                    let isSelectable = !isBefore(day, subDays(habitStartDate,1));
 
                     if (habit.recurrenceType === 'monthly') {
                       if (day.getDate() !== habitStartDate.getDate()) {
@@ -247,4 +245,6 @@ export default function HabitDetailPage() {
     </div>
   );
 }
+    
+
     

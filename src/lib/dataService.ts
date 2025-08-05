@@ -483,7 +483,7 @@ export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLis
 export const addShoppingListItemToList = async (listId: string, itemData: { name: string; category?: string; quantity?: string; }) => {
     const listRef = doc(db, "shoppingLists", listId);
     
-    const newItem: Partial<Omit<ShoppingItem, 'isBought'>> = { 
+    const newItem: Omit<ShoppingItem, 'isBought'> = { 
         id: Date.now().toString(), 
         name: `${itemData.quantity || ''} ${itemData.name}`.trim(), 
         createdAt: new Date().toISOString(),
@@ -492,14 +492,16 @@ export const addShoppingListItemToList = async (listId: string, itemData: { name
     };
     
     // Ensure quantity is not undefined before sending to Firestore
-    if (newItem.quantity === undefined) {
-        delete newItem.quantity;
+    const finalItem: any = { ...newItem, isBought: false };
+    if (finalItem.quantity === undefined) {
+        delete finalItem.quantity;
     }
     
     await updateDoc(listRef, {
-        items: arrayUnion({ ...newItem, isBought: false })
+        items: arrayUnion(finalItem)
     });
 };
+
 
 export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string) => {
     const listRef = doc(db, "shoppingLists", listId);
@@ -1204,16 +1206,16 @@ export const deleteAllMemorizationItems = async () => {
 };
 
 
-export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: boolean) => {
-    if (!task.isRecurring) return;
-
-    const taskRef = doc(db, 'tasks', task.id);
-    const dayKey = format(day, 'yyyy-MM-dd');
-    
+export const updateHabitCompletion = async (taskId: string, day: Date, isCompleted: boolean) => {
+    const taskRef = doc(db, 'tasks', taskId);
     const taskSnap = await getDoc(taskRef);
     if (!taskSnap.exists()) return;
-    const currentTaskData = taskSnap.data() as Task;
-    const completedDates = new Set(currentTaskData.completedDates || []);
+    
+    const task = taskSnap.data() as Task;
+    if (!task.isRecurring) return;
+
+    const dayKey = format(day, 'yyyy-MM-dd');
+    const completedDates = new Set(task.completedDates || []);
 
     if (isCompleted) {
         completedDates.add(dayKey);
@@ -1249,7 +1251,6 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
     } else if (task.recurrenceType === 'weekly' && task.recurrenceDays && task.recurrenceDays.length > 0) {
         let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
-        // Function to check if all required days in a week are completed
         const isWeekComplete = (weekStart: Date) => {
             return task.recurrenceDays!.every(dayId => {
                 const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
@@ -1258,9 +1259,8 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
             });
         };
         
-        // Start checking from the current week
-        if (!isWeekComplete(checkWeekStart)) {
-            // If current week is not complete, check the previous week
+        let currentWeekIsComplete = isWeekComplete(checkWeekStart);
+        if(!currentWeekIsComplete) {
             checkWeekStart = subWeeks(checkWeekStart, 1);
         }
 
@@ -1271,10 +1271,9 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
     }
 
     updateData.streak = streak;
-    updateData.bestStreak = Math.max(currentTaskData.bestStreak || 0, streak);
+    updateData.bestStreak = Math.max(task.bestStreak || 0, streak);
     
-    // Award XP and badges for streaks
-    if (streak > (currentTaskData.streak || 0)) {
+    if (streak > (task.streak || 0)) {
         await checkAndAwardBadges(task.assigneeId, task.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
     }
         
