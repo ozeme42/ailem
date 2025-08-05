@@ -12,12 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
 import { Task } from "@/lib/data";
-import { onTasksUpdate, addTask } from "@/lib/dataService";
+import { onTasksUpdate, addTask, updateHabitCompletion } from "@/lib/dataService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NewTaskForm } from "@/components/new-task-form";
 import { PageHeader } from "@/components/page-header";
+import { HabitTrackerCard } from "@/components/habit-tracker-card";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TasksPage() {
   const { user, familyMembers, loading: authLoading } = useAuth();
@@ -26,6 +28,7 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setLoading(true);
@@ -49,32 +52,42 @@ export default function TasksPage() {
   const getAssignee = (assigneeId: string) => {
     return familyMembers.find((m) => m.id === assigneeId);
   };
+
+  const handleToggleDay = async (task: Task, day: Date, isCompleted: boolean) => {
+      try {
+          await updateHabitCompletion(task, day, isCompleted);
+      } catch(e) {
+          toast({ title: 'Hata', description: 'İşaretleme sırasında bir sorun oluştu.', variant: 'destructive'});
+      }
+  }
   
   const leaderboard = [...familyMembers].sort((a,b) => b.xp - a.xp);
 
   const {
     pendingTasks,
     completedTasks,
+    habits,
   } = React.useMemo(() => {
     const filteredTasks = tasks.filter(task => {
         const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (getAssignee(task.assigneeId) && getAssignee(task.assigneeId)!.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        return searchMatch && (task.category === 'Ev İşleri' || task.category === 'Kişisel' || task.category === 'Görev');
+        return searchMatch;
     });
 
     return {
-        pendingTasks: filteredTasks.filter(t => !t.completed),
-        completedTasks: filteredTasks.filter(t => t.completed)
+        pendingTasks: filteredTasks.filter(t => !t.isRecurring && !t.completed),
+        completedTasks: filteredTasks.filter(t => !t.isRecurring && t.completed),
+        habits: filteredTasks.filter(t => t.isRecurring)
     };
   }, [tasks, searchTerm, familyMembers]);
 
   
   return (
     <>
-      <PageHeader title="Görev Yönetimi 📝">
+      <PageHeader title="Görevler & Alışkanlıklar">
         <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={handleOpenNewTask}>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Yeni Görev Ekle
+            Yeni Görev / Alışkanlık
         </Button>
       </PageHeader>
 
@@ -96,58 +109,60 @@ export default function TasksPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder={"Görev veya sorumlu ara..."}
-                className="pl-10 pr-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7">
-                <Mic className={`h-4 w-4`}/>
-              </Button>
-            </div>
-             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="shrink-0">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filtrele
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Sorumluya Göre</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {familyMembers.map(member => (
-                    <DropdownMenuCheckboxItem key={member.id}>{member.name}</DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-            <Tabs defaultValue="pending" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="pending">Devam Eden ({pendingTasks.length})</TabsTrigger>
-                    <TabsTrigger value="completed">Tamamlananlar ({completedTasks.length})</TabsTrigger>
+            <Tabs defaultValue="tasks" className="w-full">
+                 <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="tasks">Görevler</TabsTrigger>
+                    <TabsTrigger value="habits">Alışkanlıklar</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pending" className="mt-4 space-y-3">
-                    {pendingTasks.length > 0 ? (
-                        pendingTasks.map((task) => (
-                        <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
-                        ))
-                    ) : (
-                        <Card><CardContent className="p-8 text-center text-muted-foreground">Devam eden görev yok.</CardContent></Card>
-                    )}
+                <TabsContent value="tasks" className="mt-4">
+                     <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                        <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder={"Görev veya sorumlu ara..."}
+                            className="pl-10 pr-10"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        </div>
+                    </div>
+                     <Tabs defaultValue="pending" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="pending">Devam Eden ({pendingTasks.length})</TabsTrigger>
+                            <TabsTrigger value="completed">Tamamlananlar ({completedTasks.length})</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="pending" className="mt-4 space-y-3">
+                            {pendingTasks.length > 0 ? (
+                                pendingTasks.map((task) => (
+                                <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
+                                ))
+                            ) : (
+                                <Card><CardContent className="p-8 text-center text-muted-foreground">Devam eden görev yok.</CardContent></Card>
+                            )}
+                        </TabsContent>
+                        <TabsContent value="completed" className="mt-4 space-y-3">
+                            {completedTasks.length > 0 ? (
+                                completedTasks.map((task) => (
+                                <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
+                                ))
+                            ) : (
+                                <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>
+                            )}
+                        </TabsContent>
+                    </Tabs>
                 </TabsContent>
-                <TabsContent value="completed" className="mt-4 space-y-3">
-                    {completedTasks.length > 0 ? (
-                        completedTasks.map((task) => (
-                        <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
-                        ))
+                <TabsContent value="habits" className="mt-4 space-y-4">
+                    {habits.length > 0 ? (
+                    habits.map((habit) => (
+                        <HabitTrackerCard 
+                            key={habit.id}
+                            task={habit} 
+                            assignee={familyMembers.find(m => m.id === habit.assigneeId)} 
+                            onToggleDay={handleToggleDay}
+                        />
+                    ))
                     ) : (
-                        <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>
+                    <Card><CardContent className="p-8 text-center text-muted-foreground">Takip edilen alışkanlık yok.</CardContent></Card>
                     )}
                 </TabsContent>
             </Tabs>

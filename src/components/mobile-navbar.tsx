@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -12,7 +13,6 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { href: "/", label: "Ailem", icon: Users },
   { href: "/tasks", label: "Görevler", icon: CheckCircle2 },
-  { href: "/habits", label: "Alışkanlıklar", icon: Zap },
   { href: "/education", label: "Eğitim", icon: GraduationCap },
   { href: "/library", label: "Kütüphane", icon: BookOpen },
 ];

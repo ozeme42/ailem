@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -49,7 +50,6 @@ export function AppSidebar() {
   const menuItems = [
     { href: "/", label: "Ana Sayfa", icon: Home },
     { href: "/tasks", label: "Görevler", icon: ListTodo },
-    { href: "/habits", label: "Alışkanlıklar", icon: Zap },
     { href: "/prayers", label: "Namaz Takibi", icon: MosqueIcon },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },

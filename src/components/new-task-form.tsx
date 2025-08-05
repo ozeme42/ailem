@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -62,16 +63,14 @@ type NewTaskFormProps = {
 
 export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewTaskFormProps) {
   const { toast } = useToast();
-  const pathname = usePathname();
-  const isHabitPage = pathname === '/habits';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       subtasks: [],
-      isRecurring: isHabitPage,
-      recurrenceType: isHabitPage ? 'daily' : undefined,
+      isRecurring: false,
+      recurrenceType: undefined,
       recurrenceDays: [],
     },
   });
@@ -103,14 +102,14 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
           subtasks: [],
           assigneeId: undefined,
           dueDate: undefined,
-          isRecurring: isHabitPage,
-          recurrenceType: isHabitPage ? 'daily' : undefined,
+          isRecurring: false,
+          recurrenceType: undefined,
           recurrenceDays: [],
           recurrenceEndDate: undefined,
           totalOccurrences: undefined,
        });
     }
-  }, [taskToEdit, form, isHabitPage]);
+  }, [taskToEdit, form]);
 
   const difficultyPoints = {
     "Kolay": 10,
