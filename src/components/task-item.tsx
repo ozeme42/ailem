@@ -129,7 +129,7 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
             )}
           </div>
           <div className="hidden sm:flex items-center gap-2">
-            {task.recurrenceType === 'daily' && task.streak && task.streak > 1 && (
+            {(task.recurrenceType === 'daily' || task.recurrenceType === 'weekly') && task.streak && task.streak > 1 && (
                 <Badge variant="outline" className="border-orange-500/50 bg-orange-500/10 text-orange-700 dark:text-orange-400">
                     <Flame className="w-3.5 h-3.5 mr-1"/> {task.streak} Seri
                 </Badge>
