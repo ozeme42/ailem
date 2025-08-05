@@ -3,8 +3,8 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteList, ShoppingNoteItem } from './data';
-import { isPast, parseISO, isSameDay, subDays, format } from 'date-fns';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem } from './data';
+import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -483,7 +483,7 @@ export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLis
 export const addShoppingListItemToList = async (listId: string, itemData: { name: string; category?: string; quantity?: string; }) => {
     const listRef = doc(db, "shoppingLists", listId);
     
-    const newItem: Omit<ShoppingItem, 'isBought'> = { 
+    const newItem: Partial<Omit<ShoppingItem, 'isBought'>> = { 
         id: Date.now().toString(), 
         name: `${itemData.quantity || ''} ${itemData.name}`.trim(), 
         createdAt: new Date().toISOString(),
@@ -809,16 +809,15 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
         { title: 'Matematik Ödevi', points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [] },
     ];
 
-    const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
+    const initialShoppingLists: Omit<ShoppingNoteList, 'id' | 'familyId'>[] = [
         {
             name: 'Haftalık Market Alışverişi',
             icon: 'ShoppingCart',
             items: [
-                { id: '1', name: 'Süt', isBought: true, createdAt: new Date().toISOString() },
-                { id: '2', name: 'Ekmek', isBought: true, createdAt: new Date().toISOString() },
-                { id: '3', name: 'Yumurta', isBought: false, createdAt: new Date().toISOString() },
+                { id: '1', name: 'Süt', completed: true },
+                { id: '2', name: 'Ekmek', completed: true },
+                { id: '3', name: 'Yumurta', completed: false },
             ],
-            boughtItems: [],
         }
     ];
 
@@ -917,7 +916,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
 
     // Initial Shopping List
     initialShoppingLists.forEach(list => {
-        const docRef = doc(collection(db, 'shoppingLists'));
+        const docRef = doc(collection(db, 'shoppingNotes'));
         batch.set(docRef, { ...list, familyId });
     });
     
@@ -1226,8 +1225,8 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
         completedDates: Array.from(completedDates),
     };
 
+    let streak = 0;
     if (task.recurrenceType === 'daily') {
-        let streak = 0;
         const sortedDates = Array.from(completedDates).sort().map(d => parseISO(d));
         if (sortedDates.length > 0) {
             let currentDate = new Date();
@@ -1247,13 +1246,36 @@ export const updateHabitCompletion = async (task: Task, day: Date, isCompleted: 
                 }
             }
         }
-        updateData.streak = streak;
-        updateData.bestStreak = Math.max(currentTaskData.bestStreak || 0, streak);
+    } else if (task.recurrenceType === 'weekly' && task.recurrenceDays && task.recurrenceDays.length > 0) {
+        let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+
+        // Function to check if all required days in a week are completed
+        const isWeekComplete = (weekStart: Date) => {
+            return task.recurrenceDays!.every(dayId => {
+                const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
+                const checkDate = addDays(weekStart, dayIndex);
+                return completedDates.has(format(checkDate, 'yyyy-MM-dd'));
+            });
+        };
         
-        // Award XP and badges for streaks
-        if (streak > (currentTaskData.streak || 0)) {
-            await checkAndAwardBadges(task.assigneeId, task.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
+        // Start checking from the current week
+        if (!isWeekComplete(checkWeekStart)) {
+            // If current week is not complete, check the previous week
+            checkWeekStart = subWeeks(checkWeekStart, 1);
         }
+
+        while(isWeekComplete(checkWeekStart)) {
+            streak++;
+            checkWeekStart = subWeeks(checkWeekStart, 1);
+        }
+    }
+
+    updateData.streak = streak;
+    updateData.bestStreak = Math.max(currentTaskData.bestStreak || 0, streak);
+    
+    // Award XP and badges for streaks
+    if (streak > (currentTaskData.streak || 0)) {
+        await checkAndAwardBadges(task.assigneeId, task.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
     }
         
     await updateDoc(taskRef, updateData);
