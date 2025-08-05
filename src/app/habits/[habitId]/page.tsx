@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isBefore, parseISO, isSameDay, getDay, subWeeks, addWeeks, isToday } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isBefore, parseISO, isSameDay, getDay, subWeeks, addWeeks, isToday, subDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Check, X, Pencil, CheckSquare } from "lucide-react";
 
@@ -213,7 +213,7 @@ export default function HabitDetailPage() {
                     const todayForComparison = new Date();
                     todayForComparison.setHours(23, 59, 59, 999);
                     
-                    let isSelectable = !isBefore(day, habitStartDate) && day <= todayForComparison;
+                    let isSelectable = !isBefore(day, subDays(habitStartDate,1)) && day <= todayForComparison;
 
                     if (habit.recurrenceType === 'monthly') {
                       if (day.getDate() !== habitStartDate.getDate()) {
@@ -247,5 +247,4 @@ export default function HabitDetailPage() {
     </div>
   );
 }
-
     
