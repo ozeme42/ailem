@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import Link from 'next/link';
 import { format, addDays, startOfWeek, isSameDay, parseISO, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,52 +59,58 @@ export function HabitTrackerCard({ task, assignee, onToggleDay }: HabitTrackerCa
 
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>{task.title}</CardTitle>
-                <CardDescription>
-                    Sorumlu: {assignee?.name || 'Bilinmeyen'}
-                </CardDescription>
+    <Link href={`/habits/${task.id}`} className="group block">
+        <Card className="transition-all group-hover:shadow-lg group-hover:border-primary/30">
+        <CardHeader>
+            <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle>{task.title}</CardTitle>
+                    <CardDescription>
+                        Sorumlu: {assignee?.name || 'Bilinmeyen'}
+                    </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300 px-3 py-1.5 rounded-full">
+                    <Flame className="w-5 h-5"/>
+                    <span className="font-bold text-lg">{streak}</span>
+                </div>
             </div>
-            <div className="flex items-center gap-2 bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300 px-3 py-1.5 rounded-full">
-                <Flame className="w-5 h-5"/>
-                <span className="font-bold text-lg">{streak}</span>
-            </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between gap-1">
-          {weekDays.map(day => {
-            const dayKey = format(day, 'yyyy-MM-dd');
-            const isCompleted = completedDates.has(dayKey);
-            return (
-                <TooltipProvider key={dayKey}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <div 
-                                className="flex flex-col items-center gap-2 cursor-pointer"
-                                onClick={() => onToggleDay(task, day, !isCompleted)}
-                             >
-                                <div className={cn(
-                                    "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all",
-                                    isCompleted ? "bg-green-500 border-green-600" : "bg-muted border-muted-foreground/30 hover:border-primary"
-                                )}>
-                                    {isCompleted && <Check className="h-6 w-6 text-white"/>}
+        </CardHeader>
+        <CardContent>
+            <div className="flex items-center justify-between gap-1">
+            {weekDays.map(day => {
+                const dayKey = format(day, 'yyyy-MM-dd');
+                const isCompleted = completedDates.has(dayKey);
+                return (
+                    <TooltipProvider key={dayKey}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div 
+                                    className="flex flex-col items-center gap-2"
+                                    onClick={(e) => {
+                                        e.preventDefault(); // Prevent link navigation
+                                        e.stopPropagation(); // Stop event bubbling
+                                        onToggleDay(task, day, !isCompleted);
+                                    }}
+                                >
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer",
+                                        isCompleted ? "bg-green-500 border-green-600" : "bg-muted border-muted-foreground/30 hover:border-primary"
+                                    )}>
+                                        {isCompleted && <Check className="h-6 w-6 text-white"/>}
+                                    </div>
+                                    <span className="text-xs capitalize font-medium text-muted-foreground">{format(day, 'EEE', { locale: tr })}</span>
                                 </div>
-                                <span className="text-xs capitalize font-medium text-muted-foreground">{format(day, 'EEE', { locale: tr })}</span>
-                            </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                           <p>{format(day, 'd MMMM yyyy', { locale: tr })}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )
-          })}
-        </div>
-      </CardContent>
-    </Card>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                            <p>{format(day, 'd MMMM yyyy', { locale: tr })}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )
+            })}
+            </div>
+        </CardContent>
+        </Card>
+    </Link>
   );
 }
