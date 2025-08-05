@@ -92,6 +92,8 @@ export default function HabitDetailPage() {
   if (!habit) {
     return <PageHeader title="Alışkanlık Bulunamadı" />;
   }
+  
+  const habitStartDate = habit.dueDate ? parseISO(habit.dueDate) : new Date(0);
 
   if (habit.recurrenceType === 'weekly' && habit.recurrenceDays && habit.recurrenceDays.length > 0) {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -103,8 +105,12 @@ export default function HabitDetailPage() {
             const dayIndex = orderedWeekDays.indexOf(dayId);
             const date = addDays(weekStart, dayIndex);
             const isCompleted = habit.completedDates?.includes(format(date, 'yyyy-MM-dd')) || false;
-            const isPastOrToday = isBefore(date, addDays(new Date(), 1));
-            return { date, name: dayIdToName[dayId], isCompleted, isPastOrToday };
+            
+            const todayForComparison = new Date();
+            todayForComparison.setHours(23, 59, 59, 999);
+            const isSelectable = isBefore(date, todayForComparison) && !isBefore(date, subDays(habitStartDate, 1));
+            
+            return { date, name: dayIdToName[dayId], isCompleted, isSelectable };
         });
 
     return (
@@ -134,12 +140,11 @@ export default function HabitDetailPage() {
             {relevantWeekDays.map(day => (
                 <div 
                     key={day.date.toString()}
-                    onClick={() => day.isPastOrToday && handleToggleDay(day.date)}
+                    onClick={() => day.isSelectable && handleToggleDay(day.date)}
                     className={cn(
-                        "p-4 border rounded-lg flex items-center justify-between cursor-pointer transition-colors",
+                        "p-4 border rounded-lg flex items-center justify-between transition-colors",
                         day.isCompleted && "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-800",
-                        !day.isPastOrToday && "opacity-50 cursor-not-allowed",
-                        day.isPastOrToday && "hover:bg-muted/50"
+                        day.isSelectable ? "cursor-pointer hover:bg-muted/50" : "opacity-50 cursor-not-allowed",
                     )}
                 >
                     <div className="flex flex-col">
@@ -168,7 +173,6 @@ export default function HabitDetailPage() {
     day = addDays(day, 1);
   }
   const weekHeaderDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
-  const habitStartDate = habit.dueDate ? parseISO(habit.dueDate) : new Date(0);
 
   return (
     <div className="space-y-6">
