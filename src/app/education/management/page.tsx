@@ -807,9 +807,26 @@ export default function EducationManagementPage() {
                                         <p className="font-semibold">{test.title}</p>
                                         <p className="text-sm text-muted-foreground">{student?.name || 'Bilinmeyen Öğrenci'}</p>
                                      </div>
-                                     <Button size="sm" onClick={() => openGradeDialog(test)}>
-                                        Sonuç Gir
-                                     </Button>
+                                     <div className="flex items-center gap-1">
+                                        <Button size="sm" onClick={() => openGradeDialog(test)}>
+                                            Sonuç Gir
+                                        </Button>
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Ödevi sil?</AlertDialogTitle>
+                                                    <AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                     </div>
                                  </div>
                              )
                         })}
