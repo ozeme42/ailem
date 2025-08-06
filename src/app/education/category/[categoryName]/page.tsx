@@ -71,6 +71,7 @@ export default function CategoryDetailPage() {
   const { filteredTests, topicStats } = React.useMemo(() => {
     const getCategoryName = (test: Test): string => {
       if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+      if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
       if (test.subject) return test.subject;
       return 'Diğer';
     };

@@ -32,6 +32,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Sosyal Bilgiler': Globe,
     'İngilizce': MessageSquare,
     'Serbest Etkinlikler': Gamepad2,
+    'Yanlış Havuzu': NotebookText,
     'Diğer': FileText,
 };
 
@@ -43,6 +44,7 @@ const categoryColors: { [key: string]: string } = {
     'Sosyal Bilgiler': 'border-cyan-500/80 text-cyan-600',
     'İngilizce': 'border-blue-500/80 text-blue-600',
     'Serbest Etkinlikler': 'border-purple-500/80 text-purple-600',
+    'Yanlış Havuzu': 'border-pink-500/80 text-pink-600',
     'Diğer': 'border-gray-500/80 text-gray-600',
 };
 
@@ -54,6 +56,7 @@ const categoryProgressColors: { [key: string]: string } = {
     'Sosyal Bilgiler': 'bg-cyan-500',
     'İngilizce': 'bg-blue-500',
     'Serbest Etkinlikler': 'bg-purple-500',
+    'Yanlış Havuzu': 'bg-pink-500',
     'Diğer': 'bg-gray-500',
 };
 
@@ -150,6 +153,7 @@ export default function EducationPage() {
 
     const getCategoryName = (test: Test): string => {
         if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+        if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
         if (availableSubjects.includes(test.subject)) return test.subject;
         return 'Diğer';
     }
@@ -165,7 +169,7 @@ export default function EducationPage() {
         }
     });
 
-    const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Diğer'];
+    const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Yanlış Havuzu', 'Diğer'];
     
     return Object.entries(categories).sort(([a], [b]) => {
         const indexA = categoryOrder.indexOf(a);
