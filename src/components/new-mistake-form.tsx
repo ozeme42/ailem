@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -7,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/components/auth-provider';
 import { useToast } from '@/hooks/use-toast';
-import { onSubjectsUpdate, updateSubjects, addMistake } from '@/lib/dataService';
+import { onSubjectsUpdate, updateSubjects, addMistake, onTopicsUpdate, updateTopics } from '@/lib/dataService';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -55,7 +56,11 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
 
   React.useEffect(() => {
     const unsubSubjects = onSubjectsUpdate(setAllSubjects);
-    return () => unsubSubjects();
+    const unsubTopics = onTopicsUpdate(setAllTopics);
+    return () => {
+        unsubSubjects();
+        unsubTopics();
+    };
   }, []);
 
   const handleCreateSubject = async (subjectName: string) => {
@@ -64,7 +69,8 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
   };
   
   const handleCreateTopic = async (topicName: string) => {
-    setAllTopics(prev => [...new Set([...prev, topicName])]);
+    const newTopics = [...new Set([...allTopics, topicName])];
+    await updateTopics(newTopics);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {

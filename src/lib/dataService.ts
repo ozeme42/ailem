@@ -651,6 +651,35 @@ export const updateSubjects = async (subjects: string[]) => {
     await setDoc(docRef, { educationSubjects: subjects }, { merge: true });
 };
 
+export const onTopicsUpdate = (callback: (topics: string[]) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, (user) => {
+        if (user) {
+             const userDocRef = doc(db, 'users', user.uid);
+            onSnapshot(userDocRef, (userDoc) => {
+                 if (userDoc.exists()) {
+                    const familyId = userDoc.data().familyId;
+                    if (familyId) {
+                        const topicsDocRef = doc(db, 'familyManagement', familyId);
+                        return onSnapshot(topicsDocRef, (doc) => {
+                           callback(doc.exists() ? doc.data().educationTopics || [] : []);
+                        });
+                    }
+                }
+                callback([]);
+            });
+        } else {
+            callback([]);
+        }
+    });
+};
+export const updateTopics = async (topics: string[]) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    const docRef = doc(db, 'familyManagement', familyId);
+    await setDoc(docRef, { educationTopics: topics }, { merge: true });
+};
+
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void) => onFamilyDataUpdate<Test>('tests', callback);
 export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
@@ -668,7 +697,7 @@ export const addQuestionBank = async (data: Omit<QuestionBank, 'id' | 'familyId'
     return addDoc(collection(db, 'questionBanks'), { ...data, familyId });
 };
 export const updateQuestionBank = (id: string, data: Partial<Omit<QuestionBank, 'id'>>) => updateDoc(doc(db, 'questionBanks', id), data);
-export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, 'questionBanks', id));
+export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, "questionBanks", id));
 
 
 export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void, runOnce = false) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback, runOnce);
@@ -1259,6 +1288,7 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
             });
         };
         
+        // Start checking from the current week. If it's not complete, check the previous week.
         let currentWeekIsComplete = isWeekComplete(checkWeekStart);
         if(!currentWeekIsComplete) {
             checkWeekStart = subWeeks(checkWeekStart, 1);

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -8,13 +9,15 @@ import { Mistake } from "@/lib/data";
 import { onMistakesUpdate, deleteMistake } from "@/lib/dataService";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2 } from "lucide-react";
+import { PlusCircle, Trash2, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send } from "lucide-react";
 import { NewMistakeForm } from "@/components/new-mistake-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { NewTestForm } from "@/components/new-test-form";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Matematik': Ruler,
@@ -26,10 +29,16 @@ const categoryIcons: { [key: string]: React.ElementType } = {
 };
 
 export default function MistakePoolPage() {
-    const { user } = useAuth();
+    const { user, familyMembers } = useAuth();
     const [mistakes, setMistakes] = React.useState<Mistake[]>([]);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [selectedMistakes, setSelectedMistakes] = React.useState<Mistake[]>([]);
+    const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = React.useState(false);
     const { toast } = useToast();
+    
+    const studentMembers = React.useMemo(() => 
+        familyMembers.filter(m => m.role.includes('Çocuk')), 
+    [familyMembers]);
 
     React.useEffect(() => {
         if (!user) return;
@@ -59,27 +68,48 @@ export default function MistakePoolPage() {
             toast({ title: "Hata", description: "Soru silinirken bir hata oluştu.", variant: "destructive" });
         }
     };
+    
+    const handleToggleSelection = (mistake: Mistake) => {
+        setSelectedMistakes(prev => {
+            const isSelected = prev.some(m => m.id === mistake.id);
+            return isSelected ? prev.filter(m => m.id !== mistake.id) : [...prev, mistake];
+        });
+    };
+    
+    const handleAssignTest = () => {
+        if (selectedMistakes.length === 0) {
+            toast({ title: "Hiç Soru Seçilmedi", description: "Lütfen ödev oluşturmak için en az bir soru seçin.", variant: "destructive" });
+            return;
+        }
+        setIsAssignmentDialogOpen(true);
+    };
 
     return (
         <div className="space-y-6">
             <PageHeader title="Yanlış Havuzu">
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Yeni Soru Ekle
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Yeni Yanlış Soru Ekle</DialogTitle>
-                            <DialogDescription>
-                                Fotoğrafını çekerek yanlış yapılan bir soruyu havuza ekleyin.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <NewMistakeForm onFormSubmit={() => setIsFormOpen(false)} />
-                    </DialogContent>
-                </Dialog>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleAssignTest} disabled={selectedMistakes.length === 0}>
+                        <Send className="mr-2 h-4 w-4" />
+                        Seçilenlerden Ödev Oluştur ({selectedMistakes.length})
+                    </Button>
+                    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Yeni Soru Ekle
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Yeni Yanlış Soru Ekle</DialogTitle>
+                                <DialogDescription>
+                                    Fotoğrafını çekerek yanlış yapılan bir soruyu havuza ekleyin.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <NewMistakeForm onFormSubmit={() => setIsFormOpen(false)} />
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </PageHeader>
             
             {Object.keys(groupedMistakes).length > 0 ? (
@@ -105,6 +135,13 @@ export default function MistakePoolPage() {
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                                     {topicMistakes.map(mistake => (
                                                         <Card key={mistake.id} className="relative group overflow-hidden">
+                                                            <div className="absolute top-2 left-2 z-10">
+                                                                <Checkbox 
+                                                                    className="h-6 w-6 bg-white"
+                                                                    checked={selectedMistakes.some(m => m.id === mistake.id)}
+                                                                    onCheckedChange={() => handleToggleSelection(mistake)}
+                                                                />
+                                                            </div>
                                                             <Image src={mistake.imageUrl} alt="Yanlış Soru" width={300} height={400} className="object-cover w-full h-auto aspect-[3/4]" data-ai-hint="question paper"/>
                                                             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                  <AlertDialog>
@@ -144,6 +181,29 @@ export default function MistakePoolPage() {
                     </CardContent>
                 </Card>
             )}
+             <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Yanlışlardan Ödev Oluştur</DialogTitle>
+                        <DialogDescription>
+                            Seçilen {selectedMistakes.length} soruyu bir öğrenciye ata.
+                        </DialogDescription>
+                    </DialogHeader>
+                     <NewTestForm
+                        students={studentMembers}
+                        questionBanks={[]}
+                        practiceExams={[]}
+                        onAssign={() => {
+                            toast({ title: "Ödev Atandı!" });
+                            setIsAssignmentDialogOpen(false);
+                            setSelectedMistakes([]);
+                        }}
+                        availableSubjects={[]}
+                        onSubjectCreated={() => {}}
+                        mistakePoolSelection={selectedMistakes}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

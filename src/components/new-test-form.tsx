@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember } from "@/lib/data";
+import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, Mistake } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
@@ -24,13 +25,13 @@ import { Combobox } from "./ui/combobox";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 
-export type AssignmentType = "quick" | "bank" | "exam";
+export type AssignmentType = "quick" | "bank" | "exam" | "mistake";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
   
   // Tab control - not submitted, just for validation logic
-  activeTab: z.enum(["quick", "bank", "exam"]),
+  activeTab: z.enum(["quick", "bank", "exam", "mistake"]),
 
   // Quick Test
   title: z.string().optional(),
@@ -45,6 +46,9 @@ const formSchema = z.object({
 
   // Exam
   examId: z.string().optional(),
+
+  // Mistake
+  mistakeIds: z.array(z.string()).optional(),
 
   // Dates
   assignedDate: z.date().optional(),
@@ -67,6 +71,15 @@ const formSchema = z.object({
     message: "Lütfen bir ders seçin veya oluşturun.",
     path: ["subject"],
 }).refine((data) => {
+    if (data.activeTab === 'mistake') {
+      return !!data.mistakeIds && data.mistakeIds.length > 0;
+    }
+    return true;
+}, {
+    message: "Lütfen en az bir yanlış soru seçin.",
+    path: ["mistakeIds"],
+})
+.refine((data) => {
     if (data.assignedDate && data.dueDate) {
         return data.dueDate >= data.assignedDate;
     }
@@ -85,9 +98,10 @@ type NewTestFormProps = {
   initialData?: Test | null;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
+  mistakePoolSelection?: Mistake[]; // From mistake pool
 };
 
-export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated }: NewTestFormProps) {
+export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated, mistakePoolSelection }: NewTestFormProps) {
   const [activeTab, setActiveTab] = React.useState<AssignmentType>(initialData?.sourceType || "quick");
   const [selectedBankId, setSelectedBankId] = React.useState<string | null>(initialData?.sourceId || null);
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
@@ -110,6 +124,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       topicId: initialData?.sourceType === 'bank' ? initialData.topicId : "",
       // Exam Test
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : "",
+      // Mistake Test
+      mistakeIds: mistakePoolSelection?.map(m => m.id),
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
     },
@@ -121,7 +137,12 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   };
 
   React.useEffect(() => {
-    const parseDate = (dateString: string | undefined) => {
+    if (mistakePoolSelection && mistakePoolSelection.length > 0) {
+      handleTabChange('mistake');
+      form.setValue('mistakeIds', mistakePoolSelection.map(m => m.id));
+      form.setValue('title', 'Yanlış Sorular Tekrar Testi');
+    } else {
+      const parseDate = (dateString: string | undefined) => {
         if (!dateString) return undefined;
         try {
             return parse(dateString, 'dd MMMM yyyy', new Date(), { locale: tr });
@@ -165,7 +186,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           dueDate: undefined,
       });
     }
-  }, [initialData, form]);
+    }
+  }, [initialData, form, mistakePoolSelection]);
 
   const gradingType = form.watch("gradingType");
   const questionCount = form.watch("questionCount") || 0;
@@ -179,7 +201,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     
     let newTest: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'> | null = null;
     
-    const currentActiveTab = initialData?.sourceType || activeTab;
+    const currentActiveTab = mistakePoolSelection && mistakePoolSelection.length > 0 ? 'mistake' : (initialData?.sourceType || activeTab);
 
     if (currentActiveTab === 'quick') {
         newTest = {
@@ -226,6 +248,18 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                 answerKey: exam.answerKey,
             }
         }
+    } else if (currentActiveTab === 'mistake' && values.mistakeIds) {
+      newTest = {
+        title: "Yanlış Sorular Tekrar Testi",
+        subject: "Yanlış Havuzu",
+        studentId: values.studentId,
+        questionCount: values.mistakeIds.length,
+        assignedDate,
+        dueDate,
+        sourceType: 'mistake',
+        mistakeIds: values.mistakeIds,
+        gradingType: 'manual-text',
+      }
     }
     
     if (newTest) {
@@ -239,9 +273,9 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   return (
     <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="quick" disabled={!!initialData && initialData.sourceType !== 'quick'}>Hızlı Test</TabsTrigger>
-            <TabsTrigger value="bank" disabled={!!initialData && initialData.sourceType !== 'bank'}>Soru Bankası</TabsTrigger>
-            <TabsTrigger value="exam" disabled={!!initialData && initialData.sourceType !== 'exam'}>Deneme</TabsTrigger>
+            <TabsTrigger value="quick" disabled={!!initialData && initialData.sourceType !== 'quick' || !!mistakePoolSelection}>Hızlı Test</TabsTrigger>
+            <TabsTrigger value="bank" disabled={!!initialData && initialData.sourceType !== 'bank' || !!mistakePoolSelection}>Soru Bankası</TabsTrigger>
+            <TabsTrigger value="exam" disabled={!!initialData && initialData.sourceType !== 'exam' || !!mistakePoolSelection}>Deneme</TabsTrigger>
         </TabsList>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -502,6 +536,22 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                      <FormDescription>
                         Seçilen deneme sınavı öğrenciye atanacaktır.
                     </FormDescription>
+                </TabsContent>
+
+                <TabsContent value="mistake" className="space-y-4 m-0">
+                  <FormField name="mistakeIds" render={() => (
+                     <FormItem>
+                      <FormLabel>Yanlış Sorular</FormLabel>
+                      <FormControl>
+                          <div className="p-4 border rounded-md max-h-48 overflow-y-auto">
+                            <p className="text-sm text-muted-foreground">
+                              {mistakePoolSelection?.length || 0} adet yanlış soru bu ödeve eklenecek.
+                            </p>
+                          </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </TabsContent>
                 
                 <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>
