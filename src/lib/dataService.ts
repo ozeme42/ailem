@@ -661,7 +661,7 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
 export const deleteTest = (id: string) => deleteDoc(doc(db, "tests", id));
 
 
-export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void) => onFamilyDataUpdate<QuestionBank>('questionBanks', callback);
+export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void, runOnce = false) => onFamilyDataUpdate<QuestionBank>('questionBanks', callback, runOnce);
 export const addQuestionBank = async (data: Omit<QuestionBank, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
@@ -671,7 +671,7 @@ export const updateQuestionBank = (id: string, data: Partial<Omit<QuestionBank, 
 export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, 'questionBanks', id));
 
 
-export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback);
+export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void, runOnce = false) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback, runOnce);
 export const addPracticeExam = async (data: Omit<PracticeExam, 'id'| 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");

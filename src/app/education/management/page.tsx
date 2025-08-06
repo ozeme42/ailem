@@ -73,7 +73,7 @@ const newStudyPlanSchema = z.object({
 });
 
 
-function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, onOpenEditExam, onOpenEditTest, onArchiveTest, onDeleteTest }) {
+function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, onDeleteBank, onOpenEditExam, onDeleteExam, onOpenEditTest, onArchiveTest, onDeleteTest }) {
     const { familyMembers } = useAuth();
 
     const contentByCategory = React.useMemo(() => {
@@ -145,6 +145,13 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <Button variant="ghost" size="icon" onClick={() => onOpenEditBank(bank)}><Edit className="w-4 h-4"/></Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader><AlertDialogTitle>Soru Bankasını Sil</AlertDialogTitle><AlertDialogDescription>"{bank.name}" soru bankası kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteBank(bank.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                             </div>
                                         </Card>
@@ -160,6 +167,13 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <Button variant="ghost" size="icon" onClick={() => onOpenEditExam(exam)}><Edit className="w-4 h-4"/></Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader><AlertDialogTitle>Sınavı Sil</AlertDialogTitle><AlertDialogDescription>"{exam.name}" deneme sınavı kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteExam(exam.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                             </div>
                                         </Card>
@@ -655,6 +669,15 @@ export default function EducationManagementPage() {
              toast({ title: "❌ Kaydetme Hatası", variant: 'destructive'});
         }
     };
+    
+    const handleDeleteBank = async (bankId: string) => {
+        try {
+            await deleteQuestionBank(bankId);
+            toast({ title: "🗑️ Soru Bankası Silindi", variant: "destructive" });
+        } catch (error) {
+            toast({ title: "❌ Silme Hatası", variant: 'destructive' });
+        }
+    }
 
     const handleExamSubmit = async (examData: Omit<PracticeExam, 'id' | 'familyId'>, id?: string) => {
         try {
@@ -671,6 +694,15 @@ export default function EducationManagementPage() {
             toast({ title: "❌ Kaydetme Hatası", variant: 'destructive'});
         }
     };
+    
+    const handleDeleteExam = async (examId: string) => {
+        try {
+            await deletePracticeExam(examId);
+            toast({ title: "🗑️ Deneme Sınavı Silindi", variant: "destructive" });
+        } catch (error) {
+            toast({ title: "❌ Silme Hatası", variant: 'destructive' });
+        }
+    }
 
     const handleTestSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
         try {
@@ -797,7 +829,9 @@ export default function EducationManagementPage() {
                         practiceExams={practiceExams}
                         tests={tests}
                         onOpenEditBank={openEditBankDialog}
+                        onDeleteBank={handleDeleteBank}
                         onOpenEditExam={openEditExamDialog}
+                        onDeleteExam={handleDeleteExam}
                         onOpenEditTest={openEditTestDialog}
                         onArchiveTest={handleArchiveTest}
                         onDeleteTest={handleDeleteTest}
