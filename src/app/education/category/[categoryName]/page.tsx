@@ -70,10 +70,12 @@ export default function CategoryDetailPage() {
 
   const { filteredTests, topicStats } = React.useMemo(() => {
     const getCategoryName = (test: Test): string => {
-      if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-      if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
-      if (test.subject) return test.subject;
-      return 'Diğer';
+        if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+        if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
+        // Note: `availableSubjects` is not available here, but we can rely on `test.subject`
+        // as the main identifier for bank/quick tests. The main page already grouped them.
+        if (test.subject) return test.subject;
+        return 'Diğer';
     };
     
     const testsForCategory = allTests
