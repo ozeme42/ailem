@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -20,9 +20,11 @@ import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
+type AnswerKey = { [key: string]: string };
 
 export default function OpticalFormPage() {
     const router = useRouter();
@@ -39,6 +41,9 @@ export default function OpticalFormPage() {
     const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<string>>(new Set());
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [mistakePoolQuestions, setMistakePoolQuestions] = React.useState<any[]>([]);
+    
+    const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: number[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], answerKey: null });
+
 
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
@@ -210,6 +215,46 @@ export default function OpticalFormPage() {
         return () => unsubscribe();
     }, [testId]);
 
+    React.useEffect(() => {
+        if (test?.status === 'Sonuçlandı' && test.gradingType === 'auto') {
+            const fetchAnswerKeyAndCompare = async () => {
+                let answerKey: AnswerKey | undefined = undefined;
+    
+                if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
+                    const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
+                    if (bankDoc.exists()) {
+                        const bank = bankDoc.data() as QuestionBank;
+                        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
+                        answerKey = topic?.answerKey;
+                    }
+                } else if (test.sourceType === 'exam' && test.sourceId) {
+                    const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
+                    if (examDoc.exists()) {
+                        const exam = examDoc.data() as PracticeExam;
+                        answerKey = exam?.answerKey;
+                    }
+                } else if (test.sourceType === 'quick') {
+                    answerKey = test.answerKey;
+                }
+    
+                if (answerKey) {
+                    const incorrectQuestions: number[] = [];
+                    const studentAnswers = test.studentAnswers || {};
+                    for (let i = 1; i <= test.questionCount; i++) {
+                        const studentAns = studentAnswers[i];
+                        const correctAns = (answerKey as any)[i];
+                        if (studentAns && studentAns !== correctAns) {
+                            incorrectQuestions.push(i);
+                        }
+                    }
+                    setResultDetails({ incorrectQuestions, answerKey });
+                }
+            };
+    
+            fetchAnswerKeyAndCompare();
+        }
+    }, [test]);
+
 
     React.useEffect(() => {
         if (!test || test.status !== 'Atandı' || isPaused) return;
@@ -260,7 +305,7 @@ export default function OpticalFormPage() {
 
     if (test.status === 'Sonuçlandı') {
         return (
-            <div className="container mx-auto py-8">
+            <div className="container mx-auto py-8 space-y-6">
                 <header className="mb-4">
                     <Button variant="ghost" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Geri
@@ -294,6 +339,29 @@ export default function OpticalFormPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {test.gradingType === 'auto' && resultDetails.incorrectQuestions.length > 0 && (
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <ListX className="text-destructive"/> Yanlış Yapılan Sorular
+                            </CardTitle>
+                            <CardDescription>
+                                Yanlış cevaplanan soruların numaraları ve doğru cevapları.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-wrap gap-3">
+                                {resultDetails.incorrectQuestions.map(qNumber => (
+                                    <div key={qNumber} className="p-2 rounded-md border text-center bg-destructive/10">
+                                        <p className="font-bold text-lg text-destructive">{qNumber}</p>
+                                        <p className="text-xs font-semibold">Doğru: {resultDetails.answerKey?.[qNumber] || '?'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         );
     }
