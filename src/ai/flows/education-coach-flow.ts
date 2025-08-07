@@ -11,7 +11,7 @@ const MediaPartSchema = z.object({
   url: z.string(),
 });
 const ContentPartSchema = z.object({
-  text: z.string(),
+  text: z.string().optional(),
   media: MediaPartSchema.optional(),
 });
 const CoachMessageSchema = z.object({
@@ -19,7 +19,7 @@ const CoachMessageSchema = z.object({
   content: z.array(ContentPartSchema),
   id: z.string().optional(),
 });
-export type CoachMessage = z.infer<typeof CoachMessageSchema>;
+type CoachMessage = z.infer<typeof CoachMessageSchema>;
 
 // Tool to get available subjects and topics
 const getAvailableTopicsTool = ai.defineTool(
@@ -71,14 +71,13 @@ const analyzeQuestionImageTool = ai.defineTool(
     Provide the solution in Turkish.`;
 
     const llmResponse = await ai.generate({
-      prompt: prompt,
+      prompt,
       model: 'googleai/gemini-pro-vision',
       input: {
-        questionImage,
-        studentQuery: studentQuery || '',
-      }
+        questionImage: questionImage,
+        studentQuery: studentQuery,
+      },
     });
-
     return llmResponse.text;
   }
 );
