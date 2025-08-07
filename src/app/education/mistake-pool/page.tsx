@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { NewTestForm } from "@/components/new-test-form";
 import { onQuestionBanksUpdate, onPracticeExamsUpdate, onSubjectsUpdate, addTest } from "@/lib/dataService";
 import { QuestionBank, PracticeExam, FamilyMember } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Matematik': Ruler,
@@ -102,7 +103,18 @@ export default function MistakePoolPage() {
 
      const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
         try {
-            await addTest({ ...testData, status: 'Atandı', isArchived: false, sourceType: 'mistake', subject: 'Yanlış Havuzu', gradingType: 'manual-text' });
+            const finalTestData = {
+                ...testData,
+                status: 'Atandı' as const,
+                isArchived: false,
+                sourceType: 'mistake' as const,
+                subject: 'Yanlış Havuzu',
+                gradingType: 'manual-text' as const,
+                mistakeIds: selectedMistakes.map(m => m.id),
+                title: testData.title || `Yanlış Tekrar Testi - ${new Date().toLocaleDateString('tr-TR')}`
+            };
+
+            await addTest(finalTestData);
             toast({ title: "✅ Ödev Atandı", description: "Yanlış sorularından oluşan yeni ödev başarıyla öğrenciye atandı." });
             setIsAssignmentDialogOpen(false);
             setSelectedMistakes([]);
@@ -129,13 +141,18 @@ export default function MistakePoolPage() {
         <div className="space-y-6">
             <PageHeader title="Yanlış Havuzu">
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={openAssignmentDialog} disabled={selectedMistakes.length === 0}>
+                    <Button
+                        variant="outline"
+                        onClick={openAssignmentDialog}
+                        disabled={selectedMistakes.length === 0}
+                        className="bg-white/20 text-white hover:bg-white/30 border-none"
+                    >
                         <Send className="mr-2 h-4 w-4" />
                         Seçilenlerden Ödev Ata ({selectedMistakes.length})
                     </Button>
                     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                         <DialogTrigger asChild>
-                            <Button>
+                            <Button className="bg-white/20 text-white hover:bg-white/30 border-none">
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Yeni Soru Ekle
                             </Button>
