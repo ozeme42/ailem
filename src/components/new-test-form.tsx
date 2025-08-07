@@ -121,6 +121,12 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     }
   }, [mistakePoolSelection, form]);
 
+  React.useEffect(() => {
+    if (students.length === 1 && !initialData) {
+      form.setValue("studentId", students[0].id);
+    }
+  }, [students, form, initialData]);
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
@@ -217,7 +223,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Öğrenci</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={students.length === 1}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Öğrenci seçin" /></SelectTrigger></FormControl>
                   <SelectContent>{students.map((student) => (<SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>))}</SelectContent>
                 </Select>
