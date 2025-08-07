@@ -1349,8 +1349,10 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
     updatePayload.streak = streak;
     updatePayload.bestStreak = Math.max(taskData.bestStreak || 0, streak);
     
-    if (streak > (taskData.streak || 0)) {
-        await checkAndAwardBadges(taskData.assigneeId, taskData.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
+    if (isCompleted) {
+        if (streak > (taskData.streak || 0)) {
+            await checkAndAwardBadges(taskData.assigneeId, taskData.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
+        }
     }
         
     await updateDoc(taskRef, updatePayload);

@@ -53,10 +53,11 @@ export default function TasksPage() {
     return familyMembers.find((m) => m.id === assigneeId);
   };
 
-  const handleToggleDay = async (task: Task, day: Date, isCompleted: boolean) => {
+  const handleToggleDay = async (taskId: string, day: Date, isCompleted: boolean) => {
       try {
-          await updateHabitCompletion(task, day, isCompleted);
+          await updateHabitCompletion(taskId, day, isCompleted);
       } catch(e) {
+          console.error("Error in handleToggleDay:", e);
           toast({ title: 'Hata', description: 'İşaretleme sırasında bir sorun oluştu.', variant: 'destructive'});
       }
   }
@@ -158,7 +159,7 @@ export default function TasksPage() {
                             key={habit.id}
                             task={habit} 
                             assignee={familyMembers.find(m => m.id === habit.assigneeId)} 
-                            onToggleDay={handleToggleDay}
+                            onToggleDay={(day, isCompleted) => handleToggleDay(habit.id, day, isCompleted)}
                         />
                     ))
                     ) : (

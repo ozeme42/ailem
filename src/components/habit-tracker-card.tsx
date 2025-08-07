@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -15,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 interface HabitTrackerCardProps {
   task: Task;
   assignee?: FamilyMember;
-  onToggleDay: (task: Task, day: Date, isCompleted: boolean) => void;
+  onToggleDay: (day: Date, isCompleted: boolean) => void;
 }
 
 export function HabitTrackerCard({ task, assignee, onToggleDay }: HabitTrackerCardProps) {
@@ -89,7 +90,7 @@ export function HabitTrackerCard({ task, assignee, onToggleDay }: HabitTrackerCa
                                     onClick={(e) => {
                                         e.preventDefault(); // Prevent link navigation
                                         e.stopPropagation(); // Stop event bubbling
-                                        onToggleDay(task, day, !isCompleted);
+                                        onToggleDay(day, !isCompleted);
                                     }}
                                 >
                                     <div className={cn(
