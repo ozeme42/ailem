@@ -72,10 +72,10 @@ const analyzeQuestionImageTool = ai.defineTool(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-2.0-flash', // A model with vision capabilities
+      model: 'googleai/gemini-pro-vision',
       input: {
-        questionImage: questionImage,
-        studentQuery: studentQuery || '', // Ensure studentQuery is always a string
+        questionImage,
+        studentQuery: studentQuery || '',
       }
     });
 
