@@ -36,29 +36,6 @@ const getAvailableTopicsTool = ai.defineTool(
   }
 );
 
-const analyzeImagePrompt = ai.definePrompt(
-    {
-        name: 'analyzeImagePrompt',
-        input: {
-            schema: z.object({
-                questionImage: z.string().describe("Sorunun Base64 kodlanmış data URI'ı."),
-                studentQuery: z.string().describe("Öğrencinin soruyla ilgili ek talebi."),
-            }),
-        },
-        prompt: `You are an expert tutor. A student has uploaded an image of a question they are struggling with. Your task is to provide a clear, step-by-step solution in Turkish.
-
-        1.  **Analyze the Question:** First, carefully analyze the provided image to understand the question.
-        2.  **Step-by-Step Solution:** Break down the solution into logical, easy-to-follow steps. Explain the reasoning behind each step.
-        3.  **Final Answer:** Clearly state the final answer.
-        4.  **Student's Query:** Address the student's additional query if they provided one: "{{studentQuery}}"
-        
-        Image of the question is below:
-        {{media url=questionImage}}
-        `,
-    }
-);
-
-
 // Main Education Coach Flow
 const educationCoachFlow = ai.defineFlow(
   {
@@ -69,44 +46,23 @@ const educationCoachFlow = ai.defineFlow(
   },
   async (history) => {
     
-    const systemPrompt = `You are a friendly and encouraging AI Education Coach for a student. Your goal is to help them learn, understand complex topics, and develop good study habits.
-    
-    Your capabilities:
-    - You can explain any academic subject. Use the getAvailableTopicsTool to see what subjects are already registered in the system to provide context-aware answers.
-    - You can analyze images of questions and provide step-by-step solutions.
-    - You can answer follow-up questions.
-    - You can provide study tips and encouragement.
-    - You must always communicate in Turkish.`;
-    
-    // Check if the last message contains an image
-    const lastMessage = history[history.length - 1];
-    const imagePart = lastMessage.content.find((part: any) => part.media?.url);
-    
-    if (imagePart?.media?.url) {
-        // If there's an image, use the specific image analysis prompt
-        const textPart = lastMessage.content.find((part: any) => part.text);
-        const studentQuery = textPart?.text || '';
+    const systemPrompt = `You are a friendly and encouraging AI Education Coach for a student. Your goal is to help them learn, understand complex topics, and develop good study habits. You must always communicate in Turkish.
 
-        const { stream } = await ai.generateStream({
-            prompt: analyzeImagePrompt,
-            input: {
-                questionImage: imagePart.media.url,
-                studentQuery: studentQuery
-            }
-        });
-        return stream.text;
-
-    } else {
-        // If no image, proceed with the general-purpose generative model
-        const { stream } = await ai.generateStream({
-          model: 'googleai/gemini-2.0-flash',
-          tools: [getAvailableTopicsTool],
-          history: history,
-          prompt: systemPrompt,
-        });
-        
-        return stream.text;
-    }
+    Your capabilities and instructions:
+    - If the user provides an image, it's likely a question they are struggling with. Your primary task is to provide a clear, step-by-step solution in Turkish. First, analyze the image to understand the question. Then, break down the solution into logical, easy-to-follow steps. Finally, clearly state the final answer.
+    - If the user asks for a topic explanation, use the getAvailableTopicsTool to see what subjects are already registered in the system to provide context-aware answers. Then explain the topic clearly.
+    - If the user asks a follow-up question, answer it based on the conversation history.
+    - If the user asks for study tips, provide them with encouragement and effective study strategies.
+    `;
+    
+    const { stream } = await ai.generateStream({
+      model: 'googleai/gemini-2.0-flash',
+      tools: [getAvailableTopicsTool],
+      history: history,
+      prompt: systemPrompt,
+    });
+    
+    return stream.text;
   }
 );
 
