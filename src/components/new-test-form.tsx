@@ -28,58 +28,46 @@ export type AssignmentType = "quick" | "bank" | "exam" | "mistake";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  
   activeTab: z.enum(["quick", "bank", "exam", "mistake"]),
+  assignedDate: z.date().optional(),
+  dueDate: z.date().optional(),
 
+  // Quick Test Fields
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
   gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual-text"),
   answerKey: z.record(z.string()).optional(),
 
+  // Bank/Exam/Mistake Fields
   bankId: z.string().optional(),
   topicId: z.string().optional(),
   examId: z.string().optional(),
   mistakeIds: z.array(z.string()).optional(),
-
-  assignedDate: z.date().optional(),
-  dueDate: z.date().optional(),
 }).refine((data) => {
-    if (data.activeTab === 'quick') {
-      return !!data.title && data.title.length >= 2;
-    }
+    if (data.activeTab === 'quick') return data.title && data.title.length >= 2;
     return true;
-}, {
-    message: "Test başlığı en az 2 karakter olmalıdır.",
-    path: ["title"],
-})
+}, { message: "Test başlığı en az 2 karakter olmalıdır.", path: ["title"] })
 .refine((data) => {
-    if (data.activeTab === 'quick') {
-      return !!data.subject;
-    }
+    if (data.activeTab === 'quick') return !!data.subject;
     return true;
-}, {
-    message: "Lütfen bir ders seçin veya oluşturun.",
-    path: ["subject"],
-}).refine((data) => {
-    if (data.activeTab === 'mistake') {
-      return !!data.mistakeIds && data.mistakeIds.length > 0;
-    }
-    return true;
-}, {
-    message: "Lütfen en az bir yanlış soru seçin.",
-    path: ["mistakeIds"],
-})
+}, { message: "Lütfen bir ders seçin veya oluşturun.", path: ["subject"] })
 .refine((data) => {
-    if (data.assignedDate && data.dueDate) {
-        return data.dueDate >= data.assignedDate;
-    }
+    if (data.activeTab === 'bank') return !!data.bankId && !!data.topicId;
     return true;
-}, {
-    message: "Bitiş tarihi, başlangıç tarihinden önce olamaz.",
-    path: ["dueDate"],
-});
-
+}, { message: "Lütfen bir soru bankası ve konu seçin.", path: ["topicId"] })
+.refine((data) => {
+    if (data.activeTab === 'exam') return !!data.examId;
+    return true;
+}, { message: "Lütfen bir deneme sınavı seçin.", path: ["examId"] })
+.refine((data) => {
+    if (data.activeTab === 'mistake') return data.mistakeIds && data.mistakeIds.length > 0;
+    return true;
+}, { message: "Atanacak yanlış soru bulunamadı.", path: ["mistakeIds"] })
+.refine((data) => {
+    if (data.assignedDate && data.dueDate) return data.dueDate >= data.assignedDate;
+    return true;
+}, { message: "Bitiş tarihi, başlangıç tarihinden önce olamaz.", path: ["dueDate"] });
 
 type NewTestFormProps = {
   students: FamilyMember[];
@@ -93,458 +81,254 @@ type NewTestFormProps = {
 };
 
 export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated, mistakePoolSelection }: NewTestFormProps) {
-  const [activeTab, setActiveTab] = React.useState<AssignmentType>(initialData?.sourceType || "quick");
-  const [selectedBankId, setSelectedBankId] = React.useState<string | null>(initialData?.sourceId || null);
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
-
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     shouldUnregister: false,
     defaultValues: {
       studentId: initialData?.studentId || "",
-      activeTab: initialData?.sourceType || 'quick',
-      // Quick Test
-      title: initialData?.sourceType === 'quick' ? initialData.title : "",
-      subject: initialData?.sourceType === 'quick' ? initialData.subject : "",
-      questionCount: initialData?.sourceType === 'quick' ? initialData.questionCount : 20,
-      gradingType: initialData?.sourceType === 'quick' ? initialData.gradingType : "manual-text",
-      answerKey: initialData?.sourceType === 'quick' ? initialData.answerKey : {},
-      // Bank Test
-      bankId: initialData?.sourceType === 'bank' ? initialData.sourceId : "",
-      topicId: initialData?.sourceType === 'bank' ? initialData.topicId : "",
-      // Exam Test
-      examId: initialData?.sourceType === 'exam' ? initialData.sourceId : "",
-      // Mistake Test
+      activeTab: initialData?.sourceType || (mistakePoolSelection ? 'mistake' : 'quick'),
+      title: initialData?.title || "",
+      subject: initialData?.subject || "",
+      questionCount: initialData?.questionCount || 20,
+      gradingType: initialData?.gradingType || "manual-text",
+      answerKey: initialData?.answerKey || {},
+      bankId: initialData?.sourceId || "",
+      topicId: initialData?.topicId || "",
+      examId: initialData?.sourceId || "",
       mistakeIds: mistakePoolSelection?.map(m => m.id),
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
     },
   });
+
+  const activeTab = form.watch("activeTab");
+  const bankId = form.watch("bankId");
+  const gradingType = form.watch("gradingType");
+  const questionCount = form.watch("questionCount") || 0;
   
   const handleTabChange = (value: AssignmentType) => {
-    setActiveTab(value);
     form.setValue('activeTab', value);
+    // Clear other tabs' selections to avoid validation conflicts
+    if (value !== 'quick') { form.setValue('title', ''); form.setValue('subject', ''); }
+    if (value !== 'bank') { form.setValue('bankId', ''); form.setValue('topicId', ''); }
+    if (value !== 'exam') { form.setValue('examId', ''); }
+    if (value !== 'mistake' && !initialData) { form.setValue('mistakeIds', []); }
   };
 
   React.useEffect(() => {
-    if (mistakePoolSelection && mistakePoolSelection.length > 0) {
+     if (mistakePoolSelection && mistakePoolSelection.length > 0) {
       handleTabChange('mistake');
       form.setValue('mistakeIds', mistakePoolSelection.map(m => m.id));
       form.setValue('title', 'Yanlış Sorular Tekrar Testi');
-    } else {
-      const parseDate = (dateString: string | undefined) => {
-        if (!dateString) return undefined;
-        try {
-            return parse(dateString, 'dd MMMM yyyy', new Date(), { locale: tr });
-        } catch (error) {
-            return undefined;
-        }
     }
+  }, [mistakePoolSelection, form]);
 
-    if (initialData) {
-      handleTabChange(initialData.sourceType);
-      setSelectedBankId(initialData.sourceId || null);
-      form.reset({
-        studentId: initialData.studentId,
-        activeTab: initialData.sourceType,
-        title: initialData.sourceType === 'quick' ? initialData.title : "",
-        subject: initialData.subject,
-        questionCount: initialData.questionCount,
-        gradingType: initialData.gradingType || "manual",
-        answerKey: initialData.answerKey || {},
-        bankId: initialData.sourceType === 'bank' ? initialData.sourceId : "",
-        topicId: initialData.sourceType === 'bank' ? initialData.topicId : "",
-        examId: initialData.sourceType === 'exam' ? initialData.sourceId : "",
-        assignedDate: parseDate(initialData.assignedDate),
-        dueDate: parseDate(initialData.dueDate),
-      });
-    } else {
-      handleTabChange('quick');
-      setSelectedBankId(null);
-      form.reset({
-          studentId: "",
-          activeTab: 'quick',
-          questionCount: 20,
-          title: "",
-          subject: "",
-          gradingType: "manual-text",
-          answerKey: {},
-          bankId: "",
-          topicId: "",
-          examId: "",
-          assignedDate: undefined,
-          dueDate: undefined,
-      });
-    }
-    }
-  }, [initialData, form, mistakePoolSelection]);
-
-  const gradingType = form.watch("gradingType");
-  const questionCount = form.watch("questionCount") || 0;
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
     const dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
     
-    let newTest: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'> | null = null;
-    
-    const currentActiveTab = form.getValues('activeTab');
+    let testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>;
 
-    if (currentActiveTab === 'quick') {
-        newTest = {
-            title: values.title!,
-            subject: values.subject!,
-            studentId: values.studentId,
-            questionCount: values.questionCount || 0,
-            assignedDate,
-            dueDate,
-            sourceType: 'quick',
-            gradingType: values.gradingType,
-            answerKey: values.gradingType === 'auto' ? values.answerKey : undefined,
-        }
-    } else if (currentActiveTab === 'bank' && values.bankId && values.topicId) {
-        const bank = questionBanks.find(b => b.id.toString() === values.bankId);
+    switch (values.activeTab) {
+      case 'quick':
+        testData = {
+          title: values.title!,
+          subject: values.subject!,
+          studentId: values.studentId,
+          questionCount: values.questionCount || 0,
+          assignedDate, dueDate,
+          sourceType: 'quick',
+          gradingType: values.gradingType,
+          answerKey: values.gradingType === 'auto' ? values.answerKey : undefined,
+        };
+        break;
+      
+      case 'bank':
+        const bank = questionBanks.find(b => b.id === values.bankId);
         const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === values.topicId);
-        if (bank && topic) {
-             newTest = {
-                title: `${bank.name} - ${topic.name}`,
-                subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders",
-                studentId: values.studentId,
-                questionCount: topic.questionCount,
-                assignedDate,
-                dueDate,
-                sourceType: 'bank',
-                sourceId: bank.id,
-                topicId: topic.id.toString(),
-                gradingType: topic.gradingType
-            }
-        }
-    } else if (currentActiveTab === 'exam' && values.examId) {
-        const exam = practiceExams.find(e => e.id.toString() === values.examId);
-        if (exam) {
-            newTest = {
-                title: exam.name,
-                subject: "Deneme Sınavı",
-                studentId: values.studentId,
-                questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
-                assignedDate,
-                dueDate,
-                sourceType: 'exam',
-                sourceId: exam.id,
-                gradingType: exam.gradingType,
-                answerKey: exam.answerKey,
-            }
-        }
-    } else if (currentActiveTab === 'mistake' && values.mistakeIds) {
-      newTest = {
-        title: "Yanlış Sorular Tekrar Testi",
-        subject: "Yanlış Havuzu",
-        studentId: values.studentId,
-        questionCount: values.mistakeIds.length,
-        assignedDate,
-        dueDate,
-        sourceType: 'mistake',
-        mistakeIds: values.mistakeIds,
-        gradingType: 'manual-text',
-      }
+        if (!bank || !topic) return; // Should be blocked by validation
+        testData = {
+          title: `${bank.name} - ${topic.name}`,
+          subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders",
+          studentId: values.studentId,
+          questionCount: topic.questionCount,
+          assignedDate, dueDate,
+          sourceType: 'bank',
+          sourceId: bank.id,
+          topicId: topic.id.toString(),
+          gradingType: topic.gradingType,
+        };
+        break;
+
+      case 'exam':
+        const exam = practiceExams.find(e => e.id === values.examId);
+        if (!exam) return; // Should be blocked by validation
+        testData = {
+          title: exam.name,
+          subject: "Deneme Sınavı",
+          studentId: values.studentId,
+          questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
+          assignedDate, dueDate,
+          sourceType: 'exam',
+          sourceId: exam.id,
+          gradingType: exam.gradingType,
+          answerKey: exam.answerKey,
+        };
+        break;
+
+      case 'mistake':
+        if (!values.mistakeIds || values.mistakeIds.length === 0) return;
+        testData = {
+          title: "Yanlış Sorular Tekrar Testi",
+          subject: "Yanlış Havuzu",
+          studentId: values.studentId,
+          questionCount: values.mistakeIds.length,
+          assignedDate, dueDate,
+          sourceType: 'mistake',
+          mistakeIds: values.mistakeIds,
+          gradingType: 'manual-text',
+        };
+        break;
+      
+      default:
+        return;
     }
     
-    if (newTest) {
-      onAssign(newTest, initialData?.id);
-    }
+    onAssign(testData, initialData?.id);
   }
   
-  const selectedBank = questionBanks.find(b => b.id.toString() === selectedBankId);
+  const selectedBank = questionBanks.find(b => b.id === bankId);
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="quick" disabled={!!initialData && initialData.sourceType !== 'quick' || !!mistakePoolSelection}>Hızlı Test</TabsTrigger>
-            <TabsTrigger value="bank" disabled={!!initialData && initialData.sourceType !== 'bank' || !!mistakePoolSelection}>Soru Bankası</TabsTrigger>
-            <TabsTrigger value="exam" disabled={!!initialData && initialData.sourceType !== 'exam' || !!mistakePoolSelection}>Deneme</TabsTrigger>
-        </TabsList>
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                 <FormField
-                    control={form.control}
-                    name="studentId"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Öğrenci</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Öğrenci seçin" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {students.map((student) => (
-                            <SelectItem key={student.id} value={student.id.toString()}>
-                                {student.name}
-                            </SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                 <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="assignedDate"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                <FormLabel>Başlangıç Tarihi (Opsiyonel)</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                        {field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="dueDate"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                <FormLabel>Bitiş Tarihi (Opsiyonel)</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                        {field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => form.getValues('assignedDate') ? date < form.getValues('assignedDate')! : false} initialFocus/>
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                <TabsContent value="quick" className="space-y-4 m-0">
-                    <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Test Başlığı</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Örn: 2. Dönem Genel Tekrar" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="subject"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Ders</FormLabel>
-                                <Combobox
-                                    options={subjectOptions}
-                                    value={field.value || ""}
-                                    onChange={field.onChange}
-                                    onCreate={onSubjectCreated}
-                                    placeholder="Ders seç..."
-                                    notfoundText="Ders bulunamadı."
-                                    createText="Yeni ders oluştur:"
-                                />
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="questionCount"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Soru Sayısı</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="20" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                    </div>
-                     <FormField
-                        control={form.control}
-                        name="gradingType"
-                        render={({ field }) => (
-                            <FormItem className="space-y-3">
-                            <FormLabel>Değerlendirme Tipi</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                onValueChange={field.onChange}
-                                value={field.value}
-                                className="flex flex-col space-y-1"
-                                >
-                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                    <RadioGroupItem value="auto" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">
-                                    Otomatik Kontrol (Çoktan Seçmeli)
-                                    </FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                    <RadioGroupItem value="manual-text" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">
-                                    Manuel Kontrol (Açık Uçlu)
-                                    </FormLabel>
-                                </FormItem>
-                                 <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                    <RadioGroupItem value="manual" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">
-                                    Cevap Gerekmiyor (Manuel Kontrol)
-                                    </FormLabel>
-                                </FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                    {gradingType === 'auto' && (
-                        <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
-                            <DialogTrigger asChild>
-                            <Button type="button" variant="secondary" disabled={questionCount === 0}>
-                                <Key className="mr-2 h-4 w-4"/>
-                                Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questionCount})
-                            </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                    <DialogTitle>Cevap Anahtarı</DialogTitle>
-                                    <DialogDescription>
-                                        {form.getValues('title')} için cevapları girin. Toplam {questionCount} soru.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <AnswerKeyForm
-                                    totalQuestions={questionCount}
-                                    answerKey={form.getValues('answerKey') || {}}
-                                    onSave={(newKey: AnswerKey) => {
-                                        form.setValue('answerKey', newKey);
-                                        setIsAnswerKeyDialogOpen(false);
-                                    }}
-                                />
-                            </DialogContent>
-                        </Dialog>
-                    )}
-                </TabsContent>
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="quick" disabled={!!initialData || !!mistakePoolSelection}>Hızlı</TabsTrigger>
+        <TabsTrigger value="bank" disabled={!!initialData || !!mistakePoolSelection}>Banka</TabsTrigger>
+        <TabsTrigger value="exam" disabled={!!initialData || !!mistakePoolSelection}>Deneme</TabsTrigger>
+        <TabsTrigger value="mistake" disabled={!!initialData && !mistakePoolSelection}>Yanlış Havuzu</TabsTrigger>
+      </TabsList>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+          <FormField
+            control={form.control}
+            name="studentId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Öğrenci</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Öğrenci seçin" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    {students.map((student) => (<SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={form.control} name="assignedDate" render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Başlangıç Tarihi</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="dueDate" render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Bitiş Tarihi</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => form.getValues('assignedDate') ? date < form.getValues('assignedDate')! : false} initialFocus/></PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
 
-                <TabsContent value="bank" className="space-y-4 m-0">
-                    <FormField
-                        control={form.control}
-                        name="bankId"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Soru Bankası</FormLabel>
-                            <Select onValueChange={(value) => { field.onChange(value); setSelectedBankId(value); form.resetField('topicId'); }} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Soru bankası seçin" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {questionBanks.map((bank) => (
-                                <SelectItem key={bank.id} value={bank.id.toString()}>{bank.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    {selectedBank && (
-                        <FormField
-                            control={form.control}
-                            name="topicId"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Konu</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Konu seçin" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {selectedBank.subjects.map(subject => 
-                                        subject.topics.map(topic => (
-                                            <SelectItem key={topic.id} value={topic.id.toString()}>
-                                                {subject.name} - {topic.name} ({topic.questionCount} soru)
-                                            </SelectItem>
-                                        ))
-                                    )}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    )}
-                </TabsContent>
+          <TabsContent value="quick" className="space-y-4 m-0">
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: 2. Dönem Genel Tekrar" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="subject" render={({ field }) => (
+                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="questionCount" render={({ field }) => (
+                <FormItem><FormLabel>Soru Sayısı</FormLabel><FormControl><Input type="number" placeholder="20" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="gradingType" render={({ field }) => (
+              <FormItem className="space-y-3"><FormLabel>Değerlendirme Tipi</FormLabel><FormControl>
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
+                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="auto" /></FormControl><FormLabel className="font-normal">Otomatik Kontrol (Çoktan Seçmeli)</FormLabel></FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="manual-text" /></FormControl><FormLabel className="font-normal">Manuel Kontrol (Açık Uçlu)</FormLabel></FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="manual" /></FormControl><FormLabel className="font-normal">Cevap Gerekmiyor (Manuel Kontrol)</FormLabel></FormItem>
+                  </RadioGroup>
+              </FormControl><FormMessage /></FormItem>
+            )} />
+            {gradingType === 'auto' && (
+              <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
+                <DialogTrigger asChild><Button type="button" variant="secondary" disabled={questionCount === 0}><Key className="mr-2 h-4 w-4"/>Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questionCount})</Button></DialogTrigger>
+                <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Cevap Anahtarı</DialogTitle><DialogDescription>{form.getValues('title')} için cevapları girin. Toplam {questionCount} soru.</DialogDescription></DialogHeader>
+                  <AnswerKeyForm totalQuestions={questionCount} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: AnswerKey) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
+                </DialogContent>
+              </Dialog>
+            )}
+          </TabsContent>
 
-                <TabsContent value="exam" className="space-y-4 m-0">
-                     <FormField
-                        control={form.control}
-                        name="examId"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Deneme Sınavı</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Deneme seçin" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {practiceExams.map((exam) => (
-                                <SelectItem key={exam.id} value={exam.id.toString()}>{exam.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                     <FormDescription>
-                        Seçilen deneme sınavı öğrenciye atanacaktır.
-                    </FormDescription>
-                </TabsContent>
+          <TabsContent value="bank" className="space-y-4 m-0">
+            <FormField control={form.control} name="bankId" render={({ field }) => (
+              <FormItem><FormLabel>Soru Bankası</FormLabel><Select onValueChange={(value) => { field.onChange(value); form.resetField('topicId'); }} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Soru bankası seçin" /></SelectTrigger></FormControl>
+                  <SelectContent>{questionBanks.map((bank) => (<SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>))}</SelectContent>
+                </Select><FormMessage /></FormItem>
+            )} />
+            {selectedBank && (
+              <FormField control={form.control} name="topicId" render={({ field }) => (
+                <FormItem><FormLabel>Konu</FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Konu seçin" /></SelectTrigger></FormControl>
+                    <SelectContent>{selectedBank.subjects.map(subject => subject.topics.map(topic => (<SelectItem key={topic.id} value={topic.id.toString()}>{subject.name} - {topic.name} ({topic.questionCount} soru)</SelectItem>)))}</SelectContent>
+                  </Select><FormMessage /></FormItem>
+              )} />
+            )}
+          </TabsContent>
 
-                <TabsContent value="mistake" className="space-y-4 m-0">
-                  <FormField name="mistakeIds" render={() => (
-                     <FormItem>
-                      <FormLabel>Yanlış Sorular</FormLabel>
-                      <FormControl>
-                          <div className="p-4 border rounded-md max-h-48 overflow-y-auto">
-                            <p className="text-sm text-muted-foreground">
-                              {mistakePoolSelection?.length || 0} adet yanlış soru bu ödeve eklenecek.
-                            </p>
-                          </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </TabsContent>
-                
-                <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>
-            </form>
-        </Form>
+          <TabsContent value="exam" className="space-y-4 m-0">
+            <FormField control={form.control} name="examId" render={({ field }) => (
+              <FormItem><FormLabel>Deneme Sınavı</FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Deneme seçin" /></SelectTrigger></FormControl>
+                  <SelectContent>{practiceExams.map((exam) => (<SelectItem key={exam.id} value={exam.id}>{exam.name}</SelectItem>))}</SelectContent>
+                </Select><FormMessage /></FormItem>
+            )} />
+            <FormDescription>Seçilen deneme sınavı öğrenciye atanacaktır.</FormDescription>
+          </TabsContent>
+
+          <TabsContent value="mistake" className="space-y-4 m-0">
+            <FormField name="mistakeIds" render={() => (
+              <FormItem><FormLabel>Yanlış Sorular</FormLabel><FormControl>
+                  <div className="p-4 border rounded-md max-h-48 overflow-y-auto">
+                    <p className="text-sm text-muted-foreground">{mistakePoolSelection?.length || 0} adet yanlış soru bu ödeve eklenecek.</p>
+                  </div>
+                </FormControl><FormMessage /></FormItem>
+            )} />
+          </TabsContent>
+          
+          <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>
+        </form>
+      </Form>
     </Tabs>
   );
 }
+
+    
