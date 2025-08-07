@@ -75,6 +75,7 @@ const analyzeQuestionImageTool = ai.defineTool(
       model: 'googleai/gemini-2.0-flash', // A model with vision capabilities
       input: {
         questionImage: questionImage,
+        studentQuery: studentQuery || '', // Ensure studentQuery is always a string
       }
     });
 
