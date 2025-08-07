@@ -204,7 +204,7 @@ export function MemberDashboardCard({
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500"/> Alışkanlıklar</h4>
                         <div className="space-y-2">
                             {habits.map(task => (
-                                <Link href="/habits" key={task.id} className="block">
+                                <Link href="/tasks" key={task.id} className="block">
                                     <div className="flex items-center gap-3 p-2.5 rounded-lg bg-orange-500/10 text-orange-900 hover:bg-orange-500/20">
                                         <div className="truncate flex-grow"><p className="font-semibold truncate text-sm">{task.title}</p></div>
                                         <Badge variant="outline" className="border-orange-500/50 bg-transparent">{task.streak || 0} seri</Badge>
