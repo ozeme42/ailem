@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Paperclip, Send, Sparkles, User, ArrowRight } from "lucide-react";
+import { Loader2, Paperclip, Send, Sparkles, User, ArrowRight, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -106,7 +106,7 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
-                            className={cn("flex items-start gap-3", message.role === 'user' ? 'justify-end' : 'justify-start')}
+                            className={cn("flex items-start gap-3 my-4", message.role === 'user' ? 'justify-end' : 'justify-start')}
                         >
                             {message.role === 'model' && (
                                 <Avatar className="w-8 h-8 bg-primary text-primary-foreground">
