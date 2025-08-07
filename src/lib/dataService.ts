@@ -1281,13 +1281,17 @@ export const deleteAllMemorizationItems = async () => {
 export const updateHabitCompletion = async (taskId: string, day: Date, isCompleted: boolean) => {
     const taskRef = doc(db, 'tasks', taskId);
     const taskSnap = await getDoc(taskRef);
-    if (!taskSnap.exists()) return;
+
+    if (!taskSnap.exists()) {
+        console.error("Task not found for habit update:", taskId);
+        return;
+    }
     
-    const task = taskSnap.data() as Task;
-    if (!task.isRecurring) return;
+    const taskData = taskSnap.data() as Task;
+    if (!taskData.isRecurring) return;
 
     const dayKey = format(day, 'yyyy-MM-dd');
-    const completedDates = new Set(task.completedDates || []);
+    const completedDates = new Set(taskData.completedDates || []);
 
     if (isCompleted) {
         completedDates.add(dayKey);
@@ -1295,12 +1299,12 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
         completedDates.delete(dayKey);
     }
     
-    const updateData: Partial<Task> = {
+    const updatePayload: Partial<Task> = {
         completedDates: Array.from(completedDates),
     };
 
     let streak = 0;
-    if (task.recurrenceType === 'daily') {
+    if (taskData.recurrenceType === 'daily') {
         const sortedDates = Array.from(completedDates).sort().map(d => parseISO(d));
         if (sortedDates.length > 0) {
             let currentDate = new Date();
@@ -1320,18 +1324,17 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
                 }
             }
         }
-    } else if (task.recurrenceType === 'weekly' && task.recurrenceDays && task.recurrenceDays.length > 0) {
+    } else if (taskData.recurrenceType === 'weekly' && taskData.recurrenceDays && taskData.recurrenceDays.length > 0) {
         let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
         const isWeekComplete = (weekStart: Date) => {
-            return task.recurrenceDays!.every(dayId => {
+            return taskData.recurrenceDays!.every(dayId => {
                 const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
                 const checkDate = addDays(weekStart, dayIndex);
                 return completedDates.has(format(checkDate, 'yyyy-MM-dd'));
             });
         };
         
-        // Start checking from the current week. If it's not complete, check the previous week.
         let currentWeekIsComplete = isWeekComplete(checkWeekStart);
         if(!currentWeekIsComplete) {
             checkWeekStart = subWeeks(checkWeekStart, 1);
@@ -1343,15 +1346,16 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
         }
     }
 
-    updateData.streak = streak;
-    updateData.bestStreak = Math.max(task.bestStreak || 0, streak);
+    updatePayload.streak = streak;
+    updatePayload.bestStreak = Math.max(taskData.bestStreak || 0, streak);
     
-    if (streak > (task.streak || 0)) {
-        await checkAndAwardBadges(task.assigneeId, task.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
+    if (streak > (taskData.streak || 0)) {
+        await checkAndAwardBadges(taskData.assigneeId, taskData.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
     }
         
-    await updateDoc(taskRef, updateData);
+    await updateDoc(taskRef, updatePayload);
 };
+
 
 // Notes Feature
 const noteColors = [
