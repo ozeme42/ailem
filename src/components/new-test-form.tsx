@@ -15,7 +15,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, Mistake } from "@/lib/data";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { AnswerKeyForm } from "./answer-key-form";
@@ -110,10 +110,9 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   
   const handleTabChange = (value: AssignmentType) => {
     form.setValue('activeTab', value);
-    // Clear other tabs' selections to avoid validation conflicts
-    if (value !== 'quick') { form.setValue('title', ''); form.setValue('subject', ''); }
-    if (value !== 'bank') { form.setValue('bankId', ''); form.setValue('topicId', ''); }
-    if (value !== 'exam') { form.setValue('examId', ''); }
+    if (value !== 'quick') { form.setValue('title', undefined); form.setValue('subject', undefined); }
+    if (value !== 'bank') { form.setValue('bankId', undefined); form.setValue('topicId', undefined); }
+    if (value !== 'exam') { form.setValue('examId', undefined); }
     if (value !== 'mistake' && !initialData) { form.setValue('mistakeIds', []); }
   };
 
@@ -142,7 +141,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           assignedDate, dueDate,
           sourceType: 'quick',
           gradingType: values.gradingType,
-          answerKey: values.gradingType === 'auto' ? values.answerKey : undefined,
+          answerKey: values.gradingType === 'auto' ? values.answerKey : {},
         };
         break;
       
@@ -152,7 +151,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         if (!bank || !topic) return; 
         testData = {
           title: `${bank.name} - ${topic.name}`,
-          subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders",
+          subject: bank.subjects.find(s => s.topics.some(t => t.id.toString() === values.topicId))?.name || "Ders",
           studentId: values.studentId,
           questionCount: topic.questionCount,
           assignedDate, dueDate,
@@ -331,3 +330,4 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
+    
