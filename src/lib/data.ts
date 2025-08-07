@@ -1,6 +1,7 @@
 
 
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
+import { z } from 'zod';
 
 export interface User {
     uid: string;
@@ -578,4 +579,19 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId' | 'studentId'
         gradingType: 'auto',
         isArchived: false,
     }
-]
+];
+
+// Types for AI Coach
+const MediaPartSchema = z.object({
+  url: z.string(),
+});
+const ContentPartSchema = z.object({
+  text: z.string().optional(),
+  media: MediaPartSchema.optional(),
+});
+export const CoachMessageSchema = z.object({
+  role: z.enum(['user', 'model', 'tool']),
+  content: z.array(ContentPartSchema),
+  id: z.string().optional(),
+});
+export type CoachMessage = z.infer<typeof CoachMessageSchema>;

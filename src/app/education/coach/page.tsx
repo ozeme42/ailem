@@ -14,8 +14,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { runCoach, type CoachMessage } from '@/ai/flows/education-coach-flow';
-import type { FamilyMember } from "@/lib/data";
+import { runCoach } from '@/ai/flows/education-coach-flow';
+import type { FamilyMember, CoachMessage } from "@/lib/data";
 
 const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
     const [messages, setMessages] = React.useState<CoachMessage[]>([]);

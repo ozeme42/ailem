@@ -4,28 +4,13 @@
  * @fileOverview The AI Education Coach provides personalized learning assistance.
  *
  * - runCoach - The main function to interact with the coach.
- * - CoachMessage - The type definition for a message in the chat history.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { onQuestionBanksUpdate } from '@/lib/dataService';
-import type { QuestionBank } from '@/lib/data';
+import type { QuestionBank, CoachMessage } from '@/lib/data';
 
-// Define schemas for chat history
-const MediaPartSchema = z.object({
-  url: z.string(),
-});
-const ContentPartSchema = z.object({
-  text: z.string().optional(),
-  media: MediaPartSchema.optional(),
-});
-const CoachMessageSchema = z.object({
-  role: z.enum(['user', 'model', 'tool']),
-  content: z.array(ContentPartSchema),
-  id: z.string().optional(),
-});
-export type CoachMessage = z.infer<typeof CoachMessageSchema>;
 
 // Tool to get available subjects and topics
 const getAvailableTopicsTool = ai.defineTool(
@@ -95,7 +80,7 @@ const analyzeQuestionImageTool = ai.defineTool(
 const educationCoachFlow = ai.defineFlow(
   {
     name: 'educationCoachFlow',
-    inputSchema: z.array(CoachMessageSchema),
+    inputSchema: z.array(z.any()),
     outputSchema: z.string(),
     stream: true,
   },
@@ -112,11 +97,11 @@ const educationCoachFlow = ai.defineFlow(
     
     // Check if the last message contains an image
     const lastMessage = history[history.length - 1];
-    const imagePart = lastMessage.content.find(part => !!part.media);
+    const imagePart = lastMessage.content.find((part: any) => !!part.media);
     
     if (imagePart?.media) {
         // If there's an image, call the specific tool for it.
-        const textPart = lastMessage.content.find(part => !!part.text);
+        const textPart = lastMessage.content.find((part: any) => !!part.text);
         const studentQuery = textPart?.text || '';
         const analysisResult = await analyzeQuestionImageTool({ 
             questionImage: imagePart.media.url, 
