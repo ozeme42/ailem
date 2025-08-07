@@ -90,7 +90,7 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
         const allSubjects = new Set(questionBanks.flatMap(qb => qb.subjects.map(s => s.name)));
         
         // Initialize all possible categories
-        new Set([...allTestCategories, ...allSubjects, 'Genel Deneme Sınavları']).forEach(cat => {
+        new Set([...allTestCategories, ...allSubjects, 'Genel Deneme Sınavları', 'Yanlış Havuzu']).forEach(cat => {
             if (!categories[cat]) categories[cat] = { banks: [], exams: [], tests: [] };
         });
         
