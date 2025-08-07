@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -694,10 +694,53 @@ export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void,
 export const addQuestionBank = async (data: Omit<QuestionBank, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'questionBanks'), { ...data, familyId });
+    const docRef = await addDoc(collection(db, 'questionBanks'), { ...data, familyId });
+    return docRef.id;
 };
 export const updateQuestionBank = (id: string, data: Partial<Omit<QuestionBank, 'id'>>) => updateDoc(doc(db, 'questionBanks', id), data);
 export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, "questionBanks", id));
+export const deleteTopicFromBank = async (bankId: string, subjectId: number, topicId: number) => {
+    const bankRef = doc(db, 'questionBanks', bankId);
+    const bankSnap = await getDoc(bankRef);
+    if (bankSnap.exists()) {
+        const bank = bankSnap.data() as QuestionBank;
+        const newSubjects = bank.subjects.map(subject => {
+            if (subject.id === subjectId) {
+                return {
+                    ...subject,
+                    topics: subject.topics.filter(topic => topic.id !== topicId)
+                };
+            }
+            return subject;
+        }).filter(subject => subject.topics.length > 0); // Remove subject if it has no topics left
+        
+        await updateDoc(bankRef, { subjects: newSubjects });
+    }
+};
+export const addTopicToBank = async (bankId: string, subjectName: string, topic: Topic) => {
+    const bankRef = doc(db, 'questionBanks', bankId);
+    const bankSnap = await getDoc(bankRef);
+    if (bankSnap.exists()) {
+        const bank = bankSnap.data() as QuestionBank;
+        let subjectExists = false;
+        const newSubjects = bank.subjects.map(subject => {
+            if (subject.name === subjectName) {
+                subjectExists = true;
+                return {
+                    ...subject,
+                    topics: [...subject.topics, topic]
+                };
+            }
+            return subject;
+        });
+
+        if(!subjectExists) {
+            newSubjects.push({ id: Date.now(), name: subjectName, topics: [topic] });
+        }
+        
+        await updateDoc(bankRef, { subjects: newSubjects });
+    }
+};
 
 
 export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void, runOnce = false) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback, runOnce);

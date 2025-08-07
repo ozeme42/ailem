@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Mistake } from "@/lib/data";
+import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Mistake, Topic } from "@/lib/data";
 import {
   onQuestionBanksUpdate,
   onPracticeExamsUpdate,
@@ -37,7 +37,9 @@ import {
   deleteStudyPlan,
   onStudyAssignmentsUpdate,
   addStudyAssignment,
-  deleteStudyAssignment
+  deleteStudyAssignment,
+  deleteTopicFromBank,
+  addTopicToBank
 } from "@/lib/dataService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -280,19 +282,68 @@ function NewSubjectDialog({ open, onOpenChange, onCreate }) {
   );
 }
 
+const newTopicSchema = z.object({
+  name: z.string().min(2, "Konu adı en az 2 karakter olmalıdır."),
+});
 
-function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSubject, onCreateSubject }) {
+function NewTopicDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (name: string) => void }) {
+  const form = useForm({
+    resolver: zodResolver(newTopicSchema),
+    defaultValues: { name: "" },
+  });
+
+  const onSubmit = (data) => {
+    onSave(data.name);
+    form.reset();
+    onOpenChange(false);
+  };
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Yeni Konu Ekle</DialogTitle>
+            </DialogHeader>
+             <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Konu Adı</FormLabel>
+                      <FormControl>
+                        <Input placeholder="örn: Üslü Sayılar" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+                    <Button type="submit">Ekle</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+        </DialogContent>
+    </Dialog>
+  )
+}
+
+function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSubject, onCreateSubject, onDeleteTopic, onAddTopic }) {
     const [isNewSubjectDialogOpen, setIsNewSubjectDialogOpen] = React.useState(false);
+    const [isNewTopicDialogOpen, setIsNewTopicDialogOpen] = React.useState(false);
+    const [currentSubjectForNewTopic, setCurrentSubjectForNewTopic] = React.useState<string | null>(null);
 
     const topicsBySubject = React.useMemo(() => {
-        const mapping: { [key: string]: any[] } = {};
+        const mapping: { [key: string]: { topic: Topic, bankName: string, bankId: string, subjectId: number }[] } = {};
         subjects.forEach(s => mapping[s] = []);
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
                 if (mapping[subject.name]) {
                     subject.topics.forEach(topic => {
-                        if (!mapping[subject.name].some(t => t.name === topic.name)) {
-                             mapping[subject.name].push({ ...topic, bankName: bank.name, bankId: bank.id });
+                        if (!mapping[subject.name].some(t => t.topic.name === topic.name)) {
+                             mapping[subject.name].push({ topic: topic, bankName: bank.name, bankId: bank.id, subjectId: subject.id });
                         }
                     });
                 }
@@ -301,12 +352,23 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
         return mapping;
     }, [subjects, questionBanks]);
     
-    const handleEditTopic = (bankId) => {
+    const handleEditTopic = (bankId: string) => {
         const bank = questionBanks.find(b => b.id === bankId);
         if (bank) {
             onOpenEditBank(bank);
         }
     };
+
+    const handleOpenNewTopicDialog = (subjectName: string) => {
+        setCurrentSubjectForNewTopic(subjectName);
+        setIsNewTopicDialogOpen(true);
+    };
+
+    const handleSaveNewTopic = (topicName: string) => {
+        if(currentSubjectForNewTopic) {
+            onAddTopic(currentSubjectForNewTopic, topicName);
+        }
+    }
 
     return (
         <>
@@ -344,16 +406,32 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
                             </div>
                             <AccordionContent className="p-4 pt-0">
                                 <div className="space-y-2">
-                                {topics.map(topic => (
-                                    <div key={`${topic.id}-${topic.bankId}`} className="flex justify-between items-center p-2 border rounded-md">
+                                {topics.map(topicInfo => (
+                                    <div key={`${topicInfo.topic.id}-${topicInfo.bankId}`} className="flex justify-between items-center p-2 border rounded-md">
                                         <div>
-                                            <p className="font-medium">{topic.name}</p>
-                                            <p className="text-xs text-muted-foreground">{topic.bankName}</p>
+                                            <p className="font-medium">{topicInfo.topic.name}</p>
+                                            <p className="text-xs text-muted-foreground">{topicInfo.bankName}</p>
                                         </div>
-                                        <Button variant="ghost" size="sm" onClick={() => handleEditTopic(topic.bankId)}><Edit className="w-4 h-4 mr-2"/>Konuları Düzenle</Button>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="sm" onClick={() => handleEditTopic(topicInfo.bankId)}><Edit className="w-4 h-4 mr-2"/>Soru Bankasını Düzenle</Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive">
+                                                        <Trash2 className="w-4 h-4"/>
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>Konuyu Sil</AlertDialogTitle><AlertDialogDescription>"{topicInfo.topic.name}" konusunu "{topicInfo.bankName}" soru bankasından kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteTopic(topicInfo.bankId, topicInfo.subjectId, topicInfo.topic.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
                                     </div>
                                 ))}
                                 {topics.length === 0 && <p className="text-sm text-muted-foreground text-center p-4">Bu derse ait konu bulunamadı.</p>}
+                                <Button variant="outline" className="w-full mt-4" onClick={() => handleOpenNewTopicDialog(subject)}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Yeni Konu Ekle
+                                </Button>
                                 </div>
                             </AccordionContent>
                          </AccordionItem>
@@ -362,6 +440,7 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
             })}
          </Accordion>
          <NewSubjectDialog open={isNewSubjectDialogOpen} onOpenChange={setIsNewSubjectDialogOpen} onCreate={onCreateSubject} />
+         <NewTopicDialog open={isNewTopicDialogOpen} onOpenChange={setIsNewTopicDialogOpen} onSave={handleSaveNewTopic} />
          </>
     );
 }
@@ -643,6 +722,57 @@ export default function EducationManagementPage() {
         toast({ variant: 'destructive', title: "Ders Silindi" });
     };
     
+    const handleDeleteTopic = async (bankId: string, subjectId: number, topicId: number) => {
+        try {
+            await deleteTopicFromBank(bankId, subjectId, topicId);
+            toast({ title: "Konu Silindi", variant: 'destructive' });
+        } catch(e) {
+            toast({ title: "Hata", description: "Konu silinirken bir hata oluştu.", variant: 'destructive' });
+        }
+    };
+    
+    const handleAddTopic = async (subjectName: string, topicName: string) => {
+      // Find a bank that has this subject, or create a new bank.
+      let targetBank = questionBanks.find(qb => qb.subjects.some(s => s.name === subjectName));
+      let isNewBank = false;
+      
+      if (!targetBank) {
+          targetBank = questionBanks.find(qb => qb.name === "Yeni Oluşturulan Konular");
+          if (!targetBank) {
+              const newBank: Omit<QuestionBank, 'id' | 'familyId'> = {
+                  name: 'Yeni Oluşturulan Konular',
+                  subjects: [{ id: Date.now(), name: subjectName, topics: [] }]
+              };
+              try {
+                const newBankId = await addQuestionBank(newBank);
+                targetBank = { ...newBank, id: newBankId, familyId: familyId! };
+                isNewBank = true;
+              } catch (e) {
+                 toast({ title: "Soru bankası oluşturma hatası", variant: "destructive" });
+                 return;
+              }
+          }
+      }
+
+      const subjectInBank = targetBank.subjects.find(s => s.name === subjectName);
+
+      const newTopic: Topic = {
+        id: Date.now(),
+        name: topicName,
+        questionCount: 0,
+        gradingType: 'manual',
+        answerKey: {}
+      };
+      
+      try {
+        await addTopicToBank(targetBank.id, subjectName, newTopic);
+        toast({ title: "Konu Eklendi", description: `"${topicName}" konusu "${targetBank.name}" bankasına eklendi.` });
+      } catch (e) {
+         toast({ title: "Konu ekleme hatası", variant: "destructive" });
+      }
+    };
+
+    
     const openEditBankDialog = (bank: QuestionBank) => {
         setEditingBank(bank);
         setIsBankDialogOpen(true);
@@ -891,6 +1021,8 @@ export default function EducationManagementPage() {
                         onOpenEditBank={openEditBankDialog}
                         onDeleteSubject={handleDeleteSubject}
                         onCreateSubject={handleCreateSubject}
+                        onDeleteTopic={handleDeleteTopic}
+                        onAddTopic={handleAddTopic}
                     />
                 </TabsContent>
                  <TabsContent value="study-plans" className="mt-4">
