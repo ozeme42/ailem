@@ -94,9 +94,9 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       questionCount: initialData?.questionCount || 20,
       gradingType: initialData?.gradingType || "manual-text",
       answerKey: initialData?.answerKey || {},
-      bankId: initialData?.sourceId || "",
-      topicId: initialData?.topicId || "",
-      examId: initialData?.sourceId || "",
+      bankId: initialData?.sourceType === 'bank' ? initialData.sourceId : undefined,
+      topicId: initialData?.topicId || undefined,
+      examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
       mistakeIds: mistakePoolSelection?.map(m => m.id),
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -110,10 +110,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   
   const handleTabChange = (value: AssignmentType) => {
     form.setValue('activeTab', value);
-    if (value !== 'quick') { form.setValue('title', undefined); form.setValue('subject', undefined); }
-    if (value !== 'bank') { form.setValue('bankId', undefined); form.setValue('topicId', undefined); }
-    if (value !== 'exam') { form.setValue('examId', undefined); }
-    if (value !== 'mistake' && !initialData) { form.setValue('mistakeIds', []); }
   };
 
   React.useEffect(() => {
@@ -149,9 +145,10 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         const bank = questionBanks.find(b => b.id === values.bankId);
         const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === values.topicId);
         if (!bank || !topic) return; 
+        const subjectName = bank.subjects.find(s => s.topics.some(t => t.id.toString() === values.topicId))?.name || "Ders";
         testData = {
           title: `${bank.name} - ${topic.name}`,
-          subject: bank.subjects.find(s => s.topics.some(t => t.id.toString() === values.topicId))?.name || "Ders",
+          subject: subjectName,
           studentId: values.studentId,
           questionCount: topic.questionCount,
           assignedDate, dueDate,
@@ -330,4 +327,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
+    
+
     

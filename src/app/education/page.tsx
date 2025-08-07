@@ -60,7 +60,6 @@ const categoryProgressColors: { [key: string]: string } = {
     'Diğer': 'bg-gray-500',
 };
 
-// This function must be consistent with the one in `src/app/education/category/[categoryName]/page.tsx`
 const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
     if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
@@ -340,3 +339,5 @@ export default function EducationPage() {
     </>
   );
 }
+
+    

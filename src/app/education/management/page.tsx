@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,14 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Sosyal Bilgiler': Globe,
     'İngilizce': MessageSquare,
     'Serbest Etkinlikler': Gamepad2,
+    'Yanlış Havuzu': NotebookText,
     'Diğer': Library
+};
+
+const getCategoryName = (test: Test): string => {
+    if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+    if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
+    return test.subject || 'Diğer';
 };
 
 const newStudyPlanSchema = z.object({
@@ -79,14 +86,13 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
     const contentByCategory = React.useMemo(() => {
         const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[] } } = {};
         
+        const allTestCategories = new Set(tests.map(getCategoryName));
         const allSubjects = new Set(questionBanks.flatMap(qb => qb.subjects.map(s => s.name)));
         
-        Array.from(allSubjects).forEach(s => {
-            if (!categories[s]) categories[s] = { banks: [], exams: [], tests: [] };
+        // Initialize all possible categories
+        new Set([...allTestCategories, ...allSubjects, 'Genel Deneme Sınavları']).forEach(cat => {
+            if (!categories[cat]) categories[cat] = { banks: [], exams: [], tests: [] };
         });
-
-        if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [], tests: [] };
-        if (!categories['Atanmış Ödevler']) categories['Atanmış Ödevler'] = { banks: [], exams: [], tests: [] };
         
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
@@ -99,13 +105,16 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
         });
 
         practiceExams.forEach(exam => {
-            if (!categories['Genel Deneme Sınavları']) categories['Genel Deneme Sınavları'] = { banks: [], exams: [], tests: [] };
-            categories['Genel Deneme Sınavları'].exams.push(exam);
+            if (categories['Genel Deneme Sınavları']) {
+               categories['Genel Deneme Sınavları'].exams.push(exam);
+            }
         });
         
-        tests.filter(t => t.status !== 'Değerlendirme Bekliyor' && !t.isArchived).forEach(test => {
-             if (!categories['Atanmış Ödevler']) categories['Atanmış Ödevler'] = { banks: [], exams: [], tests: [] };
-            categories['Atanmış Ödevler'].tests.push(test);
+        tests.filter(t => !t.isArchived).forEach(test => {
+            const category = getCategoryName(test);
+            if (categories[category]) {
+                categories[category].tests.push(test);
+            }
         });
 
 
@@ -938,3 +947,5 @@ export default function EducationManagementPage() {
         </>
     );
 }
+
+    
