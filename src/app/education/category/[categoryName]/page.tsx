@@ -29,9 +29,9 @@ type TopicStats = {
 const getCategoryName = (test: Test, availableSubjects: string[]): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
     if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
-    if (test.subject && availableSubjects.includes(test.subject)) return test.subject;
-    if (test.subject) return test.subject; // Fallback for quick tests with new subjects
-    return 'Diğer';
+    // Use test.subject as the primary category identifier for bank/quick tests.
+    // This simplifies the logic and makes it more robust.
+    return test.subject || 'Diğer';
 };
 
 export default function CategoryDetailPage() {
@@ -45,8 +45,6 @@ export default function CategoryDetailPage() {
   const { familyMembers } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
-  // We need availableSubjects here to correctly categorize tests
-  const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const student = React.useMemo(() => 
@@ -67,13 +65,6 @@ export default function CategoryDetailPage() {
         if (loading) setLoading(false);
     });
 
-    // Fetch available subjects
-    const allSubjects = new Set<string>();
-    questionBanks.forEach(qb => qb.subjects.forEach(s => allSubjects.add(s.name)));
-    allTests.forEach(t => { if(t.subject) allSubjects.add(t.subject) });
-    setAvailableSubjects(Array.from(allSubjects));
-
-
     // Initial loading state management
     Promise.all([
         new Promise(resolve => onTestsUpdate(t => resolve(t), true)),
@@ -84,11 +75,10 @@ export default function CategoryDetailPage() {
         unsubscribeTests();
         unsubscribeBanks();
     };
-  }, [studentId, loading, questionBanks, allTests]);
+  }, [studentId, loading]);
 
   const { filteredTests, topicStats } = React.useMemo(() => {
-    // This is the critical change: use the same logic as the main education page for categorization.
-    const testsForCategory = allTests.filter(test => getCategoryName(test, availableSubjects) === categoryName);
+    const testsForCategory = allTests.filter(test => getCategoryName(test, []) === categoryName);
 
     const sortedTests = [...testsForCategory].sort((a, b) => {
           try {
@@ -124,7 +114,7 @@ export default function CategoryDetailPage() {
 
     return { filteredTests: sortedTests, topicStats: finalTopicStats };
 
-  }, [allTests, categoryName, questionBanks, availableSubjects]);
+  }, [allTests, categoryName, questionBanks]);
   
   const formatTestDate = (dateString: string) => {
       try {

@@ -61,12 +61,10 @@ const categoryProgressColors: { [key: string]: string } = {
 };
 
 // This function must be consistent with the one in `src/app/education/category/[categoryName]/page.tsx`
-const getCategoryName = (test: Test, availableSubjects: string[]): string => {
+const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
     if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
-    if (test.subject && availableSubjects.includes(test.subject)) return test.subject;
-    if (test.subject) return test.subject; // Fallback for quick tests with new subjects
-    return 'Diğer';
+    return test.subject || 'Diğer';
 };
 
 
@@ -129,13 +127,13 @@ export default function EducationPage() {
   };
 
 
-  const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId'>, id?: string) => {
+  const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
     try {
         if (id) {
             await updateTest(id, testData);
             toast({ title: "✅ Ödev Güncellendi", description: "Ödev bilgileri başarıyla güncellendi." });
         } else {
-            await addTest({ ...testData, status: 'Atandı' });
+            await addTest({ ...testData, status: 'Atandı', isArchived: false });
             toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
         }
         setIsAssignDialogOpen(false);
@@ -161,7 +159,7 @@ export default function EducationPage() {
     const categories: { [key: string]: { total: number, completed: number } } = {};
 
     tests.forEach(test => {
-        const categoryName = getCategoryName(test, availableSubjects);
+        const categoryName = getCategoryName(test);
         if (!categories[categoryName]) {
             categories[categoryName] = { total: 0, completed: 0 };
         }
@@ -182,7 +180,7 @@ export default function EducationPage() {
         return a.localeCompare(b);
     });
 
-  }, [tests, availableSubjects]);
+  }, [tests]);
 
   return (
     <>

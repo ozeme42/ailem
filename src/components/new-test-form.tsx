@@ -98,8 +98,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       topicId: initialData?.topicId || "",
       examId: initialData?.sourceId || "",
       mistakeIds: mistakePoolSelection?.map(m => m.id),
-      assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
-      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : undefined,
+      assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
+      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   });
 
@@ -149,7 +149,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       case 'bank':
         const bank = questionBanks.find(b => b.id === values.bankId);
         const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === values.topicId);
-        if (!bank || !topic) return; // Should be blocked by validation
+        if (!bank || !topic) return; 
         testData = {
           title: `${bank.name} - ${topic.name}`,
           subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders",
@@ -160,12 +160,13 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           sourceId: bank.id,
           topicId: topic.id.toString(),
           gradingType: topic.gradingType,
+          answerKey: topic.answerKey,
         };
         break;
 
       case 'exam':
         const exam = practiceExams.find(e => e.id === values.examId);
-        if (!exam) return; // Should be blocked by validation
+        if (!exam) return;
         testData = {
           title: exam.name,
           subject: "Deneme Sınavı",
@@ -330,5 +331,3 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
-
-    
