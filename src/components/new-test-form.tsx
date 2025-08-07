@@ -15,7 +15,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, Mistake } from "@/lib/data";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { AnswerKeyForm } from "./answer-key-form";
@@ -169,7 +169,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         if (!exam) return;
         testData = {
           title: exam.name,
-          subject: "Deneme Sınavı",
+          subject: "Genel Deneme Sınavları",
           studentId: values.studentId,
           questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
           assignedDate, dueDate,

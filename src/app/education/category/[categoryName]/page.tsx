@@ -26,11 +26,9 @@ type TopicStats = {
 };
 
 // This function must be consistent with the one in `src/app/education/page.tsx`
-const getCategoryName = (test: Test, availableSubjects: string[]): string => {
+const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
     if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
-    // Use test.subject as the primary category identifier for bank/quick tests.
-    // This simplifies the logic and makes it more robust.
     return test.subject || 'Diğer';
 };
 
@@ -78,7 +76,7 @@ export default function CategoryDetailPage() {
   }, [studentId, loading]);
 
   const { filteredTests, topicStats } = React.useMemo(() => {
-    const testsForCategory = allTests.filter(test => getCategoryName(test, []) === categoryName);
+    const testsForCategory = allTests.filter(test => getCategoryName(test) === categoryName);
 
     const sortedTests = [...testsForCategory].sort((a, b) => {
           try {
