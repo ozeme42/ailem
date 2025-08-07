@@ -1,6 +1,5 @@
 
 
-
 "use client";
 
 import * as React from "react";
@@ -781,11 +780,11 @@ export default function EducationManagementPage() {
         <>
             <PageHeader title="İçerik Yönetimi">
                 <Link href="/education">
-                    <Button variant="outline"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
+                    <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
                 </Link>
                  <Dialog open={isTestDialogOpen} onOpenChange={(open) => { if (!open) setEditingTest(null); setIsTestDialogOpen(open); }}>
                     <DialogTrigger asChild>
-                         <Button><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
+                         <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
