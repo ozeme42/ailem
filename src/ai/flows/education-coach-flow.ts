@@ -20,7 +20,7 @@ const ContentPartSchema = z.object({
   text: z.string().optional(),
   media: MediaPartSchema.optional(),
 });
-export const CoachMessageSchema = z.object({
+const CoachMessageSchema = z.object({
   role: z.enum(['user', 'model', 'tool']),
   content: z.array(ContentPartSchema),
   id: z.string().optional(),
@@ -83,7 +83,7 @@ const analyzeQuestionImageTool = ai.defineTool(
 
     const llmResponse = await analyzePrompt({
       questionImage: questionImage,
-      studentQuery: studentQuery,
+      studentQuery: studentQuery || "",
     });
 
     return llmResponse.text;
@@ -117,7 +117,7 @@ const educationCoachFlow = ai.defineFlow(
     if (imagePart?.media) {
         // If there's an image, call the specific tool for it.
         const textPart = lastMessage.content.find(part => !!part.text);
-        const studentQuery = textPart?.text || ''; // Ensure it's always a string
+        const studentQuery = textPart?.text || '';
         const analysisResult = await analyzeQuestionImageTool({ 
             questionImage: imagePart.media.url, 
             studentQuery: studentQuery 
