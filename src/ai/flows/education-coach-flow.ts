@@ -55,7 +55,7 @@ export async function runCoach(history: CoachMessage[]) {
       prompt: systemPrompt,
     });
     
-    return stream.text;
+    return stream;
 }
 
 // Separate, dedicated flow for analyzing images
@@ -78,19 +78,15 @@ export async function analyzeQuestionImage(input: z.infer<typeof ImageAnalysisIn
   3.  Break down the solution into logical, easy-to-follow steps.
   4.  Finally, clearly state the final answer.
   
-  Student's question: {{{studentQuery}}}
+  Student's question: ${input.studentQuery || ''}
   The image with the problem: {{media url=photoDataUri}}
   `;
   
   const llmResponse = await ai.generate({
     model: 'googleai/gemini-2.0-flash',
-    prompt: [
-        {text: prompt},
-        {media: {url: input.photoDataUri}}
-    ],
+    prompt: prompt,
     input: {
-      photoDataUri: input.photoDataUri,
-      studentQuery: input.studentQuery || ""
+        photoDataUri: input.photoDataUri
     }
   });
 
