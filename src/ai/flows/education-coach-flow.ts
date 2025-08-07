@@ -4,7 +4,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { onQuestionBanksUpdate } from '@/lib/dataService';
-import { QuestionBank } from '@/lib/data';
+import type { QuestionBank } from '@/lib/data';
 
 // Define schemas for chat history
 const MediaPartSchema = z.object({
@@ -58,12 +58,12 @@ const analyzeQuestionImageTool = ai.defineTool(
       outputSchema: z.string().describe("Sorunun adım adım, detaylı ve açıklayıcı çözümü."),
   },
   async ({ questionImage, studentQuery }) => {
-    const prompt = `You are an expert tutor. A student has uploaded an image of a question they are struggling with. Your task is to provide a clear, step-by-step solution.
+    const promptTemplate = `You are an expert tutor. A student has uploaded an image of a question they are struggling with. Your task is to provide a clear, step-by-step solution.
 
     1.  **Analyze the Question:** First, carefully analyze the provided image to understand the question.
     2.  **Step-by-Step Solution:** Break down the solution into logical, easy-to-follow steps. Explain the reasoning behind each step.
     3.  **Final Answer:** Clearly state the final answer.
-    4.  **Student's Query:** Address any specific query the student has about the question: "${studentQuery || 'Yok'}"
+    4.  **Student's Query:** Address any specific query the student has about the question: "{{studentQuery}}"
     
     Here is the image:
     {{media url=questionImage}}
@@ -71,11 +71,11 @@ const analyzeQuestionImageTool = ai.defineTool(
     Provide the solution in Turkish.`;
 
     const llmResponse = await ai.generate({
-      prompt,
+      prompt: promptTemplate,
       model: 'googleai/gemini-pro-vision',
       input: {
         questionImage: questionImage,
-        studentQuery: studentQuery,
+        studentQuery: studentQuery || '', // Ensure studentQuery is never undefined
       },
     });
     return llmResponse.text;
