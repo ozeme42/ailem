@@ -1,5 +1,11 @@
 
 'use server';
+/**
+ * @fileOverview The AI Education Coach provides personalized learning assistance.
+ *
+ * - runCoach - The main function to interact with the coach.
+ * - CoachMessage - The type definition for a message in the chat history.
+ */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -14,12 +20,12 @@ const ContentPartSchema = z.object({
   text: z.string().optional(),
   media: MediaPartSchema.optional(),
 });
-const CoachMessageSchema = z.object({
+export const CoachMessageSchema = z.object({
   role: z.enum(['user', 'model', 'tool']),
   content: z.array(ContentPartSchema),
   id: z.string().optional(),
 });
-type CoachMessage = z.infer<typeof CoachMessageSchema>;
+export type CoachMessage = z.infer<typeof CoachMessageSchema>;
 
 // Tool to get available subjects and topics
 const getAvailableTopicsTool = ai.defineTool(
@@ -53,31 +59,33 @@ const analyzeQuestionImageTool = ai.defineTool(
       description: 'Kullanıcı bir soru fotoğrafı yüklediğinde, bu soruyu adım adım çözmek ve açıklamak için bu aracı kullan.',
       inputSchema: z.object({
           questionImage: z.string().describe("Sorunun Base64 kodlanmış data URI'ı."),
-          studentQuery: z.string().optional().describe("Öğrencinin soruyla ilgili ek talebi."),
+          studentQuery: z.string().describe("Öğrencinin soruyla ilgili ek talebi."),
       }),
       outputSchema: z.string().describe("Sorunun adım adım, detaylı ve açıklayıcı çözümü."),
   },
   async ({ questionImage, studentQuery }) => {
-    const promptTemplate = `You are an expert tutor. A student has uploaded an image of a question they are struggling with. Your task is to provide a clear, step-by-step solution.
-
-    1.  **Analyze the Question:** First, carefully analyze the provided image to understand the question.
-    2.  **Step-by-Step Solution:** Break down the solution into logical, easy-to-follow steps. Explain the reasoning behind each step.
-    3.  **Final Answer:** Clearly state the final answer.
-    4.  **Student's Query:** Address any specific query the student has about the question: "{{studentQuery}}"
     
-    Here is the image:
-    {{media url=questionImage}}
-    
-    Provide the solution in Turkish.`;
+    const analyzePrompt = ai.definePrompt({
+        name: 'analyzeQuestionPrompt',
+        input: { schema: z.object({ questionImage: z.string(), studentQuery: z.string() }) },
+        prompt: `You are an expert tutor. A student has uploaded an image of a question they are struggling with. Your task is to provide a clear, step-by-step solution.
 
-    const llmResponse = await ai.generate({
-      prompt: promptTemplate,
-      model: 'googleai/gemini-pro-vision',
-      input: {
-        questionImage: questionImage,
-        studentQuery: studentQuery || '', // Ensure studentQuery is never undefined
-      },
+        1.  **Analyze the Question:** First, carefully analyze the provided image to understand the question.
+        2.  **Step-by-Step Solution:** Break down the solution into logical, easy-to-follow steps. Explain the reasoning behind each step.
+        3.  **Final Answer:** Clearly state the final answer.
+        4.  **Student's Query:** If the student has an additional query, address it: "{{studentQuery}}"
+        
+        Here is the image:
+        {{media url=questionImage}}
+        
+        Provide the solution in Turkish.`,
     });
+
+    const llmResponse = await analyzePrompt({
+      questionImage: questionImage,
+      studentQuery: studentQuery,
+    });
+
     return llmResponse.text;
   }
 );
@@ -92,6 +100,7 @@ const educationCoachFlow = ai.defineFlow(
     stream: true,
   },
   async (history) => {
+    
     const systemPrompt = `You are a friendly and encouraging AI Education Coach for a student. Your goal is to help them learn, understand complex topics, and develop good study habits.
     
     Your capabilities:
@@ -100,7 +109,29 @@ const educationCoachFlow = ai.defineFlow(
     - You can answer follow-up questions.
     - You can provide study tips and encouragement.
     - You must always communicate in Turkish.`;
+    
+    // Check if the last message contains an image
+    const lastMessage = history[history.length - 1];
+    const imagePart = lastMessage.content.find(part => !!part.media);
+    
+    if (imagePart?.media) {
+        // If there's an image, call the specific tool for it.
+        const textPart = lastMessage.content.find(part => !!part.text);
+        const studentQuery = textPart?.text || ''; // Ensure it's always a string
+        const analysisResult = await analyzeQuestionImageTool({ 
+            questionImage: imagePart.media.url, 
+            studentQuery: studentQuery 
+        });
 
+        // We can't stream this result directly, so we'll just return it as a string.
+        // For a streaming experience, this would need to be handled differently client-side.
+        const { stream } = ai.generateStream({
+            prompt: `Sen bir AI eğitim koçusun. Az önce öğrencinin yolladığı soruyu çözdün. Şimdi bu çözümü ona güzelce açıkla. İşte çözümün:\n\n${analysisResult}`,
+        });
+        return stream.text;
+    }
+
+    // If no image, proceed with the general-purpose generative model
     const { stream } = ai.generateStream({
       model: 'googleai/gemini-2.0-flash',
       tools: [getAvailableTopicsTool, analyzeQuestionImageTool],
@@ -112,7 +143,6 @@ const educationCoachFlow = ai.defineFlow(
   }
 );
 
-export async function runCoach(history: CoachMessage[], newUserMessage: CoachMessage) {
-    const fullHistory = [...history, newUserMessage];
-    return educationCoachFlow(fullHistory);
+export async function runCoach(history: CoachMessage[]) {
+    return educationCoachFlow(history);
 }

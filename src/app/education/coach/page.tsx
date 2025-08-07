@@ -24,6 +24,8 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
     const [isLoading, setIsLoading] = React.useState(false);
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+
 
     React.useEffect(() => {
         setMessages([
@@ -34,30 +36,49 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
         ]);
     }, [activeUser?.name]);
 
+    React.useEffect(() => {
+        // Scroll to bottom when messages change
+        if (scrollAreaRef.current) {
+            const scrollViewport = scrollAreaRef.current.querySelector('div');
+            if (scrollViewport) {
+                scrollViewport.scrollTo({ top: scrollViewport.scrollHeight, behavior: 'smooth' });
+            }
+        }
+    }, [messages]);
+
     const handleSendMessage = async () => {
         if ((!input.trim() && !imageUri) || isLoading) return;
 
+        const contentParts = [];
+        if (input.trim()) {
+            contentParts.push({ text: input.trim() });
+        }
+        if (imageUri) {
+            contentParts.push({ media: { url: imageUri } });
+        }
+
         const userMessage: CoachMessage = {
             role: 'user',
-            content: [{ text: input.trim(),...(imageUri && { media: { url: imageUri } }) }],
+            content: contentParts,
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        const newHistory = [...messages, userMessage];
+        setMessages(newHistory);
         setIsLoading(true);
         setInput('');
         setImageUri(null);
 
         try {
-            const history = messages.filter(m => m.role !== 'tool');
-            const stream = await runCoach(history, userMessage);
+            // Remove any tool messages from history sent to AI
+            const historyForAi = newHistory.filter(m => m.role !== 'tool'); 
+            
+            const stream = await runCoach(historyForAi);
+            
             let responseStarted = false;
+            setMessages(prev => [...prev, { role: 'model', content: [{ text: '' }] }]);
 
             for await (const chunk of stream) {
-                if (!responseStarted) {
-                    setMessages(prev => [...prev, { role: 'model', content: [{ text: '' }] }]);
-                    responseStarted = true;
-                }
-                
+                responseStarted = true;
                 setMessages(prev => {
                     const newMessages = [...prev];
                     const lastMessage = newMessages[newMessages.length - 1];
@@ -66,6 +87,11 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
                     }
                     return newMessages;
                 });
+            }
+
+            if (!responseStarted) { // Handle non-streaming results (like image analysis)
+                 setMessages(prev => prev.slice(0, -1)); // remove empty model message
+                 setMessages(prev => [...prev, { role: 'model', content: [{ text: "İşte sorunun çözümü..." }] }]);
             }
         } catch (error) {
             console.error("AI chat error:", error);
@@ -97,7 +123,7 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
 
     return (
         <Card className="flex-grow flex flex-col mt-4">
-            <ScrollArea className="flex-grow p-4 space-y-4">
+            <ScrollArea className="flex-grow p-4 space-y-4" ref={scrollAreaRef}>
                 <AnimatePresence>
                     {messages.map((message, index) => (
                         <motion.div
@@ -128,6 +154,20 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
                             )}
                         </motion.div>
                     ))}
+                    {isLoading && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-start gap-3 my-4 justify-start"
+                        >
+                             <Avatar className="w-8 h-8 bg-primary text-primary-foreground">
+                                <AvatarFallback><Sparkles className="w-5 h-5"/></AvatarFallback>
+                            </Avatar>
+                            <div className="max-w-md p-3 rounded-lg bg-muted flex items-center">
+                                <Loader2 className="h-5 w-5 animate-spin"/>
+                            </div>
+                        </motion.div>
+                    )}
                 </AnimatePresence>
             </ScrollArea>
             <CardContent className="p-4 border-t">
