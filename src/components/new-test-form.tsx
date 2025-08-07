@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -173,14 +174,13 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           sourceId: exam.id,
           gradingType: exam.gradingType,
           answerKey: exam.answerKey,
-          mistakeIds: exam.mistakeIds,
         };
         break;
 
       case 'mistake':
         if (!values.mistakeIds || values.mistakeIds.length === 0) return;
         testData = {
-          title: "Yanlış Sorular Tekrar Testi",
+          title: values.title || "Yanlış Sorular Tekrar Testi",
           subject: "Yanlış Havuzu",
           studentId: values.studentId,
           questionCount: values.mistakeIds.length,
@@ -219,9 +219,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                 <FormLabel>Öğrenci</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Öğrenci seçin" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    {students.map((student) => (<SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>))}
-                  </SelectContent>
+                  <SelectContent>{students.map((student) => (<SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>))}</SelectContent>
                 </Select>
                 <FormMessage />
               </FormItem>
@@ -313,6 +311,9 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           </TabsContent>
 
           <TabsContent value="mistake" className="space-y-4 m-0">
+             <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Yanlış Sorularım" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
             <FormField name="mistakeIds" render={() => (
               <FormItem><FormLabel>Yanlış Sorular</FormLabel><FormControl>
                   <div className="p-4 border rounded-md max-h-48 overflow-y-auto">

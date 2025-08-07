@@ -361,7 +361,6 @@ export interface PracticeExam {
     subjects: SubjectInExam[];
     gradingType: GradingType;
     answerKey?: AnswerKey;
-    mistakeIds?: string[]; // To link a practice exam to mistake pool questions
 }
 
 export interface StudyPlan {
