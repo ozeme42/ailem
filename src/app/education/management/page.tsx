@@ -710,7 +710,12 @@ export default function EducationManagementPage() {
                 await updateTest(id, testData);
                 toast({ title: "✅ Ödev Güncellendi" });
             } else {
-                await addTest({ ...testData, status: 'Atandı', isArchived: false });
+                let finalTestData = { ...testData, status: 'Atandı', isArchived: false };
+                if (testData.sourceType === 'mistake') {
+                    finalTestData.gradingType = 'manual-text';
+                    finalTestData.subject = 'Yanlış Havuzu';
+                }
+                await addTest(finalTestData);
                 toast({ title: "✅ Ödev Atandı" });
             }
             setEditingTest(null);
