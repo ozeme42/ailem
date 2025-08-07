@@ -1,3 +1,4 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -13,7 +14,7 @@ const ContentPartSchema = z.object({
   text: z.string(),
   media: MediaPartSchema.optional(),
 });
-export const CoachMessageSchema = z.object({
+const CoachMessageSchema = z.object({
   role: z.enum(['user', 'model', 'tool']),
   content: z.array(ContentPartSchema),
   id: z.string().optional(),
