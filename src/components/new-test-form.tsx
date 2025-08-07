@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -30,27 +29,19 @@ export type AssignmentType = "quick" | "bank" | "exam" | "mistake";
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
   
-  // Tab control - not submitted, just for validation logic
   activeTab: z.enum(["quick", "bank", "exam", "mistake"]),
 
-  // Quick Test
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
   gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual-text"),
   answerKey: z.record(z.string()).optional(),
 
-  // Bank
   bankId: z.string().optional(),
   topicId: z.string().optional(),
-
-  // Exam
   examId: z.string().optional(),
-
-  // Mistake
   mistakeIds: z.array(z.string()).optional(),
 
-  // Dates
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 }).refine((data) => {
@@ -158,8 +149,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         studentId: initialData.studentId,
         activeTab: initialData.sourceType,
         title: initialData.sourceType === 'quick' ? initialData.title : "",
-        subject: initialData.sourceType === 'quick' ? initialData.subject : "",
-        questionCount: initialData.sourceType === 'quick' ? initialData.questionCount : 20,
+        subject: initialData.subject,
+        questionCount: initialData.questionCount,
         gradingType: initialData.gradingType || "manual",
         answerKey: initialData.answerKey || {},
         bankId: initialData.sourceType === 'bank' ? initialData.sourceId : "",
@@ -193,20 +184,17 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   const questionCount = form.watch("questionCount") || 0;
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    let assignedDate, dueDate;
-    
-    // Always set dates if not provided for new tests. Keep existing dates if editing.
-    assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
-    dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
+    const assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
+    const dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
     
     let newTest: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'> | null = null;
     
-    const currentActiveTab = mistakePoolSelection && mistakePoolSelection.length > 0 ? 'mistake' : (initialData?.sourceType || activeTab);
+    const currentActiveTab = form.getValues('activeTab');
 
     if (currentActiveTab === 'quick') {
         newTest = {
-            title: values.title!, // refine ensures this is present
-            subject: values.subject!, // refine ensures this is present
+            title: values.title!,
+            subject: values.subject!,
             studentId: values.studentId,
             questionCount: values.questionCount || 0,
             assignedDate,
@@ -221,7 +209,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         if (bank && topic) {
              newTest = {
                 title: `${bank.name} - ${topic.name}`,
-                subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders", // find subject name
+                subject: bank.subjects.find(s => s.topics.some(t => t.id === topic.id))?.name || "Ders",
                 studentId: values.studentId,
                 questionCount: topic.questionCount,
                 assignedDate,

@@ -711,17 +711,14 @@ export default function EducationManagementPage() {
                 toast({ title: "✅ Ödev Güncellendi" });
             } else {
                 let finalTestData = { ...testData, status: 'Atandı', isArchived: false };
-                if (testData.sourceType === 'mistake') {
-                    finalTestData.gradingType = 'manual-text';
-                    finalTestData.subject = 'Yanlış Havuzu';
-                }
                 await addTest(finalTestData);
                 toast({ title: "✅ Ödev Atandı" });
             }
             setEditingTest(null);
             setIsTestDialogOpen(false);
         } catch (error) {
-             toast({ title: "❌ Kaydetme Hatası", variant: 'destructive'});
+             console.error("Error assigning test:", error);
+             toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
         }
     };
 
@@ -776,18 +773,23 @@ export default function EducationManagementPage() {
                 <Link href="/education">
                     <Button variant="outline"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
                 </Link>
-                <Dialog>
+                 <Dialog open={isTestDialogOpen} onOpenChange={(open) => { if (!open) setEditingTest(null); setIsTestDialogOpen(open); }}>
                     <DialogTrigger asChild>
-                       <Button><PlusCircle className="mr-2 h-4 w-4" /> Yeni İçerik Ekle</Button>
+                         <Button><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>Ne Oluşturmak İstersiniz?</DialogTitle>
+                            <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
                         </DialogHeader>
-                         <div className="grid grid-cols-2 gap-4 py-4">
-                            <Button variant="outline" className="h-24" onClick={() => { setEditingBank(null); setIsBankDialogOpen(true); }}>Soru Bankası</Button>
-                            <Button variant="outline" className="h-24" onClick={() => { setEditingExam(null); setIsExamDialogOpen(true); }}>Deneme Sınavı</Button>
-                        </div>
+                        <NewTestForm 
+                            students={studentMembers} 
+                            questionBanks={questionBanks}
+                            practiceExams={practiceExams}
+                            onAssign={handleTestSubmit}
+                            initialData={editingTest}
+                            availableSubjects={availableSubjects}
+                            onSubjectCreated={handleCreateSubject}
+                        />
                     </DialogContent>
                 </Dialog>
             </PageHeader>
@@ -846,6 +848,20 @@ export default function EducationManagementPage() {
                     <TabsTrigger value="study-plans">Çalışma Planları</TabsTrigger>
                 </TabsList>
                 <TabsContent value="library" className="mt-4">
+                     <Dialog>
+                        <DialogTrigger asChild>
+                           <Button><PlusCircle className="mr-2 h-4 w-4" /> Yeni İçerik Ekle</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Ne Oluşturmak İstersiniz?</DialogTitle>
+                            </DialogHeader>
+                             <div className="grid grid-cols-2 gap-4 py-4">
+                                <Button variant="outline" className="h-24" onClick={() => { setEditingBank(null); setIsBankDialogOpen(true); }}>Soru Bankası</Button>
+                                <Button variant="outline" className="h-24" onClick={() => { setEditingExam(null); setIsExamDialogOpen(true); }}>Deneme Sınavı</Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                     <ContentLibrary 
                         questionBanks={questionBanks}
                         practiceExams={practiceExams}
@@ -901,22 +917,6 @@ export default function EducationManagementPage() {
                 </DialogContent>
             </Dialog>
             
-            <Dialog open={isTestDialogOpen} onOpenChange={(open) => { if(!open) setEditingTest(null); setIsTestDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
-                    </DialogHeader>
-                    <NewTestForm 
-                        students={studentMembers} 
-                        questionBanks={questionBanks}
-                        practiceExams={practiceExams}
-                        onAssign={handleTestSubmit}
-                        initialData={editingTest}
-                        availableSubjects={availableSubjects}
-                        onSubjectCreated={handleCreateSubject}
-                    />
-                </DialogContent>
-            </Dialog>
 
             <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
                 <DialogContent>
