@@ -25,6 +25,15 @@ type TopicStats = {
   successRate: number;
 };
 
+// This function must be consistent with the one in `src/app/education/page.tsx`
+const getCategoryName = (test: Test, availableSubjects: string[]): string => {
+    if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+    if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
+    if (test.subject && availableSubjects.includes(test.subject)) return test.subject;
+    if (test.subject) return test.subject; // Fallback for quick tests with new subjects
+    return 'Diğer';
+};
+
 export default function CategoryDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -36,6 +45,8 @@ export default function CategoryDetailPage() {
   const { familyMembers } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
+  // We need availableSubjects here to correctly categorize tests
+  const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const student = React.useMemo(() => 
@@ -56,6 +67,13 @@ export default function CategoryDetailPage() {
         if (loading) setLoading(false);
     });
 
+    // Fetch available subjects
+    const allSubjects = new Set<string>();
+    questionBanks.forEach(qb => qb.subjects.forEach(s => allSubjects.add(s.name)));
+    allTests.forEach(t => { if(t.subject) allSubjects.add(t.subject) });
+    setAvailableSubjects(Array.from(allSubjects));
+
+
     // Initial loading state management
     Promise.all([
         new Promise(resolve => onTestsUpdate(t => resolve(t), true)),
@@ -66,20 +84,11 @@ export default function CategoryDetailPage() {
         unsubscribeTests();
         unsubscribeBanks();
     };
-  }, [studentId, loading]);
+  }, [studentId, loading, questionBanks, allTests]);
 
   const { filteredTests, topicStats } = React.useMemo(() => {
-    const getCategoryName = (test: Test): string => {
-        if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-        if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
-        // Note: `availableSubjects` is not available here, but we can rely on `test.subject`
-        // as the main identifier for bank/quick tests. The main page already grouped them.
-        if (test.subject) return test.subject;
-        return 'Diğer';
-    };
-    
-    const testsForCategory = allTests
-      .filter(test => getCategoryName(test) === categoryName);
+    // This is the critical change: use the same logic as the main education page for categorization.
+    const testsForCategory = allTests.filter(test => getCategoryName(test, availableSubjects) === categoryName);
 
     const sortedTests = [...testsForCategory].sort((a, b) => {
           try {
@@ -115,7 +124,7 @@ export default function CategoryDetailPage() {
 
     return { filteredTests: sortedTests, topicStats: finalTopicStats };
 
-  }, [allTests, categoryName, questionBanks]);
+  }, [allTests, categoryName, questionBanks, availableSubjects]);
   
   const formatTestDate = (dateString: string) => {
       try {

@@ -60,6 +60,15 @@ const categoryProgressColors: { [key: string]: string } = {
     'Diğer': 'bg-gray-500',
 };
 
+// This function must be consistent with the one in `src/app/education/category/[categoryName]/page.tsx`
+const getCategoryName = (test: Test, availableSubjects: string[]): string => {
+    if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+    if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
+    if (test.subject && availableSubjects.includes(test.subject)) return test.subject;
+    if (test.subject) return test.subject; // Fallback for quick tests with new subjects
+    return 'Diğer';
+};
+
 
 export default function EducationPage() {
   const { toast } = useToast();
@@ -151,15 +160,8 @@ export default function EducationPage() {
   const testsByCategory = React.useMemo(() => {
     const categories: { [key: string]: { total: number, completed: number } } = {};
 
-    const getCategoryName = (test: Test): string => {
-        if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-        if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
-        if (availableSubjects.includes(test.subject)) return test.subject;
-        return 'Diğer';
-    }
-
     tests.forEach(test => {
-        const categoryName = getCategoryName(test);
+        const categoryName = getCategoryName(test, availableSubjects);
         if (!categories[categoryName]) {
             categories[categoryName] = { total: 0, completed: 0 };
         }
