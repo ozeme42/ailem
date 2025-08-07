@@ -8,49 +8,45 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { onQuestionBanksUpdate } from '@/lib/dataService';
-import type { QuestionBank, CoachMessage } from '@/lib/data';
-
-// Tool to get available subjects and topics for text-based chat
-const getAvailableTopicsTool = ai.defineTool(
-  {
-    name: 'getAvailableTopics',
-    description: 'Kullanıcı bir konu anlatımı istediğinde, sistemde kayıtlı olan dersleri ve konuları listelemek için bu aracı kullan. Bu, öğrencinin öğrenme bağlamını anlamana yardımcı olur.',
-    outputSchema: z.array(z.string()),
-  },
-  async () => {
-    try {
-      const banks: QuestionBank[] = await new Promise((resolve) => {
-        onQuestionBanksUpdate(resolve, true);
-      });
-      const topicsList = banks.flatMap(bank => 
-        bank.subjects.flatMap(subject => 
-          subject.topics.map(topic => `${subject.name} - ${topic.name}`)
-        )
-      );
-      return Array.from(new Set(topicsList));
-    } catch (error) {
-      console.error("Failed to fetch topics:", error);
-      return ["Konular alınamadı."];
-    }
-  }
-);
+import type { CoachMessage } from '@/lib/data';
 
 
-// Main flow for text-based conversation
+// Main flow for all interactions (text and image)
 export async function* runCoach(history: CoachMessage[]): AsyncGenerator<string> {
-    const systemPrompt = `You are a friendly and encouraging AI Education Coach for a student. Your goal is to help them learn, understand complex topics, and develop good study habits. You must always communicate in Turkish.
-    
-    Your capabilities and instructions:
-    - If the user asks for a topic explanation, use the getAvailableTopicsTool to see what subjects are already registered in the system to provide context-aware answers. Then explain the topic clearly.
-    - If the user asks a follow-up question, answer it based on the conversation history.
-    - If the user asks for study tips, provide them with encouragement and effective study strategies.
-    - Do NOT attempt to analyze images in this text-based flow.
-    `;
+    const systemPrompt = `🎓 Sen bir yapay zeka eğitim koçusun ve görevlerin şunlardır:
+
+İlkokul öğrencilerine destek olmak için tasarlandın.
+
+Öğrencinin seviyesine uygun sade bir dil kullanırsın; uzun ve karışık cümlelerden kaçınırsın.
+
+Öğrenciye dersleri eğlenceli ve anlaşılır şekilde öğretirsin.
+
+Konu anlatımı yapabilir, basit örneklerle konuyu pekiştirirsin.
+
+Öğrenciye sorular sorarak öğrenmesini teşvik edersin.
+
+Sorduğu soruları dikkatlice analiz eder, adım adım çözüm sunarsın. Eğer soru görsel olarak gönderildiyse çözümleme yapıp detaylı şekilde anlatırsın.
+
+Öğrenci başarı gösterdiğinde onu tebrik eder, motive edersin. Küçük ama içten iltifatlar kullanırsın ("Harika gidiyorsun!", "Aferin sana!").
+
+Yanlış yaptığı durumlarda yargılamazsın, nazikçe doğrusunu gösterirsin.
+
+Öğrencinin öz güvenini artıracak şekilde konuşursun.
+
+Her ders için destek verebilirsin: Türkçe, Matematik, Hayat Bilgisi, Fen Bilimleri, Sosyal Bilgiler, Din Kültürü, İngilizce.
+
+Öğrenci sana resim, yazı ya da ses gönderirse hepsini anlayabilecekmişsin gibi cevap ver. Özellikle görsel olarak gönderilen soruları detaylı analiz ederek adım adım açıkla.
+
+Gerekirse çocuklara özel çizgi film benzeri örnekler vererek anlatırsın (örneğin “Toplamayı Ayşe ve Elma Sepetiyle Açıklama” gibi).
+
+İstersen kısa hikâyelerle konuyu eğlenceli hâle getirirsin.
+
+Öğrencinin dikkatini toplaması için küçük yönlendirmeler yapabilirsin ("Haydi şimdi birlikte bir soruya bakalım", "Hazırsan başlayalım", "Birkaç dakika odaklanalım").
+
+🧠 Unutma: Öğrenci küçük yaşta olduğu için onunla konuşurken sabırlı, sevecen, anlayışlı ve sade olman çok önemli. Eğlenceli ama öğretici olmalısın.`;
     
     const { stream } = await ai.generateStream({
       model: 'googleai/gemini-2.0-flash',
-      tools: [getAvailableTopicsTool],
       history: history,
       prompt: systemPrompt,
     });
@@ -60,17 +56,8 @@ export async function* runCoach(history: CoachMessage[]): AsyncGenerator<string>
     }
 }
 
-// Separate, dedicated flow for analyzing images
-const ImageAnalysisInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-  studentQuery: z.string().optional().describe('An optional question from the student about the image.'),
-});
-
-export async function analyzeQuestionImage(input: z.infer<typeof ImageAnalysisInputSchema>): Promise<string> {
+// Dedicated function for image analysis, called from the client
+export async function analyzeQuestionImage(input: { photoDataUri: string, studentQuery?: string }): Promise<string> {
   
   const prompt = `You are an expert teacher. A student has sent you a photo of a question they are struggling with.
   
