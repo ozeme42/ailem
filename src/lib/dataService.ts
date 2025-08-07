@@ -701,13 +701,13 @@ export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, "questionBan
 
 
 export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void, runOnce = false) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback, runOnce);
-export const addPracticeExam = async (data: Omit<PracticeExam, 'id'| 'familyId'>) => {
+export const addPracticeExam = async (data: Omit<PracticeExam, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'practiceExams'), { ...data, familyId });
 };
 export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id'>>) => updateDoc(doc(db, 'practiceExams', id), data);
-export const deletePracticeExam = (id: string) => deleteDoc(doc(db, 'practiceExams', id));
+export const deletePracticeExam = (id: string) => deleteDoc(doc(db, "practiceExams", id));
 
 // Study Plans
 export const onStudyPlansUpdate = (callback: (plans: StudyPlan[]) => void) => onFamilyDataUpdate<StudyPlan>('studyPlans', callback);

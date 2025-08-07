@@ -1,23 +1,24 @@
 
-
 "use client";
 
 import * as React from "react";
 import Image from 'next/image';
 import { useAuth } from "@/components/auth-provider";
-import { Mistake } from "@/lib/data";
-import { onMistakesUpdate, deleteMistake } from "@/lib/dataService";
+import { Mistake, PracticeExam } from "@/lib/data";
+import { onMistakesUpdate, deleteMistake, addPracticeExam } from "@/lib/dataService";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send } from "lucide-react";
 import { NewMistakeForm } from "@/components/new-mistake-form";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { NewTestForm } from "@/components/new-test-form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Matematik': Ruler,
@@ -33,7 +34,9 @@ export default function MistakePoolPage() {
     const [mistakes, setMistakes] = React.useState<Mistake[]>([]);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [selectedMistakes, setSelectedMistakes] = React.useState<Mistake[]>([]);
-    const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = React.useState(false);
+    const [isTestCreationDialogOpen, setIsTestCreationDialogOpen] = React.useState(false);
+    const [newTestName, setNewTestName] = React.useState("");
+
     const { toast } = useToast();
     
     const studentMembers = React.useMemo(() => 
@@ -76,21 +79,50 @@ export default function MistakePoolPage() {
         });
     };
     
-    const handleAssignTest = () => {
+    const openTestCreationDialog = () => {
         if (selectedMistakes.length === 0) {
-            toast({ title: "Hiç Soru Seçilmedi", description: "Lütfen ödev oluşturmak için en az bir soru seçin.", variant: "destructive" });
+            toast({ title: "Hiç Soru Seçilmedi", description: "Lütfen test oluşturmak için en az bir soru seçin.", variant: "destructive" });
             return;
         }
-        setIsAssignmentDialogOpen(true);
+        setNewTestName(`Tekrar Testi - ${new Date().toLocaleDateString('tr-TR')}`);
+        setIsTestCreationDialogOpen(true);
+    };
+
+    const handleCreateTestFromMistakes = async () => {
+        if (!newTestName.trim() || selectedMistakes.length === 0) return;
+
+        const testData: Omit<PracticeExam, 'id' | 'familyId'> = {
+            name: newTestName.trim(),
+            subjects: [{
+                id: 1,
+                name: 'Yanlış Havuzu',
+                questionCount: selectedMistakes.length
+            }],
+            gradingType: 'manual-text',
+            mistakeIds: selectedMistakes.map(m => m.id),
+        };
+        
+        try {
+            await addPracticeExam(testData);
+            toast({
+                title: 'Tekrar Testi Oluşturuldu',
+                description: `"${testData.name}" testi artık "Yeni Ödev Ata" ekranında Deneme Sınavları altında bulunabilir.`
+            });
+            setIsTestCreationDialogOpen(false);
+            setSelectedMistakes([]);
+            setNewTestName("");
+        } catch (error) {
+            toast({ title: "Hata", description: "Test oluşturulurken bir sorun oluştu.", variant: "destructive" });
+        }
     };
 
     return (
         <div className="space-y-6">
             <PageHeader title="Yanlış Havuzu">
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleAssignTest} disabled={selectedMistakes.length === 0}>
+                    <Button variant="outline" onClick={openTestCreationDialog} disabled={selectedMistakes.length === 0}>
                         <Send className="mr-2 h-4 w-4" />
-                        Seçilenlerden Ödev Oluştur ({selectedMistakes.length})
+                        Seçilenlerden Tekrar Testi Oluştur ({selectedMistakes.length})
                     </Button>
                     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                         <DialogTrigger asChild>
@@ -181,27 +213,26 @@ export default function MistakePoolPage() {
                     </CardContent>
                 </Card>
             )}
-             <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
+             <Dialog open={isTestCreationDialogOpen} onOpenChange={setIsTestCreationDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Yanlışlardan Ödev Oluştur</DialogTitle>
+                        <DialogTitle>Tekrar Testi Oluştur</DialogTitle>
                         <DialogDescription>
-                            Seçilen {selectedMistakes.length} soruyu bir öğrenciye ata.
+                            Seçilen {selectedMistakes.length} sorudan kalıcı bir tekrar testi oluşturun. Bu test daha sonra "Yeni Ödev Ata" ekranından atanabilir.
                         </DialogDescription>
                     </DialogHeader>
-                     <NewTestForm
-                        students={studentMembers}
-                        questionBanks={[]}
-                        practiceExams={[]}
-                        onAssign={() => {
-                            toast({ title: "Ödev Atandı!" });
-                            setIsAssignmentDialogOpen(false);
-                            setSelectedMistakes([]);
-                        }}
-                        availableSubjects={[]}
-                        onSubjectCreated={() => {}}
-                        mistakePoolSelection={selectedMistakes}
-                    />
+                    <div className="py-4 space-y-2">
+                        <Label htmlFor="test-name">Test Adı</Label>
+                        <Input 
+                            id="test-name"
+                            value={newTestName}
+                            onChange={(e) => setNewTestName(e.target.value)}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsTestCreationDialogOpen(false)}>İptal</Button>
+                        <Button onClick={handleCreateTestFromMistakes}>Testi Oluştur ve Kaydet</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

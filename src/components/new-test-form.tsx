@@ -173,6 +173,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           sourceId: exam.id,
           gradingType: exam.gradingType,
           answerKey: exam.answerKey,
+          mistakeIds: exam.mistakeIds || [],
         };
         break;
 
@@ -327,5 +328,3 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
-
-    

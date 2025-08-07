@@ -361,6 +361,7 @@ export interface PracticeExam {
     subjects: SubjectInExam[];
     gradingType: GradingType;
     answerKey?: AnswerKey;
+    mistakeIds?: string[]; // To link a practice exam to mistake pool questions
 }
 
 export interface StudyPlan {
@@ -513,16 +514,15 @@ export const initialTasks: Omit<Task, 'id' | 'familyId' | 'assigneeId' | 'create
     { title: 'Matematik Ödevi', points: 50, dueDate: '2024-08-12', completed: false, category: 'Okul', subtasks: [] },
 ];
 
-export const initialShoppingLists: Omit<ShoppingList, 'id' | 'familyId'>[] = [
+export const initialShoppingLists: Omit<ShoppingNoteList, 'id' | 'familyId'>[] = [
     {
         name: 'Haftalık Market Alışverişi',
         icon: 'ShoppingCart',
         items: [
-            { id: '1', name: 'Süt', isBought: true, createdAt: new Date().toISOString() },
-            { id: '2', name: 'Ekmek', isBought: true, createdAt: new Date().toISOString() },
-            { id: '3', name: 'Yumurta', isBought: false, createdAt: new Date().toISOString() },
+            { id: '1', name: 'Süt', completed: true },
+            { id: '2', name: 'Ekmek', completed: true },
+            { id: '3', name: 'Yumurta', completed: false },
         ],
-        boughtItems: [],
     }
 ];
 
