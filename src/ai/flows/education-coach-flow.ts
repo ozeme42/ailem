@@ -50,28 +50,24 @@ const analyzeQuestionImageTool = ai.defineTool(
   },
   async ({ questionImage, studentQuery }) => {
     
-    const analyzePrompt = ai.definePrompt({
-        name: 'analyzeQuestionPrompt',
-        input: { schema: z.object({ questionImage: z.string(), studentQuery: z.string() }) },
-        prompt: `You are an expert tutor. A student has uploaded an image of a question they are struggling with. Your task is to provide a clear, step-by-step solution.
+    const analyzePrompt = `You are an expert tutor. A student has uploaded an image of a question they are struggling with. Your task is to provide a clear, step-by-step solution.
 
         1.  **Analyze the Question:** First, carefully analyze the provided image to understand the question.
         2.  **Step-by-Step Solution:** Break down the solution into logical, easy-to-follow steps. Explain the reasoning behind each step.
         3.  **Final Answer:** Clearly state the final answer.
-        4.  **Student's Query:** If the student has an additional query, address it: "{{studentQuery}}"
+        4.  **Student's Query:** If the student has an additional query, address it: "${studentQuery || ''}"
         
-        Here is the image:
-        {{media url=questionImage}}
-        
-        Provide the solution in Turkish.`,
+        Provide the solution in Turkish.`;
+
+
+    const { text } = await ai.generate({
+        prompt: [
+            { text: analyzePrompt },
+            { media: { url: questionImage } }
+        ]
     });
 
-    const llmResponse = await analyzePrompt({
-      questionImage: questionImage,
-      studentQuery: studentQuery || "",
-    });
-
-    return llmResponse.text;
+    return text;
   }
 );
 
@@ -108,8 +104,7 @@ const educationCoachFlow = ai.defineFlow(
             studentQuery: studentQuery 
         });
 
-        // We can't stream this result directly, so we'll just return it as a string.
-        // For a streaming experience, this would need to be handled differently client-side.
+        // The result from the tool is already a string, so we can stream it directly.
         const { stream } = ai.generateStream({
             prompt: `Sen bir AI eğitim koçusun. Az önce öğrencinin yolladığı soruyu çözdün. Şimdi bu çözümü ona güzelce açıkla. İşte çözümün:\n\n${analysisResult}`,
         });
