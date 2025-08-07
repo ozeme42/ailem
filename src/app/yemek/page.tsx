@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -49,6 +50,8 @@ export default function YemekPlanlamaPage() {
   const [isNewRecipeDialogOpen, setIsNewRecipeDialogOpen] = React.useState(false);
   const [editingRecipe, setEditingRecipe] = React.useState<Recipe | null>(null);
   const [currentMealSelection, setCurrentMealSelection] = React.useState<MealSelection>(null);
+  const [recipeSearchTerm, setRecipeSearchTerm] = React.useState("");
+
 
   React.useEffect(() => {
     const unsubscribePlan = onMealPlanUpdate(setMealPlan);
@@ -68,6 +71,14 @@ export default function YemekPlanlamaPage() {
     const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const recipeSelectorFilteredRecipes = React.useMemo(() => {
+    if (!recipeSearchTerm) return recipes;
+    return recipes.filter(recipe =>
+      recipe.title.toLowerCase().includes(recipeSearchTerm.toLowerCase()) ||
+      recipe.category.toLowerCase().includes(recipeSearchTerm.toLowerCase())
+    );
+  }, [recipes, recipeSearchTerm]);
   
   const handleSaveRecipe = async (recipeData: Omit<Recipe, 'id' | 'familyId'>) => {
     try {
@@ -390,7 +401,16 @@ export default function YemekPlanlamaPage() {
                     } için bir tarif seçin.
                   </DialogDescription>
               </DialogHeader>
-              <div className="my-4">
+              <div className="my-4 space-y-4">
+                  <div className="relative w-full">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Tariflerde ara..." 
+                      className="pl-10"
+                      value={recipeSearchTerm}
+                      onChange={(e) => setRecipeSearchTerm(e.target.value)}
+                    />
+                 </div>
                 <Button 
                     variant="outline" 
                     className="w-full"
@@ -405,7 +425,7 @@ export default function YemekPlanlamaPage() {
               </div>
               <ScrollArea className="h-72 -mx-6 px-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-                    {recipes.map(recipe => (
+                    {recipeSelectorFilteredRecipes.map(recipe => (
                         <Card 
                             key={recipe.id}
                             className="overflow-hidden cursor-pointer group transition-all hover:shadow-lg hover:border-primary"
@@ -417,6 +437,11 @@ export default function YemekPlanlamaPage() {
                             </CardHeader>
                         </Card>
                     ))}
+                     {recipeSelectorFilteredRecipes.length === 0 && (
+                        <p className="col-span-full text-center text-muted-foreground py-8">
+                            Tarif bulunamadı.
+                        </p>
+                    )}
                 </div>
               </ScrollArea>
           </DialogContent>
