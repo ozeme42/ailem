@@ -38,7 +38,7 @@ const getAvailableTopicsTool = ai.defineTool(
 
 
 // Main flow for text-based conversation
-export async function runCoach(history: CoachMessage[]) {
+export async function* runCoach(history: CoachMessage[]): AsyncGenerator<string> {
     const systemPrompt = `You are a friendly and encouraging AI Education Coach for a student. Your goal is to help them learn, understand complex topics, and develop good study habits. You must always communicate in Turkish.
     
     Your capabilities and instructions:
@@ -55,7 +55,9 @@ export async function runCoach(history: CoachMessage[]) {
       prompt: systemPrompt,
     });
     
-    return stream;
+    for await (const chunk of stream) {
+        yield chunk.text ?? '';
+    }
 }
 
 // Separate, dedicated flow for analyzing images

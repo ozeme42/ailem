@@ -133,9 +133,8 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
         setInput('');
 
         try {
-            // Ensure only plain objects are sent to the server action
             const plainHistory = JSON.parse(JSON.stringify(newHistory.filter(m => m.role !== 'tool')));
-            const stream = await runCoach(plainHistory);
+            const stream = runCoach(plainHistory);
             
             setMessages(prev => [...prev, { role: 'model', content: [{ text: '' }] }]);
 
