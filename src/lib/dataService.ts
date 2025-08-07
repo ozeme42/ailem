@@ -4,7 +4,7 @@ import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic } from './data';
-import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval } from 'date-fns';
+import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -1291,36 +1291,41 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
     if (!taskData.isRecurring) return;
 
     const dayKey = format(day, 'yyyy-MM-dd');
-    const completedDates = new Set(taskData.completedDates || []);
+    const completedDatesSet = new Set(taskData.completedDates || []);
 
     if (isCompleted) {
-        completedDates.add(dayKey);
+        completedDatesSet.add(dayKey);
     } else {
-        completedDates.delete(dayKey);
+        completedDatesSet.delete(dayKey);
     }
     
+    const completedDates = Array.from(completedDatesSet);
     const updatePayload: Partial<Task> = {
-        completedDates: Array.from(completedDates),
+        completedDates: completedDates,
     };
 
     let streak = 0;
     if (taskData.recurrenceType === 'daily') {
-        const sortedDates = Array.from(completedDates).sort().map(d => parseISO(d));
+        const sortedDates = completedDates.map(d => parseISO(d)).sort((a, b) => b.getTime() - a.getTime());
         if (sortedDates.length > 0) {
-            let currentDate = new Date();
-            currentDate.setHours(0,0,0,0);
+            let lastDate = new Date();
+            lastDate.setHours(0,0,0,0);
             
-            const todayIsCompleted = sortedDates.some(d => isSameDay(d, currentDate));
-            if (!todayIsCompleted) {
-                currentDate = subDays(currentDate, 1);
+            // If today is not in the list, check from yesterday
+            if (!sortedDates.some(d => isSameDay(d, lastDate))) {
+                lastDate = subDays(lastDate, 1);
             }
 
-            for (let i = sortedDates.length - 1; i >= 0; i--) {
-                if (isSameDay(sortedDates[i], currentDate)) {
+            for (const date of sortedDates) {
+                if (differenceInDays(lastDate, date) === streak) {
                     streak++;
-                    currentDate = subDays(currentDate, 1);
-                } else if (sortedDates[i] < currentDate) {
-                    break;
+                } else {
+                    // Check if the break is because we skipped to yesterday
+                    if (streak === 0 && differenceInDays(lastDate, date) === 0) {
+                       streak++;
+                    } else {
+                       break;
+                    }
                 }
             }
         }
@@ -1331,15 +1336,11 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
             return taskData.recurrenceDays!.every(dayId => {
                 const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
                 const checkDate = addDays(weekStart, dayIndex);
-                return completedDates.has(format(checkDate, 'yyyy-MM-dd'));
+                return completedDatesSet.has(format(checkDate, 'yyyy-MM-dd'));
             });
         };
         
-        let currentWeekIsComplete = isWeekComplete(checkWeekStart);
-        if(!currentWeekIsComplete) {
-            checkWeekStart = subWeeks(checkWeekStart, 1);
-        }
-
+        // Start counting from the most recent week that *should* be complete or is complete
         while(isWeekComplete(checkWeekStart)) {
             streak++;
             checkWeekStart = subWeeks(checkWeekStart, 1);
