@@ -102,12 +102,25 @@ export default function MistakePoolPage() {
 
      const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
         try {
-            await addTest({ ...testData, status: 'Atandı', isArchived: false });
+            await addTest({ ...testData, status: 'Atandı', isArchived: false, sourceType: 'mistake', subject: 'Yanlış Havuzu', gradingType: 'manual-text' });
             toast({ title: "✅ Ödev Atandı", description: "Yanlış sorularından oluşan yeni ödev başarıyla öğrenciye atandı." });
             setIsAssignmentDialogOpen(false);
             setSelectedMistakes([]);
         } catch (error) {
              toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
+        }
+    };
+    
+    const handleToggleAllForTopic = (topicMistakes: Mistake[]) => {
+        const allSelected = topicMistakes.every(tm => selectedMistakes.some(sm => sm.id === tm.id));
+
+        if (allSelected) {
+            // If all are selected, unselect them all
+            setSelectedMistakes(prev => prev.filter(sm => !topicMistakes.some(tm => tm.id === sm.id)));
+        } else {
+            // If some or none are selected, select all
+            const newSelections = topicMistakes.filter(tm => !selectedMistakes.some(sm => sm.id === tm.id));
+            setSelectedMistakes(prev => [...prev, ...newSelections]);
         }
     };
 
@@ -157,9 +170,18 @@ export default function MistakePoolPage() {
                                 </AccordionTrigger>
                                 <AccordionContent className="p-4 pt-0">
                                     <div className="space-y-3">
-                                        {Object.entries(topics).map(([topic, topicMistakes]) => (
+                                        {Object.entries(topics).map(([topic, topicMistakes]) => {
+                                            const allTopicMistakesSelected = topicMistakes.every(tm => selectedMistakes.some(sm => sm.id === tm.id));
+                                            return (
                                             <div key={topic}>
-                                                <h4 className="font-semibold text-muted-foreground mb-2">{topic}</h4>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Checkbox
+                                                        id={`select-all-${topic}`}
+                                                        checked={allTopicMistakesSelected}
+                                                        onCheckedChange={() => handleToggleAllForTopic(topicMistakes)}
+                                                    />
+                                                    <label htmlFor={`select-all-${topic}`} className="font-semibold text-muted-foreground cursor-pointer">{topic}</label>
+                                                </div>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                                     {topicMistakes.map(mistake => (
                                                         <Card key={mistake.id} className="relative group overflow-hidden">
@@ -194,7 +216,7 @@ export default function MistakePoolPage() {
                                                     ))}
                                                 </div>
                                             </div>
-                                        ))}
+                                        )})}
                                     </div>
                                 </AccordionContent>
                              </AccordionItem>
