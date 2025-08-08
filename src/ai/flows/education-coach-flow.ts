@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview The AI Education Coach provides personalized learning assistance.
- * - educationCoachAction - The main stream action for text-based chat.
+ * - educationCoachFlow - The main function for text-based chat.
  * - analyzeQuestionImage - A dedicated function to handle image-based questions.
  */
 
@@ -43,20 +43,20 @@ Gerekirse çocuklara özel çizgi film benzeri örnekler vererek anlatırsın (�
 🧠 Unutma: Öğrenci küçük yaşta olduğu için onunla konuşurken sabırlı, sevecen, anlayışlı ve sade olman çok önemli. Eğlenceli ama öğretici olmalısın.`;
 
 
-export const educationCoachAction = ai.defineAction(
+export const educationCoachFlow = ai.defineFlow(
   {
-    name: 'educationCoach',
+    name: 'educationCoachFlow',
     inputSchema: z.array(CoachMessageSchema),
     outputSchema: z.string(),
   },
   async (history) => {
-    const { stream } = ai.generateStream({
+    const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
       history: history,
       prompt: systemPrompt,
     });
 
-    return stream;
+    return llmResponse.text;
   }
 );
 
