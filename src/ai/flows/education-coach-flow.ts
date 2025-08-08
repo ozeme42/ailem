@@ -51,6 +51,10 @@ export const educationCoachFlow = ai.defineFlow(
   },
   async (history) => {
     
+    if (!history || history.length === 0) {
+      return "Merhaba! Sana nasıl yardımcı olabilirim?";
+    }
+
     // Prepend the system prompt to the history for better context adherence
     const messagesWithSystemPrompt = [
         { role: 'system' as const, content: [{ text: systemPrompt }] },
@@ -82,7 +86,7 @@ export async function analyzeQuestionImage(input: { photoDataUri: string, studen
   The image with the problem: {{media url=photoDataUri}}
   `;
   
-  const llmResponse = await ai.generate({
+  const { text } = await ai.generate({
     model: 'googleai/gemini-2.0-flash',
     prompt: prompt,
     input: {
@@ -90,5 +94,5 @@ export async function analyzeQuestionImage(input: { photoDataUri: string, studen
     }
   });
 
-  return llmResponse.text;
+  return text;
 }
