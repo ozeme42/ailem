@@ -12,7 +12,7 @@ import type { CoachMessage } from '@/lib/data';
 
 
 // Main flow for all interactions (text and image)
-export async function* runCoach(history: CoachMessage[]): AsyncGenerator<string> {
+export async function runCoach(history: CoachMessage[]) {
     const systemPrompt = `🎓 Sen bir yapay zeka eğitim koçusun ve görevlerin şunlardır:
 
 İlkokul öğrencilerine destek olmak için tasarlandın.
@@ -45,15 +45,11 @@ Gerekirse çocuklara özel çizgi film benzeri örnekler vererek anlatırsın (�
 
 🧠 Unutma: Öğrenci küçük yaşta olduğu için onunla konuşurken sabırlı, sevecen, anlayışlı ve sade olman çok önemli. Eğlenceli ama öğretici olmalısın.`;
     
-    const { stream } = ai.generateStream({
+    return ai.generateStream({
       model: 'googleai/gemini-2.0-flash',
       history: history,
       prompt: systemPrompt,
     });
-    
-    for await (const chunk of stream) {
-        yield chunk.text ?? '';
-    }
 }
 
 // Dedicated function for image analysis, called from the client
@@ -81,3 +77,4 @@ export async function analyzeQuestionImage(input: { photoDataUri: string, studen
 
   return llmResponse.text;
 }
+
