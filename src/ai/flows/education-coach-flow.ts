@@ -51,20 +51,15 @@ export const educationCoachFlow = ai.defineFlow(
   },
   async (history) => {
     
+    // Robust check to prevent sending empty history to the AI model.
     if (!history || history.length === 0) {
-      return "Merhaba! Sana nasıl yardımcı olabilirim?";
+      return "Merhaba! Sana nasıl yardımcı olabilirim? Bana bir soru sorabilirsin.";
     }
 
-    // Prepend the system prompt to the history for better context adherence
     const messagesWithSystemPrompt = [
         { role: 'system' as const, content: [{ text: systemPrompt }] },
-        ...(history || []), // Ensure history is an array even if it's null/undefined
+        ...history,
     ];
-
-    if (messagesWithSystemPrompt.length === 1) {
-        // This case should ideally not be hit due to the check above, but as a safeguard:
-        return "Merhaba! Bana bir soru sorabilir veya bir konuyu anlatmamı isteyebilirsin.";
-    }
 
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
