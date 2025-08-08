@@ -10,12 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks } from 'lucide-react';
+import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress } from '@/lib/data';
 import { Progress } from './ui/progress';
-import { format } from 'date-fns';
+import { format, isToday, parseISO } from 'date-fns';
 
 interface MemberDashboardCardProps {
     member: FamilyMember;
@@ -54,11 +54,21 @@ export function MemberDashboardCard({
     const { toast } = useToast();
     const { familyId, familyMembers } = useAuth();
     
-    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers } = React.useMemo(() => {
+    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes } = React.useMemo(() => {
         const memberId = member.id;
+        let completedActivityCount = 0;
+        const todayKey = format(new Date(), 'yyyy-MM-dd');
 
         const memberTasks = tasks.filter(t => t.assigneeId === memberId);
+        
+        // Count completed recurring tasks (habits) for today
         const habits = memberTasks.filter(t => t.isRecurring);
+        habits.forEach(habit => {
+            if (habit.completedDates?.includes(todayKey)) {
+                completedActivityCount++;
+            }
+        });
+
         const otherTasks = memberTasks.filter(t => !t.isRecurring && !t.completed);
         
         const pendingTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
@@ -79,17 +89,26 @@ export function MemberDashboardCard({
                 .filter(Boolean) as (BookType & { libraryStatus: 'reading' | 'to-read', progress?: number })[];
         }
             
-        const memberProgress = new Set(memorizationProgress.filter(p => p.memberId === memberId && !p.completed).map(p => p.itemId));
-        const pendingMemorizationData = memorizationItems.filter(item => memberProgress.has(item.id));
+        const memberProgress = memorizationProgress.filter(p => p.memberId === memberId);
+        const completedMemorizationIds = new Set(memberProgress.filter(p => p.completed && p.completedAt && isToday(parseISO(p.completedAt))).map(p => p.itemId));
+        completedActivityCount += completedMemorizationIds.size;
         
-        const todayKey = format(new Date(), 'yyyy-MM-dd');
+        const pendingMemorizationData = memorizationItems.filter(item => {
+            const progress = memberProgress.find(p => p.itemId === item.id);
+            return !progress || !progress.completed;
+        });
+        
         const memberPrayerData = prayerProgress.find(p => p.memberId === member.id);
         const todaysCompletions = memberPrayerData?.completions?.[todayKey] || [];
+        completedActivityCount += todaysCompletions.length;
+        
         const prayerTimes = ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"];
         const todaysPrayersData = prayerTimes.map(prayer => ({
             name: prayer,
             completed: todaysCompletions.includes(prayer),
         }));
+
+        const earnedTime = completedActivityCount * 15;
 
 
         return { 
@@ -100,6 +119,7 @@ export function MemberDashboardCard({
             readingBooks: readingBooksData, 
             pendingMemorization: pendingMemorizationData,
             todaysPrayers: todaysPrayersData,
+            earnedFreeTimeMinutes: earnedTime,
         };
     }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, prayerProgress]);
 
@@ -182,6 +202,15 @@ export function MemberDashboardCard({
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-4 flex-grow">
+                 {member.role.includes('Çocuk') && (
+                    <div>
+                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Gamepad2 className="h-4 w-4 text-green-600"/> Bugünkü Serbest Zaman</h4>
+                         <div className="p-3 rounded-lg bg-green-500/10 text-green-900 text-center">
+                            <p className="font-bold text-2xl text-green-600">{earnedFreeTimeMinutes} <span className="text-base font-medium">dakika</span></p>
+                            <p className="text-xs text-green-700/80">Tamamlanan {Math.floor(earnedFreeTimeMinutes / 15)} aktivite için</p>
+                         </div>
+                    </div>
+                )}
                 {member.role.includes('Çocuk') && (
                     <div>
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Check className="h-4 w-4 text-green-600"/> Bugünkü Namazlar</h4>
