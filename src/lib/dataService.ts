@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays } from 'date-fns';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
@@ -468,6 +468,16 @@ export const updateMealPlan = async (dayKey: string, dayPlan: { [meal: string]: 
     const docRef = doc(db, "mealPlan", `${familyId}_${dayKey}`);
     await setDoc(docRef, { ...dayPlan, familyId }, { merge: true });
 }
+
+// Calorie Logs
+export const onCalorieLogsUpdate = (callback: (logs: CalorieLog[]) => void) => onFamilyDataUpdate<CalorieLog>('calorieLogs', callback);
+export const upsertCalorieLog = async (logData: Omit<CalorieLog, 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    const logRef = doc(db, "calorieLogs", logData.id);
+    await setDoc(logRef, { ...logData, familyId }, { merge: true });
+};
+
 
 
 // Shopping Lists
@@ -1558,3 +1568,5 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     return setDoc(docRef, updateData, { merge: true });
 };
+
+    

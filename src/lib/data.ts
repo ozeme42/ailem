@@ -146,6 +146,17 @@ export type MealPlan = {
   }
 }
 
+export interface CalorieLog {
+    id: string; // Format: YYYY-MM-DD
+    familyId: string;
+    caloriesTaken: number;
+    caloriesBurned: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+}
+
+
 // Goals / Roadmaps
 export interface GoalTask {
     id: string;
@@ -594,3 +605,4 @@ export const CoachMessageSchema = z.object({
   content: z.array(ContentPartSchema),
 });
 export type CoachMessage = z.infer<typeof CoachMessageSchema>;
+    
