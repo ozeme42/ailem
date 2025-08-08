@@ -158,13 +158,12 @@ function CalorieTracker() {
             { name: 'Yağ', value: totalFat, fill: 'hsl(var(--chart-3))' },
         ] : [];
         
-        const daysInRange = Math.max(1, differenceInDays(endOfDay(now), startDate));
         
         return {
             stats: {
                 totalTaken,
                 totalBurned,
-                avgDeficit: (totalTaken - totalBurned) / daysInRange,
+                totalDeficit: totalTaken - totalBurned,
                 totalProtein,
                 totalCarbs,
                 totalFat,
@@ -270,7 +269,7 @@ function CalorieTracker() {
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Alınan</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalTaken.toLocaleString('tr-TR')} kcal</CardContent></Card>
                                 <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Yakılan</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalBurned.toLocaleString('tr-TR')} kcal</CardContent></Card>
-                                <Card><CardHeader><CardTitle className="text-sm font-medium">Ort. Kalori Açığı</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.avgDeficit.toFixed(0)} kcal</CardContent></Card>
+                                <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Kalori Açığı</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalDeficit.toLocaleString('tr-TR')} kcal</CardContent></Card>
                                 <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Protein</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalProtein.toLocaleString('tr-TR')} g</CardContent></Card>
                             </div>
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
