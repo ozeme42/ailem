@@ -73,9 +73,18 @@ export function MemberDashboardCard({
         
         const pendingTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
         
-        const pendingStudies = studyAssignments
-            .filter(sa => sa.studentId === memberId && sa.status === 'assigned')
+        const memberStudyAssignments = studyAssignments.filter(sa => sa.studentId === memberId);
+
+        const pendingStudies = memberStudyAssignments
+            .filter(sa => sa.status === 'assigned')
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
+        
+        const todaysCompletedStudies = memberStudyAssignments.filter(sa =>
+            sa.status === 'completed' &&
+            sa.completedAt &&
+            isToday(parseISO(sa.completedAt))
+        ).length;
+        completedActivityCount += todaysCompletedStudies;
         
         const memberLib = userLibraries.find(lib => lib.memberId === memberId);
         let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read', progress?: number })[] = [];
@@ -330,3 +339,4 @@ export function MemberDashboardCard({
         </Card>
     );
 }
+
