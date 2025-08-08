@@ -58,8 +58,13 @@ export const educationCoachFlow = ai.defineFlow(
     // Prepend the system prompt to the history for better context adherence
     const messagesWithSystemPrompt = [
         { role: 'system' as const, content: [{ text: systemPrompt }] },
-        ...history,
+        ...(history || []), // Ensure history is an array even if it's null/undefined
     ];
+
+    if (messagesWithSystemPrompt.length === 1) {
+        // This case should ideally not be hit due to the check above, but as a safeguard:
+        return "Merhaba! Bana bir soru sorabilir veya bir konuyu anlatmamı isteyebilirsin.";
+    }
 
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
