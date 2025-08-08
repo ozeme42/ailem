@@ -29,6 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/components/auth-provider";
+import { Calendar } from "@/components/ui/calendar";
 
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
