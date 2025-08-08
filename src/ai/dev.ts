@@ -3,4 +3,3 @@
 import '@/ai/flows/search-books-flow';
 import '@/ai/flows/generate-shopping-list-flow';
 import '@/ai/flows/migrate-image-flow';
-import '@/ai/flows/education-coach-flow';

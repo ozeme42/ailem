@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { href: "/", label: "Ailem", icon: Users },
   { href: "/tasks", label: "Görevler", icon: CheckCircle2 },
-  { href: "/education/coach", label: "Koç", icon: BrainCircuit },
   { href: "/education", label: "Eğitim", icon: GraduationCap },
   { href: "/library", label: "Kütüphane", icon: BookOpen },
 ];
