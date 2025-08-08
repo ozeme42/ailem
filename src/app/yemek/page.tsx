@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save } from "lucide-react";
-import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, eachDayOfInterval, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
+import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -317,7 +317,7 @@ function CalorieTracker() {
                                  <Card>
                                     <CardHeader><CardTitle>Makro Dağılımı</CardTitle></CardHeader>
                                     <CardContent>
-                                         <ChartContainer config={{}} className="h-64">
+                                         <ChartContainer config={{}} className="h-64 min-w-[300px]">
                                             <PieChart>
                                                 <Pie data={macroData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                                                     {macroData.map((entry, index) => (
@@ -748,6 +748,7 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
 
