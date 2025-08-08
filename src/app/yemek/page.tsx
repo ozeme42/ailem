@@ -150,8 +150,7 @@ function CalorieTracker() {
 
         const chartData = Object.entries(dataByPeriod).map(([name, data]) => ({
             name,
-            "Alınan": data.caloriesTaken,
-            "Yakılan": data.caloriesBurned,
+            "Kalori Açığı": data.caloriesTaken - data.caloriesBurned,
         }));
         
         const totalMacros = totalProtein + totalCarbs + totalFat;
@@ -288,16 +287,18 @@ function CalorieTracker() {
                             </div>
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <Card>
-                                    <CardHeader><CardTitle>Kalori Grafiği</CardTitle></CardHeader>
+                                    <CardHeader><CardTitle>Kalori Açığı Grafiği</CardTitle></CardHeader>
                                     <CardContent>
                                         <ChartContainer config={{}} className="h-64">
                                             <BarChart data={chartData}>
                                                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                                 <YAxis fontSize={12} tickLine={false} axisLine={false} />
                                                 <Tooltip content={<ChartTooltipContent />} />
-                                                <Legend />
-                                                <Bar dataKey="Alınan" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                                                <Bar dataKey="Yakılan" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="Kalori Açığı" radius={[4, 4, 0, 0]}>
+                                                  {chartData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry["Kalori Açığı"] >= 0 ? "hsl(var(--chart-2))" : "hsl(var(--chart-5))"} />
+                                                  ))}
+                                                </Bar>
                                             </BarChart>
                                         </ChartContainer>
                                     </CardContent>
@@ -736,5 +737,6 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
