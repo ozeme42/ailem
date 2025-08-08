@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save } from "lucide-react";
-import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, eachDayOfInterval, differenceInDays, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
+import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, eachDayOfInterval, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -299,9 +299,9 @@ function CalorieTracker() {
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <Card>
                                     <CardHeader><CardTitle>Kalori Açığı Grafiği</CardTitle></CardHeader>
-                                    <CardContent>
-                                        <ChartContainer config={{}} className="h-64">
-                                            <BarChart data={chartData}>
+                                    <CardContent className="overflow-x-auto">
+                                        <ChartContainer config={{}} className="h-64 min-w-[300px]">
+                                            <BarChart data={chartData} barSize={20}>
                                                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                                 <YAxis fontSize={12} tickLine={false} axisLine={false} />
                                                 <Tooltip content={<ChartTooltipContent />} />
@@ -748,6 +748,7 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
 
