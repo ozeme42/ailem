@@ -590,8 +590,7 @@ const ContentPartSchema = z.object({
   media: MediaPartSchema.optional(),
 });
 export const CoachMessageSchema = z.object({
-  role: z.enum(['user', 'model', 'tool']),
+  role: z.enum(['user', 'model']),
   content: z.array(ContentPartSchema),
-  id: z.string().optional(),
 });
 export type CoachMessage = z.infer<typeof CoachMessageSchema>;

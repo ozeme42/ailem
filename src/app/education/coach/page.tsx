@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { runCoach, analyzeQuestionImage } from '@/ai/flows/education-coach-flow';
+import { educationCoachAction, analyzeQuestionImage } from '@/ai/flows/education-coach-flow';
 import type { FamilyMember, CoachMessage } from "@/lib/data";
 
 // New component for the image analysis section
@@ -133,8 +133,9 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
         setInput('');
 
         try {
-            const plainHistory = JSON.parse(JSON.stringify(newHistory.filter(m => m.role !== 'tool')));
-            const stream = runCoach(plainHistory);
+            // The history needs to be plain objects for the server action.
+            const plainHistory = JSON.parse(JSON.stringify(newHistory));
+            const stream = await educationCoachAction(plainHistory);
             
             setMessages(prev => [...prev, { role: 'model', content: [{ text: '' }] }]);
 
@@ -142,7 +143,7 @@ const ChatInterface = ({ activeUser }: { activeUser: FamilyMember }) => {
                 setMessages(prev => {
                     const newMessages = [...prev];
                     const lastMessage = newMessages[newMessages.length - 1];
-                    if (lastMessage.role === 'model') {
+                    if (lastMessage.role === 'model' && lastMessage.content[0]) {
                         lastMessage.content[0].text += chunk;
                     }
                     return newMessages;

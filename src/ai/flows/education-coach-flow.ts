@@ -2,18 +2,15 @@
 'use server';
 /**
  * @fileOverview The AI Education Coach provides personalized learning assistance.
- * - runCoach - The main function to interact with the coach for text-based queries.
+ * - educationCoachAction - The main stream action for text-based chat.
  * - analyzeQuestionImage - A dedicated function to handle image-based questions.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import type { CoachMessage } from '@/lib/data';
+import { CoachMessageSchema } from '@/lib/data';
 
-
-// Main flow for all interactions (text and image)
-export async function runCoach(history: CoachMessage[]) {
-    const systemPrompt = `🎓 Sen bir yapay zeka eğitim koçusun ve görevlerin şunlardır:
+const systemPrompt = `🎓 Sen bir yapay zeka eğitim koçusun ve görevlerin şunlardır:
 
 İlkokul öğrencilerine destek olmak için tasarlandın.
 
@@ -44,13 +41,25 @@ Gerekirse çocuklara özel çizgi film benzeri örnekler vererek anlatırsın (�
 Öğrencinin dikkatini toplaması için küçük yönlendirmeler yapabilirsin ("Haydi şimdi birlikte bir soruya bakalım", "Hazırsan başlayalım", "Birkaç dakika odaklanalım").
 
 🧠 Unutma: Öğrenci küçük yaşta olduğu için onunla konuşurken sabırlı, sevecen, anlayışlı ve sade olman çok önemli. Eğlenceli ama öğretici olmalısın.`;
-    
-    return ai.generateStream({
+
+
+export const educationCoachAction = ai.defineAction(
+  {
+    name: 'educationCoach',
+    inputSchema: z.array(CoachMessageSchema),
+    outputSchema: z.string(),
+  },
+  async (history) => {
+    const { stream } = ai.generateStream({
       model: 'googleai/gemini-2.0-flash',
       history: history,
       prompt: systemPrompt,
     });
-}
+
+    return stream;
+  }
+);
+
 
 // Dedicated function for image analysis, called from the client
 export async function analyzeQuestionImage(input: { photoDataUri: string, studentQuery?: string }): Promise<string> {
@@ -77,4 +86,3 @@ export async function analyzeQuestionImage(input: { photoDataUri: string, studen
 
   return llmResponse.text;
 }
-
