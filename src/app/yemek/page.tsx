@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save } from "lucide-react";
-import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, startOfISOWeek, endOfISOWeek, eachWeekOfInterval, eachDayOfInterval, endOfDay, subWeeks, subMonths, differenceInDays } from "date-fns";
+import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -59,7 +59,11 @@ function CalorieTracker() {
     const { toast } = useToast();
     const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
     const [allLogs, setAllLogs] = React.useState<CalorieLog[]>([]);
-    const [timeRange, setTimeRange] = React.useState<'daily' | 'weekly' | 'monthly'>('daily');
+    
+    // States for statistics
+    const [statsDate, setStatsDate] = React.useState<Date>(new Date());
+    const [statsPeriod, setStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
+
 
     React.useEffect(() => {
         const unsub = onCalorieLogsUpdate(setAllLogs);
@@ -102,22 +106,31 @@ function CalorieTracker() {
     };
     
     const { stats, chartData, macroData } = React.useMemo(() => {
-        const now = new Date();
         let startDate: Date;
+        let endDate: Date;
 
-        if (timeRange === 'daily') {
-            startDate = subDays(now, 6);
-        } else if (timeRange === 'weekly') {
-            startDate = subWeeks(startOfWeek(now, { weekStartsOn: 1 }), 3);
+        if (statsPeriod === 'weekly') {
+            startDate = startOfWeek(statsDate, { weekStartsOn: 1 });
+            endDate = endOfDay(addDays(startDate, 6));
         } else { // monthly
-            startDate = subMonths(startOfMonth(now), 5);
+            startDate = startOfMonth(statsDate);
+            endDate = endOfMonth(statsDate);
         }
         
-        const relevantLogs = allLogs.filter(log => parseISO(log.id) >= startDate);
+        const relevantLogs = allLogs.filter(log => {
+             const logDate = parseISO(log.id);
+             return logDate >= startDate && logDate <= endDate;
+        });
         
         let totalTaken = 0, totalBurned = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
         
-        const dataByPeriod: { [key: string]: CalorieLog & { count: number } } = {};
+        const dataByPeriod: { [key: string]: CalorieLog } = {};
+        const periodDays = eachDayOfInterval({start: startDate, end: endDate});
+
+        periodDays.forEach(day => {
+            const dayKey = format(day, 'dd MMM');
+            dataByPeriod[dayKey] = { id: dayKey, caloriesTaken: 0, caloriesBurned: 0, protein: 0, carbs: 0, fat: 0, familyId: ''};
+        });
 
         relevantLogs.forEach(log => {
             totalTaken += log.caloriesTaken;
@@ -127,21 +140,11 @@ function CalorieTracker() {
             totalFat += log.fat;
             
             const logDate = parseISO(log.id);
-            let key = "";
-            if (timeRange === 'daily') {
-                key = format(logDate, 'dd MMM', { locale: tr });
-            } else if (timeRange === 'weekly') {
-                key = format(startOfWeek(logDate, { weekStartsOn: 1 }), 'dd MMM', { locale: tr });
-            } else { // monthly
-                key = format(logDate, 'MMM yy', { locale: tr });
-            }
-
-            if (!dataByPeriod[key]) {
-                dataByPeriod[key] = { ...log, count: 1, id: key };
-            } else {
+            const key = format(logDate, 'dd MMM');
+            
+            if (dataByPeriod[key]) {
                 dataByPeriod[key].caloriesTaken += log.caloriesTaken;
                 dataByPeriod[key].caloriesBurned += log.caloriesBurned;
-                dataByPeriod[key].count++;
             }
         });
 
@@ -149,7 +152,7 @@ function CalorieTracker() {
             name,
             "Alınan": data.caloriesTaken,
             "Yakılan": data.caloriesBurned,
-        })).sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+        }));
         
         const totalMacros = totalProtein + totalCarbs + totalFat;
         const macroData = totalMacros > 0 ? [
@@ -171,7 +174,7 @@ function CalorieTracker() {
             chartData,
             macroData,
         }
-    }, [allLogs, timeRange]);
+    }, [allLogs, statsDate, statsPeriod]);
 
     return (
         <Card>
@@ -262,9 +265,20 @@ function CalorieTracker() {
                     <TabsContent value="stats" className="pt-6">
                         <div className="space-y-6">
                             <div className="flex justify-center gap-2">
-                                <Button variant={timeRange === 'daily' ? 'default' : 'outline'} onClick={() => setTimeRange('daily')}>Son 7 Gün</Button>
-                                <Button variant={timeRange === 'weekly' ? 'default' : 'outline'} onClick={() => setTimeRange('weekly')}>Son 4 Hafta</Button>
-                                <Button variant={timeRange === 'monthly' ? 'default' : 'outline'} onClick={() => setTimeRange('monthly')}>Son 6 Ay</Button>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline"><CalendarIcon className="mr-2 h-4 w-4"/> {format(statsDate, "PPP", { locale: tr })}</Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar mode="single" selected={statsDate} onSelect={(d) => setStatsDate(d || new Date())} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                                <Tabs value={statsPeriod} onValueChange={(value) => setStatsPeriod(value as 'weekly' | 'monthly')} className="w-auto">
+                                    <TabsList>
+                                        <TabsTrigger value="weekly">Haftalık</TabsTrigger>
+                                        <TabsTrigger value="monthly">Aylık</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
                             </div>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Alınan</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalTaken.toLocaleString('tr-TR')} kcal</CardContent></Card>
@@ -723,4 +737,3 @@ export default function YemekPlanlamaPage() {
   );
 }
 
-    
