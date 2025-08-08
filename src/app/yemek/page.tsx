@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save } from "lucide-react";
-import { format, addDays, startOfWeek, parseISO, subDays } from "date-fns";
+import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, startOfISOWeek, endOfISOWeek, eachWeekOfInterval, eachDayOfInterval, endOfDay, subWeeks, subMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -30,6 +30,8 @@ import { z } from 'zod';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/components/auth-provider";
 import { Calendar } from "@/components/ui/calendar";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
@@ -57,6 +59,7 @@ function CalorieTracker() {
     const { toast } = useToast();
     const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
     const [allLogs, setAllLogs] = React.useState<CalorieLog[]>([]);
+    const [timeRange, setTimeRange] = React.useState<'daily' | 'weekly' | 'monthly'>('daily');
 
     React.useEffect(() => {
         const unsub = onCalorieLogsUpdate(setAllLogs);
@@ -97,86 +100,215 @@ function CalorieTracker() {
             toast({ title: 'Hata', description: 'Veriler kaydedilirken bir sorun oluştu.', variant: 'destructive' });
         }
     };
+    
+    const { stats, chartData, macroData } = React.useMemo(() => {
+        const now = new Date();
+        let startDate: Date;
+
+        if (timeRange === 'daily') {
+            startDate = subDays(now, 6);
+        } else if (timeRange === 'weekly') {
+            startDate = subWeeks(startOfWeek(now, { weekStartsOn: 1 }), 3);
+        } else { // monthly
+            startDate = subMonths(startOfMonth(now), 5);
+        }
+        
+        const relevantLogs = allLogs.filter(log => parseISO(log.id) >= startDate);
+        
+        let totalTaken = 0, totalBurned = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+        
+        const dataByPeriod: { [key: string]: CalorieLog & { count: number } } = {};
+
+        relevantLogs.forEach(log => {
+            totalTaken += log.caloriesTaken;
+            totalBurned += log.caloriesBurned;
+            totalProtein += log.protein;
+            totalCarbs += log.carbs;
+            totalFat += log.fat;
+            
+            const logDate = parseISO(log.id);
+            let key = "";
+            if (timeRange === 'daily') {
+                key = format(logDate, 'dd MMM', { locale: tr });
+            } else if (timeRange === 'weekly') {
+                key = format(startOfWeek(logDate, { weekStartsOn: 1 }), 'dd MMM', { locale: tr });
+            } else { // monthly
+                key = format(logDate, 'MMM yy', { locale: tr });
+            }
+
+            if (!dataByPeriod[key]) {
+                dataByPeriod[key] = { ...log, count: 1, id: key };
+            } else {
+                dataByPeriod[key].caloriesTaken += log.caloriesTaken;
+                dataByPeriod[key].caloriesBurned += log.caloriesBurned;
+                dataByPeriod[key].count++;
+            }
+        });
+
+        const chartData = Object.entries(dataByPeriod).map(([name, data]) => ({
+            name,
+            "Alınan": data.caloriesTaken,
+            "Yakılan": data.caloriesBurned,
+        })).sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+        
+        const totalMacros = totalProtein + totalCarbs + totalFat;
+        const macroData = totalMacros > 0 ? [
+            { name: 'Protein', value: totalProtein, fill: 'hsl(var(--chart-1))' },
+            { name: 'Karbonhidrat', value: totalCarbs, fill: 'hsl(var(--chart-2))' },
+            { name: 'Yağ', value: totalFat, fill: 'hsl(var(--chart-3))' },
+        ] : [];
+        
+        const daysInRange = Math.max(1, differenceInDays(endOfDay(now), startDate));
+        
+        return {
+            stats: {
+                totalTaken,
+                totalBurned,
+                avgDeficit: (totalTaken - totalBurned) / daysInRange,
+                totalProtein,
+                totalCarbs,
+                totalFat,
+            },
+            chartData,
+            macroData,
+        }
+    }, [allLogs, timeRange]);
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Günlük Kalori ve Makro Takibi</CardTitle>
                 <CardDescription>
-                    Seçtiğiniz güne ait değerleri manuel olarak girin ve kaydedin.
+                    Seçtiğiniz güne ait değerleri manuel olarak girin, kaydedin ve istatistiklerinizi görüntüleyin.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Form {...form}>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="flex flex-col sm:flex-row gap-4 items-center">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn("w-full sm:w-auto justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {selectedDate ? format(selectedDate, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={selectedDate} onSelect={(date) => setSelectedDate(date || new Date())} initialFocus />
-                                </PopoverContent>
-                            </Popover>
-                            <div className="flex-grow text-center sm:text-right">
-                                <p className="text-sm font-medium text-muted-foreground">Kalori Açığı</p>
-                                <p className={cn("text-2xl font-bold", calorieDeficit > 0 ? "text-green-600" : "text-red-600")}>
-                                    {calorieDeficit.toLocaleString('tr-TR')} kcal
-                                </p>
+                <Tabs defaultValue="entry" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="entry">Veri Girişi</TabsTrigger>
+                        <TabsTrigger value="stats">İstatistikler</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="entry" className="pt-6">
+                        <Form {...form}>
+                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn("w-full sm:w-auto justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                                            >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {selectedDate ? format(selectedDate, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar mode="single" selected={selectedDate} onSelect={(date) => setSelectedDate(date || new Date())} initialFocus />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <div className="flex-grow text-center sm:text-right">
+                                        <p className="text-sm font-medium text-muted-foreground">Kalori Açığı</p>
+                                        <p className={cn("text-2xl font-bold", calorieDeficit >= 0 ? "text-green-600" : "text-red-600")}>
+                                            {calorieDeficit.toLocaleString('tr-TR')} kcal
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="caloriesTaken" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Alınan Kalori (kcal)</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="caloriesBurned" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Yakılan Kalori (kcal)</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <FormField control={form.control} name="protein" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Protein (g)</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="carbs" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Karbonhidrat (g)</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="fat" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Yağ (g)</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                </div>
+                                <Button type="submit" className="w-full">
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Günü Kaydet
+                                </Button>
+                            </form>
+                        </Form>
+                    </TabsContent>
+                    <TabsContent value="stats" className="pt-6">
+                        <div className="space-y-6">
+                            <div className="flex justify-center gap-2">
+                                <Button variant={timeRange === 'daily' ? 'default' : 'outline'} onClick={() => setTimeRange('daily')}>Son 7 Gün</Button>
+                                <Button variant={timeRange === 'weekly' ? 'default' : 'outline'} onClick={() => setTimeRange('weekly')}>Son 4 Hafta</Button>
+                                <Button variant={timeRange === 'monthly' ? 'default' : 'outline'} onClick={() => setTimeRange('monthly')}>Son 6 Ay</Button>
+                            </div>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Alınan</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalTaken.toLocaleString('tr-TR')} kcal</CardContent></Card>
+                                <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Yakılan</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalBurned.toLocaleString('tr-TR')} kcal</CardContent></Card>
+                                <Card><CardHeader><CardTitle className="text-sm font-medium">Ort. Kalori Açığı</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.avgDeficit.toFixed(0)} kcal</CardContent></Card>
+                                <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Protein</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalProtein.toLocaleString('tr-TR')} g</CardContent></Card>
+                            </div>
+                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <Card>
+                                    <CardHeader><CardTitle>Kalori Grafiği</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <ChartContainer config={{}} className="h-64">
+                                            <BarChart data={chartData}>
+                                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                                <Tooltip content={<ChartTooltipContent />} />
+                                                <Legend />
+                                                <Bar dataKey="Alınan" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="Yakılan" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ChartContainer>
+                                    </CardContent>
+                                </Card>
+                                 <Card>
+                                    <CardHeader><CardTitle>Makro Dağılımı</CardTitle></CardHeader>
+                                    <CardContent>
+                                         <ChartContainer config={{}} className="h-64">
+                                            <PieChart>
+                                                <Pie data={macroData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                                    {macroData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip content={<ChartTooltipContent />} />
+                                                <Legend />
+                                            </PieChart>
+                                        </ChartContainer>
+                                    </CardContent>
+                                </Card>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             <FormField control={form.control} name="caloriesTaken" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Alınan Kalori (kcal)</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name="caloriesBurned" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Yakılan Kalori (kcal)</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                             <FormField control={form.control} name="protein" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Protein (g)</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                             <FormField control={form.control} name="carbs" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Karbonhidrat (g)</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name="fat" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Yağ (g)</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                        </div>
-                        <Button type="submit" className="w-full">
-                            <Save className="mr-2 h-4 w-4" />
-                            Günü Kaydet
-                        </Button>
-                    </form>
-                </Form>
+                    </TabsContent>
+                </Tabs>
             </CardContent>
         </Card>
     );

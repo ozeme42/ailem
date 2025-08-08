@@ -542,6 +542,21 @@ export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
     { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
 ];
 
+export const initialRecipes: Omit<Recipe, 'id'|'familyId'>[] = [
+    {
+        title: "Menemen",
+        category: 'Kahvaltı',
+        rating: 4.8,
+        instructions: "Biberleri ve domatesleri doğrayın. Tereyağını tavada eritin ve biberleri kavurun. Domatesleri ekleyip suyunu çekene kadar pişirin. Yumurtaları kırın ve karıştırarak pişirin. Baharatları ekleyip servis yapın."
+    },
+    {
+        title: "Mercimek Çorbası",
+        category: 'Akşam Yemeği',
+        rating: 4.9,
+        instructions: "Tüm sebzeleri doğrayın. Mercimeği yıkayıp süzün. Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin. Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun. Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin. Baharatları ekleyip bir taşım daha kaynatın."
+    }
+];
+
 export const initialMealPlan: MealPlan = {
   "2024-08-12": { // This key needs to be dynamic based on current week, but for initial setup it's fine
     "Kahvaltı": initialRecipes[0] as Recipe,
