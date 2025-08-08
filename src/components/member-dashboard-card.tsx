@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -74,7 +73,6 @@ export function MemberDashboardCard({
         const pendingTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
         
         const memberStudyAssignments = studyAssignments.filter(sa => sa.studentId === memberId);
-
         const pendingStudies = memberStudyAssignments
             .filter(sa => sa.status === 'assigned')
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
@@ -102,10 +100,10 @@ export function MemberDashboardCard({
         const completedMemorizationIds = new Set(memberProgress.filter(p => p.completed && p.completedAt && isToday(parseISO(p.completedAt))).map(p => p.itemId));
         completedActivityCount += completedMemorizationIds.size;
         
-        const pendingMemorizationData = memorizationItems.filter(item => {
-            const progress = memberProgress.find(p => p.itemId === item.id);
-            return !progress || !progress.completed;
-        });
+        const pendingMemorizationData = memberProgress
+            .filter(p => !p.completed)
+            .map(p => memorizationItems.find(item => item.id === p.itemId))
+            .filter((item): item is MemorizationItem => !!item);
         
         const memberPrayerData = prayerProgress.find(p => p.memberId === member.id);
         const todaysCompletions = memberPrayerData?.completions?.[todayKey] || [];
@@ -339,4 +337,3 @@ export function MemberDashboardCard({
         </Card>
     );
 }
-
