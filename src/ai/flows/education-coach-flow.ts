@@ -50,10 +50,16 @@ export const educationCoachFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async (history) => {
+    
+    // Prepend the system prompt to the history for better context adherence
+    const messagesWithSystemPrompt = [
+        { role: 'system' as const, content: [{ text: systemPrompt }] },
+        ...history,
+    ];
+
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
-      history: history,
-      prompt: systemPrompt,
+      history: messagesWithSystemPrompt,
     });
 
     return llmResponse.text;
