@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save } from "lucide-react";
-import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, eachDayOfInterval } from "date-fns";
+import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, eachDayOfInterval, differenceInDays, addWeeks, subWeeks, addMonths, subMonths } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -104,6 +104,14 @@ function CalorieTracker() {
             toast({ title: 'Hata', description: 'Veriler kaydedilirken bir sorun oluştu.', variant: 'destructive' });
         }
     };
+    
+    const handleStatsNav = (direction: 'prev' | 'next') => {
+        if (statsPeriod === 'weekly') {
+            setStatsDate(d => direction === 'prev' ? subWeeks(d, 1) : addWeeks(d, 1));
+        } else {
+            setStatsDate(d => direction === 'prev' ? subMonths(d, 1) : addMonths(d, 1));
+        }
+    }
     
     const { stats, chartData, macroData } = React.useMemo(() => {
         let startDate: Date;
@@ -263,16 +271,19 @@ function CalorieTracker() {
                     </TabsContent>
                     <TabsContent value="stats" className="pt-6">
                         <div className="space-y-6">
-                            <div className="flex justify-center gap-2">
+                            <div className="flex justify-center items-center gap-2">
+                                <Button variant="outline" size="icon" onClick={() => handleStatsNav('prev')}><ChevronLeft className="h-4 w-4"/></Button>
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="outline"><CalendarIcon className="mr-2 h-4 w-4"/> {format(statsDate, "PPP", { locale: tr })}</Button>
+                                        <Button variant="outline" className="w-36"><CalendarIcon className="mr-2 h-4 w-4"/> {format(statsDate, "PPP", { locale: tr })}</Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
                                         <Calendar mode="single" selected={statsDate} onSelect={(d) => setStatsDate(d || new Date())} initialFocus />
                                     </PopoverContent>
                                 </Popover>
-                                <Tabs value={statsPeriod} onValueChange={(value) => setStatsPeriod(value as 'weekly' | 'monthly')} className="w-auto">
+                                 <Button variant="outline" size="icon" onClick={() => handleStatsNav('next')}><ChevronRight className="h-4 w-4"/></Button>
+
+                                <Tabs value={statsPeriod} onValueChange={(value) => setStatsPeriod(value as 'weekly' | 'monthly')} className="w-auto ml-4">
                                     <TabsList>
                                         <TabsTrigger value="weekly">Haftalık</TabsTrigger>
                                         <TabsTrigger value="monthly">Aylık</TabsTrigger>
@@ -737,6 +748,7 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
 
