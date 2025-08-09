@@ -223,5 +223,3 @@ function SearchResults({ notes, notebooks }: { notes: Note[], notebooks: Noteboo
         </div>
     )
 }
-
-

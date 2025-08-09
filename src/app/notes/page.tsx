@@ -19,11 +19,10 @@ function NotesSkeleton() {
   return (
     <div className="space-y-6">
        <PageHeader title="Not Defterleri">
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-44" />
        </PageHeader>
-        <div className="flex justify-between items-center">
-            <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-10 w-24" />
+        <div className="relative w-full sm:max-w-md">
+            <Skeleton className="h-10 w-full" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Skeleton className="h-48 w-full" />
@@ -33,4 +32,3 @@ function NotesSkeleton() {
     </div>
   );
 }
-
