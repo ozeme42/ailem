@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskItem } from "@/components/task-item";
 import { Task } from "@/lib/data";
-import { onTasksUpdate, addTask, updateHabitCompletion } from "@/lib/dataService";
+import { onTasksUpdate, addTask, updateTask, updateHabitCompletion, deleteTask } from "@/lib/dataService";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -48,6 +48,15 @@ export default function TasksPage() {
     setEditingTask(null);
     setIsTaskFormOpen(true);
   };
+  
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+        await deleteTask(taskId);
+        toast({ title: "Görev Silindi", description: "Görev başarıyla kaldırıldı.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "Hata", description: "Görev silinirken bir hata oluştu.", variant: "destructive"});
+    }
+  }
   
   const getAssignee = (assigneeId: string) => {
     return familyMembers.find((m) => m.id === assigneeId);
@@ -160,6 +169,8 @@ export default function TasksPage() {
                             task={habit} 
                             assignee={familyMembers.find(m => m.id === habit.assigneeId)} 
                             onToggleDay={(day, isCompleted) => handleToggleDay(habit.id, day, isCompleted)}
+                            onEdit={() => handleOpenEditTask(habit)}
+                            onDelete={() => handleDeleteTask(habit.id)}
                         />
                     ))
                     ) : (
