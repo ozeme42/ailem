@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -320,14 +319,14 @@ export function MemberDashboardCard({
                    <div>
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><GraduationCap className="h-4 w-4 text-red-600"/> Ödevler</h4>
                         <div className="space-y-2">
-                            {pendingTests.slice(0,1).map(test => (
+                            {pendingTests.map(test => (
                                 <Link href={`/education/${test.id}`} key={test.id} className="block">
                                     <div className="flex items-center gap-3 p-2.5 rounded-lg bg-red-500/10 text-red-900 hover:bg-red-500/20">
                                         <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
                                     </div>
                                 </Link>
                             ))}
-                            {pendingStudies.slice(0,1).map(study => (
+                            {pendingStudies.map(study => (
                                 <Link href="/education/study" key={study.id} className="block">
                                     <div className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 hover:bg-blue-500/20">
                                          <div className="truncate">
