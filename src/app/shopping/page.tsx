@@ -190,7 +190,14 @@ export default function ShoppingPage() {
   
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate((lists) => {
-        setShoppingLists(lists.sort((a,b) => a.name.localeCompare(b.name, 'tr')));
+        const sortedLists = lists.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            if (!dateA) return 1;
+            if (!dateB) return -1;
+            return dateA - dateB;
+        });
+        setShoppingLists(sortedLists);
         setIsLoaded(true);
     });
     return () => {
@@ -293,16 +300,16 @@ export default function ShoppingPage() {
     const sortedPending = (selectedList.items || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (dateA === 0) return 1; // Put items without a date at the end
-        if (dateB === 0) return -1;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
         return dateA - dateB;
     });
 
     const sortedBought = (selectedList.boughtItems || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (dateA === 0) return 1;
-        if (dateB === 0) return -1;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
         return dateA - dateB;
     });
 
@@ -519,4 +526,5 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
 

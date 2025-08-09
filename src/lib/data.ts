@@ -441,6 +441,7 @@ export interface ShoppingList {
   icon: string;
   items: ShoppingItem[];
   boughtItems?: ShoppingItem[];
+  createdAt?: string;
 }
 
 // Separate data structure for Needs page

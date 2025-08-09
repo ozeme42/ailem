@@ -481,11 +481,11 @@ export const upsertCalorieLog = async (logData: Omit<CalorieLog, 'familyId'>) =>
 
 
 // Shopping Lists
-export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback, false, 'name');
+export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback);
 export const addShoppingList = async (name: string, icon: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'shoppingLists'), { name: name, icon: icon, items: [], boughtItems: [], familyId });
+    return addDoc(collection(db, 'shoppingLists'), { name: name, icon: icon, items: [], boughtItems: [], familyId, createdAt: new Date().toISOString() });
 };
 export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
 export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
