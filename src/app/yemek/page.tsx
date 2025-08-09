@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save } from "lucide-react";
-import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, addWeeks, subWeeks, addMonths, subMonths, eachDayOfInterval } from "date-fns";
+import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, addWeeks, subWeeks, addMonths, subMonths, eachDayOfInterval, isWithinInterval } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -345,6 +345,7 @@ export default function YemekPlanlamaPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("Hepsi");
   const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [statsDate, setStatsDate] = React.useState(new Date());
   const { toast } = useToast();
   
   const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
@@ -366,21 +367,6 @@ export default function YemekPlanlamaPage() {
 
   const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStartDate, i));
-
-
-  const filteredRecipes = recipes.filter(recipe => {
-    const matchesCategory = activeTab === "Hepsi" || recipe.category === activeTab;
-    const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const recipeSelectorFilteredRecipes = React.useMemo(() => {
-    if (!recipeSearchTerm) return recipes;
-    return recipes.filter(recipe =>
-      recipe.title.toLowerCase().includes(recipeSearchTerm.toLowerCase()) ||
-      recipe.category.toLowerCase().includes(recipeSearchTerm.toLowerCase())
-    );
-  }, [recipes, recipeSearchTerm]);
   
   const handleSaveRecipe = async (recipeData: Omit<Recipe, 'id' | 'familyId'>) => {
     try {
@@ -441,9 +427,12 @@ export default function YemekPlanlamaPage() {
      updateMealPlan(dayKey, updatedDayPlan);
   };
 
-  const { mostEaten, recipeCounts, lastEatenDates } = React.useMemo(() => {
+  const { allTimeCounts, lastEatenDates, monthlyStats } = React.useMemo(() => {
     const counts = new Map<string, number>();
     const lastDates = new Map<string, string>(); // recipeId -> date string 'yyyy-MM-dd'
+    
+    // For last eaten date (within last 90 days)
+    const ninetyDaysAgo = subDays(new Date(), 90);
     
     const sortedDayKeys = Object.keys(mealPlan).sort((a, b) => b.localeCompare(a)); // Sort dates descending
 
@@ -451,26 +440,63 @@ export default function YemekPlanlamaPage() {
         const dayPlan = mealPlan[dayKey];
         for (const recipe of Object.values(dayPlan)) {
             if (recipe?.id) {
-                // Increment count
+                // Increment total count
                 counts.set(recipe.id, (counts.get(recipe.id) || 0) + 1);
-                // Set last eaten date if not already set (since we iterate from most recent)
-                if (!lastDates.has(recipe.id)) {
+                
+                const mealDate = parseISO(dayKey);
+                // Set last eaten date if not already set and within 90 days
+                if (!lastDates.has(recipe.id) && mealDate >= ninetyDaysAgo) {
                     lastDates.set(recipe.id, dayKey);
                 }
             }
         }
     }
+    
+    // Monthly stats
+    const monthStart = startOfMonth(statsDate);
+    const monthEnd = endOfMonth(statsDate);
+    const monthlyCounts = new Map<string, number>();
 
-    const sorted = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([id, count]) => {
-        const recipe = recipes.find(r => r.id === id);
-        return { ...recipe, count };
-      });
+    Object.entries(mealPlan).forEach(([dayKey, dayPlan]) => {
+        const mealDate = parseISO(dayKey);
+        if (isWithinInterval(mealDate, { start: monthStart, end: monthEnd })) {
+            Object.values(dayPlan).forEach(recipe => {
+                if (recipe?.id) {
+                     monthlyCounts.set(recipe.id, (monthlyCounts.get(recipe.id) || 0) + 1);
+                }
+            })
+        }
+    });
 
-    return { mostEaten: sorted, recipeCounts: counts, lastEatenDates: lastDates };
-  }, [mealPlan, recipes]);
+    const sortedMonthly = Array.from(monthlyCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([id, count]) => {
+            const recipe = recipes.find(r => r.id === id);
+            return { ...recipe, count };
+        });
+
+    return { allTimeCounts: counts, lastEatenDates: lastDates, monthlyStats: sortedMonthly };
+  }, [mealPlan, recipes, statsDate]);
+  
+   const filteredRecipes = React.useMemo(() => {
+    return recipes
+        .filter(recipe => {
+            const matchesCategory = activeTab === "Hepsi" || recipe.category === activeTab;
+            const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesCategory && matchesSearch;
+        })
+        .sort((a,b) => (allTimeCounts.get(b.id) || 0) - (allTimeCounts.get(a.id) || 0));
+  }, [recipes, activeTab, searchTerm, allTimeCounts]);
+
+  const recipeSelectorFilteredRecipes = React.useMemo(() => {
+    if (!recipeSearchTerm) return recipes;
+    return recipes.filter(recipe =>
+      recipe.title.toLowerCase().includes(recipeSearchTerm.toLowerCase()) ||
+      recipe.category.toLowerCase().includes(recipeSearchTerm.toLowerCase())
+    );
+  }, [recipes, recipeSearchTerm]);
+
 
   const handleOpenNewRecipeDialog = () => {
     setEditingRecipe(null);
@@ -563,6 +589,43 @@ export default function YemekPlanlamaPage() {
                     </div>
                     </CardContent>
                 </Card>
+
+                 <Card className="mb-8">
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                             <div className="flex-grow">
+                                <CardTitle>Aylık Popüler Tarifler</CardTitle>
+                                <CardDescription>{format(statsDate, 'MMMM yyyy', { locale: tr })}</CardDescription>
+                            </div>
+                             <div className="flex items-center gap-2 self-end sm:self-center">
+                                <Button variant="outline" size="icon" onClick={() => setStatsDate(d => subMonths(d, 1))}>
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" onClick={() => setStatsDate(new Date())}>Bu Ay</Button>
+                                <Button variant="outline" size="icon" onClick={() => setStatsDate(d => addMonths(d, 1))}>
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {monthlyStats.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {monthlyStats.map((recipe, index) => (
+                                    <div key={recipe.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50">
+                                        <span className="font-bold text-xl text-primary">{index + 1}</span>
+                                        <div>
+                                            <p className="font-semibold">{recipe.title}</p>
+                                            <p className="text-sm text-muted-foreground">{recipe.count} kez pişirildi</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                             <p className="text-sm text-muted-foreground text-center py-4">Bu ay için veri bulunamadı.</p>
+                        )}
+                    </CardContent>
+                </Card>
                 
                 <Card className="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-xl">
                     <CardHeader>
@@ -628,8 +691,8 @@ export default function YemekPlanlamaPage() {
                                                         <CardHeader className="p-4">
                                                         <div className="flex justify-between items-start">
                                                             <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
-                                                            {(recipeCounts.get(recipe.id) || 0) > 0 && (
-                                                                <Badge variant="secondary">{recipeCounts.get(recipe.id)}</Badge>
+                                                            {(allTimeCounts.get(recipe.id) || 0) > 0 && (
+                                                                <Badge variant="secondary">{allTimeCounts.get(recipe.id)}</Badge>
                                                             )}
                                                         </div>
                                                         <CardDescription className="text-xs">{recipe.category}</CardDescription>
@@ -748,6 +811,7 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
 
