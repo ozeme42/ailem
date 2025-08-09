@@ -287,17 +287,28 @@ export default function ShoppingPage() {
     setSuggestions([]);
   };
 
-  const { boughtItems } = useMemo(() => {
+  const { pendingItems, boughtItems } = useMemo(() => {
     if (!selectedList) return { pendingItems: [], boughtItems: [] };
     
-    const allArchived = (selectedList.boughtItems || []).sort((a,b) => {
+    const sortedPending = (selectedList.items || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
+        if (dateA === 0) return 1; // Put items without a date at the end
+        if (dateB === 0) return -1;
+        return dateA - dateB;
+    });
+
+    const sortedBought = (selectedList.boughtItems || []).sort((a,b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (dateA === 0) return 1;
+        if (dateB === 0) return -1;
+        return dateA - dateB;
     });
 
     return {
-      boughtItems: allArchived,
+      pendingItems: sortedPending,
+      boughtItems: sortedBought,
     };
   }, [selectedList]);
 
@@ -334,14 +345,14 @@ export default function ShoppingPage() {
   }
 
   if (selectedList) {
-    const groupedPendingItems = (selectedList.items || []).reduce((acc, item) => {
+    const groupedPendingItems = pendingItems.reduce((acc, item) => {
             const category = item.category || 'Diğer';
             if (!acc[category]) acc[category] = [];
             acc[category].push(item);
             return acc;
         }, {} as Record<string, ShoppingListItemType[]>);
         
-    const groupedBoughtItems = (selectedList.boughtItems || []).reduce((acc, item) => {
+    const groupedBoughtItems = boughtItems.reduce((acc, item) => {
             const category = item.category || 'Diğer';
             if (!acc[category]) acc[category] = [];
             acc[category].push(item);
@@ -398,7 +409,7 @@ export default function ShoppingPage() {
              <div className={cn("flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                     <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                        <TabsTrigger value="pending">Alınacaklar ({(selectedList.items || []).length})</TabsTrigger>
+                        <TabsTrigger value="pending">Alınacaklar ({(pendingItems || []).length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
@@ -409,7 +420,7 @@ export default function ShoppingPage() {
                                     <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
                                       {items.map((item, index) => (
                                           <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                              <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md" />
+                                              <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => moveItemToBought(selectedList!.id, item.id)} className="size-6 rounded-md" />
                                               <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                               <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                   <AlertDialog>
@@ -417,8 +428,8 @@ export default function ShoppingPage() {
                                                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                                       </AlertDialogTrigger>
                                                       <AlertDialogContent>
-                                                          <AlertDialogHeader><AlertDialogTitleComponent>Alınanlara Taşı</AlertDialogTitleComponent><AlertDialogDescription>Bu ürünü kalıcı olarak "Alınanlar" listesine taşımak istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                          <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => moveItemToBought(selectedList!.id, item.id)}>Taşı</AlertDialogAction></AlertDialogFooter>
+                                                          <AlertDialogHeader><AlertDialogTitleComponent>Alınacaklardan Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ürünü kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                          <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)}>Sil</AlertDialogAction></AlertDialogFooter>
                                                       </AlertDialogContent>
                                                   </AlertDialog>
                                               </div>
@@ -455,7 +466,7 @@ export default function ShoppingPage() {
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
                                                         <Repeat className="h-4 w-4"/>
                                                     </Button>
-                                                    <p className="font-medium flex-grow line-through text-muted-foreground">{item.name}</p>
+                                                    <p className="font-semibold flex-grow line-through text-muted-foreground">{item.name}</p>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, true)} title="Kalıcı olarak sil">
                                                         <Trash2 className="h-4 w-4"/>
                                                     </Button>
@@ -508,3 +519,4 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
