@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { onShoppingListsUpdate, addShoppingList, deleteShoppingList, addShoppingListItemToList, clearBoughtItemsFromList, deleteShoppingListItemFromList, toggleShoppingListItemStatusInList, moveItemToBought, moveItemToPending } from '@/lib/dataService';
+import { onShoppingListsUpdate, addShoppingList, updateShoppingList, deleteShoppingList, addShoppingListItemToList, clearBoughtItemsFromList, deleteShoppingListItemFromList, toggleShoppingListItemStatusInList, moveItemToBought, moveItemToPending } from '@/lib/dataService';
 import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/lib/data';
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
@@ -50,21 +50,29 @@ const createListSchema = z.object({
 
 type CreateListFormData = z.infer<typeof createListSchema>;
 
-const CreateListDialog = ({ isOpen, onOpenChange, onCreate }: {
+const CreateListDialog = ({ isOpen, onOpenChange, onCreate, initialData }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (data: CreateListFormData) => void;
+  initialData?: ShoppingList | null;
 }) => {
     const form = useForm<CreateListFormData>({
         resolver: zodResolver(createListSchema),
-        defaultValues: { name: '', icon: 'ShoppingCart' },
     });
+    
+    React.useEffect(() => {
+        if(initialData) {
+            form.reset({ name: initialData.name, icon: initialData.icon });
+        } else {
+            form.reset({ name: '', icon: 'ShoppingCart' });
+        }
+    }, [initialData, form]);
     
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Yeni Alışveriş Listesi Oluştur</DialogTitle>
+                    <DialogTitle>{initialData ? 'Listeyi Düzenle' : 'Yeni Alışveriş Listesi Oluştur'}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onCreate)} className="space-y-4">
@@ -109,7 +117,7 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate }: {
                         />
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-                            <Button type="submit">Oluştur</Button>
+                            <Button type="submit">{initialData ? 'Kaydet' : 'Oluştur'}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -118,10 +126,11 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate }: {
     );
 };
 
-const ListCard = ({ list, colorClass, onClick, onDelete }: { 
+const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: { 
     list: ShoppingList; 
     colorClass: string; 
     onClick: () => void;
+    onEdit: () => void;
     onDelete: (id: string) => void;
 }) => {
     const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
@@ -142,7 +151,8 @@ const ListCard = ({ list, colorClass, onClick, onDelete }: {
                     </p>
                 </div>
             </div>
-             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="h-4 w-4" /></Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                          <Button variant="destructive" size="icon" className="h-7 w-7 bg-black/30 hover:bg-black/50 border-0" onClick={(e) => e.stopPropagation()}>
@@ -171,7 +181,8 @@ export default function ShoppingPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
   
-  const [isCreateListOpen, setCreateListOpen] = useState(false);
+  const [isListDialogOpen, setListDialogOpen] = useState(false);
+  const [editingList, setEditingList] = useState<ShoppingList | null>(null);
   const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -230,10 +241,20 @@ export default function ShoppingPage() {
   }, [newItemName, historicalItems]);
 
 
-  const handleCreateList = async (data: CreateListFormData) => {
-    await addShoppingList(data.name, data.icon);
-    toast({ title: "Alışveriş Listesi Oluşturuldu!" });
-    setCreateListOpen(false);
+  const handleCreateOrUpdateList = async (data: CreateListFormData) => {
+    try {
+        if (editingList) {
+            await updateShoppingList(editingList.id, data);
+            toast({ title: "Liste Güncellendi!" });
+        } else {
+            await addShoppingList(data.name, data.icon);
+            toast({ title: "Alışveriş Listesi Oluşturuldu!" });
+        }
+        setListDialogOpen(false);
+        setEditingList(null);
+    } catch(e) {
+        toast({ title: "Hata", description: "İşlem sırasında bir hata oluştu.", variant: 'destructive'});
+    }
   };
   
  const handleAddItem = async (e?: React.FormEvent, itemName?: string) => {
@@ -284,6 +305,11 @@ export default function ShoppingPage() {
   const handleSelectList = (list: ShoppingList) => {
       setSelectedList(list);
   };
+  
+  const handleEditList = (list: ShoppingList) => {
+      setEditingList(list);
+      setListDialogOpen(true);
+  }
   
   const handleDeleteList = async (id: string) => {
       try {
@@ -451,7 +477,7 @@ export default function ShoppingPage() {
   return (
     <div className="space-y-6">
         <PageHeader title="Alışveriş Listeleri">
-            <Button variant="secondary" onClick={() => setCreateListOpen(true)}>
+            <Button variant="secondary" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
                 <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
             </Button>
         </PageHeader>
@@ -465,6 +491,7 @@ export default function ShoppingPage() {
                             list={list} 
                             colorClass={cn("bg-gradient-to-br", color.gradient)} 
                             onClick={() => handleSelectList(list)}
+                            onEdit={() => handleEditList(list)}
                             onDelete={handleDeleteList}
                         />
                     )
@@ -477,7 +504,7 @@ export default function ShoppingPage() {
                 </div>
             )}
         </div>
-      <CreateListDialog isOpen={isCreateListOpen} onOpenChange={setCreateListOpen} onCreate={handleCreateList} />
+      <CreateListDialog isOpen={isListDialogOpen} onOpenChange={setListDialogOpen} onCreate={handleCreateOrUpdateList} initialData={editingList} />
     </div>
   );
 }
