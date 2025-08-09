@@ -315,13 +315,24 @@ export default function ShoppingPage() {
             return acc;
         }, {} as Record<string, ShoppingListItemType[]>);
         
+    const groupedBoughtItems = (selectedList.boughtItems || []).reduce((acc, item) => {
+            const category = item.category || 'Diğer';
+            if (!acc[category]) acc[category] = [];
+            acc[category].push(item);
+            return acc;
+        }, {} as Record<string, ShoppingListItemType[]>);
+        
     const categoryOrder: { [key: string]: number } = {
         'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
         'Temel Gıda': 5, 'Atıştırmalık': 6, 'İçecekler': 7, 'Dondurulmuş Gıdalar': 8,
         'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11, 'Diğer': 99
     };
     
-    const sortedCategories = Object.entries(groupedPendingItems).sort(([catA], [catB]) => {
+    const sortedPendingCategories = Object.entries(groupedPendingItems).sort(([catA], [catB]) => {
+        return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
+    });
+    
+    const sortedBoughtCategories = Object.entries(groupedBoughtItems).sort(([catA], [catB]) => {
         return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
     });
 
@@ -366,7 +377,7 @@ export default function ShoppingPage() {
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
                         <div className="divide-y divide-yellow-200 dark:divide-yellow-800/50">
-                            {sortedCategories.map(([category, items]) => (
+                            {sortedPendingCategories.map(([category, items]) => (
                                 <div key={category} className="px-4">
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
                                     <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
@@ -392,14 +403,14 @@ export default function ShoppingPage() {
                             ))}
                         </div>
                     </TabsContent>
-                    <TabsContent value="bought" className="flex-grow bg-muted/30 dark:bg-card rounded-b-lg">
+                    <TabsContent value="bought" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
                         {boughtItems.length === 0 ? (
                         <div className="text-center py-16 text-muted-foreground">
                                 <p>Henüz alınan bir ürün yok.</p>
                             </div>
                         ) : (
                         <div>
-                            <div className="flex justify-end p-2 border-b">
+                            <div className="flex justify-end p-2 border-b border-yellow-200 dark:border-yellow-800/50">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -408,14 +419,25 @@ export default function ShoppingPage() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </div>
-                            <div className="divide-y divide-border/50 px-4">
-                            {boughtItems.map((item) => (
-                                <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList.id, item.id)}><Repeat className="h-4 w-4"/></Button>
-                                    <p className="font-semibold flex-grow line-through text-muted-foreground">{item.name}</p>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}><Trash2 className="h-4 w-4"/></Button>
-                                </div>
-                            ))}
+                             <div className="divide-y divide-yellow-200 dark:divide-yellow-800/50">
+                                {sortedBoughtCategories.map(([category, items]) => (
+                                    <div key={category} className="px-4">
+                                        {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
+                                        <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
+                                            {items.map((item) => (
+                                                <div key={item.id} className="flex items-center gap-4 py-3 group">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
+                                                        <Repeat className="h-4 w-4"/>
+                                                    </Button>
+                                                    <p className="font-medium flex-grow line-through text-muted-foreground">{item.name}</p>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, true)} title="Kalıcı olarak sil">
+                                                        <Trash2 className="h-4 w-4"/>
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                         )}
