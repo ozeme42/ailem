@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -72,6 +73,7 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
 
         const allSubtasksCompleted = newSubtasks.every(st => st.completed);
         if (allSubtasksCompleted && !task.completed) {
+            await updateTask(task.id, { completed: true });
             handleCompletion(); // Call main completion handler to award points etc.
         } else if (!allSubtasksCompleted && task.completed) {
              // If a subtask is un-checked, un-complete the main task

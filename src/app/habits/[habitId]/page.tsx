@@ -203,32 +203,26 @@ export default function HabitDetailPage() {
                     </div>
                 ))}
                 {days.map((day, index) => {
-                    const isCurrentMonth = isSameDay(addDays(monthStart, day.getDate() - monthStart.getDate()), day);
-
                     const dayKey = format(day, 'yyyy-MM-dd');
                     const isCompleted = habit.completedDates?.includes(dayKey) || false;
+                    const isSelectable = !isBefore(day, subDays(habitStartDate, 1));
                     
-                    const todayForComparison = new Date();
-                    todayForComparison.setHours(23, 59, 59, 999);
-                    
-                    let isSelectable = !isBefore(day, subDays(habitStartDate,1));
-
-                    if (habit.recurrenceType === 'monthly') {
+                    let isRelevantDay = true;
+                     if (habit.recurrenceType === 'monthly') {
                       if (day.getDate() !== habitStartDate.getDate()) {
-                        isSelectable = false;
+                        isRelevantDay = false;
                       }
                     }
 
-                    const isMissed = isSelectable && !isCompleted && isBefore(day, new Date()) && !isSameDay(day, new Date());
+                    const isMissed = isSelectable && isRelevantDay && !isCompleted && isBefore(day, new Date()) && !isSameDay(day, new Date());
                     
                     return (
                         <div
                             key={index}
-                            onClick={() => isSelectable && handleToggleDay(day)}
+                            onClick={() => isSelectable && isRelevantDay && handleToggleDay(day)}
                             className={cn(
                                 "aspect-square border-b border-r p-2 flex flex-col justify-start items-start transition-colors",
-                                !isCurrentMonth && "bg-muted/50 text-muted-foreground/50",
-                                isSelectable ? "cursor-pointer hover:bg-muted" : "cursor-not-allowed opacity-50"
+                                isSelectable && isRelevantDay ? "cursor-pointer hover:bg-muted" : "cursor-not-allowed opacity-50 bg-muted/30"
                             )}
                         >
                            <span className={cn('font-semibold', isToday(day) && 'text-primary')}>{format(day, 'd')}</span>
@@ -245,6 +239,3 @@ export default function HabitDetailPage() {
     </div>
   );
 }
-    
-
-    

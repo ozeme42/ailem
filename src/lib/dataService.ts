@@ -1152,6 +1152,23 @@ export const checkAndAwardBadges = async (
 export const updateTask = async (id: string, data: Partial<Task>) => {
     const taskRef = doc(db, 'tasks', id);
     const updateData = removeUndefined(data);
+
+    if (data.completed === false) {
+        const taskSnap = await getDoc(taskRef);
+        if (taskSnap.exists()) {
+            const task = taskSnap.data() as Task;
+            const memberRef = doc(db, 'families', task.familyId);
+            const familySnap = await getDoc(memberRef);
+            if (familySnap.exists()) {
+                const familyData = familySnap.data();
+                const member = familyData.members.find((m: FamilyMember) => m.id === task.assigneeId);
+                if (member) {
+                     const updatedXp = Math.max(0, (member.xp || 0) - task.points);
+                     await updateFamilyMemberInFamily(task.familyId, task.assigneeId, { xp: updatedXp });
+                }
+            }
+        }
+    }
     await updateDoc(taskRef, updateData);
 };
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
