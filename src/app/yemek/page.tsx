@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save } from "lucide-react";
-import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, addWeeks, subWeeks, addMonths, subMonths, eachDayOfInterval, isWithinInterval } from "date-fns";
+import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, addWeeks, subWeeks, addMonths, subMonths, isWithinInterval, eachDayOfInterval } from "date-fns";
 import { tr } from "date-fns/locale";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -473,8 +473,10 @@ export default function YemekPlanlamaPage() {
         .slice(0, 3)
         .map(([id, count]) => {
             const recipe = recipes.find(r => r.id === id);
-            return { ...recipe, count };
-        });
+            return recipe ? { ...recipe, count } : null;
+        })
+        .filter((r): r is Recipe & { count: number } => r !== null);
+
 
     return { allTimeCounts: counts, lastEatenDates: lastDates, monthlyStats: sortedMonthly };
   }, [mealPlan, recipes, statsDate]);
@@ -612,7 +614,7 @@ export default function YemekPlanlamaPage() {
                         {monthlyStats.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 {monthlyStats.map((recipe, index) => (
-                                    <div key={recipe.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50">
+                                    <div key={`${recipe.id}-${index}`} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50">
                                         <span className="font-bold text-xl text-primary">{index + 1}</span>
                                         <div>
                                             <p className="font-semibold">{recipe.title}</p>
@@ -811,6 +813,7 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
 
