@@ -118,7 +118,7 @@ export function MemberDashboardCard({
             completed: todaysCompletions.includes(prayer),
         }));
 
-        const memberVideos = videos.filter(v => v.assigneeId === memberId && v.completedVideos < v.totalVideos);
+        const memberVideos = videos.filter(v => v.assigneeId === memberId && (v.completedVideos || 0) > 0 && (v.completedVideos || 0) < v.totalVideos);
         completedActivityCount += memberVideos.reduce((sum, video) => sum + (video.completedVideos || 0), 0); // This might be tricky, let's assume each completed video counts
 
         const earnedTime = completedActivityCount * 15;
