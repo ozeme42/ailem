@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -9,10 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks, Gamepad2 } from 'lucide-react';
+import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks, Gamepad2, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily } from '@/lib/dataService';
-import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress } from '@/lib/data';
+import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video } from '@/lib/data';
 import { Progress } from './ui/progress';
 import { format, isToday, parseISO } from 'date-fns';
 
@@ -24,6 +25,7 @@ interface MemberDashboardCardProps {
     studyPlans: StudyPlan[];
     userLibraries: UserLibrary[];
     books: BookType[];
+    videos: Video[];
     memorizationItems: MemorizationItem[];
     memorizationProgress: MemorizationProgress[];
     prayerProgress: PrayerProgress[];
@@ -46,6 +48,7 @@ export function MemberDashboardCard({
     studyPlans,
     userLibraries,
     books,
+    videos,
     memorizationItems,
     memorizationProgress,
     prayerProgress,
@@ -53,7 +56,7 @@ export function MemberDashboardCard({
     const { toast } = useToast();
     const { familyId, familyMembers } = useAuth();
     
-    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes } = React.useMemo(() => {
+    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes, pendingVideos } = React.useMemo(() => {
         const memberId = member.id;
         let completedActivityCount = 0;
         const todayKey = format(new Date(), 'yyyy-MM-dd');
@@ -115,6 +118,9 @@ export function MemberDashboardCard({
             completed: todaysCompletions.includes(prayer),
         }));
 
+        const memberVideos = videos.filter(v => v.assigneeId === memberId && v.completedVideos < v.totalVideos);
+        completedActivityCount += memberVideos.reduce((sum, video) => sum + (video.completedVideos || 0), 0); // This might be tricky, let's assume each completed video counts
+
         const earnedTime = completedActivityCount * 15;
 
 
@@ -123,12 +129,13 @@ export function MemberDashboardCard({
             pendingTasks: otherTasks, 
             pendingTests, 
             pendingStudies, 
-            readingBooks: readingBooksData, 
+            readingBooks: readingBooksData,
+            pendingVideos: memberVideos,
             pendingMemorization: pendingMemorizationData,
             todaysPrayers: todaysPrayersData,
             earnedFreeTimeMinutes: earnedTime,
         };
-    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, memorizationItems, memorizationProgress, prayerProgress]);
+    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, videos, memorizationItems, memorizationProgress, prayerProgress]);
 
     const handleTaskCompletion = async (task: Task) => {
         if (!familyId || !member) return;
@@ -190,6 +197,7 @@ export function MemberDashboardCard({
         ...readingBooks,
         ...pendingMemorization,
         ...todaysPrayers,
+        ...pendingVideos,
     ];
 
     if (allPendingItems.filter(item => 'title' in item || 'topic' in item || 'name' in item).length === 0 && todaysPrayers.filter(p => !p.completed).length === 0) return null;
@@ -247,6 +255,24 @@ export function MemberDashboardCard({
                                     </div>
                                 </Link>
                             ))}
+                        </div>
+                    </div>
+                )}
+                {pendingVideos.length > 0 && (
+                     <div>
+                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Youtube className="h-4 w-4 text-red-600"/> Video Dersler</h4>
+                        <div className="space-y-3">
+                        {pendingVideos.slice(0, 2).map(video => (
+                             <Link href="/videos" key={video.id} className="block">
+                                <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-red-500/10 text-red-900 hover:bg-red-500/20">
+                                    <div className="truncate"><p className="font-semibold truncate text-sm">{video.title}</p></div>
+                                    <div>
+                                        <Progress value={(video.completedVideos / video.totalVideos) * 100} className="h-1.5" indicatorClassName="bg-red-500"/>
+                                        <p className="text-xs text-red-800/80 mt-1 text-right">{video.completedVideos} / {video.totalVideos} video</p>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
                         </div>
                     </div>
                 )}
