@@ -88,7 +88,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     resolver: zodResolver(formSchema),
     shouldUnregister: false,
     defaultValues: {
-      studentId: initialData?.studentId || "",
+      studentId: initialData?.studentId || undefined,
       activeTab: initialData?.sourceType || (mistakePoolSelection ? 'mistake' : 'quick'),
       title: initialData?.title || "",
       subject: initialData?.subject || "",
@@ -223,7 +223,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Öğrenci</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={students.length === 1}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Öğrenci seçin" /></SelectTrigger></FormControl>
                   <SelectContent>{students.map((student) => (<SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>))}</SelectContent>
                 </Select>
