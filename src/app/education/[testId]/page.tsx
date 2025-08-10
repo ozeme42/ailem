@@ -42,7 +42,7 @@ export default function OpticalFormPage() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [mistakePoolQuestions, setMistakePoolQuestions] = React.useState<any[]>([]);
     
-    const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: number[], emptyQuestions: number[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], emptyQuestions: [], answerKey: null });
+    const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: string[], emptyQuestions: string[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], emptyQuestions: [], answerKey: null });
 
 
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
@@ -216,46 +216,61 @@ export default function OpticalFormPage() {
     }, [testId]);
 
     React.useEffect(() => {
-        if (test?.status === 'Sonuçlandı' && test.gradingType === 'auto') {
-            const fetchAnswerKeyAndCompare = async () => {
+        if (test?.status !== 'Sonuçlandı') return;
+    
+        const processResults = async () => {
+            if (test.gradingType === 'auto') {
                 let answerKey: AnswerKey | undefined = undefined;
     
                 if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
                     const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
-                    if (bankDoc.exists()) {
-                        const bank = bankDoc.data() as QuestionBank;
-                        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-                        answerKey = topic?.answerKey;
-                    }
+                    answerKey = bankDoc.exists() ? (bankDoc.data() as QuestionBank).subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId)?.answerKey : undefined;
                 } else if (test.sourceType === 'exam' && test.sourceId) {
                     const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
-                    if (examDoc.exists()) {
-                        const exam = examDoc.data() as PracticeExam;
-                        answerKey = exam?.answerKey;
-                    }
+                    answerKey = examDoc.exists() ? (examDoc.data() as PracticeExam).answerKey : undefined;
                 } else if (test.sourceType === 'quick') {
                     answerKey = test.answerKey;
                 }
     
                 if (answerKey) {
-                    const incorrectQuestions: number[] = [];
-                    const emptyQuestions: number[] = [];
+                    const incorrect: string[] = [];
+                    const empty: string[] = [];
                     const studentAnswers = test.studentAnswers || {};
                     for (let i = 1; i <= test.questionCount; i++) {
                         const studentAns = studentAnswers[i];
                         const correctAns = (answerKey as any)[i];
                         if (!studentAns) {
-                           emptyQuestions.push(i);
+                           empty.push(i.toString());
                         } else if (studentAns !== correctAns) {
-                           incorrectQuestions.push(i);
+                           incorrect.push(i.toString());
                         }
                     }
-                    setResultDetails({ incorrectQuestions, emptyQuestions, answerKey });
+                    setResultDetails({ incorrectQuestions: incorrect, emptyQuestions: empty, answerKey });
                 }
-            };
+            } else if (test.gradingType === 'manual-text' || test.sourceType === 'mistake') {
+                const incorrect: string[] = [];
+                const empty: string[] = [];
+                const evaluations = test.studentTextAnswersEvaluation || {};
+                const studentAnswers = test.studentTextAnswers || {};
+                
+                const questionIdentifiers = test.sourceType === 'mistake' 
+                    ? test.mistakeIds || [] 
+                    : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
+
+                questionIdentifiers.forEach((qId, index) => {
+                    const qNum = (index + 1).toString();
+                    if (!studentAnswers[qId] || studentAnswers[qId].trim() === "") {
+                        empty.push(qNum);
+                    } else if (evaluations[qId] === 'incorrect') {
+                        incorrect.push(qNum);
+                    }
+                });
+
+                setResultDetails({ incorrectQuestions: incorrect, emptyQuestions: empty, answerKey: null });
+            }
+        };
     
-            fetchAnswerKeyAndCompare();
-        }
+        processResults();
     }, [test]);
 
 
@@ -343,14 +358,17 @@ export default function OpticalFormPage() {
                     </CardContent>
                 </Card>
 
-                {test.gradingType === 'auto' && resultDetails.incorrectQuestions.length > 0 && (
+                {resultDetails.incorrectQuestions.length > 0 && (
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <ListX className="text-destructive"/> Yanlış Yapılan Sorular
                             </CardTitle>
                             <CardDescription>
-                                Yanlış cevaplanan soruların numaraları ve doğru cevapları.
+                                {test.gradingType === 'auto'
+                                    ? "Yanlış cevaplanan soruların numaraları ve doğru cevapları."
+                                    : "Yanlış olarak değerlendirilen soruların numaraları."
+                                }
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -358,7 +376,9 @@ export default function OpticalFormPage() {
                                 {resultDetails.incorrectQuestions.map(qNumber => (
                                     <div key={qNumber} className="p-2 rounded-md border text-center bg-destructive/10">
                                         <p className="font-bold text-lg text-destructive">{qNumber}</p>
-                                        <p className="text-xs font-semibold">Doğru: {resultDetails.answerKey?.[qNumber] || '?'}</p>
+                                        {test.gradingType === 'auto' && resultDetails.answerKey?.[qNumber] && (
+                                             <p className="text-xs font-semibold">Doğru: {resultDetails.answerKey?.[qNumber] || '?'}</p>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -366,7 +386,7 @@ export default function OpticalFormPage() {
                     </Card>
                 )}
 
-                 {test.gradingType === 'auto' && resultDetails.emptyQuestions.length > 0 && (
+                 {resultDetails.emptyQuestions.length > 0 && (
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
