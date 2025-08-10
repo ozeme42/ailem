@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { Textarea } from "./ui/textarea";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, Loader2 } from "lucide-react";
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { useAuth } from './auth-provider';
 
@@ -55,7 +55,7 @@ const formSchema = z.object({
 });
 
 export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps) {
-
+    const [isSaving, setIsSaving] = React.useState(false);
     const isTextGrading = test.gradingType === 'manual-text' || test.sourceType === 'mistake';
     const [questions, setQuestions] = React.useState<(Partial<Mistake> & { qNum: string, id: string })[]>([]);
     
@@ -76,7 +76,6 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                  const studentAnswers = test.studentTextAnswers || {};
                  for (let i = 1; i <= test.questionCount; i++) {
                      const qId = i.toString();
-                     // Include all questions, regardless of whether they have an answer
                      fetchedQuestions.push({
                         id: qId,
                         studentAnswer: studentAnswers[qId] || "",
@@ -88,7 +87,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
             
             const initialEvals: Evaluations = {};
             const questionIdentifiers = test.sourceType === 'mistake' 
-                ? test.mistakeIds || []
+                ? test.mistakeIds || [] 
                 : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
 
             questionIdentifiers.forEach(qId => {
@@ -107,6 +106,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
 
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
+        setIsSaving(true);
         let correct = 0;
         let incorrect = 0;
         let empty = 0;
@@ -131,8 +131,8 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
             } else if (evalData.status === 'incorrect') {
                 incorrect++;
                 finalEvaluations[qId] = 'incorrect';
-            } else { // 'unevaluated'
-                empty++; // Unevaluated are counted as empty
+            } else { 
+                empty++;
                 finalEvaluations[qId] = 'unevaluated';
             }
             
@@ -160,6 +160,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
             evaluations: finalEvaluations,
             teacherFeedback: finalTeacherFeedback,
         });
+        setIsSaving(false);
     }
 
     if (!isTextGrading) {
@@ -185,7 +186,10 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                 </CardContent>
                 <div className="flex justify-end gap-4 pt-4">
                     <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
-                    <Button type="submit">Değerlendirmeyi Tamamla</Button>
+                    <Button type="submit" disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Değerlendirmeyi Tamamla
+                    </Button>
                 </div>
             </form>
         </Form>
