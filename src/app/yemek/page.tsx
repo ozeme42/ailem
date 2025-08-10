@@ -30,7 +30,7 @@ import { z } from 'zod';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/components/auth-provider";
 import { Calendar } from "@/components/ui/calendar";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 
@@ -139,7 +139,7 @@ function CalorieTracker() {
         const periodDays = eachDayOfInterval({start: startDate, end: endDate});
 
         periodDays.forEach(day => {
-            const dayKey = format(day, 'dd MMM');
+            const dayKey = statsPeriod === 'weekly' ? format(day, 'EEE', { locale: tr }) : format(day, 'dd MMM');
             dataByPeriod[dayKey] = { id: dayKey, caloriesTaken: 0, caloriesBurned: 0, protein: 0, carbs: 0, fat: 0, familyId: ''};
         });
 
@@ -151,7 +151,7 @@ function CalorieTracker() {
             totalFat += log.fat;
             
             const logDate = parseISO(log.id);
-            const key = format(logDate, 'dd MMM');
+            const key = statsPeriod === 'weekly' ? format(logDate, 'EEE', { locale: tr }) : format(logDate, 'dd MMM');
             
             if (dataByPeriod[key]) {
                 dataByPeriod[key].caloriesTaken += log.caloriesTaken;
@@ -326,9 +326,10 @@ function CalorieTracker() {
                                                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                                 <YAxis fontSize={12} tickLine={false} axisLine={false} />
                                                 <Tooltip content={<ChartTooltipContent />} />
+                                                <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeDasharray="3 3" />
                                                 <Bar dataKey="Kalori Durumu" radius={[4, 4, 0, 0]}>
                                                   {chartData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry["Kalori Durumu"] >= 0 ? "hsl(var(--chart-5))" : "hsl(var(--chart-2))"} />
+                                                    <Cell key={`cell-${index}`} fill={entry["Kalori Durumu"] >= 0 ? "hsl(var(--destructive))" : "hsl(var(--chart-2))"} />
                                                   ))}
                                                 </Bar>
                                             </BarChart>
@@ -854,14 +855,3 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
