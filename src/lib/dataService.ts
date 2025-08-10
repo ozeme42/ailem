@@ -1173,37 +1173,35 @@ export const updateTask = async (id: string, data: Partial<Task>) => {
     await updateDoc(taskRef, updateData);
 };
 
-export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
+export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'>>) => {
     const testDocRef = doc(db, 'tests', id);
-    await updateDoc(testDocRef, removeUndefined(data));
+    const cleanedData = removeUndefined(updateData);
+    await updateDoc(testDocRef, cleanedData);
     
-    if (data.status === 'Sonuçlandı') {
-        const familyId = (await getDoc(testDocRef)).data()?.familyId;
-        if (!familyId) return;
+    if (cleanedData.status === 'Sonuçlandı') {
+        const testSnap = await getDoc(testDocRef);
+        if (!testSnap.exists()) return;
 
-        // Create a representation of the full test with the updates applied
-        const originalTestSnap = await getDoc(testDocRef);
-        if (!originalTestSnap.exists()) return;
-        const testForMistakes = { ...originalTestSnap.data(), ...data } as Test;
-        
+        const test = { ...testSnap.data(), ...cleanedData } as Test;
+        if (!test.familyId) return;
+
         const batch = writeBatch(db);
-        
-        const incorrectOrEmptyQuestions: { qNum: number; studentAnswer: string }[] = [];
+        const incorrectOrEmptyQuestions: { qNum: string; studentAnswer: string }[] = [];
 
         // For Auto-graded tests
-        if (testForMistakes.gradingType === 'auto' && testForMistakes.answerKey) {
-            for (let i = 1; i <= testForMistakes.questionCount; i++) {
+        if (test.gradingType === 'auto' && test.answerKey) {
+            for (let i = 1; i <= test.questionCount; i++) {
                 const qNum = i.toString();
-                if (testForMistakes.studentAnswers?.[qNum] !== testForMistakes.answerKey[qNum]) {
-                    incorrectOrEmptyQuestions.push({ qNum: i, studentAnswer: testForMistakes.studentAnswers?.[qNum] || "(Boş)" });
+                if (test.studentAnswers?.[qNum] !== test.answerKey[qNum]) {
+                    incorrectOrEmptyQuestions.push({ qNum: qNum, studentAnswer: test.studentAnswers?.[qNum] || "(Boş)" });
                 }
             }
         } 
         // For Manually-graded tests
-        else if (testForMistakes.gradingType === 'manual-text' && testForMistakes.studentTextAnswersEvaluation) {
-             for (const qId in testForMistakes.studentTextAnswersEvaluation) {
-                if (testForMistakes.studentTextAnswersEvaluation[qId] === 'incorrect' || testForMistakes.studentTextAnswersEvaluation[qId] === 'empty') {
-                    incorrectOrEmptyQuestions.push({ qNum: parseInt(qId), studentAnswer: testForMistakes.studentTextAnswers?.[qId] || "(Boş)" });
+        else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
+             for (const qId in test.studentTextAnswersEvaluation) {
+                if (test.studentTextAnswersEvaluation[qId] === 'incorrect' || test.studentTextAnswersEvaluation[qId] === 'empty') {
+                    incorrectOrEmptyQuestions.push({ qNum: qId, studentAnswer: test.studentTextAnswers?.[qId] || "(Boş)" });
                 }
             }
         }
@@ -1212,13 +1210,13 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         incorrectOrEmptyQuestions.forEach(q => {
              const mistakeRef = doc(collection(db, 'mistakes'));
              const newMistake: Omit<Mistake, 'id'> = {
-                familyId: familyId,
-                creatorId: testForMistakes.studentId,
+                familyId: test.familyId,
+                creatorId: test.studentId,
                 testId: id,
-                originalQuestionId: q.qNum.toString(),
+                originalQuestionId: q.qNum,
                 studentAnswer: q.studentAnswer,
-                subject: testForMistakes.subject,
-                topic: testForMistakes.title,
+                subject: test.subject,
+                topic: test.title, // Using test title as topic for simplicity, can be improved.
                 createdAt: new Date().toISOString(),
                 status: 'active',
             };

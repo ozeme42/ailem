@@ -5,15 +5,18 @@ import * as React from "react";
 import Link from 'next/link';
 import { useAuth } from "@/components/auth-provider";
 import { Mistake, Test, FamilyMember } from "@/lib/data";
-import { onMistakesUpdate, addTest } from "@/lib/dataService";
+import { onMistakesUpdate, addTest, updateMistake } from "@/lib/dataService";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, ArrowRight, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send } from "lucide-react";
+import { AlertCircle, ArrowRight, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { EditMistakeForm } from "@/components/edit-mistake-form";
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -32,6 +35,7 @@ export default function MistakePoolDashboardPage() {
     const [mistakes, setMistakes] = React.useState<Mistake[]>([]);
     const [selectedMistakeIds, setSelectedMistakeIds] = React.useState<string[]>([]);
     const [targetStudentId, setTargetStudentId] = React.useState<string>('');
+    const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const { toast } = useToast();
 
     const studentMembers = React.useMemo(() => 
@@ -141,10 +145,14 @@ export default function MistakePoolDashboardPage() {
                                                 onCheckedChange={(checked) => handleSelectionChange(mistake.id, !!checked)}
                                                 className="mt-1"
                                             />
-                                            <label htmlFor={`mistake-${mistake.id}`} className="flex-grow">
-                                                <p className="font-semibold">{mistake.topic}</p>
-                                                <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
-                                            </label>
+                                            <div className="flex-grow">
+                                                <p className="font-semibold">{mistake.topic} - Soru #{mistake.originalQuestionId}</p>
+                                                <Image src={mistake.imageUrl || "https://placehold.co/300x400.png"} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover" data-ai-hint="question paper" />
+                                            </div>
+                                            <Button variant="outline" size="sm" onClick={() => setEditingMistake(mistake)}>
+                                                <Edit className="mr-2 h-4 w-4"/>
+                                                Geri Bildirim
+                                            </Button>
                                         </div>
                                     ))}
                                 </CardContent>
@@ -163,6 +171,17 @@ export default function MistakePoolDashboardPage() {
                     </CardContent>
                 </Card>
             )}
+
+            <Dialog open={!!editingMistake} onOpenChange={(open) => !open && setEditingMistake(null)}>
+                <DialogContent>
+                    {editingMistake && (
+                        <EditMistakeForm 
+                            mistake={editingMistake}
+                            onFormSubmit={() => setEditingMistake(null)}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
