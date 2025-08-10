@@ -1192,24 +1192,36 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
     const testData = testDoc.data() as Test;
     const familyId = testData.familyId;
 
-    if (updateData.status === 'Sonuçlandı' && updateData.studentTextAnswersEvaluation) {
+    if (updateData.status === 'Sonuçlandı') {
         const batch = writeBatch(db);
-        const incorrectOrEmptyQuestions = Object.entries(updateData.studentTextAnswersEvaluation)
-            .filter(([, status]) => status === 'incorrect' || status === 'empty')
-            .map(([questionId]) => questionId);
-        
-        for(const questionId of incorrectOrEmptyQuestions) {
+        const incorrectOrEmptyQuestions: string[] = [];
+
+        if (testData.gradingType === 'auto') {
+            for (let i = 1; i <= testData.questionCount; i++) {
+                const qId = i.toString();
+                if (testData.studentAnswers?.[qId] !== testData.answerKey?.[qId]) {
+                    incorrectOrEmptyQuestions.push(qId);
+                }
+            }
+        } else if (testData.gradingType === 'manual-text' && updateData.studentTextAnswersEvaluation) {
+             Object.entries(updateData.studentTextAnswersEvaluation)
+                .filter(([, status]) => status === 'incorrect' || status === 'empty')
+                .forEach(([questionId]) => incorrectOrEmptyQuestions.push(questionId));
+        }
+
+        for (const questionId of incorrectOrEmptyQuestions) {
             const mistakeRef = doc(collection(db, 'mistakes'));
             const newMistake: Omit<Mistake, 'id'> = {
                 familyId: familyId,
                 creatorId: testData.studentId,
                 testId: id,
                 originalQuestionId: questionId,
-                studentAnswer: testData.studentTextAnswers?.[questionId] || '',
+                studentAnswer: testData.studentAnswers?.[questionId] || testData.studentTextAnswers?.[questionId] || '',
                 subject: testData.subject,
-                topic: testData.title, // Simplified topic
+                topic: testData.title,
                 createdAt: new Date().toISOString(),
                 status: 'active',
+                teacherFeedback: updateData.teacherFeedback?.[questionId] || undefined
             };
             batch.set(mistakeRef, removeUndefined(newMistake));
         }
@@ -1613,5 +1625,7 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     return setDoc(docRef, updateData, { merge: true });
 };
+
+    
 
     
