@@ -1173,19 +1173,18 @@ export const updateTask = async (id: string, data: Partial<Task>) => {
     await updateDoc(taskRef, updateData);
 };
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
-    // When updating a test, ensure empty/undefined fields are handled correctly for Firestore.
     const updateData: Partial<Test> = { ...data };
 
     if ('answerKey' in updateData && (updateData.answerKey === undefined || Object.keys(updateData.answerKey).length === 0)) {
         delete updateData.answerKey;
     }
-     if ('studentAnswers' in updateData && (updateData.studentAnswers === undefined || Object.keys(updateData.studentAnswers).length === 0)) {
+    if ('studentAnswers' in updateData && (updateData.studentAnswers === undefined || Object.keys(updateData.studentAnswers).length === 0)) {
         delete updateData.studentAnswers;
     }
-     if ('studentTextAnswers' in updateData && (updateData.studentTextAnswers === undefined || Object.keys(updateData.studentTextAnswers).length === 0)) {
+    if ('studentTextAnswers' in updateData && (updateData.studentTextAnswers === undefined || Object.keys(updateData.studentTextAnswers).length === 0)) {
         delete updateData.studentTextAnswers;
     }
-    
+
     const testDocRef = doc(db, 'tests', id);
     const testDoc = await getDoc(testDocRef);
     if (!testDoc.exists()) return;
@@ -1207,14 +1206,14 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
                 testId: id,
                 originalQuestionId: questionId,
                 studentAnswer: testData.studentTextAnswers?.[questionId] || '',
-                correctAnswer: updateData.teacherFeedback?.[questionId]?.correctAnswer || '',
-                correctImageUrl: updateData.teacherFeedback?.[questionId]?.correctImageUrl || '',
+                correctAnswer: updateData.teacherFeedback?.[questionId]?.correctAnswer,
+                correctImageUrl: updateData.teacherFeedback?.[questionId]?.correctImageUrl,
                 subject: testData.subject,
                 topic: testData.title, // Simplified topic
                 createdAt: new Date().toISOString(),
                 status: 'active',
             };
-            batch.set(mistakeRef, newMistake);
+            batch.set(mistakeRef, removeUndefined(newMistake));
         }
         await batch.commit();
     }
@@ -1570,7 +1569,8 @@ export const onSinglePrayerProgressUpdate = (memberId: string, callback: (progre
         if (user) {
             const familyId = await getCurrentFamilyId();
             if (familyId) {
-                const docRef = doc(db, 'prayerProgress', `${familyId}_${memberId}`);
+                const docId = `${familyId}_${memberId}`;
+                const docRef = doc(db, 'prayerProgress', docId);
                 return onSnapshot(docRef, (doc) => {
                     callback(doc.exists() ? { id: doc.id, ...doc.data() } as PrayerProgress : null);
                 });
