@@ -1,29 +1,40 @@
 
+
 "use client";
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { Test } from "@/lib/data";
+import type { Test, Mistake } from "@/lib/data";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { Textarea } from "./ui/textarea";
+import { UploadCloud } from "lucide-react";
 
-type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated';
-type Evaluations = { [key: string]: EvaluationStatus };
+type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
+type Evaluation = {
+    status: EvaluationStatus;
+    correctAnswer?: string;
+    correctImageUrl?: string;
+    newImageDataUri?: string;
+};
+
+type Evaluations = { [key: string]: Evaluation };
 
 export type ManualGradeData = {
     correct: number;
     incorrect: number;
     empty: number;
-    evaluations: Evaluations;
+    evaluations: { [key: string]: EvaluationStatus };
+    teacherFeedback: Test['teacherFeedback'];
 }
 
 type ManualGradeFormProps = {
@@ -32,217 +43,205 @@ type ManualGradeFormProps = {
   onCancel: () => void;
 };
 
+const formSchema = z.object({
+    evaluations: z.record(z.object({
+        status: z.enum(['correct', 'incorrect', 'unevaluated', 'empty']),
+        correctAnswer: z.string().optional(),
+        correctImageUrl: z.string().optional(),
+        newImageDataUri: z.string().optional(),
+    }))
+});
 
 export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps) {
 
-    const isTextGrading = test.gradingType === 'manual-text' && test.studentTextAnswers && Object.keys(test.studentTextAnswers).length > 0;
-    const isMistakePoolGrading = test.sourceType === 'mistake' && test.mistakeIds;
-    const isSimpleManualGrading = test.gradingType === 'manual';
+    const isTextGrading = test.gradingType === 'manual-text' || test.sourceType === 'mistake';
+    const [questions, setQuestions] = React.useState<(Mistake & { qNum: string })[]>([]);
     
-    const [mistakeQuestions, setMistakeQuestions] = React.useState<any[]>([]);
-    
-    // State for question-by-question evaluation
-    const [evaluations, setEvaluations] = React.useState<Evaluations>(test.studentTextAnswersEvaluation || {});
-
-    React.useEffect(() => {
-        const fetchMistakeQuestions = async () => {
-            if (isMistakePoolGrading && test.mistakeIds) {
-                const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-                setMistakeQuestions(mistakeDocs.map(d => ({ id: d.id, ...d.data() })));
-            }
-        };
-        fetchMistakeQuestions();
-    }, [isMistakePoolGrading, test.mistakeIds]);
-    
-    // Calculate summary based on evaluations state
-    const summary = React.useMemo(() => {
-        let correct = 0;
-        let incorrect = 0;
-        let empty = 0;
-
-        if (isTextGrading || isMistakePoolGrading) {
-            const studentAnswers = test.studentTextAnswers || {};
-            const totalAnswers = Object.keys(studentAnswers).filter(k => studentAnswers[k].trim() !== "").length;
-            
-            Object.values(evaluations).forEach(status => {
-                if (status === 'correct') correct++;
-                else if (status === 'incorrect') incorrect++;
-            });
-    
-            const evaluatedCount = correct + incorrect;
-            empty = test.questionCount - totalAnswers + (totalAnswers - evaluatedCount);
-        }
-
-        return { correct, incorrect, empty };
-    }, [evaluations, test.questionCount, isTextGrading, isMistakePoolGrading, test.studentTextAnswers]);
-
-
-    const formSchema = z.object({
-        correct: z.coerce.number().min(0, "Değer 0'dan küçük olamaz.").default(summary.correct),
-        incorrect: z.coerce.number().min(0, "Değer 0'dan küçük olamaz.").default(summary.incorrect),
-        empty: z.coerce.number().min(0, "Değer 0'dan küçük olamaz.").default(summary.empty),
-    }).refine(data => data.correct + data.incorrect + data.empty === test.questionCount, {
-        message: `Toplam sayı, soru sayısına (${test.questionCount}) eşit olmalıdır.`,
-        path: ["correct"],
-    });
-
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            correct: summary.correct,
-            incorrect: summary.incorrect,
-            empty: summary.empty,
+            evaluations: {}
         },
     });
 
     React.useEffect(() => {
-        if (isTextGrading || isMistakePoolGrading) {
-            form.reset({
-                correct: summary.correct,
-                incorrect: summary.incorrect,
-                empty: summary.empty
+        const fetchQuestionsAndAnswers = async () => {
+            let fetchedQuestions: (Mistake & { qNum: string })[] = [];
+            if (test.sourceType === 'mistake' && test.mistakeIds) {
+                const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
+                fetchedQuestions = mistakeDocs.map((d, i) => ({ id: d.id, ...d.data(), qNum: (i+1).toString() } as Mistake & { qNum: string }));
+            } else if (test.sourceType === 'bank' || test.sourceType === 'quick') {
+                 // For bank/quick tests, we don't have stored question images, so we create placeholder question objects
+                 const studentAnswers = test.studentTextAnswers || {};
+                 for (let i = 1; i <= test.questionCount; i++) {
+                     const qId = i.toString();
+                     if (studentAnswers[qId]) {
+                        fetchedQuestions.push({
+                            id: qId,
+                            studentAnswer: studentAnswers[qId],
+                            qNum: qId,
+                        } as any);
+                     }
+                 }
+            }
+            setQuestions(fetchedQuestions);
+            
+            const initialEvals: Evaluations = {};
+            fetchedQuestions.forEach(q => {
+                const feedback = test.teacherFeedback?.[q.id];
+                initialEvals[q.id] = {
+                    status: test.studentTextAnswersEvaluation?.[q.id] || 'unevaluated',
+                    correctAnswer: feedback?.correctAnswer || '',
+                    correctImageUrl: feedback?.correctImageUrl || '',
+                    newImageDataUri: ''
+                };
             });
-        }
-    }, [summary, form, isTextGrading, isMistakePoolGrading]);
+             form.reset({ evaluations: initialEvals });
+        };
+        fetchQuestionsAndAnswers();
+    }, [test, form]);
 
-    const handleEvaluationChange = (questionIdentifier: string, status: EvaluationStatus) => {
-        setEvaluations(prev => ({ ...prev, [questionIdentifier]: status }));
-    };
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        if (isTextGrading || isMistakePoolGrading) {
-            onSave({ ...summary, evaluations });
-        } else {
-            onSave({ ...values, evaluations: {} });
-        }
+        let correct = 0;
+        let incorrect = 0;
+        
+        const finalEvaluations: { [key: string]: EvaluationStatus } = {};
+        const finalTeacherFeedback: NonNullable<Test['teacherFeedback']> = {};
+
+        Object.entries(values.evaluations).forEach(([qId, evalData]) => {
+            finalEvaluations[qId] = evalData.status;
+            if(evalData.status === 'correct') correct++;
+            if(evalData.status === 'incorrect') incorrect++;
+
+            if(evalData.correctAnswer || evalData.correctImageUrl || evalData.newImageDataUri) {
+                finalTeacherFeedback[qId] = {
+                    correctAnswer: evalData.correctAnswer,
+                    correctImageUrl: evalData.correctImageUrl || evalData.newImageDataUri, // Use new URI if present
+                };
+            }
+        });
+        
+        const answeredCount = Object.keys(test.studentTextAnswers || {}).filter(k => test.studentTextAnswers?.[k].trim()).length;
+        const empty = test.questionCount - answeredCount;
+
+        onSave({
+            correct,
+            incorrect,
+            empty: empty + (answeredCount - (correct + incorrect)), // un-evaluated are also empty for scoring
+            evaluations: finalEvaluations,
+            teacherFeedback: finalTeacherFeedback,
+        });
     }
-  
-  if (isTextGrading || isMistakePoolGrading) {
-    const questions = isMistakePoolGrading 
-        ? mistakeQuestions 
-        : Object.entries(test.studentTextAnswers!).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10));
+
+    if (!isTextGrading) {
+        // Fallback for non-text grading types if needed, or just show an error.
+        return <p>Bu test türü için manuel değerlendirme desteklenmiyor.</p>
+    }
 
     return (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-             <Card>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <CardHeader>
                     <CardTitle className="text-base">Öğrenci Cevapları</CardTitle>
-                    <CardDescription>Her bir cevabı doğru veya yanlış olarak işaretleyin.</CardDescription>
+                    <CardDescription>Her bir cevabı doğru veya yanlış olarak işaretleyin ve isteğe bağlı olarak doğru cevabı/çözümü ekleyin.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <ScrollArea className="h-64 pr-4">
-                        <div className="space-y-3">
-                        {questions.map((q, index) => {
-                            const qNum = isMistakePoolGrading ? (index + 1).toString() : q[0];
-                            const qIdentifier = isMistakePoolGrading ? q.id : q[0];
-                            const studentAns = test.studentTextAnswers?.[qIdentifier] || "(Boş bırakılmış)";
-                            const imageUrl = isMistakePoolGrading ? q.imageUrl : null;
-                            
-                            return (
-                                <div key={qIdentifier} className="p-3 border rounded-lg">
-                                    <p className="text-sm font-semibold text-primary">{qNum}. Soru</p>
-                                    {imageUrl && <Image src={imageUrl} alt={`Soru ${qNum}`} width={400} height={300} className="my-2 rounded-md border" data-ai-hint="question paper"/>}
-                                    <p className="text-sm my-2">
-                                        <span className="font-semibold">Öğrenci Cevabı:</span>
-                                        <span className="text-muted-foreground ml-2">{studentAns}</span>
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <Button type="button" size="sm" variant={evaluations[qIdentifier] === 'correct' ? 'default' : 'outline'} className="text-green-600 border-green-500/50 hover:bg-green-500/10" onClick={() => handleEvaluationChange(qIdentifier, 'correct')}>Doğru</Button>
-                                        <Button type="button" size="sm" variant={evaluations[qIdentifier] === 'incorrect' ? 'destructive' : 'outline'} className="text-red-600 border-red-500/50 hover:bg-red-500/10" onClick={() => handleEvaluationChange(qIdentifier, 'incorrect')}>Yanlış</Button>
-                                    </div>
-                                </div>
-                            )
-                        })}
+                    <ScrollArea className="h-96 pr-4">
+                        <div className="space-y-4">
+                            {questions.map((q) => (
+                                <QuestionGradeCard key={q.id} question={q} control={form.control} />
+                            ))}
                         </div>
                     </ScrollArea>
                 </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">Değerlendirme Özeti</CardTitle>
-                </CardHeader>
-                 <CardContent className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-2 rounded-lg bg-green-500/10">
-                        <p className="font-bold text-lg text-green-600">{summary.correct}</p>
-                        <p className="text-xs font-medium">Doğru</p>
-                    </div>
-                    <div className="text-center p-2 rounded-lg bg-red-500/10">
-                        <p className="font-bold text-lg text-red-600">{summary.incorrect}</p>
-                        <p className="text-xs font-medium">Yanlış</p>
-                    </div>
-                    <div className="text-center p-2 rounded-lg bg-gray-500/10">
-                        <p className="font-bold text-lg text-gray-600">{summary.empty}</p>
-                        <p className="text-xs font-medium">Boş</p>
-                    </div>
-                </CardContent>
-            </Card>
-            <div className="flex justify-end gap-4 pt-4">
-                <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
-                <Button type="submit">Değerlendirmeyi Tamamla</Button>
-            </div>
-        </form>
-    )
-  }
-  
-  if (isSimpleManualGrading) {
-      return (
-         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-                <FormField
-                control={form.control}
-                name="correct"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Doğru</FormLabel>
-                    <FormControl>
-                        <Input type="number" {...field} />
-                    </FormControl>
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="incorrect"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Yanlış</FormLabel>
-                    <FormControl>
-                        <Input type="number" {...field} />
-                    </FormControl>
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="empty"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Boş</FormLabel>
-                    <FormControl>
-                        <Input type="number" {...field} />
-                    </FormControl>
-                    </FormItem>
-                )}
-                />
-            </div>
-            <FormMessage>
-              {form.formState.errors.correct?.message}
-            </FormMessage>
-            <div className="flex justify-end gap-4">
-                <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
-                <Button type="submit">Sonuçları Kaydet</Button>
-            </div>
-          </form>
+                <div className="flex justify-end gap-4 pt-4">
+                    <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
+                    <Button type="submit">Değerlendirmeyi Tamamla</Button>
+                </div>
+            </form>
         </Form>
-      )
-  }
+    );
+}
 
-  // Fallback for any unexpected case
-  return (
-      <div className="p-4 text-center">
-        <p>Bu test türü için bir değerlendirme formu bulunamadı.</p>
-        <Button type="button" variant="ghost" onClick={onCancel} className="mt-4">Kapat</Button>
-      </div>
-  );
+function QuestionGradeCard({ question, control }: { question: any, control: any }) {
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const { setValue, watch } = useForm({
+         defaultValues: {
+            correctImageUrl: '',
+            newImageDataUri: '',
+        }
+    });
+
+    const currentEval = watch(`evaluations.${question.id}`);
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setValue(`evaluations.${question.id}.newImageDataUri`, reader.result as string, { shouldValidate: true });
+                setValue(`evaluations.${question.id}.correctImageUrl`, reader.result as string, { shouldValidate: true });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    return (
+        <Card className="p-4">
+            <p className="font-bold text-primary mb-2">{question.qNum}. Soru</p>
+            {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${question.qNum}`} width={400} height={300} className="my-2 rounded-md border" data-ai-hint="question paper" />}
+            <p className="text-sm my-2">
+                <span className="font-semibold">Öğrenci Cevabı:</span>
+                <span className="text-muted-foreground ml-2">{question.studentAnswer || "(Boş bırakılmış)"}</span>
+            </p>
+             <FormField
+                control={control}
+                name={`evaluations.${question.id}.status`}
+                render={({ field }) => (
+                    <div className="flex items-center gap-2 mt-2">
+                        <Button type="button" size="sm" variant={field.value === 'correct' ? 'default' : 'outline'} className="text-green-600 border-green-500/50 hover:bg-green-500/10" onClick={() => field.onChange('correct')}>Doğru</Button>
+                        <Button type="button" size="sm" variant={field.value === 'incorrect' ? 'destructive' : 'outline'} className="text-red-600 border-red-500/50 hover:bg-red-500/10" onClick={() => field.onChange('incorrect')}>Yanlış</Button>
+                    </div>
+                )}
+            />
+            {currentEval?.status === 'incorrect' && (
+                <div className="mt-4 space-y-3 p-3 bg-muted/50 rounded-lg">
+                    <FormField
+                        control={control}
+                        name={`evaluations.${question.id}.correctAnswer`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs">Doğru Cevap (Opsiyonel)</FormLabel>
+                                <FormControl><Textarea placeholder="Doğru cevabı veya açıklamayı yazın" {...field} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={control}
+                        name={`evaluations.${question.id}.correctImageUrl`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs">Çözüm Görseli (Opsiyonel)</FormLabel>
+                                <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+                                <Card 
+                                    className="aspect-video w-full border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    {field.value ? (
+                                        <Image src={field.value} alt="Çözüm Önizleme" layout="fill" objectFit="contain" className="p-2" />
+                                    ) : (
+                                        <>
+                                            <UploadCloud className="h-8 w-8"/>
+                                            <p className="mt-2 text-xs">Görsel Yükle</p>
+                                        </>
+                                    )}
+                                </Card>
+                            </FormItem>
+                        )}
+                    />
+                </div>
+            )}
+        </Card>
+    )
 }

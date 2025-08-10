@@ -42,7 +42,7 @@ export interface Subtask {
 }
 
 export interface Task {
-  id: string;
+  id:string;
   familyId: string; // To scope tasks to a family
   title: string;
   assigneeId: string; // Now refers to FamilyMember.id
@@ -337,6 +337,7 @@ export interface Test {
   studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
+  teacherFeedback?: { [questionIdentifier: string]: { correctAnswer?: string; correctImageUrl?: string; }};
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   mistakeIds?: string[];
@@ -464,8 +465,14 @@ export interface ShoppingNoteList {
 export interface Mistake {
     id: string;
     familyId: string;
-    creatorId: string;
-    imageUrl: string;
+    creatorId: string; // Member who originally got it wrong
+    testId?: string; // Which test this mistake came from
+    originalQuestionId?: string; // e.g. question number '5' or mistake pool id
+    imageUrl?: string; // Image of the question
+    studentAnswer?: string; // Student's incorrect answer
+    correctAnswer?: string; // Provided by teacher
+    correctImageUrl?: string; // Provided by teacher
+    feedback?: string; // Notes from teacher
     subject: string;
     topic: string;
     createdAt: string; // ISO date string
@@ -543,20 +550,10 @@ export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
     { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
 ];
 
-export const initialRecipes: Omit<Recipe, 'id'|'familyId'>[] = [
-    {
-        title: "Menemen",
-        category: 'Kahvaltı',
-        rating: 4.8,
-        instructions: "Biberleri ve domatesleri doğrayın. Tereyağını tavada eritin ve biberleri kavurun. Domatesleri ekleyip suyunu çekene kadar pişirin. Yumurtaları kırın ve karıştırarak pişirin. Baharatları ekleyip servis yapın."
-    },
-    {
-        title: "Mercimek Çorbası",
-        category: 'Akşam Yemeği',
-        rating: 4.9,
-        instructions: "Tüm sebzeleri doğrayın. Mercimeği yıkayıp süzün. Tencerede yağı kızdırıp soğanları kavurun, salçayı ekleyin. Diğer sebzeleri ve mercimeği ekleyip üzerini geçecek kadar sıcak su koyun. Sebzeler yumuşayana kadar pişirin ve blenderdan geçirin. Baharatları ekleyip bir taşım daha kaynatın."
-    }
-];
+// This is a duplicate, will remove it.
+// export const initialRecipes: Omit<Recipe, 'id'|'familyId'>[] = [
+//     ...
+// ];
 
 export const initialMealPlan: MealPlan = {
   "2024-08-12": { // This key needs to be dynamic based on current week, but for initial setup it's fine
