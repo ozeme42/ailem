@@ -9,6 +9,7 @@ import { onTestsUpdate } from "@/lib/dataService";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ArrowRight, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Matematik': Ruler,
