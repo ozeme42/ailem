@@ -624,7 +624,7 @@ export const toggleShoppingNoteItemStatusInList = async (listId: string, itemId:
 // Education
 // ... existing education functions ...
 export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback);
-export const addMistake = async (data: Omit<Mistake, 'id' | 'familyId' | 'status'>) => {
+export const addMistake = async (data: Partial<Omit<Mistake, 'id' | 'familyId' | 'status'>>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'mistakes'), { ...data, familyId, status: 'active' });
@@ -1194,11 +1194,11 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
 
     if (updateData.status === 'Sonuçlandı' && updateData.studentTextAnswersEvaluation) {
         const batch = writeBatch(db);
-        const incorrectQuestions = Object.entries(updateData.studentTextAnswersEvaluation)
-            .filter(([, status]) => status === 'incorrect')
+        const incorrectOrEmptyQuestions = Object.entries(updateData.studentTextAnswersEvaluation)
+            .filter(([, status]) => status === 'incorrect' || status === 'empty')
             .map(([questionId]) => questionId);
         
-        for(const questionId of incorrectQuestions) {
+        for(const questionId of incorrectOrEmptyQuestions) {
             const mistakeRef = doc(collection(db, 'mistakes'));
             const newMistake: Omit<Mistake, 'id'> = {
                 familyId: familyId,
@@ -1206,8 +1206,6 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
                 testId: id,
                 originalQuestionId: questionId,
                 studentAnswer: testData.studentTextAnswers?.[questionId] || '',
-                correctAnswer: updateData.teacherFeedback?.[questionId]?.correctAnswer,
-                correctImageUrl: updateData.teacherFeedback?.[questionId]?.correctImageUrl,
                 subject: testData.subject,
                 topic: testData.title, // Simplified topic
                 createdAt: new Date().toISOString(),
@@ -1615,3 +1613,5 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     return setDoc(docRef, updateData, { merge: true });
 };
+
+    

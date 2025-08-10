@@ -337,7 +337,6 @@ export interface Test {
   studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
-  teacherFeedback?: { [questionIdentifier: string]: { correctAnswer?: string; correctImageUrl?: string; }};
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   mistakeIds?: string[];
@@ -618,3 +617,5 @@ export const CoachMessageSchema = z.object({
   content: z.array(ContentPartSchema),
 });
 export type CoachMessage = z.infer<typeof CoachMessageSchema>;
+
+    
