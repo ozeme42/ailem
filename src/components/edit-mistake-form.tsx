@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, UploadCloud, Camera, ArrowLeft } from 'lucide-react';
+import { Loader2, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import type { Mistake } from '@/lib/data';
 import { ScrollArea } from './ui/scroll-area';
@@ -43,6 +43,15 @@ export function EditMistakeForm({ mistake, onSave }: EditMistakeFormProps) {
       newImageDataUri: "",
     },
   });
+  
+  React.useEffect(() => {
+    form.reset({
+      correctAnswer: mistake.correctAnswer || "",
+      feedback: mistake.feedback || "",
+      newImageDataUri: "",
+    });
+    setImagePreview(mistake.correctImageUrl || null);
+  }, [mistake, form]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

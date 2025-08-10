@@ -7,14 +7,13 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import type { Test, Mistake } from "@/lib/data";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 
 
@@ -39,7 +38,6 @@ const formSchema = z.object({
 
 export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps) {
     const [isSaving, setIsSaving] = React.useState(false);
-    const isTextGrading = test.gradingType === 'manual-text' || test.sourceType === 'mistake';
     const [questions, setQuestions] = React.useState<(Partial<Mistake> & { qNum: string, id: string })[]>([]);
     
     const form = useForm<z.infer<typeof formSchema>>({
@@ -48,6 +46,9 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
             evaluations: {}
         },
     });
+    
+    const { setValue, watch } = form;
+    const evaluations = watch('evaluations');
 
     React.useEffect(() => {
         const fetchQuestionsAndAnswers = async () => {
@@ -108,8 +109,12 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         });
         setIsSaving(false);
     }
+    
+    const handleStatusChange = (qId: string, status: EvaluationStatus) => {
+        setValue(`evaluations.${qId}`, status, { shouldDirty: true });
+    };
 
-    if (!isTextGrading) {
+    if (test.gradingType !== 'manual-text' && test.sourceType !== 'mistake') {
         return <p>Bu test türü için manuel değerlendirme desteklenmiyor.</p>
     }
 
@@ -123,26 +128,27 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                 <CardContent>
                     <ScrollArea className="h-96 pr-4">
                         <div className="space-y-4">
-                            {questions.map((q) => (
-                               <Card key={q.id} className="p-4">
-                                    <p className="font-bold text-primary mb-2">{q.qNum}. Soru</p>
-                                    {q.imageUrl && <Image src={q.imageUrl} alt={`Soru ${q.qNum}`} width={400} height={300} className="my-2 rounded-md border" data-ai-hint="question paper" />}
-                                    <p className="text-sm my-2">
-                                        <span className="font-semibold">Öğrenci Cevabı:</span>
-                                        <span className="text-muted-foreground ml-2">{q.studentAnswer || "(Boş bırakılmış)"}</span>
-                                    </p>
-                                     <FormField
-                                        control={form.control}
-                                        name={`evaluations.${q.id}`}
-                                        render={({ field }) => (
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <Button type="button" size="sm" variant={field.value === 'correct' ? 'default' : 'outline'} className="text-green-600 border-green-500/50 hover:bg-green-500/10" onClick={() => field.onChange('correct')}>Doğru</Button>
-                                                <Button type="button" size="sm" variant={field.value === 'incorrect' ? 'destructive' : 'outline'} className="text-red-600 border-red-500/50 hover:bg-red-500/10" onClick={() => field.onChange('incorrect')}>Yanlış</Button>
-                                            </div>
-                                        )}
-                                    />
-                                </Card>
-                            ))}
+                            {questions.map((q) => {
+                                const status = evaluations[q.id] || 'unevaluated';
+                                return (
+                                   <Card key={q.id} className={cn("p-4 transition-colors", 
+                                        status === 'correct' && 'bg-green-50 border-green-200',
+                                        status === 'incorrect' && 'bg-red-50 border-red-200',
+                                        status === 'empty' && 'bg-gray-50 border-gray-200',
+                                   )}>
+                                        <p className="font-bold text-primary mb-2">{q.qNum}. Soru</p>
+                                        {q.imageUrl && <Image src={q.imageUrl} alt={`Soru ${q.qNum}`} width={400} height={300} className="my-2 rounded-md border" data-ai-hint="question paper" />}
+                                        <p className="text-sm my-2">
+                                            <span className="font-semibold">Öğrenci Cevabı:</span>
+                                            <span className="text-muted-foreground ml-2">{q.studentAnswer || "(Boş bırakılmış)"}</span>
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Button type="button" size="sm" variant={status === 'correct' ? 'default' : 'outline'} className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200" onClick={() => handleStatusChange(q.id, 'correct')}>Doğru</Button>
+                                            <Button type="button" size="sm" variant={status === 'incorrect' ? 'destructive' : 'outline'} className="bg-red-100 text-red-800 border-red-300 hover:bg-red-200" onClick={() => handleStatusChange(q.id, 'incorrect')}>Yanlış</Button>
+                                        </div>
+                                    </Card>
+                                )
+                            })}
                              {questions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Değerlendirilecek soru bulunmuyor.</p>}
                         </div>
                     </ScrollArea>
@@ -158,5 +164,3 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         </Form>
     );
 }
-
-    
