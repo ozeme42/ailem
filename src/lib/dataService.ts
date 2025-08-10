@@ -5,6 +5,7 @@ import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc,
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays } from 'date-fns';
+import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -1187,6 +1188,8 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
     
     const testDocRef = doc(db, 'tests', id);
     const testDoc = await getDoc(testDocRef);
+    if (!testDoc.exists()) return;
+    
     const testData = testDoc.data() as Test;
     const familyId = testData.familyId;
 
@@ -1612,5 +1615,3 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     return setDoc(docRef, updateData, { merge: true });
 };
-
-
