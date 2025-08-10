@@ -310,7 +310,7 @@ export interface Student {
 export type AnswerKey = { [key: number]: string };
 export type TextAnswerKey = { [key: string]: string };
 export type GradingType = 'auto' | 'manual-text' | 'manual';
-export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated';
+export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
 export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
 
 
