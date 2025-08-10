@@ -43,7 +43,7 @@ export default function TestFeedbackPage() {
 
                 const mistakesQuery = query(collection(db, "mistakes"), where("testId", "==", testId));
                 const mistakesUnsubscribe = onSnapshot(mistakesQuery, (mistakesSnapshot) => {
-                    const fetchedMistakes = mistakesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
+                    const fetchedMistakes = mistakesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake)).sort((a,b) => (parseInt(a.originalQuestionId || '0') - parseInt(b.originalQuestionId || '0')));
                     setMistakes(fetchedMistakes);
                     setLoading(false);
                 });
@@ -101,7 +101,7 @@ export default function TestFeedbackPage() {
                                     mistake.feedback || mistake.correctAnswer ? "bg-green-50 border-green-200" : "hover:bg-muted/50"
                                 )}
                             >
-                                <p className="font-semibold">{index + 1}. Soru Geri Bildirimi</p>
+                                <p className="font-semibold">{mistake.originalQuestionId || index + 1}. Soru Geri Bildirimi</p>
                                 {mistake.feedback || mistake.correctAnswer ? (
                                     <span className="text-xs text-green-600">Tamamlandı</span>
                                 ):(
@@ -116,7 +116,7 @@ export default function TestFeedbackPage() {
                 </CardContent>
             </Card>
 
-            <Dialog open={!!editingMistake} onOpenChange={() => setEditingMistake(null)}>
+            <Dialog open={!!editingMistake} onOpenChange={(open) => {if (!open) setEditingMistake(null)}}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Geri Bildirim Ekle</DialogTitle>
@@ -135,3 +135,4 @@ export default function TestFeedbackPage() {
         </div>
     );
 }
+

@@ -1,6 +1,6 @@
 
 import { Suspense } from 'react';
-import ProfileClient from './profile-client';
+import ProfileClient from '@/app/education/profile/[memberId]/profile-client';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -47,3 +47,4 @@ function ProfileSkeleton() {
     </div>
   );
 }
+

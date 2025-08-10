@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -1172,61 +1172,80 @@ export const updateTask = async (id: string, data: Partial<Task>) => {
     }
     await updateDoc(taskRef, updateData);
 };
+
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
     const updateData: Partial<Test> = { ...data };
-
-    if ('answerKey' in updateData && (updateData.answerKey === undefined || Object.keys(updateData.answerKey).length === 0)) {
-        delete updateData.answerKey;
-    }
-    if ('studentAnswers' in updateData && (updateData.studentAnswers === undefined || Object.keys(updateData.studentAnswers).length === 0)) {
-        delete updateData.studentAnswers;
-    }
-    if ('studentTextAnswers' in updateData && (updateData.studentTextAnswers === undefined || Object.keys(updateData.studentTextAnswers).length === 0)) {
-        delete updateData.studentTextAnswers;
-    }
-
     const testDocRef = doc(db, 'tests', id);
     const testDoc = await getDoc(testDocRef);
     if (!testDoc.exists()) return;
-    
+
     const testData = testDoc.data() as Test;
     const familyId = testData.familyId;
-    const studentAnswers = { ...(testData.studentAnswers || {}), ...(updateData.studentAnswers || {})};
-    const studentTextAnswers = { ...(testData.studentTextAnswers || {}), ...(updateData.studentTextAnswers || {})};
-    const studentTextAnswersEvaluation = { ...(testData.studentTextAnswersEvaluation || {}), ...(updateData.studentTextAnswersEvaluation || {})};
+    
+    const studentAnswers = updateData.studentAnswers || testData.studentAnswers || {};
+    const studentTextAnswers = updateData.studentTextAnswers || testData.studentTextAnswers || {};
+    const studentTextAnswersEvaluation = updateData.studentTextAnswersEvaluation || testData.studentTextAnswersEvaluation || {};
+    const answerKey = updateData.answerKey || testData.answerKey || {};
+
 
     if (updateData.status === 'Sonuçlandı') {
         const batch = writeBatch(db);
-        
-        for(let i = 1; i <= testData.questionCount; i++) {
-            const qNum = i.toString();
+        const questionIdentifiers = testData.sourceType === 'mistake' && testData.mistakeIds ? testData.mistakeIds : Array.from({ length: testData.questionCount }, (_, i) => (i + 1).toString());
+
+        for (const qId of questionIdentifiers) {
+            const qNum = testData.sourceType === 'mistake' ? (testData.mistakeIds?.indexOf(qId) ?? -1) + 1 : parseInt(qId);
+            if (qNum === 0) continue;
+            
             let isIncorrectOrEmpty = false;
 
             if (testData.gradingType === 'auto') {
-                if (studentAnswers[qNum] !== testData.answerKey?.[qNum]) {
+                if (studentAnswers[qNum] !== answerKey[qNum]) {
                     isIncorrectOrEmpty = true;
                 }
-            } else if (testData.gradingType === 'manual-text' && studentTextAnswersEvaluation) {
-                const evalStatus = studentTextAnswersEvaluation[qNum];
-                if (evalStatus === 'incorrect' || evalStatus === 'empty' || !evalStatus) {
+            } else if (testData.gradingType === 'manual-text') {
+                const evalStatus = studentTextAnswersEvaluation[qId];
+                if (evalStatus === 'incorrect' || evalStatus === 'empty') {
+                    isIncorrectOrEmpty = true;
+                }
+            } else if (testData.sourceType === 'mistake') {
+                 const evalStatus = studentTextAnswersEvaluation[qId];
+                if (evalStatus === 'incorrect' || evalStatus === 'empty') {
                     isIncorrectOrEmpty = true;
                 }
             }
 
             if (isIncorrectOrEmpty) {
                 const mistakeRef = doc(collection(db, 'mistakes'));
+                
+                let studentAnswerText = '';
+                 if (testData.gradingType === 'auto') {
+                    studentAnswerText = studentAnswers[qNum] || '';
+                 } else if (testData.gradingType === 'manual-text') {
+                    studentAnswerText = studentTextAnswers[qId] || '';
+                 } else if (testData.sourceType === 'mistake') {
+                    studentAnswerText = studentTextAnswers[qId] || '';
+                 }
+
+
                 const newMistake: Omit<Mistake, 'id'> = {
                     familyId: familyId,
                     creatorId: testData.studentId,
                     testId: id,
-                    originalQuestionId: qNum,
-                    studentAnswer: studentAnswers[qNum] || studentTextAnswers[qNum] || '',
+                    originalQuestionId: qNum.toString(),
+                    studentAnswer: studentAnswerText,
                     subject: testData.subject,
                     topic: testData.title,
                     createdAt: new Date().toISOString(),
                     status: 'active',
-                    teacherFeedback: updateData.teacherFeedback?.[qNum]
                 };
+                
+                if (testData.sourceType === 'mistake') {
+                    const originalMistakeDoc = await getDoc(doc(db, 'mistakes', qId));
+                    if (originalMistakeDoc.exists()) {
+                         newMistake.imageUrl = originalMistakeDoc.data().imageUrl;
+                    }
+                }
+                
                 batch.set(mistakeRef, removeUndefined(newMistake));
             }
         }
@@ -1249,6 +1268,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
     
     await updateDoc(testDocRef, removeUndefined(updateData));
 };
+
 
 // Ambient Sounds
 export const onAmbientSoundsUpdate = (callback: (sounds: AmbientSound[]) => void, runOnce?: boolean) => onFamilyDataUpdate<AmbientSound>('ambientSounds', callback, runOnce);
@@ -1631,6 +1651,3 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
     return setDoc(docRef, updateData, { merge: true });
 };
 
-    
-
-    

@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                 correct++;
             } else if (status === 'incorrect') {
                 incorrect++;
-            } else { 
+            } else if (status === 'empty') {
                 empty++;
             }
         }
@@ -164,3 +164,4 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         </Form>
     );
 }
+
