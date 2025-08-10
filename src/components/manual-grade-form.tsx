@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -17,6 +18,9 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { Textarea } from "./ui/textarea";
 import { UploadCloud } from "lucide-react";
+import { migrateImage } from '@/ai/flows/migrate-image-flow';
+import { useAuth } from './auth-provider';
+
 
 type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
 type Evaluation = {
@@ -103,7 +107,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     }, [test, form]);
 
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: z.infer<typeof formSchema>) {
         let correct = 0;
         let incorrect = 0;
         let empty = 0;
@@ -115,7 +119,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                 ? test.mistakeIds || [] 
                 : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
 
-        questionIdentifiers.forEach(qId => {
+        for (const qId of questionIdentifiers) {
             const evalData = values.evaluations[qId];
             const studentAnswer = test.studentTextAnswers?.[qId];
 
@@ -132,14 +136,23 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                 empty++; // Unevaluated are counted as empty
                 finalEvaluations[qId] = 'unevaluated';
             }
+            
+            let finalImageUrl = evalData.correctImageUrl;
+            if (evalData.newImageDataUri) {
+                 const destinationPath = `solutions/${test.id}/${qId}.jpg`;
+                 const migrationResult = await migrateImage({ imageDataUri: evalData.newImageDataUri, destinationPath });
+                 if (migrationResult.success && migrationResult.newUrl) {
+                    finalImageUrl = migrationResult.newUrl;
+                 }
+            }
 
-            if(evalData.correctAnswer || evalData.correctImageUrl || evalData.newImageDataUri) {
+            if(evalData.correctAnswer || finalImageUrl) {
                 finalTeacherFeedback[qId] = {
                     correctAnswer: evalData.correctAnswer,
-                    correctImageUrl: evalData.correctImageUrl || evalData.newImageDataUri,
+                    correctImageUrl: finalImageUrl,
                 };
             }
-        });
+        };
 
         onSave({
             correct,
@@ -182,13 +195,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
 
 function QuestionGradeCard({ question, control }: { question: any, control: any }) {
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const { setValue, watch } = useForm({
-         defaultValues: {
-            correctImageUrl: '',
-            newImageDataUri: '',
-        }
-    });
-
+    const { setValue, watch } = useForm();
     const currentEval = watch(`evaluations.${question.id}`);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,11 +204,12 @@ function QuestionGradeCard({ question, control }: { question: any, control: any 
             const reader = new FileReader();
             reader.onloadend = () => {
                 setValue(`evaluations.${question.id}.newImageDataUri`, reader.result as string, { shouldValidate: true });
-                setValue(`evaluations.${question.id}.correctImageUrl`, reader.result as string, { shouldValidate: true });
             };
             reader.readAsDataURL(file);
         }
     };
+    
+    const imageToDisplay = currentEval?.newImageDataUri || currentEval?.correctImageUrl;
 
     return (
         <Card className="p-4">
@@ -233,29 +241,23 @@ function QuestionGradeCard({ question, control }: { question: any, control: any 
                             </FormItem>
                         )}
                     />
-                     <FormField
-                        control={control}
-                        name={`evaluations.${question.id}.correctImageUrl`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="text-xs">Çözüm Görseli (Opsiyonel)</FormLabel>
-                                <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                                <Card 
-                                    className="aspect-video w-full border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    {field.value ? (
-                                        <Image src={field.value} alt="Çözüm Önizleme" layout="fill" objectFit="contain" className="p-2" />
-                                    ) : (
-                                        <>
-                                            <UploadCloud className="h-8 w-8"/>
-                                            <p className="mt-2 text-xs">Görsel Yükle</p>
-                                        </>
-                                    )}
-                                </Card>
-                            </FormItem>
-                        )}
-                    />
+                     <FormItem>
+                        <FormLabel className="text-xs">Çözüm Görseli (Opsiyonel)</FormLabel>
+                        <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+                        <Card 
+                            className="aspect-video w-full border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            {imageToDisplay ? (
+                                <Image src={imageToDisplay} alt="Çözüm Önizleme" layout="fill" objectFit="contain" className="p-2" data-ai-hint="solution paper"/>
+                            ) : (
+                                <>
+                                    <UploadCloud className="h-8 w-8"/>
+                                    <p className="mt-2 text-xs">Görsel Yükle</p>
+                                </>
+                            )}
+                        </Card>
+                    </FormItem>
                 </div>
             )}
         </Card>

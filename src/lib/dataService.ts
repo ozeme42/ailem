@@ -1186,16 +1186,14 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
     }
     
     const testDocRef = doc(db, 'tests', id);
-    await updateDoc(testDocRef, updateData);
-
-    // If it's a mistake test evaluation, update the mistakes
-    if(updateData.sourceType === 'mistake' && updateData.studentTextAnswersEvaluation) {
+    
+    if (updateData.sourceType === 'mistake' && updateData.studentTextAnswersEvaluation) {
         const batch = writeBatch(db);
         const testDoc = await getDoc(testDocRef);
         const testData = testDoc.data() as Test;
 
         if (testData.mistakeIds) {
-            for(const mistakeId of testData.mistakeIds) {
+            for (const mistakeId of testData.mistakeIds) {
                 if (updateData.studentTextAnswersEvaluation[mistakeId] === 'correct') {
                     const mistakeRef = doc(db, 'mistakes', mistakeId);
                     batch.update(mistakeRef, { status: 'corrected' });
@@ -1204,6 +1202,8 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         }
         await batch.commit();
     }
+    
+    await updateDoc(testDocRef, updateData);
 };
 
 // Ambient Sounds
@@ -1585,5 +1585,3 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     return setDoc(docRef, updateData, { merge: true });
 };
-
-    

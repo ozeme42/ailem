@@ -618,4 +618,3 @@ export const CoachMessageSchema = z.object({
   content: z.array(ContentPartSchema),
 });
 export type CoachMessage = z.infer<typeof CoachMessageSchema>;
-    
