@@ -85,7 +85,9 @@ function CalorieTracker() {
 
     const { watch, handleSubmit } = form;
     const watchedValues = watch();
-    const calorieDeficit = watchedValues.caloriesTaken - watchedValues.caloriesBurned;
+    const calorieDifference = watchedValues.caloriesTaken - watchedValues.caloriesBurned;
+    const calorieStatus = calorieDifference > 0 ? "Fazla" : calorieDifference < 0 ? "Açık" : "Dengede";
+    const calorieStatusLabel = `Kalori ${calorieStatus}`;
 
     const onSubmit = async (data: z.infer<typeof calorieFormSchema>) => {
         if (!user) {
@@ -158,7 +160,7 @@ function CalorieTracker() {
 
         const chartData = Object.entries(dataByPeriod).map(([name, data]) => ({
             name,
-            "Kalori Açığı": data.caloriesTaken - data.caloriesBurned,
+            "Kalori Durumu": data.caloriesTaken - data.caloriesBurned,
         }));
         
         const totalMacros = totalProtein + totalCarbs + totalFat;
@@ -182,6 +184,24 @@ function CalorieTracker() {
             macroData,
         }
     }, [allLogs, statsDate, statsPeriod]);
+
+    const macroChartConfig = {
+      macros: {
+        label: "Makrolar",
+      },
+      Protein: {
+        label: "Protein",
+        color: "hsl(var(--chart-1))",
+      },
+      Karbonhidrat: {
+        label: "Karbonhidrat",
+        color: "hsl(var(--chart-2))",
+      },
+      Yağ: {
+        label: "Yağ",
+        color: "hsl(var(--chart-3))",
+      },
+    } satisfies ChartConfig
 
     return (
         <Card>
@@ -216,9 +236,9 @@ function CalorieTracker() {
                                         </PopoverContent>
                                     </Popover>
                                     <div className="flex-grow text-center sm:text-right">
-                                        <p className="text-sm font-medium text-muted-foreground">Kalori Açığı</p>
-                                        <p className={cn("text-2xl font-bold", calorieDeficit >= 0 ? "text-green-600" : "text-red-600")}>
-                                            {calorieDeficit.toLocaleString('tr-TR')} kcal
+                                        <p className="text-sm font-medium text-muted-foreground">{calorieStatusLabel}</p>
+                                        <p className={cn("text-2xl font-bold", calorieDifference > 0 ? "text-orange-600" : calorieDifference < 0 ? "text-green-600" : "text-foreground")}>
+                                            {Math.abs(calorieDifference).toLocaleString('tr-TR')} kcal
                                         </p>
                                     </div>
                                 </div>
@@ -293,21 +313,21 @@ function CalorieTracker() {
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Alınan</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalTaken.toLocaleString('tr-TR')} kcal</CardContent></Card>
                                 <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Yakılan</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalBurned.toLocaleString('tr-TR')} kcal</CardContent></Card>
-                                <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Kalori Açığı</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalDeficit.toLocaleString('tr-TR')} kcal</CardContent></Card>
+                                <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Kalori Durumu</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalDeficit.toLocaleString('tr-TR')} kcal</CardContent></Card>
                                 <Card><CardHeader><CardTitle className="text-sm font-medium">Toplam Protein</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats.totalProtein.toLocaleString('tr-TR')} g</CardContent></Card>
                             </div>
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <Card>
-                                    <CardHeader><CardTitle>Kalori Açığı Grafiği</CardTitle></CardHeader>
+                                    <CardHeader><CardTitle>Kalori Durumu Grafiği</CardTitle></CardHeader>
                                     <CardContent className="overflow-x-auto">
                                         <ChartContainer config={{}} className="h-64 min-w-[300px]">
                                             <BarChart data={chartData} barSize={20}>
                                                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                                 <YAxis fontSize={12} tickLine={false} axisLine={false} />
                                                 <Tooltip content={<ChartTooltipContent />} />
-                                                <Bar dataKey="Kalori Açığı" radius={[4, 4, 0, 0]}>
+                                                <Bar dataKey="Kalori Durumu" radius={[4, 4, 0, 0]}>
                                                   {chartData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry["Kalori Açığı"] >= 0 ? "hsl(var(--chart-2))" : "hsl(var(--chart-5))"} />
+                                                    <Cell key={`cell-${index}`} fill={entry["Kalori Durumu"] >= 0 ? "hsl(var(--chart-5))" : "hsl(var(--chart-2))"} />
                                                   ))}
                                                 </Bar>
                                             </BarChart>
@@ -317,14 +337,34 @@ function CalorieTracker() {
                                  <Card>
                                     <CardHeader><CardTitle>Makro Dağılımı</CardTitle></CardHeader>
                                     <CardContent>
-                                         <ChartContainer config={{}} className="h-64 min-w-[300px]">
+                                         <ChartContainer config={macroChartConfig} className="h-64 min-w-[300px]">
                                             <PieChart>
-                                                <Pie data={macroData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                                <Pie
+                                                  data={macroData}
+                                                  dataKey="value"
+                                                  nameKey="name"
+                                                  cx="50%"
+                                                  cy="50%"
+                                                  outerRadius={80}
+                                                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                                                    const RADIAN = Math.PI / 180;
+                                                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                                                    return (
+                                                      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                                        {`${(percent * 100).toFixed(0)}%`}
+                                                      </text>
+                                                    );
+                                                  }}
+                                                  labelLine={false}
+                                                >
                                                     {macroData.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={entry.fill} />
                                                     ))}
                                                 </Pie>
-                                                <Tooltip content={<ChartTooltipContent />} />
+                                                <Tooltip formatter={(value, name, props) => `${value}g (${(props.payload.percent * 100).toFixed(1)}%)`} />
                                                 <Legend />
                                             </PieChart>
                                         </ChartContainer>
@@ -813,6 +853,7 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
 
