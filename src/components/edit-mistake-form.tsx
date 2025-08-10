@@ -1,173 +1,167 @@
-
 "use client";
 
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useAuth } from '@/components/auth-provider';
-import { useToast } from '@/hooks/use-toast';
-import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, UploadCloud } from 'lucide-react';
-import Image from 'next/image';
-import type { Mistake } from '@/lib/data';
-import { ScrollArea } from './ui/scroll-area';
+import * as React from "react";
+import Link from 'next/link';
+import { useAuth } from "@/components/auth-provider";
+import { Mistake, Test, FamilyMember } from "@/lib/data";
+import { onMistakesUpdate, addTest } from "@/lib/dataService";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, ArrowRight, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
-const formSchema = z.object({
-  correctAnswer: z.string().optional(),
-  feedback: z.string().optional(),
-  newImageDataUri: z.string().optional(),
-});
 
-type EditMistakeFormProps = {
-  mistake: Mistake;
-  onSave: (id: string, data: Partial<Omit<Mistake, 'id'>>) => void;
+const categoryIcons: { [key: string]: React.ElementType } = {
+    'Matematik': Ruler,
+    'Fen Bilimleri': TestTube2,
+    'Türkçe': BookCopy,
+    'Sosyal Bilgiler': Globe,
+    'İngilizce': MessageSquare,
+    'Diğer': Gamepad2,
+    'Genel Deneme Sınavları': Globe,
+    'Yanlış Havuzu': Ruler,
 };
 
-export function EditMistakeForm({ mistake, onSave }: EditMistakeFormProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [imagePreview, setImagePreview] = React.useState<string | null>(mistake.correctImageUrl || null);
+export default function MistakePoolDashboardPage() {
+    const { user, familyMembers } = useAuth();
+    const [mistakes, setMistakes] = React.useState<Mistake[]>([]);
+    const [selectedMistakeIds, setSelectedMistakeIds] = React.useState<string[]>([]);
+    const [targetStudentId, setTargetStudentId] = React.useState<string>('');
+    const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      correctAnswer: mistake.correctAnswer || "",
-      feedback: mistake.feedback || "",
-      newImageDataUri: "",
-    },
-  });
-  
-  React.useEffect(() => {
-    form.reset({
-      correctAnswer: mistake.correctAnswer || "",
-      feedback: mistake.feedback || "",
-      newImageDataUri: "",
-    });
-    setImagePreview(mistake.correctImageUrl || null);
-  }, [mistake, form]);
+    const studentMembers = React.useMemo(() => 
+        familyMembers.filter(m => m.role.includes('Çocuk')), 
+    [familyMembers]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        form.setValue('newImageDataUri', result, { shouldValidate: true });
-        setImagePreview(result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    React.useEffect(() => {
+        if (!user) return;
+        const unsubscribeMistakes = onMistakesUpdate(setMistakes);
+        return () => unsubscribeMistakes();
+    }, [user]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) {
-      toast({ title: 'Hata', description: 'Giriş yapmanız gerekiyor.', variant: 'destructive' });
-      return;
-    }
-    setLoading(true);
-    let finalImageUrl = mistake.correctImageUrl;
+    const handleSelectionChange = (mistakeId: string, isSelected: boolean) => {
+        setSelectedMistakeIds(prev => 
+            isSelected ? [...prev, mistakeId] : prev.filter(id => id !== mistakeId)
+        );
+    };
 
-    try {
-      if (values.newImageDataUri) {
-        toast({ title: "Görsel Yükleniyor..." });
-        const destinationPath = `mistake-solutions/${user.uid}-${Date.now()}.jpg`;
-        const migrationResult = await migrateImage({
-          imageDataUri: values.newImageDataUri,
-          destinationPath,
-        });
-
-        if (!migrationResult.success || !migrationResult.newUrl) {
-          throw new Error(migrationResult.error || 'Çözüm görseli yüklenemedi.');
+    const handleAssignTest = async () => {
+        if (selectedMistakeIds.length === 0) {
+            toast({ title: 'Hata', description: 'Lütfen en az bir soru seçin.', variant: 'destructive' });
+            return;
         }
-        finalImageUrl = migrationResult.newUrl;
-      }
+        if (!targetStudentId) {
+            toast({ title: 'Hata', description: 'Lütfen bir öğrenci seçin.', variant: 'destructive' });
+            return;
+        }
+        
+        const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
+            title: "Yanlış Sorular Tekrar Testi",
+            subject: "Yanlış Havuzu",
+            studentId: targetStudentId,
+            questionCount: selectedMistakeIds.length,
+            assignedDate: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+            sourceType: 'mistake',
+            mistakeIds: selectedMistakeIds,
+            gradingType: 'manual-text',
+        };
+        
+        try {
+            await addTest(testData);
+            toast({ title: 'Ödev Atandı!', description: 'Yanlış sorular tekrar testi olarak atandı.'});
+            setSelectedMistakeIds([]);
+            setTargetStudentId('');
+        } catch (e) {
+            toast({ title: 'Hata', description: 'Ödev atanırken bir sorun oluştu.', variant: 'destructive' });
+        }
+    };
+    
+    const mistakesBySubject = React.useMemo(() => {
+        const grouped: { [key: string]: Mistake[] } = {};
+        mistakes.forEach(mistake => {
+            const subject = mistake.subject || 'Diğer';
+            if (!grouped[subject]) {
+                grouped[subject] = [];
+            }
+            grouped[subject].push(mistake);
+        });
+        return Object.entries(grouped);
+    }, [mistakes]);
 
-      const mistakeUpdateData = {
-        correctAnswer: values.correctAnswer,
-        feedback: values.feedback,
-        correctImageUrl: finalImageUrl,
-      };
-
-      onSave(mistake.id, mistakeUpdateData);
-
-    } catch (err: any) {
-      toast({ title: 'Hata', description: err.message, variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-        <ScrollArea className="h-[60vh] pr-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
-                <Label>Yanlış Yapılan Soru</Label>
-                <Image src={mistake.imageUrl || 'https://placehold.co/400x300.png'} alt="Yanlış Soru" width={400} height={300} className="w-full h-auto rounded-md border" data-ai-hint="question paper" />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="correctAnswer"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Doğru Cevap</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Doğru cevabı yazın..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormItem>
-              <FormLabel>Çözüm Görseli (Opsiyonel)</FormLabel>
-              <FormControl>
-                <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-              </FormControl>
-              <div
-                className="w-full aspect-video border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground hover:border-primary cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {imagePreview ? (
-                  <Image src={imagePreview} alt="Çözüm Önizlemesi" width={200} height={150} className="max-h-full w-auto object-contain rounded-md" data-ai-hint="solution explanation" />
-                ) : (
-                  <div className="text-center">
-                    <UploadCloud className="mx-auto h-8 w-8" />
-                    <p className="mt-2 text-sm">Görsel Yükle</p>
-                  </div>
-                )}
-              </div>
-            </FormItem>
+    return (
+        <div className="space-y-6">
+            <PageHeader title="Yanlış Havuzu">
+                 <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <p className="text-sm text-white/80 max-w-2xl">
+                        Burada öğrencilerin yanlış yaptığı veya boş bıraktığı tüm sorular birikir.
+                        İstediğiniz soruları seçip tekrar testi olarak atayabilirsiniz.
+                    </p>
+                    {selectedMistakeIds.length > 0 && (
+                        <Card className="p-4 w-full sm:w-auto">
+                            <Label htmlFor="student-select">Seçilen {selectedMistakeIds.length} soruyu ata:</Label>
+                             <div className="flex gap-2 mt-2">
+                                <Select onValueChange={setTargetStudentId} value={targetStudentId}>
+                                    <SelectTrigger id="student-select">
+                                        <SelectValue placeholder="Öğrenci Seç" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {studentMembers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Button onClick={handleAssignTest}><Send className="mr-2 h-4 w-4" /> Ata</Button>
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            </PageHeader>
             
-            <FormField
-              control={form.control}
-              name="feedback"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ek Notlar / Geri Bildirim (Opsiyonel)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Öğrenci için ek notlar..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </ScrollArea>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Geri Bildirimi Kaydet
-        </Button>
-      </form>
-    </Form>
-  );
+            {mistakesBySubject.length > 0 ? (
+                 <div className="space-y-6">
+                    {mistakesBySubject.map(([subject, subjectMistakes]) => {
+                        const Icon = categoryIcons[subject] || BookCopy;
+                        return (
+                            <Card key={subject}>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Icon className="h-6 w-6"/> {subject}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {subjectMistakes.map(mistake => (
+                                        <div key={mistake.id} className="flex items-start gap-4 p-3 border rounded-lg">
+                                            <Checkbox
+                                                id={`mistake-${mistake.id}`}
+                                                checked={selectedMistakeIds.includes(mistake.id)}
+                                                onCheckedChange={(checked) => handleSelectionChange(mistake.id, !!checked)}
+                                                className="mt-1"
+                                            />
+                                            <label htmlFor={`mistake-${mistake.id}`} className="flex-grow">
+                                                <p className="font-semibold">{mistake.topic}</p>
+                                                <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
+                </div>
+            ) : (
+                 <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground flex items-center justify-center gap-4">
+                        <AlertCircle className="h-8 w-8 text-primary"/>
+                        <div>
+                            <p className="font-semibold">Yanlış havuzu boş.</p>
+                            <p className="text-sm">Bir test değerlendirildiğinde yanlış veya boş sorular buraya eklenecektir.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
 }

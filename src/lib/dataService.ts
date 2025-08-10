@@ -623,7 +623,7 @@ export const toggleShoppingNoteItemStatusInList = async (listId: string, itemId:
 
 // Education
 // ... existing education functions ...
-export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback);
+export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback, false, 'createdAt', 'desc');
 export const addMistake = async (data: Partial<Omit<Mistake, 'id' | 'familyId' | 'status'>>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
@@ -1174,100 +1174,63 @@ export const updateTask = async (id: string, data: Partial<Task>) => {
 };
 
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
-    const updateData: Partial<Test> = { ...data };
     const testDocRef = doc(db, 'tests', id);
-    const testDoc = await getDoc(testDocRef);
-    if (!testDoc.exists()) return;
-
-    const testData = testDoc.data() as Test;
-    const familyId = testData.familyId;
+    await updateDoc(testDocRef, removeUndefined(data));
     
-    const studentAnswers = updateData.studentAnswers || testData.studentAnswers || {};
-    const studentTextAnswers = updateData.studentTextAnswers || testData.studentTextAnswers || {};
-    const studentTextAnswersEvaluation = updateData.studentTextAnswersEvaluation || testData.studentTextAnswersEvaluation || {};
-    const answerKey = updateData.answerKey || testData.answerKey || {};
+    if (data.status === 'Sonuçlandı') {
+        const familyId = (await getDoc(testDocRef)).data()?.familyId;
+        if (!familyId) return;
 
-
-    if (updateData.status === 'Sonuçlandı') {
-        const batch = writeBatch(db);
-        const questionIdentifiers = testData.sourceType === 'mistake' && testData.mistakeIds ? testData.mistakeIds : Array.from({ length: testData.questionCount }, (_, i) => (i + 1).toString());
-
-        for (const qId of questionIdentifiers) {
-            const qNum = testData.sourceType === 'mistake' ? (testData.mistakeIds?.indexOf(qId) ?? -1) + 1 : parseInt(qId);
-            if (qNum === 0) continue;
-            
-            let isIncorrectOrEmpty = false;
-
-            if (testData.gradingType === 'auto') {
-                if (studentAnswers[qNum] !== answerKey[qNum]) {
-                    isIncorrectOrEmpty = true;
-                }
-            } else if (testData.gradingType === 'manual-text') {
-                const evalStatus = studentTextAnswersEvaluation[qId];
-                if (evalStatus === 'incorrect' || evalStatus === 'empty') {
-                    isIncorrectOrEmpty = true;
-                }
-            } else if (testData.sourceType === 'mistake') {
-                 const evalStatus = studentTextAnswersEvaluation[qId];
-                if (evalStatus === 'incorrect' || evalStatus === 'empty') {
-                    isIncorrectOrEmpty = true;
-                }
-            }
-
-            if (isIncorrectOrEmpty) {
-                const mistakeRef = doc(collection(db, 'mistakes'));
-                
-                let studentAnswerText = '';
-                 if (testData.gradingType === 'auto') {
-                    studentAnswerText = studentAnswers[qNum] || '';
-                 } else if (testData.gradingType === 'manual-text') {
-                    studentAnswerText = studentTextAnswers[qId] || '';
-                 } else if (testData.sourceType === 'mistake') {
-                    studentAnswerText = studentTextAnswers[qId] || '';
-                 }
-
-
-                const newMistake: Omit<Mistake, 'id'> = {
-                    familyId: familyId,
-                    creatorId: testData.studentId,
-                    testId: id,
-                    originalQuestionId: qNum.toString(),
-                    studentAnswer: studentAnswerText,
-                    subject: testData.subject,
-                    topic: testData.title,
-                    createdAt: new Date().toISOString(),
-                    status: 'active',
-                };
-                
-                if (testData.sourceType === 'mistake') {
-                    const originalMistakeDoc = await getDoc(doc(db, 'mistakes', qId));
-                    if (originalMistakeDoc.exists()) {
-                         newMistake.imageUrl = originalMistakeDoc.data().imageUrl;
-                    }
-                }
-                
-                batch.set(mistakeRef, removeUndefined(newMistake));
-            }
-        }
-        await batch.commit();
-    }
-    
-    if (updateData.sourceType === 'mistake' && updateData.studentTextAnswersEvaluation) {
+        // Create a representation of the full test with the updates applied
+        const originalTestSnap = await getDoc(testDocRef);
+        if (!originalTestSnap.exists()) return;
+        const testForMistakes = { ...originalTestSnap.data(), ...data } as Test;
+        
         const batch = writeBatch(db);
         
-        if (testData.mistakeIds) {
-            for (const mistakeId of testData.mistakeIds) {
-                if (updateData.studentTextAnswersEvaluation[mistakeId] === 'correct') {
-                    const mistakeRef = doc(db, 'mistakes', mistakeId);
-                    batch.update(mistakeRef, { status: 'corrected' });
+        const incorrectOrEmptyQuestions: { qNum: number; studentAnswer: string }[] = [];
+
+        // For Auto-graded tests
+        if (testForMistakes.gradingType === 'auto' && testForMistakes.answerKey) {
+            for (let i = 1; i <= testForMistakes.questionCount; i++) {
+                const qNum = i.toString();
+                if (testForMistakes.studentAnswers?.[qNum] !== testForMistakes.answerKey[qNum]) {
+                    incorrectOrEmptyQuestions.push({ qNum: i, studentAnswer: testForMistakes.studentAnswers?.[qNum] || "(Boş)" });
+                }
+            }
+        } 
+        // For Manually-graded tests
+        else if (testForMistakes.gradingType === 'manual-text' && testForMistakes.studentTextAnswersEvaluation) {
+             for (const qId in testForMistakes.studentTextAnswersEvaluation) {
+                if (testForMistakes.studentTextAnswersEvaluation[qId] === 'incorrect' || testForMistakes.studentTextAnswersEvaluation[qId] === 'empty') {
+                    incorrectOrEmptyQuestions.push({ qNum: parseInt(qId), studentAnswer: testForMistakes.studentTextAnswers?.[qId] || "(Boş)" });
                 }
             }
         }
-        await batch.commit();
+
+        // Add identified questions to the mistakes collection
+        incorrectOrEmptyQuestions.forEach(q => {
+             const mistakeRef = doc(collection(db, 'mistakes'));
+             const newMistake: Omit<Mistake, 'id'> = {
+                familyId: familyId,
+                creatorId: testForMistakes.studentId,
+                testId: id,
+                originalQuestionId: q.qNum.toString(),
+                studentAnswer: q.studentAnswer,
+                subject: testForMistakes.subject,
+                topic: testForMistakes.title,
+                createdAt: new Date().toISOString(),
+                status: 'active',
+            };
+            batch.set(mistakeRef, removeUndefined(newMistake));
+        });
+
+        if (incorrectOrEmptyQuestions.length > 0) {
+            await batch.commit();
+        }
     }
-    
-    await updateDoc(testDocRef, removeUndefined(updateData));
 };
+
 
 
 // Ambient Sounds
