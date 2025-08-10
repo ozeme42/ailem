@@ -5,34 +5,26 @@ import * as React from "react";
 import Link from 'next/link';
 import { useAuth } from "@/components/auth-provider";
 import { Mistake, Test, FamilyMember } from "@/lib/data";
-import { onMistakesUpdate, addTest, updateMistake } from "@/lib/dataService";
+import { onMistakesUpdate, onTestsUpdate, addTest, updateMistake } from "@/lib/dataService";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, ArrowRight, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send, Edit } from "lucide-react";
+import { AlertCircle, ArrowRight, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send, Edit, NotebookText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EditMistakeForm } from "@/components/edit-mistake-form";
-
-
-const categoryIcons: { [key: string]: React.ElementType } = {
-    'Matematik': Ruler,
-    'Fen Bilimleri': TestTube2,
-    'Türkçe': BookCopy,
-    'Sosyal Bilgiler': Globe,
-    'İngilizce': MessageSquare,
-    'Diğer': Gamepad2,
-    'Genel Deneme Sınavları': Globe,
-    'Yanlış Havuzu': Ruler,
-};
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { compareDesc, parse } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 export default function MistakePoolDashboardPage() {
     const { user, familyMembers } = useAuth();
-    const [mistakes, setMistakes] = React.useState<Mistake[]>([]);
+    const [allMistakes, setAllMistakes] = React.useState<Mistake[]>([]);
+    const [allTests, setAllTests] = React.useState<Test[]>([]);
     const [selectedMistakeIds, setSelectedMistakeIds] = React.useState<string[]>([]);
     const [targetStudentId, setTargetStudentId] = React.useState<string>('');
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
@@ -44,8 +36,12 @@ export default function MistakePoolDashboardPage() {
 
     React.useEffect(() => {
         if (!user) return;
-        const unsubscribeMistakes = onMistakesUpdate(setMistakes);
-        return () => unsubscribeMistakes();
+        const unsubscribeMistakes = onMistakesUpdate(setAllMistakes);
+        const unsubscribeTests = onTestsUpdate(setAllTests);
+        return () => {
+            unsubscribeMistakes();
+            unsubscribeTests();
+        };
     }, [user]);
 
     const handleSelectionChange = (mistakeId: string, isSelected: boolean) => {
@@ -86,24 +82,44 @@ export default function MistakePoolDashboardPage() {
         }
     };
     
-    const mistakesBySubject = React.useMemo(() => {
-        const grouped: { [key: string]: Mistake[] } = {};
-        mistakes.forEach(mistake => {
-            const subject = mistake.subject || 'Diğer';
-            if (!grouped[subject]) {
-                grouped[subject] = [];
+    const { testsWithMistakes, totalMistakeCount } = React.useMemo(() => {
+        const mistakeByTestId = new Map<string, Mistake[]>();
+        allMistakes.forEach(mistake => {
+            if (mistake.testId) {
+                const mistakes = mistakeByTestId.get(mistake.testId) || [];
+                mistakes.push(mistake);
+                mistakeByTestId.set(mistake.testId, mistakes);
             }
-            grouped[subject].push(mistake);
         });
-        return Object.entries(grouped);
-    }, [mistakes]);
+        
+        const tests = allTests
+            .filter(test => mistakeByTestId.has(test.id))
+            .map(test => ({
+                ...test,
+                mistakes: mistakeByTestId.get(test.id) || []
+            }))
+             .sort((a, b) => {
+                try {
+                    const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                    const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                    return compareDesc(dateA, dateB);
+                } catch(e) {
+                    return 0;
+                }
+            });
+
+        return {
+            testsWithMistakes: tests,
+            totalMistakeCount: allMistakes.length,
+        }
+    }, [allMistakes, allTests]);
 
     return (
         <div className="space-y-6">
             <PageHeader title="Yanlış Havuzu">
                  <div className="flex flex-col sm:flex-row gap-4 items-center">
                     <p className="text-sm text-white/80 max-w-2xl">
-                        Burada öğrencilerin yanlış yaptığı veya boş bıraktığı tüm sorular birikir.
+                        Burada, değerlendirilmiş testlerdeki tüm yanlış ve boş sorular birikir.
                         İstediğiniz soruları seçip tekrar testi olarak atayabilirsiniz.
                     </p>
                     {selectedMistakeIds.length > 0 && (
@@ -125,41 +141,53 @@ export default function MistakePoolDashboardPage() {
                 </div>
             </PageHeader>
             
-            {mistakesBySubject.length > 0 ? (
-                 <div className="space-y-6">
-                    {mistakesBySubject.map(([subject, subjectMistakes]) => {
-                        const Icon = categoryIcons[subject] || BookCopy;
+            {testsWithMistakes.length > 0 ? (
+                 <Accordion type="multiple" className="w-full space-y-4">
+                    {testsWithMistakes.map(test => {
+                        const student = familyMembers.find(m => m.id === test.studentId);
                         return (
-                            <Card key={subject}>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Icon className="h-6 w-6"/> {subject}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    {subjectMistakes.map(mistake => (
-                                        <div key={mistake.id} className="flex items-start gap-4 p-3 border rounded-lg">
-                                            <Checkbox
-                                                id={`mistake-${mistake.id}`}
-                                                checked={selectedMistakeIds.includes(mistake.id)}
-                                                onCheckedChange={(checked) => handleSelectionChange(mistake.id, !!checked)}
-                                                className="mt-1"
-                                            />
-                                            <div className="flex-grow">
-                                                <p className="font-semibold">{mistake.topic} - Soru #{mistake.originalQuestionId}</p>
-                                                <Image src={mistake.imageUrl || "https://placehold.co/300x400.png"} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover" data-ai-hint="question paper" />
+                            <AccordionItem key={test.id} value={test.id} className="border-b-0">
+                                <Card>
+                                    <AccordionTrigger className="p-4 hover:no-underline">
+                                         <div className="flex items-center gap-3">
+                                            <NotebookText className="w-8 h-8" />
+                                            <div className="text-left">
+                                                <h3 className="text-lg font-semibold">{test.title}</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                   {student?.name || 'Bilinmeyen Öğrenci'} - {test.mistakes.length} yanlış/boş soru
+                                                </p>
                                             </div>
-                                            <Button variant="outline" size="sm" onClick={() => setEditingMistake(mistake)}>
-                                                <Edit className="mr-2 h-4 w-4"/>
-                                                Geri Bildirim
-                                            </Button>
                                         </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="p-4 pt-0">
+                                        <div className="space-y-3">
+                                            {test.mistakes.map(mistake => (
+                                                <div key={mistake.id} className="flex items-start gap-4 p-3 border rounded-lg">
+                                                    <Checkbox
+                                                        id={`mistake-${mistake.id}`}
+                                                        checked={selectedMistakeIds.includes(mistake.id)}
+                                                        onCheckedChange={(checked) => handleSelectionChange(mistake.id, !!checked)}
+                                                        className="mt-1"
+                                                    />
+                                                    <div className="flex-grow">
+                                                        <p className="font-semibold">{mistake.topic} - Soru #{mistake.originalQuestionId}</p>
+                                                        {mistake.imageUrl && (
+                                                            <Image src={mistake.imageUrl} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover" data-ai-hint="question paper" />
+                                                        )}
+                                                    </div>
+                                                    <Button variant="outline" size="sm" onClick={() => setEditingMistake(mistake)}>
+                                                        <Edit className="mr-2 h-4 w-4"/>
+                                                        Geri Bildirim
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </AccordionContent>
+                                </Card>
+                            </AccordionItem>
                         )
                     })}
-                </div>
+                </Accordion>
             ) : (
                  <Card>
                     <CardContent className="p-8 text-center text-muted-foreground flex items-center justify-center gap-4">
@@ -185,3 +213,4 @@ export default function MistakePoolDashboardPage() {
         </div>
     );
 }
+
