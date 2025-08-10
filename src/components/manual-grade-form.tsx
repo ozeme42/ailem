@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -55,7 +54,7 @@ const formSchema = z.object({
 export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps) {
 
     const isTextGrading = test.gradingType === 'manual-text' || test.sourceType === 'mistake';
-    const [questions, setQuestions] = React.useState<(Mistake & { qNum: string })[]>([]);
+    const [questions, setQuestions] = React.useState<(Partial<Mistake> & { qNum: string, id: string })[]>([]);
     
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -66,31 +65,33 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
 
     React.useEffect(() => {
         const fetchQuestionsAndAnswers = async () => {
-            let fetchedQuestions: (Mistake & { qNum: string })[] = [];
+            let fetchedQuestions: (Partial<Mistake> & { qNum: string, id: string })[] = [];
             if (test.sourceType === 'mistake' && test.mistakeIds) {
                 const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-                fetchedQuestions = mistakeDocs.map((d, i) => ({ id: d.id, ...d.data(), qNum: (i+1).toString() } as Mistake & { qNum: string }));
-            } else if (test.sourceType === 'bank' || test.sourceType === 'quick') {
-                 // For bank/quick tests, we don't have stored question images, so we create placeholder question objects
+                fetchedQuestions = mistakeDocs.map((d, i) => ({ id: d.id, ...d.data(), studentAnswer: test.studentTextAnswers?.[d.id], qNum: (i+1).toString() } as Mistake & { qNum: string }));
+            } else if (test.gradingType === 'manual-text' && (test.sourceType === 'bank' || test.sourceType === 'quick')) {
                  const studentAnswers = test.studentTextAnswers || {};
                  for (let i = 1; i <= test.questionCount; i++) {
                      const qId = i.toString();
-                     if (studentAnswers[qId]) {
-                        fetchedQuestions.push({
-                            id: qId,
-                            studentAnswer: studentAnswers[qId],
-                            qNum: qId,
-                        } as any);
-                     }
+                     // Include all questions, regardless of whether they have an answer
+                     fetchedQuestions.push({
+                        id: qId,
+                        studentAnswer: studentAnswers[qId] || "",
+                        qNum: qId,
+                     });
                  }
             }
             setQuestions(fetchedQuestions);
             
             const initialEvals: Evaluations = {};
-            fetchedQuestions.forEach(q => {
-                const feedback = test.teacherFeedback?.[q.id];
-                initialEvals[q.id] = {
-                    status: test.studentTextAnswersEvaluation?.[q.id] || 'unevaluated',
+            const questionIdentifiers = test.sourceType === 'mistake' 
+                ? test.mistakeIds || []
+                : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
+
+            questionIdentifiers.forEach(qId => {
+                const feedback = test.teacherFeedback?.[qId];
+                initialEvals[qId] = {
+                    status: test.studentTextAnswersEvaluation?.[qId] || 'unevaluated',
                     correctAnswer: feedback?.correctAnswer || '',
                     correctImageUrl: feedback?.correctImageUrl || '',
                     newImageDataUri: ''
@@ -105,37 +106,51 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     function onSubmit(values: z.infer<typeof formSchema>) {
         let correct = 0;
         let incorrect = 0;
+        let empty = 0;
         
         const finalEvaluations: { [key: string]: EvaluationStatus } = {};
         const finalTeacherFeedback: NonNullable<Test['teacherFeedback']> = {};
+        
+        const questionIdentifiers = test.sourceType === 'mistake' 
+                ? test.mistakeIds || [] 
+                : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
 
-        Object.entries(values.evaluations).forEach(([qId, evalData]) => {
-            finalEvaluations[qId] = evalData.status;
-            if(evalData.status === 'correct') correct++;
-            if(evalData.status === 'incorrect') incorrect++;
+        questionIdentifiers.forEach(qId => {
+            const evalData = values.evaluations[qId];
+            const studentAnswer = test.studentTextAnswers?.[qId];
+
+            if (!studentAnswer || studentAnswer.trim() === "") {
+                empty++;
+                finalEvaluations[qId] = 'empty';
+            } else if (evalData.status === 'correct') {
+                correct++;
+                finalEvaluations[qId] = 'correct';
+            } else if (evalData.status === 'incorrect') {
+                incorrect++;
+                finalEvaluations[qId] = 'incorrect';
+            } else { // 'unevaluated'
+                empty++; // Unevaluated are counted as empty
+                finalEvaluations[qId] = 'unevaluated';
+            }
 
             if(evalData.correctAnswer || evalData.correctImageUrl || evalData.newImageDataUri) {
                 finalTeacherFeedback[qId] = {
                     correctAnswer: evalData.correctAnswer,
-                    correctImageUrl: evalData.correctImageUrl || evalData.newImageDataUri, // Use new URI if present
+                    correctImageUrl: evalData.correctImageUrl || evalData.newImageDataUri,
                 };
             }
         });
-        
-        const answeredCount = Object.keys(test.studentTextAnswers || {}).filter(k => test.studentTextAnswers?.[k].trim()).length;
-        const empty = test.questionCount - answeredCount;
 
         onSave({
             correct,
             incorrect,
-            empty: empty + (answeredCount - (correct + incorrect)), // un-evaluated are also empty for scoring
+            empty,
             evaluations: finalEvaluations,
             teacherFeedback: finalTeacherFeedback,
         });
     }
 
     if (!isTextGrading) {
-        // Fallback for non-text grading types if needed, or just show an error.
         return <p>Bu test türü için manuel değerlendirme desteklenmiyor.</p>
     }
 
@@ -152,6 +167,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                             {questions.map((q) => (
                                 <QuestionGradeCard key={q.id} question={q} control={form.control} />
                             ))}
+                             {questions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Değerlendirilecek soru bulunmuyor.</p>}
                         </div>
                     </ScrollArea>
                 </CardContent>
