@@ -329,7 +329,7 @@ function CalorieTracker() {
                                                 <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeDasharray="3 3" />
                                                 <Bar dataKey="Kalori Durumu" radius={[4, 4, 0, 0]}>
                                                   {chartData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry["Kalori Durumu"] >= 0 ? "hsl(var(--destructive))" : "hsl(var(--chart-2))"} />
+                                                    <Cell key={`cell-${index}`} fill={entry["Kalori Durumu"] >= 0 ? "hsl(var(--chart-2))" : "hsl(var(--destructive))" } />
                                                   ))}
                                                 </Bar>
                                             </BarChart>
