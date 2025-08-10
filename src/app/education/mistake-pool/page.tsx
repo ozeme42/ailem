@@ -5,10 +5,10 @@ import * as React from "react";
 import Image from 'next/image';
 import { useAuth } from "@/components/auth-provider";
 import { Mistake, Test } from "@/lib/data";
-import { onMistakesUpdate, deleteMistake } from "@/lib/dataService";
+import { onMistakesUpdate, deleteMistake, updateMistake } from "@/lib/dataService";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send } from "lucide-react";
+import { PlusCircle, Trash2, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, Send, Edit } from "lucide-react";
 import { NewMistakeForm } from "@/components/new-mistake-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { NewTestForm } from "@/components/new-test-form";
 import { onQuestionBanksUpdate, onPracticeExamsUpdate, onSubjectsUpdate, addTest } from "@/lib/dataService";
 import { QuestionBank, PracticeExam, FamilyMember } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { EditMistakeForm } from "@/components/edit-mistake-form";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Matematik': Ruler,
@@ -36,6 +37,7 @@ export default function MistakePoolPage() {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = React.useState(false);
     const [selectedMistakes, setSelectedMistakes] = React.useState<Mistake[]>([]);
+    const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
 
     const { toast } = useToast();
     
@@ -83,6 +85,16 @@ export default function MistakePoolPage() {
             toast({ title: "Soru Silindi", description: "Soru yanlış havuzundan kaldırıldı.", variant: "destructive" });
         } catch (error) {
             toast({ title: "Hata", description: "Soru silinirken bir hata oluştu.", variant: "destructive" });
+        }
+    };
+
+    const handleUpdateMistake = async (id: string, data: Partial<Omit<Mistake, 'id'>>) => {
+        try {
+            await updateMistake(id, data);
+            toast({ title: "Soru Güncellendi", description: "Doğru cevap ve çözüm başarıyla kaydedildi." });
+            setEditingMistake(null);
+        } catch (error) {
+            toast({ title: "Hata", description: "Soru güncellenirken bir hata oluştu.", variant: "destructive" });
         }
     };
     
@@ -209,8 +221,11 @@ export default function MistakePoolPage() {
                                                                     onCheckedChange={() => handleToggleSelection(mistake)}
                                                                 />
                                                             </div>
-                                                            <Image src={mistake.imageUrl} alt="Yanlış Soru" width={300} height={400} className="object-cover w-full h-auto aspect-[3/4]" data-ai-hint="question paper"/>
-                                                            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Image src={mistake.imageUrl || "https://placehold.co/300x400.png"} alt="Yanlış Soru" width={300} height={400} className="object-cover w-full h-auto aspect-[3/4]" data-ai-hint="question paper"/>
+                                                            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                                                                <Button variant="secondary" size="icon" className="h-8 w-8" onClick={() => setEditingMistake(mistake)}>
+                                                                    <Edit className="h-4 w-4"/>
+                                                                </Button>
                                                                  <AlertDialog>
                                                                     <AlertDialogTrigger asChild>
                                                                          <Button variant="destructive" size="icon" className="h-8 w-8">
@@ -267,6 +282,24 @@ export default function MistakePoolPage() {
                     />
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={!!editingMistake} onOpenChange={() => setEditingMistake(null)}>
+                <DialogContent>
+                     <DialogHeader>
+                        <DialogTitle>Geri Bildirim Ekle</DialogTitle>
+                        <DialogDescription>
+                           Bu yanlış soru için doğru cevabı ve çözüm görselini ekleyin.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {editingMistake && (
+                         <EditMistakeForm
+                            mistake={editingMistake}
+                            onSave={handleUpdateMistake}
+                         />
+                    )}
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }
