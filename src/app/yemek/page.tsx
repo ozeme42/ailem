@@ -86,8 +86,7 @@ function CalorieTracker() {
     const { watch, handleSubmit } = form;
     const watchedValues = watch();
     const calorieDifference = watchedValues.caloriesTaken - watchedValues.caloriesBurned;
-    const calorieStatus = calorieDifference > 0 ? "Fazlası" : calorieDifference < 0 ? "Açığı" : "Dengede";
-    const calorieStatusLabel = `Kalori ${calorieStatus}`;
+    const calorieStatus = calorieDifference > 0 ? "Kalori Fazlası" : calorieDifference < 0 ? "Kalori Açığı" : "Dengede";
 
 
     const onSubmit = async (data: z.infer<typeof calorieFormSchema>) => {
@@ -237,7 +236,7 @@ function CalorieTracker() {
                                         </PopoverContent>
                                     </Popover>
                                     <div className="flex-grow text-center sm:text-right">
-                                        <p className="text-sm font-medium text-muted-foreground">{calorieStatusLabel}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">{calorieStatus}</p>
                                         <p className={cn("text-2xl font-bold", calorieDifference > 0 ? "text-orange-600" : calorieDifference < 0 ? "text-green-600" : "text-foreground")}>
                                             {Math.abs(calorieDifference).toLocaleString('tr-TR')} kcal
                                         </p>
@@ -324,7 +323,7 @@ function CalorieTracker() {
                                         <ChartContainer config={{}} className="h-64 min-w-[300px]">
                                             <BarChart data={chartData} barSize={20}>
                                                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                                <YAxis fontSize={12} tickLine={false} axisLine={false} reversed={true} />
                                                 <Tooltip content={<ChartTooltipContent />} />
                                                 <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeDasharray="3 3" />
                                                 <Bar dataKey="Kalori Durumu" radius={[4, 4, 0, 0]}>
