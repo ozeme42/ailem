@@ -1173,7 +1173,7 @@ export const updateTask = async (id: string, data: Partial<Task>) => {
 };
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) => {
     // When updating a test, ensure empty/undefined fields are handled correctly for Firestore.
-    const updateData = { ...data };
+    const updateData: Partial<Test> = { ...data };
 
     if ('answerKey' in updateData && (updateData.answerKey === undefined || Object.keys(updateData.answerKey).length === 0)) {
         delete updateData.answerKey;
@@ -1186,12 +1186,39 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
     }
     
     const testDocRef = doc(db, 'tests', id);
+    const testDoc = await getDoc(testDocRef);
+    const testData = testDoc.data() as Test;
+    const familyId = testData.familyId;
+
+    if (updateData.status === 'Sonuçlandı' && updateData.studentTextAnswersEvaluation) {
+        const batch = writeBatch(db);
+        const incorrectQuestions = Object.entries(updateData.studentTextAnswersEvaluation)
+            .filter(([, status]) => status === 'incorrect')
+            .map(([questionId]) => questionId);
+        
+        for(const questionId of incorrectQuestions) {
+            const mistakeRef = doc(collection(db, 'mistakes'));
+            const newMistake: Omit<Mistake, 'id'> = {
+                familyId: familyId,
+                creatorId: testData.studentId,
+                testId: id,
+                originalQuestionId: questionId,
+                studentAnswer: testData.studentTextAnswers?.[questionId] || '',
+                correctAnswer: updateData.teacherFeedback?.[questionId]?.correctAnswer || '',
+                correctImageUrl: updateData.teacherFeedback?.[questionId]?.correctImageUrl || '',
+                subject: testData.subject,
+                topic: testData.title, // Simplified topic
+                createdAt: new Date().toISOString(),
+                status: 'active',
+            };
+            batch.set(mistakeRef, newMistake);
+        }
+        await batch.commit();
+    }
     
     if (updateData.sourceType === 'mistake' && updateData.studentTextAnswersEvaluation) {
         const batch = writeBatch(db);
-        const testDoc = await getDoc(testDocRef);
-        const testData = testDoc.data() as Test;
-
+        
         if (testData.mistakeIds) {
             for (const mistakeId of testData.mistakeIds) {
                 if (updateData.studentTextAnswersEvaluation[mistakeId] === 'correct') {
@@ -1203,7 +1230,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
         await batch.commit();
     }
     
-    await updateDoc(testDocRef, updateData);
+    await updateDoc(testDocRef, removeUndefined(updateData));
 };
 
 // Ambient Sounds
@@ -1585,4 +1612,5 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     return setDoc(docRef, updateData, { merge: true });
 };
+
 

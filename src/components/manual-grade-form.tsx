@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,7 @@ type Evaluation = {
     status: EvaluationStatus;
     correctAnswer?: string;
     correctImageUrl?: string;
-    newImageDataUri?: string;
+    newImageDataUri?: string; // For client-side preview
 };
 
 type Evaluations = { [key: string]: Evaluation };
@@ -178,7 +177,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                     <ScrollArea className="h-96 pr-4">
                         <div className="space-y-4">
                             {questions.map((q) => (
-                                <QuestionGradeCard key={q.id} question={q} control={form.control} />
+                                <QuestionGradeCard key={q.id} question={q} control={form.control} formMethods={form} />
                             ))}
                              {questions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Değerlendirilecek soru bulunmuyor.</p>}
                         </div>
@@ -193,9 +192,9 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     );
 }
 
-function QuestionGradeCard({ question, control }: { question: any, control: any }) {
+function QuestionGradeCard({ question, control, formMethods }: { question: any, control: any, formMethods: any }) {
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const { setValue, watch } = useForm();
+    const { setValue, watch } = formMethods;
     const currentEval = watch(`evaluations.${question.id}`);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
