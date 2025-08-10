@@ -182,7 +182,7 @@ export default function TestFeedbackPage() {
                     <FeedbackCard key={mistake.id} mistake={mistake} onUpdate={handleMistakeUpdate} />
                 ))}
                  {mistakes.length === 0 && (
-                    <p className="col-span-full text-center text-muted-foreground">Bu testte geri bildirim eklenecek soru bulunmuyor.</p>
+                    <p className="col-span-full text-center text-muted-foreground py-10">Bu testte geri bildirim eklenecek soru bulunmuyor.</p>
                 )}
             </div>
         </div>

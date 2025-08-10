@@ -1191,39 +1191,44 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id'>>) =>
     
     const testData = testDoc.data() as Test;
     const familyId = testData.familyId;
+    const studentAnswers = { ...(testData.studentAnswers || {}), ...(updateData.studentAnswers || {})};
+    const studentTextAnswers = { ...(testData.studentTextAnswers || {}), ...(updateData.studentTextAnswers || {})};
+    const studentTextAnswersEvaluation = { ...(testData.studentTextAnswersEvaluation || {}), ...(updateData.studentTextAnswersEvaluation || {})};
 
     if (updateData.status === 'Sonuçlandı') {
         const batch = writeBatch(db);
-        const incorrectOrEmptyQuestions: string[] = [];
+        
+        for(let i = 1; i <= testData.questionCount; i++) {
+            const qNum = i.toString();
+            let isIncorrectOrEmpty = false;
 
-        if (testData.gradingType === 'auto') {
-            for (let i = 1; i <= testData.questionCount; i++) {
-                const qId = i.toString();
-                if (testData.studentAnswers?.[qId] !== testData.answerKey?.[qId]) {
-                    incorrectOrEmptyQuestions.push(qId);
+            if (testData.gradingType === 'auto') {
+                if (studentAnswers[qNum] !== testData.answerKey?.[qNum]) {
+                    isIncorrectOrEmpty = true;
+                }
+            } else if (testData.gradingType === 'manual-text' && studentTextAnswersEvaluation) {
+                const evalStatus = studentTextAnswersEvaluation[qNum];
+                if (evalStatus === 'incorrect' || evalStatus === 'empty' || !evalStatus) {
+                    isIncorrectOrEmpty = true;
                 }
             }
-        } else if (testData.gradingType === 'manual-text' && updateData.studentTextAnswersEvaluation) {
-             Object.entries(updateData.studentTextAnswersEvaluation)
-                .filter(([, status]) => status === 'incorrect' || status === 'empty')
-                .forEach(([questionId]) => incorrectOrEmptyQuestions.push(questionId));
-        }
 
-        for (const questionId of incorrectOrEmptyQuestions) {
-            const mistakeRef = doc(collection(db, 'mistakes'));
-            const newMistake: Omit<Mistake, 'id'> = {
-                familyId: familyId,
-                creatorId: testData.studentId,
-                testId: id,
-                originalQuestionId: questionId,
-                studentAnswer: testData.studentAnswers?.[questionId] || testData.studentTextAnswers?.[questionId] || '',
-                subject: testData.subject,
-                topic: testData.title,
-                createdAt: new Date().toISOString(),
-                status: 'active',
-                teacherFeedback: updateData.teacherFeedback?.[questionId] || undefined
-            };
-            batch.set(mistakeRef, removeUndefined(newMistake));
+            if (isIncorrectOrEmpty) {
+                const mistakeRef = doc(collection(db, 'mistakes'));
+                const newMistake: Omit<Mistake, 'id'> = {
+                    familyId: familyId,
+                    creatorId: testData.studentId,
+                    testId: id,
+                    originalQuestionId: qNum,
+                    studentAnswer: studentAnswers[qNum] || studentTextAnswers[qNum] || '',
+                    subject: testData.subject,
+                    topic: testData.title,
+                    createdAt: new Date().toISOString(),
+                    status: 'active',
+                    teacherFeedback: updateData.teacherFeedback?.[qNum]
+                };
+                batch.set(mistakeRef, removeUndefined(newMistake));
+            }
         }
         await batch.commit();
     }
