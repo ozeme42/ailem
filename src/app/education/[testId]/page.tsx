@@ -42,7 +42,7 @@ export default function OpticalFormPage() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [mistakePoolQuestions, setMistakePoolQuestions] = React.useState<any[]>([]);
     
-    const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: number[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], answerKey: null });
+    const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: number[], emptyQuestions: number[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], emptyQuestions: [], answerKey: null });
 
 
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
@@ -239,15 +239,18 @@ export default function OpticalFormPage() {
     
                 if (answerKey) {
                     const incorrectQuestions: number[] = [];
+                    const emptyQuestions: number[] = [];
                     const studentAnswers = test.studentAnswers || {};
                     for (let i = 1; i <= test.questionCount; i++) {
                         const studentAns = studentAnswers[i];
                         const correctAns = (answerKey as any)[i];
-                        if (studentAns && studentAns !== correctAns) {
-                            incorrectQuestions.push(i);
+                        if (!studentAns) {
+                           emptyQuestions.push(i);
+                        } else if (studentAns !== correctAns) {
+                           incorrectQuestions.push(i);
                         }
                     }
-                    setResultDetails({ incorrectQuestions, answerKey });
+                    setResultDetails({ incorrectQuestions, emptyQuestions, answerKey });
                 }
             };
     
@@ -356,6 +359,28 @@ export default function OpticalFormPage() {
                                     <div key={qNumber} className="p-2 rounded-md border text-center bg-destructive/10">
                                         <p className="font-bold text-lg text-destructive">{qNumber}</p>
                                         <p className="text-xs font-semibold">Doğru: {resultDetails.answerKey?.[qNumber] || '?'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                 {test.gradingType === 'auto' && resultDetails.emptyQuestions.length > 0 && (
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <MinusCircle className="text-muted-foreground"/> Boş Bırakılan Sorular
+                            </CardTitle>
+                             <CardDescription>
+                                Cevaplanmayan soruların numaraları.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-wrap gap-3">
+                                {resultDetails.emptyQuestions.map(qNumber => (
+                                    <div key={qNumber} className="p-2 rounded-md border text-center bg-muted/50">
+                                        <p className="font-bold text-lg text-muted-foreground">{qNumber}</p>
                                     </div>
                                 ))}
                             </div>
