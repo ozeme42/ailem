@@ -86,8 +86,9 @@ function CalorieTracker() {
     const { watch, handleSubmit } = form;
     const watchedValues = watch();
     const calorieDifference = watchedValues.caloriesTaken - watchedValues.caloriesBurned;
-    const calorieStatus = calorieDifference > 0 ? "Fazla" : calorieDifference < 0 ? "Açık" : "Dengede";
+    const calorieStatus = calorieDifference > 0 ? "Fazlası" : calorieDifference < 0 ? "Açığı" : "Dengede";
     const calorieStatusLabel = `Kalori ${calorieStatus}`;
+
 
     const onSubmit = async (data: z.infer<typeof calorieFormSchema>) => {
         if (!user) {
@@ -853,6 +854,7 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
 
 
 
