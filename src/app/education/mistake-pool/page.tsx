@@ -172,7 +172,7 @@ export default function MistakePoolDashboardPage() {
             </PageHeader>
             
             {testsWithMistakes.length > 0 ? (
-                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={testsWithMistakes.map(t => t.id)}>
+                 <Accordion type="multiple" className="w-full space-y-4">
                     {testsWithMistakes.map(test => {
                         return (
                             <AccordionItem key={test.id} value={test.id} className="border-b-0">
