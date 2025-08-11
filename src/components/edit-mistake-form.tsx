@@ -103,12 +103,6 @@ export function EditMistakeForm({ mistake, onFormSubmit }: EditMistakeFormProps)
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <DialogHeader>
-          <DialogTitle>Geri Bildirim Ekle</DialogTitle>
-          <DialogDescription>
-            Bu soru için doğru cevabı ve çözüm görselini ekleyin.
-          </DialogDescription>
-        </DialogHeader>
         <ScrollArea className="h-[60vh] pr-4">
             <div className="space-y-4">
                 <div className="space-y-2">

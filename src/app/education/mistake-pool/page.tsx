@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EditMistakeForm } from "@/components/edit-mistake-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { compareDesc, parse, format, parseISO } from 'date-fns';
@@ -138,7 +138,7 @@ export default function MistakePoolDashboardPage() {
                     </p>
                     <Dialog open={isNewMistakeFormOpen} onOpenChange={setIsNewMistakeFormOpen}>
                         <DialogTrigger asChild>
-                             <Button className="bg-white/20 text-white hover:bg-white/30 border-none">Yeni Yanlış Soru Ekle</Button>
+                             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">Yeni Yanlış Soru Ekle</Button>
                         </DialogTrigger>
                         <DialogContent>
                             <NewMistakeForm onFormSubmit={() => setIsNewMistakeFormOpen(false)} />
@@ -232,6 +232,12 @@ export default function MistakePoolDashboardPage() {
 
             <Dialog open={!!editingMistake} onOpenChange={(open) => !open && setEditingMistake(null)}>
                 <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Geri Bildirim Ekle</DialogTitle>
+                        <DialogDescription>
+                            Bu soru için doğru cevabı ve çözüm görselini ekleyin.
+                        </DialogDescription>
+                    </DialogHeader>
                     {editingMistake && (
                         <EditMistakeForm 
                             mistake={editingMistake}
