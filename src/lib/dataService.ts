@@ -693,10 +693,18 @@ export const updateTopics = async (topics: string[]) => {
 
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void) => onFamilyDataUpdate<Test>('tests', callback);
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
+
+export const addTest = async (data: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'tests'), { ...data, familyId });
+    
+    const newTestData: Omit<Test, 'id' | 'familyId'> = {
+        ...data,
+        status: 'Atandı',
+        isArchived: false,
+    };
+
+    return addDoc(collection(db, 'tests'), { ...newTestData, familyId });
 };
 export const deleteTest = (id: string) => deleteDoc(doc(db, "tests", id));
 
