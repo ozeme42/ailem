@@ -64,8 +64,7 @@ export default function MistakePoolDashboardPage() {
         }
 
         const selectedMistakes = allMistakes.filter(m => selectedMistakeIds.includes(m.id));
-        const firstMistakeTestId = selectedMistakes.find(m => m.testId)?.testId;
-        const originalTest = firstMistakeTestId ? allTests.find(t => t.id === firstMistakeTestId) : null;
+        const originalTest = allTests.find(t => t.id === selectedMistakes.find(m => m.testId)?.testId);
         const testTitle = originalTest ? `${originalTest.title} - Tekrar Testi` : "Yanlış Sorular Tekrar Testi";
         
         const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
@@ -73,8 +72,8 @@ export default function MistakePoolDashboardPage() {
             subject: "Yanlış Havuzu",
             studentId: targetStudentId,
             questionCount: selectedMistakeIds.length,
-            assignedDate: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+            assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
+            dueDate: format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr }),
             sourceType: 'mistake',
             mistakeIds: selectedMistakeIds,
             gradingType: 'manual-text',
@@ -93,49 +92,35 @@ export default function MistakePoolDashboardPage() {
     const testsWithMistakes = React.useMemo(() => {
         const groupedByTestId: { [key: string]: Mistake[] } = {};
 
-        // Group all mistakes by their testId
         allMistakes.forEach(mistake => {
             const key = mistake.testId || 'unassigned';
-            if (!groupedByTestId[key]) {
-                groupedByTestId[key] = [];
-            }
+            if (!groupedByTestId[key]) groupedByTestId[key] = [];
             groupedByTestId[key].push(mistake);
         });
 
-        // Map grouped mistakes to test information
         const testEntries = Object.entries(groupedByTestId).map(([testId, mistakes]) => {
-            let testInfo, student;
-            if (testId !== 'unassigned') {
-                 testInfo = allTests.find(t => t.id === testId);
-                 student = familyMembers.find(m => m.id === testInfo?.studentId);
-            }
-            
+            const testInfo = allTests.find(t => t.id === testId);
+            const student = familyMembers.find(m => m.id === testInfo?.studentId);
             return {
                 id: testId,
-                title: testInfo?.title || (testId !== 'unassigned' ? `Test ID: ${testId.slice(0,5)}...` : 'Manuel Eklenen Sorular'),
+                title: testInfo?.title || "Bilinmeyen Test",
                 studentName: student?.name,
                 assignedDate: testInfo?.assignedDate || new Date().toISOString(),
                 mistakes,
             };
         });
         
-        // Sort tests by date, keeping 'unassigned' at the bottom
         return testEntries.sort((a, b) => {
             if (a.id === 'unassigned') return 1;
             if (b.id === 'unassigned') return -1;
             try {
-                // Attempt to parse dates in "dd MMMM yyyy" format first
-                const dateAStr = a.assignedDate;
-                const dateBStr = b.assignedDate;
-                
-                const dateA = dateAStr.includes(' ') ? parse(dateAStr, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(dateAStr);
-                const dateB = dateBStr.includes(' ') ? parse(dateBStr, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(dateBStr);
-
+                const dateA = a.assignedDate.includes(' ') ? parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(a.assignedDate);
+                const dateB = b.assignedDate.includes(' ') ? parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(b.assignedDate);
                 if (isNaN(dateA.getTime())) return 1;
                 if (isNaN(dateB.getTime())) return -1;
                 return compareDesc(dateA, dateB);
-            } catch(e) {
-                return 0; // Fallback if date parsing fails
+            } catch (e) {
+                return 0;
             }
         });
         
@@ -151,7 +136,7 @@ export default function MistakePoolDashboardPage() {
                     </p>
                     <Dialog open={isNewMistakeFormOpen} onOpenChange={setIsNewMistakeFormOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="outline">Yeni Yanlış Soru Ekle</Button>
+                             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">Yeni Yanlış Soru Ekle</Button>
                         </DialogTrigger>
                         <DialogContent>
                             <NewMistakeForm onFormSubmit={() => setIsNewMistakeFormOpen(false)} />
@@ -255,6 +240,4 @@ export default function MistakePoolDashboardPage() {
             </Dialog>
         </div>
     );
-
-    
 }
