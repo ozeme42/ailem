@@ -93,41 +93,37 @@ export default function MistakePoolDashboardPage() {
         }
     };
     
-    const testsWithMistakes = React.useMemo(() => {
-        const groupedByTestId: { [key: string]: Mistake[] } = {};
+   const groupedMistakes = React.useMemo(() => {
+    const grouped: { [key: string]: { type: 'test' | 'manual'; title: string; studentName?: string; mistakes: Mistake[] } } = {};
 
-        allMistakes.forEach(mistake => {
-            const key = mistake.testId || 'unassigned';
-            if (!groupedByTestId[key]) groupedByTestId[key] = [];
-            groupedByTestId[key].push(mistake);
-        });
+    allMistakes.forEach(mistake => {
+        let key: string;
+        let groupTitle: string;
+        let type: 'test' | 'manual';
+        let studentName: string | undefined;
 
-        const testEntries = Object.entries(groupedByTestId).map(([testId, mistakes]) => {
-            const testInfo = allTests.find(t => t.id === testId);
-            const student = familyMembers.find(m => m.id === testInfo?.studentId);
-            return {
-                id: testId,
-                title: testInfo?.title || (testId === 'unassigned' ? "Manuel Eklenen Sorular" : `Bilinmeyen Test (${testId.substring(0,5)})`),
-                studentName: student?.name,
-                assignedDate: testInfo?.assignedDate || new Date().toISOString(),
-                mistakes,
-            };
-        });
-        
-        return testEntries.sort((a, b) => {
-            if (a.id === 'unassigned') return 1;
-            if (b.id === 'unassigned') return -1;
-            try {
-                const dateA = a.assignedDate.includes(' ') ? parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(a.assignedDate);
-                const dateB = b.assignedDate.includes(' ') ? parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(b.assignedDate);
-                if (isNaN(dateA.getTime())) return 1;
-                if (isNaN(dateB.getTime())) return -1;
-                return compareDesc(dateA, dateB);
-            } catch (e) {
-                return 0;
-            }
-        });
-        
+        if (mistake.testId) {
+            key = `test-${mistake.testId}`;
+            const testInfo = allTests.find(t => t.id === mistake.testId);
+            groupTitle = testInfo?.title || `Bilinmeyen Test (${mistake.testId.substring(0, 5)})`;
+            studentName = familyMembers.find(m => m.id === testInfo?.studentId)?.name;
+            type = 'test';
+        } else {
+            // Group manually added mistakes by subject
+            key = `manual-${mistake.subject || 'Diğer'}`;
+            groupTitle = `Manuel Eklenenler: ${mistake.subject || 'Diğer'}`;
+            type = 'manual';
+        }
+
+        if (!grouped[key]) {
+            grouped[key] = { type, title: groupTitle, studentName, mistakes: [] };
+        }
+        grouped[key].mistakes.push(mistake);
+    });
+
+    return Object.entries(grouped)
+        .map(([id, data]) => ({ id, ...data }))
+        .sort((a, b) => a.title.localeCompare(b.title));
     }, [allMistakes, allTests, familyMembers]);
     
     return (
@@ -169,27 +165,27 @@ export default function MistakePoolDashboardPage() {
                 </div>
             </PageHeader>
             
-            {testsWithMistakes.length > 0 ? (
+            {groupedMistakes.length > 0 ? (
                  <Accordion type="multiple" className="w-full space-y-4">
-                    {testsWithMistakes.map(test => {
+                    {groupedMistakes.map(group => {
                         return (
-                            <AccordionItem key={test.id} value={test.id} className="border-b-0">
+                            <AccordionItem key={group.id} value={group.id} className="border-b-0">
                                 <Card>
                                     <AccordionTrigger className="p-4 hover:no-underline">
                                          <div className="flex items-center gap-3 w-full">
                                             <NotebookText className="w-8 h-8" />
                                             <div className="text-left flex-grow">
-                                                <h3 className="text-lg font-semibold">{test.title}</h3>
+                                                <h3 className="text-lg font-semibold">{group.title}</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                   {test.mistakes.length} yanlış/boş soru
+                                                   {group.mistakes.length} yanlış/boş soru
                                                 </p>
                                             </div>
-                                            {test.studentName && <Badge variant="outline">{test.studentName}</Badge>}
+                                            {group.studentName && <Badge variant="outline">{group.studentName}</Badge>}
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-4 pt-0">
                                         <div className="space-y-3">
-                                            {test.mistakes.map(mistake => (
+                                            {group.mistakes.map(mistake => (
                                                 <div key={mistake.id} className="flex items-start gap-4 p-3 border rounded-lg">
                                                     <Checkbox
                                                         id={`mistake-${mistake.id}`}
@@ -199,7 +195,9 @@ export default function MistakePoolDashboardPage() {
                                                     />
                                                     <div className="flex-grow">
                                                         <p className="font-semibold">{mistake.subject} - {mistake.topic}</p>
-                                                        <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
+                                                        {mistake.originalQuestionId && (
+                                                           <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
+                                                        )}
                                                         {mistake.imageUrl && (
                                                             <Dialog>
                                                                 <DialogTrigger asChild>
@@ -255,3 +253,4 @@ export default function MistakePoolDashboardPage() {
         </div>
     );
 }
+
