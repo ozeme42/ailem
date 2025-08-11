@@ -8,7 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember, QuestionBank, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { compareDesc, format, parse } from 'date-fns';
@@ -176,6 +176,7 @@ export default function CategoryDetailPage() {
               const isPending = test.status === 'Atandı';
               const startDate = formatTestDate(test.assignedDate);
               const endDate = formatTestDate(test.dueDate);
+              const isMistakeTest = test.sourceType === 'mistake';
               const duration = test.questionCount * 1.5;
 
               return (
@@ -210,9 +211,19 @@ export default function CategoryDetailPage() {
                     </div>
 
                     <div className="flex flex-col justify-center items-center text-center">
-                      <Clock className="w-8 h-8 text-primary/80 mb-2"/>
-                      <p className="text-2xl font-bold">{duration}</p>
-                      <p className="text-sm text-muted-foreground">DK</p>
+                       {isMistakeTest ? (
+                           <>
+                                <NotebookText className="w-8 h-8 text-primary/80 mb-2"/>
+                                <p className="text-2xl font-bold">{test.questionCount}</p>
+                                <p className="text-sm text-muted-foreground">SORU</p>
+                           </>
+                       ) : (
+                           <>
+                                <Clock className="w-8 h-8 text-primary/80 mb-2"/>
+                                <p className="text-2xl font-bold">{duration}</p>
+                                <p className="text-sm text-muted-foreground">DK</p>
+                           </>
+                       )}
                     </div>
                   </CardContent>
                   <CardFooter className="p-0">
