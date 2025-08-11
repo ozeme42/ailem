@@ -69,7 +69,7 @@ export default function MistakePoolDashboardPage() {
         
         const testTitle = originalTest ? `${originalTest.title} Tekrar Testi` : "Yanlış Sorular Tekrar Testi";
         
-        const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
+        const testData: Omit<Test, 'id' | 'familyId'> = {
             title: testTitle,
             subject: "Yanlış Havuzu",
             studentId: targetStudentId,
@@ -79,6 +79,8 @@ export default function MistakePoolDashboardPage() {
             sourceType: 'mistake',
             mistakeIds: selectedMistakeIds,
             gradingType: 'manual-text',
+            status: 'Atandı',
+            isArchived: false
         };
         
         try {
@@ -105,7 +107,7 @@ export default function MistakePoolDashboardPage() {
             const student = familyMembers.find(m => m.id === testInfo?.studentId);
             return {
                 id: testId,
-                title: testInfo?.title || (testId === 'unassigned' ? "Manuel Eklenen Sorular" : "Bilinmeyen Test"),
+                title: testInfo?.title || (testId === 'unassigned' ? "Manuel Eklenen Sorular" : `Bilinmeyen Test (${testId.substring(0,5)})`),
                 studentName: student?.name,
                 assignedDate: testInfo?.assignedDate || new Date().toISOString(),
                 mistakes,
@@ -138,9 +140,13 @@ export default function MistakePoolDashboardPage() {
                     </p>
                     <Dialog open={isNewMistakeFormOpen} onOpenChange={setIsNewMistakeFormOpen}>
                         <DialogTrigger asChild>
-                             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">Yeni Yanlış Soru Ekle</Button>
+                             <Button className="bg-white/20 text-white hover:bg-white/30 border-none">Yeni Yanlış Soru Ekle</Button>
                         </DialogTrigger>
                         <DialogContent>
+                             <DialogHeader>
+                                <DialogTitle>Yeni Yanlış Soru Ekle</DialogTitle>
+                                <DialogDescription>Kamerayla fotoğrafını çekerek veya dosya yükleyerek yanlış soruları havuza ekleyin.</DialogDescription>
+                            </DialogHeader>
                             <NewMistakeForm onFormSubmit={() => setIsNewMistakeFormOpen(false)} />
                         </DialogContent>
                     </Dialog>
