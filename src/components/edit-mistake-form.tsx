@@ -112,8 +112,10 @@ export function EditMistakeForm({ mistake, onFormSubmit }: EditMistakeFormProps)
         <ScrollArea className="h-[60vh] pr-4">
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <p className="font-semibold text-sm">Öğrencinin Sorusu</p>
-                    <Image src={mistake.imageUrl || "https://placehold.co/400x300.png"} alt="Yanlış Soru" width={400} height={300} className="rounded-md border" data-ai-hint="question paper"/>
+                     <p className="text-sm my-2 p-3 rounded-lg bg-muted">
+                        <span className="font-semibold">Öğrenci Cevabı:</span>
+                        <span className="text-muted-foreground ml-2">{mistake.studentAnswer || "(Boş bırakılmış)"}</span>
+                    </p>
                 </div>
                 
                 <FormField
