@@ -504,7 +504,9 @@ export default function OpticalFormPage() {
                             {isMistakePoolTest ? (
                                 currentMistakeQuestion && (
                                     <div className="space-y-4">
-                                        <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
+                                        {currentMistakeQuestion.imageUrl && (
+                                            <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
+                                        )}
                                         <div className="flex-grow flex items-center gap-2">
                                             <Input
                                                 placeholder="Cevabınızı buraya yazın..."
