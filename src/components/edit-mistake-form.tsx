@@ -115,11 +115,7 @@ export function EditMistakeForm({ mistake, onFormSubmit }: EditMistakeFormProps)
                     <p className="font-semibold text-sm">Öğrencinin Sorusu</p>
                     <Image src={mistake.imageUrl || "https://placehold.co/400x300.png"} alt="Yanlış Soru" width={400} height={300} className="rounded-md border" data-ai-hint="question paper"/>
                 </div>
-                 <div className="space-y-2">
-                    <p className="font-semibold text-sm">Öğrencinin Cevabı</p>
-                    <div className="p-3 rounded-md bg-muted text-muted-foreground">{mistake.studentAnswer || "(Boş bırakılmış)"}</div>
-                </div>
-
+                
                 <FormField
                     control={form.control}
                     name="correctAnswer"
