@@ -706,7 +706,22 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId' | 'status' | 'i
 
     return addDoc(collection(db, 'tests'), { ...newTestData, familyId });
 };
-export const deleteTest = (id: string) => deleteDoc(doc(db, "tests", id));
+export const deleteTest = async (id: string) => {
+    const batch = writeBatch(db);
+
+    // Delete the test itself
+    const testRef = doc(db, "tests", id);
+    batch.delete(testRef);
+
+    // Find and delete associated mistakes
+    const mistakesQuery = query(collection(db, "mistakes"), where("testId", "==", id));
+    const mistakesSnapshot = await getDocs(mistakesQuery);
+    mistakesSnapshot.forEach((mistakeDoc) => {
+        batch.delete(mistakeDoc.ref);
+    });
+
+    return batch.commit();
+};
 
 
 export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void, runOnce = false) => onFamilyDataUpdate<QuestionBank>('questionBanks', callback, runOnce);
