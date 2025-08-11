@@ -84,21 +84,27 @@ export default function MistakePoolDashboardPage() {
         }
     };
     
-    const { testsWithMistakes, totalMistakeCount } = React.useMemo(() => {
+    const testsWithMistakes = React.useMemo(() => {
         const mistakeByTestId = new Map<string, Mistake[]>();
-        const unassignedMistakes: Mistake[] = [];
 
         allMistakes.forEach(mistake => {
-            if (mistake.testId) {
-                const mistakes = mistakeByTestId.get(mistake.testId) || [];
-                mistakes.push(mistake);
-                mistakeByTestId.set(mistake.testId, mistakes);
-            } else {
-                unassignedMistakes.push(mistake);
-            }
+            const key = mistake.testId || 'unassigned';
+            const mistakes = mistakeByTestId.get(key) || [];
+            mistakes.push(mistake);
+            mistakeByTestId.set(key, mistakes);
         });
-        
+
         const tests = Array.from(mistakeByTestId.entries()).map(([testId, mistakes]) => {
+            if (testId === 'unassigned') {
+                 return {
+                    id: 'unassigned',
+                    title: 'Manuel Eklenen Sorular',
+                    studentId: '',
+                    assignedDate: new Date().toISOString(),
+                    mistakes,
+                };
+            }
+            
             const testInfo = allTests.find(t => t.id === testId);
             return {
                 id: testId,
@@ -108,6 +114,8 @@ export default function MistakePoolDashboardPage() {
                 mistakes,
             };
         }).sort((a, b) => {
+            if (a.id === 'unassigned') return 1;
+            if (b.id === 'unassigned') return -1;
             try {
                 const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                 const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
@@ -116,21 +124,8 @@ export default function MistakePoolDashboardPage() {
                 return 0;
             }
         });
-
-        if (unassignedMistakes.length > 0) {
-            tests.push({
-                id: 'unassigned',
-                title: 'Manuel Eklenen Sorular',
-                studentId: '',
-                assignedDate: new Date().toISOString(),
-                mistakes: unassignedMistakes
-            });
-        }
         
-        return {
-            testsWithMistakes: tests,
-            totalMistakeCount: allMistakes.length,
-        }
+        return tests;
     }, [allMistakes, allTests]);
     
     return (
@@ -169,7 +164,7 @@ export default function MistakePoolDashboardPage() {
             </PageHeader>
             
             {testsWithMistakes.length > 0 ? (
-                 <Accordion type="multiple" className="w-full space-y-4">
+                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={testsWithMistakes.map(t => t.id)}>
                     {testsWithMistakes.map(test => {
                         const student = familyMembers.find(m => m.id === test.studentId);
                         return (
@@ -197,7 +192,8 @@ export default function MistakePoolDashboardPage() {
                                                         className="mt-1"
                                                     />
                                                     <div className="flex-grow">
-                                                        <p className="font-semibold">{mistake.topic} - Soru #{mistake.originalQuestionId}</p>
+                                                        <p className="font-semibold">{mistake.subject} - {mistake.topic}</p>
+                                                        <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
                                                         {mistake.imageUrl && (
                                                             <Image src={mistake.imageUrl} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover" data-ai-hint="question paper" />
                                                         )}
@@ -239,4 +235,5 @@ export default function MistakePoolDashboardPage() {
             </Dialog>
         </div>
     );
-}
+
+    
