@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -14,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/components/ui/combobox';
-import { Loader2, UploadCloud, Camera, ArrowLeft } from 'lucide-react';
+import { Loader2, UploadCloud, Camera, ArrowLeft, X } from 'lucide-react';
 import Image from 'next/image';
 import { ImageCropper } from '@/components/image-cropper';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -22,9 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
-  imageDataUri: z.string().refine(val => val.startsWith('data:image/'), {
-    message: "Lütfen bir resim dosyası yükleyin.",
-  }),
+  imageDataUris: z.array(z.string()).min(1, "Lütfen en az bir resim dosyası yükleyin."),
 });
 
 type NewMistakeFormProps = {
@@ -50,7 +47,7 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
     defaultValues: {
       subject: "",
       topic: "",
-      imageDataUri: "",
+      imageDataUris: [],
     },
   });
 
@@ -74,14 +71,29 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        form.setValue('imageDataUri', reader.result as string, { shouldValidate: true });
-        setStep('fill_details');
-      };
-      reader.readAsDataURL(file);
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    if (files.length === 1) { // Single file, allow cropping
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImageToCrop(reader.result as string);
+            setStep('crop_image');
+        };
+        reader.readAsDataURL(files[0]);
+    } else { // Multiple files, skip cropping
+        const filePromises = Array.from(files).map(file => {
+            return new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        });
+        Promise.all(filePromises).then(dataUris => {
+            form.setValue('imageDataUris', dataUris, { shouldValidate: true });
+            setStep('fill_details');
+        });
     }
   };
 
@@ -121,7 +133,7 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
   };
 
   const onCropComplete = (croppedImageUrl: string) => {
-    form.setValue('imageDataUri', croppedImageUrl, { shouldValidate: true });
+    form.setValue('imageDataUris', [croppedImageUrl], { shouldValidate: true });
     setStep('fill_details');
   };
 
@@ -131,28 +143,33 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
       return;
     }
     setLoading(true);
-    try {
-      const destinationPath = `mistake-pool/${user.uid}-${Date.now()}.jpg`;
-      const migrationResult = await migrateImage({
-        imageDataUri: values.imageDataUri,
-        destinationPath,
-      });
 
-      if (!migrationResult.success || !migrationResult.newUrl) {
-        throw new Error(migrationResult.error || 'Resim yüklenemedi.');
+    try {
+      toast({ title: "Görseller Yükleniyor...", description: `${values.imageDataUris.length} adet soru havuza ekleniyor.` });
+
+      for (const imageDataUri of values.imageDataUris) {
+         const destinationPath = `mistake-pool/${user.uid}-${Date.now()}-${Math.random()}.jpg`;
+         const migrationResult = await migrateImage({
+            imageDataUri: imageDataUri,
+            destinationPath,
+         });
+
+         if (!migrationResult.success || !migrationResult.newUrl) {
+            throw new Error(migrationResult.error || 'Resim yüklenemedi.');
+         }
+
+         const mistakeData = {
+            creatorId: user.uid,
+            imageUrl: migrationResult.newUrl,
+            subject: values.subject,
+            topic: values.topic,
+            createdAt: new Date().toISOString(),
+         };
+
+         await addMistake(mistakeData);
       }
 
-      const mistakeData = {
-        creatorId: user.uid,
-        imageUrl: migrationResult.newUrl,
-        subject: values.subject,
-        topic: values.topic,
-        createdAt: new Date().toISOString(),
-      };
-
-      await addMistake(mistakeData);
-
-      toast({ title: 'Başarılı!', description: 'Yanlış soru havuza eklendi.' });
+      toast({ title: 'Başarılı!', description: `${values.imageDataUris.length} yanlış soru havuza eklendi.` });
       onFormSubmit();
     } catch (err: any) {
       toast({ title: 'Hata', description: err.message, variant: 'destructive' });
@@ -170,7 +187,7 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
           <Button variant="outline" className="w-full h-24" onClick={() => fileInputRef.current?.click()}>
               <UploadCloud className="mr-2 h-5 w-5"/> Dosya Yükle
           </Button>
-          <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+          <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
           <Button variant="outline" className="w-full h-24" onClick={startCamera}>
               <Camera className="mr-2 h-5 w-5"/> Fotoğraf Çek
           </Button>
@@ -198,14 +215,22 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
           </div>
       )
   }
+  
+  const {imageDataUris} = form.getValues();
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
         <Button variant="ghost" size="sm" onClick={() => setStep('select_source')} className="mb-2">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Resmi Değiştir
+            <ArrowLeft className="mr-2 h-4 w-4" /> Resimleri Değiştir
         </Button>
-        <Image src={form.getValues('imageDataUri')} alt="Kırpılan Soru" width={400} height={300} className="w-full h-auto rounded-md" data-ai-hint="question paper" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto border p-2 rounded-md">
+            {imageDataUris.map((uri, index) => (
+                <div key={index} className="relative">
+                    <Image src={uri} alt={`Soru ${index + 1}`} width={100} height={100} className="w-full h-auto object-contain rounded-md" data-ai-hint="question paper" />
+                </div>
+            ))}
+        </div>
         
         <FormField
           control={form.control}
@@ -249,7 +274,7 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
 
         <Button type="submit" className="w-full" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Soruyu Kaydet
+          {imageDataUris.length} Soruyu Kaydet
         </Button>
       </form>
     </Form>

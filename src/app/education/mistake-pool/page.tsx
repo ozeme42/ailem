@@ -64,8 +64,10 @@ export default function MistakePoolDashboardPage() {
         }
 
         const selectedMistakes = allMistakes.filter(m => selectedMistakeIds.includes(m.id));
-        const originalTest = allTests.find(t => t.id === selectedMistakes.find(m => m.testId)?.testId);
-        const testTitle = originalTest ? `${originalTest.title} - Tekrar Testi` : "Yanlış Sorular Tekrar Testi";
+        const firstMistakeWithTest = selectedMistakes.find(m => m.testId);
+        const originalTest = firstMistakeWithTest ? allTests.find(t => t.id === firstMistakeWithTest.testId) : null;
+        
+        const testTitle = originalTest ? `${originalTest.title} Tekrar Testi` : "Yanlış Sorular Tekrar Testi";
         
         const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
             title: testTitle,
@@ -103,7 +105,7 @@ export default function MistakePoolDashboardPage() {
             const student = familyMembers.find(m => m.id === testInfo?.studentId);
             return {
                 id: testId,
-                title: testInfo?.title || "Bilinmeyen Test",
+                title: testInfo?.title || (testId === 'unassigned' ? "Manuel Eklenen Sorular" : "Bilinmeyen Test"),
                 studentName: student?.name,
                 assignedDate: testInfo?.assignedDate || new Date().toISOString(),
                 mistakes,
@@ -136,7 +138,7 @@ export default function MistakePoolDashboardPage() {
                     </p>
                     <Dialog open={isNewMistakeFormOpen} onOpenChange={setIsNewMistakeFormOpen}>
                         <DialogTrigger asChild>
-                             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">Yeni Yanlış Soru Ekle</Button>
+                             <Button className="bg-white/20 text-white hover:bg-white/30 border-none">Yeni Yanlış Soru Ekle</Button>
                         </DialogTrigger>
                         <DialogContent>
                             <NewMistakeForm onFormSubmit={() => setIsNewMistakeFormOpen(false)} />
