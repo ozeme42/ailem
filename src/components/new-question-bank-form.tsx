@@ -255,6 +255,7 @@ function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectI
                         name={`subjects.${subjectIndex}.topics.${topicIndex}`}
                         render={({ field }) => (
                             <AnswerKeyDialog
+                                key={topicField.id} 
                                 topic={field.value}
                                 onSave={(newKey) => field.onChange({ ...field.value, answerKey: newKey })}
                                 isVisible={gradingType === 'auto'}
@@ -301,6 +302,7 @@ function AnswerKeyDialog({ topic, onSave, isVisible }: { topic: any, onSave: (ke
                     </DialogDescription>
                 </DialogHeader>
                 <AnswerKeyForm
+                    key={`${topic.id}-${topic.questionCount}`}
                     totalQuestions={topic.questionCount || 0}
                     answerKey={topic.answerKey || {}}
                     onSave={(newKey) => {

@@ -228,6 +228,7 @@ export function NewPracticeExamForm({ onSubmit, initialData, availableSubjects, 
                       </DialogDescription>
                   </DialogHeader>
                   <AnswerKeyForm
+                      key={totalQuestions}
                       totalQuestions={totalQuestions}
                       answerKey={form.getValues('answerKey') || {}}
                       onSave={(newKey) => {
