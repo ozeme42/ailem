@@ -85,18 +85,19 @@ export default function MistakePoolDashboardPage() {
     };
     
     const testsWithMistakes = React.useMemo(() => {
-        const mistakeByTestId = new Map<string, Mistake[]>();
+        const groupedByTestId: { [key: string]: Mistake[] } = {};
 
         allMistakes.forEach(mistake => {
             const key = mistake.testId || 'unassigned';
-            const mistakes = mistakeByTestId.get(key) || [];
-            mistakes.push(mistake);
-            mistakeByTestId.set(key, mistakes);
+            if (!groupedByTestId[key]) {
+                groupedByTestId[key] = [];
+            }
+            groupedByTestId[key].push(mistake);
         });
 
-        const tests = Array.from(mistakeByTestId.entries()).map(([testId, mistakes]) => {
+        const testEntries = Object.entries(groupedByTestId).map(([testId, mistakes]) => {
             if (testId === 'unassigned') {
-                 return {
+                return {
                     id: 'unassigned',
                     title: 'Manuel Eklenen Sorular',
                     studentId: '',
@@ -108,24 +109,28 @@ export default function MistakePoolDashboardPage() {
             const testInfo = allTests.find(t => t.id === testId);
             return {
                 id: testId,
-                title: testInfo?.title || "Bilinmeyen Test",
+                title: testInfo?.title || `Bilinmeyen Test (${testId.slice(0,5)})`,
                 studentId: testInfo?.studentId,
                 assignedDate: testInfo?.assignedDate || new Date().toISOString(),
                 mistakes,
             };
-        }).sort((a, b) => {
+        });
+
+        return testEntries.sort((a, b) => {
             if (a.id === 'unassigned') return 1;
             if (b.id === 'unassigned') return -1;
             try {
-                const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                // Handle potential invalid date strings gracefully
+                const dateA = a.assignedDate ? parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(0);
+                const dateB = b.assignedDate ? parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(0);
+                if (isNaN(dateA.getTime())) return 1;
+                if (isNaN(dateB.getTime())) return -1;
                 return compareDesc(dateA, dateB);
             } catch(e) {
                 return 0;
             }
         });
         
-        return tests;
     }, [allMistakes, allTests]);
     
     return (
@@ -176,7 +181,7 @@ export default function MistakePoolDashboardPage() {
                                             <div className="text-left">
                                                 <h3 className="text-lg font-semibold">{test.title}</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                   {student?.name || 'Manuel Eklenen'} - {test.mistakes.length} yanlış/boş soru
+                                                   {student?.name || (test.id !== 'unassigned' ? 'Bilinmeyen Öğrenci' : 'Manuel Eklenen')} - {test.mistakes.length} yanlış/boş soru
                                                 </p>
                                             </div>
                                         </div>
@@ -237,3 +242,4 @@ export default function MistakePoolDashboardPage() {
     );
 
     
+}
