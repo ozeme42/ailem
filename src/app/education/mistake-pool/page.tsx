@@ -96,21 +96,16 @@ export default function MistakePoolDashboardPage() {
         });
 
         const testEntries = Object.entries(groupedByTestId).map(([testId, mistakes]) => {
-            if (testId === 'unassigned') {
-                return {
-                    id: 'unassigned',
-                    title: 'Manuel Eklenen Sorular',
-                    studentId: '',
-                    assignedDate: new Date().toISOString(),
-                    mistakes,
-                };
+            let testInfo, student;
+            if (testId !== 'unassigned') {
+                 testInfo = allTests.find(t => t.id === testId);
+                 student = familyMembers.find(m => m.id === testInfo?.studentId);
             }
             
-            const testInfo = allTests.find(t => t.id === testId);
             return {
                 id: testId,
-                title: testInfo?.title || `Bilinmeyen Test (${testId.slice(0,5)})`,
-                studentId: testInfo?.studentId,
+                title: testInfo?.title || (testId !== 'unassigned' ? `Bilinmeyen Test (${testId.slice(0,5)})` : 'Manuel Eklenen Sorular'),
+                studentName: student?.name || (testId !== 'unassigned' ? 'Bilinmeyen Öğrenci' : 'Manuel Eklenen'),
                 assignedDate: testInfo?.assignedDate || new Date().toISOString(),
                 mistakes,
             };
@@ -120,9 +115,12 @@ export default function MistakePoolDashboardPage() {
             if (a.id === 'unassigned') return 1;
             if (b.id === 'unassigned') return -1;
             try {
-                // Handle potential invalid date strings gracefully
-                const dateA = a.assignedDate ? parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(0);
-                const dateB = b.assignedDate ? parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(0);
+                const dateAStr = a.assignedDate.includes(' ') ? a.assignedDate : format(parseISO(a.assignedDate), 'dd MMMM yyyy', { locale: tr });
+                const dateBStr = b.assignedDate.includes(' ') ? b.assignedDate : format(parseISO(b.assignedDate), 'dd MMMM yyyy', { locale: tr });
+
+                const dateA = parse(dateAStr, 'dd MMMM yyyy', new Date(), { locale: tr });
+                const dateB = parse(dateBStr, 'dd MMMM yyyy', new Date(), { locale: tr });
+
                 if (isNaN(dateA.getTime())) return 1;
                 if (isNaN(dateB.getTime())) return -1;
                 return compareDesc(dateA, dateB);
@@ -131,7 +129,7 @@ export default function MistakePoolDashboardPage() {
             }
         });
         
-    }, [allMistakes, allTests]);
+    }, [allMistakes, allTests, familyMembers]);
     
     return (
         <div className="space-y-6">
@@ -171,7 +169,6 @@ export default function MistakePoolDashboardPage() {
             {testsWithMistakes.length > 0 ? (
                  <Accordion type="multiple" className="w-full space-y-4" defaultValue={testsWithMistakes.map(t => t.id)}>
                     {testsWithMistakes.map(test => {
-                        const student = familyMembers.find(m => m.id === test.studentId);
                         return (
                             <AccordionItem key={test.id} value={test.id} className="border-b-0">
                                 <Card>
@@ -181,7 +178,7 @@ export default function MistakePoolDashboardPage() {
                                             <div className="text-left">
                                                 <h3 className="text-lg font-semibold">{test.title}</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                   {student?.name || (test.id !== 'unassigned' ? 'Bilinmeyen Öğrenci' : 'Manuel Eklenen')} - {test.mistakes.length} yanlış/boş soru
+                                                   {test.studentName} - {test.mistakes.length} yanlış/boş soru
                                                 </p>
                                             </div>
                                         </div>
