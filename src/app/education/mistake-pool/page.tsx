@@ -86,30 +86,47 @@ export default function MistakePoolDashboardPage() {
     
     const { testsWithMistakes, totalMistakeCount } = React.useMemo(() => {
         const mistakeByTestId = new Map<string, Mistake[]>();
+        const unassignedMistakes: Mistake[] = [];
+
         allMistakes.forEach(mistake => {
             if (mistake.testId) {
                 const mistakes = mistakeByTestId.get(mistake.testId) || [];
                 mistakes.push(mistake);
                 mistakeByTestId.set(mistake.testId, mistakes);
+            } else {
+                unassignedMistakes.push(mistake);
             }
         });
         
-        const tests = allTests
-            .filter(test => mistakeByTestId.has(test.id))
-            .map(test => ({
-                ...test,
-                mistakes: mistakeByTestId.get(test.id) || []
-            }))
-             .sort((a, b) => {
-                try {
-                    const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                    const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                    return compareDesc(dateA, dateB);
-                } catch(e) {
-                    return 0;
-                }
-            });
+        const tests = Array.from(mistakeByTestId.entries()).map(([testId, mistakes]) => {
+            const testInfo = allTests.find(t => t.id === testId);
+            return {
+                id: testId,
+                title: testInfo?.title || "Bilinmeyen Test",
+                studentId: testInfo?.studentId,
+                assignedDate: testInfo?.assignedDate || new Date().toISOString(),
+                mistakes,
+            };
+        }).sort((a, b) => {
+            try {
+                const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                return compareDesc(dateA, dateB);
+            } catch(e) {
+                return 0;
+            }
+        });
 
+        if (unassignedMistakes.length > 0) {
+            tests.push({
+                id: 'unassigned',
+                title: 'Manuel Eklenen Sorular',
+                studentId: '',
+                assignedDate: new Date().toISOString(),
+                mistakes: unassignedMistakes
+            });
+        }
+        
         return {
             testsWithMistakes: tests,
             totalMistakeCount: allMistakes.length,
