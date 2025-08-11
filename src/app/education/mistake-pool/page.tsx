@@ -62,9 +62,14 @@ export default function MistakePoolDashboardPage() {
             toast({ title: 'Hata', description: 'Lütfen bir öğrenci seçin.', variant: 'destructive' });
             return;
         }
+
+        const selectedMistakes = allMistakes.filter(m => selectedMistakeIds.includes(m.id));
+        const firstMistakeTestId = selectedMistakes.find(m => m.testId)?.testId;
+        const originalTest = firstMistakeTestId ? allTests.find(t => t.id === firstMistakeTestId) : null;
+        const testTitle = originalTest ? `${originalTest.title} - Tekrar Testi` : "Yanlış Sorular Tekrar Testi";
         
         const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
-            title: "Yanlış Sorular Tekrar Testi",
+            title: testTitle,
             subject: "Yanlış Havuzu",
             studentId: targetStudentId,
             questionCount: selectedMistakeIds.length,
