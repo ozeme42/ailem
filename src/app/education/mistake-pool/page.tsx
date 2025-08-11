@@ -15,11 +15,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { EditMistakeForm } from "@/components/edit-mistake-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { compareDesc, parse } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { NewMistakeForm } from "@/components/new-mistake-form";
 
 export default function MistakePoolDashboardPage() {
     const { user, familyMembers } = useAuth();
@@ -28,6 +29,7 @@ export default function MistakePoolDashboardPage() {
     const [selectedMistakeIds, setSelectedMistakeIds] = React.useState<string[]>([]);
     const [targetStudentId, setTargetStudentId] = React.useState<string>('');
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
+    const [isNewMistakeFormOpen, setIsNewMistakeFormOpen] = React.useState(false);
     const { toast } = useToast();
 
     const studentMembers = React.useMemo(() => 
@@ -113,15 +115,23 @@ export default function MistakePoolDashboardPage() {
             totalMistakeCount: allMistakes.length,
         }
     }, [allMistakes, allTests]);
-
+    
     return (
         <div className="space-y-6">
             <PageHeader title="Yanlış Havuzu">
                  <div className="flex flex-col sm:flex-row gap-4 items-center">
                     <p className="text-sm text-white/80 max-w-2xl">
                         Burada, değerlendirilmiş testlerdeki tüm yanlış ve boş sorular birikir.
-                        İstediğiniz soruları seçip tekrar testi olarak atayabilirsiniz.
+                        İstediğiniz soruları seçip tekrar testi olarak atayabilir veya yeni yanlış sorusu ekleyebilirsiniz.
                     </p>
+                    <Dialog open={isNewMistakeFormOpen} onOpenChange={setIsNewMistakeFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">Yeni Yanlış Soru Ekle</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <NewMistakeForm onFormSubmit={() => setIsNewMistakeFormOpen(false)} />
+                        </DialogContent>
+                    </Dialog>
                     {selectedMistakeIds.length > 0 && (
                         <Card className="p-4 w-full sm:w-auto">
                             <Label htmlFor="student-select">Seçilen {selectedMistakeIds.length} soruyu ata:</Label>
@@ -154,7 +164,7 @@ export default function MistakePoolDashboardPage() {
                                             <div className="text-left">
                                                 <h3 className="text-lg font-semibold">{test.title}</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                   {student?.name || 'Bilinmeyen Öğrenci'} - {test.mistakes.length} yanlış/boş soru
+                                                   {student?.name || 'Manuel Eklenen'} - {test.mistakes.length} yanlış/boş soru
                                                 </p>
                                             </div>
                                         </div>
@@ -213,4 +223,3 @@ export default function MistakePoolDashboardPage() {
         </div>
     );
 }
-
