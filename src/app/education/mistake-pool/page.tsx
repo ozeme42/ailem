@@ -18,9 +18,10 @@ import Image from "next/image";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { EditMistakeForm } from "@/components/edit-mistake-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { compareDesc, parse } from 'date-fns';
+import { compareDesc, parse, format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { NewMistakeForm } from "@/components/new-mistake-form";
+import { Badge } from "@/components/ui/badge";
 
 export default function MistakePoolDashboardPage() {
     const { user, familyMembers } = useAuth();
@@ -87,6 +88,7 @@ export default function MistakePoolDashboardPage() {
     const testsWithMistakes = React.useMemo(() => {
         const groupedByTestId: { [key: string]: Mistake[] } = {};
 
+        // Group all mistakes by their testId
         allMistakes.forEach(mistake => {
             const key = mistake.testId || 'unassigned';
             if (!groupedByTestId[key]) {
@@ -95,6 +97,7 @@ export default function MistakePoolDashboardPage() {
             groupedByTestId[key].push(mistake);
         });
 
+        // Map grouped mistakes to test information
         const testEntries = Object.entries(groupedByTestId).map(([testId, mistakes]) => {
             let testInfo, student;
             if (testId !== 'unassigned') {
@@ -104,28 +107,30 @@ export default function MistakePoolDashboardPage() {
             
             return {
                 id: testId,
-                title: testInfo?.title || (testId !== 'unassigned' ? `Bilinmeyen Test (${testId.slice(0,5)})` : 'Manuel Eklenen Sorular'),
-                studentName: student?.name || (testId !== 'unassigned' ? 'Bilinmeyen Öğrenci' : 'Manuel Eklenen'),
+                title: testInfo?.title || (testId !== 'unassigned' ? `Test ID: ${testId.slice(0,5)}...` : 'Manuel Eklenen Sorular'),
+                studentName: student?.name,
                 assignedDate: testInfo?.assignedDate || new Date().toISOString(),
                 mistakes,
             };
         });
-
+        
+        // Sort tests by date, keeping 'unassigned' at the bottom
         return testEntries.sort((a, b) => {
             if (a.id === 'unassigned') return 1;
             if (b.id === 'unassigned') return -1;
             try {
-                const dateAStr = a.assignedDate.includes(' ') ? a.assignedDate : format(parseISO(a.assignedDate), 'dd MMMM yyyy', { locale: tr });
-                const dateBStr = b.assignedDate.includes(' ') ? b.assignedDate : format(parseISO(b.assignedDate), 'dd MMMM yyyy', { locale: tr });
-
-                const dateA = parse(dateAStr, 'dd MMMM yyyy', new Date(), { locale: tr });
-                const dateB = parse(dateBStr, 'dd MMMM yyyy', new Date(), { locale: tr });
+                // Attempt to parse dates in "dd MMMM yyyy" format first
+                const dateAStr = a.assignedDate;
+                const dateBStr = b.assignedDate;
+                
+                const dateA = dateAStr.includes(' ') ? parse(dateAStr, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(dateAStr);
+                const dateB = dateBStr.includes(' ') ? parse(dateBStr, 'dd MMMM yyyy', new Date(), { locale: tr }) : parseISO(dateBStr);
 
                 if (isNaN(dateA.getTime())) return 1;
                 if (isNaN(dateB.getTime())) return -1;
                 return compareDesc(dateA, dateB);
             } catch(e) {
-                return 0;
+                return 0; // Fallback if date parsing fails
             }
         });
         
@@ -173,14 +178,15 @@ export default function MistakePoolDashboardPage() {
                             <AccordionItem key={test.id} value={test.id} className="border-b-0">
                                 <Card>
                                     <AccordionTrigger className="p-4 hover:no-underline">
-                                         <div className="flex items-center gap-3">
+                                         <div className="flex items-center gap-3 w-full">
                                             <NotebookText className="w-8 h-8" />
-                                            <div className="text-left">
+                                            <div className="text-left flex-grow">
                                                 <h3 className="text-lg font-semibold">{test.title}</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                   {test.studentName} - {test.mistakes.length} yanlış/boş soru
+                                                   {test.mistakes.length} yanlış/boş soru
                                                 </p>
                                             </div>
+                                            {test.studentName && <Badge variant="outline">{test.studentName}</Badge>}
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-4 pt-0">
@@ -197,7 +203,14 @@ export default function MistakePoolDashboardPage() {
                                                         <p className="font-semibold">{mistake.subject} - {mistake.topic}</p>
                                                         <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
                                                         {mistake.imageUrl && (
-                                                            <Image src={mistake.imageUrl} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover" data-ai-hint="question paper" />
+                                                            <Dialog>
+                                                                <DialogTrigger asChild>
+                                                                    <Image src={mistake.imageUrl} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover cursor-pointer" data-ai-hint="question paper" />
+                                                                </DialogTrigger>
+                                                                <DialogContent className="max-w-4xl">
+                                                                     <Image src={mistake.imageUrl} alt="Yanlış Soru" width={800} height={1000} className="w-full h-auto" data-ai-hint="question paper" />
+                                                                </DialogContent>
+                                                            </Dialog>
                                                         )}
                                                     </div>
                                                     <Button variant="outline" size="sm" onClick={() => setEditingMistake(mistake)}>
