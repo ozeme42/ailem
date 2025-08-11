@@ -191,7 +191,7 @@ export default function OpticalFormPage() {
                             if(!initialAnswers[i]) initialAnswers[i] = null;
                         }
                         setMcqAnswers(initialAnswers);
-                     } else if (type === 'manual-text') {
+                     } else if (type === 'manual-text' || currentTest.sourceType === 'mistake') {
                         const initialAnswers: TextAnswers = currentTest.studentTextAnswers || {};
                          for (let i = 1; i <= currentTest.questionCount; i++) {
                             if(!initialAnswers[i]) initialAnswers[i] = "";
@@ -205,6 +205,14 @@ export default function OpticalFormPage() {
                     const mistakeDocs = await Promise.all(currentTest.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
                     const mistakes = mistakeDocs.map(d => ({ id: d.id, ...d.data() }));
                     setMistakePoolQuestions(mistakes);
+                    if (mistakes.length > 0) {
+                        const initialAnswers = currentTest.studentTextAnswers || {};
+                        const newAnswers: TextAnswers = {};
+                        mistakes.forEach(m => {
+                            newAnswers[m.id] = initialAnswers[m.id] || "";
+                        });
+                        setTextAnswers(newAnswers);
+                    }
                 }
 
             } else {
