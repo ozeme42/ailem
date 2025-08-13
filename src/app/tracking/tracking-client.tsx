@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, startOfWeek, addDays, subDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, subDays, isSameDay, isFuture } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, BookOpen, Youtube, BrainCircuit, Flame } from 'lucide-react';
 
@@ -66,7 +66,7 @@ export function TrackingClient() {
 
         const memberLib = userLibraries.find(lib => lib.memberId === selectedMember.id);
         const readingBooks: TrackableItem[] = (memberLib?.books || [])
-            .filter(b => b.status === 'reading') // Only show books being actively read
+            .filter(b => b.status === 'reading')
             .map(b => {
                 const bookDetail = books.find(bd => bd.id === b.bookId);
                 return bookDetail ? { id: bookDetail.id, type: 'book', title: bookDetail.title, icon: BookOpen } : null;
@@ -137,11 +137,11 @@ export function TrackingClient() {
             </div>
             <div className="overflow-x-auto border rounded-lg">
                 <Table className="w-full">
-                    <TableHeader>
+                    <TableHeader className="bg-muted/50">
                         <TableRow>
                             <TableHead className="w-1/4 min-w-[200px] border-r">Aktivite</TableHead>
                             {weekDays.map(day => (
-                                <TableHead key={day.toISOString()} className="text-center border-r last:border-r-0">
+                                <TableHead key={day.toISOString()} className={cn("text-center border-r last:border-r-0", isSameDay(day, new Date()) && "bg-primary/10")}>
                                     <p>{format(day, 'EEE', { locale: tr })}</p>
                                     <p className="text-xs text-muted-foreground">{format(day, 'd')}</p>
                                 </TableHead>
@@ -158,11 +158,11 @@ export function TrackingClient() {
                                     </div>
                                 </TableCell>
                                 {weekDays.map(day => (
-                                    <TableCell key={day.toISOString()} className="text-center border-r last:border-r-0">
+                                    <TableCell key={day.toISOString()} className={cn("text-center border-r last:border-r-0", isSameDay(day, new Date()) && "bg-primary/5")}>
                                         <Checkbox
                                             checked={isChecked(item, day)}
                                             onCheckedChange={(checked) => handleCheck(item, day, !!checked)}
-                                            disabled={isSameDay(day, new Date()) ? false : true}
+                                            disabled={isFuture(day) && !isSameDay(day, new Date())}
                                         />
                                     </TableCell>
                                 ))}
