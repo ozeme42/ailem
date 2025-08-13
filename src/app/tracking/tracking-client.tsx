@@ -74,7 +74,7 @@ export function TrackingClient() {
             .filter((b): b is TrackableItem => b !== null);
 
         const assignedVideos: TrackableItem[] = videos
-            .filter(v => v.assigneeId === selectedMember.id && v.completedVideos < v.totalVideos)
+            .filter(v => v.assigneeId === selectedMember.id && (v.completedVideos || 0) > 0 && v.completedVideos < v.totalVideos)
             .map(v => ({ id: v.id, type: 'video', title: v.title, icon: Youtube }));
             
         const memberHabits: TrackableItem[] = tasks
@@ -179,4 +179,3 @@ export function TrackingClient() {
         </div>
     );
 }
-
