@@ -294,33 +294,6 @@ export default function ShoppingPage() {
     setSuggestions([]);
   };
 
-  const { pendingItems, boughtItems } = useMemo(() => {
-    if (!selectedList) return { pendingItems: [], boughtItems: [] };
-    
-    // Alınacaklar listesi her zaman `items` dizisindeki tüm öğeleri içerir.
-    const sortedPending = (selectedList.items || []).sort((a,b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (!dateA) return 1;
-        if (!dateB) return -1;
-        return dateA - dateB;
-    });
-
-    const sortedBought = (selectedList.boughtItems || []).sort((a,b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (!dateA) return 1;
-        if (!dateB) return -1;
-        return dateA - dateB;
-    });
-
-    return {
-      pendingItems: sortedPending,
-      boughtItems: sortedBought,
-    };
-  }, [selectedList]);
-
-  
   const handleSelectList = (list: ShoppingList) => {
       setSelectedList(list);
   };
@@ -353,6 +326,23 @@ export default function ShoppingPage() {
   }
 
   if (selectedList) {
+    // Directly filter and sort items for rendering
+    const pendingItems = (selectedList.items || []).sort((a,b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateA - dateB;
+    });
+    
+    const boughtItems = (selectedList.boughtItems || []).sort((a,b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateA - dateB;
+    });
+
     const groupedPendingItems = pendingItems.reduce((acc, item) => {
             const category = item.category || 'Diğer';
             if (!acc[category]) acc[category] = [];
