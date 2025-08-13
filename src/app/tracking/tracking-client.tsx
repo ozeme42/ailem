@@ -81,7 +81,7 @@ export function TrackingClient() {
             .filter((b): b is TrackableItem => b !== null);
 
         const assignedVideos: TrackableItem[] = videos
-            .filter(v => v.assigneeId === selectedMember.id && (v.completedVideos || 0) > 0 && (v.completedVideos || 0) < v.totalVideos)
+            .filter(v => v.assigneeId === selectedMember.id && (v.completedVideos || 0) < v.totalVideos)
             .map(v => ({ id: v.id, type: 'video' as const, title: v.title, icon: Youtube }));
             
         const memberHabits: TrackableItem[] = tasks
@@ -160,8 +160,8 @@ export function TrackingClient() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {trackableItems.map(item => (
-                            <TableRow key={item.id}>
+                        {trackableItems.map((item, index) => (
+                            <TableRow key={item.id} className={cn(index % 2 === 0 && "bg-muted/20")}>
                                 <TableCell className="font-medium border-r">
                                     <div className="flex items-center gap-2">
                                         <item.icon className="h-5 w-5 text-muted-foreground"/>
@@ -190,3 +190,4 @@ export function TrackingClient() {
         </div>
     );
 }
+
