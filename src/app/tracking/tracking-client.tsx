@@ -66,7 +66,7 @@ export function TrackingClient() {
 
         const memberLib = userLibraries.find(lib => lib.memberId === selectedMember.id);
         const readingBooks: TrackableItem[] = (memberLib?.books || [])
-            .filter(b => b.status === 'reading')
+            .filter(b => b.status === 'reading') // Only show books being actively read
             .map(b => {
                 const bookDetail = books.find(bd => bd.id === b.bookId);
                 return bookDetail ? { id: bookDetail.id, type: 'book', title: bookDetail.title, icon: BookOpen } : null;
@@ -135,13 +135,13 @@ export function TrackingClient() {
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
-            <div className="overflow-x-auto">
-                <Table className="w-full border-collapse">
+            <div className="overflow-x-auto border rounded-lg">
+                <Table className="w-full">
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-1/4 min-w-[200px]">Aktivite</TableHead>
+                            <TableHead className="w-1/4 min-w-[200px] border-r">Aktivite</TableHead>
                             {weekDays.map(day => (
-                                <TableHead key={day.toISOString()} className="text-center">
+                                <TableHead key={day.toISOString()} className="text-center border-r last:border-r-0">
                                     <p>{format(day, 'EEE', { locale: tr })}</p>
                                     <p className="text-xs text-muted-foreground">{format(day, 'd')}</p>
                                 </TableHead>
@@ -151,14 +151,14 @@ export function TrackingClient() {
                     <TableBody>
                         {trackableItems.map(item => (
                             <TableRow key={item.id}>
-                                <TableCell className="font-medium">
+                                <TableCell className="font-medium border-r">
                                     <div className="flex items-center gap-2">
                                         <item.icon className="h-5 w-5 text-muted-foreground"/>
                                         <span>{item.title}</span>
                                     </div>
                                 </TableCell>
                                 {weekDays.map(day => (
-                                    <TableCell key={day.toISOString()} className="text-center">
+                                    <TableCell key={day.toISOString()} className="text-center border-r last:border-r-0">
                                         <Checkbox
                                             checked={isChecked(item, day)}
                                             onCheckedChange={(checked) => handleCheck(item, day, !!checked)}
@@ -179,3 +179,4 @@ export function TrackingClient() {
         </div>
     );
 }
+
