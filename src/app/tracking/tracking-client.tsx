@@ -149,7 +149,7 @@ export function TrackingClient() {
             <div className="overflow-x-auto border rounded-lg">
                 <Table className="w-full">
                     <TableHeader>
-                        <TableRow className="bg-muted/50">
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
                             <TableHead className="w-1/4 min-w-[200px] border-r">Aktivite</TableHead>
                             {weekDays.map(day => (
                                 <TableHead key={day.toISOString()} className={cn("text-center border-r last:border-r-0", isSameDay(day, new Date()) && "bg-primary/10")}>
@@ -190,4 +190,3 @@ export function TrackingClient() {
         </div>
     );
 }
-
