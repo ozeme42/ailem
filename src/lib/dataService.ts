@@ -156,6 +156,10 @@ export const migrateOrphanBooks = async (familyId: string) => {
 
 // User Libraries
 export const onUserLibrariesUpdate = (familyId: string, callback: (libraries: UserLibrary[]) => void) => {
+    if (!familyId) {
+        callback([]);
+        return () => {};
+    }
     const q = query(collection(db, "userLibraries"), where("familyId", "==", familyId));
     return onSnapshot(q, (snapshot) => {
         const libraries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserLibrary));
@@ -694,14 +698,14 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void) => onFamilyDataUpdate<Test>('tests', callback);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'>) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     
     const newTestData: Omit<Test, 'id' | 'familyId'> = {
-        ...data,
         status: 'Atandı',
         isArchived: false,
+        ...data,
     };
 
     return addDoc(collection(db, 'tests'), { ...newTestData, familyId });
@@ -1634,3 +1638,4 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
 
     return setDoc(docRef, updateData, { merge: true });
 };
+

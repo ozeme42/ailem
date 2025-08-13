@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, startOfWeek, addDays, subDays, isSameDay, isFuture } from 'date-fns';
+import { format, startOfWeek, addDays, subDays, isSameDay, isFuture, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, BookOpen, Youtube, BrainCircuit, Flame } from 'lucide-react';
 
@@ -43,8 +43,10 @@ export function TrackingClient() {
     }, [familyMembers, selectedMember]);
 
     React.useEffect(() => {
+        if (!selectedMember || !familyId) return;
+
         const unsubBooks = onBooksUpdate(setBooks);
-        const unsubLibraries = onUserLibrariesUpdate(selectedMember?.familyId || '', setUserLibraries);
+        const unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
         const unsubTasks = onTasksUpdate(setTasks);
         const unsubVideos = onVideosUpdate(setVideos);
         const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
@@ -58,7 +60,7 @@ export function TrackingClient() {
             unsubMemorizationItems();
             unsubMemorizationProgress();
         };
-    }, [selectedMember]);
+    }, [selectedMember, familyId]);
 
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -71,23 +73,23 @@ export function TrackingClient() {
             .filter(b => b.status === 'reading')
             .map(b => {
                 const bookDetail = books.find(bd => bd.id === b.bookId);
-                return bookDetail ? { id: bookDetail.id, type: 'book', title: bookDetail.title, icon: BookOpen } : null;
+                return bookDetail ? { id: bookDetail.id, type: 'book' as const, title: bookDetail.title, icon: BookOpen } : null;
             })
             .filter((b): b is TrackableItem => b !== null);
 
         const assignedVideos: TrackableItem[] = videos
             .filter(v => v.assigneeId === selectedMember.id && (v.completedVideos || 0) < v.totalVideos)
-            .map(v => ({ id: v.id, type: 'video', title: v.title, icon: Youtube, total: v.totalVideos, completed: v.completedVideos }));
+            .map(v => ({ id: v.id, type: 'video' as const, title: v.title, icon: Youtube, total: v.totalVideos, completed: v.completedVideos }));
             
         const memberHabits: TrackableItem[] = tasks
             .filter(t => t.isRecurring && t.assigneeId === selectedMember.id)
-            .map(t => ({ id: t.id, type: 'habit', title: t.title, icon: Flame }));
+            .map(t => ({ id: t.id, type: 'habit' as const, title: t.title, icon: Flame }));
             
         const memberMemorization = memorizationProgress
             .filter(p => p.memberId === selectedMember.id && !p.completed)
             .map(p => {
                 const itemDetail = memorizationItems.find(mi => mi.id === p.itemId);
-                return itemDetail ? { id: itemDetail.id, type: 'memorization', title: itemDetail.title, icon: BrainCircuit } : null;
+                return itemDetail ? { id: itemDetail.id, type: 'memorization' as const, title: itemDetail.title, icon: BrainCircuit } : null;
             })
             .filter((i): i is TrackableItem => i !== null);
 
@@ -97,38 +99,42 @@ export function TrackingClient() {
 
     const handleCheck = async (item: TrackableItem, day: Date, isChecked: boolean) => {
         if (!selectedMember || !familyId) return;
-
-        switch (item.type) {
-            case 'habit':
-                await updateHabitCompletion(item.id, day, isChecked);
-                break;
-            case 'memorization':
-                if (isChecked) { // You can only mark memorization as done for the day, not undo
-                    await updateMemorizationProgress(item.id, selectedMember.id, true);
-                }
-                break;
-            case 'book':
-                // For books, we just assume checking means progress was made. 
-                // A more detailed "log reading" popup could be implemented later.
-                const book = books.find(b => b.id === item.id);
-                const libBook = userLibraries.find(l => l.memberId === selectedMember.id)?.books.find(b => b.bookId === item.id);
-                if(book && libBook && book.pageCount) {
-                    const currentProgress = libBook.progress || 0;
-                    // For simplicity, let's assume checking a day is ~5% progress.
-                    const newProgress = Math.min(100, currentProgress + 5); 
-                    await updateUserBookStatus(familyId, selectedMember.id, item.id, newProgress === 100 ? 'finished' : 'reading', newProgress);
-                }
-                break;
-            case 'video':
-                 const video = videos.find(v => v.id === item.id);
-                 if (video) {
-                     const currentCompleted = video.completedVideos || 0;
-                     const newCompleted = isChecked ? currentCompleted + 1 : Math.max(0, currentCompleted - 1);
-                     await updateVideo(item.id, { completedVideos: newCompleted });
-                 }
-                break;
-            default:
-                break;
+        
+        // This function should be simple and just call the service.
+        // The real-time listener will update the state.
+        try {
+            switch (item.type) {
+                case 'habit':
+                    await updateHabitCompletion(item.id, day, isChecked);
+                    break;
+                case 'memorization':
+                     // A user can only mark memorization as done for a day.
+                    if (isChecked) {
+                        await updateMemorizationProgress(item.id, selectedMember.id, true);
+                    }
+                    break;
+                case 'book':
+                     const book = books.find(b => b.id === item.id);
+                    const libBook = userLibraries.find(l => l.memberId === selectedMember.id)?.books.find(b => b.bookId === item.id);
+                    if(book && libBook && book.pageCount) {
+                        const currentProgress = libBook.progress || 0;
+                        const newProgress = Math.min(100, currentProgress + 5); 
+                        await updateUserBookStatus(familyId, selectedMember.id, item.id, newProgress >= 100 ? 'finished' : 'reading', newProgress);
+                    }
+                    break;
+                case 'video':
+                     const video = videos.find(v => v.id === item.id);
+                     if (video) {
+                         const currentCompleted = video.completedVideos || 0;
+                         const newCompleted = isChecked ? currentCompleted + 1 : Math.max(0, currentCompleted - 1);
+                         await updateVideo(item.id, { completedVideos: newCompleted });
+                     }
+                    break;
+                default:
+                    break;
+            }
+        } catch (error) {
+            console.error("Error updating tracking item:", error);
         }
     };
 
@@ -139,7 +145,7 @@ export function TrackingClient() {
                 return task?.completedDates?.includes(format(day, 'yyyy-MM-dd')) || false;
              case 'memorization':
                  const progress = memorizationProgress.find(p => p.itemId === item.id && p.memberId === selectedMember?.id);
-                 return progress?.completed && progress.completedAt ? isSameDay(new Date(progress.completedAt), day) : false;
+                 return !!progress?.completed;
              default:
                 // For book/video, we don't have daily tracking data yet, so we'll leave it unchecked.
                 return false;
@@ -175,8 +181,8 @@ export function TrackingClient() {
             </div>
             <div className="overflow-x-auto border rounded-lg">
                 <Table className="w-full">
-                    <TableHeader className="bg-muted/50">
-                        <TableRow>
+                    <TableHeader>
+                        <TableRow className="bg-muted/50">
                             <TableHead className="w-1/4 min-w-[200px] border-r">Aktivite</TableHead>
                             {weekDays.map(day => (
                                 <TableHead key={day.toISOString()} className={cn("text-center border-r last:border-r-0", isSameDay(day, new Date()) && "bg-primary/10")}>
@@ -217,3 +223,4 @@ export function TrackingClient() {
         </div>
     );
 }
+
