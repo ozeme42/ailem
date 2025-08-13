@@ -31,7 +31,7 @@ export interface FamilyMember {
   streak: number;
   badges: string[];
   mood: 'happy' | 'excited' | 'focused' | 'playful' | 'tired' | 'stressed';
-  status: 'online' | 'away' | 'offline';
+  status: 'online' | 'offline';
   readingGoals?: ReadingGoals;
 }
 
@@ -276,6 +276,16 @@ export interface Video {
     totalVideos: number;
     completedVideos: number;
     assigneeId: string;
+}
+
+export type TrackableItemType = 'book' | 'video' | 'habit' | 'memorization';
+export interface DailyTracking {
+    id: string; // Composite key: `${date}_${memberId}_${itemId}`
+    familyId: string;
+    memberId: string;
+    itemId: string;
+    itemType: TrackableItemType;
+    date: string; // 'yyyy-MM-dd'
 }
 
 

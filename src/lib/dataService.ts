@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -1639,3 +1639,47 @@ export const updatePrayerProgress = async (memberId: string, completions: Prayer
     return setDoc(docRef, updateData, { merge: true });
 };
 
+// Daily Tracking
+export const onDailyTrackingsUpdate = (
+  familyId: string,
+  memberId: string,
+  callback: (trackings: DailyTracking[]) => void
+) => {
+  const q = query(
+    collection(db, 'dailyTrackings'),
+    where('familyId', '==', familyId),
+    where('memberId', '==', memberId)
+  );
+  return onSnapshot(q, (snapshot) => {
+    const trackings = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as DailyTracking));
+    callback(trackings);
+  });
+};
+
+export const setDailyTrackingStatus = async (
+  memberId: string,
+  item: { id: string; type: TrackableItemType },
+  date: Date,
+  isChecked: boolean
+) => {
+  const familyId = await getCurrentFamilyId();
+  if (!familyId) throw new Error("User not in a family");
+
+  const dateKey = format(date, 'yyyy-MM-dd');
+  const trackingId = `${dateKey}_${memberId}_${item.id}`;
+  const trackingRef = doc(db, 'dailyTrackings', trackingId);
+
+  if (isChecked) {
+    const trackingData: DailyTracking = {
+      id: trackingId,
+      familyId,
+      memberId,
+      itemId: item.id,
+      itemType: item.type,
+      date: dateKey,
+    };
+    await setDoc(trackingRef, trackingData);
+  } else {
+    await deleteDoc(trackingRef);
+  }
+};
