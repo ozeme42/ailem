@@ -297,6 +297,7 @@ export default function ShoppingPage() {
   const { pendingItems, boughtItems } = useMemo(() => {
     if (!selectedList) return { pendingItems: [], boughtItems: [] };
     
+    // Alınacaklar listesi her zaman `items` dizisindeki tüm öğeleri içerir.
     const sortedPending = (selectedList.items || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -416,7 +417,7 @@ export default function ShoppingPage() {
              <div className={cn("flex-grow flex flex-col min-h-0 -mx-4 sm:mx-0")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                     <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                        <TabsTrigger value="pending">Alınacaklar ({(pendingItems || []).length})</TabsTrigger>
+                        <TabsTrigger value="pending">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
@@ -531,4 +532,3 @@ export default function ShoppingPage() {
     </div>
   );
 }
-
