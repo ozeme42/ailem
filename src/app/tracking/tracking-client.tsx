@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/components/auth-provider';
-import { onBooksUpdate, onUserLibrariesUpdate, updateTask, onTasksUpdate, onVideosUpdate, onMemorizationItemsUpdate, onMemorizationProgressUpdate, updateHabitCompletion } from '@/lib/dataService';
+import { onBooksUpdate, onUserLibrariesUpdate, updateTask, onTasksUpdate, onVideosUpdate, onMemorizationItemsUpdate, onMemorizationProgressUpdate, updateHabitCompletion, updateVideo, updateUserBookStatus, updateMemorizationProgress } from '@/lib/dataService';
 import { Book as BookType, UserLibrary, FamilyMember, Task, Video, MemorizationItem, MemorizationProgress } from '@/lib/data';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -19,10 +19,12 @@ type TrackableItem = {
     type: 'book' | 'video' | 'habit' | 'memorization';
     title: string;
     icon: React.ElementType;
+    total?: number; // total videos or pages
+    completed?: number; // completed videos or pages
 };
 
 export function TrackingClient() {
-    const { familyMembers } = useAuth();
+    const { familyId, familyMembers } = useAuth();
     const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
     const [currentDate, setCurrentDate] = React.useState(new Date());
 
@@ -74,8 +76,8 @@ export function TrackingClient() {
             .filter((b): b is TrackableItem => b !== null);
 
         const assignedVideos: TrackableItem[] = videos
-            .filter(v => v.assigneeId === selectedMember.id && (v.completedVideos || 0) > 0 && v.completedVideos < v.totalVideos)
-            .map(v => ({ id: v.id, type: 'video', title: v.title, icon: Youtube }));
+            .filter(v => v.assigneeId === selectedMember.id && (v.completedVideos || 0) < v.totalVideos)
+            .map(v => ({ id: v.id, type: 'video', title: v.title, icon: Youtube, total: v.totalVideos, completed: v.completedVideos }));
             
         const memberHabits: TrackableItem[] = tasks
             .filter(t => t.isRecurring && t.assigneeId === selectedMember.id)
@@ -93,19 +95,55 @@ export function TrackingClient() {
         return [...readingBooks, ...assignedVideos, ...memberHabits, ...memberMemorization];
     }, [selectedMember, userLibraries, books, videos, tasks, memorizationItems, memorizationProgress]);
 
-    const handleCheck = (item: TrackableItem, day: Date, isChecked: boolean) => {
-        if (item.type === 'habit') {
-            updateHabitCompletion(item.id, day, isChecked);
+    const handleCheck = async (item: TrackableItem, day: Date, isChecked: boolean) => {
+        if (!selectedMember || !familyId) return;
+
+        switch (item.type) {
+            case 'habit':
+                await updateHabitCompletion(item.id, day, isChecked);
+                break;
+            case 'memorization':
+                if (isChecked) { // You can only mark memorization as done for the day, not undo
+                    await updateMemorizationProgress(item.id, selectedMember.id, true);
+                }
+                break;
+            case 'book':
+                // For books, we just assume checking means progress was made. 
+                // A more detailed "log reading" popup could be implemented later.
+                const book = books.find(b => b.id === item.id);
+                const libBook = userLibraries.find(l => l.memberId === selectedMember.id)?.books.find(b => b.bookId === item.id);
+                if(book && libBook && book.pageCount) {
+                    const currentProgress = libBook.progress || 0;
+                    // For simplicity, let's assume checking a day is ~5% progress.
+                    const newProgress = Math.min(100, currentProgress + 5); 
+                    await updateUserBookStatus(familyId, selectedMember.id, item.id, newProgress === 100 ? 'finished' : 'reading', newProgress);
+                }
+                break;
+            case 'video':
+                 const video = videos.find(v => v.id === item.id);
+                 if (video) {
+                     const currentCompleted = video.completedVideos || 0;
+                     const newCompleted = isChecked ? currentCompleted + 1 : Math.max(0, currentCompleted - 1);
+                     await updateVideo(item.id, { completedVideos: newCompleted });
+                 }
+                break;
+            default:
+                break;
         }
-        // Add logic for other types later
     };
 
     const isChecked = (item: TrackableItem, day: Date): boolean => {
-         if (item.type === 'habit') {
-            const task = tasks.find(t => t.id === item.id);
-            return task?.completedDates?.includes(format(day, 'yyyy-MM-dd')) || false;
-        }
-        return false;
+         switch (item.type) {
+             case 'habit':
+                const task = tasks.find(t => t.id === item.id);
+                return task?.completedDates?.includes(format(day, 'yyyy-MM-dd')) || false;
+             case 'memorization':
+                 const progress = memorizationProgress.find(p => p.itemId === item.id && p.memberId === selectedMember?.id);
+                 return progress?.completed && progress.completedAt ? isSameDay(new Date(progress.completedAt), day) : false;
+             default:
+                // For book/video, we don't have daily tracking data yet, so we'll leave it unchecked.
+                return false;
+         }
     }
 
     return (
