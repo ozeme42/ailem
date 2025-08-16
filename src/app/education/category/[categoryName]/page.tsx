@@ -8,7 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember, QuestionBank, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { compareDesc, format, parse } from 'date-fns';
@@ -174,6 +174,8 @@ export default function CategoryDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTests.map((test) => {
               const isPending = test.status === 'Atandı';
+              const isFinishedWithMistakes = test.status === 'Sonuçlandı' && test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
+              const isFinished = test.status === 'Sonuçlandı' && !isFinishedWithMistakes;
               const startDate = formatTestDate(test.assignedDate);
               const endDate = formatTestDate(test.dueDate);
               const isMistakeTest = test.sourceType === 'mistake';
@@ -232,12 +234,18 @@ export default function CategoryDetailPage() {
                           size="lg" 
                           className={cn(
                               "w-full rounded-t-none h-12 text-base",
-                              !isPending 
-                                  ? "bg-pink-600 hover:bg-pink-700"
-                                  : "bg-cyan-500 hover:bg-cyan-600"
+                              isPending && "bg-cyan-500 hover:bg-cyan-600",
+                              isFinished && "bg-pink-600 hover:bg-pink-700",
+                              isFinishedWithMistakes && "bg-destructive hover:bg-destructive/90"
                           )}
                       >
-                        {isPending ? 'Sınav Giriş Ekranına Git' : 'Sonuçlarımı Göster'}
+                        {isPending && 'Sınav Giriş Ekranına Git'}
+                        {isFinished && 'Sonuçlarımı Göster'}
+                        {isFinishedWithMistakes && (
+                            <>
+                                <Sparkles className="mr-2 h-4 w-4"/> Eksikleri Tamamla
+                            </>
+                        )}
                       </Button>
                     </Link>
                   </CardFooter>

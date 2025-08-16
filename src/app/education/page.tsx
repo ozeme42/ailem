@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, Sparkles } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
@@ -307,6 +307,7 @@ export default function EducationPage() {
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
             tests.filter(test => test.status !== 'Değerlendirme Bekliyor').map(test => {
+                const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">
@@ -316,7 +317,17 @@ export default function EducationPage() {
                         </div>
                         <div className="flex items-center gap-2 mt-3 sm:mt-0">
                              {test.status === 'Atandı' && <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>}
-                             {test.status === 'Sonuçlandı' && <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>}
+                             {test.status === 'Sonuçlandı' && hasMistakes && (
+                                 <Link href={`/education/${test.id}`}>
+                                    <Button variant="destructive">
+                                        <Sparkles className="mr-2 h-4 w-4"/>
+                                        Eksikleri Tamamla
+                                    </Button>
+                                 </Link>
+                             )}
+                              {test.status === 'Sonuçlandı' && !hasMistakes && (
+                                <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>
+                              )}
                         </div>
                     </Card>
                 );
@@ -329,5 +340,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
