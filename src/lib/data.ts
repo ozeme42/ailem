@@ -317,7 +317,7 @@ export interface Student {
   avatar: string;
 }
 
-export type AnswerKey = { [key: number]: string };
+export type AnswerKey = { [key: string]: string };
 export type TextAnswerKey = { [key: string]: string };
 export type GradingType = 'auto' | 'manual-text' | 'manual';
 export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
@@ -333,9 +333,9 @@ export interface Test {
   questionCount: number;
   assignedDate: string;
   dueDate: string;
-  status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
+  status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
   isArchived: boolean;
-  sourceType: 'quick' | 'bank' | 'exam' | 'mistake';
+  sourceType: 'quick' | 'bank' | 'exam';
   gradingType?: GradingType;
   sourceId?: string;
   topicId?: string;
@@ -349,7 +349,7 @@ export interface Test {
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
-  mistakeIds?: string[];
+  remainingQuestions?: string[]; // Array of question numbers to be re-answered
 }
 
 export interface Topic {
@@ -469,8 +469,6 @@ export interface ShoppingNoteList {
 }
 
 
-// This data is now only for initial setup
-// ... (rest of the initial data remains the same)
 export interface Mistake {
     id: string;
     familyId: string;
@@ -627,5 +625,3 @@ export const CoachMessageSchema = z.object({
   content: z.array(ContentPartSchema),
 });
 export type CoachMessage = z.infer<typeof CoachMessageSchema>;
-
-    

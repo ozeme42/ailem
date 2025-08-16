@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Mistake, Topic } from "@/lib/data";
+import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Topic } from "@/lib/data";
 import {
   onQuestionBanksUpdate,
   onPracticeExamsUpdate,
@@ -66,13 +66,11 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Sosyal Bilgiler': Globe,
     'İngilizce': MessageSquare,
     'Serbest Etkinlikler': Gamepad2,
-    'Yanlış Havuzu': NotebookText,
     'Diğer': Library
 };
 
 const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-    if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
     return test.subject || 'Diğer';
 };
 
@@ -92,7 +90,7 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
         const allSubjects = new Set(questionBanks.flatMap(qb => qb.subjects.map(s => s.name)));
         
         // Initialize all possible categories
-        new Set([...allTestCategories, ...allSubjects, 'Genel Deneme Sınavları', 'Yanlış Havuzu']).forEach(cat => {
+        new Set([...allTestCategories, ...allSubjects, 'Genel Deneme Sınavları']).forEach(cat => {
             if (!categories[cat]) categories[cat] = { banks: [], exams: [], tests: [] };
         });
         

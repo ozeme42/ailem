@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, Mistake } from "@/lib/data";
+import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
@@ -25,11 +25,11 @@ import { Combobox } from "./ui/combobox";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 
-export type AssignmentType = "quick" | "bank" | "exam" | "mistake";
+export type AssignmentType = "quick" | "bank" | "exam";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  activeTab: z.enum(["quick", "bank", "exam", "mistake"]),
+  activeTab: z.enum(["quick", "bank", "exam"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 
@@ -44,7 +44,6 @@ const formSchema = z.object({
   bankId: z.string().optional(),
   topicId: z.string().optional(),
   examId: z.string().optional(),
-  mistakeIds: z.array(z.string()).optional(),
 }).refine((data) => {
     if (data.activeTab === 'quick') return data.title && data.title.length >= 2;
     return true;
@@ -62,10 +61,6 @@ const formSchema = z.object({
     return true;
 }, { message: "Lütfen bir deneme sınavı seçin.", path: ["examId"] })
 .refine((data) => {
-    if (data.activeTab === 'mistake') return data.mistakeIds && data.mistakeIds.length > 0;
-    return true;
-}, { message: "Atanacak yanlış soru bulunamadı.", path: ["mistakeIds"] })
-.refine((data) => {
     if (data.assignedDate && data.dueDate) return data.dueDate >= data.assignedDate;
     return true;
 }, { message: "Bitiş tarihi, başlangıç tarihinden önce olamaz.", path: ["dueDate"] });
@@ -78,10 +73,9 @@ type NewTestFormProps = {
   initialData?: Test | null;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
-  mistakePoolSelection?: Mistake[]; // From mistake pool
 };
 
-export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated, mistakePoolSelection }: NewTestFormProps) {
+export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated }: NewTestFormProps) {
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -89,7 +83,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     shouldUnregister: false,
     defaultValues: {
       studentId: initialData?.studentId || undefined,
-      activeTab: initialData?.sourceType || (mistakePoolSelection ? 'mistake' : 'quick'),
+      activeTab: initialData?.sourceType || 'quick',
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       questionCount: initialData?.questionCount || 20,
@@ -98,7 +92,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       bankId: initialData?.sourceType === 'bank' ? initialData.sourceId : undefined,
       topicId: initialData?.topicId || undefined,
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
-      mistakeIds: mistakePoolSelection?.map(m => m.id),
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
@@ -112,14 +105,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   const handleTabChange = (value: AssignmentType) => {
     form.setValue('activeTab', value);
   };
-
-  React.useEffect(() => {
-     if (mistakePoolSelection && mistakePoolSelection.length > 0) {
-      handleTabChange('mistake');
-      form.setValue('mistakeIds', mistakePoolSelection.map(m => m.id));
-      form.setValue('title', 'Yanlış Sorular Tekrar Testi');
-    }
-  }, [mistakePoolSelection, form]);
 
   React.useEffect(() => {
     if (students.length === 1 && !initialData) {
@@ -182,20 +167,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           answerKey: exam.answerKey,
         };
         break;
-
-      case 'mistake':
-        if (!values.mistakeIds || values.mistakeIds.length === 0) return;
-        testData = {
-          title: values.title || "Yanlış Sorular Tekrar Testi",
-          subject: "Yanlış Havuzu",
-          studentId: values.studentId,
-          questionCount: values.mistakeIds.length,
-          assignedDate, dueDate,
-          sourceType: 'mistake',
-          mistakeIds: values.mistakeIds,
-          gradingType: 'manual-text',
-        };
-        break;
       
       default:
         return;
@@ -209,11 +180,10 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="quick" disabled={!!initialData || !!mistakePoolSelection}>Hızlı</TabsTrigger>
-        <TabsTrigger value="bank" disabled={!!initialData || !!mistakePoolSelection}>Banka</TabsTrigger>
-        <TabsTrigger value="exam" disabled={!!initialData || !!mistakePoolSelection}>Deneme</TabsTrigger>
-        <TabsTrigger value="mistake" disabled={!!initialData && !mistakePoolSelection}>Yanlış Havuzu</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="quick" disabled={!!initialData}>Hızlı</TabsTrigger>
+        <TabsTrigger value="bank" disabled={!!initialData}>Banka</TabsTrigger>
+        <TabsTrigger value="exam" disabled={!!initialData}>Deneme</TabsTrigger>
       </TabsList>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -316,19 +286,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             <FormDescription>Seçilen deneme sınavı öğrenciye atanacaktır.</FormDescription>
           </TabsContent>
 
-          <TabsContent value="mistake" className="space-y-4 m-0">
-             <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Yanlış Sorularım" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField name="mistakeIds" render={() => (
-              <FormItem><FormLabel>Yanlış Sorular</FormLabel><FormControl>
-                  <div className="p-4 border rounded-md max-h-48 overflow-y-auto">
-                    <p className="text-sm text-muted-foreground">{mistakePoolSelection?.length || 0} adet yanlış soru bu ödeve eklenecek.</p>
-                  </div>
-                </FormControl><FormMessage /></FormItem>
-            )} />
-          </TabsContent>
-          
           <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>
         </form>
       </Form>
