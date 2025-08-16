@@ -168,7 +168,6 @@ export default function OpticalFormPage() {
      const startRetake = async () => {
         if (!test) return;
     
-        // Always query for active mistakes related to this test. This is the single source of truth.
         const mistakesQuery = query(
             collection(db, 'mistakes'), 
             where('testId', '==', test.id), 
@@ -192,14 +191,12 @@ export default function OpticalFormPage() {
     const handleRetakeSubmit = async () => {
         if (!test || retakeQuestions.length === 0) return;
         
-        // This is a simplified check. A real implementation might involve re-grading.
-        // For now, we assume retaking means they got it right.
         const remainingIds = test.remainingMistakeIds?.filter(id => !retakeAnswers[id]) || [];
 
         try {
             await updateTest(test.id, { remainingMistakeIds: remainingIds });
             toast({ title: 'Tebrikler!', description: 'Eksiklerini tamamladın.' });
-            // Refresh test data to show updated results
+            
             const updatedTestDoc = await getDoc(doc(db, 'tests', testId));
             if(updatedTestDoc.exists()) {
                 setTest({ id: updatedTestDoc.id, ...updatedTestDoc.data()} as TestType);
@@ -335,11 +332,10 @@ export default function OpticalFormPage() {
         );
     }
     
-    // --- RETAKE TEST VIEW ---
     if(viewMode === 'retake_test') {
         const currentMistakeQuestion = retakeQuestions[currentQuestionIndex];
-        // Smart image URL lookup
         const imageUrl = currentMistakeQuestion?.imageUrl;
+        const originalQuestionNumber = currentMistakeQuestion?.originalQuestionId;
 
         return (
              <div className="container mx-auto py-8">
@@ -353,7 +349,10 @@ export default function OpticalFormPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-2xl">Eksikleri Tamamlama Testi</CardTitle>
-                                <CardDescription>{test.title} - Soru {currentQuestionIndex + 1} / {retakeQuestions.length}</CardDescription>
+                                <CardDescription>
+                                    {test.title} - Soru {currentQuestionIndex + 1} / {retakeQuestions.length}
+                                    {originalQuestionNumber && ` (Orijinal Soru #${originalQuestionNumber})`}
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {imageUrl && (
@@ -402,7 +401,6 @@ export default function OpticalFormPage() {
         )
     }
 
-    // --- INITIAL TEST VIEW ---
     const handleMcqAnswerChange = (questionNumber: number, value: string) => {
         setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };
@@ -504,3 +502,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
