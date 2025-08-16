@@ -1248,11 +1248,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         // Logic for manually graded text-based tests
         else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
             const studentAnswers = test.studentTextAnswers || {};
-            const questionImageUrls = test.questions?.reduce((acc, q) => {
-                if (q.imageUrl) acc[q.questionNumber] = q.imageUrl;
-                return acc;
-            }, {} as Record<number, string>);
-
+            
             for (const qId in test.studentTextAnswersEvaluation) {
                 const status = test.studentTextAnswersEvaluation[qId];
                 if (status === 'incorrect' || status === 'empty') {
@@ -1267,7 +1263,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                         topic: test.title,
                         createdAt: new Date().toISOString(),
                         status: 'active' as const,
-                        imageUrl: questionImageUrls?.[qNum] || (updateData as any).imageUrls?.[qId]
+                        imageUrl: test.questions?.find(q => q.questionNumber === qNum)?.imageUrl,
                     };
                     const mistakeRef = doc(collection(db, 'mistakes'));
                     batch.set(mistakeRef, removeUndefined(mistakeData));

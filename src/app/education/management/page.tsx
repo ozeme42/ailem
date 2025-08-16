@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -58,6 +59,8 @@ import { NewStudyAssignmentForm } from "@/components/new-study-assignment-form";
 import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { EditMistakeForm } from "@/components/edit-mistake-form";
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -939,7 +942,7 @@ export default function EducationManagementPage() {
             const score = gradingTest.questionCount > 0
                 ? (gradeData.correct / gradingTest.questionCount) * 100
                 : 0;
-
+            
             const updatedData: Partial<Test> = {
                 status: 'Sonuçlandı',
                 correctAnswers: gradeData.correct,
@@ -948,39 +951,6 @@ export default function EducationManagementPage() {
                 score: score,
                 studentTextAnswersEvaluation: gradeData.evaluations,
             };
-            
-            const testDoc = await getDoc(doc(db, 'tests', gradingTest.id));
-            if (!testDoc.exists()) {
-                throw new Error("Değerlendirilecek test bulunamadı.");
-            }
-            const fullTest = { ...testDoc.data(), ...updatedData } as Test;
-
-
-            // Create mistake entries for incorrect/empty questions
-            const questionImageUrls = fullTest.questions?.reduce((acc, q) => {
-                if(q.imageUrl) acc[q.questionNumber] = q.imageUrl;
-                return acc;
-            }, {} as Record<number, string>);
-
-            for (const qId in gradeData.evaluations) {
-                const status = gradeData.evaluations[qId];
-                if (status === 'incorrect' || status === 'empty') {
-                    const studentAnswer = fullTest.studentTextAnswers?.[qId] || '(Boş)';
-                    const qNum = parseInt(qId, 10);
-                    const mistakeData = {
-                        creatorId: fullTest.studentId,
-                        testId: fullTest.id,
-                        originalQuestionId: qId,
-                        studentAnswer: studentAnswer,
-                        subject: fullTest.subject,
-                        topic: fullTest.title,
-                        createdAt: new Date().toISOString(),
-                        imageUrl: questionImageUrls?.[qNum],
-                        correctImageUrl: gradeData.imageUrls?.[qId]
-                    };
-                    await addMistake(mistakeData);
-                }
-            }
 
             await updateTest(gradingTest.id, updatedData);
             await checkAndAwardBadges(gradingTest.studentId, familyId, { type: 'test_completed', test: { ...gradingTest, ...updatedData } });
