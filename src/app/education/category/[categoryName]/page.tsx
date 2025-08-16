@@ -173,9 +173,20 @@ export default function CategoryDetailPage() {
           <h3 className="text-xl font-bold">Atanmış Sınavlar</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTests.map((test) => {
-              const isPending = test.status === 'Atandı';
-              const isFinishedWithMistakes = test.status === 'Sonuçlandı' && test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
-              const isFinished = test.status === 'Sonuçlandı' && !isFinishedWithMistakes;
+              const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
+              let buttonText = 'Sınav Giriş Ekranına Git';
+              let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
+              
+              if (test.status === 'Sonuçlandı') {
+                  if (hasMistakes) {
+                      buttonText = 'Eksikleri Tamamla';
+                      buttonClass = "bg-destructive hover:bg-destructive/90";
+                  } else {
+                      buttonText = 'Sonuçlarımı Göster';
+                      buttonClass = "bg-pink-600 hover:bg-pink-700";
+                  }
+              }
+
               const startDate = formatTestDate(test.assignedDate);
               const endDate = formatTestDate(test.dueDate);
               const isMistakeTest = test.sourceType === 'mistake';
@@ -190,7 +201,7 @@ export default function CategoryDetailPage() {
                           <p className="text-xs text-muted-foreground">{test.subject}</p>
                           <h3 className="font-bold text-lg leading-tight">{test.title}</h3>
                       </div>
-                      {!isPending ? (
+                      {test.status !== 'Atandı' ? (
                           <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>
                       ) : (
                           <Box className="w-8 h-8 text-muted-foreground/70" />
@@ -232,20 +243,10 @@ export default function CategoryDetailPage() {
                     <Link href={`/education/${test.id}`} passHref className="w-full">
                       <Button 
                           size="lg" 
-                          className={cn(
-                              "w-full rounded-t-none h-12 text-base",
-                              isPending && "bg-cyan-500 hover:bg-cyan-600",
-                              isFinished && "bg-pink-600 hover:bg-pink-700",
-                              isFinishedWithMistakes && "bg-destructive hover:bg-destructive/90"
-                          )}
+                          className={cn("w-full rounded-t-none h-12 text-base", buttonClass)}
                       >
-                        {isPending && 'Sınav Giriş Ekranına Git'}
-                        {isFinished && 'Sonuçlarımı Göster'}
-                        {isFinishedWithMistakes && (
-                            <>
-                                <Sparkles className="mr-2 h-4 w-4"/> Eksikleri Tamamla
-                            </>
-                        )}
+                        {hasMistakes && test.status === 'Sonuçlandı' && <Sparkles className="mr-2 h-4 w-4"/>}
+                        {buttonText}
                       </Button>
                     </Link>
                   </CardFooter>

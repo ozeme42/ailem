@@ -308,6 +308,15 @@ export default function EducationPage() {
           {tests.length > 0 ? (
             tests.filter(test => test.status !== 'Değerlendirme Bekliyor').map(test => {
                 const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
+                let button;
+                if (test.status === 'Atandı') {
+                    button = <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>;
+                } else if (hasMistakes) {
+                    button = <Link href={`/education/${test.id}`}><Button variant="destructive"><Sparkles className="mr-2 h-4 w-4"/>Eksikleri Tamamla</Button></Link>;
+                } else {
+                    button = <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>;
+                }
+
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">
@@ -316,18 +325,7 @@ export default function EducationPage() {
                             <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-3 sm:mt-0">
-                             {test.status === 'Atandı' && <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>}
-                             {test.status === 'Sonuçlandı' && hasMistakes && (
-                                 <Link href={`/education/${test.id}`}>
-                                    <Button variant="destructive">
-                                        <Sparkles className="mr-2 h-4 w-4"/>
-                                        Eksikleri Tamamla
-                                    </Button>
-                                 </Link>
-                             )}
-                              {test.status === 'Sonuçlandı' && !hasMistakes && (
-                                <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>
-                              )}
+                             {button}
                         </div>
                     </Card>
                 );
