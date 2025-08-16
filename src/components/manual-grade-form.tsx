@@ -43,9 +43,17 @@ const formSchema = z.object({
     imageDataUris: z.record(z.string().optional()), // For new uploads
 });
 
+type QuestionForGrading = Partial<Mistake> & { 
+    id: string; // The ID of the mistake or question number
+    qNum: string; // The display number/text for the question
+    studentAnswer: string;
+    imageUrl?: string | null;
+};
+
+
 export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps) {
     const [isSaving, setIsSaving] = React.useState(false);
-    const [questions, setQuestions] = React.useState<(Partial<Mistake> & { qNum: string, id: string })[]>([]);
+    const [questions, setQuestions] = React.useState<QuestionForGrading[]>([]);
     const { toast } = useToast();
     
     const form = useForm<z.infer<typeof formSchema>>({
@@ -63,20 +71,22 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
 
     React.useEffect(() => {
         const fetchQuestionsAndAnswers = async () => {
-            let fetchedQuestions: (Partial<Mistake> & { qNum: string, id: string })[] = [];
+            let fetchedQuestions: QuestionForGrading[] = [];
             
             if (test.sourceType === 'mistake' && test.mistakeIds) {
                 const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-                fetchedQuestions = mistakeDocs.map((d, i) => {
+                fetchedQuestions = mistakeDocs.map((d) => {
                     const mistakeData = d.data() as Mistake;
+                    // For mistake-based tests, the studentAnswer is keyed by the mistake ID
+                    const studentAnswer = (test.studentTextAnswers as any)?.[d.id] || "";
+                    const questionNumber = mistakeData.originalQuestionId ? `Soru ${mistakeData.originalQuestionId}` : "Manuel Eklenen Soru";
                     return { 
                         id: d.id, 
                         ...mistakeData, 
-                        studentAnswer: test.studentTextAnswers?.[d.id] || "",
-                        qNum: (i + 1).toString(),
+                        studentAnswer: studentAnswer,
+                        qNum: questionNumber,
                     };
                 });
-
             } else if (test.gradingType === 'manual-text' && (test.sourceType === 'bank' || test.sourceType === 'quick')) {
                  const studentAnswers = test.studentTextAnswers || {};
                  for (let i = 1; i <= test.questionCount; i++) {
@@ -84,7 +94,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                      fetchedQuestions.push({
                         id: qId,
                         studentAnswer: studentAnswers[qId] || "",
-                        qNum: qId,
+                        qNum: `${qId}. Soru`, // The qNum is the question number itself
                         imageUrl: test.questions?.find(q => q.questionNumber === i)?.imageUrl
                      });
                  }
@@ -205,7 +215,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                                         status === 'empty' && 'bg-gray-500/10 border-gray-500/20',
                                    )}>
                                         <div className="flex justify-between items-center mb-2">
-                                            <p className="font-bold text-primary">{q.qNum}. Soru</p>
+                                            <p className="font-bold text-primary">{q.qNum}</p>
                                             {getStatusBadge(status)}
                                         </div>
                                         {q.imageUrl && <Image src={q.imageUrl} alt={`Soru ${q.qNum}`} width={400} height={300} className="my-2 rounded-md border" data-ai-hint="question paper" />}
