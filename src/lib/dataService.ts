@@ -1217,17 +1217,36 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
 
         const batch = writeBatch(db);
         const mistakeIdsToRetake: string[] = [];
-        const incorrectOrEmptyQuestions: {
-            qNum: string;
-            studentAnswer: string;
-            imageUrl?: string;
-        }[] = [];
+
+        // Logic for auto-graded tests (MCQ)
+        if (test.gradingType === 'auto' && test.answerKey && test.studentAnswers) {
+            for (const qNumStr in test.answerKey) {
+                const qNum = parseInt(qNumStr, 10);
+                const correctAnswer = test.answerKey[qNum];
+                const studentAnswer = test.studentAnswers[qNum];
+                if (studentAnswer !== correctAnswer) {
+                    const questionImage = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
+                    const mistakeData = {
+                        familyId: test.familyId,
+                        creatorId: test.studentId,
+                        testId: id,
+                        originalQuestionId: qNumStr,
+                        studentAnswer: studentAnswer || '(Boş)',
+                        subject: test.subject,
+                        topic: test.title,
+                        createdAt: new Date().toISOString(),
+                        status: 'active' as const,
+                        imageUrl: questionImage,
+                    };
+                    const mistakeRef = doc(collection(db, 'mistakes'));
+                    batch.set(mistakeRef, removeUndefined(mistakeData));
+                    mistakeIdsToRetake.push(mistakeRef.id);
+                }
+            }
+        }
         
-        // This is complex logic, simplified for now.
-        // It identifies incorrect/empty questions and creates mistakes for them.
-        
-        // Example for manual text grading:
-        if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
+        // Logic for manually graded text-based tests
+        else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
             const studentAnswers = test.studentTextAnswers || {};
             const questionImageUrls = test.questions?.reduce((acc, q) => {
                 if (q.imageUrl) acc[q.questionNumber] = q.imageUrl;
@@ -1247,7 +1266,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                         subject: test.subject,
                         topic: test.title,
                         createdAt: new Date().toISOString(),
-                        status: 'active' as 'active' | 'corrected',
+                        status: 'active' as const,
                         imageUrl: questionImageUrls?.[qNum] || (updateData as any).imageUrls?.[qId]
                     };
                     const mistakeRef = doc(collection(db, 'mistakes'));

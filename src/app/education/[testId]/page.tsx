@@ -167,20 +167,16 @@ export default function OpticalFormPage() {
     
      const startRetake = async () => {
         if (!test) return;
-
-        let mistakesToRetake: Mistake[] = [];
-
-        if (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) {
-            const mistakeDocs = await Promise.all(test.remainingMistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-            mistakesToRetake = mistakeDocs
-                .filter(d => d.exists())
-                .map(d => ({ id: d.id, ...d.data() } as Mistake));
-        } else {
-            // Fallback for automatically graded tests that don't have remainingMistakeIds yet
-            const mistakesQuery = query(collection(db, 'mistakes'), where('testId', '==', test.id), where('status', '==', 'active'));
-            const querySnapshot = await getDocs(mistakesQuery);
-            mistakesToRetake = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
-        }
+    
+        // Always query for active mistakes related to this test. This is the single source of truth.
+        const mistakesQuery = query(
+            collection(db, 'mistakes'), 
+            where('testId', '==', test.id), 
+            where('status', '==', 'active')
+        );
+        
+        const querySnapshot = await getDocs(mistakesQuery);
+        const mistakesToRetake = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
         
         if (mistakesToRetake.length === 0) {
             toast({ title: 'Tebrikler!', description: 'Bu testte tamamlanacak eksik soru bulunmuyor.' });
@@ -191,6 +187,7 @@ export default function OpticalFormPage() {
         setViewMode('retake_test');
         setCurrentQuestionIndex(0);
     };
+
 
     const handleRetakeSubmit = async () => {
         if (!test || retakeQuestions.length === 0) return;
@@ -341,8 +338,8 @@ export default function OpticalFormPage() {
     // --- RETAKE TEST VIEW ---
     if(viewMode === 'retake_test') {
         const currentMistakeQuestion = retakeQuestions[currentQuestionIndex];
-        const originalTestQuestion = test.questions?.find(q => q.questionNumber.toString() === currentMistakeQuestion?.originalQuestionId);
-        const imageUrl = currentMistakeQuestion?.imageUrl || originalTestQuestion?.imageUrl;
+        // Smart image URL lookup
+        const imageUrl = currentMistakeQuestion?.imageUrl;
 
         return (
              <div className="container mx-auto py-8">
