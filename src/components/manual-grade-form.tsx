@@ -17,7 +17,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { Loader2, UploadCloud } from "lucide-react";
 import { Input } from "./ui/input";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 
 type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
