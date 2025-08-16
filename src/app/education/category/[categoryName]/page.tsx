@@ -174,7 +174,7 @@ export default function CategoryDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTests.map((test) => {
               const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
-              let buttonText = 'Sınav Giriş Ekranına Git';
+              let buttonText = 'Sınava Gir';
               let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
               
               if (test.status === 'Sonuçlandı') {
@@ -182,7 +182,7 @@ export default function CategoryDetailPage() {
                       buttonText = 'Eksikleri Tamamla';
                       buttonClass = "bg-destructive hover:bg-destructive/90";
                   } else {
-                      buttonText = 'Sonuçlarımı Göster';
+                      buttonText = 'Sonuçları Göster';
                       buttonClass = "bg-pink-600 hover:bg-pink-700";
                   }
               }

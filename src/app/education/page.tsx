@@ -309,13 +309,16 @@ export default function EducationPage() {
             tests.filter(test => test.status !== 'Değerlendirme Bekliyor').map(test => {
                 const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
                 let button;
-                if (test.status === 'Atandı') {
+                 if (test.status === 'Sonuçlandı') {
+                    if (hasMistakes) {
+                        button = <Link href={`/education/${test.id}`}><Button variant="destructive"><Sparkles className="mr-2 h-4 w-4"/>Eksikleri Tamamla</Button></Link>;
+                    } else {
+                        button = <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>;
+                    }
+                } else { // 'Atandı'
                     button = <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>;
-                } else if (hasMistakes) {
-                    button = <Link href={`/education/${test.id}`}><Button variant="destructive"><Sparkles className="mr-2 h-4 w-4"/>Eksikleri Tamamla</Button></Link>;
-                } else {
-                    button = <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>;
                 }
+
 
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
