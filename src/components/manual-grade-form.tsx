@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -34,7 +35,6 @@ export type ManualGradeData = {
 type ManualGradeFormProps = {
   test: Test;
   onSave: (data: ManualGradeData) => void;
-  onCancel: () => void;
 };
 
 const formSchema = z.object({
@@ -51,7 +51,10 @@ type QuestionForGrading = Partial<Mistake> & {
 };
 
 
-export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps) {
+export const ManualGradeForm = React.forwardRef<
+    { submit: () => void },
+    ManualGradeFormProps
+>(({ test, onSave }, ref) => {
     const [isSaving, setIsSaving] = React.useState(false);
     const [questions, setQuestions] = React.useState<QuestionForGrading[]>([]);
     const { toast } = useToast();
@@ -65,9 +68,16 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         },
     });
     
-    const { setValue, watch } = form;
+    const { setValue, watch, handleSubmit } = form;
     const evaluations = watch('evaluations');
     const imageDataUris = watch('imageDataUris');
+    
+    React.useImperativeHandle(ref, () => ({
+        submit: () => {
+            handleSubmit(onSubmit)();
+        },
+    }));
+
 
     React.useEffect(() => {
         const fetchQuestionsAndAnswers = async () => {
@@ -252,14 +262,9 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                         </div>
                     </ScrollArea>
                 </CardContent>
-                <div className="flex justify-end gap-4 pt-4">
-                    <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
-                    <Button type="submit" disabled={isSaving}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Değerlendirmeyi Tamamla
-                    </Button>
-                </div>
             </form>
         </Form>
     );
-}
+});
+
+ManualGradeForm.displayName = 'ManualGradeForm';

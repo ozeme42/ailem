@@ -706,6 +706,8 @@ function StudyPlanManagement() {
 export default function EducationManagementPage() {
     const { toast } = useToast();
     const { familyMembers, familyId } = useAuth();
+    const gradeFormRef = React.useRef<{ submit: () => void }>(null);
+
 
     const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
     const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
@@ -1121,22 +1123,22 @@ export default function EducationManagementPage() {
                 </DialogContent>
             </Dialog>
             
-
             <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Testi Değerlendir</DialogTitle>
-                        <DialogDescription>
-                            {gradingTest?.title} testinin sonuçlarını girin.
-                        </DialogDescription>
+                        <DialogTitle>Testi Değerlendir: {gradingTest?.title}</DialogTitle>
                     </DialogHeader>
                     {gradingTest && (
                         <ManualGradeForm
+                            ref={gradeFormRef}
                             test={gradingTest}
                             onSave={handleGradeSubmit}
-                            onCancel={() => setIsGradeDialogOpen(false)}
                         />
                     )}
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsGradeDialogOpen(false)}>İptal</Button>
+                        <Button onClick={() => gradeFormRef.current?.submit()}>Değerlendirmeyi Tamamla</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
             
