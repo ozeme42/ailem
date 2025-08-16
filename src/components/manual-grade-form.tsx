@@ -76,6 +76,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
             if (test.sourceType === 'mistake' && test.mistakeIds) {
                 const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
                 fetchedQuestions = mistakeDocs.map((d) => {
+                    if (!d.exists()) return null;
                     const mistakeData = d.data() as Mistake;
                     const studentAnswer = (test.studentTextAnswers as any)?.[d.id] || "";
                     const questionNumberText = mistakeData.originalQuestionId ? `Soru ${mistakeData.originalQuestionId}` : "Manuel Eklenen Soru";
@@ -85,7 +86,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                         studentAnswer: studentAnswer,
                         qNum: questionNumberText,
                     };
-                });
+                }).filter((q): q is QuestionForGrading => q !== null);
             } else if (test.gradingType === 'manual-text' && (test.sourceType === 'bank' || test.sourceType === 'quick')) {
                  const studentAnswers = test.studentTextAnswers || {};
                  for (let i = 1; i <= test.questionCount; i++) {
@@ -93,7 +94,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                      fetchedQuestions.push({
                         id: qId,
                         studentAnswer: studentAnswers[qId] || "",
-                        qNum: `${qId}. Soru`,
+                        qNum: `${i}. Soru`,
                         imageUrl: test.questions?.find(q => q.questionNumber === i)?.imageUrl
                      });
                  }
