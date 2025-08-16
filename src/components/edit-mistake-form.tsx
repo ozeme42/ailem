@@ -18,6 +18,7 @@ import Image from 'next/image';
 import type { Mistake } from '@/lib/data';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
+import { Badge } from './ui/badge';
 
 const formSchema = z.object({
   correctAnswer: z.string().optional(),
@@ -114,10 +115,15 @@ export function EditMistakeForm({ mistake, onFormSubmit }: EditMistakeFormProps)
                             </div>
                         </div>
                     )}
-                     <p className="text-sm my-2 p-3 rounded-lg bg-muted">
-                        <span className="font-semibold">Öğrenci Cevabı:</span>
-                        <span className="text-muted-foreground ml-2">{mistake.studentAnswer || "(Boş bırakılmış)"}</span>
-                    </p>
+                     <div className="text-sm my-2 p-3 rounded-lg bg-muted space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="font-semibold">Öğrenci Cevabı:</span>
+                            {mistake.originalQuestionId && (
+                                <Badge variant="outline">Soru #{mistake.originalQuestionId}</Badge>
+                            )}
+                        </div>
+                        <p className="text-muted-foreground">{mistake.studentAnswer || "(Boş bırakılmış)"}</p>
+                    </div>
                 </div>
                 
                 <FormField
