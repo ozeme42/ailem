@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { NewTestForm } from "@/components/new-test-form";
@@ -75,6 +75,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
 
 const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+    if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
     return test.subject || 'Diğer';
 };
 
@@ -189,8 +190,8 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
                                                         <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitle>Soru Bankasını Sil</AlertDialogTitle><AlertDialogDescription>"{bank.name}" soru bankası kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteBank(bank.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                            <AlertDialogHeader><AlertDialogTitleComponent>Soru Bankasını Sil</AlertDialogTitleComponent><AlertDialogDescription>"{bank.name}" soru bankası kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteBank(bank.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
                                                 </div>
@@ -211,8 +212,8 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
                                                         <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitle>Sınavı Sil</AlertDialogTitle><AlertDialogDescription>"{exam.name}" deneme sınavı kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteExam(exam.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                            <AlertDialogHeader><AlertDialogTitleComponent>Sınavı Sil</AlertDialogTitleComponent><AlertDialogDescription>"{exam.name}" deneme sınavı kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteExam(exam.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
                                                 </div>
@@ -245,8 +246,8 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
                                                         <AlertDialog>
                                                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
                                                             <AlertDialogContent>
-                                                                <AlertDialogHeader><AlertDialogTitle>Ödevi sil?</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                                <AlertDialogHeader><AlertDialogTitleComponent>Ödevi sil?</AlertDialogTitleComponent><AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                                             </AlertDialogContent>
                                                         </AlertDialog>
                                                     </div>
@@ -256,7 +257,7 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
                                     })}
                                 </div>
                             </AccordionContent>
-                        </AccordionItem>
+                         </AccordionItem>
                     </Card>
                 )
             })}
@@ -429,8 +430,8 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
                                         <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive shrink-0"><Trash2 className="w-4 h-4"/></Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Dersi Sil</AlertDialogTitle><AlertDialogDescription>"{subject}" dersini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteSubject(subject)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                        <AlertDialogHeader><AlertDialogTitleComponent>Dersi Sil</AlertDialogTitleComponent><AlertDialogDescription>"{subject}" dersini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteSubject(subject)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </div>
@@ -451,8 +452,8 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
                                                     </Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>Konuyu Sil</AlertDialogTitle><AlertDialogDescription>"{topicInfo.topic.name}" konusunu "{topicInfo.bankName}" soru bankasından kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteTopic(topicInfo.bankId, topicInfo.subjectId, topicInfo.topic.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                    <AlertDialogHeader><AlertDialogTitleComponent>Konuyu Sil</AlertDialogTitleComponent><AlertDialogDescription>"{topicInfo.topic.name}" konusunu "{topicInfo.bankName}" soru bankasından kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteTopic(topicInfo.bankId, topicInfo.subjectId, topicInfo.topic.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                                 </AlertDialogContent>
                                             </AlertDialog>
                                         </div>
@@ -588,8 +589,8 @@ function StudyPlanManagement() {
                             <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
                                 <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Planı sil?</AlertDialogTitle><AlertDialogDescription>"{plan.title}" planı ve içindeki tüm atamalar kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                    <AlertDialogHeader><AlertDialogTitleComponent>Planı sil?</AlertDialogTitleComponent><AlertDialogDescription>"{plan.title}" planı ve içindeki tüm atamalar kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
@@ -610,8 +611,8 @@ function StudyPlanManagement() {
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
                                             <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitle>Atamayı Sil</AlertDialogTitle><AlertDialogDescription>Bu atamayı silmek istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                <AlertDialogHeader><AlertDialogTitleComponent>Atamayı Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu atamayı silmek istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
@@ -1037,10 +1038,10 @@ export default function EducationManagementPage() {
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>Ödevi sil?</AlertDialogTitle>
+                                                    <AlertDialogTitleComponent>Ödevi sil?</AlertDialogTitleComponent>
                                                     <AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription>
                                                 </AlertDialogHeader>
-                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                      </div>
@@ -1150,9 +1151,15 @@ export default function EducationManagementPage() {
                 </DialogContent>
             </Dialog>
             
-            <Dialog open={isMistakeDialogOpen} onOpenChange={setIsMistakeDialogOpen}>
+            <Dialog open={isMistakeDialogOpen} onOpenChange={(open) => {if (!open) setEditingMistake(null); setIsMistakeDialogOpen(open);}}>
                 <DialogContent>
-                     {editingMistake && (
+                    <DialogHeader>
+                        <DialogTitle>Yanlış Soruya Geri Bildirim</DialogTitle>
+                        <DialogDescription>
+                            Öğrencinin hatasını anlamasına yardımcı olacak notlar veya çözüm görselleri ekleyin.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {editingMistake && (
                         <EditMistakeForm 
                             mistake={editingMistake}
                             onFormSubmit={handleMistakeFormSubmit}
@@ -1164,5 +1171,4 @@ export default function EducationManagementPage() {
     );
 }
 
-    
     
