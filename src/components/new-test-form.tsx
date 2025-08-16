@@ -4,26 +4,29 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Key, UploadCloud, Trash2 } from "lucide-react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember } from "@/lib/data";
+import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, QuickTestQuestion } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { AnswerKeyForm } from "./answer-key-form";
-import { Key } from "lucide-react";
 import { Combobox } from "./ui/combobox";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
+import { migrateImage } from "@/ai/flows/migrate-image-flow";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "./ui/badge";
 
 export type AssignmentType = "quick" | "bank" | "exam";
 
@@ -36,9 +39,12 @@ const formSchema = z.object({
   // Quick Test Fields
   title: z.string().optional(),
   subject: z.string().optional(),
-  questionCount: z.coerce.number().optional(),
   gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual-text"),
   answerKey: z.record(z.string()).optional(),
+  questions: z.array(z.object({
+    questionNumber: z.number(),
+    imageUrl: z.string().url("Geçerli bir görsel URL'si girilmelidir."),
+  })).optional(),
 
   // Bank/Exam/Mistake Fields
   bankId: z.string().optional(),
@@ -77,6 +83,8 @@ type NewTestFormProps = {
 
 export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated }: NewTestFormProps) {
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,9 +94,9 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       activeTab: initialData?.sourceType || 'quick',
       title: initialData?.title || "",
       subject: initialData?.subject || "",
-      questionCount: initialData?.questionCount || 20,
       gradingType: initialData?.gradingType || "manual-text",
       answerKey: initialData?.answerKey || {},
+      questions: initialData?.questions || [],
       bankId: initialData?.sourceType === 'bank' ? initialData.sourceId : undefined,
       topicId: initialData?.topicId || undefined,
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
@@ -97,14 +105,60 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     },
   });
 
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: "questions",
+  });
+
   const activeTab = form.watch("activeTab");
   const bankId = form.watch("bankId");
   const gradingType = form.watch("gradingType");
-  const questionCount = form.watch("questionCount") || 0;
+  const questionCount = form.watch("questions")?.length || 0;
   
   const handleTabChange = (value: AssignmentType) => {
     form.setValue('activeTab', value);
   };
+  
+   const handleImageUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    toast({ title: 'Görseller Yükleniyor...', description: 'Bu işlem biraz zaman alabilir.' });
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      await new Promise<void>(resolve => {
+        reader.onload = async () => {
+          const imageDataUri = reader.result as string;
+          try {
+            const destinationPath = `test-questions/${Date.now()}-${file.name}`;
+            const migrationResult = await migrateImage({ imageDataUri, destinationPath });
+            if (migrationResult.success && migrationResult.newUrl) {
+              append({
+                questionNumber: fields.length + 1,
+                imageUrl: migrationResult.newUrl,
+              });
+            } else {
+               toast({ title: "Görsel Yükleme Hatası", description: migrationResult.error, variant: "destructive" });
+            }
+          } catch(e) {
+             toast({ title: "Görsel Yükleme Hatası", variant: "destructive" });
+          }
+          resolve();
+        };
+      });
+    }
+     if (event.target) {
+      event.target.value = ''; // Reset file input
+    }
+  };
+
 
   React.useEffect(() => {
     if (students.length === 1 && !initialData) {
@@ -125,11 +179,12 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           title: values.title!,
           subject: values.subject!,
           studentId: values.studentId,
-          questionCount: values.questionCount || 0,
+          questionCount: values.questions?.length || 0,
           assignedDate, dueDate,
           sourceType: 'quick',
           gradingType: values.gradingType,
           answerKey: values.gradingType === 'auto' ? values.answerKey : {},
+          questions: values.questions,
         };
         break;
       
@@ -232,20 +287,43 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: 2. Dönem Genel Tekrar" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="subject" render={({ field }) => (
+            
+             <FormField control={form.control} name="subject" render={({ field }) => (
                 <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="questionCount" render={({ field }) => (
-                <FormItem><FormLabel>Soru Sayısı</FormLabel><FormControl><Input type="number" placeholder="20" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+            )} />
+             
+             <div className="space-y-2">
+                <FormLabel>Sorular</FormLabel>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="relative group">
+                             <Badge className="absolute top-1 left-1 z-10">Soru {index + 1}</Badge>
+                            <Image src={(field as any).imageUrl} alt={`Soru ${index + 1}`} width={100} height={100} className="w-full h-auto object-contain rounded-md border" data-ai-hint="question paper" />
+                            <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => remove(index)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleImageUpload}>
+                    <UploadCloud className="mr-2 h-4 w-4" />
+                    Soru Resimleri Yükle
+                </Button>
+                <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    multiple
+                />
             </div>
+            
             <FormField control={form.control} name="gradingType" render={({ field }) => (
               <FormItem className="space-y-3"><FormLabel>Değerlendirme Tipi</FormLabel><FormControl>
                   <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
                     <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="auto" /></FormControl><FormLabel className="font-normal">Otomatik Kontrol (Çoktan Seçmeli)</FormLabel></FormItem>
                     <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="manual-text" /></FormControl><FormLabel className="font-normal">Manuel Kontrol (Açık Uçlu)</FormLabel></FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="manual" /></FormControl><FormLabel className="font-normal">Cevap Gerekmiyor (Manuel Kontrol)</FormLabel></FormItem>
                   </RadioGroup>
               </FormControl><FormMessage /></FormItem>
             )} />
