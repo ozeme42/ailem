@@ -341,6 +341,8 @@ export default function OpticalFormPage() {
     // --- RETAKE TEST VIEW ---
     if(viewMode === 'retake_test') {
         const currentMistakeQuestion = retakeQuestions[currentQuestionIndex];
+        const originalTestQuestion = test.questions?.find(q => q.questionNumber.toString() === currentMistakeQuestion?.originalQuestionId);
+        const imageUrl = currentMistakeQuestion?.imageUrl || originalTestQuestion?.imageUrl;
 
         return (
              <div className="container mx-auto py-8">
@@ -357,8 +359,8 @@ export default function OpticalFormPage() {
                                 <CardDescription>{test.title} - Soru {currentQuestionIndex + 1} / {retakeQuestions.length}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {currentMistakeQuestion?.imageUrl && (
-                                    <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
+                                {imageUrl && (
+                                    <Image src={imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
                                 )}
                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionIndex + 1}</div>
