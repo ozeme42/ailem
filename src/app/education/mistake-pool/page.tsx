@@ -53,31 +53,30 @@ export default function MistakePoolDashboardPage() {
         );
     };
 
-    const handleAssignTest = async () => {
-        if (selectedMistakeIds.length === 0) {
+    const handleAssignTest = async (mistakesToAssign: Mistake[], studentId: string) => {
+        if (mistakesToAssign.length === 0) {
             toast({ title: 'Hata', description: 'Lütfen en az bir soru seçin.', variant: 'destructive' });
             return;
         }
-        if (!targetStudentId) {
+        if (!studentId) {
             toast({ title: 'Hata', description: 'Lütfen bir öğrenci seçin.', variant: 'destructive' });
             return;
         }
 
-        const selectedMistakes = allMistakes.filter(m => selectedMistakeIds.includes(m.id));
-        const firstMistakeWithTest = selectedMistakes.find(m => m.testId);
-        const originalTest = firstMistakeWithTest ? allTests.find(t => t.id === firstMistakeWithTest.testId) : null;
+        const firstMistake = mistakesToAssign[0];
+        const originalTest = allTests.find(t => t.id === firstMistake.testId);
         
         const testTitle = originalTest ? `${originalTest.title} Tekrar Testi` : "Yanlış Sorular Tekrar Testi";
         
         const testData: Omit<Test, 'id' | 'familyId'> = {
             title: testTitle,
             subject: "Yanlış Havuzu",
-            studentId: targetStudentId,
-            questionCount: selectedMistakeIds.length,
+            studentId: studentId,
+            questionCount: mistakesToAssign.length,
             assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
             dueDate: format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr }),
             sourceType: 'mistake',
-            mistakeIds: selectedMistakeIds,
+            mistakeIds: mistakesToAssign.map(m => m.id),
             gradingType: 'manual-text',
             status: 'Atandı',
             isArchived: false
@@ -87,42 +86,51 @@ export default function MistakePoolDashboardPage() {
             await addTest(testData);
             toast({ title: 'Ödev Atandı!', description: 'Yanlış sorular tekrar testi olarak atandı.'});
             setSelectedMistakeIds([]);
-            setTargetStudentId('');
         } catch (e) {
             toast({ title: 'Hata', description: 'Ödev atanırken bir sorun oluştu.', variant: 'destructive' });
         }
     };
     
    const groupedMistakes = React.useMemo(() => {
-        const grouped: { [key: string]: { type: 'test' | 'manual'; title: string; studentName?: string; mistakes: Mistake[] } } = {};
+    const grouped: { [key: string]: { type: 'test' | 'manual'; title: string; studentName?: string; studentId: string; mistakes: Mistake[] } } = {};
+    const unassignedMistakes = allMistakes.filter(m => m.status === 'active');
 
-        allMistakes.forEach(mistake => {
-            let key: string;
-            let groupTitle: string;
-            let type: 'test' | 'manual';
-            let studentName: string | undefined;
+    unassignedMistakes.forEach(mistake => {
+        let key: string;
+        let groupTitle: string;
+        let type: 'test' | 'manual';
+        let studentName: string | undefined;
+        let studentId = '';
 
-            if (mistake.testId) {
-                key = `test-${mistake.testId}`;
-                const testInfo = allTests.find(t => t.id === mistake.testId);
-                groupTitle = testInfo?.title || `Bilinmeyen Test (${mistake.testId.substring(0, 5)})`;
-                studentName = familyMembers.find(m => m.id === testInfo?.creatorId)?.name;
-                type = 'test';
-            } else {
-                key = `manual-${mistake.subject || 'Diğer'}`;
-                groupTitle = `Manuel Eklenenler: ${mistake.subject || 'Diğer'}`;
-                type = 'manual';
-                studentName = familyMembers.find(m => m.id === mistake.creatorId)?.name;
-            }
+        if (mistake.testId) {
+            const testInfo = allTests.find(t => t.id === mistake.testId);
+            if (!testInfo) return; // Skip if original test not found
+            
+            key = `test-${mistake.testId}`;
+            groupTitle = testInfo.title;
+            const student = familyMembers.find(m => m.id === testInfo.studentId);
+            studentName = student?.name;
+            studentId = student?.id || '';
+            type = 'test';
+        } else {
+            key = `manual-${mistake.subject || 'Diğer'}-${mistake.creatorId}`;
+            groupTitle = `Manuel Eklenenler: ${mistake.subject || 'Diğer'}`;
+            const student = familyMembers.find(m => m.id === mistake.creatorId);
+            studentName = student?.name;
+            studentId = student?.id || '';
+            type = 'manual';
+        }
 
-            if (!grouped[key]) {
-                grouped[key] = { type, title: groupTitle, studentName, mistakes: [] };
-            }
-            grouped[key].mistakes.push(mistake);
-        });
-        
-        return Object.values(grouped).sort((a,b) => a.title.localeCompare(b.title));
-    }, [allMistakes, allTests, familyMembers]);
+        if (!studentId) return;
+
+        if (!grouped[key]) {
+            grouped[key] = { type, title: groupTitle, studentName, studentId, mistakes: [] };
+        }
+        grouped[key].mistakes.push(mistake);
+    });
+    
+    return Object.values(grouped).sort((a,b) => a.title.localeCompare(b.title));
+}, [allMistakes, allTests, familyMembers]);
     
     return (
         <div className="space-y-6">
@@ -144,82 +152,59 @@ export default function MistakePoolDashboardPage() {
                             <NewMistakeForm onFormSubmit={() => setIsNewMistakeFormOpen(false)} />
                         </DialogContent>
                     </Dialog>
-                    {selectedMistakeIds.length > 0 && (
-                        <Card className="p-4 w-full sm:w-auto">
-                            <Label htmlFor="student-select">Seçilen {selectedMistakeIds.length} soruyu ata:</Label>
-                             <div className="flex gap-2 mt-2">
-                                <Select onValueChange={setTargetStudentId} value={targetStudentId}>
-                                    <SelectTrigger id="student-select">
-                                        <SelectValue placeholder="Öğrenci Seç" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {studentMembers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Button onClick={handleAssignTest}><Send className="mr-2 h-4 w-4" /> Ata</Button>
-                            </div>
-                        </Card>
-                    )}
                 </div>
             </PageHeader>
             
             {groupedMistakes.length > 0 ? (
-                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={groupedMistakes.map(g => g.title)}>
+                 <div className="space-y-4">
                     {groupedMistakes.map(group => {
                         return (
-                            <AccordionItem key={group.title} value={group.title} className="border-b-0">
-                                <Card>
-                                    <AccordionTrigger className="p-4 hover:no-underline">
-                                         <div className="flex items-center gap-3 w-full">
-                                            <NotebookText className="w-8 h-8" />
-                                            <div className="text-left flex-grow">
-                                                <h3 className="text-lg font-semibold">{group.title}</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                   {group.mistakes.length} yanlış/boş soru
-                                                </p>
-                                            </div>
-                                            {group.studentName && <Badge variant="outline">{group.studentName}</Badge>}
+                             <Card key={group.title + group.studentId}>
+                                <CardHeader>
+                                     <div className="flex items-center justify-between">
+                                        <div>
+                                            <CardTitle>{group.title}</CardTitle>
+                                            <CardDescription>
+                                                {group.studentName} öğrencisine ait {group.mistakes.length} yanlış/boş soru
+                                            </CardDescription>
                                         </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="p-4 pt-0">
-                                        <div className="space-y-3">
-                                            {group.mistakes.map(mistake => (
-                                                <div key={mistake.id} className="flex items-start gap-4 p-3 border rounded-lg">
-                                                    <Checkbox
-                                                        id={`mistake-${mistake.id}`}
-                                                        checked={selectedMistakeIds.includes(mistake.id)}
-                                                        onCheckedChange={(checked) => handleSelectionChange(mistake.id, !!checked)}
-                                                        className="mt-1"
-                                                    />
-                                                    <div className="flex-grow">
-                                                        <p className="font-semibold">{mistake.subject} - {mistake.topic}</p>
-                                                        {mistake.originalQuestionId && (
-                                                           <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
-                                                        )}
-                                                        {mistake.imageUrl && (
-                                                            <Dialog>
-                                                                <DialogTrigger asChild>
-                                                                    <Image src={mistake.imageUrl} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover cursor-pointer" data-ai-hint="question paper" />
-                                                                </DialogTrigger>
-                                                                <DialogContent className="max-w-4xl">
-                                                                     <Image src={mistake.imageUrl} alt="Yanlış Soru" width={800} height={1000} className="w-full h-auto" data-ai-hint="question paper" />
-                                                                </DialogContent>
-                                                            </Dialog>
-                                                        )}
-                                                    </div>
-                                                    <Button variant="outline" size="sm" onClick={() => setEditingMistake(mistake)}>
-                                                        <Edit className="mr-2 h-4 w-4"/>
-                                                        Geri Bildirim
-                                                    </Button>
+                                        <Button onClick={() => handleAssignTest(group.mistakes, group.studentId)}>
+                                            <Send className="mr-2 h-4 w-4"/> Tümünü Tekrar Ata
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        {group.mistakes.map(mistake => (
+                                            <div key={mistake.id} className="flex items-start gap-4 p-3 border rounded-lg">
+                                                <div className="flex-grow">
+                                                    <p className="font-semibold">{mistake.subject} - {mistake.topic}</p>
+                                                    {mistake.originalQuestionId && (
+                                                       <p className="text-sm text-muted-foreground">Soru #{mistake.originalQuestionId}</p>
+                                                    )}
+                                                    {mistake.imageUrl && (
+                                                        <Dialog>
+                                                            <DialogTrigger asChild>
+                                                                <Image src={mistake.imageUrl} alt="Yanlış Soru" width={150} height={200} className="mt-2 rounded-md object-cover cursor-pointer" data-ai-hint="question paper" />
+                                                            </DialogTrigger>
+                                                            <DialogContent className="max-w-4xl">
+                                                                 <Image src={mistake.imageUrl} alt="Yanlış Soru" width={800} height={1000} className="w-full h-auto" data-ai-hint="question paper" />
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </AccordionContent>
-                                </Card>
-                            </AccordionItem>
+                                                <Button variant="outline" size="sm" onClick={() => setEditingMistake(mistake)}>
+                                                    <Edit className="mr-2 h-4 w-4"/>
+                                                    Geri Bildirim
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
                         )
                     })}
-                </Accordion>
+                </div>
             ) : (
                  <Card>
                     <CardContent className="p-8 text-center text-muted-foreground flex items-center justify-center gap-4">

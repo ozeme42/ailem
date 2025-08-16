@@ -633,7 +633,10 @@ export const addMistake = async (data: Partial<Omit<Mistake, 'id' | 'familyId' |
     return addDoc(collection(db, 'mistakes'), { ...data, familyId, status: 'active' });
 };
 export const deleteMistake = (id: string) => deleteDoc(doc(db, "mistakes", id));
-export const updateMistake = (id: string, data: Partial<Omit<Mistake, 'id'>>) => updateDoc(doc(db, 'mistakes', id), data);
+export const updateMistake = (id: string, data: Partial<Omit<Mistake, 'id'>>) => {
+    const cleanedData = removeUndefined(data);
+    return updateDoc(doc(db, 'mistakes', id), cleanedData);
+}
 
 
 export const onSubjectsUpdate = (callback: (subjects: string[]) => void) => {
@@ -1233,6 +1236,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                         studentAnswer: test.studentTextAnswers?.[mistakeId] || '(Boş)',
                         imageUrl: originalMistake?.imageUrl, // Carry over the image URL
                     });
+                     batch.update(doc(db, 'mistakes', mistakeId), { status: 'corrected' });
                 }
             });
         }
