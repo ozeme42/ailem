@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -19,6 +18,7 @@ import { Loader2, UploadCloud } from "lucide-react";
 import { Input } from "./ui/input";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "./ui/badge";
 
 
 type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
@@ -155,6 +155,20 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
             reader.readAsDataURL(file);
         }
     };
+    
+    const getStatusBadge = (status: EvaluationStatus) => {
+        switch (status) {
+            case 'correct':
+                return <Badge variant="default" className="bg-green-600">Doğru</Badge>;
+            case 'incorrect':
+                return <Badge variant="destructive">Yanlış</Badge>;
+            case 'empty':
+                return <Badge variant="secondary">Boş</Badge>;
+            default:
+                return <Badge variant="outline">Değerlendirilmedi</Badge>;
+        }
+    }
+
 
     if (test.gradingType !== 'manual-text' && test.sourceType !== 'mistake') {
         return <p>Bu test türü için manuel değerlendirme desteklenmiyor.</p>
@@ -173,17 +187,23 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                             {questions.map((q) => {
                                 const status = evaluations[q.id] || 'unevaluated';
                                 const imageDataUri = imageDataUris[q.id];
+                                const isAnswerEmpty = !q.studentAnswer || q.studentAnswer.trim() === "";
                                 return (
                                    <Card key={q.id} className={cn("p-4 transition-colors", 
-                                        status === 'correct' && 'bg-green-50 border-green-200',
-                                        status === 'incorrect' && 'bg-red-50 border-red-200',
-                                        status === 'empty' && 'bg-gray-50 border-gray-200',
+                                        status === 'correct' && 'bg-green-500/10 border-green-500/20',
+                                        status === 'incorrect' && 'bg-red-500/10 border-red-500/20',
+                                        status === 'empty' && 'bg-gray-500/10 border-gray-500/20',
                                    )}>
-                                        <p className="font-bold text-primary mb-2">{q.qNum}. Soru</p>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <p className="font-bold text-primary">{q.qNum}. Soru</p>
+                                            {getStatusBadge(status)}
+                                        </div>
                                         {q.imageUrl && <Image src={q.imageUrl} alt={`Soru ${q.qNum}`} width={400} height={300} className="my-2 rounded-md border" data-ai-hint="question paper" />}
                                         <p className="text-sm my-2">
                                             <span className="font-semibold">Öğrenci Cevabı:</span>
-                                            <span className="text-muted-foreground ml-2">{q.studentAnswer || "(Boş bırakılmış)"}</span>
+                                             <span className={cn("ml-2", isAnswerEmpty ? "text-red-500 font-medium" : "text-muted-foreground")}>
+                                                {isAnswerEmpty ? "(Boş bırakılmış)" : q.studentAnswer}
+                                            </span>
                                         </p>
                                         <div className="flex items-center gap-2 mt-2">
                                             <Button type="button" size="sm" variant={status === 'correct' ? 'default' : 'outline'} className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200" onClick={() => handleStatusChange(q.id, 'correct')}>Doğru</Button>
@@ -223,4 +243,3 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         </Form>
     );
 }
-
