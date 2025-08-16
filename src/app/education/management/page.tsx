@@ -1144,12 +1144,6 @@ export default function EducationManagementPage() {
             
             <Dialog open={isMistakeDialogOpen} onOpenChange={(open) => {if (!open) setEditingMistake(null); setIsMistakeDialogOpen(open);}}>
                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Yanlış Soruya Geri Bildirim</DialogTitle>
-                        <DialogDescription>
-                            Öğrencinin hatasını anlamasına yardımcı olacak notlar veya çözüm görselleri ekleyin.
-                        </DialogDescription>
-                    </DialogHeader>
                     {editingMistake && (
                         <EditMistakeForm 
                             mistake={editingMistake}

@@ -1230,7 +1230,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 topic: test.title,
                 createdAt: new Date().toISOString(),
                 status: 'active' as const,
-                imageUrl: imageUrl,
+                imageUrl: imageUrl, // THIS IS THE CRITICAL PART
             };
         };
 
@@ -1256,9 +1256,8 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 const status = test.studentTextAnswersEvaluation[qId];
                 if (status === 'incorrect' || status === 'empty') {
                     const studentAnswer = test.studentTextAnswers[qId] || '(Boş)';
-                     const imageUrl = test.sourceType === 'quick' 
-                        ? test.questions?.find(q => q.questionNumber === parseInt(qId, 10))?.imageUrl
-                        : undefined;
+                     const question = test.questions?.find(q => q.questionNumber === parseInt(qId, 10));
+                     const imageUrl = question?.imageUrl;
                     const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
                     const mistakeRef = doc(collection(db, 'mistakes'));
                     batch.set(mistakeRef, removeUndefined(mistakeData));
