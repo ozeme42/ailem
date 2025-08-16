@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Topic } from "@/lib/data";
+import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Topic, Mistake } from "@/lib/data";
 import {
   onQuestionBanksUpdate,
   onPracticeExamsUpdate,
@@ -41,6 +40,8 @@ import {
   deleteTopicFromBank,
   addTopicToBank,
   addMistake,
+  onMistakesUpdate,
+  updateMistake,
 } from "@/lib/dataService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -56,11 +57,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { NewStudyAssignmentForm } from "@/components/new-study-assignment-form";
 import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { EditMistakeForm } from "@/components/edit-mistake-form";
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
     'Atanmış Ödevler': Send,
+    'Yanlış Havuzu': AlertCircle,
     'Matematik': Ruler,
     'Fen Bilimleri': TestTube2,
     'Türkçe': BookCopy,
@@ -81,18 +84,20 @@ const newStudyPlanSchema = z.object({
 });
 
 
-function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, onDeleteBank, onOpenEditExam, onDeleteExam, onOpenEditTest, onArchiveTest, onDeleteTest }) {
+function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenEditBank, onDeleteBank, onOpenEditExam, onDeleteExam, onOpenEditTest, onArchiveTest, onDeleteTest, onOpenEditMistake }) {
     const { familyMembers } = useAuth();
 
     const contentByCategory = React.useMemo(() => {
-        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[] } } = {};
+        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[], mistakes: Mistake[] } } = {};
         
         const allTestCategories = new Set(tests.map(getCategoryName));
         const allSubjects = new Set(questionBanks.flatMap(qb => qb.subjects.map(s => s.name)));
+        const allMistakeSubjects = new Set(mistakes.map(m => m.subject || 'Diğer'));
         
         // Initialize all possible categories
-        new Set([...allTestCategories, ...allSubjects, 'Genel Deneme Sınavları']).forEach(cat => {
-            if (!categories[cat]) categories[cat] = { banks: [], exams: [], tests: [] };
+        const categorySet = new Set([...allTestCategories, ...allSubjects, ...allMistakeSubjects, 'Genel Deneme Sınavları', 'Yanlış Havuzu']);
+        categorySet.forEach(cat => {
+            if (!categories[cat]) categories[cat] = { banks: [], exams: [], tests: [], mistakes: [] };
         });
         
         questionBanks.forEach(bank => {
@@ -117,16 +122,24 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
                 categories[category].tests.push(test);
             }
         });
+        
+        mistakes.forEach(mistake => {
+            const category = mistake.subject || 'Yanlış Havuzu';
+            if (!categories[category]) {
+                categories[category] = { banks: [], exams: [], tests: [], mistakes: [] };
+            }
+            categories[category].mistakes.push(mistake);
+        })
 
 
         return categories;
-    }, [questionBanks, practiceExams, tests]);
+    }, [questionBanks, practiceExams, tests, mistakes]);
 
     return (
         <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
             {Object.entries(contentByCategory).map(([category, content]) => {
                 const Icon = categoryIcons[category] || BookCopy;
-                const totalCount = content.banks.length + content.exams.length + content.tests.length;
+                const totalCount = content.banks.length + content.exams.length + content.tests.length + content.mistakes.length;
                 
                 if (totalCount === 0) return null;
 
@@ -144,6 +157,24 @@ function ContentLibrary({ questionBanks, practiceExams, tests, onOpenEditBank, o
                             </AccordionTrigger>
                             <AccordionContent className="p-4 pt-0">
                                 <div className="space-y-3">
+                                    {content.mistakes.map(mistake => {
+                                        const student = familyMembers.find(m => m.id === mistake.creatorId);
+                                        return (
+                                            <Card key={mistake.id} className="p-3">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-semibold">{mistake.subject} - {mistake.topic}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Öğrenci: {student?.name || '?'} - Oluşturulma: {format(parseISO(mistake.createdAt), 'dd.MM.yy')}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Button variant="ghost" size="icon" onClick={() => onOpenEditMistake(mistake)}><Edit className="w-4 h-4"/></Button>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        )
+                                    })}
                                     {content.banks.map(bank => (
                                         <Card key={bank.id} className="p-3">
                                             <div className="flex justify-between items-center">
@@ -664,16 +695,20 @@ export default function EducationManagementPage() {
     const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
     const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
     const [tests, setTests] = React.useState<Test[]>([]);
+    const [mistakes, setMistakes] = React.useState<Mistake[]>([]);
     const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
     
     const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
     const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
     const [isTestDialogOpen, setIsTestDialogOpen] = React.useState(false);
     const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
+    const [isMistakeDialogOpen, setIsMistakeDialogOpen] = React.useState(false);
+
 
     const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
     const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
     const [editingTest, setEditingTest] = React.useState<Test | null>(null);
+    const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
     
     const studentMembers = React.useMemo(() => 
@@ -685,11 +720,14 @@ export default function EducationManagementPage() {
         const unsubExams = onPracticeExamsUpdate(setPracticeExams);
         const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
         const unsubTests = onTestsUpdate(setTests);
+        const unsubMistakes = onMistakesUpdate(setMistakes);
+
         return () => {
             unsubBanks();
             unsubExams();
             unsubSubjects();
             unsubTests();
+            unsubMistakes();
         };
     }, []);
 
@@ -785,6 +823,11 @@ export default function EducationManagementPage() {
     const openEditTestDialog = (test: Test) => {
         setEditingTest(test);
         setIsTestDialogOpen(true);
+    }
+    
+    const openEditMistakeDialog = (mistake: Mistake) => {
+        setEditingMistake(mistake);
+        setIsMistakeDialogOpen(true);
     }
 
     const openGradeDialog = (test: Test) => {
@@ -930,6 +973,12 @@ export default function EducationManagementPage() {
             toast({ title: "❌ Değerlendirme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive' });
         }
     };
+    
+    const handleMistakeFormSubmit = async () => {
+        setIsMistakeDialogOpen(false);
+        setEditingMistake(null);
+        toast({title: "Geri Bildirim Kaydedildi"});
+    };
 
     return (
         <>
@@ -991,10 +1040,7 @@ export default function EducationManagementPage() {
                                                     <AlertDialogTitle>Ödevi sil?</AlertDialogTitle>
                                                     <AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription>
                                                 </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
-                                                </AlertDialogFooter>
+                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                      </div>
@@ -1030,6 +1076,7 @@ export default function EducationManagementPage() {
                         questionBanks={questionBanks}
                         practiceExams={practiceExams}
                         tests={tests}
+                        mistakes={mistakes}
                         onOpenEditBank={openEditBankDialog}
                         onDeleteBank={handleDeleteBank}
                         onOpenEditExam={openEditExamDialog}
@@ -1037,6 +1084,7 @@ export default function EducationManagementPage() {
                         onOpenEditTest={openEditTestDialog}
                         onArchiveTest={handleArchiveTest}
                         onDeleteTest={handleDeleteTest}
+                        onOpenEditMistake={openEditMistakeDialog}
                     />
                 </TabsContent>
                 <TabsContent value="curriculum" className="mt-4">
@@ -1101,8 +1149,20 @@ export default function EducationManagementPage() {
                     )}
                 </DialogContent>
             </Dialog>
+            
+            <Dialog open={isMistakeDialogOpen} onOpenChange={setIsMistakeDialogOpen}>
+                <DialogContent>
+                     {editingMistake && (
+                        <EditMistakeForm 
+                            mistake={editingMistake}
+                            onFormSubmit={handleMistakeFormSubmit}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
 
+    
     
