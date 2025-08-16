@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -74,6 +75,7 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
                         id: qId,
                         studentAnswer: studentAnswers[qId] || "",
                         qNum: qId,
+                        imageUrl: test.questions?.find(q => q.questionNumber === i)?.imageUrl
                      });
                  }
             }
@@ -221,3 +223,4 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
         </Form>
     );
 }
+

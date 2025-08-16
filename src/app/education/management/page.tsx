@@ -39,7 +39,8 @@ import {
   addStudyAssignment,
   deleteStudyAssignment,
   deleteTopicFromBank,
-  addTopicToBank
+  addTopicToBank,
+  addMistake,
 } from "@/lib/dataService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -892,6 +893,31 @@ export default function EducationManagementPage() {
                 score: score,
                 studentTextAnswersEvaluation: gradeData.evaluations,
             };
+            
+            // Create mistake entries for incorrect/empty questions
+            const questionImageUrls = gradingTest.questions?.reduce((acc, q) => {
+                if(q.imageUrl) acc[q.questionNumber] = q.imageUrl;
+                return acc;
+            }, {} as Record<number, string>);
+
+            for (const qId in gradeData.evaluations) {
+                const status = gradeData.evaluations[qId];
+                if (status === 'incorrect' || status === 'empty') {
+                    const studentAnswer = gradingTest.studentTextAnswers?.[qId] || '(Boş)';
+                    const qNum = parseInt(qId, 10);
+                    const mistakeData = {
+                        creatorId: gradingTest.studentId,
+                        testId: gradingTest.id,
+                        originalQuestionId: qId,
+                        studentAnswer: studentAnswer,
+                        subject: gradingTest.subject,
+                        topic: gradingTest.title,
+                        createdAt: new Date().toISOString(),
+                        imageUrl: questionImageUrls?.[qNum] || gradeData.imageUrls?.[qId]
+                    };
+                    await addMistake(mistakeData);
+                }
+            }
 
             await updateTest(gradingTest.id, updatedData);
             await checkAndAwardBadges(gradingTest.studentId, familyId, { type: 'test_completed', test: { ...gradingTest, ...updatedData } });
@@ -900,6 +926,7 @@ export default function EducationManagementPage() {
             setIsGradeDialogOpen(false);
             setGradingTest(null);
         } catch (error) {
+            console.error("Error grading test:", error);
             toast({ title: "❌ Değerlendirme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive' });
         }
     };
