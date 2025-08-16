@@ -615,12 +615,12 @@ export default function ArchiveClient() {
                                 </FormItem>
                             )}
                         />
+                         <DialogFooter>
+                            <Button variant="ghost" onClick={() => setEditingShelf(null)}>İptal</Button>
+                            <Button type="submit" form="shelf-form">Kaydet</Button>
+                        </DialogFooter>
                     </form>
                 </Form>
-                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => setEditingShelf(null)}>İptal</Button>
-                    <Button type="submit" form="shelf-form">Kaydet</Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
 
