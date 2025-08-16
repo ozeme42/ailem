@@ -506,6 +506,7 @@ export default function NotebookClient() {
                                 onKeyDown={e => e.key === 'Enter' && (editingFolder ? handleUpdateFolder() : handleAddNewFolder())}
                             />
                             <DialogFooter>
+                                <Button type="button" variant="ghost" onClick={() => setIsFolderDialogOpen(false)}>İptal</Button>
                                 <Button onClick={editingFolder ? handleUpdateFolder : handleAddNewFolder}>
                                     {editingFolder ? 'Güncelle' : 'Oluştur'}
                                 </Button>
@@ -518,7 +519,10 @@ export default function NotebookClient() {
       </Tabs>
       
       <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-        <DialogContent><DialogHeader><DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm Ekle"}</DialogTitle></DialogHeader>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm Ekle"}</DialogTitle>
+            </DialogHeader>
             <div className="grid gap-4 py-4">
                 <Input placeholder="Bölüm adı" value={sectionFormData.title} onChange={(e) => setSectionFormData(prev => ({ ...prev, title: e.target.value }))} onKeyDown={(e) => { if(e.key === 'Enter') handleSaveSection()}} />
                 <div className="flex flex-wrap gap-2">
@@ -527,7 +531,10 @@ export default function NotebookClient() {
                     ))}
                 </div>
             </div>
-            <DialogFooter><Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button><Button onClick={handleSaveSection}>Kaydet</Button></DialogFooter>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
+                <Button onClick={handleSaveSection}>Kaydet</Button>
+            </DialogFooter>
         </DialogContent>
      </Dialog>
      <NoteEditForm 
