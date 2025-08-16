@@ -94,37 +94,34 @@ export default function MistakePoolDashboardPage() {
     };
     
    const groupedMistakes = React.useMemo(() => {
-    const grouped: { [key: string]: { type: 'test' | 'manual'; title: string; studentName?: string; mistakes: Mistake[] } } = {};
+        const grouped: { [key: string]: { type: 'test' | 'manual'; title: string; studentName?: string; mistakes: Mistake[] } } = {};
 
-    allMistakes.forEach(mistake => {
-        let key: string;
-        let groupTitle: string;
-        let type: 'test' | 'manual';
-        let studentName: string | undefined;
+        allMistakes.forEach(mistake => {
+            let key: string;
+            let groupTitle: string;
+            let type: 'test' | 'manual';
+            let studentName: string | undefined;
 
-        if (mistake.testId) {
-            key = `test-${mistake.testId}`;
-            const testInfo = allTests.find(t => t.id === mistake.testId);
-            groupTitle = testInfo?.title || `Bilinmeyen Test (${mistake.testId.substring(0, 5)})`;
-            studentName = familyMembers.find(m => m.id === testInfo?.creatorId)?.name;
-            type = 'test';
-        } else {
-            // Group manually added mistakes by subject
-            key = `manual-${mistake.subject || 'Diğer'}`;
-            groupTitle = `Manuel Eklenenler: ${mistake.subject || 'Diğer'}`;
-            type = 'manual';
-            studentName = familyMembers.find(m => m.id === mistake.creatorId)?.name;
-        }
+            if (mistake.testId) {
+                key = `test-${mistake.testId}`;
+                const testInfo = allTests.find(t => t.id === mistake.testId);
+                groupTitle = testInfo?.title || `Bilinmeyen Test (${mistake.testId.substring(0, 5)})`;
+                studentName = familyMembers.find(m => m.id === testInfo?.creatorId)?.name;
+                type = 'test';
+            } else {
+                key = `manual-${mistake.subject || 'Diğer'}`;
+                groupTitle = `Manuel Eklenenler: ${mistake.subject || 'Diğer'}`;
+                type = 'manual';
+                studentName = familyMembers.find(m => m.id === mistake.creatorId)?.name;
+            }
 
-        if (!grouped[key]) {
-            grouped[key] = { type, title: groupTitle, studentName, mistakes: [] };
-        }
-        grouped[key].mistakes.push(mistake);
-    });
-
-    return Object.entries(grouped)
-        .map(([id, data]) => ({ id, ...data }))
-        .sort((a, b) => a.title.localeCompare(b.title));
+            if (!grouped[key]) {
+                grouped[key] = { type, title: groupTitle, studentName, mistakes: [] };
+            }
+            grouped[key].mistakes.push(mistake);
+        });
+        
+        return Object.values(grouped).sort((a,b) => a.title.localeCompare(b.title));
     }, [allMistakes, allTests, familyMembers]);
     
     return (
@@ -167,10 +164,10 @@ export default function MistakePoolDashboardPage() {
             </PageHeader>
             
             {groupedMistakes.length > 0 ? (
-                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={groupedMistakes.map(g => g.id)}>
+                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={groupedMistakes.map(g => g.title)}>
                     {groupedMistakes.map(group => {
                         return (
-                            <AccordionItem key={group.id} value={group.id} className="border-b-0">
+                            <AccordionItem key={group.title} value={group.title} className="border-b-0">
                                 <Card>
                                     <AccordionTrigger className="p-4 hover:no-underline">
                                          <div className="flex items-center gap-3 w-full">
