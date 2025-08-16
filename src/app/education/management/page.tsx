@@ -90,33 +90,42 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
 
     const contentByCategory = React.useMemo(() => {
         const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[], mistakes: Mistake[] } } = {};
-        
-        const allTestCategories = new Set(tests.map(getCategoryName));
-        const allSubjects = new Set(questionBanks.flatMap(qb => qb.subjects.map(s => s.name)));
-        const allMistakeSubjects = new Set(mistakes.map(m => m.subject || 'Diğer'));
-        
-        // Initialize all possible categories
-        const categorySet = new Set([...allTestCategories, ...allSubjects, ...allMistakeSubjects, 'Genel Deneme Sınavları', 'Yanlış Havuzu']);
-        categorySet.forEach(cat => {
-            if (!categories[cat]) categories[cat] = { banks: [], exams: [], tests: [], mistakes: [] };
+
+        const initializeCategory = (name: string) => {
+            if (!categories[name]) {
+                categories[name] = { banks: [], exams: [], tests: [], mistakes: [] };
+            }
+        };
+
+        // Initialize all subject categories from question banks
+        questionBanks.forEach(bank => {
+            bank.subjects.forEach(subject => initializeCategory(subject.name));
         });
+
+        // Initialize all test categories
+        tests.forEach(test => initializeCategory(getCategoryName(test)));
         
+        // Initialize static categories
+        initializeCategory('Genel Deneme Sınavları');
+        if (mistakes.length > 0) {
+            initializeCategory('Yanlış Havuzu');
+        }
+
+        // Populate question banks
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
-                 if (categories[subject.name]) {
-                    if (!categories[subject.name].banks.find(b => b.id === bank.id)) {
-                        categories[subject.name].banks.push(bank);
-                    }
+                if (categories[subject.name] && !categories[subject.name].banks.find(b => b.id === bank.id)) {
+                    categories[subject.name].banks.push(bank);
                 }
             });
         });
-
-        practiceExams.forEach(exam => {
-            if (categories['Genel Deneme Sınavları']) {
-               categories['Genel Deneme Sınavları'].exams.push(exam);
-            }
-        });
         
+        // Populate practice exams
+        practiceExams.forEach(exam => {
+            categories['Genel Deneme Sınavları'].exams.push(exam);
+        });
+
+        // Populate active tests
         tests.filter(t => !t.isArchived).forEach(test => {
             const category = getCategoryName(test);
             if (categories[category]) {
@@ -124,14 +133,10 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
             }
         });
         
-        mistakes.forEach(mistake => {
-            const category = mistake.subject || 'Yanlış Havuzu';
-            if (!categories[category]) {
-                categories[category] = { banks: [], exams: [], tests: [], mistakes: [] };
-            }
-            categories[category].mistakes.push(mistake);
-        })
-
+        // Populate all mistakes into the central "Yanlış Havuzu" category
+        if (categories['Yanlış Havuzu']) {
+             categories['Yanlış Havuzu'].mistakes.push(...mistakes);
+        }
 
         return categories;
     }, [questionBanks, practiceExams, tests, mistakes]);
