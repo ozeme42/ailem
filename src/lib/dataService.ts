@@ -172,7 +172,7 @@ export const onSingleUserLibraryUpdate = (memberId: string, callback: (library: 
     return onAuthStateChanged(auth, async (user) => {
         if (user) {
             const familyId = await getCurrentFamilyId();
-            if (familyId) {
+            if (familyId && memberId) {
                 const libraryId = `${familyId}_${memberId}`;
                 const docRef = doc(db, 'userLibraries', libraryId);
                 return onSnapshot(docRef, (docSnap) => {
@@ -1214,19 +1214,25 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         const batch = writeBatch(db);
         const incorrectOrEmptyQuestions: { qNum: string; studentAnswer: string; imageUrl?: string; }[] = [];
 
+        // Fetch original mistake data if the test is from the mistake pool
+        const originalMistakesMap = new Map<string, Mistake>();
         if (test.sourceType === 'mistake' && test.mistakeIds) {
             const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-            mistakeDocs.forEach((mistakeDoc, i) => {
-                if (mistakeDoc.exists()) {
-                    const mistake = mistakeDoc.data() as Mistake;
-                    const evaluation = test.studentTextAnswersEvaluation?.[mistake.id];
-                    if (evaluation === 'incorrect' || evaluation === 'empty') {
-                        incorrectOrEmptyQuestions.push({
-                            qNum: (i + 1).toString(),
-                            studentAnswer: test.studentTextAnswers?.[mistake.id] || '(Boş)',
-                            imageUrl: mistake.imageUrl,
-                        });
-                    }
+            mistakeDocs.forEach(doc => {
+                if (doc.exists()) {
+                    originalMistakesMap.set(doc.id, { id: doc.id, ...doc.data() } as Mistake);
+                }
+            });
+
+            test.mistakeIds.forEach((mistakeId, i) => {
+                const evaluation = test.studentTextAnswersEvaluation?.[mistakeId];
+                if (evaluation === 'incorrect' || evaluation === 'empty') {
+                    const originalMistake = originalMistakesMap.get(mistakeId);
+                    incorrectOrEmptyQuestions.push({
+                        qNum: (i + 1).toString(),
+                        studentAnswer: test.studentTextAnswers?.[mistakeId] || '(Boş)',
+                        imageUrl: originalMistake?.imageUrl, // Carry over the image URL
+                    });
                 }
             });
         }
@@ -1258,7 +1264,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 topic: test.title,
                 createdAt: new Date().toISOString(),
                 status: 'active',
-                imageUrl: q.imageUrl,
+                imageUrl: q.imageUrl, // Save the carried-over image URL
             };
             batch.set(mistakeRef, removeUndefined(newMistake));
         });
