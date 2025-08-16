@@ -1206,7 +1206,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
     const testDocRef = doc(db, 'tests', id);
     const cleanedData = removeUndefined(updateData);
     await updateDoc(testDocRef, cleanedData);
-    
+
     if (cleanedData.status === 'Sonuçlandı') {
         const testSnap = await getDoc(testDocRef);
         if (!testSnap.exists()) return;
@@ -1215,7 +1215,11 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         if (!test.familyId) return;
 
         const batch = writeBatch(db);
-        const incorrectOrEmptyQuestions: { qNum: string; studentAnswer: string; imageUrl?: string; }[] = [];
+        const incorrectOrEmptyQuestions: {
+            qNum: string;
+            studentAnswer: string;
+            imageUrl?: string; // Add this
+        }[] = [];
 
         // Fetch original mistake data if the test is from the mistake pool
         const originalMistakesMap = new Map<string, Mistake>();
@@ -1226,35 +1230,32 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                     originalMistakesMap.set(doc.id, { id: doc.id, ...doc.data() } as Mistake);
                 }
             });
+        }
+        
+        const evaluations = test.studentTextAnswersEvaluation || {};
+        const studentAnswers = test.studentTextAnswers || {};
+        const imageFileUrls = (updateData as any).imageUrls || {}; // Get uploaded image URLs from form data
 
-            test.mistakeIds.forEach((mistakeId, i) => {
-                const evaluation = test.studentTextAnswersEvaluation?.[mistakeId];
-                if (evaluation === 'incorrect' || evaluation === 'empty') {
-                    const originalMistake = originalMistakesMap.get(mistakeId);
-                    incorrectOrEmptyQuestions.push({
-                        qNum: (i + 1).toString(),
-                        studentAnswer: test.studentTextAnswers?.[mistakeId] || '(Boş)',
-                        imageUrl: originalMistake?.imageUrl, // Carry over the image URL
-                    });
-                     batch.update(doc(db, 'mistakes', mistakeId), { status: 'corrected' });
-                }
-            });
-        }
-        else if (test.gradingType === 'auto' && test.answerKey) {
-            for (let i = 1; i <= test.questionCount; i++) {
-                const qNum = i.toString();
-                if (test.studentAnswers?.[qNum] !== test.answerKey[qNum]) {
-                    incorrectOrEmptyQuestions.push({ qNum: qNum, studentAnswer: test.studentAnswers?.[qNum] || "(Boş)" });
-                }
-            }
-        } 
-        else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
-             for (const qId in test.studentTextAnswersEvaluation) {
-                if (test.studentTextAnswersEvaluation[qId] === 'incorrect' || test.studentTextAnswersEvaluation[qId] === 'empty') {
-                    incorrectOrEmptyQuestions.push({ qNum: qId, studentAnswer: test.studentTextAnswers?.[qId] || "(Boş)" });
+        const questionIdentifiers = test.sourceType === 'mistake'
+            ? test.mistakeIds || []
+            : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
+
+        questionIdentifiers.forEach((qId, index) => {
+            const status = evaluations[qId];
+            if (status === 'incorrect' || status === 'empty') {
+                const originalMistake = originalMistakesMap.get(qId);
+                const newImageUrl = imageFileUrls[qId]; // Check for newly uploaded image
+                
+                incorrectOrEmptyQuestions.push({
+                    qNum: (index + 1).toString(),
+                    studentAnswer: studentAnswers[qId] || '(Boş)',
+                    imageUrl: newImageUrl || originalMistake?.imageUrl, // Prioritize new image, fall back to old one
+                });
+                if (test.sourceType === 'mistake') {
+                    batch.update(doc(db, 'mistakes', qId), { status: 'corrected' });
                 }
             }
-        }
+        });
 
         incorrectOrEmptyQuestions.forEach(q => {
              const mistakeRef = doc(collection(db, 'mistakes'));
@@ -1268,7 +1269,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 topic: test.title,
                 createdAt: new Date().toISOString(),
                 status: 'active',
-                imageUrl: q.imageUrl, // Save the carried-over image URL
+                imageUrl: q.imageUrl,
             };
             batch.set(mistakeRef, removeUndefined(newMistake));
         });
@@ -1278,7 +1279,6 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         }
     }
 };
-
 
 
 // Ambient Sounds
