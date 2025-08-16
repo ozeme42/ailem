@@ -85,7 +85,7 @@ const newStudyPlanSchema = z.object({
 });
 
 
-function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenEditBank, onDeleteBank, onOpenEditExam, onDeleteExam, onOpenEditTest, onArchiveTest, onDeleteTest, onOpenEditMistake }) {
+function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenEditBank, onDeleteBank, onOpenEditExam, onDeleteExam, onOpenEditTest, onArchiveTest, onDeleteTest, onOpenEditMistake }: { questionBanks: QuestionBank[], practiceExams: PracticeExam[], tests: Test[], mistakes: Mistake[], onOpenEditBank: (bank: QuestionBank) => void, onDeleteBank: (id: string) => void, onOpenEditExam: (exam: PracticeExam) => void, onDeleteExam: (id: string) => void, onOpenEditTest: (test: Test) => void, onArchiveTest: (test: Test) => void, onDeleteTest: (id: string) => void, onOpenEditMistake: (mistake: Mistake) => void }) {
     const { familyMembers } = useAuth();
 
     const contentByCategory = React.useMemo(() => {
@@ -122,6 +122,9 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
         
         // Populate practice exams
         practiceExams.forEach(exam => {
+            if (!categories['Genel Deneme Sınavları']) {
+                initializeCategory('Genel Deneme Sınavları');
+            }
             categories['Genel Deneme Sınavları'].exams.push(exam);
         });
 
@@ -134,7 +137,10 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
         });
         
         // Populate all mistakes into the central "Yanlış Havuzu" category
-        if (categories['Yanlış Havuzu']) {
+        if (mistakes.length > 0) {
+            if (!categories['Yanlış Havuzu']) {
+                initializeCategory('Yanlış Havuzu');
+            }
              categories['Yanlış Havuzu'].mistakes.push(...mistakes);
         }
 
@@ -273,13 +279,13 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
 const newSubjectSchema = z.object({
   name: z.string().min(2, "Ders adı en az 2 karakter olmalıdır."),
 });
-function NewSubjectDialog({ open, onOpenChange, onCreate }) {
+function NewSubjectDialog({ open, onOpenChange, onCreate }: { open: boolean, onOpenChange: (open: boolean) => void, onCreate: (name: string) => void }) {
   const form = useForm({
     resolver: zodResolver(newSubjectSchema),
     defaultValues: { name: "" },
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: z.infer<typeof newSubjectSchema>) => {
     onCreate(data.name);
     form.reset();
     onOpenChange(false);
@@ -328,7 +334,7 @@ function NewTopicDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
     defaultValues: { name: "" },
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: z.infer<typeof newTopicSchema>) => {
     onSave(data.name);
     form.reset();
     onOpenChange(false);
@@ -366,7 +372,7 @@ function NewTopicDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
   )
 }
 
-function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSubject, onCreateSubject, onDeleteTopic, onAddTopic }) {
+function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSubject, onCreateSubject, onDeleteTopic, onAddTopic }: { subjects: string[], questionBanks: QuestionBank[], onOpenEditBank: (bank: QuestionBank) => void, onDeleteSubject: (subject: string) => void, onCreateSubject: (subject: string) => void, onDeleteTopic: (bankId: string, subjectId: number, topicId: number) => void, onAddTopic: (subject: string, topic: string) => void}) {
     const [isNewSubjectDialogOpen, setIsNewSubjectDialogOpen] = React.useState(false);
     const [isNewTopicDialogOpen, setIsNewTopicDialogOpen] = React.useState(false);
     const [currentSubjectForNewTopic, setCurrentSubjectForNewTopic] = React.useState<string | null>(null);
@@ -943,8 +949,15 @@ export default function EducationManagementPage() {
                 studentTextAnswersEvaluation: gradeData.evaluations,
             };
             
+            const testDoc = await getDoc(doc(db, 'tests', gradingTest.id));
+            if (!testDoc.exists()) {
+                throw new Error("Değerlendirilecek test bulunamadı.");
+            }
+            const fullTest = { ...testDoc.data(), ...updatedData } as Test;
+
+
             // Create mistake entries for incorrect/empty questions
-            const questionImageUrls = gradingTest.questions?.reduce((acc, q) => {
+            const questionImageUrls = fullTest.questions?.reduce((acc, q) => {
                 if(q.imageUrl) acc[q.questionNumber] = q.imageUrl;
                 return acc;
             }, {} as Record<number, string>);
@@ -952,15 +965,15 @@ export default function EducationManagementPage() {
             for (const qId in gradeData.evaluations) {
                 const status = gradeData.evaluations[qId];
                 if (status === 'incorrect' || status === 'empty') {
-                    const studentAnswer = gradingTest.studentTextAnswers?.[qId] || '(Boş)';
+                    const studentAnswer = fullTest.studentTextAnswers?.[qId] || '(Boş)';
                     const qNum = parseInt(qId, 10);
                     const mistakeData = {
-                        creatorId: gradingTest.studentId,
-                        testId: gradingTest.id,
+                        creatorId: fullTest.studentId,
+                        testId: fullTest.id,
                         originalQuestionId: qId,
                         studentAnswer: studentAnswer,
-                        subject: gradingTest.subject,
-                        topic: gradingTest.title,
+                        subject: fullTest.subject,
+                        topic: fullTest.title,
                         createdAt: new Date().toISOString(),
                         imageUrl: questionImageUrls?.[qNum] || gradeData.imageUrls?.[qId]
                     };
