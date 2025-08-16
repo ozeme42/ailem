@@ -173,7 +173,7 @@ export default function CategoryDetailPage() {
           <h3 className="text-xl font-bold">Atanmış Sınavlar</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTests.map((test) => {
-              const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
+              const hasMistakes = (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) || ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0);
               let buttonText = 'Sınava Gir';
               let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
               

@@ -307,8 +307,9 @@ export default function EducationPage() {
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
             tests.filter(test => test.status !== 'Değerlendirme Bekliyor').map(test => {
-                const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
+                const hasMistakes = (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) || ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0);
                 let button;
+
                  if (test.status === 'Sonuçlandı') {
                     if (hasMistakes) {
                         button = <Link href={`/education/${test.id}`}><Button variant="destructive"><Sparkles className="mr-2 h-4 w-4"/>Eksikleri Tamamla</Button></Link>;
