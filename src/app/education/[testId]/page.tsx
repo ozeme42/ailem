@@ -456,8 +456,10 @@ export default function OpticalFormPage() {
 
     const isInteractive = test.gradingType === 'auto' || test.gradingType === 'manual-text' || test.sourceType === 'mistake';
     const isMistakePoolTest = test.sourceType === 'mistake';
-    const currentQuestionNumber = currentQuestionIndex + 1;
+    const isQuickTestWithImages = test.sourceType === 'quick' && test.questions && test.questions.length > 0;
     
+    const currentQuestionNumber = currentQuestionIndex + 1;
+    const currentQuestion = isQuickTestWithImages ? test.questions?.find(q => q.questionNumber === currentQuestionNumber) : null;
     const currentMistakeQuestion = isMistakePoolTest ? mistakePoolQuestions[currentQuestionIndex] : null;
 
 
@@ -501,24 +503,20 @@ export default function OpticalFormPage() {
                             <CardDescription>{test.subject} - Soru {currentQuestionNumber} / {test.questionCount}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {isMistakePoolTest ? (
-                                currentMistakeQuestion && (
-                                    <div className="space-y-4">
-                                        {currentMistakeQuestion.imageUrl && (
-                                            <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
-                                        )}
-                                        <div className="flex-grow flex items-center gap-2">
-                                            <Input
-                                                placeholder="Cevabınızı buraya yazın..."
-                                                value={textAnswers[currentMistakeQuestion.id] || ""}
-                                                onChange={(e) => handleTextAnswerChange(currentMistakeQuestion.id, e.target.value)}
-                                                className="flex-grow"
-                                            />
-                                        </div>
-                                    </div>
-                                )
-                            ) : test.gradingType === 'auto' ? (
-                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
+                            {isQuickTestWithImages && currentQuestion?.imageUrl ? (
+                                <div className="space-y-4">
+                                     <Image src={currentQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
+                                </div>
+                            ) : isMistakePoolTest && currentMistakeQuestion ? (
+                                <div className="space-y-4">
+                                    {currentMistakeQuestion.imageUrl && (
+                                        <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
+                                    )}
+                                </div>
+                            ) : null}
+
+                            {test.gradingType === 'auto' ? (
+                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
                                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionNumber}</div>
                                     <RadioGroup
                                         value={mcqAnswers[currentQuestionNumber] || ""}
@@ -544,21 +542,21 @@ export default function OpticalFormPage() {
                                         ))}
                                     </RadioGroup>
                                  </div>
-                            ) : test.gradingType === 'manual-text' ? (
-                                <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
+                            ) : test.gradingType === 'manual-text' || isMistakePoolTest ? (
+                                <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionNumber}</div>
                                    <div className="flex-grow flex items-center gap-2">
                                         <Input
                                             placeholder="Cevabınızı buraya yazın..."
-                                            value={textAnswers[currentQuestionNumber] || ""}
-                                            onChange={(e) => handleTextAnswerChange(currentQuestionNumber.toString(), e.target.value)}
+                                            value={textAnswers[currentMistakeQuestion?.id || currentQuestionNumber] || ""}
+                                            onChange={(e) => handleTextAnswerChange(currentMistakeQuestion?.id || currentQuestionNumber.toString(), e.target.value)}
                                             className="flex-grow"
                                         />
                                         <Button 
                                             size="icon" 
                                             variant="ghost"
-                                            onClick={() => handleSaveSingleAnswer(currentQuestionNumber.toString())}
-                                            disabled={!dirtyTextAnswers.has(currentQuestionNumber.toString())}
+                                            onClick={() => handleSaveSingleAnswer(currentMistakeQuestion?.id || currentQuestionNumber.toString())}
+                                            disabled={!dirtyTextAnswers.has(currentMistakeQuestion?.id || currentQuestionNumber.toString())}
                                             aria-label="Cevabı Kaydet"
                                         >
                                             <Save className="h-4 w-4" />

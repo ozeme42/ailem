@@ -179,7 +179,7 @@ export interface Goal {
     assigneeId: string;
     title: string;
     description?: string;
-    createdAt: string; // ISO String
+    createdAt: string; // ISO string
     status: 'in-progress' | 'completed';
     sections: GoalSection[];
     // Fields for editing
@@ -323,6 +323,11 @@ export type GradingType = 'auto' | 'manual-text' | 'manual';
 export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
 export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
 
+export interface QuickTestQuestion {
+  questionNumber: number;
+  imageUrl?: string | null;
+  // Add other fields like 'text' if needed later
+}
 
 export interface Test {
   id: string;
@@ -335,10 +340,11 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
   isArchived: boolean;
-  sourceType: 'quick' | 'bank' | 'exam';
+  sourceType: 'quick' | 'bank' | 'exam' | 'mistake';
   gradingType?: GradingType;
   sourceId?: string;
   topicId?: string;
+  mistakeIds?: string[]; // For mistake-pool generated tests
   score?: number;
   correctAnswers?: number;
   incorrectAnswers?: number;
@@ -350,6 +356,7 @@ export interface Test {
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   remainingQuestions?: string[]; // Array of question numbers to be re-answered
+  questions?: QuickTestQuestion[]; // For image-based quick tests
 }
 
 export interface Topic {
