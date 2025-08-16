@@ -975,7 +975,8 @@ export default function EducationManagementPage() {
                         subject: fullTest.subject,
                         topic: fullTest.title,
                         createdAt: new Date().toISOString(),
-                        imageUrl: questionImageUrls?.[qNum] || gradeData.imageUrls?.[qId]
+                        imageUrl: questionImageUrls?.[qNum],
+                        correctImageUrl: gradeData.imageUrls?.[qId]
                     };
                     await addMistake(mistakeData);
                 }
