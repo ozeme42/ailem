@@ -166,14 +166,28 @@ export default function OpticalFormPage() {
     };
     
      const startRetake = async () => {
-        if (!test || !test.remainingMistakeIds) return;
+        if (!test) return;
+
+        let mistakesToRetake: Mistake[] = [];
+
+        if (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) {
+            const mistakeDocs = await Promise.all(test.remainingMistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
+            mistakesToRetake = mistakeDocs
+                .filter(d => d.exists())
+                .map(d => ({ id: d.id, ...d.data() } as Mistake));
+        } else {
+            // Fallback for automatically graded tests that don't have remainingMistakeIds yet
+            const mistakesQuery = query(collection(db, 'mistakes'), where('testId', '==', test.id), where('status', '==', 'active'));
+            const querySnapshot = await getDocs(mistakesQuery);
+            mistakesToRetake = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
+        }
         
-        const mistakeDocs = await Promise.all(test.remainingMistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-        const mistakesData = mistakeDocs
-            .filter(d => d.exists())
-            .map(d => ({ id: d.id, ...d.data() } as Mistake));
-            
-        setRetakeQuestions(mistakesData);
+        if (mistakesToRetake.length === 0) {
+            toast({ title: 'Tebrikler!', description: 'Bu testte tamamlanacak eksik soru bulunmuyor.' });
+            return;
+        }
+
+        setRetakeQuestions(mistakesToRetake);
         setViewMode('retake_test');
         setCurrentQuestionIndex(0);
     };
@@ -282,7 +296,7 @@ export default function OpticalFormPage() {
     }
 
     if (viewMode === 'results') {
-        const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
+        const hasMistakes = (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) || ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0);
         return (
             <div className="container mx-auto py-8 space-y-6">
                 <header className="mb-4">
@@ -310,7 +324,7 @@ export default function OpticalFormPage() {
                         {hasMistakes && (
                              <Button className="w-full" size="lg" onClick={startRetake}>
                                 <Sparkles className="mr-2 h-5 w-5"/>
-                                Eksiklerini Tamamla ({test.remainingMistakeIds?.length} Soru)
+                                Eksiklerini Tamamla ({test.remainingMistakeIds?.length || (test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
                             </Button>
                         )}
                          {!hasMistakes && test.status === 'Sonuçlandı' && (
