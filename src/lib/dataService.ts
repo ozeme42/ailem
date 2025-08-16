@@ -1218,6 +1218,22 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         const batch = writeBatch(db);
         const mistakeIdsToRetake: string[] = [];
 
+        // Common function to create mistake data
+        const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
+            return {
+                familyId: test.familyId,
+                creatorId: test.studentId,
+                testId: id,
+                originalQuestionId: questionId,
+                studentAnswer: studentAnswer || '(Boş)',
+                subject: test.subject,
+                topic: test.title,
+                createdAt: new Date().toISOString(),
+                status: 'active' as const,
+                imageUrl: imageUrl,
+            };
+        };
+
         // Logic for auto-graded tests (MCQ)
         if (test.gradingType === 'auto' && test.answerKey && test.studentAnswers) {
             for (const qNumStr in test.answerKey) {
@@ -1225,19 +1241,8 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 const correctAnswer = test.answerKey[qNum];
                 const studentAnswer = test.studentAnswers[qNum];
                 if (studentAnswer !== correctAnswer) {
-                    const questionImage = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
-                    const mistakeData = {
-                        familyId: test.familyId,
-                        creatorId: test.studentId,
-                        testId: id,
-                        originalQuestionId: qNumStr,
-                        studentAnswer: studentAnswer || '(Boş)',
-                        subject: test.subject,
-                        topic: test.title,
-                        createdAt: new Date().toISOString(),
-                        status: 'active' as const,
-                        imageUrl: questionImage,
-                    };
+                    const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
+                    const mistakeData = createMistakeData(qNumStr, studentAnswer, imageUrl);
                     const mistakeRef = doc(collection(db, 'mistakes'));
                     batch.set(mistakeRef, removeUndefined(mistakeData));
                     mistakeIdsToRetake.push(mistakeRef.id);
@@ -1246,25 +1251,14 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         }
         
         // Logic for manually graded text-based tests
-        else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
-            const studentAnswers = test.studentTextAnswers || {};
-            
+        else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation && test.studentTextAnswers) {
             for (const qId in test.studentTextAnswersEvaluation) {
                 const status = test.studentTextAnswersEvaluation[qId];
                 if (status === 'incorrect' || status === 'empty') {
                     const qNum = parseInt(qId, 10);
-                    const mistakeData = {
-                        familyId: test.familyId,
-                        creatorId: test.studentId,
-                        testId: id,
-                        originalQuestionId: qId,
-                        studentAnswer: studentAnswers[qId] || '(Boş)',
-                        subject: test.subject,
-                        topic: test.title,
-                        createdAt: new Date().toISOString(),
-                        status: 'active' as const,
-                        imageUrl: test.questions?.find(q => q.questionNumber === qNum)?.imageUrl,
-                    };
+                    const studentAnswer = test.studentTextAnswers[qId] || '(Boş)';
+                    const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
+                    const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
                     const mistakeRef = doc(collection(db, 'mistakes'));
                     batch.set(mistakeRef, removeUndefined(mistakeData));
                     mistakeIdsToRetake.push(mistakeRef.id);
