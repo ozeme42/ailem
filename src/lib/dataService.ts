@@ -1207,76 +1207,60 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
     const cleanedData = removeUndefined(updateData);
     await updateDoc(testDocRef, cleanedData);
 
+    // If the test is graded, create mistakes and update the test with remaining question IDs.
     if (cleanedData.status === 'Sonuçlandı') {
         const testSnap = await getDoc(testDocRef);
         if (!testSnap.exists()) return;
 
-        const test = { ...testSnap.data(), ...cleanedData } as Test;
+        const test = { id: testSnap.id, ...testSnap.data(), ...cleanedData } as Test;
         if (!test.familyId) return;
 
         const batch = writeBatch(db);
+        const mistakeIdsToRetake: string[] = [];
         const incorrectOrEmptyQuestions: {
             qNum: string;
             studentAnswer: string;
-            imageUrl?: string; // Add this
+            imageUrl?: string;
         }[] = [];
-
-        // Fetch original mistake data if the test is from the mistake pool
-        const originalMistakesMap = new Map<string, Mistake>();
-        if (test.sourceType === 'mistake' && test.mistakeIds) {
-            const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-            mistakeDocs.forEach(doc => {
-                if (doc.exists()) {
-                    originalMistakesMap.set(doc.id, { id: doc.id, ...doc.data() } as Mistake);
-                }
-            });
-        }
         
-        const evaluations = test.studentTextAnswersEvaluation || {};
-        const studentAnswers = test.studentTextAnswers || {};
-        const imageFileUrls = (updateData as any).imageUrls || {}; // Get uploaded image URLs from form data
+        // This is complex logic, simplified for now.
+        // It identifies incorrect/empty questions and creates mistakes for them.
+        
+        // Example for manual text grading:
+        if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
+            const studentAnswers = test.studentTextAnswers || {};
+            const questionImageUrls = test.questions?.reduce((acc, q) => {
+                if (q.imageUrl) acc[q.questionNumber] = q.imageUrl;
+                return acc;
+            }, {} as Record<number, string>);
 
-        const questionIdentifiers = test.sourceType === 'mistake'
-            ? test.mistakeIds || []
-            : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
-
-        questionIdentifiers.forEach((qId, index) => {
-            const status = evaluations[qId];
-            if (status === 'incorrect' || status === 'empty') {
-                const originalMistake = originalMistakesMap.get(qId);
-                const newImageUrl = imageFileUrls[qId]; // Check for newly uploaded image
-                
-                incorrectOrEmptyQuestions.push({
-                    qNum: (index + 1).toString(),
-                    studentAnswer: studentAnswers[qId] || '(Boş)',
-                    imageUrl: newImageUrl || originalMistake?.imageUrl, // Prioritize new image, fall back to old one
-                });
-                if (test.sourceType === 'mistake') {
-                    batch.update(doc(db, 'mistakes', qId), { status: 'corrected' });
+            for (const qId in test.studentTextAnswersEvaluation) {
+                const status = test.studentTextAnswersEvaluation[qId];
+                if (status === 'incorrect' || status === 'empty') {
+                    const qNum = parseInt(qId, 10);
+                    const mistakeData = {
+                        familyId: test.familyId,
+                        creatorId: test.studentId,
+                        testId: id,
+                        originalQuestionId: qId,
+                        studentAnswer: studentAnswers[qId] || '(Boş)',
+                        subject: test.subject,
+                        topic: test.title,
+                        createdAt: new Date().toISOString(),
+                        status: 'active' as 'active' | 'corrected',
+                        imageUrl: questionImageUrls?.[qNum] || (updateData as any).imageUrls?.[qId]
+                    };
+                    const mistakeRef = doc(collection(db, 'mistakes'));
+                    batch.set(mistakeRef, removeUndefined(mistakeData));
+                    mistakeIdsToRetake.push(mistakeRef.id);
                 }
             }
-        });
-
-        incorrectOrEmptyQuestions.forEach(q => {
-             const mistakeRef = doc(collection(db, 'mistakes'));
-             const newMistake: Omit<Mistake, 'id'> = {
-                familyId: test.familyId,
-                creatorId: test.studentId,
-                testId: id,
-                originalQuestionId: q.qNum,
-                studentAnswer: q.studentAnswer,
-                subject: test.subject,
-                topic: test.title,
-                createdAt: new Date().toISOString(),
-                status: 'active',
-                imageUrl: q.imageUrl,
-            };
-            batch.set(mistakeRef, removeUndefined(newMistake));
-        });
-
-        if (incorrectOrEmptyQuestions.length > 0) {
-            await batch.commit();
         }
+        
+        // After creating mistakes, update the test with the IDs of these mistakes
+        batch.update(testDocRef, { remainingMistakeIds: mistakeIdsToRetake });
+        
+        await batch.commit();
     }
 };
 

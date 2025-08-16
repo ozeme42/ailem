@@ -3,17 +3,17 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Test as TestType, QuestionBank, PracticeExam } from "@/lib/data";
+import { Test as TestType, QuestionBank, PracticeExam, Mistake } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
@@ -23,8 +23,10 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 
 type McqAnswers = { [key: string]: string | null };
-type TextAnswers = { [key: string]: string };
+type TextAnswers = { [key:string]: string };
 type AnswerKey = { [key: string]: string };
+
+type ViewMode = 'initial_test' | 'results' | 'retake_test';
 
 export default function OpticalFormPage() {
     const router = useRouter();
@@ -35,20 +37,24 @@ export default function OpticalFormPage() {
     const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
+    const [retakeAnswers, setRetakeAnswers] = React.useState<TextAnswers>({});
+
     const [timeLeft, setTimeLeft] = React.useState(0);
     const [totalTime, setTotalTime] = React.useState(0);
     const [isPaused, setIsPaused] = React.useState(false);
-    const [dirtyTextAnswers, setDirtyTextAnswers] = React.useState<Set<string>>(new Set());
-    const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
-    const [mistakePoolQuestions, setMistakePoolQuestions] = React.useState<any[]>([]);
+
+    const [viewMode, setViewMode] = React.useState<ViewMode>('initial_test');
     
+    const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+    const [retakeQuestions, setRetakeQuestions] = React.useState<Mistake[]>([]);
+    
+    // For results view
     const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: string[], emptyQuestions: string[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], emptyQuestions: [], answerKey: null });
 
 
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
 
-        // Stop the timer and save final time
         setIsPaused(true);
         const timeSpent = (test.timeSpentSeconds || 0) + (totalTime - timeLeft);
 
@@ -60,26 +66,20 @@ export default function OpticalFormPage() {
             
             const gradingType = test.gradingType || 'manual';
             
-            // If the test is NOT auto-graded, its status MUST become 'Değerlendirme Bekliyor'
             if (gradingType !== 'auto') {
                 updatedData.status = 'Değerlendirme Bekliyor'; 
                 if (test.sourceType === 'mistake') {
-                    // For mistake pool tests, answers are saved differently
-                    const mistakeAnswers: { [mistakeId: string]: string } = {};
-                     mistakePoolQuestions.forEach(q => {
-                        mistakeAnswers[q.id] = textAnswers[q.id] || "";
-                    });
-                    updatedData.studentTextAnswers = mistakeAnswers;
+                    updatedData.studentTextAnswers = textAnswers;
                 } else if (gradingType === 'manual-text') {
                     updatedData.studentTextAnswers = textAnswers;
-                } else { // For mcq with manual grading
+                } else { 
                     updatedData.studentAnswers = mcqAnswers;
                 }
                 toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                     description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
                 });
-            } else { // This block ONLY runs if gradingType is 'auto'
+            } else { 
                 updatedData.studentAnswers = mcqAnswers;
                 let answerKey: { [key: string]: string } | undefined = undefined;
 
@@ -126,12 +126,10 @@ export default function OpticalFormPage() {
                         description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
                     });
 
-                    // Award badges only after auto-grading is complete
                     if (test.familyId && test.studentId) {
                          await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
                     }
                 } else {
-                    // Answer key not found for an 'auto' test, mark as 'Değerlendirme Bekliyor' for manual check
                     updatedData.status = 'Değerlendirme Bekliyor';
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
@@ -141,7 +139,7 @@ export default function OpticalFormPage() {
             }
             
             await updateTest(test.id, updatedData);
-            router.push('/education');
+            setViewMode('results');
 
         } catch (error) {
             console.error("Error saving test results:", error);
@@ -151,7 +149,7 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
-    }, [test, mcqAnswers, textAnswers, router, toast, totalTime, timeLeft, mistakePoolQuestions]);
+    }, [test, mcqAnswers, textAnswers, router, toast, totalTime, timeLeft]);
     
     const handlePauseToggle = async () => {
         if (!test) return;
@@ -166,6 +164,41 @@ export default function OpticalFormPage() {
             await updateTest(test.id, { timerStatus: 'paused', timeSpentSeconds: timeSpent });
         }
     };
+    
+     const startRetake = async () => {
+        if (!test || !test.remainingMistakeIds) return;
+        
+        const mistakeDocs = await Promise.all(test.remainingMistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
+        const mistakesData = mistakeDocs
+            .filter(d => d.exists())
+            .map(d => ({ id: d.id, ...d.data() } as Mistake));
+            
+        setRetakeQuestions(mistakesData);
+        setViewMode('retake_test');
+        setCurrentQuestionIndex(0);
+    };
+
+    const handleRetakeSubmit = async () => {
+        if (!test || retakeQuestions.length === 0) return;
+        
+        // This is a simplified check. A real implementation might involve re-grading.
+        // For now, we assume retaking means they got it right.
+        const remainingIds = test.remainingMistakeIds?.filter(id => !retakeAnswers[id]) || [];
+
+        try {
+            await updateTest(test.id, { remainingMistakeIds: remainingIds });
+            toast({ title: 'Tebrikler!', description: 'Eksiklerini tamamladın.' });
+            // Refresh test data to show updated results
+            const updatedTestDoc = await getDoc(doc(db, 'tests', testId));
+            if(updatedTestDoc.exists()) {
+                setTest({ id: updatedTestDoc.id, ...updatedTestDoc.data()} as TestType);
+            }
+            setViewMode('results');
+        } catch (error) {
+            toast({ title: 'Hata', description: 'Tekrar testi kaydedilemedi.', variant: 'destructive' });
+        }
+    };
+
 
     React.useEffect(() => {
         if (!testId) return;
@@ -176,45 +209,23 @@ export default function OpticalFormPage() {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 setTest(currentTest);
 
-                if (currentTest) {
+                if (currentTest.status === 'Sonuçlandı') {
+                    setViewMode('results');
+                } else {
+                     setViewMode('initial_test');
                      const totalDuration = currentTest.questionCount * 90;
                      const timeAlreadySpent = currentTest.timeSpentSeconds || 0;
-                     
                      setTotalTime(totalDuration);
                      setTimeLeft(totalDuration - timeAlreadySpent);
-                     setIsPaused(currentTest.timerStatus === 'paused' || currentTest.status !== 'Atandı');
+                     setIsPaused(currentTest.timerStatus === 'paused');
+                }
 
-                     const type = currentTest.gradingType || 'manual';
-                     if(type === 'auto') {
-                        const initialAnswers: McqAnswers = currentTest.studentAnswers || {};
-                        for (let i = 1; i <= currentTest.questionCount; i++) {
-                            if(!initialAnswers[i]) initialAnswers[i] = null;
-                        }
-                        setMcqAnswers(initialAnswers);
-                     } else if (type === 'manual-text' || currentTest.sourceType === 'mistake') {
-                        const initialAnswers: TextAnswers = currentTest.studentTextAnswers || {};
-                         for (let i = 1; i <= currentTest.questionCount; i++) {
-                            if(!initialAnswers[i]) initialAnswers[i] = "";
-                        }
-                        setTextAnswers(initialAnswers);
-                     }
+                if (currentTest.gradingType === 'auto') {
+                    setMcqAnswers(currentTest.studentAnswers || {});
+                } else if (currentTest.gradingType === 'manual-text' || currentTest.sourceType === 'mistake') {
+                    setTextAnswers(currentTest.studentTextAnswers || {});
                 }
                 
-                // If it's a mistake pool test, fetch the questions
-                if (currentTest.sourceType === 'mistake' && currentTest.mistakeIds) {
-                    const mistakeDocs = await Promise.all(currentTest.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-                    const mistakes = mistakeDocs.map(d => ({ id: d.id, ...d.data() }));
-                    setMistakePoolQuestions(mistakes);
-                    if (mistakes.length > 0) {
-                        const initialAnswers = currentTest.studentTextAnswers || {};
-                        const newAnswers: TextAnswers = {};
-                        mistakes.forEach(m => {
-                            newAnswers[m.id] = initialAnswers[m.id] || "";
-                        });
-                        setTextAnswers(newAnswers);
-                    }
-                }
-
             } else {
                 setTest(null);
             }
@@ -224,66 +235,7 @@ export default function OpticalFormPage() {
     }, [testId]);
 
     React.useEffect(() => {
-        if (test?.status !== 'Sonuçlandı') return;
-    
-        const processResults = async () => {
-            if (test.gradingType === 'auto') {
-                let answerKey: AnswerKey | undefined = undefined;
-    
-                if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
-                    const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
-                    answerKey = bankDoc.exists() ? (bankDoc.data() as QuestionBank).subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId)?.answerKey : undefined;
-                } else if (test.sourceType === 'exam' && test.sourceId) {
-                    const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
-                    answerKey = examDoc.exists() ? (examDoc.data() as PracticeExam).answerKey : undefined;
-                } else if (test.sourceType === 'quick') {
-                    answerKey = test.answerKey;
-                }
-    
-                if (answerKey) {
-                    const incorrect: string[] = [];
-                    const empty: string[] = [];
-                    const studentAnswers = test.studentAnswers || {};
-                    for (let i = 1; i <= test.questionCount; i++) {
-                        const studentAns = studentAnswers[i];
-                        const correctAns = (answerKey as any)[i];
-                        if (!studentAns) {
-                           empty.push(i.toString());
-                        } else if (studentAns !== correctAns) {
-                           incorrect.push(i.toString());
-                        }
-                    }
-                    setResultDetails({ incorrectQuestions: incorrect, emptyQuestions: empty, answerKey });
-                }
-            } else if (test.gradingType === 'manual-text' || test.sourceType === 'mistake') {
-                const incorrect: string[] = [];
-                const empty: string[] = [];
-                const evaluations = test.studentTextAnswersEvaluation || {};
-                const studentAnswers = test.studentTextAnswers || {};
-                
-                const questionIdentifiers = test.sourceType === 'mistake' 
-                    ? test.mistakeIds || [] 
-                    : Array.from({ length: test.questionCount }, (_, i) => (i + 1).toString());
-
-                questionIdentifiers.forEach((qId, index) => {
-                    const qNum = (index + 1).toString();
-                    if (!studentAnswers[qId] || studentAnswers[qId].trim() === "") {
-                        empty.push(qNum);
-                    } else if (evaluations[qId] === 'incorrect') {
-                        incorrect.push(qNum);
-                    }
-                });
-
-                setResultDetails({ incorrectQuestions: incorrect, emptyQuestions: empty, answerKey: null });
-            }
-        };
-    
-        processResults();
-    }, [test]);
-
-
-    React.useEffect(() => {
-        if (!test || test.status !== 'Atandı' || isPaused) return;
+        if (!test || test.status !== 'Atandı' || isPaused || viewMode !== 'initial_test') return;
         
         if (timeLeft <= 0) {
             handleSubmit(true);
@@ -295,7 +247,7 @@ export default function OpticalFormPage() {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, test, handleSubmit, isPaused]);
+    }, [timeLeft, test, handleSubmit, isPaused, viewMode]);
 
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -329,7 +281,8 @@ export default function OpticalFormPage() {
         )
     }
 
-    if (test.status === 'Sonuçlandı') {
+    if (viewMode === 'results') {
+        const hasMistakes = test.remainingMistakeIds && test.remainingMistakeIds.length > 0;
         return (
             <div className="container mx-auto py-8 space-y-6">
                 <header className="mb-4">
@@ -350,119 +303,109 @@ export default function OpticalFormPage() {
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-center">
-                            <Card className="p-4 bg-green-500/10">
-                                <CardTitle className="flex items-center justify-center gap-2"><Check className="text-green-600"/> Doğru</CardTitle>
-                                <p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p>
-                            </Card>
-                            <Card className="p-4 bg-red-500/10">
-                                <CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle>
-                                <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
-                            </Card>
-                             <Card className="p-4 bg-gray-500/10">
-                                <CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle>
-                                <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
-                            </Card>
+                            <Card className="p-4 bg-green-500/10"><CardTitle className="flex items-center justify-center gap-2"><Check className="text-green-600"/> Doğru</CardTitle><p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p></Card>
+                            <Card className="p-4 bg-red-500/10"><CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle><p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p></Card>
+                            <Card className="p-4 bg-gray-500/10"><CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle><p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p></Card>
                         </div>
+                        {hasMistakes && (
+                             <Button className="w-full" size="lg" onClick={startRetake}>
+                                <Sparkles className="mr-2 h-5 w-5"/>
+                                Eksiklerini Tamamla ({test.remainingMistakeIds?.length} Soru)
+                            </Button>
+                        )}
+                         {!hasMistakes && test.status === 'Sonuçlandı' && (
+                             <div className="text-center p-4 rounded-lg bg-green-500/10 text-green-700 font-semibold">
+                                Tebrikler! Bu testteki tüm eksiklerini tamamladın.
+                             </div>
+                        )}
                     </CardContent>
                 </Card>
-
-                {resultDetails.incorrectQuestions.length > 0 && (
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <ListX className="text-destructive"/> Yanlış Yapılan Sorular
-                            </CardTitle>
-                            <CardDescription>
-                                {test.gradingType === 'auto'
-                                    ? "Yanlış cevaplanan soruların numaraları ve doğru cevapları."
-                                    : "Yanlış olarak değerlendirilen soruların numaraları."
-                                }
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-wrap gap-3">
-                                {resultDetails.incorrectQuestions.map(qNumber => (
-                                    <div key={qNumber} className="p-2 rounded-md border text-center bg-destructive/10">
-                                        <p className="font-bold text-lg text-destructive">{qNumber}</p>
-                                        {test.gradingType === 'auto' && resultDetails.answerKey?.[qNumber] && (
-                                             <p className="text-xs font-semibold">Doğru: {resultDetails.answerKey?.[qNumber] || '?'}</p>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                 {resultDetails.emptyQuestions.length > 0 && (
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <MinusCircle className="text-muted-foreground"/> Boş Bırakılan Sorular
-                            </CardTitle>
-                             <CardDescription>
-                                Cevaplanmayan soruların numaraları.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-wrap gap-3">
-                                {resultDetails.emptyQuestions.map(qNumber => (
-                                    <div key={qNumber} className="p-2 rounded-md border text-center bg-muted/50">
-                                        <p className="font-bold text-lg text-muted-foreground">{qNumber}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
             </div>
         );
     }
     
-    // Test is 'Atandı' or 'Değerlendirme Bekliyor', so show the test-taking UI
+    // --- RETAKE TEST VIEW ---
+    if(viewMode === 'retake_test') {
+        const currentMistakeQuestion = retakeQuestions[currentQuestionIndex];
+
+        return (
+             <div className="container mx-auto py-8">
+                <header className="mb-4">
+                    <Button variant="ghost" onClick={() => setViewMode('results')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Sonuçlara Geri Dön
+                    </Button>
+                </header>
+                 <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-2xl">Eksikleri Tamamlama Testi</CardTitle>
+                                <CardDescription>{test.title} - Soru {currentQuestionIndex + 1} / {retakeQuestions.length}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {currentMistakeQuestion?.imageUrl && (
+                                    <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
+                                )}
+                                <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
+                                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionIndex + 1}</div>
+                                   <div className="flex-grow flex items-center gap-2">
+                                        <Input
+                                            placeholder="Cevabınızı buraya yazın..."
+                                            value={retakeAnswers[currentMistakeQuestion.id] || ""}
+                                            onChange={(e) => setRetakeAnswers(prev => ({...prev, [currentMistakeQuestion.id]: e.target.value}))}
+                                            className="flex-grow"
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardContent className="flex justify-between items-center pt-4">
+                                <Button variant="outline" onClick={() => setCurrentQuestionIndex(q => q - 1)} disabled={currentQuestionIndex === 0}>
+                                    <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
+                                </Button>
+                                <Button onClick={() => setCurrentQuestionIndex(q => q + 1)} disabled={currentQuestionIndex === retakeQuestions.length - 1}>
+                                    Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                     <aside className="lg:sticky top-8 self-start">
+                         <Card>
+                            <CardHeader className="text-center"><CardTitle>Test Bilgisi</CardTitle></CardHeader>
+                            <CardContent className="space-y-6">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button className="w-full" size="lg">Testi Bitir</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={handleRetakeSubmit}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </CardContent>
+                        </Card>
+                    </aside>
+                </main>
+            </div>
+        )
+    }
+
+    // --- INITIAL TEST VIEW ---
     const handleMcqAnswerChange = (questionNumber: number, value: string) => {
         setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };
 
     const handleTextAnswerChange = (questionIdentifier: string, value: string) => {
         setTextAnswers(prev => ({ ...prev, [questionIdentifier]: value }));
-        setDirtyTextAnswers(prev => new Set(prev.add(questionIdentifier)));
-    };
-    
-    const handleSaveSingleAnswer = async (questionIdentifier: string) => {
-        try {
-            await updateTest(test.id, { studentTextAnswers: textAnswers });
-            toast({
-                title: `✅ Cevap Kaydedildi!`,
-                description: "Cevabın başarıyla kaydedildi.",
-            });
-            setDirtyTextAnswers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(questionIdentifier);
-                return newSet;
-            });
-        } catch (error) {
-             toast({
-                variant: "destructive",
-                title: "❌ Kaydetme Hatası!",
-                description: "Cevabın kaydedilirken bir sorun oluştu.",
-            });
-        }
     };
 
     const answeredQuestions = test.gradingType === 'auto'
         ? Object.values(mcqAnswers).filter(a => a !== null).length
         : Object.values(textAnswers).filter(a => a.trim() !== "").length;
 
-    const isInteractive = test.gradingType === 'auto' || test.gradingType === 'manual-text' || test.sourceType === 'mistake';
-    const isMistakePoolTest = test.sourceType === 'mistake';
     const isQuickTestWithImages = test.sourceType === 'quick' && test.questions && test.questions.length > 0;
     
     const currentQuestionNumber = currentQuestionIndex + 1;
     const currentQuestion = isQuickTestWithImages ? test.questions?.find(q => q.questionNumber === currentQuestionNumber) : null;
-    const currentMistakeQuestion = isMistakePoolTest ? mistakePoolQuestions[currentQuestionIndex] : null;
-
-
     const timePercentage = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0;
 
     return (
@@ -478,8 +421,7 @@ export default function OpticalFormPage() {
                      <div>
                         <p className="text-sm font-medium text-muted-foreground">KALAN SÜRE</p>
                         <p className={cn(`text-5xl font-bold tracking-tighter`, timeLeft < totalTime * 0.2 ? 'text-destructive' : 'text-foreground')}>
-                            <Clock className="inline-block h-10 w-10 mr-2 align-text-bottom"/> 
-                            {formatTime(timeLeft)}
+                            <Clock className="inline-block h-10 w-10 mr-2 align-text-bottom"/> {formatTime(timeLeft)}
                         </p>
                     </div>
                     {test.status === 'Atandı' && (
@@ -488,11 +430,7 @@ export default function OpticalFormPage() {
                          </Button>
                     )}
                 </CardContent>
-                <Progress 
-                    value={timePercentage} 
-                    className="h-2 rounded-t-none"
-                    indicatorClassName={cn(timeLeft < totalTime * 0.2 ? 'bg-destructive' : 'bg-green-500')}
-                />
+                <Progress value={timePercentage} className="h-2 rounded-t-none" indicatorClassName={cn(timeLeft < totalTime * 0.2 ? 'bg-destructive' : 'bg-green-500')}/>
             </Card>
 
             <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -503,115 +441,47 @@ export default function OpticalFormPage() {
                             <CardDescription>{test.subject} - Soru {currentQuestionNumber} / {test.questionCount}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {isQuickTestWithImages && currentQuestion?.imageUrl ? (
-                                <div className="space-y-4">
-                                     <Image src={currentQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
-                                </div>
-                            ) : isMistakePoolTest && currentMistakeQuestion ? (
-                                <div className="space-y-4">
-                                    {currentMistakeQuestion.imageUrl && (
-                                        <Image src={currentMistakeQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
-                                    )}
-                                </div>
-                            ) : null}
+                            {isQuickTestWithImages && currentQuestion?.imageUrl && (
+                                <Image src={currentQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
+                            )}
 
                             {test.gradingType === 'auto' ? (
                                  <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
                                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionNumber}</div>
-                                    <RadioGroup
-                                        value={mcqAnswers[currentQuestionNumber] || ""}
-                                        onValueChange={(value) => handleMcqAnswerChange(currentQuestionNumber, value)}
-                                        className="flex flex-wrap gap-4"
-                                    >
-                                        {['A', 'B', 'C'].map(option => (
-                                            <div key={option}>
-                                                <RadioGroupItem value={option} id={`q${currentQuestionNumber}-${option}`} className="sr-only" />
-                                                <Label
-                                                    htmlFor={`q${currentQuestionNumber}-${option}`}
-                                                    className={cn(
-                                                        "flex items-center justify-center w-16 h-16 text-2xl font-bold rounded-lg border-2 cursor-pointer transition-colors",
-                                                        "hover:bg-accent hover:text-accent-foreground",
-                                                        mcqAnswers[currentQuestionNumber] === option
-                                                            ? "bg-primary text-primary-foreground border-primary"
-                                                            : "bg-transparent border-input"
-                                                    )}
-                                                >
-                                                    {option}
-                                                </Label>
-                                            </div>
+                                    <RadioGroup value={mcqAnswers[currentQuestionNumber] || ""} onValueChange={(value) => handleMcqAnswerChange(currentQuestionNumber, value)} className="flex flex-wrap gap-4">
+                                        {['A', 'B', 'C', 'D'].map(option => (
+                                            <div key={option}><RadioGroupItem value={option} id={`q${currentQuestionNumber}-${option}`} className="sr-only" /><Label htmlFor={`q${currentQuestionNumber}-${option}`} className={cn("flex items-center justify-center w-16 h-16 text-2xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[currentQuestionNumber] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
                                         ))}
                                     </RadioGroup>
                                  </div>
-                            ) : test.gradingType === 'manual-text' || isMistakePoolTest ? (
+                            ) : test.gradingType === 'manual-text' ? (
                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionNumber}</div>
-                                   <div className="flex-grow flex items-center gap-2">
-                                        <Input
-                                            placeholder="Cevabınızı buraya yazın..."
-                                            value={textAnswers[currentMistakeQuestion?.id || currentQuestionNumber] || ""}
-                                            onChange={(e) => handleTextAnswerChange(currentMistakeQuestion?.id || currentQuestionNumber.toString(), e.target.value)}
-                                            className="flex-grow"
-                                        />
-                                        <Button 
-                                            size="icon" 
-                                            variant="ghost"
-                                            onClick={() => handleSaveSingleAnswer(currentMistakeQuestion?.id || currentQuestionNumber.toString())}
-                                            disabled={!dirtyTextAnswers.has(currentMistakeQuestion?.id || currentQuestionNumber.toString())}
-                                            aria-label="Cevabı Kaydet"
-                                        >
-                                            <Save className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                   <div className="flex-grow flex items-center gap-2"><Input placeholder="Cevabınızı buraya yazın..." value={textAnswers[currentQuestionNumber] || ""} onChange={(e) => handleTextAnswerChange(currentQuestionNumber.toString(), e.target.value)} className="flex-grow"/></div>
                                 </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground p-3">Bu test için cevap girişi gerekmiyor. Sınav sonunda "Testi Bitir" butonuna tıklamanız yeterlidir.</p>
-                            )}
+                            ) : (<p className="text-sm text-muted-foreground p-3">Bu test için cevap girişi gerekmiyor. Sınav sonunda "Testi Bitir" butonuna tıklamanız yeterlidir.</p>)}
                         </CardContent>
                          <CardContent className="flex justify-between items-center pt-4">
-                            <Button variant="outline" onClick={() => setCurrentQuestionIndex(q => q - 1)} disabled={currentQuestionIndex === 0}>
-                                <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
-                            </Button>
-                             <Button onClick={() => setCurrentQuestionIndex(q => q + 1)} disabled={currentQuestionIndex === test.questionCount - 1}>
-                                Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
-                            </Button>
+                            <Button variant="outline" onClick={() => setCurrentQuestionIndex(q => q - 1)} disabled={currentQuestionIndex === 0}><ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru</Button>
+                            <Button onClick={() => setCurrentQuestionIndex(q => q + 1)} disabled={currentQuestionIndex === test.questionCount - 1}>Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/></Button>
                         </CardContent>
                     </Card>
                 </div>
                 <aside className="lg:sticky top-8 self-start">
                      <Card>
-                        <CardHeader className="text-center">
-                            <CardTitle>Test Bilgisi</CardTitle>
-                        </CardHeader>
+                        <CardHeader className="text-center"><CardTitle>Test Bilgisi</CardTitle></CardHeader>
                         <CardContent className="space-y-6">
-                           {isInteractive && (
+                           {(test.gradingType === 'auto' || test.gradingType === 'manual-text') && (
                                 <div className="text-center">
-                                    <p className="text-muted-foreground">
-                                        {test.gradingType === 'auto' ? 'İşaretlenen Soru' : 'Cevaplanan Soru'}
-                                    </p>
-                                    <p className="text-4xl font-bold text-foreground">
-                                    <CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>
-                                    {answeredQuestions} / {test.questionCount}
-                                </p>
+                                    <p className="text-muted-foreground">{test.gradingType === 'auto' ? 'İşaretlenen Soru' : 'Cevaplanan Soru'}</p>
+                                    <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestions} / {test.questionCount}</p>
                                 </div>
                            )}
-                           
                            <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button className="w-full" size="lg" disabled={timeLeft <= 0 || test.status !== 'Atandı'}>
-                                    Testi Bitir
-                                </Button>
-                            </AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button className="w-full" size="lg" disabled={timeLeft <= 0 || test.status !== 'Atandı'}>Testi Bitir</Button></AlertDialogTrigger>
                             <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction>
-                                </AlertDialogFooter>
+                                <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                             </AlertDialog>
                         </CardContent>

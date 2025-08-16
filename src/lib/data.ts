@@ -355,7 +355,7 @@ export interface Test {
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
-  remainingQuestions?: string[]; // Array of question numbers to be re-answered
+  remainingMistakeIds?: string[]; // IDs of mistakes left to be corrected
   questions?: QuickTestQuestion[]; // For image-based quick tests
 }
 
