@@ -1255,9 +1255,10 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
             for (const qId in test.studentTextAnswersEvaluation) {
                 const status = test.studentTextAnswersEvaluation[qId];
                 if (status === 'incorrect' || status === 'empty') {
-                    const qNum = parseInt(qId, 10);
                     const studentAnswer = test.studentTextAnswers[qId] || '(Boş)';
-                    const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
+                     const imageUrl = test.sourceType === 'quick' 
+                        ? test.questions?.find(q => q.questionNumber === parseInt(qId, 10))?.imageUrl
+                        : undefined;
                     const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
                     const mistakeRef = doc(collection(db, 'mistakes'));
                     batch.set(mistakeRef, removeUndefined(mistakeData));
