@@ -64,9 +64,19 @@ export function ManualGradeForm({ test, onSave, onCancel }: ManualGradeFormProps
     React.useEffect(() => {
         const fetchQuestionsAndAnswers = async () => {
             let fetchedQuestions: (Partial<Mistake> & { qNum: string, id: string })[] = [];
+            
             if (test.sourceType === 'mistake' && test.mistakeIds) {
                 const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
-                fetchedQuestions = mistakeDocs.map((d, i) => ({ id: d.id, ...d.data(), studentAnswer: test.studentTextAnswers?.[d.id], qNum: (i+1).toString() } as Mistake & { qNum: string }));
+                fetchedQuestions = mistakeDocs.map((d, i) => {
+                    const mistakeData = d.data() as Mistake;
+                    return { 
+                        id: d.id, 
+                        ...mistakeData, 
+                        studentAnswer: test.studentTextAnswers?.[d.id] || "",
+                        qNum: (i + 1).toString(),
+                    };
+                });
+
             } else if (test.gradingType === 'manual-text' && (test.sourceType === 'bank' || test.sourceType === 'quick')) {
                  const studentAnswers = test.studentTextAnswers || {};
                  for (let i = 1; i <= test.questionCount; i++) {
