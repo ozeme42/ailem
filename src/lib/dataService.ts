@@ -536,10 +536,9 @@ export const moveItemToBought = async (listId: string, itemId: string) => {
     if (listSnap.exists()) {
         const list = listSnap.data() as ShoppingList;
         const itemToMove = list.items.find(item => item.id === itemId);
-        if (itemToMove) {
-            const updatedItem = { ...itemToMove, isBought: true };
+        if (itemToMove && itemToMove.isBought) {
             const newItems = list.items.filter(item => item.id !== itemId);
-            const newBoughtItems = [updatedItem, ...(list.boughtItems || [])];
+            const newBoughtItems = [itemToMove, ...(list.boughtItems || [])];
             await updateDoc(listRef, { items: newItems, boughtItems: newBoughtItems });
         }
     }
@@ -1213,10 +1212,25 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         if (!test.familyId) return;
 
         const batch = writeBatch(db);
-        const incorrectOrEmptyQuestions: { qNum: string; studentAnswer: string }[] = [];
+        const incorrectOrEmptyQuestions: { qNum: string; studentAnswer: string; imageUrl?: string; }[] = [];
 
-        // For Auto-graded tests
-        if (test.gradingType === 'auto' && test.answerKey) {
+        if (test.sourceType === 'mistake' && test.mistakeIds) {
+            const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
+            mistakeDocs.forEach((mistakeDoc, i) => {
+                if (mistakeDoc.exists()) {
+                    const mistake = mistakeDoc.data() as Mistake;
+                    const evaluation = test.studentTextAnswersEvaluation?.[mistake.id];
+                    if (evaluation === 'incorrect' || evaluation === 'empty') {
+                        incorrectOrEmptyQuestions.push({
+                            qNum: (i + 1).toString(),
+                            studentAnswer: test.studentTextAnswers?.[mistake.id] || '(Boş)',
+                            imageUrl: mistake.imageUrl,
+                        });
+                    }
+                }
+            });
+        }
+        else if (test.gradingType === 'auto' && test.answerKey) {
             for (let i = 1; i <= test.questionCount; i++) {
                 const qNum = i.toString();
                 if (test.studentAnswers?.[qNum] !== test.answerKey[qNum]) {
@@ -1224,7 +1238,6 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 }
             }
         } 
-        // For Manually-graded tests
         else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
              for (const qId in test.studentTextAnswersEvaluation) {
                 if (test.studentTextAnswersEvaluation[qId] === 'incorrect' || test.studentTextAnswersEvaluation[qId] === 'empty') {
@@ -1233,7 +1246,6 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
             }
         }
 
-        // Add identified questions to the mistakes collection
         incorrectOrEmptyQuestions.forEach(q => {
              const mistakeRef = doc(collection(db, 'mistakes'));
              const newMistake: Omit<Mistake, 'id'> = {
@@ -1243,9 +1255,10 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 originalQuestionId: q.qNum,
                 studentAnswer: q.studentAnswer,
                 subject: test.subject,
-                topic: test.title, // Using test title as topic for simplicity, can be improved.
+                topic: test.title,
                 createdAt: new Date().toISOString(),
                 status: 'active',
+                imageUrl: q.imageUrl,
             };
             batch.set(mistakeRef, removeUndefined(newMistake));
         });

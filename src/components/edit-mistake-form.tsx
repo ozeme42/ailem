@@ -106,6 +106,14 @@ export function EditMistakeForm({ mistake, onFormSubmit }: EditMistakeFormProps)
         <ScrollArea className="h-[60vh] pr-4">
             <div className="space-y-4">
                 <div className="space-y-2">
+                    {mistake.imageUrl && (
+                        <div>
+                            <FormLabel>Orijinal Soru</FormLabel>
+                             <div className="relative w-full aspect-video border rounded-lg overflow-hidden mt-1">
+                                <Image src={mistake.imageUrl} alt="Orijinal Soru" layout="fill" objectFit="contain" className="bg-muted" data-ai-hint="question paper" />
+                            </div>
+                        </div>
+                    )}
                      <p className="text-sm my-2 p-3 rounded-lg bg-muted">
                         <span className="font-semibold">Öğrenci Cevabı:</span>
                         <span className="text-muted-foreground ml-2">{mistake.studentAnswer || "(Boş bırakılmış)"}</span>

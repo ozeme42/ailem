@@ -106,13 +106,14 @@ export default function MistakePoolDashboardPage() {
             key = `test-${mistake.testId}`;
             const testInfo = allTests.find(t => t.id === mistake.testId);
             groupTitle = testInfo?.title || `Bilinmeyen Test (${mistake.testId.substring(0, 5)})`;
-            studentName = familyMembers.find(m => m.id === testInfo?.studentId)?.name;
+            studentName = familyMembers.find(m => m.id === testInfo?.creatorId)?.name;
             type = 'test';
         } else {
             // Group manually added mistakes by subject
             key = `manual-${mistake.subject || 'Diğer'}`;
             groupTitle = `Manuel Eklenenler: ${mistake.subject || 'Diğer'}`;
             type = 'manual';
+            studentName = familyMembers.find(m => m.id === mistake.creatorId)?.name;
         }
 
         if (!grouped[key]) {
@@ -166,7 +167,7 @@ export default function MistakePoolDashboardPage() {
             </PageHeader>
             
             {groupedMistakes.length > 0 ? (
-                 <Accordion type="multiple" className="w-full space-y-4">
+                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={groupedMistakes.map(g => g.id)}>
                     {groupedMistakes.map(group => {
                         return (
                             <AccordionItem key={group.id} value={group.id} className="border-b-0">
@@ -253,4 +254,3 @@ export default function MistakePoolDashboardPage() {
         </div>
     );
 }
-
