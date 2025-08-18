@@ -1225,8 +1225,6 @@ export const generateMistakesForTest = async (testId: string) => {
 
     // The test document's `questions` field is the single source of truth for question images.
     const questionImageMap = new Map<string, string | undefined>();
-    
-    // Always prioritize images directly on the test object first.
     if (test.questions && test.questions.length > 0) {
         test.questions.forEach(q => {
             if (q.imageUrl) {
@@ -1251,7 +1249,8 @@ export const generateMistakesForTest = async (testId: string) => {
     };
 
     if (test.gradingType === 'auto' && test.answerKey) {
-        for (const qNumStr in test.answerKey) {
+        for (let i = 1; i <= test.questionCount; i++) {
+            const qNumStr = i.toString();
             const correctAnswer = test.answerKey[qNumStr];
             const studentAnswer = test.studentAnswers?.[qNumStr] ?? null;
 
@@ -1262,17 +1261,6 @@ export const generateMistakesForTest = async (testId: string) => {
                 mistakeIdsToRetake.push(mistakeRef.id);
             }
         }
-        // Also check for empty answers not present in answerKey
-        for (let i = 1; i <= test.questionCount; i++) {
-            const qNumStr = i.toString();
-            if (!(qNumStr in (test.studentAnswers || {}))) {
-                const mistakeData = createMistakeData(qNumStr, "");
-                const mistakeRef = doc(collection(db, 'mistakes'));
-                batch.set(mistakeRef, removeUndefined(mistakeData));
-                mistakeIdsToRetake.push(mistakeRef.id);
-            }
-        }
-
     } else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
         for (const qId in test.studentTextAnswersEvaluation) {
             const status = test.studentTextAnswersEvaluation[qId];

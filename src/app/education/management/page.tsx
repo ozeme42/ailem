@@ -650,11 +650,15 @@ function AssignedTestCard({ test, familyMembers, onImageUpload }: {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>{test.title}</CardTitle>
-                <CardDescription>
-                    {student?.name || "Bilinmeyen"} - {test.subject}
-                    <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>{test.title}</CardTitle>
+                        <CardDescription>
+                            {student?.name || "Bilinmeyen"} - {test.subject}
+                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
+                        </CardDescription>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="mb-4">
@@ -1185,6 +1189,7 @@ export default function EducationManagementPage() {
     
 
     
+
 
 
 

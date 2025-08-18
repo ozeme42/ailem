@@ -77,6 +77,7 @@ export default function OpticalFormPage() {
                 } else { 
                     updatedData.studentAnswers = mcqAnswers;
                 }
+                await updateTest(test.id, updatedData);
                 toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                     description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
@@ -108,9 +109,10 @@ export default function OpticalFormPage() {
                     let empty = 0;
 
                     for (let i = 1; i <= test.questionCount; i++) {
-                        if (!mcqAnswers[i] || mcqAnswers[i] === null) {
+                        const qNumStr = i.toString();
+                        if (!mcqAnswers[qNumStr] || mcqAnswers[qNumStr] === null) {
                             empty++;
-                        } else if (mcqAnswers[i] === (answerKey as any)[i]) {
+                        } else if (mcqAnswers[qNumStr] === (answerKey as any)[qNumStr]) {
                             correct++;
                         } else {
                             incorrect++;
