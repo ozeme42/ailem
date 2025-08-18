@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -190,9 +191,10 @@ export default function OpticalFormPage() {
         
         // If no mistakes found, check if there are any incorrect/empty answers to generate them from
         const hasUngeneratedMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
+        
         if (mistakesToRetake.length === 0 && hasUngeneratedMistakes) {
             setIsGeneratingMistakes(true);
-            toast({ title: 'Eksikler Hazırlanıyor...', description: 'Lütfen bekleyin, eski testiniz için yanlışlar oluşturuluyor.' });
+            toast({ title: 'Eksikler Hazırlanıyor...', description: 'Lütfen bekleyin, testinizdeki yanlış ve boş sorularınız tekrar çözmeniz için oluşturuluyor.' });
             try {
                 await generateMistakesForTest(test.id);
                 mistakesToRetake = await fetchMistakes(); // Re-fetch after generation
@@ -397,7 +399,7 @@ export default function OpticalFormPage() {
                         {hasMistakes && (
                              <Button className="w-full" size="lg" onClick={startRetake} disabled={isGeneratingMistakes}>
                                 {isGeneratingMistakes ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5"/>}
-                                Eksiklerini Tamamla ({test.remainingMistakeIds?.length || (test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
+                                Eksiklerini Tamamla ({(test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
                             </Button>
                         )}
                          {!hasMistakes && test.status === 'Sonuçlandı' && (
