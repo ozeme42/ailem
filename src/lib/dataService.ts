@@ -905,7 +905,7 @@ export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'fa
 };
 
 
-export const deleteGoal = (id: string) => deleteDoc(doc(db, 'goals', id));
+export const deleteGoal = (id: string) => deleteDoc(doc(db, "goals", id));
 
 
 // This needs to be called from a client component that has access to the AuthContext
@@ -1230,7 +1230,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 topic: test.title,
                 createdAt: new Date().toISOString(),
                 status: 'active' as const,
-                imageUrl: imageUrl, // THIS IS THE CRITICAL PART
+                imageUrl: imageUrl,
             };
         };
 
@@ -1256,8 +1256,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 const status = test.studentTextAnswersEvaluation[qId];
                 if (status === 'incorrect' || status === 'empty') {
                     const studentAnswer = test.studentTextAnswers[qId] || '(Boş)';
-                     const question = test.questions?.find(q => q.questionNumber === parseInt(qId, 10));
-                     const imageUrl = question?.imageUrl;
+                    const imageUrl = test.questions?.find(q => q.questionNumber === parseInt(qId, 10))?.imageUrl;
                     const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
                     const mistakeRef = doc(collection(db, 'mistakes'));
                     batch.set(mistakeRef, removeUndefined(mistakeData));
