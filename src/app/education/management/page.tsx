@@ -1046,7 +1046,22 @@ export default function EducationManagementPage() {
                                         <div className="grid grid-cols-4 gap-2">
                                             {Array.from({ length: test.questionCount }).map((_, index) => {
                                                 const question = test.questions?.find(q => q.questionNumber === index + 1);
-                                                const evaluation: EvaluationStatus | undefined = test.studentTextAnswersEvaluation?.[index+1] ?? test.studentAnswers?.[index+1] === test.answerKey?.[index+1] ? 'correct' : 'incorrect';
+                                                
+                                                let evaluation: EvaluationStatus;
+
+                                                if (test.gradingType === 'auto') {
+                                                    const studentAnswer = test.studentAnswers?.[index + 1];
+                                                    const correctAnswer = test.answerKey?.[index + 1];
+                                                    if (studentAnswer === undefined || studentAnswer === null) {
+                                                        evaluation = 'empty';
+                                                    } else if (studentAnswer === correctAnswer) {
+                                                        evaluation = 'correct';
+                                                    } else {
+                                                        evaluation = 'incorrect';
+                                                    }
+                                                } else {
+                                                    evaluation = test.studentTextAnswersEvaluation?.[index + 1] || 'unevaluated';
+                                                }
                                                 
                                                 const colorClass = 
                                                     evaluation === 'correct' ? 'border-green-500 bg-green-500/10' :
@@ -1179,3 +1194,4 @@ export default function EducationManagementPage() {
     
 
     
+
