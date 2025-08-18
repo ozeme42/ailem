@@ -1260,8 +1260,7 @@ export const generateMistakesForTest = async (testId: string) => {
         }
     } else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
         const evaluations = test.studentTextAnswersEvaluation;
-        for (let i = 1; i <= test.questionCount; i++) {
-            const qId = i.toString();
+        for (const qId in evaluations) {
             const status = evaluations[qId];
             if (status === 'incorrect' || status === 'empty') {
                  const studentAnswer = test.studentTextAnswers?.[qId] || '';
