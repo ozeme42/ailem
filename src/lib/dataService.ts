@@ -1232,12 +1232,12 @@ export const generateMistakesForTest = async (testId: string) => {
         });
     }
 
-    const createMistakeData = (questionId: string, studentAnswer: string) => ({
+    const createMistakeData = (questionId: string, studentAnswer: string | null) => ({
         familyId: test.familyId,
         creatorId: test.studentId,
         testId: test.id,
         originalQuestionId: questionId,
-        studentAnswer: studentAnswer || '(Boş bırakılmış)',
+        studentAnswer: studentAnswer || "", // Ensure it's always a string for consistent filtering
         subject: test.subject,
         topic: test.title,
         createdAt: new Date().toISOString(),
@@ -1252,7 +1252,7 @@ export const generateMistakesForTest = async (testId: string) => {
             const studentAnswer = test.studentAnswers?.[qNumStr] ?? null;
 
             if (studentAnswer !== correctAnswer) {
-                const mistakeData = createMistakeData(qNumStr, studentAnswer || '');
+                const mistakeData = createMistakeData(qNumStr, studentAnswer);
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
                 mistakeIdsToRetake.push(mistakeRef.id);
@@ -1263,7 +1263,7 @@ export const generateMistakesForTest = async (testId: string) => {
         for (const qId in evaluations) {
             const status = evaluations[qId];
             if (status === 'incorrect' || status === 'empty') {
-                 const studentAnswer = test.studentTextAnswers?.[qId] || '';
+                 const studentAnswer = test.studentTextAnswers?.[qId] ?? null;
                  const mistakeData = createMistakeData(qId, studentAnswer);
                  const mistakeRef = doc(collection(db, 'mistakes'));
                  batch.set(mistakeRef, removeUndefined(mistakeData));
