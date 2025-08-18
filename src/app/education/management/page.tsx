@@ -1169,15 +1169,6 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [currentQuestion, setCurrentQuestion] = React.useState(0);
     const isOpen = currentOpenCard === test.id;
-
-    const getEvaluation = (qNum: number): 'correct' | 'incorrect' | 'empty' => {
-        if (test.gradingType === 'auto' && test.answerKey) {
-            const studentAnswer = test.studentAnswers?.[qNum];
-            if (!studentAnswer) return 'empty';
-            return studentAnswer === test.answerKey[qNum] ? 'correct' : 'incorrect';
-        }
-        return test.studentTextAnswersEvaluation?.[qNum] || 'empty';
-    }
     
     const handleTriggerFileUpload = (qNum: number) => {
         if(fileInputRef.current) {
@@ -1213,22 +1204,22 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
             {isOpen && (
                 <CardContent>
                     <div className="border-t pt-4">
-                        <div className="aspect-video w-full border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground bg-muted/20 relative">
-                             {test.questions && test.questions[currentQuestion]?.imageUrl ? (
-                                <label className="w-full h-full cursor-pointer group/image">
+                        <label className="w-full aspect-video border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground bg-muted/20 relative group/image cursor-pointer hover:border-primary">
+                            {test.questions && test.questions[currentQuestion]?.imageUrl ? (
+                                <>
                                     <Image src={test.questions[currentQuestion].imageUrl!} alt={`Soru ${currentQuestion + 1}`} layout="fill" objectFit="contain" className="p-2" data-ai-hint="question paper" />
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity">
+                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity">
                                         <p className="text-white font-semibold">Görseli Değiştir</p>
                                     </div>
-                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => onImageUpload(e, test, currentQuestion + 1)} />
-                                </label>
+                                </>
                             ) : (
-                                <Button variant="outline" onClick={() => handleTriggerFileUpload(currentQuestion + 1)}>
-                                    <UploadCloud className="mr-2 h-4 w-4" />
+                                <div className="text-center">
+                                     <UploadCloud className="mr-2 h-6 w-6" />
                                     Soru {currentQuestion + 1} İçin Görsel Yükle
-                                </Button>
+                                </div>
                             )}
-                        </div>
+                             <input type="file" className="hidden" accept="image/*" onChange={(e) => onImageUpload(e, test, currentQuestion + 1)} />
+                        </label>
                         <div className="flex justify-between items-center mt-2">
                              <Button variant="ghost" onClick={() => setCurrentQuestion(q => Math.max(0, q - 1))} disabled={currentQuestion === 0}><ArrowLeft className="mr-2 h-4 w-4"/>Önceki</Button>
                             <span className="text-sm font-medium">{currentQuestion + 1} / {test.questionCount}</span>
@@ -1253,3 +1244,6 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
         </Card>
     );
 }
+
+
+    
