@@ -433,21 +433,23 @@ export default function OpticalFormPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {imageUrl ? (
-                                    <Image src={imageUrl} alt={`Soru ${originalQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
-                                ) : (
-                                    <label className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer">
-                                        <UploadCloud className="h-10 w-10 mb-2"/>
-                                        <p>Görsel bulunamadı.</p>
-                                        <p className="text-xs">Görsel yüklemek için tıklayın.</p>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => handleImageUploadForMistake(e, currentMistakeQuestion)}
-                                        />
-                                    </label>
-                                )}
+                                <label className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer relative">
+                                    {imageUrl ? (
+                                        <Image src={imageUrl} alt={`Soru ${originalQuestionNumber}`} layout="fill" objectFit="contain" className="rounded-lg" data-ai-hint="question paper" />
+                                    ) : (
+                                        <>
+                                            <UploadCloud className="h-10 w-10 mb-2"/>
+                                            <p>Görsel bulunamadı.</p>
+                                            <p className="text-xs">Görsel yüklemek için tıklayın.</p>
+                                        </>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => handleImageUploadForMistake(e, currentMistakeQuestion)}
+                                    />
+                                </label>
                                 <div className="space-y-2 my-2 p-3 rounded-lg border bg-muted">
                                     <p className="font-semibold">Öğrenci Cevabı:</p>
                                     <p className="text-muted-foreground">{currentMistakeQuestion?.studentAnswer || "(Boş bırakılmış)"}</p>
