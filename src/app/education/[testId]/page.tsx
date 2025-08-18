@@ -451,7 +451,7 @@ export default function OpticalFormPage() {
                                     />
                                 </label>
                                 <div className="space-y-2 my-2 p-3 rounded-lg border bg-muted">
-                                    <p className="font-semibold">Öğrenci Cevabı:</p>
+                                    <p className="font-semibold">Önceki Cevabınız:</p>
                                     <p className="text-muted-foreground">{currentMistakeQuestion?.studentAnswer || "(Boş bırakılmış)"}</p>
                                 </div>
                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
