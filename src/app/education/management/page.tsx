@@ -653,7 +653,6 @@ export default function EducationManagementPage() {
     const [editingTest, setEditingTest] = React.useState<Test | null>(null);
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
-    const [activeTestCard, setActiveTestCard] = React.useState<string | null>(null);
     
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -675,46 +674,6 @@ export default function EducationManagementPage() {
         };
     }, []);
     
-    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, test: Test, questionNumber: number) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        toast({ title: 'Görsel yükleniyor...' });
-        try {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onloadend = async () => {
-                const imageDataUri = reader.result as string;
-                const destinationPath = `test-questions/${test.id}-${questionNumber}-${Date.now()}.jpg`;
-                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
-
-                if (!migrationResult.success || !migrationResult.newUrl) {
-                    throw new Error(migrationResult.error || 'Görsel yüklenemedi.');
-                }
-                
-                const existingQuestionIndex = (test.questions || []).findIndex(q => q.questionNumber === questionNumber);
-                let updatedQuestions = [...(test.questions || [])];
-
-                if (existingQuestionIndex > -1) {
-                    updatedQuestions[existingQuestionIndex] = { ...updatedQuestions[existingQuestionIndex], imageUrl: migrationResult.newUrl };
-                } else {
-                    updatedQuestions.push({ questionNumber: questionNumber, imageUrl: migrationResult.newUrl });
-                }
-                
-                // Ensure questions are sorted by number, just in case.
-                updatedQuestions.sort((a, b) => a.questionNumber - b.questionNumber);
-                
-                await updateTest(test.id, { questions: updatedQuestions });
-                toast({ title: `Soru ${questionNumber} için görsel güncellendi!` });
-            };
-        } catch (e: any) {
-            toast({ title: 'Hata', description: e.message, variant: 'destructive' });
-        } finally {
-             if (event.target) event.target.value = '';
-        }
-    };
-
-
     const testsAwaitingGrading = React.useMemo(() => {
         return tests.filter(test => test.status === 'Değerlendirme Bekliyor');
     }, [tests]);
@@ -1044,9 +1003,6 @@ export default function EducationManagementPage() {
                                 onEdit={openEditTestDialog}
                                 onArchive={handleArchiveTest}
                                 onDelete={handleDeleteTest}
-                                onImageUpload={handleImageUpload}
-                                currentOpenCard={activeTestCard}
-                                onOpenCard={setActiveTestCard}
                             />
                         ))}
                     </div>
@@ -1153,26 +1109,20 @@ export default function EducationManagementPage() {
 }
 
 
-function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, onImageUpload, currentOpenCard, onOpenCard }: {
+function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete }: {
     test: Test,
     familyMembers: any[],
     onEdit: (test: Test) => void,
     onArchive: (test: Test) => void,
     onDelete: (id: string) => void,
-    onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, test: Test, questionNumber: number) => void,
-    currentOpenCard: string | null,
-    onOpenCard: (id: string | null) => void
 }) {
     const student = familyMembers.find(m => m.id === test.studentId);
     const isCompleted = test.status === 'Sonuçlandı';
     const scorePercentage = test.score || 0;
-    const [currentQuestion, setCurrentQuestion] = React.useState(0);
-    const isOpen = currentOpenCard === test.id;
-    
+
     return (
         <Card className="flex flex-col">
-            <input type="file" id={`file-input-${test.id}-${currentQuestion}`} className="hidden" accept="image/*" onChange={(e) => onImageUpload(e, test, currentQuestion + 1)} />
-            <CardHeader className="cursor-pointer" onClick={() => onOpenCard(isOpen ? null : test.id)}>
+            <CardHeader>
                 <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">{test.title}</CardTitle>
                     <Badge variant={isCompleted ? "default" : "outline"} className={cn(isCompleted && "bg-green-600")}>{test.status}</Badge>
@@ -1193,32 +1143,6 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
                     </div>
                 </CardContent>
             )}
-            {isOpen && (
-                <CardContent>
-                    <div className="border-t pt-4">
-                        <div className="relative w-full aspect-video rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground bg-muted/20">
-                            {test.questions && test.questions[currentQuestion]?.imageUrl ? (
-                                <>
-                                    <Image src={test.questions[currentQuestion].imageUrl!} alt={`Soru ${currentQuestion + 1}`} layout="fill" objectFit="contain" className="p-2" data-ai-hint="question paper" />
-                                    <label htmlFor={`file-input-${test.id}-${currentQuestion}`} className="absolute top-2 right-2 z-10">
-                                         <Button size="sm" className="h-8">Görseli Değiştir</Button>
-                                    </label>
-                                </>
-                            ) : (
-                                <label htmlFor={`file-input-${test.id}-${currentQuestion}`} className="text-center cursor-pointer">
-                                     <UploadCloud className="mx-auto h-8 w-8" />
-                                     <p className="mt-2 text-sm font-semibold">Soru {currentQuestion + 1} İçin Görsel Yükle</p>
-                                </label>
-                            )}
-                        </div>
-                        <div className="flex justify-between items-center mt-2">
-                             <Button variant="ghost" onClick={() => setCurrentQuestion(q => Math.max(0, q - 1))} disabled={currentQuestion === 0}><ArrowLeft className="mr-2 h-4 w-4"/>Önceki</Button>
-                            <span className="text-sm font-medium">{currentQuestion + 1} / {test.questionCount}</span>
-                             <Button variant="ghost" onClick={() => setCurrentQuestion(q => Math.min(test.questionCount - 1, q + 1))} disabled={currentQuestion === test.questionCount - 1}>Sonraki<ArrowRight className="ml-2 h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                </CardContent>
-            )}
             <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3 mt-auto">
                 <Button variant="ghost" size="sm" onClick={() => onEdit(test)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
                 {isCompleted && <Button variant="secondary" size="sm" onClick={() => onArchive(test)}><Archive className="w-4 h-4 mr-2"/>Arşivle</Button>}
@@ -1235,8 +1159,3 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
         </Card>
     );
 }
-
-
-    
-
-    
