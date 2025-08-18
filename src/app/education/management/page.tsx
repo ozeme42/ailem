@@ -931,7 +931,7 @@ export default function EducationManagementPage() {
         toast({title: "Geri Bildirim Kaydedildi"});
     };
     
-     const handleOpenImageUpload = (testId: string, questionIndex: number) => {
+    const handleOpenImageUpload = (testId: string, questionIndex: number) => {
         setEditingQuestion({ testId, questionIndex });
         setIsImageUploadOpen(true);
     };
@@ -957,17 +957,21 @@ export default function EducationManagementPage() {
                 const testToUpdate = tests.find(t => t.id === editingQuestion.testId);
                 if (testToUpdate) {
                     const updatedQuestions = [...(testToUpdate.questions || [])];
-                    const qIndex = updatedQuestions.findIndex(q => q.questionNumber === editingQuestion.questionIndex + 1);
+                    const questionNumber = editingQuestion.questionIndex + 1;
+                    const qIndex = updatedQuestions.findIndex(q => q.questionNumber === questionNumber);
                     
                     if (qIndex !== -1) {
                         updatedQuestions[qIndex].imageUrl = migrationResult.newUrl;
                     } else {
                         updatedQuestions.push({
-                            questionNumber: editingQuestion.questionIndex + 1,
+                            questionNumber: questionNumber,
                             imageUrl: migrationResult.newUrl
                         });
                     }
                     
+                    // Sort to be safe, although pushing should maintain order if done correctly
+                    updatedQuestions.sort((a,b) => a.questionNumber - b.questionNumber);
+
                     await updateTest(editingQuestion.testId, { questions: updatedQuestions });
                     toast({ title: "Görsel Güncellendi!" });
                 }
@@ -1078,10 +1082,13 @@ export default function EducationManagementPage() {
                                                 const question = test.questions?.find(q => q.questionNumber === index + 1);
                                                 return (
                                                     <div key={index} className="aspect-square border rounded-md flex items-center justify-center relative group">
+                                                        <input type="file" accept="image/*" className="hidden" ref={el => { if(el) el.onchange = handleImageUpload}} onClick={(e) => {
+                                                            setEditingQuestion({ testId: test.id, questionIndex: index });
+                                                        }}/>
                                                         {question?.imageUrl ? (
                                                             <Image src={question.imageUrl} alt={`Soru ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="question paper" />
                                                         ) : (
-                                                            <Button variant="ghost" size="sm" className="h-full w-full text-xs" onClick={() => handleOpenImageUpload(test.id, index)}>
+                                                            <Button variant="ghost" size="sm" className="h-full w-full text-xs" onClick={() => { setEditingQuestion({ testId: test.id, questionIndex: index }); document.querySelector<HTMLInputElement>(`input[type=file]`)?.click();}}>
                                                                 <FileImage className="h-4 w-4 mr-1"/>
                                                                 Soru {index + 1}
                                                             </Button>
@@ -1199,21 +1206,10 @@ export default function EducationManagementPage() {
                     )}
                 </DialogContent>
             </Dialog>
-            <Dialog open={isImageUploadOpen} onOpenChange={setIsImageUploadOpen}>
-                <DialogContent className="max-w-xl">
-                     <DialogHeader>
-                        <DialogTitle>Soru Görseli Yükle</DialogTitle>
-                     </DialogHeader>
-                    <div className="flex flex-col items-center justify-center h-full pt-8">
-                         <input type="file" accept="image/*" className="hidden" ref={(node) => {
-                             if (node) node.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
-                         }} />
-                         <Button onClick={() => document.querySelector<HTMLInputElement>('input[type=file]')?.click()}>Görsel Seç</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
         </>
     );
 }
+
+    
 
     

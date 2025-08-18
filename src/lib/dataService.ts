@@ -1223,35 +1223,11 @@ export const generateMistakesForTest = async (testId: string) => {
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
 
-    let questionSource: QuickTestQuestion[] = test.questions || [];
-
-    if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
-        const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
-        if (bankDoc.exists()) {
-            const bank = bankDoc.data() as QuestionBank;
-            const topic = bank.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-            if (topic && (topic as any).questions) {
-                 questionSource = (topic as any).questions;
-            }
-        }
-    } else if (test.sourceType === 'exam' && test.sourceId) {
-        const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
-        if (examDoc.exists()) {
-            const exam = examDoc.data() as PracticeExam;
-             if ((exam as any).questions) {
-                 questionSource = (exam as any).questions;
-            }
-        }
-    }
+    // The single source of truth for questions is the test document itself.
+    const questionSource = test.questions || [];
 
     const createMistakeData = (questionId: string, studentAnswer: string, originalQuestionNumber?: number) => {
-        let imageUrl: string | null | undefined = null;
-        if (originalQuestionNumber !== undefined) {
-             const question = questionSource.find(q => q.questionNumber === originalQuestionNumber);
-             if (question) {
-                imageUrl = question.imageUrl;
-             }
-        }
+        const question = questionSource.find(q => q.questionNumber === originalQuestionNumber);
         
         return {
             familyId: test.familyId,
@@ -1263,7 +1239,7 @@ export const generateMistakesForTest = async (testId: string) => {
             topic: test.title,
             createdAt: new Date().toISOString(),
             status: 'active' as const,
-            imageUrl: imageUrl,
+            imageUrl: question?.imageUrl || null,
         };
     };
 
@@ -1728,3 +1704,5 @@ export const setDailyTrackingStatus = async (
     await deleteDoc(trackingRef);
   }
 };
+
+    
