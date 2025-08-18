@@ -1048,19 +1048,16 @@ export default function EducationManagementPage() {
                                                 const question = test.questions?.find(q => q.questionNumber === index + 1);
                                                 
                                                 let evaluation: EvaluationStatus;
+                                                const studentAnswer = test.studentAnswers?.[index + 1];
 
-                                                if (test.gradingType === 'auto') {
-                                                    const studentAnswer = test.studentAnswers?.[index + 1];
-                                                    const correctAnswer = test.answerKey?.[index + 1];
-                                                    if (studentAnswer === undefined || studentAnswer === null) {
-                                                        evaluation = 'empty';
-                                                    } else if (studentAnswer === correctAnswer) {
-                                                        evaluation = 'correct';
-                                                    } else {
-                                                        evaluation = 'incorrect';
-                                                    }
+                                                if (test.status !== 'Sonuçlandı' || !test.answerKey) {
+                                                    evaluation = 'unevaluated';
+                                                } else if (studentAnswer === undefined || studentAnswer === null) {
+                                                    evaluation = 'empty';
+                                                } else if (studentAnswer === test.answerKey[index + 1]) {
+                                                    evaluation = 'correct';
                                                 } else {
-                                                    evaluation = test.studentTextAnswersEvaluation?.[index + 1] || 'unevaluated';
+                                                    evaluation = 'incorrect';
                                                 }
                                                 
                                                 const colorClass = 
@@ -1194,4 +1191,5 @@ export default function EducationManagementPage() {
     
 
     
+
 
