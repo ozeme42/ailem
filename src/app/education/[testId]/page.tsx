@@ -188,8 +188,9 @@ export default function OpticalFormPage() {
     
         let mistakesToRetake = await fetchMistakes();
         
-        // If no mistakes found, try to generate them for older tests
-        if (mistakesToRetake.length === 0 && ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0)) {
+        // If no mistakes found, check if there are any incorrect/empty answers to generate them from
+        const hasUngeneratedMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
+        if (mistakesToRetake.length === 0 && hasUngeneratedMistakes) {
             setIsGeneratingMistakes(true);
             toast({ title: 'Eksikler Hazırlanıyor...', description: 'Lütfen bekleyin, eski testiniz için yanlışlar oluşturuluyor.' });
             try {
