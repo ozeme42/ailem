@@ -1166,20 +1166,12 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
     const student = familyMembers.find(m => m.id === test.studentId);
     const isCompleted = test.status === 'Sonuçlandı';
     const scorePercentage = test.score || 0;
-    const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [currentQuestion, setCurrentQuestion] = React.useState(0);
     const isOpen = currentOpenCard === test.id;
     
-    const handleTriggerFileUpload = (qNum: number) => {
-        if(fileInputRef.current) {
-            fileInputRef.current.onchange = (e) => onImageUpload(e as any, test, qNum);
-            fileInputRef.current.click();
-        }
-    };
-    
     return (
         <Card className="flex flex-col">
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
+            <input type="file" id={`file-input-${test.id}-${currentQuestion}`} className="hidden" accept="image/*" onChange={(e) => onImageUpload(e, test, currentQuestion + 1)} />
             <CardHeader className="cursor-pointer" onClick={() => onOpenCard(isOpen ? null : test.id)}>
                 <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">{test.title}</CardTitle>
@@ -1204,22 +1196,21 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
             {isOpen && (
                 <CardContent>
                     <div className="border-t pt-4">
-                        <label className="w-full aspect-video border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground bg-muted/20 relative group/image cursor-pointer hover:border-primary">
+                        <div className="relative w-full aspect-video rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground bg-muted/20">
                             {test.questions && test.questions[currentQuestion]?.imageUrl ? (
                                 <>
                                     <Image src={test.questions[currentQuestion].imageUrl!} alt={`Soru ${currentQuestion + 1}`} layout="fill" objectFit="contain" className="p-2" data-ai-hint="question paper" />
-                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity">
-                                        <p className="text-white font-semibold">Görseli Değiştir</p>
-                                    </div>
+                                    <label htmlFor={`file-input-${test.id}-${currentQuestion}`} className="absolute top-2 right-2 z-10">
+                                         <Button size="sm" className="h-8">Görseli Değiştir</Button>
+                                    </label>
                                 </>
                             ) : (
-                                <div className="text-center">
-                                     <UploadCloud className="mr-2 h-6 w-6" />
-                                    Soru {currentQuestion + 1} İçin Görsel Yükle
-                                </div>
+                                <label htmlFor={`file-input-${test.id}-${currentQuestion}`} className="text-center cursor-pointer">
+                                     <UploadCloud className="mx-auto h-8 w-8" />
+                                     <p className="mt-2 text-sm font-semibold">Soru {currentQuestion + 1} İçin Görsel Yükle</p>
+                                </label>
                             )}
-                             <input type="file" className="hidden" accept="image/*" onChange={(e) => onImageUpload(e, test, currentQuestion + 1)} />
-                        </label>
+                        </div>
                         <div className="flex justify-between items-center mt-2">
                              <Button variant="ghost" onClick={() => setCurrentQuestion(q => Math.max(0, q - 1))} disabled={currentQuestion === 0}><ArrowLeft className="mr-2 h-4 w-4"/>Önceki</Button>
                             <span className="text-sm font-medium">{currentQuestion + 1} / {test.questionCount}</span>
@@ -1245,5 +1236,7 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, 
     );
 }
 
+
+    
 
     
