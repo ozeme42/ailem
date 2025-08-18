@@ -189,22 +189,28 @@ export default function OpticalFormPage() {
         }
     };
     
-    const startRetake = async () => {
+    const startRetake = async (filter: 'incorrect' | 'empty' | 'all') => {
         if (!test) return;
     
         const fetchMistakes = async () => {
-            const mistakesQuery = query(
+            let q = query(
                 collection(db, 'mistakes'),
                 where('testId', '==', test.id),
                 where('status', '==', 'active')
             );
-            const querySnapshot = await getDocs(mistakesQuery);
+
+            if (filter === 'incorrect') {
+                q = query(q, where('studentAnswer', '!=', ''));
+            } else if (filter === 'empty') {
+                q = query(q, where('studentAnswer', '==', ''));
+            }
+
+            const querySnapshot = await getDocs(q);
             return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
         };
     
         let mistakesToRetake = await fetchMistakes();
         
-        // If no mistakes found, check if there are any incorrect/empty answers to generate them from
         const hasUngeneratedMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
         
         if (mistakesToRetake.length === 0 && hasUngeneratedMistakes) {
@@ -386,7 +392,10 @@ export default function OpticalFormPage() {
     }
 
     if (viewMode === 'results') {
-        const hasMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
+        const hasIncorrect = (test.incorrectAnswers || 0) > 0;
+        const hasEmpty = (test.emptyAnswers || 0) > 0;
+        const hasMistakes = hasIncorrect || hasEmpty;
+
         return (
             <div className="container mx-auto py-8 space-y-6">
                 <header className="mb-4">
@@ -409,22 +418,22 @@ export default function OpticalFormPage() {
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <Card className="p-4 bg-green-500/10"><CardTitle className="flex items-center justify-center gap-2"><Check className="text-green-600"/> Doğru</CardTitle><p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p></Card>
                             <div
-                                className={cn("p-4 rounded-lg border", (test.incorrectAnswers || 0) > 0 ? 'bg-red-500/10 cursor-pointer hover:bg-red-500/20' : 'bg-card')}
-                                onClick={(test.incorrectAnswers || 0) > 0 ? startRetake : undefined}
+                                className={cn("p-4 rounded-lg border", hasIncorrect ? 'bg-red-500/10 cursor-pointer hover:bg-red-500/20' : 'bg-card')}
+                                onClick={hasIncorrect ? () => startRetake('incorrect') : undefined}
                             >
                                 <CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle>
                                 <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
                             </div>
                             <div
-                                className={cn("p-4 rounded-lg border", (test.emptyAnswers || 0) > 0 ? 'bg-gray-500/10 cursor-pointer hover:bg-gray-500/20' : 'bg-card')}
-                                onClick={(test.emptyAnswers || 0) > 0 ? startRetake : undefined}
+                                className={cn("p-4 rounded-lg border", hasEmpty ? 'bg-gray-500/10 cursor-pointer hover:bg-gray-500/20' : 'bg-card')}
+                                onClick={hasEmpty ? () => startRetake('empty') : undefined}
                             >
                                 <CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle>
                                 <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
                             </div>
                         </div>
                         {hasMistakes && (
-                             <Button className="w-full" size="lg" onClick={startRetake} disabled={isGeneratingMistakes}>
+                             <Button className="w-full" size="lg" onClick={() => startRetake('all')} disabled={isGeneratingMistakes}>
                                 {isGeneratingMistakes ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5"/>}
                                 Eksiklerini Tamamla ({(test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
                             </Button>
