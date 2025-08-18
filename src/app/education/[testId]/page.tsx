@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { doc, getDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
-import { updateTest, checkAndAwardBadges, updateMistake, generateMistakesForTest } from "@/lib/dataService";
+import { updateTest, checkAndAwardBadges, updateMistake, generateMistakesForTest, migrateImage } from "@/lib/dataService";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -52,6 +52,8 @@ export default function OpticalFormPage() {
     
     // For results view
     const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: string[], emptyQuestions: string[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], emptyQuestions: [], answerKey: null });
+
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
@@ -250,6 +252,39 @@ export default function OpticalFormPage() {
             toast({ title: 'Hata', description: 'Tekrar testi kaydedilemedi.', variant: 'destructive' });
         }
     };
+    
+    const handleImageUploadForMistake = async (event: React.ChangeEvent<HTMLInputElement>, mistake: Mistake) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        toast({ title: "Görsel Yükleniyor..." });
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = async () => {
+                const imageDataUri = reader.result as string;
+                const destinationPath = `mistake-pool/${test?.studentId || 'unknown'}-${mistake.id}-${Date.now()}.jpg`;
+                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
+
+                if (!migrationResult.success || !migrationResult.newUrl) {
+                    throw new Error(migrationResult.error || "Görsel yüklenemedi.");
+                }
+
+                await updateMistake(mistake.id, { imageUrl: migrationResult.newUrl });
+                
+                // Update local state to show the new image immediately
+                setRetakeQuestions(prev => prev.map(q => 
+                    q.id === mistake.id ? { ...q, imageUrl: migrationResult.newUrl } : q
+                ));
+
+                toast({ title: "Görsel Güncellendi!" });
+            };
+        } catch (e) {
+            toast({ title: "Hata", variant: "destructive" });
+        } finally {
+            if (event.target) event.target.value = ''; // Reset file input
+        }
+    };
 
 
     React.useEffect(() => {
@@ -402,7 +437,17 @@ export default function OpticalFormPage() {
                                 {imageUrl ? (
                                     <Image src={imageUrl} alt={`Soru ${originalQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
                                 ) : (
-                                    <div className="text-center p-8 border rounded-lg bg-muted">Görsel bulunamadı.</div>
+                                    <label className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer">
+                                        <UploadCloud className="h-10 w-10 mb-2"/>
+                                        <p>Görsel bulunamadı.</p>
+                                        <p className="text-xs">Görsel yüklemek için tıklayın.</p>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => handleImageUploadForMistake(e, currentMistakeQuestion)}
+                                        />
+                                    </label>
                                 )}
                                 <div className="space-y-2 my-2 p-3 rounded-lg border bg-muted">
                                     <p className="font-semibold">Öğrenci Cevabı:</p>
@@ -552,3 +597,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    

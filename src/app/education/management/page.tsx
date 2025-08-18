@@ -629,64 +629,6 @@ function StudyPlanManagement() {
   )
 }
 
-
-function AssignedTestCard({ test, familyMembers, onImageUpload }: { 
-    test: Test, 
-    familyMembers: any[], 
-    onImageUpload: (event: React.ChangeEvent<HTMLInputElement>, testId: string, questionIndex: number) => void 
-}) {
-    const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
-    const student = familyMembers.find(m => m.id === test.studentId);
-    
-    const currentQuestion = React.useMemo(() => 
-        (test.questions || []).find(q => q.questionNumber === currentQuestionIndex + 1),
-    [test.questions, currentQuestionIndex]);
-
-    const handleOpenImageUpload = (testId: string, questionIndex: number) => {
-        const fileInput = document.getElementById(`file-input-${testId}-${questionIndex}`);
-        fileInput?.click();
-    };
-
-    return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle>{test.title}</CardTitle>
-                        <CardDescription>
-                            {student?.name || "Bilinmeyen"} - {test.subject}
-                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
-                        </CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="mb-4">
-                    {currentQuestion?.imageUrl ? (
-                        <Image src={currentQuestion.imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
-                    ) : (
-                         <label htmlFor={`file-input-${test.id}-${currentQuestionIndex}`} className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer">
-                            <FileImage className="h-10 w-10 mb-2"/>
-                            <p>Soru Görseli Yükle</p>
-                            <p className="text-xs">Soru {currentQuestionIndex + 1} için resim seçin</p>
-                        </label>
-                    )}
-                    <input id={`file-input-${test.id}-${currentQuestionIndex}`} type="file" accept="image/*" className="hidden" onChange={(e) => onImageUpload(e, test.id, currentQuestionIndex)} />
-                </div>
-            </CardContent>
-             <CardFooter className="flex justify-between items-center">
-                <Button variant="outline" onClick={() => setCurrentQuestionIndex(q => q - 1)} disabled={currentQuestionIndex === 0}>
-                    <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
-                </Button>
-                <span>{currentQuestionIndex + 1} / {test.questionCount}</span>
-                <Button onClick={() => setCurrentQuestionIndex(q => q + 1)} disabled={currentQuestionIndex === test.questionCount - 1}>
-                    Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
-                </Button>
-            </CardFooter>
-        </Card>
-    );
-}
-
 export default function EducationManagementPage() {
     const { toast } = useToast();
     const { familyMembers, familyId } = useAuth();
@@ -955,51 +897,6 @@ export default function EducationManagementPage() {
         toast({title: "Geri Bildirim Kaydedildi"});
     };
 
-    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, testId: string, questionIndex: number) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        toast({ title: "Görsel Yükleniyor..." });
-        try {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onloadend = async () => {
-                const imageDataUri = reader.result as string;
-                const destinationPath = `test-questions/${testId}-${questionIndex}-${Date.now()}.jpg`;
-                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
-
-                if (!migrationResult.success || !migrationResult.newUrl) {
-                    throw new Error(migrationResult.error || "Görsel yüklenemedi.");
-                }
-
-                const testToUpdate = tests.find(t => t.id === testId);
-                if (testToUpdate) {
-                    const updatedQuestions = [...(testToUpdate.questions || [])];
-                    const questionNumber = questionIndex + 1;
-                    const qIndex = updatedQuestions.findIndex(q => q.questionNumber === questionNumber);
-                    
-                    if (qIndex !== -1) {
-                        updatedQuestions[qIndex].imageUrl = migrationResult.newUrl;
-                    } else {
-                        updatedQuestions.push({
-                            questionNumber: questionNumber,
-                            imageUrl: migrationResult.newUrl
-                        });
-                    }
-                    
-                    updatedQuestions.sort((a,b) => a.questionNumber - b.questionNumber);
-
-                    await updateTest(testId, { questions: updatedQuestions });
-                    toast({ title: "Görsel Güncellendi!" });
-                }
-            };
-        } catch (e) {
-            toast({ title: "Hata", variant: "destructive" });
-        } finally {
-            if(event.target) event.target.value = ''; // Reset file input
-        }
-    };
-
     return (
         <>
             <PageHeader title="İçerik Yönetimi">
@@ -1081,7 +978,18 @@ export default function EducationManagementPage() {
                 <TabsContent value="assignments" className="mt-4">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {tests.filter(t => !t.isArchived).map(test => (
-                            <AssignedTestCard key={test.id} test={test} familyMembers={familyMembers} onImageUpload={handleImageUpload} />
+                            <Card key={test.id}>
+                                <CardHeader>
+                                    <CardTitle>{test.title}</CardTitle>
+                                    <CardDescription>
+                                        {familyMembers.find(m => m.id === test.studentId)?.name || 'Bilinmeyen'} - {test.subject}
+                                    </CardDescription>
+                                    <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="w-fit">{test.status}</Badge>
+                                </CardHeader>
+                                <CardFooter className="flex justify-end gap-2">
+                                     <Button variant="ghost" size="icon" onClick={() => openEditTestDialog(test)}><Edit className="w-4 h-4"/></Button>
+                                </CardFooter>
+                            </Card>
                         ))}
                     </div>
                 </TabsContent>
@@ -1187,10 +1095,3 @@ export default function EducationManagementPage() {
 }
 
     
-
-    
-
-
-
-
-
