@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage, Check, X, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Topic, Mistake } from "@/lib/data";
+import { QuestionBank, PracticeExam, Test, StudyPlan, StudyAssignment, Topic, Mistake, EvaluationStatus } from "@/lib/data";
 import {
   onQuestionBanksUpdate,
   onPracticeExamsUpdate,
@@ -63,6 +63,7 @@ import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from "next/image";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
+import { cn } from "@/lib/utils";
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -90,15 +91,14 @@ const newStudyPlanSchema = z.object({
 });
 
 
-function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenEditBank, onDeleteBank, onOpenEditExam, onDeleteExam, onOpenEditTest, onArchiveTest, onDeleteTest, onOpenEditMistake }: { questionBanks: QuestionBank[], practiceExams: PracticeExam[], tests: Test[], mistakes: Mistake[], onOpenEditBank: (bank: QuestionBank) => void, onDeleteBank: (id: string) => void, onOpenEditExam: (exam: PracticeExam) => void, onDeleteExam: (id: string) => void, onOpenEditTest: (test: Test) => void, onArchiveTest: (test: Test) => void, onDeleteTest: (id: string) => void, onOpenEditMistake: (mistake: Mistake) => void }) {
-    const { familyMembers } = useAuth();
-
+function ContentLibrary({ questionBanks, practiceExams, onOpenEditBank, onDeleteBank, onOpenEditExam, onDeleteExam }: { questionBanks: QuestionBank[], practiceExams: PracticeExam[], onOpenEditBank: (bank: QuestionBank) => void, onDeleteBank: (id: string) => void, onOpenEditExam: (exam: PracticeExam) => void, onDeleteExam: (id: string) => void }) {
+    
     const contentByCategory = React.useMemo(() => {
-        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[], tests: Test[], mistakes: Mistake[] } } = {};
+        const categories: { [key: string]: { banks: QuestionBank[], exams: PracticeExam[] } } = {};
 
         const initializeCategory = (name: string) => {
             if (!categories[name]) {
-                categories[name] = { banks: [], exams: [], tests: [], mistakes: [] };
+                categories[name] = { banks: [], exams: [] };
             }
         };
 
@@ -109,10 +109,7 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
         
         // Initialize static categories
         initializeCategory('Genel Deneme Sınavları');
-        if (mistakes.length > 0) {
-            initializeCategory('Yanlış Havuzu');
-        }
-
+       
         // Populate question banks
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
@@ -130,22 +127,14 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
             categories['Genel Deneme Sınavları'].exams.push(exam);
         });
         
-        // Populate all mistakes into the central "Yanlış Havuzu" category
-        if (mistakes.length > 0) {
-            if (!categories['Yanlış Havuzu']) {
-                initializeCategory('Yanlış Havuzu');
-            }
-             categories['Yanlış Havuzu'].mistakes.push(...mistakes);
-        }
-
         return categories;
-    }, [questionBanks, practiceExams, mistakes]);
+    }, [questionBanks, practiceExams]);
 
     return (
         <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
             {Object.entries(contentByCategory).map(([category, content]) => {
                 const Icon = categoryIcons[category] || BookCopy;
-                const totalCount = content.banks.length + content.exams.length + content.mistakes.length;
+                const totalCount = content.banks.length + content.exams.length;
                 
                 if (totalCount === 0) return null;
 
@@ -163,24 +152,6 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
                             </AccordionTrigger>
                             <AccordionContent className="p-4 pt-0">
                                 <div className="space-y-3">
-                                    {content.mistakes.map(mistake => {
-                                        const student = familyMembers.find(m => m.id === mistake.creatorId);
-                                        return (
-                                            <Card key={mistake.id} className="p-3">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <p className="font-semibold">{mistake.subject} - {mistake.topic}</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Öğrenci: {student?.name || '?'} - Oluşturulma: {format(parseISO(mistake.createdAt), 'dd.MM.yy')}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Button variant="ghost" size="icon" onClick={() => onOpenEditMistake(mistake)}><Edit className="w-4 h-4"/></Button>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        )
-                                    })}
                                     {content.banks.map(bank => (
                                         <Card key={bank.id} className="p-3">
                                             <div className="flex justify-between items-center">
@@ -676,9 +647,7 @@ export default function EducationManagementPage() {
     const [isTestDialogOpen, setIsTestDialogOpen] = React.useState(false);
     const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
     const [isMistakeDialogOpen, setIsMistakeDialogOpen] = React.useState(false);
-    const [isImageUploadOpen, setIsImageUploadOpen] = React.useState(false);
-
-
+    
     const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
     const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
     const [editingTest, setEditingTest] = React.useState<Test | null>(null);
@@ -933,11 +902,11 @@ export default function EducationManagementPage() {
     
     const handleOpenImageUpload = (testId: string, questionIndex: number) => {
         setEditingQuestion({ testId, questionIndex });
-        setIsImageUploadOpen(true);
+        const fileInput = document.getElementById(`file-input-${testId}-${questionIndex}`);
+        fileInput?.click();
     };
 
-    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (!editingQuestion) return;
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, testId: string, questionIndex: number) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -947,17 +916,17 @@ export default function EducationManagementPage() {
             reader.readAsDataURL(file);
             reader.onloadend = async () => {
                 const imageDataUri = reader.result as string;
-                const destinationPath = `test-questions/${editingQuestion.testId}-${editingQuestion.questionIndex}-${Date.now()}.jpg`;
+                const destinationPath = `test-questions/${testId}-${questionIndex}-${Date.now()}.jpg`;
                 const migrationResult = await migrateImage({ imageDataUri, destinationPath });
 
                 if (!migrationResult.success || !migrationResult.newUrl) {
                     throw new Error(migrationResult.error || "Görsel yüklenemedi.");
                 }
 
-                const testToUpdate = tests.find(t => t.id === editingQuestion.testId);
+                const testToUpdate = tests.find(t => t.id === testId);
                 if (testToUpdate) {
                     const updatedQuestions = [...(testToUpdate.questions || [])];
-                    const questionNumber = editingQuestion.questionIndex + 1;
+                    const questionNumber = questionIndex + 1;
                     const qIndex = updatedQuestions.findIndex(q => q.questionNumber === questionNumber);
                     
                     if (qIndex !== -1) {
@@ -969,14 +938,11 @@ export default function EducationManagementPage() {
                         });
                     }
                     
-                    // Sort to be safe, although pushing should maintain order if done correctly
                     updatedQuestions.sort((a,b) => a.questionNumber - b.questionNumber);
 
-                    await updateTest(editingQuestion.testId, { questions: updatedQuestions });
+                    await updateTest(testId, { questions: updatedQuestions });
                     toast({ title: "Görsel Güncellendi!" });
                 }
-                 setIsImageUploadOpen(false);
-                 setEditingQuestion(null);
             };
         } catch (e) {
             toast({ title: "Hata", variant: "destructive" });
@@ -1064,44 +1030,50 @@ export default function EducationManagementPage() {
                     <TabsTrigger value="study-plans">Çalışma Planları</TabsTrigger>
                 </TabsList>
                 <TabsContent value="assignments" className="mt-4">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {tests.filter(t => !t.isArchived).map(test => {
-                           const student = familyMembers.find(m => m.id === test.studentId);
-                           return (
-                               <Card key={test.id}>
-                                   <CardHeader>
-                                       <CardTitle>{test.title}</CardTitle>
-                                       <CardDescription>
-                                           {student?.name || "Bilinmeyen"} - {test.subject}
-                                           <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
-                                       </CardDescription>
-                                   </CardHeader>
-                                   <CardContent>
-                                       <div className="grid grid-cols-4 gap-2">
+                            const student = familyMembers.find(m => m.id === test.studentId);
+                            return (
+                                <Card key={test.id}>
+                                    <CardHeader>
+                                        <CardTitle>{test.title}</CardTitle>
+                                        <CardDescription>
+                                            {student?.name || "Bilinmeyen"} - {test.subject}
+                                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-4 gap-2">
                                             {Array.from({ length: test.questionCount }).map((_, index) => {
                                                 const question = test.questions?.find(q => q.questionNumber === index + 1);
+                                                const evaluation: EvaluationStatus | undefined = test.studentTextAnswersEvaluation?.[index+1] ?? test.studentAnswers?.[index+1] === test.answerKey?.[index+1] ? 'correct' : 'incorrect';
+                                                
+                                                const colorClass = 
+                                                    evaluation === 'correct' ? 'border-green-500 bg-green-500/10' :
+                                                    evaluation === 'incorrect' ? 'border-red-500 bg-red-500/10' :
+                                                    evaluation === 'empty' ? 'border-gray-500 bg-gray-500/10' :
+                                                    'border-border';
+
                                                 return (
-                                                    <div key={index} className="aspect-square border rounded-md flex items-center justify-center relative group">
-                                                        <input type="file" accept="image/*" className="hidden" ref={el => { if(el) el.onchange = handleImageUpload}} onClick={(e) => {
-                                                            setEditingQuestion({ testId: test.id, questionIndex: index });
-                                                        }}/>
+                                                    <div key={index} className={cn("aspect-square border rounded-md flex items-center justify-center relative group", colorClass)}>
+                                                        <input id={`file-input-${test.id}-${index}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, test.id, index)} />
                                                         {question?.imageUrl ? (
                                                             <Image src={question.imageUrl} alt={`Soru ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="question paper" />
                                                         ) : (
-                                                            <Button variant="ghost" size="sm" className="h-full w-full text-xs" onClick={() => { setEditingQuestion({ testId: test.id, questionIndex: index }); document.querySelector<HTMLInputElement>(`input[type=file]`)?.click();}}>
-                                                                <FileImage className="h-4 w-4 mr-1"/>
+                                                            <button className="h-full w-full text-xs flex flex-col items-center justify-center text-muted-foreground" onClick={() => handleOpenImageUpload(test.id, index)}>
+                                                                <FileImage className="h-4 w-4 mb-1"/>
                                                                 Soru {index + 1}
-                                                            </Button>
+                                                            </button>
                                                         )}
                                                     </div>
                                                 )
                                             })}
-                                       </div>
-                                   </CardContent>
-                               </Card>
-                           )
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
                         })}
-                     </div>
+                    </div>
                 </TabsContent>
                 <TabsContent value="library" className="mt-4">
                      <Dialog>
@@ -1121,16 +1093,10 @@ export default function EducationManagementPage() {
                     <ContentLibrary 
                         questionBanks={questionBanks}
                         practiceExams={practiceExams}
-                        tests={tests}
-                        mistakes={mistakes}
                         onOpenEditBank={openEditBankDialog}
                         onDeleteBank={handleDeleteBank}
                         onOpenEditExam={openEditExamDialog}
                         onDeleteExam={handleDeleteExam}
-                        onOpenEditTest={openEditTestDialog}
-                        onArchiveTest={handleArchiveTest}
-                        onDeleteTest={handleDeleteTest}
-                        onOpenEditMistake={openEditMistakeDialog}
                     />
                 </TabsContent>
                 <TabsContent value="curriculum" className="mt-4">
