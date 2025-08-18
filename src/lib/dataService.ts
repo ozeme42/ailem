@@ -1223,7 +1223,6 @@ export const generateMistakesForTest = async (testId: string) => {
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
 
-    // The test document's `questions` field is the single source of truth for question images.
     const questionImageMap = new Map<string, string | undefined>();
     if (test.questions && test.questions.length > 0) {
         test.questions.forEach(q => {
@@ -1233,20 +1232,18 @@ export const generateMistakesForTest = async (testId: string) => {
         });
     }
 
-    const createMistakeData = (questionId: string, studentAnswer: string) => {
-        return {
-            familyId: test.familyId,
-            creatorId: test.studentId,
-            testId: test.id,
-            originalQuestionId: questionId,
-            studentAnswer: studentAnswer || '(Boş)',
-            subject: test.subject,
-            topic: test.title,
-            createdAt: new Date().toISOString(),
-            status: 'active' as const,
-            imageUrl: questionImageMap.get(questionId) || null,
-        };
-    };
+    const createMistakeData = (questionId: string, studentAnswer: string) => ({
+        familyId: test.familyId,
+        creatorId: test.studentId,
+        testId: test.id,
+        originalQuestionId: questionId,
+        studentAnswer: studentAnswer || '(Boş bırakılmış)',
+        subject: test.subject,
+        topic: test.title,
+        createdAt: new Date().toISOString(),
+        status: 'active' as const,
+        imageUrl: questionImageMap.get(questionId) || null,
+    });
 
     if (test.gradingType === 'auto' && test.answerKey) {
         for (let i = 1; i <= test.questionCount; i++) {
@@ -1254,19 +1251,31 @@ export const generateMistakesForTest = async (testId: string) => {
             const correctAnswer = test.answerKey[qNumStr];
             const studentAnswer = test.studentAnswers?.[qNumStr] ?? null;
 
-            if (studentAnswer !== correctAnswer) { // This includes both incorrect and empty
-                const mistakeData = createMistakeData(qNumStr, studentAnswer || "");
+            if (studentAnswer !== correctAnswer) {
+                const mistakeData = createMistakeData(qNumStr, studentAnswer || '');
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
                 mistakeIdsToRetake.push(mistakeRef.id);
             }
         }
-    } else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
-        for (const qId in test.studentTextAnswersEvaluation) {
-            const status = test.studentTextAnswersEvaluation[qId];
-            if (status === 'incorrect' || status === 'empty') {
-                const studentAnswer = test.studentTextAnswers?.[qId] || '(Boş)';
+    } else if (test.gradingType === 'manual-text' && test.studentTextAnswers) {
+        const evaluations = test.studentTextAnswersEvaluation || {};
+        for (const qId in test.studentTextAnswers) {
+            if (evaluations[qId] === 'incorrect') {
+                const studentAnswer = test.studentTextAnswers[qId];
                 const mistakeData = createMistakeData(qId, studentAnswer);
+                const mistakeRef = doc(collection(db, 'mistakes'));
+                batch.set(mistakeRef, removeUndefined(mistakeData));
+                mistakeIdsToRetake.push(mistakeRef.id);
+            }
+        }
+        // Also handle questions that were empty and thus not in studentTextAnswers
+        const answeredQuestionIds = new Set(Object.keys(test.studentTextAnswers));
+        for (let i = 1; i <= test.questionCount; i++) {
+            const qId = i.toString();
+            if (!answeredQuestionIds.has(qId)) {
+                // This is an empty question
+                const mistakeData = createMistakeData(qId, '');
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
                 mistakeIdsToRetake.push(mistakeRef.id);
