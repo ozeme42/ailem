@@ -1258,27 +1258,17 @@ export const generateMistakesForTest = async (testId: string) => {
                 mistakeIdsToRetake.push(mistakeRef.id);
             }
         }
-    } else if (test.gradingType === 'manual-text' && test.studentTextAnswers) {
-        const evaluations = test.studentTextAnswersEvaluation || {};
-        for (const qId in test.studentTextAnswers) {
-            if (evaluations[qId] === 'incorrect') {
-                const studentAnswer = test.studentTextAnswers[qId];
-                const mistakeData = createMistakeData(qId, studentAnswer);
-                const mistakeRef = doc(collection(db, 'mistakes'));
-                batch.set(mistakeRef, removeUndefined(mistakeData));
-                mistakeIdsToRetake.push(mistakeRef.id);
-            }
-        }
-        // Also handle questions that were empty and thus not in studentTextAnswers
-        const answeredQuestionIds = new Set(Object.keys(test.studentTextAnswers));
+    } else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
+        const evaluations = test.studentTextAnswersEvaluation;
         for (let i = 1; i <= test.questionCount; i++) {
             const qId = i.toString();
-            if (!answeredQuestionIds.has(qId)) {
-                // This is an empty question
-                const mistakeData = createMistakeData(qId, '');
-                const mistakeRef = doc(collection(db, 'mistakes'));
-                batch.set(mistakeRef, removeUndefined(mistakeData));
-                mistakeIdsToRetake.push(mistakeRef.id);
+            const status = evaluations[qId];
+            if (status === 'incorrect' || status === 'empty') {
+                 const studentAnswer = test.studentTextAnswers?.[qId] || '';
+                 const mistakeData = createMistakeData(qId, studentAnswer);
+                 const mistakeRef = doc(collection(db, 'mistakes'));
+                 batch.set(mistakeRef, removeUndefined(mistakeData));
+                 mistakeIdsToRetake.push(mistakeRef.id);
             }
         }
     }

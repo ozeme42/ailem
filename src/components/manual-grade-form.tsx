@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -82,7 +81,8 @@ export const ManualGradeForm = React.forwardRef<
     React.useEffect(() => {
         const fetchQuestionsAndAnswers = async () => {
             let fetchedQuestions: QuestionForGrading[] = [];
-            
+            const initialEvals: { [key: string]: EvaluationStatus } = {};
+
             if (test.sourceType === 'mistake' && test.mistakeIds) {
                 const mistakeDocs = await Promise.all(test.mistakeIds.map(id => getDoc(doc(db, 'mistakes', id))));
                 fetchedQuestions = mistakeDocs.map((d) => {
@@ -109,10 +109,8 @@ export const ManualGradeForm = React.forwardRef<
                      });
                  }
             }
-            setQuestions(fetchedQuestions);
-            
-            const initialEvals: { [key: string]: EvaluationStatus } = {};
-             fetchedQuestions.forEach(q => {
+
+            fetchedQuestions.forEach(q => {
                 const studentAnswer = q.studentAnswer;
                 if (!studentAnswer || studentAnswer.trim() === "") {
                     initialEvals[q.id] = 'empty';
@@ -120,7 +118,9 @@ export const ManualGradeForm = React.forwardRef<
                     initialEvals[q.id] = test.studentTextAnswersEvaluation?.[q.id] || 'unevaluated';
                 }
             });
-             form.reset({ evaluations: initialEvals, imageUrls: {}, imageDataUris: {} });
+
+            setQuestions(fetchedQuestions);
+            form.reset({ evaluations: initialEvals, imageUrls: {}, imageDataUris: {} });
         };
         fetchQuestionsAndAnswers();
     }, [test, form]);
