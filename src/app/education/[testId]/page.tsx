@@ -433,7 +433,7 @@ export default function OpticalFormPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <label className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer relative">
+                                <label className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer relative" onClick={() => fileInputRef.current?.click()}>
                                     {imageUrl ? (
                                         <Image src={imageUrl} alt={`Soru ${originalQuestionNumber}`} layout="fill" objectFit="contain" className="rounded-lg" data-ai-hint="question paper" />
                                     ) : (
@@ -447,6 +447,7 @@ export default function OpticalFormPage() {
                                         type="file"
                                         accept="image/*"
                                         className="hidden"
+                                        ref={fileInputRef}
                                         onChange={(e) => handleImageUploadForMistake(e, currentMistakeQuestion)}
                                     />
                                 </label>

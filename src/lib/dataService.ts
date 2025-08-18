@@ -1254,7 +1254,7 @@ export const generateMistakesForTest = async (testId: string) => {
             const correctAnswer = test.answerKey[qNumStr];
             const studentAnswer = test.studentAnswers?.[qNumStr] ?? null;
 
-            if (studentAnswer !== correctAnswer) {
+            if (studentAnswer !== correctAnswer) { // This includes both incorrect and empty
                 const mistakeData = createMistakeData(qNumStr, studentAnswer || "");
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
