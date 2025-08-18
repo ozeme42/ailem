@@ -65,14 +65,19 @@ export default function OpticalFormPage() {
         let allStudentMcqAnswers: McqAnswers = {};
         let allStudentTextAnswers: TextAnswers = {};
         
-        for (let i = 1; i <= test.questionCount; i++) {
-            const qNumStr = i.toString();
-            if (test.gradingType === 'auto') {
+        // Ensure all questions are accounted for, even if empty
+        if (test.gradingType === 'auto') {
+            for (let i = 1; i <= test.questionCount; i++) {
+                const qNumStr = i.toString();
                 allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
-            } else if (test.gradingType === 'manual-text') {
-                allStudentTextAnswers[qNumStr] = textAnswers[qNumStr] || "";
+            }
+        } else if (test.gradingType === 'manual-text') {
+            for (let i = 1; i <= test.questionCount; i++) {
+                const qNumStr = i.toString();
+                 allStudentTextAnswers[qNumStr] = textAnswers[qNumStr] || "";
             }
         }
+
 
         try {
             let updatedData: Partial<TestType> = {
@@ -403,8 +408,20 @@ export default function OpticalFormPage() {
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <Card className="p-4 bg-green-500/10"><CardTitle className="flex items-center justify-center gap-2"><Check className="text-green-600"/> Doğru</CardTitle><p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p></Card>
-                            <Card className="p-4 bg-red-500/10"><CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle><p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p></Card>
-                            <Card className="p-4 bg-gray-500/10"><CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle><p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p></Card>
+                            <div
+                                className={cn("p-4 rounded-lg border", (test.incorrectAnswers || 0) > 0 ? 'bg-red-500/10 cursor-pointer hover:bg-red-500/20' : 'bg-card')}
+                                onClick={(test.incorrectAnswers || 0) > 0 ? startRetake : undefined}
+                            >
+                                <CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle>
+                                <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
+                            </div>
+                            <div
+                                className={cn("p-4 rounded-lg border", (test.emptyAnswers || 0) > 0 ? 'bg-gray-500/10 cursor-pointer hover:bg-gray-500/20' : 'bg-card')}
+                                onClick={(test.emptyAnswers || 0) > 0 ? startRetake : undefined}
+                            >
+                                <CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle>
+                                <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
+                            </div>
                         </div>
                         {hasMistakes && (
                              <Button className="w-full" size="lg" onClick={startRetake} disabled={isGeneratingMistakes}>
