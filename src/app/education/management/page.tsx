@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,9 @@ import { tr } from 'date-fns/locale';
 import { EditMistakeForm } from "@/components/edit-mistake-form";
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Image from "next/image";
+import { ImageCropper } from "@/components/image-cropper";
+import { migrateImage } from "@/ai/flows/migrate-image-flow";
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -104,9 +107,6 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => initializeCategory(subject.name));
         });
-
-        // Initialize all test categories
-        tests.forEach(test => initializeCategory(getCategoryName(test)));
         
         // Initialize static categories
         initializeCategory('Genel Deneme Sınavları');
@@ -130,14 +130,6 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
             }
             categories['Genel Deneme Sınavları'].exams.push(exam);
         });
-
-        // Populate active tests
-        tests.filter(t => !t.isArchived).forEach(test => {
-            const category = getCategoryName(test);
-            if (categories[category]) {
-                categories[category].tests.push(test);
-            }
-        });
         
         // Populate all mistakes into the central "Yanlış Havuzu" category
         if (mistakes.length > 0) {
@@ -148,13 +140,13 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
         }
 
         return categories;
-    }, [questionBanks, practiceExams, tests, mistakes]);
+    }, [questionBanks, practiceExams, mistakes]);
 
     return (
         <Accordion type="multiple" defaultValue={Object.keys(contentByCategory)} className="w-full space-y-4">
             {Object.entries(contentByCategory).map(([category, content]) => {
                 const Icon = categoryIcons[category] || BookCopy;
-                const totalCount = content.banks.length + content.exams.length + content.tests.length + content.mistakes.length;
+                const totalCount = content.banks.length + content.exams.length + content.mistakes.length;
                 
                 if (totalCount === 0) return null;
 
@@ -234,41 +226,6 @@ function ContentLibrary({ questionBanks, practiceExams, tests, mistakes, onOpenE
                                             </div>
                                         </Card>
                                     ))}
-                                    {content.tests.map(test => {
-                                        const student = familyMembers.find(m => m.id === test.studentId);
-                                        return (
-                                            <Card key={test.id} className="p-3">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="font-semibold">{test.title}</p>
-                                                            <Badge variant={test.status === 'Sonuçlandı' ? 'default' : 'outline'}>
-                                                                {test.status}
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {student?.name || 'Bilinmeyen Öğrenci'} - Son Teslim: {test.dueDate}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        {test.status === 'Sonuçlandı' && (
-                                                            <Button variant="ghost" size="icon" onClick={() => onArchiveTest(test)} title="Arşivle">
-                                                                <Archive className="w-4 h-4 text-muted-foreground"/>
-                                                            </Button>
-                                                        )}
-                                                        <Button variant="ghost" size="icon" onClick={() => onOpenEditTest(test)}><Edit className="w-4 h-4"/></Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader><AlertDialogTitleComponent>Ödevi sil?</AlertDialogTitleComponent><AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        )
-                                    })}
                                 </div>
                             </AccordionContent>
                          </AccordionItem>
@@ -720,6 +677,7 @@ export default function EducationManagementPage() {
     const [isTestDialogOpen, setIsTestDialogOpen] = React.useState(false);
     const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
     const [isMistakeDialogOpen, setIsMistakeDialogOpen] = React.useState(false);
+    const [isImageUploadOpen, setIsImageUploadOpen] = React.useState(false);
 
 
     const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
@@ -727,6 +685,9 @@ export default function EducationManagementPage() {
     const [editingTest, setEditingTest] = React.useState<Test | null>(null);
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
+    const [editingQuestion, setEditingQuestion] = React.useState<{ testId: string; questionIndex: number } | null>(null);
+    const [imageToCrop, setImageToCrop] = React.useState<string | null>(null);
+
     
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -971,6 +932,48 @@ export default function EducationManagementPage() {
         setEditingMistake(null);
         toast({title: "Geri Bildirim Kaydedildi"});
     };
+    
+     const handleOpenImageUpload = (testId: string, questionIndex: number) => {
+        setEditingQuestion({ testId, questionIndex });
+        setIsImageUploadOpen(true);
+    };
+
+    const handleImageCrop = async (croppedImageUrl: string) => {
+        if (!editingQuestion) return;
+        
+        toast({ title: "Görsel Yükleniyor..." });
+        try {
+            const destinationPath = `test-questions/${editingQuestion.testId}-${editingQuestion.questionIndex}-${Date.now()}.jpg`;
+            const migrationResult = await migrateImage({ imageDataUri: croppedImageUrl, destinationPath });
+            if (!migrationResult.success || !migrationResult.newUrl) {
+                throw new Error("Görsel yüklenemedi.");
+            }
+            
+            const testToUpdate = tests.find(t => t.id === editingQuestion.testId);
+            if (testToUpdate) {
+                const updatedQuestions = [...(testToUpdate.questions || [])];
+                const qIndex = updatedQuestions.findIndex(q => q.questionNumber === editingQuestion.questionIndex + 1);
+                
+                if (qIndex !== -1) {
+                    updatedQuestions[qIndex].imageUrl = migrationResult.newUrl;
+                } else {
+                    updatedQuestions.push({
+                        questionNumber: editingQuestion.questionIndex + 1,
+                        imageUrl: migrationResult.newUrl
+                    });
+                }
+                
+                await updateTest(editingQuestion.testId, { questions: updatedQuestions });
+                toast({ title: "Görsel Güncellendi!" });
+            }
+        } catch (e) {
+            toast({ title: "Hata", variant: "destructive" });
+        } finally {
+            setIsImageUploadOpen(false);
+            setImageToCrop(null);
+            setEditingQuestion(null);
+        }
+    };
 
     return (
         <>
@@ -1043,12 +1046,50 @@ export default function EducationManagementPage() {
                 </Card>
             )}
 
-            <Tabs defaultValue="library" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+            <Tabs defaultValue="assignments" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="assignments">Atanmış Ödevler</TabsTrigger>
                     <TabsTrigger value="library">İçerik Kütüphanesi</TabsTrigger>
                     <TabsTrigger value="curriculum">Ders ve Konu Yönetimi</TabsTrigger>
                     <TabsTrigger value="study-plans">Çalışma Planları</TabsTrigger>
                 </TabsList>
+                <TabsContent value="assignments" className="mt-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {tests.filter(t => !t.isArchived).map(test => {
+                           const student = familyMembers.find(m => m.id === test.studentId);
+                           return (
+                               <Card key={test.id}>
+                                   <CardHeader>
+                                       <CardTitle>{test.title}</CardTitle>
+                                       <CardDescription>
+                                           {student?.name || "Bilinmeyen"} - {test.subject}
+                                           <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
+                                       </CardDescription>
+                                   </CardHeader>
+                                   <CardContent>
+                                       <div className="grid grid-cols-4 gap-2">
+                                            {Array.from({ length: test.questionCount }).map((_, index) => {
+                                                const question = test.questions?.find(q => q.questionNumber === index + 1);
+                                                return (
+                                                    <div key={index} className="aspect-square border rounded-md flex items-center justify-center relative">
+                                                        {question?.imageUrl ? (
+                                                            <Image src={question.imageUrl} alt={`Soru ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" />
+                                                        ) : (
+                                                            <Button variant="ghost" size="sm" className="h-full w-full text-xs" onClick={() => handleOpenImageUpload(test.id, index)}>
+                                                                <FileImage className="h-4 w-4 mr-1"/>
+                                                                Soru {index + 1}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                       </div>
+                                   </CardContent>
+                               </Card>
+                           )
+                        })}
+                     </div>
+                </TabsContent>
                 <TabsContent value="library" className="mt-4">
                      <Dialog>
                         <DialogTrigger asChild>
@@ -1152,8 +1193,35 @@ export default function EducationManagementPage() {
                     )}
                 </DialogContent>
             </Dialog>
+            <Dialog open={isImageUploadOpen} onOpenChange={setIsImageUploadOpen}>
+                <DialogContent className="max-w-4xl h-[80vh]">
+                     <DialogHeader>
+                        <DialogTitle>Soru Görseli Yükle</DialogTitle>
+                     </DialogHeader>
+                     {imageToCrop ? (
+                        <ImageCropper image={imageToCrop} onCropComplete={handleImageCrop} />
+                     ) : (
+                        <div className="flex flex-col items-center justify-center h-full">
+                             <input type="file" accept="image/*" className="hidden" ref={(node) => {
+                                 if (node) node.onchange = (e) => {
+                                     const file = (e.target as HTMLInputElement).files?.[0];
+                                     if (file) {
+                                         const reader = new FileReader();
+                                         reader.onload = (event) => {
+                                             setImageToCrop(event.target?.result as string);
+                                         };
+                                         reader.readAsDataURL(file);
+                                     }
+                                 };
+                             }} />
+                             <Button onClick={() => document.querySelector<HTMLInputElement>('input[type=file]')?.click()}>Görsel Seç</Button>
+                        </div>
+                     )}
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
 
     
+

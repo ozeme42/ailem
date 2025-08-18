@@ -9,9 +9,10 @@ import { Slider } from '@/components/ui/slider';
 interface ImageCropperProps {
   image: string;
   onCropComplete: (croppedImageUrl: string) => void;
+  aspect?: number;
 }
 
-export function ImageCropper({ image, onCropComplete }: ImageCropperProps) {
+export function ImageCropper({ image, onCropComplete, aspect = 4 / 3 }: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -42,7 +43,7 @@ export function ImageCropper({ image, onCropComplete }: ImageCropperProps) {
           image={image}
           crop={crop}
           zoom={zoom}
-          aspect={4 / 3}
+          aspect={aspect}
           onCropChange={onCropChange}
           onZoomChange={onZoomChange}
           onCropComplete={onCropPixelsChange}
