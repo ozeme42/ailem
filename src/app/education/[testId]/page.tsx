@@ -61,6 +61,18 @@ export default function OpticalFormPage() {
 
         setIsPaused(true);
         const timeSpent = (test.timeSpentSeconds || 0) + (totalTime - timeLeft);
+        
+        let allStudentMcqAnswers: McqAnswers = {};
+        let allStudentTextAnswers: TextAnswers = {};
+        
+        for (let i = 1; i <= test.questionCount; i++) {
+            const qNumStr = i.toString();
+            if (test.gradingType === 'auto') {
+                allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
+            } else if (test.gradingType === 'manual-text') {
+                allStudentTextAnswers[qNumStr] = textAnswers[qNumStr] || "";
+            }
+        }
 
         try {
             let updatedData: Partial<TestType> = {
@@ -72,12 +84,10 @@ export default function OpticalFormPage() {
             
             if (gradingType !== 'auto') {
                 updatedData.status = 'Değerlendirme Bekliyor'; 
-                if (test.sourceType === 'mistake') {
+                 if (test.sourceType === 'mistake') {
                     updatedData.studentTextAnswers = textAnswers;
-                } else if (gradingType === 'manual-text') {
-                    updatedData.studentTextAnswers = textAnswers;
-                } else { 
-                    updatedData.studentAnswers = mcqAnswers;
+                } else {
+                    updatedData.studentTextAnswers = allStudentTextAnswers;
                 }
                 await updateTest(test.id, updatedData);
                 toast({
@@ -85,7 +95,7 @@ export default function OpticalFormPage() {
                     description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
                 });
             } else { 
-                updatedData.studentAnswers = mcqAnswers;
+                updatedData.studentAnswers = allStudentMcqAnswers;
                 let answerKey: { [key: string]: string } | undefined = undefined;
 
                 if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
@@ -112,9 +122,9 @@ export default function OpticalFormPage() {
 
                     for (let i = 1; i <= test.questionCount; i++) {
                         const qNumStr = i.toString();
-                        if (!mcqAnswers[qNumStr] || mcqAnswers[qNumStr] === null) {
+                        if (!allStudentMcqAnswers[qNumStr] || allStudentMcqAnswers[qNumStr] === null) {
                             empty++;
-                        } else if (mcqAnswers[qNumStr] === (answerKey as any)[qNumStr]) {
+                        } else if (allStudentMcqAnswers[qNumStr] === (answerKey as any)[qNumStr]) {
                             correct++;
                         } else {
                             incorrect++;
@@ -602,3 +612,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
