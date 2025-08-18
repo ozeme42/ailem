@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { doc, getDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
-import { updateTest, checkAndAwardBadges, updateMistake } from "@/lib/dataService";
+import { updateTest, checkAndAwardBadges, updateMistake, generateMistakesForTest } from "@/lib/dataService";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -48,6 +48,7 @@ export default function OpticalFormPage() {
     
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [retakeQuestions, setRetakeQuestions] = React.useState<Mistake[]>([]);
+    const [isGeneratingMistakes, setIsGeneratingMistakes] = React.useState(false);
     
     // For results view
     const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: string[], emptyQuestions: string[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], emptyQuestions: [], answerKey: null });
@@ -166,18 +167,38 @@ export default function OpticalFormPage() {
         }
     };
     
-     const startRetake = async () => {
+    const startRetake = async () => {
         if (!test) return;
     
-        const mistakesQuery = query(
-            collection(db, 'mistakes'), 
-            where('testId', '==', test.id), 
-            where('status', '==', 'active')
-        );
+        const fetchMistakes = async () => {
+            const mistakesQuery = query(
+                collection(db, 'mistakes'),
+                where('testId', '==', test.id),
+                where('status', '==', 'active')
+            );
+            const querySnapshot = await getDocs(mistakesQuery);
+            return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
+        };
+    
+        let mistakesToRetake = await fetchMistakes();
         
-        const querySnapshot = await getDocs(mistakesQuery);
-        const mistakesToRetake = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
-        
+        // If no mistakes found, try to generate them for older tests
+        if (mistakesToRetake.length === 0 && ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0)) {
+            setIsGeneratingMistakes(true);
+            toast({ title: 'Eksikler Hazırlanıyor...', description: 'Lütfen bekleyin, eski testiniz için yanlışlar oluşturuluyor.' });
+            try {
+                await generateMistakesForTest(test.id);
+                mistakesToRetake = await fetchMistakes(); // Re-fetch after generation
+            } catch (error) {
+                console.error("Error generating mistakes:", error);
+                toast({ title: 'Hata', description: 'Eksik sorular oluşturulurken bir sorun oluştu.', variant: 'destructive' });
+                setIsGeneratingMistakes(false);
+                return;
+            } finally {
+                setIsGeneratingMistakes(false);
+            }
+        }
+    
         if (mistakesToRetake.length === 0) {
             toast({ title: 'Tebrikler!', description: 'Bu testte tamamlanacak eksik soru bulunmuyor.' });
             return;
@@ -308,7 +329,7 @@ export default function OpticalFormPage() {
     }
 
     if (viewMode === 'results') {
-        const hasMistakes = (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) || ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0);
+        const hasMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
         return (
             <div className="container mx-auto py-8 space-y-6">
                 <header className="mb-4">
@@ -334,8 +355,8 @@ export default function OpticalFormPage() {
                             <Card className="p-4 bg-gray-500/10"><CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle><p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p></Card>
                         </div>
                         {hasMistakes && (
-                             <Button className="w-full" size="lg" onClick={startRetake}>
-                                <Sparkles className="mr-2 h-5 w-5"/>
+                             <Button className="w-full" size="lg" onClick={startRetake} disabled={isGeneratingMistakes}>
+                                {isGeneratingMistakes ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5"/>}
                                 Eksiklerini Tamamla ({test.remainingMistakeIds?.length || (test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
                             </Button>
                         )}
@@ -374,7 +395,7 @@ export default function OpticalFormPage() {
                             </CardHeader>
                             <CardContent>
                                 {imageUrl ? (
-                                    <Image src={imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
+                                    <Image src={imageUrl} alt={`Soru ${originalQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
                                 ) : (
                                     <div className="text-center p-8 border rounded-lg bg-muted">Görsel bulunamadı.</div>
                                 )}

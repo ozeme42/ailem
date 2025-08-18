@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -1208,11 +1208,15 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
     await updateDoc(testDocRef, cleanedData);
 
     if (cleanedData.status !== 'Sonuçlandı') return;
+    await generateMistakesForTest(id);
+};
 
+export const generateMistakesForTest = async (testId: string) => {
+    const testDocRef = doc(db, 'tests', testId);
     const testSnap = await getDoc(testDocRef);
     if (!testSnap.exists()) return;
-    
-    const test = { id: testSnap.id, ...testSnap.data(), ...cleanedData } as Test;
+
+    const test = { id: testId, ...testSnap.data() } as Test;
     if (!test.familyId) return;
 
     const batch = writeBatch(db);
@@ -1222,7 +1226,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
         return {
             familyId: test.familyId,
             creatorId: test.studentId,
-            testId: id,
+            testId: test.id,
             originalQuestionId: questionId,
             studentAnswer: studentAnswer || '(Boş)',
             subject: test.subject,
@@ -1238,13 +1242,16 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
             const qNum = parseInt(qNumStr, 10);
             const correctAnswer = test.answerKey[qNum];
             const studentAnswer = test.studentAnswers?.[qNum] ?? null;
+
             if (studentAnswer !== correctAnswer) {
-                let imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
-                
-                // If it's a bank or exam test, we need to fetch the image from there
-                if (!imageUrl && (test.sourceType === 'bank' || test.sourceType === 'exam')) {
-                    // This logic requires fetching the original test/bank, which is complex here.
-                    // For now, we assume quick tests have images. This needs improvement.
+                let imageUrl: string | null | undefined = null;
+                // Quick tests have images on the test document itself
+                if (test.sourceType === 'quick' && test.questions) {
+                    imageUrl = test.questions.find(q => q.questionNumber === qNum)?.imageUrl;
+                } else if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
+                    // For bank tests, the image URL would be on the topic/question level, which we don't store on the test doc.
+                    // This part would require fetching the question bank and finding the specific question image, which is complex.
+                    // For now, we pass null if not a quick test. This can be enhanced later if needed.
                 }
 
                 const mistakeData = createMistakeData(qNumStr, studentAnswer || "", imageUrl);
@@ -1258,14 +1265,10 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
             const status = test.studentTextAnswersEvaluation[qId];
             if (status === 'incorrect' || status === 'empty') {
                 const studentAnswer = test.studentTextAnswers?.[qId] || '(Boş)';
-                let imageUrl: string | undefined | null = test.studentTextAnswersEvaluation.imageUrls?.[qId];
-
-                if (!imageUrl) {
-                     if (test.sourceType === 'quick' && test.questions) {
-                        imageUrl = test.questions.find(q => q.questionNumber.toString() === qId)?.imageUrl;
-                    } else if (test.sourceType === 'mistake') {
-                        // This case is for re-taking mistakes, which we don't generate new mistakes from for now.
-                    }
+                let imageUrl: string | undefined | null = (test as any).imageUrls?.[qId]; // From manual grading
+                
+                if (!imageUrl && test.sourceType === 'quick' && test.questions) {
+                    imageUrl = test.questions.find(q => q.questionNumber.toString() === qId)?.imageUrl;
                 }
                 
                 const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
@@ -1275,13 +1278,14 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
             }
         }
     }
-    
+
     if (mistakeIdsToRetake.length > 0) {
         batch.update(testDocRef, { remainingMistakeIds: mistakeIdsToRetake });
     }
-    
+
     await batch.commit();
 };
+
 
 
 // Ambient Sounds
