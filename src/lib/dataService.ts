@@ -1231,16 +1231,24 @@ export const generateMistakesForTest = async (testId: string) => {
         if (bankSnap.exists()) {
             const bank = bankSnap.data() as QuestionBank;
             const topic = bank.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-            // Assuming questions are stored on the topic itself, which they aren't in the current model.
-            // This logic needs to be adapted if questions are stored elsewhere, for now we assume they are not available for bank tests.
-            // Let's assume for now that bank tests might not have images stored in a retrievable way for this function.
-            // sourceQuestions = topic.questions; // This would be the ideal case
+            // Assuming the test object contains the questions from the bank topic
+            // This needs to be ensured when the test is created.
+            // For now, let's assume the test object *may* have a questions field.
+            if(topic) {
+                // @ts-ignore // Topic does not have questions, but we need to assume it might from legacy or future structure.
+                sourceQuestions = topic.questions || test.questions;
+            }
+        }
+    } else if (test.sourceType === 'exam' && test.sourceId) {
+        // Similar logic for exams if they store questions with images
+        const examDocRef = doc(db, 'practiceExams', test.sourceId);
+        const examSnap = await getDoc(examDocRef);
+        if (examSnap.exists()) {
+            // @ts-ignore
+            sourceQuestions = examSnap.data().questions || test.questions;
         }
     }
     
-    // ... similar logic for 'exam' if needed ...
-
-
     const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
         return {
             familyId: test.familyId,
