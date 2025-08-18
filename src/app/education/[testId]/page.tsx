@@ -376,7 +376,7 @@ export default function OpticalFormPage() {
     
     if(viewMode === 'retake_test') {
         const currentMistakeQuestion = retakeQuestions[currentQuestionIndex];
-        const imageUrl = currentMistakeQuestion?.correctImageUrl || currentMistakeQuestion?.imageUrl;
+        const imageUrl = currentMistakeQuestion?.imageUrl;
         const originalQuestionNumber = currentMistakeQuestion?.originalQuestionId;
 
         return (

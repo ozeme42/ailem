@@ -1050,11 +1050,13 @@ export default function EducationManagementPage() {
                                                 let evaluation: EvaluationStatus;
                                                 const studentAnswer = test.studentAnswers?.[index + 1];
 
-                                                if (test.status !== 'Sonuçlandı' || !test.answerKey) {
+                                                if (test.status !== 'Sonuçlandı') {
                                                     evaluation = 'unevaluated';
-                                                } else if (studentAnswer === undefined || studentAnswer === null) {
+                                                } else if (test.gradingType === 'manual-text') {
+                                                     evaluation = test.studentTextAnswersEvaluation?.[index+1] || 'unevaluated'
+                                                } else if (!studentAnswer) {
                                                     evaluation = 'empty';
-                                                } else if (studentAnswer === test.answerKey[index + 1]) {
+                                                } else if (test.answerKey && studentAnswer === test.answerKey[index + 1]) {
                                                     evaluation = 'correct';
                                                 } else {
                                                     evaluation = 'incorrect';
@@ -1191,5 +1193,6 @@ export default function EducationManagementPage() {
     
 
     
+
 
 

@@ -1224,19 +1224,18 @@ export const generateMistakesForTest = async (testId: string) => {
     const mistakeIdsToRetake: string[] = [];
 
     // The test document's `questions` field is the single source of truth for question images.
-    const questionImageMap = new Map<number, string | undefined>();
+    const questionImageMap = new Map<string, string | undefined>();
     
     // Always prioritize images directly on the test object first.
     if (test.questions && test.questions.length > 0) {
         test.questions.forEach(q => {
             if (q.imageUrl) {
-                questionImageMap.set(q.questionNumber, q.imageUrl);
+                questionImageMap.set(q.questionNumber.toString(), q.imageUrl);
             }
         });
     }
 
     const createMistakeData = (questionId: string, studentAnswer: string) => {
-        const qNum = parseInt(questionId, 10);
         return {
             familyId: test.familyId,
             creatorId: test.studentId,
@@ -1247,7 +1246,7 @@ export const generateMistakesForTest = async (testId: string) => {
             topic: test.title,
             createdAt: new Date().toISOString(),
             status: 'active' as const,
-            imageUrl: questionImageMap.get(qNum) || null,
+            imageUrl: questionImageMap.get(questionId) || null,
         };
     };
 
@@ -1263,6 +1262,17 @@ export const generateMistakesForTest = async (testId: string) => {
                 mistakeIdsToRetake.push(mistakeRef.id);
             }
         }
+        // Also check for empty answers not present in answerKey
+        for (let i = 1; i <= test.questionCount; i++) {
+            const qNumStr = i.toString();
+            if (!(qNumStr in (test.studentAnswers || {}))) {
+                const mistakeData = createMistakeData(qNumStr, "");
+                const mistakeRef = doc(collection(db, 'mistakes'));
+                batch.set(mistakeRef, removeUndefined(mistakeData));
+                mistakeIdsToRetake.push(mistakeRef.id);
+            }
+        }
+
     } else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
         for (const qId in test.studentTextAnswersEvaluation) {
             const status = test.studentTextAnswersEvaluation[qId];
