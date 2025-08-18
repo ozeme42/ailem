@@ -356,8 +356,10 @@ export default function OpticalFormPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {imageUrl && (
+                                {imageUrl ? (
                                     <Image src={imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} width={800} height={600} className="rounded-lg border object-contain w-full mb-4" data-ai-hint="question paper" />
+                                ) : (
+                                    <div className="text-center p-8 border rounded-lg bg-muted">Görsel bulunamadı.</div>
                                 )}
                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionIndex + 1}</div>

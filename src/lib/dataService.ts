@@ -1207,69 +1207,73 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
     const cleanedData = removeUndefined(updateData);
     await updateDoc(testDocRef, cleanedData);
 
-    // If the test is graded, create mistakes and update the test with remaining question IDs.
-    if (cleanedData.status === 'Sonuçlandı') {
-        const testSnap = await getDoc(testDocRef);
-        if (!testSnap.exists()) return;
+    if (cleanedData.status !== 'Sonuçlandı') return;
 
-        const test = { id: testSnap.id, ...testSnap.data(), ...cleanedData } as Test;
-        if (!test.familyId) return;
+    const testSnap = await getDoc(testDocRef);
+    if (!testSnap.exists()) return;
+    
+    const test = { id: testSnap.id, ...testSnap.data(), ...cleanedData } as Test;
+    if (!test.familyId) return;
 
-        const batch = writeBatch(db);
-        const mistakeIdsToRetake: string[] = [];
+    const batch = writeBatch(db);
+    const mistakeIdsToRetake: string[] = [];
 
-        // Common function to create mistake data
-        const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
-            return {
-                familyId: test.familyId,
-                creatorId: test.studentId,
-                testId: id,
-                originalQuestionId: questionId,
-                studentAnswer: studentAnswer || '(Boş)',
-                subject: test.subject,
-                topic: test.title,
-                createdAt: new Date().toISOString(),
-                status: 'active' as const,
-                imageUrl: imageUrl,
-            };
+    const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
+        return {
+            familyId: test.familyId,
+            creatorId: test.studentId,
+            testId: id,
+            originalQuestionId: questionId,
+            studentAnswer: studentAnswer || '(Boş)',
+            subject: test.subject,
+            topic: test.title,
+            createdAt: new Date().toISOString(),
+            status: 'active' as const,
+            imageUrl: imageUrl || null,
         };
+    };
 
-        // Logic for auto-graded tests (MCQ)
-        if (test.gradingType === 'auto' && test.answerKey && test.studentAnswers) {
-            for (const qNumStr in test.answerKey) {
-                const qNum = parseInt(qNumStr, 10);
-                const correctAnswer = test.answerKey[qNum];
-                const studentAnswer = test.studentAnswers[qNum];
-                if (studentAnswer !== correctAnswer) {
-                    const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
-                    const mistakeData = createMistakeData(qNumStr, studentAnswer, imageUrl);
-                    const mistakeRef = doc(collection(db, 'mistakes'));
-                    batch.set(mistakeRef, removeUndefined(mistakeData));
-                    mistakeIdsToRetake.push(mistakeRef.id);
-                }
+    if (test.gradingType === 'auto' && test.answerKey) {
+        for (const qNumStr in test.answerKey) {
+            const qNum = parseInt(qNumStr, 10);
+            const correctAnswer = test.answerKey[qNum];
+            const studentAnswer = test.studentAnswers?.[qNum] ?? null;
+            if (studentAnswer !== correctAnswer) {
+                const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
+                const mistakeData = createMistakeData(qNumStr, studentAnswer, imageUrl);
+                const mistakeRef = doc(collection(db, 'mistakes'));
+                batch.set(mistakeRef, removeUndefined(mistakeData));
+                mistakeIdsToRetake.push(mistakeRef.id);
             }
         }
-        
-        // Logic for manually graded text-based tests
-        else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation && test.studentTextAnswers) {
-            for (const qId in test.studentTextAnswersEvaluation) {
-                const status = test.studentTextAnswersEvaluation[qId];
-                if (status === 'incorrect' || status === 'empty') {
-                    const studentAnswer = test.studentTextAnswers[qId] || '(Boş)';
-                    const imageUrl = test.questions?.find(q => q.questionNumber === parseInt(qId, 10))?.imageUrl;
-                    const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
-                    const mistakeRef = doc(collection(db, 'mistakes'));
-                    batch.set(mistakeRef, removeUndefined(mistakeData));
-                    mistakeIdsToRetake.push(mistakeRef.id);
+    } else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
+        for (const qId in test.studentTextAnswersEvaluation) {
+            const status = test.studentTextAnswersEvaluation[qId];
+            if (status === 'incorrect' || status === 'empty') {
+                const studentAnswer = test.studentTextAnswers?.[qId] || '(Boş)';
+                let imageUrl: string | undefined | null = test.studentTextAnswersEvaluation.imageUrls?.[qId];
+
+                if (!imageUrl) {
+                    if (test.sourceType === 'mistake') {
+                        // This case should not happen often if we record correctly
+                    } else if (test.questions) {
+                        imageUrl = test.questions.find(q => q.questionNumber === parseInt(qId, 10))?.imageUrl;
+                    }
                 }
+                
+                const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
+                const mistakeRef = doc(collection(db, 'mistakes'));
+                batch.set(mistakeRef, removeUndefined(mistakeData));
+                mistakeIdsToRetake.push(mistakeRef.id);
             }
         }
-        
-        // After creating mistakes, update the test with the IDs of these mistakes
-        batch.update(testDocRef, { remainingMistakeIds: mistakeIdsToRetake });
-        
-        await batch.commit();
     }
+    
+    if (mistakeIdsToRetake.length > 0) {
+        batch.update(testDocRef, { remainingMistakeIds: mistakeIdsToRetake });
+    }
+    
+    await batch.commit();
 };
 
 
