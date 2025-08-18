@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage, Check, X, MinusCircle, ArrowRight } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage, Check, X, MinusCircle, ArrowRight, CheckCircle, BarChart3, Clock, Notebook as NotebookIcon, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ import { db } from '@/lib/firebase';
 import Image from "next/image";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -977,20 +978,53 @@ export default function EducationManagementPage() {
                 </TabsList>
                 <TabsContent value="assignments" className="mt-4">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {tests.filter(t => !t.isArchived).map(test => (
-                            <Card key={test.id}>
-                                <CardHeader>
-                                    <CardTitle>{test.title}</CardTitle>
-                                    <CardDescription>
-                                        {familyMembers.find(m => m.id === test.studentId)?.name || 'Bilinmeyen'} - {test.subject}
-                                    </CardDescription>
-                                    <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="w-fit">{test.status}</Badge>
-                                </CardHeader>
-                                <CardFooter className="flex justify-end gap-2">
-                                     <Button variant="ghost" size="icon" onClick={() => openEditTestDialog(test)}><Edit className="w-4 h-4"/></Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
+                        {tests.filter(t => !t.isArchived).map(test => {
+                            const student = familyMembers.find(m => m.id === test.studentId);
+                            const isCompleted = test.status === 'Sonuçlandı';
+                            const scorePercentage = test.score || 0;
+                            return (
+                                <Card key={test.id} className="flex flex-col">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start">
+                                            <CardTitle className="text-lg">{test.title}</CardTitle>
+                                            <Badge variant={isCompleted ? "default" : "outline"} className={cn(isCompleted && "bg-green-600")}>{test.status}</Badge>
+                                        </div>
+                                        <CardDescription>
+                                            {student?.name || 'Bilinmeyen'} - {test.subject}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        {isCompleted ? (
+                                            <div className="space-y-3">
+                                                <Progress value={scorePercentage} className="h-2" />
+                                                <div className="flex justify-between text-sm font-medium">
+                                                    <span className="flex items-center gap-1.5 text-green-600"><CheckCircle className="h-4 w-4"/> Doğru: {test.correctAnswers}</span>
+                                                    <span className="flex items-center gap-1.5 text-red-600"><X className="h-4 w-4"/> Yanlış: {test.incorrectAnswers}</span>
+                                                    <span className="flex items-center gap-1.5 text-gray-500"><MinusCircle className="h-4 w-4"/> Boş: {test.emptyAnswers}</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-muted-foreground text-center p-4 border-2 border-dashed rounded-lg">
+                                                <p>Bu test henüz tamamlanmadı.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                    <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3">
+                                        <Button variant="ghost" size="sm" onClick={() => openEditTestDialog(test)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
+                                        {isCompleted && <Button variant="secondary" size="sm" onClick={() => handleArchiveTest(test)}><Archive className="w-4 h-4 mr-2"/>Arşivle</Button>}
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="destructive" size="sm"><Trash2 className="w-4 h-4 mr-2"/>Sil</Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitleComponent>Ödevi Sil</AlertDialogTitleComponent><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </CardFooter>
+                                </Card>
+                            )
+                        })}
                     </div>
                 </TabsContent>
                 <TabsContent value="library" className="mt-4">
@@ -1093,5 +1127,3 @@ export default function EducationManagementPage() {
         </>
     );
 }
-
-    
