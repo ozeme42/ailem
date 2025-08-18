@@ -62,7 +62,6 @@ import { EditMistakeForm } from "@/components/edit-mistake-form";
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from "next/image";
-import { ImageCropper } from "@/components/image-cropper";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 
 
@@ -686,7 +685,6 @@ export default function EducationManagementPage() {
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
     const [editingQuestion, setEditingQuestion] = React.useState<{ testId: string; questionIndex: number } | null>(null);
-    const [imageToCrop, setImageToCrop] = React.useState<string | null>(null);
 
     
     const studentMembers = React.useMemo(() => 
@@ -938,40 +936,48 @@ export default function EducationManagementPage() {
         setIsImageUploadOpen(true);
     };
 
-    const handleImageCrop = async (croppedImageUrl: string) => {
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!editingQuestion) return;
-        
+        const file = event.target.files?.[0];
+        if (!file) return;
+
         toast({ title: "Görsel Yükleniyor..." });
         try {
-            const destinationPath = `test-questions/${editingQuestion.testId}-${editingQuestion.questionIndex}-${Date.now()}.jpg`;
-            const migrationResult = await migrateImage({ imageDataUri: croppedImageUrl, destinationPath });
-            if (!migrationResult.success || !migrationResult.newUrl) {
-                throw new Error("Görsel yüklenemedi.");
-            }
-            
-            const testToUpdate = tests.find(t => t.id === editingQuestion.testId);
-            if (testToUpdate) {
-                const updatedQuestions = [...(testToUpdate.questions || [])];
-                const qIndex = updatedQuestions.findIndex(q => q.questionNumber === editingQuestion.questionIndex + 1);
-                
-                if (qIndex !== -1) {
-                    updatedQuestions[qIndex].imageUrl = migrationResult.newUrl;
-                } else {
-                    updatedQuestions.push({
-                        questionNumber: editingQuestion.questionIndex + 1,
-                        imageUrl: migrationResult.newUrl
-                    });
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = async () => {
+                const imageDataUri = reader.result as string;
+                const destinationPath = `test-questions/${editingQuestion.testId}-${editingQuestion.questionIndex}-${Date.now()}.jpg`;
+                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
+
+                if (!migrationResult.success || !migrationResult.newUrl) {
+                    throw new Error(migrationResult.error || "Görsel yüklenemedi.");
                 }
-                
-                await updateTest(editingQuestion.testId, { questions: updatedQuestions });
-                toast({ title: "Görsel Güncellendi!" });
-            }
+
+                const testToUpdate = tests.find(t => t.id === editingQuestion.testId);
+                if (testToUpdate) {
+                    const updatedQuestions = [...(testToUpdate.questions || [])];
+                    const qIndex = updatedQuestions.findIndex(q => q.questionNumber === editingQuestion.questionIndex + 1);
+                    
+                    if (qIndex !== -1) {
+                        updatedQuestions[qIndex].imageUrl = migrationResult.newUrl;
+                    } else {
+                        updatedQuestions.push({
+                            questionNumber: editingQuestion.questionIndex + 1,
+                            imageUrl: migrationResult.newUrl
+                        });
+                    }
+                    
+                    await updateTest(editingQuestion.testId, { questions: updatedQuestions });
+                    toast({ title: "Görsel Güncellendi!" });
+                }
+                 setIsImageUploadOpen(false);
+                 setEditingQuestion(null);
+            };
         } catch (e) {
             toast({ title: "Hata", variant: "destructive" });
         } finally {
-            setIsImageUploadOpen(false);
-            setImageToCrop(null);
-            setEditingQuestion(null);
+            if(event.target) event.target.value = ''; // Reset file input
         }
     };
 
@@ -1071,9 +1077,9 @@ export default function EducationManagementPage() {
                                             {Array.from({ length: test.questionCount }).map((_, index) => {
                                                 const question = test.questions?.find(q => q.questionNumber === index + 1);
                                                 return (
-                                                    <div key={index} className="aspect-square border rounded-md flex items-center justify-center relative">
+                                                    <div key={index} className="aspect-square border rounded-md flex items-center justify-center relative group">
                                                         {question?.imageUrl ? (
-                                                            <Image src={question.imageUrl} alt={`Soru ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" />
+                                                            <Image src={question.imageUrl} alt={`Soru ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="question paper" />
                                                         ) : (
                                                             <Button variant="ghost" size="sm" className="h-full w-full text-xs" onClick={() => handleOpenImageUpload(test.id, index)}>
                                                                 <FileImage className="h-4 w-4 mr-1"/>
@@ -1194,29 +1200,16 @@ export default function EducationManagementPage() {
                 </DialogContent>
             </Dialog>
             <Dialog open={isImageUploadOpen} onOpenChange={setIsImageUploadOpen}>
-                <DialogContent className="max-w-4xl h-[80vh]">
+                <DialogContent className="max-w-xl">
                      <DialogHeader>
                         <DialogTitle>Soru Görseli Yükle</DialogTitle>
                      </DialogHeader>
-                     {imageToCrop ? (
-                        <ImageCropper image={imageToCrop} onCropComplete={handleImageCrop} />
-                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full">
-                             <input type="file" accept="image/*" className="hidden" ref={(node) => {
-                                 if (node) node.onchange = (e) => {
-                                     const file = (e.target as HTMLInputElement).files?.[0];
-                                     if (file) {
-                                         const reader = new FileReader();
-                                         reader.onload = (event) => {
-                                             setImageToCrop(event.target?.result as string);
-                                         };
-                                         reader.readAsDataURL(file);
-                                     }
-                                 };
-                             }} />
-                             <Button onClick={() => document.querySelector<HTMLInputElement>('input[type=file]')?.click()}>Görsel Seç</Button>
-                        </div>
-                     )}
+                    <div className="flex flex-col items-center justify-center h-full pt-8">
+                         <input type="file" accept="image/*" className="hidden" ref={(node) => {
+                             if (node) node.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
+                         }} />
+                         <Button onClick={() => document.querySelector<HTMLInputElement>('input[type=file]')?.click()}>Görsel Seç</Button>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
@@ -1224,4 +1217,3 @@ export default function EducationManagementPage() {
 }
 
     
-

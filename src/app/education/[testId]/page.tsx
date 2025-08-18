@@ -123,6 +123,9 @@ export default function OpticalFormPage() {
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
                     updatedData.score = score;
+                    
+                    await updateTest(test.id, updatedData);
+                    
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı ve Değerlendirildi!",
                         description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
@@ -133,6 +136,7 @@ export default function OpticalFormPage() {
                     }
                 } else {
                     updatedData.status = 'Değerlendirme Bekliyor';
+                    await updateTest(test.id, updatedData);
                     toast({
                         title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                         description: "Cevapların kaydedildi ama cevap anahtarı bulunamadı. Testin yakında manuel olarak değerlendirilecek.",
@@ -140,7 +144,6 @@ export default function OpticalFormPage() {
                 }
             }
             
-            await updateTest(test.id, updatedData);
             setViewMode('results');
 
         } catch (error) {

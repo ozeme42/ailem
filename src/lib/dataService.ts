@@ -1207,8 +1207,9 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
     const cleanedData = removeUndefined(updateData);
     await updateDoc(testDocRef, cleanedData);
 
-    if (cleanedData.status !== 'Sonuçlandı') return;
-    await generateMistakesForTest(id);
+    if (cleanedData.status === 'Sonuçlandı') {
+        await generateMistakesForTest(id);
+    }
 };
 
 export const generateMistakesForTest = async (testId: string) => {
@@ -1221,39 +1222,6 @@ export const generateMistakesForTest = async (testId: string) => {
 
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
-
-    let sourceQuestions: QuickTestQuestion[] | undefined = [];
-
-    // Fetch questions based on the source type
-    if (test.sourceType === 'quick') {
-        sourceQuestions = test.questions;
-    } else if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
-        const bankDocRef = doc(db, 'questionBanks', test.sourceId);
-        const bankSnap = await getDoc(bankDocRef);
-        if (bankSnap.exists()) {
-            const bank = bankSnap.data() as QuestionBank;
-            const topic = bank.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-             // @ts-ignore
-            if (topic?.questions) { 
-                 // @ts-ignore
-                sourceQuestions = topic.questions;
-            } else if (test.questions) {
-                 sourceQuestions = test.questions;
-            }
-        }
-    } else if (test.sourceType === 'exam' && test.sourceId) {
-        const examDocRef = doc(db, 'practiceExams', test.sourceId);
-        const examSnap = await getDoc(examDocRef);
-        if (examSnap.exists()) {
-             // @ts-ignore
-             if (examSnap.data().questions) {
-                // @ts-ignore
-                sourceQuestions = examSnap.data().questions;
-             } else if (test.questions) {
-                 sourceQuestions = test.questions;
-             }
-        }
-    }
 
     const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
         return {
@@ -1277,7 +1245,7 @@ export const generateMistakesForTest = async (testId: string) => {
             const studentAnswer = test.studentAnswers?.[qNum] ?? null;
 
             if (studentAnswer !== correctAnswer) {
-                const imageUrl = sourceQuestions?.find(q => q.questionNumber === qNum)?.imageUrl;
+                const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
                 const mistakeData = createMistakeData(qNumStr, studentAnswer || "", imageUrl);
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
@@ -1289,11 +1257,7 @@ export const generateMistakesForTest = async (testId: string) => {
             const status = test.studentTextAnswersEvaluation[qId];
             if (status === 'incorrect' || status === 'empty') {
                 const studentAnswer = test.studentTextAnswers?.[qId] || '(Boş)';
-                let imageUrl: string | undefined | null = (test as any).imageUrls?.[qId]; 
-                
-                if (!imageUrl && sourceQuestions) {
-                    imageUrl = sourceQuestions.find(q => q.questionNumber.toString() === qId)?.imageUrl;
-                }
+                const imageUrl = test.questions?.find(q => q.questionNumber.toString() === qId)?.imageUrl;
                 
                 const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
                 const mistakeRef = doc(collection(db, 'mistakes'));
