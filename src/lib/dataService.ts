@@ -1224,32 +1224,16 @@ export const generateMistakesForTest = async (testId: string) => {
     const mistakeIdsToRetake: string[] = [];
 
     // The test document's `questions` field is the single source of truth for question images.
-    // This takes precedence over bank/exam images.
     const questionImageMap = new Map<number, string | undefined>();
     
-    // Prioritize images directly on the test object. This is the most reliable source.
+    // Always prioritize images directly on the test object first.
     if (test.questions && test.questions.length > 0) {
         test.questions.forEach(q => {
             if (q.imageUrl) {
                 questionImageMap.set(q.questionNumber, q.imageUrl);
             }
         });
-    } else if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
-        // Fallback for older bank tests that might not have the images copied to the test doc.
-        const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
-        if (bankDoc.exists()) {
-            const bank = bankDoc.data() as QuestionBank;
-            const topic = bank.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-            if (topic && (topic as any).questions) { // Check for legacy questions property
-                (topic as any).questions.forEach((q: QuickTestQuestion) => {
-                    if (q.imageUrl) {
-                        questionImageMap.set(q.questionNumber, q.imageUrl);
-                    }
-                });
-            }
-        }
     }
-
 
     const createMistakeData = (questionId: string, studentAnswer: string) => {
         const qNum = parseInt(questionId, 10);
@@ -1726,5 +1710,3 @@ export const setDailyTrackingStatus = async (
     await deleteDoc(trackingRef);
   }
 };
-
-    
