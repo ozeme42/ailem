@@ -98,32 +98,43 @@ export const ManualGradeForm = React.forwardRef<
                         qNum: questionNumberText,
                     };
                 }).filter((q): q is QuestionForGrading => q !== null);
-            } else if (test.gradingType === 'manual-text' && (test.sourceType === 'bank' || test.sourceType === 'quick')) {
+                 fetchedQuestions.forEach(q => {
+                    const studentAnswer = q.studentAnswer;
+                    if (!studentAnswer || studentAnswer.trim() === "") {
+                        initialEvals[q.id] = 'empty';
+                    } else {
+                        initialEvals[q.id] = test.studentTextAnswersEvaluation?.[q.id] || 'unevaluated';
+                    }
+                });
+            } else { // Handle quick and bank tests
                  const studentAnswers = test.studentTextAnswers || {};
                  for (let i = 1; i <= test.questionCount; i++) {
                      const qId = i.toString();
+                     const studentAnswer = studentAnswers[qId];
+                     const isAnswerEmpty = !studentAnswer || studentAnswer.trim() === "";
+
                      fetchedQuestions.push({
                         id: qId,
-                        studentAnswer: studentAnswers[qId] || "",
+                        studentAnswer: studentAnswer || "",
                         qNum: `${i}. Soru`,
                         imageUrl: test.questions?.find(q => q.questionNumber === i)?.imageUrl
                      });
+                     
+                      if (isAnswerEmpty) {
+                        initialEvals[qId] = 'empty';
+                      } else {
+                        initialEvals[qId] = test.studentTextAnswersEvaluation?.[qId] || 'unevaluated';
+                      }
                  }
             }
-
-            fetchedQuestions.forEach(q => {
-                const studentAnswer = q.studentAnswer;
-                if (!studentAnswer || studentAnswer.trim() === "") {
-                    initialEvals[q.id] = 'empty';
-                } else {
-                    initialEvals[q.id] = test.studentTextAnswersEvaluation?.[q.id] || 'unevaluated';
-                }
-            });
-
+            
             setQuestions(fetchedQuestions);
             form.reset({ evaluations: initialEvals, imageUrls: {}, imageDataUris: {} });
         };
-        fetchQuestionsAndAnswers();
+        
+        if (test.questionCount > 0) {
+            fetchQuestionsAndAnswers();
+        }
     }, [test, form]);
 
 
@@ -269,4 +280,5 @@ export const ManualGradeForm = React.forwardRef<
 });
 
 ManualGradeForm.displayName = 'ManualGradeForm';
+
 
