@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { doc, getDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
-import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
+import { updateTest, checkAndAwardBadges, updateMistake } from "@/lib/dataService";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -191,18 +191,35 @@ export default function OpticalFormPage() {
 
     const handleRetakeSubmit = async () => {
         if (!test || retakeQuestions.length === 0) return;
-        
-        const remainingIds = test.remainingMistakeIds?.filter(id => !retakeAnswers[id]) || [];
+    
+        const updatedMistakePromises = retakeQuestions.map(mistake => {
+            const studentAnswer = retakeAnswers[mistake.id] || "";
+            if (studentAnswer.trim().toLowerCase() === (mistake.correctAnswer || "").trim().toLowerCase()) {
+                return updateMistake(mistake.id, { status: 'corrected' });
+            }
+            return Promise.resolve(); // Do nothing if answer is wrong or empty
+        });
 
         try {
-            await updateTest(test.id, { remainingMistakeIds: remainingIds });
-            toast({ title: 'Tebrikler!', description: 'Eksiklerini tamamladın.' });
+            await Promise.all(updatedMistakePromises);
+            toast({ title: 'Tebrikler!', description: 'Doğru cevapladığın eksikler tamamlandı.' });
             
-            const updatedTestDoc = await getDoc(doc(db, 'tests', testId));
-            if(updatedTestDoc.exists()) {
-                setTest({ id: updatedTestDoc.id, ...updatedTestDoc.data()} as TestType);
+            // Re-fetch mistakes to update the view
+            const updatedMistakesQuery = query(
+                collection(db, 'mistakes'), 
+                where('testId', '==', test.id), 
+                where('status', '==', 'active')
+            );
+            const updatedSnapshot = await getDocs(updatedMistakesQuery);
+            if (updatedSnapshot.empty) {
+                // All mistakes are corrected, go back to results
+                setViewMode('results');
+            } else {
+                // Some mistakes remain, update the question list and stay in retake mode
+                setRetakeQuestions(updatedSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake)));
+                setCurrentQuestionIndex(0); // Reset to first question
             }
-            setViewMode('results');
+
         } catch (error) {
             toast({ title: 'Hata', description: 'Tekrar testi kaydedilemedi.', variant: 'destructive' });
         }
@@ -218,8 +235,8 @@ export default function OpticalFormPage() {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 setTest(currentTest);
 
-                if (currentTest.status === 'Sonuçlandı') {
-                    setViewMode('results');
+                if (currentTest.status === 'Sonuçlandı' || currentTest.status === 'Tekrar Çözülüyor') {
+                     setViewMode('results');
                 } else {
                      setViewMode('initial_test');
                      const totalDuration = currentTest.questionCount * 90;
@@ -335,7 +352,7 @@ export default function OpticalFormPage() {
     
     if(viewMode === 'retake_test') {
         const currentMistakeQuestion = retakeQuestions[currentQuestionIndex];
-        const imageUrl = currentMistakeQuestion?.imageUrl;
+        const imageUrl = currentMistakeQuestion?.correctImageUrl || currentMistakeQuestion?.imageUrl;
         const originalQuestionNumber = currentMistakeQuestion?.originalQuestionId;
 
         return (
@@ -361,6 +378,10 @@ export default function OpticalFormPage() {
                                 ) : (
                                     <div className="text-center p-8 border rounded-lg bg-muted">Görsel bulunamadı.</div>
                                 )}
+                                <div className="space-y-2 my-2 p-3 rounded-lg border bg-muted">
+                                    <p className="font-semibold">Öğrenci Cevabı:</p>
+                                    <p className="text-muted-foreground">{currentMistakeQuestion?.studentAnswer || "(Boş bırakılmış)"}</p>
+                                </div>
                                 <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionIndex + 1}</div>
                                    <div className="flex-grow flex items-center gap-2">

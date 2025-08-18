@@ -1239,8 +1239,15 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
             const correctAnswer = test.answerKey[qNum];
             const studentAnswer = test.studentAnswers?.[qNum] ?? null;
             if (studentAnswer !== correctAnswer) {
-                const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
-                const mistakeData = createMistakeData(qNumStr, studentAnswer, imageUrl);
+                let imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
+                
+                // If it's a bank or exam test, we need to fetch the image from there
+                if (!imageUrl && (test.sourceType === 'bank' || test.sourceType === 'exam')) {
+                    // This logic requires fetching the original test/bank, which is complex here.
+                    // For now, we assume quick tests have images. This needs improvement.
+                }
+
+                const mistakeData = createMistakeData(qNumStr, studentAnswer || "", imageUrl);
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
                 mistakeIdsToRetake.push(mistakeRef.id);
@@ -1254,10 +1261,10 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
                 let imageUrl: string | undefined | null = test.studentTextAnswersEvaluation.imageUrls?.[qId];
 
                 if (!imageUrl) {
-                    if (test.sourceType === 'mistake') {
-                        // This case should not happen often if we record correctly
-                    } else if (test.questions) {
-                        imageUrl = test.questions.find(q => q.questionNumber === parseInt(qId, 10))?.imageUrl;
+                     if (test.sourceType === 'quick' && test.questions) {
+                        imageUrl = test.questions.find(q => q.questionNumber.toString() === qId)?.imageUrl;
+                    } else if (test.sourceType === 'mistake') {
+                        // This case is for re-taking mistakes, which we don't generate new mistakes from for now.
                     }
                 }
                 
