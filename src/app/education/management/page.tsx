@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage, Check, X, MinusCircle } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage, Check, X, MinusCircle, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -630,6 +630,59 @@ function StudyPlanManagement() {
 }
 
 
+function AssignedTestCard({ test, familyMembers, onImageUpload }: { 
+    test: Test, 
+    familyMembers: any[], 
+    onImageUpload: (event: React.ChangeEvent<HTMLInputElement>, testId: string, questionIndex: number) => void 
+}) {
+    const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+    const student = familyMembers.find(m => m.id === test.studentId);
+    
+    const currentQuestion = React.useMemo(() => 
+        (test.questions || []).find(q => q.questionNumber === currentQuestionIndex + 1),
+    [test.questions, currentQuestionIndex]);
+
+    const handleOpenImageUpload = (testId: string, questionIndex: number) => {
+        const fileInput = document.getElementById(`file-input-${testId}-${questionIndex}`);
+        fileInput?.click();
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{test.title}</CardTitle>
+                <CardDescription>
+                    {student?.name || "Bilinmeyen"} - {test.subject}
+                    <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="mb-4">
+                    {currentQuestion?.imageUrl ? (
+                        <Image src={currentQuestion.imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
+                    ) : (
+                         <label htmlFor={`file-input-${test.id}-${currentQuestionIndex}`} className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer">
+                            <FileImage className="h-10 w-10 mb-2"/>
+                            <p>Soru Görseli Yükle</p>
+                            <p className="text-xs">Soru {currentQuestionIndex + 1} için resim seçin</p>
+                        </label>
+                    )}
+                    <input id={`file-input-${test.id}-${currentQuestionIndex}`} type="file" accept="image/*" className="hidden" onChange={(e) => onImageUpload(e, test.id, currentQuestionIndex)} />
+                </div>
+            </CardContent>
+             <CardFooter className="flex justify-between items-center">
+                <Button variant="outline" onClick={() => setCurrentQuestionIndex(q => q - 1)} disabled={currentQuestionIndex === 0}>
+                    <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
+                </Button>
+                <span>{currentQuestionIndex + 1} / {test.questionCount}</span>
+                <Button onClick={() => setCurrentQuestionIndex(q => q + 1)} disabled={currentQuestionIndex === test.questionCount - 1}>
+                    Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
 export default function EducationManagementPage() {
     const { toast } = useToast();
     const { familyMembers, familyId } = useAuth();
@@ -653,8 +706,6 @@ export default function EducationManagementPage() {
     const [editingTest, setEditingTest] = React.useState<Test | null>(null);
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
-    const [editingQuestion, setEditingQuestion] = React.useState<{ testId: string; questionIndex: number } | null>(null);
-
     
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -899,12 +950,6 @@ export default function EducationManagementPage() {
         setEditingMistake(null);
         toast({title: "Geri Bildirim Kaydedildi"});
     };
-    
-    const handleOpenImageUpload = (testId: string, questionIndex: number) => {
-        setEditingQuestion({ testId, questionIndex });
-        const fileInput = document.getElementById(`file-input-${testId}-${questionIndex}`);
-        fileInput?.click();
-    };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, testId: string, questionIndex: number) => {
         const file = event.target.files?.[0];
@@ -1030,63 +1075,10 @@ export default function EducationManagementPage() {
                     <TabsTrigger value="study-plans">Çalışma Planları</TabsTrigger>
                 </TabsList>
                 <TabsContent value="assignments" className="mt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {tests.filter(t => !t.isArchived).map(test => {
-                            const student = familyMembers.find(m => m.id === test.studentId);
-                            return (
-                                <Card key={test.id}>
-                                    <CardHeader>
-                                        <CardTitle>{test.title}</CardTitle>
-                                        <CardDescription>
-                                            {student?.name || "Bilinmeyen"} - {test.subject}
-                                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"} className="ml-2">{test.status}</Badge>
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {Array.from({ length: test.questionCount }).map((_, index) => {
-                                                const question = test.questions?.find(q => q.questionNumber === index + 1);
-                                                
-                                                let evaluation: EvaluationStatus;
-                                                const studentAnswer = test.studentAnswers?.[index + 1];
-
-                                                if (test.status !== 'Sonuçlandı') {
-                                                    evaluation = 'unevaluated';
-                                                } else if (test.gradingType === 'manual-text') {
-                                                     evaluation = test.studentTextAnswersEvaluation?.[index+1] || 'unevaluated'
-                                                } else if (!studentAnswer) {
-                                                    evaluation = 'empty';
-                                                } else if (test.answerKey && studentAnswer === test.answerKey[index + 1]) {
-                                                    evaluation = 'correct';
-                                                } else {
-                                                    evaluation = 'incorrect';
-                                                }
-                                                
-                                                const colorClass = 
-                                                    evaluation === 'correct' ? 'border-green-500 bg-green-500/10' :
-                                                    evaluation === 'incorrect' ? 'border-red-500 bg-red-500/10' :
-                                                    evaluation === 'empty' ? 'border-gray-500 bg-gray-500/10' :
-                                                    'border-border';
-
-                                                return (
-                                                    <div key={index} className={cn("aspect-square border rounded-md flex items-center justify-center relative group", colorClass)}>
-                                                        <input id={`file-input-${test.id}-${index}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, test.id, index)} />
-                                                        {question?.imageUrl ? (
-                                                            <Image src={question.imageUrl} alt={`Soru ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="question paper" />
-                                                        ) : (
-                                                            <button className="h-full w-full text-xs flex flex-col items-center justify-center text-muted-foreground" onClick={() => handleOpenImageUpload(test.id, index)}>
-                                                                <FileImage className="h-4 w-4 mb-1"/>
-                                                                Soru {index + 1}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )
-                        })}
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {tests.filter(t => !t.isArchived).map(test => (
+                            <AssignedTestCard key={test.id} test={test} familyMembers={familyMembers} onImageUpload={handleImageUpload} />
+                        ))}
                     </div>
                 </TabsContent>
                 <TabsContent value="library" className="mt-4">
@@ -1193,6 +1185,7 @@ export default function EducationManagementPage() {
     
 
     
+
 
 
 
