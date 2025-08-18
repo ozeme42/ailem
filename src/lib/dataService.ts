@@ -1222,33 +1222,39 @@ export const generateMistakesForTest = async (testId: string) => {
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
 
-    let sourceQuestions: QuickTestQuestion[] | undefined = test.questions;
+    let sourceQuestions: QuickTestQuestion[] | undefined = [];
 
-    // If it's a bank test, fetch the questions from the question bank document
-    if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
+    // Fetch questions based on the source type
+    if (test.sourceType === 'quick') {
+        sourceQuestions = test.questions;
+    } else if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
         const bankDocRef = doc(db, 'questionBanks', test.sourceId);
         const bankSnap = await getDoc(bankDocRef);
         if (bankSnap.exists()) {
             const bank = bankSnap.data() as QuestionBank;
             const topic = bank.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-            // Assuming the test object contains the questions from the bank topic
-            // This needs to be ensured when the test is created.
-            // For now, let's assume the test object *may* have a questions field.
-            if(topic) {
-                // @ts-ignore // Topic does not have questions, but we need to assume it might from legacy or future structure.
-                sourceQuestions = topic.questions || test.questions;
+             // @ts-ignore
+            if (topic?.questions) { 
+                 // @ts-ignore
+                sourceQuestions = topic.questions;
+            } else if (test.questions) {
+                 sourceQuestions = test.questions;
             }
         }
     } else if (test.sourceType === 'exam' && test.sourceId) {
-        // Similar logic for exams if they store questions with images
         const examDocRef = doc(db, 'practiceExams', test.sourceId);
         const examSnap = await getDoc(examDocRef);
         if (examSnap.exists()) {
-            // @ts-ignore
-            sourceQuestions = examSnap.data().questions || test.questions;
+             // @ts-ignore
+             if (examSnap.data().questions) {
+                // @ts-ignore
+                sourceQuestions = examSnap.data().questions;
+             } else if (test.questions) {
+                 sourceQuestions = test.questions;
+             }
         }
     }
-    
+
     const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
         return {
             familyId: test.familyId,
