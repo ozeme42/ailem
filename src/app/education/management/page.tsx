@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage, Check, X, MinusCircle, ArrowRight, CheckCircle, BarChart3, Clock, Notebook as NotebookIcon, MoreVertical } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, FilePen, Archive, Library, Settings, BookHeart, NotebookText, AlertCircle, FileImage, Check, X, MinusCircle, ArrowRight, CheckCircle, BarChart3, Clock, Notebook as NotebookIcon, MoreVertical, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -632,7 +632,7 @@ function StudyPlanManagement() {
 
 export default function EducationManagementPage() {
     const { toast } = useToast();
-    const { familyMembers, familyId } = useAuth();
+    const { user, familyMembers, familyId } = useAuth();
     const gradeFormRef = React.useRef<{ submit: () => void }>(null);
 
 
@@ -653,6 +653,7 @@ export default function EducationManagementPage() {
     const [editingTest, setEditingTest] = React.useState<Test | null>(null);
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
+    const [activeTestCard, setActiveTestCard] = React.useState<string | null>(null);
     
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -673,6 +674,46 @@ export default function EducationManagementPage() {
             unsubMistakes();
         };
     }, []);
+    
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, test: Test, questionNumber: number) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        toast({ title: 'Görsel yükleniyor...' });
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = async () => {
+                const imageDataUri = reader.result as string;
+                const destinationPath = `test-questions/${test.id}-${questionNumber}-${Date.now()}.jpg`;
+                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
+
+                if (!migrationResult.success || !migrationResult.newUrl) {
+                    throw new Error(migrationResult.error || 'Görsel yüklenemedi.');
+                }
+                
+                const existingQuestionIndex = (test.questions || []).findIndex(q => q.questionNumber === questionNumber);
+                let updatedQuestions = [...(test.questions || [])];
+
+                if (existingQuestionIndex > -1) {
+                    updatedQuestions[existingQuestionIndex] = { ...updatedQuestions[existingQuestionIndex], imageUrl: migrationResult.newUrl };
+                } else {
+                    updatedQuestions.push({ questionNumber: questionNumber, imageUrl: migrationResult.newUrl });
+                }
+                
+                // Ensure questions are sorted by number, just in case.
+                updatedQuestions.sort((a, b) => a.questionNumber - b.questionNumber);
+                
+                await updateTest(test.id, { questions: updatedQuestions });
+                toast({ title: `Soru ${questionNumber} için görsel güncellendi!` });
+            };
+        } catch (e: any) {
+            toast({ title: 'Hata', description: e.message, variant: 'destructive' });
+        } finally {
+             if (event.target) event.target.value = '';
+        }
+    };
+
 
     const testsAwaitingGrading = React.useMemo(() => {
         return tests.filter(test => test.status === 'Değerlendirme Bekliyor');
@@ -880,6 +921,23 @@ export default function EducationManagementPage() {
                 studentTextAnswersEvaluation: gradeData.evaluations,
             };
 
+            // Add uploaded image URLs to the main test object
+            if (Object.keys(gradeData.imageUrls).length > 0) {
+                 const newQuestions = [...(gradingTest.questions || [])];
+                for(const qNum in gradeData.imageUrls) {
+                    const questionIndex = newQuestions.findIndex(q => q.questionNumber === parseInt(qNum));
+                    const imageUrl = gradeData.imageUrls[qNum];
+                    if (imageUrl) {
+                        if (questionIndex > -1) {
+                            newQuestions[questionIndex].imageUrl = imageUrl;
+                        } else {
+                            newQuestions.push({ questionNumber: parseInt(qNum), imageUrl });
+                        }
+                    }
+                }
+                updatedData.questions = newQuestions.sort((a,b) => a.questionNumber - b.questionNumber);
+            }
+
             await updateTest(gradingTest.id, updatedData);
             await checkAndAwardBadges(gradingTest.studentId, familyId, { type: 'test_completed', test: { ...gradingTest, ...updatedData } });
             
@@ -978,53 +1036,19 @@ export default function EducationManagementPage() {
                 </TabsList>
                 <TabsContent value="assignments" className="mt-4">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {tests.filter(t => !t.isArchived).map(test => {
-                            const student = familyMembers.find(m => m.id === test.studentId);
-                            const isCompleted = test.status === 'Sonuçlandı';
-                            const scorePercentage = test.score || 0;
-                            return (
-                                <Card key={test.id} className="flex flex-col">
-                                    <CardHeader>
-                                        <div className="flex justify-between items-start">
-                                            <CardTitle className="text-lg">{test.title}</CardTitle>
-                                            <Badge variant={isCompleted ? "default" : "outline"} className={cn(isCompleted && "bg-green-600")}>{test.status}</Badge>
-                                        </div>
-                                        <CardDescription>
-                                            {student?.name || 'Bilinmeyen'} - {test.subject}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        {isCompleted ? (
-                                            <div className="space-y-3">
-                                                <Progress value={scorePercentage} className="h-2" />
-                                                <div className="flex justify-between text-sm font-medium">
-                                                    <span className="flex items-center gap-1.5 text-green-600"><CheckCircle className="h-4 w-4"/> Doğru: {test.correctAnswers}</span>
-                                                    <span className="flex items-center gap-1.5 text-red-600"><X className="h-4 w-4"/> Yanlış: {test.incorrectAnswers}</span>
-                                                    <span className="flex items-center gap-1.5 text-gray-500"><MinusCircle className="h-4 w-4"/> Boş: {test.emptyAnswers}</span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="text-sm text-muted-foreground text-center p-4 border-2 border-dashed rounded-lg">
-                                                <p>Bu test henüz tamamlanmadı.</p>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                    <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3">
-                                        <Button variant="ghost" size="sm" onClick={() => openEditTestDialog(test)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
-                                        {isCompleted && <Button variant="secondary" size="sm" onClick={() => handleArchiveTest(test)}><Archive className="w-4 h-4 mr-2"/>Arşivle</Button>}
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="destructive" size="sm"><Trash2 className="w-4 h-4 mr-2"/>Sil</Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitleComponent>Ödevi Sil</AlertDialogTitleComponent><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </CardFooter>
-                                </Card>
-                            )
-                        })}
+                        {tests.filter(t => !t.isArchived).map(test => (
+                            <TestManagementCard 
+                                key={test.id} 
+                                test={test}
+                                familyMembers={familyMembers}
+                                onEdit={openEditTestDialog}
+                                onArchive={handleArchiveTest}
+                                onDelete={handleDeleteTest}
+                                onImageUpload={handleImageUpload}
+                                currentOpenCard={activeTestCard}
+                                onOpenCard={setActiveTestCard}
+                            />
+                        ))}
                     </div>
                 </TabsContent>
                 <TabsContent value="library" className="mt-4">
@@ -1125,5 +1149,107 @@ export default function EducationManagementPage() {
                 </DialogContent>
             </Dialog>
         </>
+    );
+}
+
+
+function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete, onImageUpload, currentOpenCard, onOpenCard }: {
+    test: Test,
+    familyMembers: any[],
+    onEdit: (test: Test) => void,
+    onArchive: (test: Test) => void,
+    onDelete: (id: string) => void,
+    onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, test: Test, questionNumber: number) => void,
+    currentOpenCard: string | null,
+    onOpenCard: (id: string | null) => void
+}) {
+    const student = familyMembers.find(m => m.id === test.studentId);
+    const isCompleted = test.status === 'Sonuçlandı';
+    const scorePercentage = test.score || 0;
+    const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+    const [currentQuestion, setCurrentQuestion] = React.useState(0);
+    const isOpen = currentOpenCard === test.id;
+
+    const getEvaluation = (qNum: number): 'correct' | 'incorrect' | 'empty' => {
+        if (test.gradingType === 'auto' && test.answerKey) {
+            const studentAnswer = test.studentAnswers?.[qNum];
+            if (!studentAnswer) return 'empty';
+            return studentAnswer === test.answerKey[qNum] ? 'correct' : 'incorrect';
+        }
+        return test.studentTextAnswersEvaluation?.[qNum] || 'empty';
+    }
+    
+    const handleTriggerFileUpload = (qNum: number) => {
+        if(fileInputRef.current) {
+            fileInputRef.current.onchange = (e) => onImageUpload(e as any, test, qNum);
+            fileInputRef.current.click();
+        }
+    };
+    
+    return (
+        <Card className="flex flex-col">
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
+            <CardHeader className="cursor-pointer" onClick={() => onOpenCard(isOpen ? null : test.id)}>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{test.title}</CardTitle>
+                    <Badge variant={isCompleted ? "default" : "outline"} className={cn(isCompleted && "bg-green-600")}>{test.status}</Badge>
+                </div>
+                <CardDescription>
+                    {student?.name || 'Bilinmeyen'} - {test.subject}
+                </CardDescription>
+            </CardHeader>
+            {isCompleted && (
+                 <CardContent>
+                    <div className="space-y-3">
+                        <Progress value={scorePercentage} className="h-2" />
+                        <div className="flex justify-between text-sm font-medium">
+                            <span className="flex items-center gap-1.5 text-green-600"><CheckCircle className="h-4 w-4"/> Doğru: {test.correctAnswers}</span>
+                            <span className="flex items-center gap-1.5 text-red-600"><X className="h-4 w-4"/> Yanlış: {test.incorrectAnswers}</span>
+                            <span className="flex items-center gap-1.5 text-gray-500"><MinusCircle className="h-4 w-4"/> Boş: {test.emptyAnswers}</span>
+                        </div>
+                    </div>
+                </CardContent>
+            )}
+            {isOpen && (
+                <CardContent>
+                    <div className="border-t pt-4">
+                        <div className="aspect-video w-full border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground bg-muted/20 relative">
+                             {test.questions && test.questions[currentQuestion]?.imageUrl ? (
+                                <label className="w-full h-full cursor-pointer group/image">
+                                    <Image src={test.questions[currentQuestion].imageUrl!} alt={`Soru ${currentQuestion + 1}`} layout="fill" objectFit="contain" className="p-2" data-ai-hint="question paper" />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity">
+                                        <p className="text-white font-semibold">Görseli Değiştir</p>
+                                    </div>
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => onImageUpload(e, test, currentQuestion + 1)} />
+                                </label>
+                            ) : (
+                                <Button variant="outline" onClick={() => handleTriggerFileUpload(currentQuestion + 1)}>
+                                    <UploadCloud className="mr-2 h-4 w-4" />
+                                    Soru {currentQuestion + 1} İçin Görsel Yükle
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                             <Button variant="ghost" onClick={() => setCurrentQuestion(q => Math.max(0, q - 1))} disabled={currentQuestion === 0}><ArrowLeft className="mr-2 h-4 w-4"/>Önceki</Button>
+                            <span className="text-sm font-medium">{currentQuestion + 1} / {test.questionCount}</span>
+                             <Button variant="ghost" onClick={() => setCurrentQuestion(q => Math.min(test.questionCount - 1, q + 1))} disabled={currentQuestion === test.questionCount - 1}>Sonraki<ArrowRight className="ml-2 h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                </CardContent>
+            )}
+            <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3 mt-auto">
+                <Button variant="ghost" size="sm" onClick={() => onEdit(test)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
+                {isCompleted && <Button variant="secondary" size="sm" onClick={() => onArchive(test)}><Archive className="w-4 h-4 mr-2"/>Arşivle</Button>}
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm"><Trash2 className="w-4 h-4 mr-2"/>Sil</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitleComponent>Ödevi Sil</AlertDialogTitleComponent><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardFooter>
+        </Card>
     );
 }
