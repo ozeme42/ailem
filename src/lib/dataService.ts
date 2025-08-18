@@ -1223,7 +1223,36 @@ export const generateMistakesForTest = async (testId: string) => {
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
 
-    const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
+    let questionSource: QuickTestQuestion[] = test.questions || [];
+
+    if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
+        const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
+        if (bankDoc.exists()) {
+            const bank = bankDoc.data() as QuestionBank;
+            const topic = bank.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
+            if (topic && (topic as any).questions) {
+                 questionSource = (topic as any).questions;
+            }
+        }
+    } else if (test.sourceType === 'exam' && test.sourceId) {
+        const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
+        if (examDoc.exists()) {
+            const exam = examDoc.data() as PracticeExam;
+             if ((exam as any).questions) {
+                 questionSource = (exam as any).questions;
+            }
+        }
+    }
+
+    const createMistakeData = (questionId: string, studentAnswer: string, originalQuestionNumber?: number) => {
+        let imageUrl: string | null | undefined = null;
+        if (originalQuestionNumber !== undefined) {
+             const question = questionSource.find(q => q.questionNumber === originalQuestionNumber);
+             if (question) {
+                imageUrl = question.imageUrl;
+             }
+        }
+        
         return {
             familyId: test.familyId,
             creatorId: test.studentId,
@@ -1234,7 +1263,7 @@ export const generateMistakesForTest = async (testId: string) => {
             topic: test.title,
             createdAt: new Date().toISOString(),
             status: 'active' as const,
-            imageUrl: imageUrl || null,
+            imageUrl: imageUrl,
         };
     };
 
@@ -1245,8 +1274,7 @@ export const generateMistakesForTest = async (testId: string) => {
             const studentAnswer = test.studentAnswers?.[qNum] ?? null;
 
             if (studentAnswer !== correctAnswer) {
-                const imageUrl = test.questions?.find(q => q.questionNumber === qNum)?.imageUrl;
-                const mistakeData = createMistakeData(qNumStr, studentAnswer || "", imageUrl);
+                const mistakeData = createMistakeData(qNumStr, studentAnswer || "", qNum);
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
                 mistakeIdsToRetake.push(mistakeRef.id);
@@ -1257,9 +1285,8 @@ export const generateMistakesForTest = async (testId: string) => {
             const status = test.studentTextAnswersEvaluation[qId];
             if (status === 'incorrect' || status === 'empty') {
                 const studentAnswer = test.studentTextAnswers?.[qId] || '(Boş)';
-                const imageUrl = test.questions?.find(q => q.questionNumber.toString() === qId)?.imageUrl;
-                
-                const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
+                const qNum = parseInt(qId, 10);
+                const mistakeData = createMistakeData(qId, studentAnswer, qNum);
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
                 mistakeIdsToRetake.push(mistakeRef.id);
