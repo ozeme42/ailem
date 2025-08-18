@@ -39,6 +39,7 @@ const formSchema = z.object({
   // Quick Test Fields
   title: z.string().optional(),
   subject: z.string().optional(),
+  questionCount: z.coerce.number().optional(),
   gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual-text"),
   answerKey: z.record(z.string()).optional(),
   questions: z.array(z.object({
@@ -94,6 +95,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       activeTab: initialData?.sourceType || 'quick',
       title: initialData?.title || "",
       subject: initialData?.subject || "",
+      questionCount: initialData?.questionCount || 0,
       gradingType: initialData?.gradingType || "manual-text",
       answerKey: initialData?.answerKey || {},
       questions: initialData?.questions || [],
@@ -113,7 +115,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   const activeTab = form.watch("activeTab");
   const bankId = form.watch("bankId");
   const gradingType = form.watch("gradingType");
-  const questionCount = form.watch("questions")?.length || 0;
+  const questions = form.watch("questions") || [];
   
   const handleTabChange = (value: AssignmentType) => {
     form.setValue('activeTab', value);
@@ -165,6 +167,10 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       form.setValue("studentId", students[0].id);
     }
   }, [students, form, initialData]);
+  
+  React.useEffect(() => {
+    form.setValue('questionCount', questions.length);
+  }, [questions, form]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -293,7 +299,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             )} />
              
              <div className="space-y-2">
-                <FormLabel>Sorular</FormLabel>
+                <FormLabel>Sorular ({questions.length} adet)</FormLabel>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {fields.map((field, index) => (
                         <div key={field.id} className="relative group">
@@ -329,9 +335,9 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             )} />
             {gradingType === 'auto' && (
               <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
-                <DialogTrigger asChild><Button type="button" variant="secondary" disabled={questionCount === 0}><Key className="mr-2 h-4 w-4"/>Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questionCount})</Button></DialogTrigger>
-                <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Cevap Anahtarı</DialogTitle><DialogDescription>{form.getValues('title')} için cevapları girin. Toplam {questionCount} soru.</DialogDescription></DialogHeader>
-                  <AnswerKeyForm totalQuestions={questionCount} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: AnswerKey) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
+                <DialogTrigger asChild><Button type="button" variant="secondary" disabled={questions.length === 0}><Key className="mr-2 h-4 w-4"/>Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questions.length})</Button></DialogTrigger>
+                <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Cevap Anahtarı</DialogTitle><DialogDescription>{form.getValues('title')} için cevapları girin. Toplam {questions.length} soru.</DialogDescription></DialogHeader>
+                  <AnswerKeyForm totalQuestions={questions.length} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: AnswerKey) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
                 </DialogContent>
               </Dialog>
             )}
@@ -370,3 +376,4 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
+
