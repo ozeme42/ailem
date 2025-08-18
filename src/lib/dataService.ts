@@ -1222,6 +1222,25 @@ export const generateMistakesForTest = async (testId: string) => {
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
 
+    let sourceQuestions: QuickTestQuestion[] | undefined = test.questions;
+
+    // If it's a bank test, fetch the questions from the question bank document
+    if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
+        const bankDocRef = doc(db, 'questionBanks', test.sourceId);
+        const bankSnap = await getDoc(bankDocRef);
+        if (bankSnap.exists()) {
+            const bank = bankSnap.data() as QuestionBank;
+            const topic = bank.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
+            // Assuming questions are stored on the topic itself, which they aren't in the current model.
+            // This logic needs to be adapted if questions are stored elsewhere, for now we assume they are not available for bank tests.
+            // Let's assume for now that bank tests might not have images stored in a retrievable way for this function.
+            // sourceQuestions = topic.questions; // This would be the ideal case
+        }
+    }
+    
+    // ... similar logic for 'exam' if needed ...
+
+
     const createMistakeData = (questionId: string, studentAnswer: string, imageUrl?: string | null) => {
         return {
             familyId: test.familyId,
@@ -1244,16 +1263,7 @@ export const generateMistakesForTest = async (testId: string) => {
             const studentAnswer = test.studentAnswers?.[qNum] ?? null;
 
             if (studentAnswer !== correctAnswer) {
-                let imageUrl: string | null | undefined = null;
-                // Quick tests have images on the test document itself
-                if (test.sourceType === 'quick' && test.questions) {
-                    imageUrl = test.questions.find(q => q.questionNumber === qNum)?.imageUrl;
-                } else if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
-                    // For bank tests, the image URL would be on the topic/question level, which we don't store on the test doc.
-                    // This part would require fetching the question bank and finding the specific question image, which is complex.
-                    // For now, we pass null if not a quick test. This can be enhanced later if needed.
-                }
-
+                const imageUrl = sourceQuestions?.find(q => q.questionNumber === qNum)?.imageUrl;
                 const mistakeData = createMistakeData(qNumStr, studentAnswer || "", imageUrl);
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
@@ -1265,10 +1275,10 @@ export const generateMistakesForTest = async (testId: string) => {
             const status = test.studentTextAnswersEvaluation[qId];
             if (status === 'incorrect' || status === 'empty') {
                 const studentAnswer = test.studentTextAnswers?.[qId] || '(Boş)';
-                let imageUrl: string | undefined | null = (test as any).imageUrls?.[qId]; // From manual grading
+                let imageUrl: string | undefined | null = (test as any).imageUrls?.[qId]; 
                 
-                if (!imageUrl && test.sourceType === 'quick' && test.questions) {
-                    imageUrl = test.questions.find(q => q.questionNumber.toString() === qId)?.imageUrl;
+                if (!imageUrl && sourceQuestions) {
+                    imageUrl = sourceQuestions.find(q => q.questionNumber.toString() === qId)?.imageUrl;
                 }
                 
                 const mistakeData = createMistakeData(qId, studentAnswer, imageUrl);
