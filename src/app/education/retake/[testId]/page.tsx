@@ -61,15 +61,18 @@ export default function RetakeTestPage() {
                 }
 
                 const mistakesSnapshot = await getDocs(mistakesQuery);
-                const mistakes = mistakesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
+                const allMistakes = mistakesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
                 
-                if (mistakes.length === 0) {
+                // Only include questions that have an image URL
+                const mistakesWithImages = allMistakes.filter(m => m.imageUrl);
+
+                if (mistakesWithImages.length === 0) {
                     toast({ title: "Tebrikler!", description: "Bu kritere uygun tamamlanacak eksik soru bulunmuyor." });
                     router.push(`/education/${testId}`);
                     return;
                 }
                 
-                setRetakeQuestions(mistakes);
+                setRetakeQuestions(mistakesWithImages);
 
             } catch (error) {
                 console.error("Error fetching retake data:", error);
