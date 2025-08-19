@@ -193,32 +193,32 @@ export default function OpticalFormPage() {
         if (!test) return;
     
         const fetchMistakes = async () => {
-            let q = query(
+            let baseQuery = query(
                 collection(db, 'mistakes'),
                 where('testId', '==', test.id),
                 where('status', '==', 'active')
             );
-
+    
             if (filter === 'incorrect') {
-                q = query(q, where('studentAnswer', '!=', ''));
+                baseQuery = query(baseQuery, where('studentAnswer', '!=', ''));
             } else if (filter === 'empty') {
-                q = query(q, where('studentAnswer', '==', ''));
+                baseQuery = query(baseQuery, where('studentAnswer', '==', ''));
             }
-
-            const querySnapshot = await getDocs(q);
+            // 'all' doesn't need an additional filter
+    
+            const querySnapshot = await getDocs(baseQuery);
             return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
         };
     
         let mistakesToRetake = await fetchMistakes();
-        
         const hasUngeneratedMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
-        
+    
         if (mistakesToRetake.length === 0 && hasUngeneratedMistakes) {
             setIsGeneratingMistakes(true);
             toast({ title: 'Eksikler Hazırlanıyor...', description: 'Lütfen bekleyin, testinizdeki yanlış ve boş sorularınız tekrar çözmeniz için oluşturuluyor.' });
             try {
                 await generateMistakesForTest(test.id);
-                mistakesToRetake = await fetchMistakes(); // Re-fetch after generation
+                mistakesToRetake = await fetchMistakes(); // Re-fetch after generation with the same filter
             } catch (error) {
                 console.error("Error generating mistakes:", error);
                 toast({ title: 'Hata', description: 'Eksik sorular oluşturulurken bir sorun oluştu.', variant: 'destructive' });
@@ -230,7 +230,7 @@ export default function OpticalFormPage() {
         }
     
         if (mistakesToRetake.length === 0) {
-            toast({ title: 'Tebrikler!', description: 'Bu testte tamamlanacak eksik soru bulunmuyor.' });
+            toast({ title: 'Tebrikler!', description: 'Bu kritere uygun tamamlanacak eksik soru bulunmuyor.' });
             return;
         }
 
@@ -638,5 +638,7 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
 
     
