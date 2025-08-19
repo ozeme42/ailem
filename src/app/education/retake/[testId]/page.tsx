@@ -13,7 +13,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { getDoc, getDocs, collection, query, where, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { updateMistake, migrateImage } from "@/lib/dataService";
+import { updateMistake } from "@/lib/dataService";
+import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import Image from "next/image";
 
 type RetakeAnswers = { [key: string]: string };
@@ -231,6 +232,3 @@ export default function RetakeTestPage() {
         </div>
     );
 }
-
-
-    
