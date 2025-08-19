@@ -65,13 +65,12 @@ export default function OpticalFormPage() {
         let allStudentMcqAnswers: McqAnswers = {};
         let allStudentTextAnswers: TextAnswers = {};
         
-        // Ensure all questions are accounted for, even if empty
         if (test.gradingType === 'auto') {
             for (let i = 1; i <= test.questionCount; i++) {
                 const qNumStr = i.toString();
                 allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
             }
-        } else if (test.gradingType === 'manual-text') {
+        } else if (test.gradingType === 'manual-text' || test.sourceType === 'mistake') {
             for (let i = 1; i <= test.questionCount; i++) {
                 const qNumStr = i.toString();
                  allStudentTextAnswers[qNumStr] = textAnswers[qNumStr] || "";
@@ -193,20 +192,19 @@ export default function OpticalFormPage() {
         if (!test) return;
     
         const fetchMistakes = async () => {
-            let baseQuery = query(
+            let q = query(
                 collection(db, 'mistakes'),
                 where('testId', '==', test.id),
                 where('status', '==', 'active')
             );
     
             if (filter === 'incorrect') {
-                baseQuery = query(baseQuery, where('studentAnswer', '!=', ''));
+                q = query(q, where('studentAnswer', '!=', ''));
             } else if (filter === 'empty') {
-                baseQuery = query(baseQuery, where('studentAnswer', '==', ''));
+                q = query(q, where('studentAnswer', '==', ''));
             }
-            // 'all' doesn't need an additional filter
     
-            const querySnapshot = await getDocs(baseQuery);
+            const querySnapshot = await getDocs(q);
             return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
         };
     
