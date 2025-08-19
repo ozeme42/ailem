@@ -636,7 +636,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    
-
-    
