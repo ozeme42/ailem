@@ -27,7 +27,6 @@ type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key:string]: string };
 type AnswerKey = { [key: string]: string };
 
-type ViewMode = 'initial_test' | 'results' | 'retake_test';
 
 export default function OpticalFormPage() {
     const router = useRouter();
@@ -38,24 +37,14 @@ export default function OpticalFormPage() {
     const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
-    const [retakeAnswers, setRetakeAnswers] = React.useState<TextAnswers>({});
 
     const [timeLeft, setTimeLeft] = React.useState(0);
     const [totalTime, setTotalTime] = React.useState(0);
     const [isPaused, setIsPaused] = React.useState(false);
-
-    const [viewMode, setViewMode] = React.useState<ViewMode>('initial_test');
     
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
-    const [retakeQuestions, setRetakeQuestions] = React.useState<Mistake[]>([]);
     const [isGeneratingMistakes, setIsGeneratingMistakes] = React.useState(false);
     
-    // For results view
-    const [resultDetails, setResultDetails] = React.useState<{ incorrectQuestions: string[], emptyQuestions: string[], answerKey: AnswerKey | null }>({ incorrectQuestions: [], emptyQuestions: [], answerKey: null });
-
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
 
@@ -65,18 +54,19 @@ export default function OpticalFormPage() {
         let allStudentMcqAnswers: McqAnswers = {};
         let allStudentTextAnswers: TextAnswers = {};
         
-        if (test.gradingType === 'auto') {
+        const gradingType = test.gradingType || 'manual';
+
+        if (gradingType === 'auto') {
             for (let i = 1; i <= test.questionCount; i++) {
                 const qNumStr = i.toString();
                 allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
             }
-        } else if (test.gradingType === 'manual-text' || test.sourceType === 'mistake') {
+        } else if (gradingType === 'manual-text' || test.sourceType === 'mistake') {
             for (let i = 1; i <= test.questionCount; i++) {
                 const qNumStr = i.toString();
-                 allStudentTextAnswers[qNumStr] = textAnswers[qNumStr] || "";
+                allStudentTextAnswers[qNumStr] = textAnswers[qNumStr] || "";
             }
         }
-
 
         try {
             let updatedData: Partial<TestType> = {
@@ -84,21 +74,7 @@ export default function OpticalFormPage() {
                 timeSpentSeconds: timeSpent
             };
             
-            const gradingType = test.gradingType || 'manual';
-            
-            if (gradingType !== 'auto') {
-                updatedData.status = 'Değerlendirme Bekliyor'; 
-                 if (test.sourceType === 'mistake') {
-                    updatedData.studentTextAnswers = textAnswers;
-                } else {
-                    updatedData.studentTextAnswers = allStudentTextAnswers;
-                }
-                await updateTest(test.id, updatedData);
-                toast({
-                    title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
-                    description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
-                });
-            } else { 
+            if (gradingType === 'auto') {
                 updatedData.studentAnswers = allStudentMcqAnswers;
                 let answerKey: { [key: string]: string } | undefined = undefined;
 
@@ -160,10 +136,15 @@ export default function OpticalFormPage() {
                         description: "Cevapların kaydedildi ama cevap anahtarı bulunamadı. Testin yakında manuel olarak değerlendirilecek.",
                     });
                 }
+            } else { // Manual grading types
+                updatedData.status = 'Değerlendirme Bekliyor'; 
+                updatedData.studentTextAnswers = allStudentTextAnswers;
+                await updateTest(test.id, updatedData);
+                toast({
+                    title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
+                    description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
+                });
             }
-            
-            setViewMode('results');
-
         } catch (error) {
             console.error("Error saving test results:", error);
             toast({
@@ -188,35 +169,21 @@ export default function OpticalFormPage() {
         }
     };
     
-    const startRetake = async (filter: 'incorrect' | 'empty' | 'all') => {
+    const startRetake = async () => {
         if (!test) return;
     
-        const fetchMistakes = async () => {
-            let q = query(
-                collection(db, 'mistakes'),
-                where('testId', '==', test.id),
-                where('status', '==', 'active')
-            );
+        // Check if there are any mistakes in the database first
+        let q = query(collection(db, 'mistakes'), where('testId', '==', test.id), where('status', '==', 'active'));
+        const existingMistakesSnapshot = await getDocs(q);
     
-            if (filter === 'incorrect') {
-                q = query(q, where('studentAnswer', '!=', ''));
-            } else if (filter === 'empty') {
-                q = query(q, where('studentAnswer', '==', ''));
-            }
-    
-            const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake));
-        };
-    
-        let mistakesToRetake = await fetchMistakes();
+        // Check if there are mistakes that *should* exist
         const hasUngeneratedMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
     
-        if (mistakesToRetake.length === 0 && hasUngeneratedMistakes) {
+        if (existingMistakesSnapshot.empty && hasUngeneratedMistakes) {
             setIsGeneratingMistakes(true);
             toast({ title: 'Eksikler Hazırlanıyor...', description: 'Lütfen bekleyin, testinizdeki yanlış ve boş sorularınız tekrar çözmeniz için oluşturuluyor.' });
             try {
                 await generateMistakesForTest(test.id);
-                mistakesToRetake = await fetchMistakes(); // Re-fetch after generation with the same filter
             } catch (error) {
                 console.error("Error generating mistakes:", error);
                 toast({ title: 'Hata', description: 'Eksik sorular oluşturulurken bir sorun oluştu.', variant: 'destructive' });
@@ -227,84 +194,7 @@ export default function OpticalFormPage() {
             }
         }
     
-        if (mistakesToRetake.length === 0) {
-            toast({ title: 'Tebrikler!', description: 'Bu kritere uygun tamamlanacak eksik soru bulunmuyor.' });
-            return;
-        }
-
-        setRetakeQuestions(mistakesToRetake);
-        setViewMode('retake_test');
-        setCurrentQuestionIndex(0);
-    };
-
-
-    const handleRetakeSubmit = async () => {
-        if (!test || retakeQuestions.length === 0) return;
-    
-        const updatedMistakePromises = retakeQuestions.map(mistake => {
-            const studentAnswer = retakeAnswers[mistake.id] || "";
-            if (studentAnswer.trim().toLowerCase() === (mistake.correctAnswer || "").trim().toLowerCase()) {
-                return updateMistake(mistake.id, { status: 'corrected' });
-            }
-            return Promise.resolve(); // Do nothing if answer is wrong or empty
-        });
-
-        try {
-            await Promise.all(updatedMistakePromises);
-            toast({ title: 'Tebrikler!', description: 'Doğru cevapladığın eksikler tamamlandı.' });
-            
-            // Re-fetch mistakes to update the view
-            const updatedMistakesQuery = query(
-                collection(db, 'mistakes'), 
-                where('testId', '==', test.id), 
-                where('status', '==', 'active')
-            );
-            const updatedSnapshot = await getDocs(updatedMistakesQuery);
-            if (updatedSnapshot.empty) {
-                // All mistakes are corrected, go back to results
-                setViewMode('results');
-            } else {
-                // Some mistakes remain, update the question list and stay in retake mode
-                setRetakeQuestions(updatedSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Mistake)));
-                setCurrentQuestionIndex(0); // Reset to first question
-            }
-
-        } catch (error) {
-            toast({ title: 'Hata', description: 'Tekrar testi kaydedilemedi.', variant: 'destructive' });
-        }
-    };
-    
-    const handleImageUploadForMistake = async (event: React.ChangeEvent<HTMLInputElement>, mistake: Mistake) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        toast({ title: "Görsel Yükleniyor..." });
-        try {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onloadend = async () => {
-                const imageDataUri = reader.result as string;
-                const destinationPath = `mistake-pool/${test?.studentId || 'unknown'}-${mistake.id}-${Date.now()}.jpg`;
-                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
-
-                if (!migrationResult.success || !migrationResult.newUrl) {
-                    throw new Error(migrationResult.error || "Görsel yüklenemedi.");
-                }
-
-                await updateMistake(mistake.id, { imageUrl: migrationResult.newUrl });
-                
-                // Update local state to show the new image immediately
-                setRetakeQuestions(prev => prev.map(q => 
-                    q.id === mistake.id ? { ...q, imageUrl: migrationResult.newUrl } : q
-                ));
-
-                toast({ title: "Görsel Güncellendi!" });
-            };
-        } catch (e) {
-            toast({ title: "Hata", variant: "destructive" });
-        } finally {
-            if (event.target) event.target.value = ''; // Reset file input
-        }
+        router.push(`/education/retake/${test.id}`);
     };
 
 
@@ -317,17 +207,12 @@ export default function OpticalFormPage() {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 setTest(currentTest);
 
-                if (currentTest.status === 'Sonuçlandı' || currentTest.status === 'Tekrar Çözülüyor') {
-                     setViewMode('results');
-                } else {
-                     setViewMode('initial_test');
-                     const totalDuration = currentTest.questionCount * 90;
-                     const timeAlreadySpent = currentTest.timeSpentSeconds || 0;
-                     setTotalTime(totalDuration);
-                     setTimeLeft(totalDuration - timeAlreadySpent);
-                     setIsPaused(currentTest.timerStatus === 'paused');
-                }
-
+                const totalDuration = currentTest.questionCount * 90;
+                const timeAlreadySpent = currentTest.timeSpentSeconds || 0;
+                setTotalTime(totalDuration);
+                setTimeLeft(totalDuration - timeAlreadySpent);
+                setIsPaused(currentTest.timerStatus === 'paused');
+                
                 if (currentTest.gradingType === 'auto') {
                     setMcqAnswers(currentTest.studentAnswers || {});
                 } else if (currentTest.gradingType === 'manual-text' || currentTest.sourceType === 'mistake') {
@@ -343,7 +228,7 @@ export default function OpticalFormPage() {
     }, [testId]);
 
     React.useEffect(() => {
-        if (!test || test.status !== 'Atandı' || isPaused || viewMode !== 'initial_test') return;
+        if (!test || test.status !== 'Atandı' || isPaused) return;
         
         if (timeLeft <= 0) {
             handleSubmit(true);
@@ -355,7 +240,7 @@ export default function OpticalFormPage() {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, test, handleSubmit, isPaused, viewMode]);
+    }, [timeLeft, test, handleSubmit, isPaused]);
 
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -389,7 +274,7 @@ export default function OpticalFormPage() {
         )
     }
 
-    if (viewMode === 'results') {
+    if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const hasIncorrect = (test.incorrectAnswers || 0) > 0;
         const hasEmpty = (test.emptyAnswers || 0) > 0;
         const hasMistakes = hasIncorrect || hasEmpty;
@@ -415,23 +300,25 @@ export default function OpticalFormPage() {
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <Card className="p-4 bg-green-500/10"><CardTitle className="flex items-center justify-center gap-2"><Check className="text-green-600"/> Doğru</CardTitle><p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p></Card>
-                            <div
-                                className={cn("p-4 rounded-lg border", hasIncorrect ? 'bg-red-500/10 cursor-pointer hover:bg-red-500/20' : 'bg-card')}
-                                onClick={hasIncorrect ? () => startRetake('incorrect') : undefined}
-                            >
-                                <CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle>
-                                <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
-                            </div>
-                            <div
-                                className={cn("p-4 rounded-lg border", hasEmpty ? 'bg-gray-500/10 cursor-pointer hover:bg-gray-500/20' : 'bg-card')}
-                                onClick={hasEmpty ? () => startRetake('empty') : undefined}
-                            >
-                                <CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle>
-                                <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
-                            </div>
+                            <Link href={`/education/retake/${test.id}?filter=incorrect`} passHref>
+                                <div
+                                    className={cn("p-4 rounded-lg border", hasIncorrect ? 'bg-red-500/10 cursor-pointer hover:bg-red-500/20' : 'bg-card')}
+                                >
+                                    <CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle>
+                                    <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
+                                </div>
+                            </Link>
+                            <Link href={`/education/retake/${test.id}?filter=empty`} passHref>
+                                <div
+                                    className={cn("p-4 rounded-lg border", hasEmpty ? 'bg-gray-500/10 cursor-pointer hover:bg-gray-500/20' : 'bg-card')}
+                                >
+                                    <CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle>
+                                    <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
+                                </div>
+                             </Link>
                         </div>
                         {hasMistakes && (
-                             <Button className="w-full" size="lg" onClick={() => startRetake('all')} disabled={isGeneratingMistakes}>
+                             <Button className="w-full" size="lg" onClick={startRetake} disabled={isGeneratingMistakes}>
                                 {isGeneratingMistakes ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5"/>}
                                 Eksiklerini Tamamla ({(test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
                             </Button>
@@ -445,94 +332,6 @@ export default function OpticalFormPage() {
                 </Card>
             </div>
         );
-    }
-    
-    if(viewMode === 'retake_test') {
-        const currentMistakeQuestion = retakeQuestions[currentQuestionIndex];
-        const imageUrl = currentMistakeQuestion?.imageUrl;
-        const originalQuestionNumber = currentMistakeQuestion?.originalQuestionId;
-
-        return (
-             <div className="container mx-auto py-8">
-                <header className="mb-4">
-                    <Button variant="ghost" onClick={() => setViewMode('results')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Sonuçlara Geri Dön
-                    </Button>
-                </header>
-                 <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-2xl">Eksikleri Tamamlama Testi</CardTitle>
-                                <CardDescription>
-                                    {test.title} - Soru {currentQuestionIndex + 1} / {retakeQuestions.length}
-                                    {originalQuestionNumber && ` (Orijinal Soru #${originalQuestionNumber})`}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <label className="w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer relative" onClick={() => fileInputRef.current?.click()}>
-                                    {imageUrl ? (
-                                        <Image src={imageUrl} alt={`Soru ${originalQuestionNumber}`} layout="fill" objectFit="contain" className="rounded-lg" data-ai-hint="question paper" />
-                                    ) : (
-                                        <>
-                                            <UploadCloud className="h-10 w-10 mb-2"/>
-                                            <p>Görsel bulunamadı.</p>
-                                            <p className="text-xs">Görsel yüklemek için tıklayın.</p>
-                                        </>
-                                    )}
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        ref={fileInputRef}
-                                        onChange={(e) => handleImageUploadForMistake(e, currentMistakeQuestion)}
-                                    />
-                                </label>
-                                <div className="space-y-2 my-2 p-3 rounded-lg border bg-muted">
-                                    <p className="font-semibold">Önceki Cevabınız:</p>
-                                    <p className="text-muted-foreground">{currentMistakeQuestion?.studentAnswer || "(Boş bırakılmış)"}</p>
-                                </div>
-                                <div className="flex items-start sm:items-center gap-4 p-3 rounded-lg border mt-4">
-                                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{currentQuestionIndex + 1}</div>
-                                   <div className="flex-grow flex items-center gap-2">
-                                        <Input
-                                            placeholder="Cevabınızı buraya yazın..."
-                                            value={retakeAnswers[currentMistakeQuestion.id] || ""}
-                                            onChange={(e) => setRetakeAnswers(prev => ({...prev, [currentMistakeQuestion.id]: e.target.value}))}
-                                            className="flex-grow"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardContent className="flex justify-between items-center pt-4">
-                                <Button variant="outline" onClick={() => setCurrentQuestionIndex(q => q - 1)} disabled={currentQuestionIndex === 0}>
-                                    <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
-                                </Button>
-                                <Button onClick={() => setCurrentQuestionIndex(q => q + 1)} disabled={currentQuestionIndex === retakeQuestions.length - 1}>
-                                    Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                     <aside className="lg:sticky top-8 self-start">
-                         <Card>
-                            <CardHeader className="text-center"><CardTitle>Test Bilgisi</CardTitle></CardHeader>
-                            <CardContent className="space-y-6">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button className="w-full" size="lg">Testi Bitir</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={handleRetakeSubmit}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </CardContent>
-                        </Card>
-                    </aside>
-                </main>
-            </div>
-        )
     }
 
     const handleMcqAnswerChange = (questionNumber: number, value: string) => {
@@ -636,3 +435,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
