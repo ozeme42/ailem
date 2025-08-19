@@ -167,7 +167,7 @@ export const ManualGradeForm = React.forwardRef<
                     <CardDescription>Her bir cevabı doğru veya yanlış olarak işaretleyin.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ScrollArea className="h-96 pr-4">
+                    <ScrollArea className="h-[55vh] pr-4">
                         <div className="space-y-4">
                             {questions.map((q) => {
                                 const status = evaluations[q.id] || 'unevaluated';
@@ -207,4 +207,5 @@ export const ManualGradeForm = React.forwardRef<
 });
 
 ManualGradeForm.displayName = 'ManualGradeForm';
+
 
