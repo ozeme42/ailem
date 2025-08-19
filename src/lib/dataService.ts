@@ -1223,7 +1223,7 @@ export const generateMistakesForTest = async (testId: string) => {
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
 
-    const createMistakeData = (questionId: string, studentAnswer: string | null) => ({
+    const createMistakeData = (questionId: string, studentAnswer: string | null, imageUrl?: string | null) => ({
         familyId: test.familyId,
         creatorId: test.studentId,
         testId: test.id,
@@ -1233,6 +1233,7 @@ export const generateMistakesForTest = async (testId: string) => {
         topic: test.title,
         createdAt: new Date().toISOString(),
         status: 'active' as const,
+        imageUrl: imageUrl || null,
     });
 
     if (test.gradingType === 'auto' && test.answerKey) {
@@ -1242,7 +1243,8 @@ export const generateMistakesForTest = async (testId: string) => {
             const studentAnswer = test.studentAnswers?.[qNumStr] ?? null;
 
             if (studentAnswer !== correctAnswer) {
-                const mistakeData = createMistakeData(qNumStr, studentAnswer);
+                const questionImageUrl = test.questions?.find(q => q.questionNumber.toString() === qNumStr)?.imageUrl;
+                const mistakeData = createMistakeData(qNumStr, studentAnswer, questionImageUrl);
                 const mistakeRef = doc(collection(db, 'mistakes'));
                 batch.set(mistakeRef, removeUndefined(mistakeData));
                 mistakeIdsToRetake.push(mistakeRef.id);
@@ -1254,7 +1256,8 @@ export const generateMistakesForTest = async (testId: string) => {
             const status = evaluations[qId];
             if (status === 'incorrect' || status === 'empty') {
                  const studentAnswer = test.studentTextAnswers?.[qId] ?? null;
-                 const mistakeData = createMistakeData(qId, studentAnswer);
+                 const questionImageUrl = test.questions?.find(q => q.questionNumber.toString() === qId)?.imageUrl;
+                 const mistakeData = createMistakeData(qId, studentAnswer, questionImageUrl);
                  const mistakeRef = doc(collection(db, 'mistakes'));
                  batch.set(mistakeRef, removeUndefined(mistakeData));
                  mistakeIdsToRetake.push(mistakeRef.id);
