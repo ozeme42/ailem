@@ -763,7 +763,7 @@ export default function EducationManagementPage() {
         setIsExamDialogOpen(true);
     }
     
-    const openEditTestDialog = (test: Test) => {
+    const openAssignTestDialog = (test: Test) => {
         setEditingTest(test);
         setIsTestDialogOpen(true);
     }
@@ -834,7 +834,8 @@ export default function EducationManagementPage() {
                 await updateTest(id, testData);
                 toast({ title: "✅ Ödev Güncellendi" });
             } else {
-                let finalTestData = { ...testData, status: 'Atandı', isArchived: false };
+                const questionCount = (testData as Test).questions ? (testData as Test).questions!.length : (testData as Test).questionCount;
+                let finalTestData = { ...testData, status: 'Atandı' as const, isArchived: false, questionCount: questionCount };
                 await addTest(finalTestData);
                 toast({ title: "✅ Ödev Atandı" });
             }
@@ -879,23 +880,6 @@ export default function EducationManagementPage() {
                 score: score,
                 studentTextAnswersEvaluation: gradeData.evaluations,
             };
-
-            // Add uploaded image URLs to the main test object
-            if (Object.keys(gradeData.imageUrls).length > 0) {
-                 const newQuestions = [...(gradingTest.questions || [])];
-                for(const qNum in gradeData.imageUrls) {
-                    const questionIndex = newQuestions.findIndex(q => q.questionNumber === parseInt(qNum));
-                    const imageUrl = gradeData.imageUrls[qNum];
-                    if (imageUrl) {
-                        if (questionIndex > -1) {
-                            newQuestions[questionIndex].imageUrl = imageUrl;
-                        } else {
-                            newQuestions.push({ questionNumber: parseInt(qNum), imageUrl });
-                        }
-                    }
-                }
-                updatedData.questions = newQuestions.sort((a,b) => a.questionNumber - b.questionNumber);
-            }
 
             await updateTest(gradingTest.id, updatedData);
             await checkAndAwardBadges(gradingTest.studentId, familyId, { type: 'test_completed', test: { ...gradingTest, ...updatedData } });
@@ -1000,7 +984,8 @@ export default function EducationManagementPage() {
                                 key={test.id} 
                                 test={test}
                                 familyMembers={familyMembers}
-                                onEdit={openEditTestDialog}
+                                onAssign={openAssignTestDialog}
+                                onGrade={openGradeDialog}
                                 onArchive={handleArchiveTest}
                                 onDelete={handleDeleteTest}
                             />
@@ -1109,10 +1094,11 @@ export default function EducationManagementPage() {
 }
 
 
-function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete }: {
+function TestManagementCard({ test, familyMembers, onAssign, onGrade, onArchive, onDelete }: {
     test: Test,
     familyMembers: any[],
-    onEdit: (test: Test) => void,
+    onAssign: (test: Test) => void,
+    onGrade: (test: Test) => void,
     onArchive: (test: Test) => void,
     onDelete: (id: string) => void,
 }) {
@@ -1144,7 +1130,12 @@ function TestManagementCard({ test, familyMembers, onEdit, onArchive, onDelete }
                 </CardContent>
             )}
             <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3 mt-auto">
-                <Button variant="ghost" size="sm" onClick={() => onEdit(test)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
+                {isCompleted ? (
+                    <Button variant="outline" size="sm" onClick={() => onGrade(test)}><Edit className="w-4 h-4 mr-2"/>Yeniden Değerlendir</Button>
+                ) : (
+                     <Button variant="ghost" size="sm" onClick={() => onAssign(test)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
+                )}
+                
                 {isCompleted && <Button variant="secondary" size="sm" onClick={() => onArchive(test)}><Archive className="w-4 h-4 mr-2"/>Arşivle</Button>}
                 <AlertDialog>
                     <AlertDialogTrigger asChild>

@@ -1223,15 +1223,6 @@ export const generateMistakesForTest = async (testId: string) => {
     const batch = writeBatch(db);
     const mistakeIdsToRetake: string[] = [];
 
-    const questionImageMap = new Map<string, string | undefined>();
-    if (test.questions && test.questions.length > 0) {
-        test.questions.forEach(q => {
-            if (q.imageUrl) {
-                questionImageMap.set(q.questionNumber.toString(), q.imageUrl);
-            }
-        });
-    }
-
     const createMistakeData = (questionId: string, studentAnswer: string | null) => ({
         familyId: test.familyId,
         creatorId: test.studentId,
@@ -1242,7 +1233,6 @@ export const generateMistakesForTest = async (testId: string) => {
         topic: test.title,
         createdAt: new Date().toISOString(),
         status: 'active' as const,
-        imageUrl: questionImageMap.get(questionId) || null,
     });
 
     if (test.gradingType === 'auto' && test.answerKey) {
