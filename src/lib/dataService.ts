@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -1698,4 +1698,168 @@ export const setDailyTrackingStatus = async (
   } else {
     await deleteDoc(trackingRef);
   }
+};
+
+// BUDGETING
+// Accounts
+export const onAccountsUpdate = (callback: (accounts: Account[]) => void) => onFamilyDataUpdate<Account>('accounts', callback);
+
+export const addAccount = async (data: Omit<Account, 'id' | 'familyId' | 'balance'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'accounts'), { ...data, familyId, balance: 0 });
+};
+
+export const updateAccount = async (id: string, data: Partial<Omit<Account, 'id' | 'familyId' | 'balance'>>) => {
+    return updateDoc(doc(db, 'accounts', id), data);
+};
+
+export const deleteAccount = async (id: string) => {
+    return deleteDoc(doc(db, 'accounts', id));
+};
+
+// Transactions
+export const onTransactionsUpdate = (callback: (transactions: Transaction[]) => void, month: Date) => {
+    const auth = getAuth();
+    let unsubscribe: ReturnType<typeof onSnapshot> | null = null;
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (unsubscribe) unsubscribe();
+
+        if (user) {
+            const familyId = await getCurrentFamilyId();
+            if (familyId) {
+                const start = format(startOfWeek(startOfMonth(month)), 'yyyy-MM-dd');
+                const end = format(endOfWeek(endOfMonth(month)), 'yyyy-MM-dd');
+
+                const q = query(
+                    collection(db, "transactions"),
+                    where("familyId", "==", familyId),
+                    where("date", ">=", start),
+                    where("date", "<=", end),
+                    orderBy("date", "desc")
+                );
+
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+                    callback(transactions);
+                });
+            } else {
+                callback([]);
+            }
+        } else {
+            callback([]);
+        }
+    });
+
+    return () => {
+        authUnsubscribe();
+        if (unsubscribe) unsubscribe();
+    };
+};
+
+const updateAccountBalance = async (accountId: string, amount: number, type: 'income' | 'expense') => {
+    const accountRef = doc(db, 'accounts', accountId);
+    const accountSnap = await getDoc(accountRef);
+    if (accountSnap.exists()) {
+        const currentBalance = accountSnap.data().balance || 0;
+        const newBalance = type === 'income' ? currentBalance + amount : currentBalance - amount;
+        await updateDoc(accountRef, { balance: newBalance });
+    }
+};
+
+export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+
+    const batch = writeBatch(db);
+
+    const newTransactionRef = doc(collection(db, 'transactions'));
+    batch.set(newTransactionRef, { ...data, familyId });
+
+    const accountRef = doc(db, 'accounts', data.accountId);
+    const accountSnap = await getDoc(accountRef);
+    if (accountSnap.exists()) {
+        const currentBalance = accountSnap.data().balance || 0;
+        const newBalance = data.type === 'income' ? currentBalance + data.amount : currentBalance - data.amount;
+        batch.update(accountRef, { balance: newBalance });
+    }
+
+    return batch.commit();
+};
+
+export const updateTransaction = async (id: string, data: Partial<Omit<Transaction, 'id'>>) => {
+    const transactionRef = doc(db, 'transactions', id);
+    const oldTransactionSnap = await getDoc(transactionRef);
+    if (!oldTransactionSnap.exists()) throw new Error("Transaction not found");
+
+    const oldData = oldTransactionSnap.data() as Transaction;
+    const batch = writeBatch(db);
+
+    // Revert old balance change
+    const oldAccountRef = doc(db, 'accounts', oldData.accountId);
+    const oldAccountSnap = await getDoc(oldAccountRef);
+    if (oldAccountSnap.exists()) {
+        const oldBalance = oldAccountSnap.data().balance;
+        const revertedBalance = oldData.type === 'income' ? oldBalance - oldData.amount : oldBalance + oldData.amount;
+        batch.update(oldAccountRef, { balance: revertedBalance });
+    }
+
+    // Apply new balance change
+    const newAccountId = data.accountId || oldData.accountId;
+    const newAmount = data.amount || oldData.amount;
+    const newType = data.type || oldData.type;
+    const newAccountRef = doc(db, 'accounts', newAccountId);
+    const newAccountSnap = await getDoc(newAccountRef);
+    if (newAccountSnap.exists()) {
+        let currentBalance = newAccountSnap.data().balance;
+        // If account changed, old account's reverted balance is correct.
+        // If account is the same, use the reverted balance for calculation.
+        if (oldData.accountId === newAccountId) {
+            const oldBalance = oldAccountSnap.data().balance;
+            currentBalance = oldData.type === 'income' ? oldBalance - oldData.amount : oldBalance + oldData.amount;
+        }
+        const newBalance = newType === 'income' ? currentBalance + newAmount : currentBalance - newAmount;
+        batch.update(newAccountRef, { balance: newBalance });
+    }
+
+    // Update the transaction itself
+    batch.update(transactionRef, data);
+
+    return batch.commit();
+};
+
+export const deleteTransaction = async (id: string) => {
+    const transactionRef = doc(db, 'transactions', id);
+    const transactionSnap = await getDoc(transactionRef);
+    if (!transactionSnap.exists()) return;
+
+    const data = transactionSnap.data() as Transaction;
+    const batch = writeBatch(db);
+
+    // Revert balance change
+    const accountRef = doc(db, 'accounts', data.accountId);
+    const accountSnap = await getDoc(accountRef);
+    if (accountSnap.exists()) {
+        const currentBalance = accountSnap.data().balance;
+        const newBalance = data.type === 'income' ? currentBalance - data.amount : currentBalance + data.amount;
+        batch.update(accountRef, { balance: newBalance });
+    }
+
+    // Delete transaction
+    batch.delete(transactionRef);
+
+    return batch.commit();
+};
+
+
+// Budgets
+export const onBudgetsUpdate = (callback: (budgets: Budget[]) => void) => onFamilyDataUpdate<Budget>('budgets', callback);
+export const updateBudget = async (data: Partial<Omit<Budget, 'id' | 'familyId'>>, month: string) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+
+    const budgetId = `${familyId}_${month}`; // e.g., 'family123_2024-08'
+    const docRef = doc(db, "budgets", budgetId);
+    return setDoc(docRef, { ...data, familyId }, { merge: true });
 };
