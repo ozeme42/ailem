@@ -5,7 +5,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3 } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3, PiggyBank } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
@@ -54,6 +54,7 @@ export function AppSidebar() {
     { href: "/tracking", label: "Takip Tablosu", icon: Columns3 },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },
+    { href: "/budget", label: "Bütçe", icon: PiggyBank },
     { href: "/goals", label: "Yol Haritaları", icon: Target },
     { href: "/memorization", label: "Ezber Takibi", icon: CheckCircle },
     { href: "/notes", label: "Notlar", icon: Notebook },
