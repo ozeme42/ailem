@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -106,20 +107,20 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
                 <FormField control={form.control} name="creditLimit" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Kredi Limiti</FormLabel>
-                        <FormControl><Input type="number" placeholder="50000" {...field} /></FormControl>
+                        <FormControl><Input type="number" placeholder="50000" {...field} value={field.value ?? ''} /></FormControl>
                     </FormItem>
                 )}/>
                  <div className="grid grid-cols-2 gap-4">
                      <FormField control={form.control} name="statementDate" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Hesap Kesim Günü</FormLabel>
-                            <FormControl><Input type="number" placeholder="Ayın 27'si ise 27 girin" {...field} /></FormControl>
+                            <FormControl><Input type="number" placeholder="Ayın 27'si ise 27 girin" {...field} value={field.value ?? ''} /></FormControl>
                         </FormItem>
                     )}/>
                      <FormField control={form.control} name="dueDate" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Son Ödeme Günü</FormLabel>
-                            <FormControl><Input type="number" placeholder="Ayın 7'si ise 7 girin" {...field} /></FormControl>
+                            <FormControl><Input type="number" placeholder="Ayın 7'si ise 7 girin" {...field} value={field.value ?? ''} /></FormControl>
                         </FormItem>
                     )}/>
                 </div>

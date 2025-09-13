@@ -15,6 +15,33 @@ const getCurrentFamilyId = async (): Promise<string | null> => {
     return userDoc.data()?.familyId || null;
 }
 
+// Helper function to recursively remove undefined properties from an object
+function removeUndefined(obj: any): any {
+  if (obj === null || obj === undefined) return undefined;
+
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefined);
+  }
+
+  if (typeof obj === 'object') {
+    const newObj: { [key: string]: any } = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        if (value !== undefined) {
+          const cleanedValue = removeUndefined(value);
+          if (cleanedValue !== undefined) {
+            newObj[key] = cleanedValue;
+          }
+        }
+      }
+    }
+    return newObj;
+  }
+  
+  return obj;
+}
+
 
 // Generic CRUD operations
 // These need to be updated to use the familyId from the logged-in user.
@@ -91,11 +118,12 @@ export const addBook = async (data: Omit<Book, 'id' | 'familyId' | 'createdAt'>)
 export const updateBook = async (id: string, data: Partial<Omit<Book, 'id' | 'familyId' | 'createdAt'>>) => {
     const bookRef = doc(db, 'mediaItems', id);
     const bookSnap = await getDoc(bookRef);
+    const cleanedData = removeUndefined(data);
     if (bookSnap.exists() && !bookSnap.data().createdAt) {
         // If the book doesn't have a creation date, add it.
-        return updateDoc(bookRef, { ...data, createdAt: new Date().toISOString() });
+        return updateDoc(bookRef, { ...cleanedData, createdAt: new Date().toISOString() });
     }
-    return updateDoc(bookRef, data);
+    return updateDoc(bookRef, cleanedData);
 };
 export const deleteBook = (id: string) => deleteDoc(doc(db, "mediaItems", id));
 
@@ -106,7 +134,7 @@ export const addVideo = async (data: Omit<Video, 'id' | 'familyId' | 'createdAt'
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'videos'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
-export const updateVideo = (id: string, data: Partial<Omit<Video, 'id' | 'familyId'>>) => updateDoc(doc(db, 'videos', id), data);
+export const updateVideo = (id: string, data: Partial<Omit<Video, 'id' | 'familyId'>>) => updateDoc(doc(db, 'videos', id), removeUndefined(data));
 export const deleteVideo = (id: string) => deleteDoc(doc(db, "videos", id));
 
 
@@ -405,12 +433,7 @@ export const addCalendarEvent = async (data: Omit<CalendarEvent, 'id' | 'familyI
 };
 export const updateCalendarEvent = async (id: string, data: Partial<Omit<CalendarEvent, 'id' | 'familyId'>>) => {
     const eventRef = doc(db, 'calendarEvents', id);
-    // Create a new object to avoid modifying the original data object
-    const eventData = { ...data };
-    if (eventData.endDate === undefined) {
-        delete (eventData as any).endDate;
-    }
-    return updateDoc(eventRef, eventData);
+    return updateDoc(eventRef, removeUndefined(data));
 };
 export const deleteCalendarEvent = (id: string) => deleteDoc(doc(db, 'calendarEvents', id));
 
@@ -506,11 +529,7 @@ export const addShoppingListItemToList = async (listId: string, itemData: { name
         quantity: itemData.quantity,
     };
     
-    // Ensure quantity is not undefined before sending to Firestore
-    const finalItem: any = { ...newItem, isBought: false };
-    if (finalItem.quantity === undefined) {
-        delete finalItem.quantity;
-    }
+    const finalItem = removeUndefined({ ...newItem, isBought: false });
     
     await updateDoc(listRef, {
         items: arrayUnion(finalItem)
@@ -854,32 +873,7 @@ export const addGoal = async (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' |
     return addDoc(collection(db, 'goals'), newGoal);
 };
 
-// Helper function to recursively remove undefined properties from an object
-function removeUndefined(obj: any): any {
-  if (obj === null || obj === undefined) return undefined;
 
-  if (Array.isArray(obj)) {
-    return obj.map(removeUndefined);
-  }
-
-  if (typeof obj === 'object') {
-    const newObj: { [key: string]: any } = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        if (value !== undefined) {
-          const cleanedValue = removeUndefined(value);
-          if (cleanedValue !== undefined) {
-            newObj[key] = cleanedValue;
-          }
-        }
-      }
-    }
-    return newObj;
-  }
-  
-  return obj;
-}
 
 
 export const updateGoal = async (id: string, data: Partial<Omit<Goal, 'id' | 'familyId' | 'creatorId' | 'createdAt'>>) => {
@@ -1707,11 +1701,13 @@ export const onAccountsUpdate = (callback: (accounts: Account[]) => void) => onF
 export const addAccount = async (data: Omit<Account, 'id' | 'familyId' | 'balance'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'accounts'), { ...data, familyId, balance: 0 });
+    const cleanedData = removeUndefined(data);
+    return addDoc(collection(db, 'accounts'), { ...cleanedData, familyId, balance: 0 });
 };
 
 export const updateAccount = async (id: string, data: Partial<Omit<Account, 'id' | 'familyId' | 'balance'>>) => {
-    return updateDoc(doc(db, 'accounts', id), data);
+    const cleanedData = removeUndefined(data);
+    return updateDoc(doc(db, 'accounts', id), cleanedData);
 };
 
 export const deleteAccount = async (id: string) => {
@@ -1773,9 +1769,10 @@ export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>)
     if (!familyId) throw new Error("User not in a family");
 
     const batch = writeBatch(db);
+    const cleanedData = removeUndefined(data);
 
     const newTransactionRef = doc(collection(db, 'transactions'));
-    batch.set(newTransactionRef, { ...data, familyId });
+    batch.set(newTransactionRef, { ...cleanedData, familyId });
 
     const accountRef = doc(db, 'accounts', data.accountId);
     const accountSnap = await getDoc(accountRef);
@@ -1795,6 +1792,7 @@ export const updateTransaction = async (id: string, data: Partial<Omit<Transacti
 
     const oldData = oldTransactionSnap.data() as Transaction;
     const batch = writeBatch(db);
+    const cleanedData = removeUndefined(data);
 
     // Revert old balance change
     const oldAccountRef = doc(db, 'accounts', oldData.accountId);
@@ -1824,7 +1822,7 @@ export const updateTransaction = async (id: string, data: Partial<Omit<Transacti
     }
 
     // Update the transaction itself
-    batch.update(transactionRef, data);
+    batch.update(transactionRef, cleanedData);
 
     return batch.commit();
 };
@@ -1861,5 +1859,5 @@ export const updateBudget = async (data: Partial<Omit<Budget, 'id' | 'familyId'>
 
     const budgetId = `${familyId}_${month}`; // e.g., 'family123_2024-08'
     const docRef = doc(db, "budgets", budgetId);
-    return setDoc(docRef, { ...data, familyId }, { merge: true });
+    return setDoc(docRef, { ...removeUndefined(data), familyId }, { merge: true });
 };
