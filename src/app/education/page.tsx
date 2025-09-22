@@ -23,6 +23,7 @@ import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
