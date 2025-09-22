@@ -909,15 +909,14 @@ export default function EducationManagementPage() {
                     <DialogTrigger asChild>
                          <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md flex flex-col h-[90vh]">
+                    <DialogContent className="sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
                             <DialogDescription>
                                 {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
                             </DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="flex-grow min-h-0">
-                          <div className="pr-4">
+                        <ScrollArea className="h-[60vh] pr-6">
                             <NewTestForm 
                                 students={studentMembers} 
                                 questionBanks={questionBanks}
@@ -927,7 +926,6 @@ export default function EducationManagementPage() {
                                 availableSubjects={availableSubjects}
                                 onSubjectCreated={handleCreateSubject}
                             />
-                          </div>
                         </ScrollArea>
                     </DialogContent>
                 </Dialog>
@@ -1158,4 +1156,3 @@ function TestManagementCard({ test, familyMembers, onAssign, onGrade, onArchive,
     );
 }
 
-    
