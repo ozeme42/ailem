@@ -310,7 +310,7 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
 
     const topicsBySubject = React.useMemo(() => {
         const mapping: { [key: string]: { topic: Topic, bankName: string, bankId: string, subjectId: number }[] } = {};
-        subjects.forEach(s => mapping[s] = []);
+        subjects.forEach(s => mapping[s] = [];
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
                 if (mapping[subject.name]) {
@@ -916,7 +916,7 @@ export default function EducationManagementPage() {
                                 {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
                             </DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="flex-grow min-h-0 pr-6">
+                        <ScrollArea className="flex-grow min-h-0 pr-6 -mr-6">
                             <NewTestForm 
                                 students={studentMembers} 
                                 questionBanks={questionBanks}
