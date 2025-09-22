@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -75,6 +76,7 @@ const DialogFooter = ({
   <div
     className={cn(
       "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 border-t",
+      "mt-auto flex-shrink-0",
       className
     )}
     {...props}
@@ -121,3 +123,5 @@ export {
   DialogTitle,
   DialogDescription,
 }
+
+    

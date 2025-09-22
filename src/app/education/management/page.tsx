@@ -448,7 +448,7 @@ function StudyPlanManagement() {
     setIsPlanDialogOpen(true);
   };
   
-  const handleOpenAssignmentDialog = (planId: string) => {
+  const handleOpenAssignmentDialog = (planId: string) {
       setCurrentPlanForAssignment(planId);
       setIsAssignmentDialogOpen(true);
   }
@@ -910,24 +910,28 @@ export default function EducationManagementPage() {
                     <DialogTrigger asChild>
                          <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md flex flex-col h-full max-h-[90vh]">
                         <DialogHeader>
                             <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
                             <DialogDescription>
                                 {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
                             </DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="max-h-[70vh] -mx-6 px-6">
-                            <NewTestForm 
-                                students={studentMembers} 
-                                questionBanks={questionBanks}
-                                practiceExams={practiceExams}
-                                onAssign={handleTestSubmit}
-                                initialData={editingTest}
-                                availableSubjects={availableSubjects}
-                                onSubjectCreated={handleCreateSubject}
-                            />
-                        </ScrollArea>
+                        <div className="flex-grow min-h-0">
+                          <ScrollArea className="h-full">
+                              <div className="pr-4">
+                                <NewTestForm 
+                                    students={studentMembers} 
+                                    questionBanks={questionBanks}
+                                    practiceExams={practiceExams}
+                                    onAssign={handleTestSubmit}
+                                    initialData={editingTest}
+                                    availableSubjects={availableSubjects}
+                                    onSubjectCreated={handleCreateSubject}
+                                />
+                              </div>
+                          </ScrollArea>
+                        </div>
                     </DialogContent>
                 </Dialog>
             </PageHeader>
@@ -1158,3 +1162,6 @@ function TestManagementCard({ test, familyMembers, onAssign, onGrade, onArchive,
 }
 
 
+
+
+    
