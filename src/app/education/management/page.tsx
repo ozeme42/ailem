@@ -65,6 +65,7 @@ import Image from "next/image";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -909,19 +910,23 @@ export default function EducationManagementPage() {
                     <DialogTrigger asChild>
                          <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
                         <DialogHeader>
                             <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
                         </DialogHeader>
-                        <NewTestForm 
-                            students={studentMembers} 
-                            questionBanks={questionBanks}
-                            practiceExams={practiceExams}
-                            onAssign={handleTestSubmit}
-                            initialData={editingTest}
-                            availableSubjects={availableSubjects}
-                            onSubjectCreated={handleCreateSubject}
-                        />
+                        <ScrollArea className="flex-grow min-h-0">
+                          <div className="pr-6">
+                            <NewTestForm 
+                                students={studentMembers} 
+                                questionBanks={questionBanks}
+                                practiceExams={practiceExams}
+                                onAssign={handleTestSubmit}
+                                initialData={editingTest}
+                                availableSubjects={availableSubjects}
+                                onSubjectCreated={handleCreateSubject}
+                            />
+                           </div>
+                        </ScrollArea>
                     </DialogContent>
                 </Dialog>
             </PageHeader>
