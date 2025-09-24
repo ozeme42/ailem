@@ -329,6 +329,13 @@ export interface QuickTestQuestion {
   // Add other fields like 'text' if needed later
 }
 
+// Renaming this to be more generic for the retake page
+export interface Question {
+  questionNumber: number;
+  imageUrl?: string | null;
+}
+
+
 export interface Test {
   id: string;
   familyId: string;
@@ -353,6 +360,7 @@ export interface Test {
   studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
+  retakeAnswers?: TextAnswerKey;
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   remainingMistakeIds?: string[]; // IDs of mistakes left to be corrected

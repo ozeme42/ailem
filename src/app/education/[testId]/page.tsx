@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { doc, getDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
-import { updateTest, checkAndAwardBadges, updateMistake, generateMistakesForTest } from "@/lib/dataService";
+import { updateTest, checkAndAwardBadges, updateMistake } from "@/lib/dataService";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -168,35 +168,6 @@ export default function OpticalFormPage() {
             await updateTest(test.id, { timerStatus: 'paused', timeSpentSeconds: timeSpent });
         }
     };
-    
-    const startRetake = async () => {
-        if (!test) return;
-    
-        // Check if there are any mistakes in the database first
-        let q = query(collection(db, 'mistakes'), where('testId', '==', test.id), where('status', '==', 'active'));
-        const existingMistakesSnapshot = await getDocs(q);
-    
-        // Check if there are mistakes that *should* exist
-        const hasUngeneratedMistakes = (test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0;
-    
-        if (existingMistakesSnapshot.empty && hasUngeneratedMistakes) {
-            setIsGeneratingMistakes(true);
-            toast({ title: 'Eksikler Hazırlanıyor...', description: 'Lütfen bekleyin, testinizdeki yanlış ve boş sorularınız tekrar çözmeniz için oluşturuluyor.' });
-            try {
-                await generateMistakesForTest(test.id);
-            } catch (error) {
-                console.error("Error generating mistakes:", error);
-                toast({ title: 'Hata', description: 'Eksik sorular oluşturulurken bir sorun oluştu.', variant: 'destructive' });
-                setIsGeneratingMistakes(false);
-                return;
-            } finally {
-                setIsGeneratingMistakes(false);
-            }
-        }
-    
-        router.push(`/education/retake/${test.id}`);
-    };
-
 
     React.useEffect(() => {
         if (!testId) return;
@@ -318,9 +289,11 @@ export default function OpticalFormPage() {
                              </Link>
                         </div>
                         {hasMistakes && (
-                             <Button className="w-full" size="lg" onClick={startRetake} disabled={isGeneratingMistakes}>
-                                {isGeneratingMistakes ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5"/>}
-                                Eksiklerini Tamamla ({(test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
+                             <Button asChild className="w-full" size="lg">
+                                <Link href={`/education/retake/${test.id}`}>
+                                    <Sparkles className="mr-2 h-5 w-5"/>
+                                    Eksiklerini Tamamla ({(test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
+                                </Link>
                             </Button>
                         )}
                          {!hasMistakes && test.status === 'Sonuçlandı' && (
@@ -435,5 +408,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    
