@@ -738,14 +738,7 @@ export const deleteTest = async (id: string) => {
     const testRef = doc(db, "tests", id);
     batch.delete(testRef);
 
-    // Find and delete associated mistakes
-    const mistakesQuery = query(collection(db, "mistakes"), where("testId", "==", id));
-    const mistakesSnapshot = await getDocs(mistakesQuery);
-    mistakesSnapshot.forEach((mistakeDoc) => {
-        batch.delete(mistakeDoc.ref);
-    });
-
-    return batch.commit();
+    await batch.commit();
 };
 
 
@@ -1200,72 +1193,7 @@ export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'
     const testDocRef = doc(db, 'tests', id);
     const cleanedData = removeUndefined(updateData);
     await updateDoc(testDocRef, cleanedData);
-
-    if (cleanedData.status === 'Sonuçlandı') {
-        await generateMistakesForTest(id);
-    }
 };
-
-export const generateMistakesForTest = async (testId: string) => {
-    const testDocRef = doc(db, 'tests', testId);
-    const testSnap = await getDoc(testDocRef);
-    if (!testSnap.exists()) return;
-
-    const test = { id: testId, ...testSnap.data() } as Test;
-    if (!test.familyId) return;
-
-    const batch = writeBatch(db);
-    const mistakeIdsToRetake: string[] = [];
-
-    const createMistakeData = (questionId: string, studentAnswer: string | null, imageUrl?: string | null) => ({
-        familyId: test.familyId,
-        creatorId: test.studentId,
-        testId: test.id,
-        originalQuestionId: questionId,
-        studentAnswer: studentAnswer || "", // Ensure it's always a string for consistent filtering
-        subject: test.subject,
-        topic: test.title,
-        createdAt: new Date().toISOString(),
-        status: 'active' as const,
-        imageUrl: imageUrl || null,
-    });
-
-    if (test.gradingType === 'auto' && test.answerKey) {
-        for (let i = 1; i <= test.questionCount; i++) {
-            const qNumStr = i.toString();
-            const correctAnswer = test.answerKey[qNumStr];
-            const studentAnswer = test.studentAnswers?.[qNumStr] ?? null;
-
-            if (studentAnswer !== correctAnswer) {
-                const questionImageUrl = test.questions?.find(q => q.questionNumber.toString() === qNumStr)?.imageUrl;
-                const mistakeData = createMistakeData(qNumStr, studentAnswer, questionImageUrl);
-                const mistakeRef = doc(collection(db, 'mistakes'));
-                batch.set(mistakeRef, removeUndefined(mistakeData));
-                mistakeIdsToRetake.push(mistakeRef.id);
-            }
-        }
-    } else if (test.gradingType === 'manual-text' && test.studentTextAnswersEvaluation) {
-        const evaluations = test.studentTextAnswersEvaluation;
-        for (const qId in evaluations) {
-            const status = evaluations[qId];
-            if (status === 'incorrect' || status === 'empty') {
-                 const studentAnswer = test.studentTextAnswers?.[qId] ?? null;
-                 const questionImageUrl = test.questions?.find(q => q.questionNumber.toString() === qId)?.imageUrl;
-                 const mistakeData = createMistakeData(qId, studentAnswer, questionImageUrl);
-                 const mistakeRef = doc(collection(db, 'mistakes'));
-                 batch.set(mistakeRef, removeUndefined(mistakeData));
-                 mistakeIdsToRetake.push(mistakeRef.id);
-            }
-        }
-    }
-
-    if (mistakeIdsToRetake.length > 0) {
-        batch.update(testDocRef, { remainingMistakeIds: mistakeIdsToRetake });
-    }
-
-    await batch.commit();
-};
-
 
 
 // Ambient Sounds

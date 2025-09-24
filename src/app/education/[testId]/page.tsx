@@ -91,7 +91,7 @@ export default function OpticalFormPage() {
                         const exam = examDoc.data() as PracticeExam;
                         answerKey = exam?.answerKey;
                     }
-                } else if (test.sourceType === 'quick') {
+                } else if (test.sourceType === 'quick' || test.sourceType === 'mistake') {
                     answerKey = test.answerKey;
                 }
 
@@ -248,7 +248,6 @@ export default function OpticalFormPage() {
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const hasIncorrect = (test.incorrectAnswers || 0) > 0;
         const hasEmpty = (test.emptyAnswers || 0) > 0;
-        const hasMistakes = hasIncorrect || hasEmpty;
 
         return (
             <div className="container mx-auto py-8 space-y-6">
@@ -271,36 +270,9 @@ export default function OpticalFormPage() {
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <Card className="p-4 bg-green-500/10"><CardTitle className="flex items-center justify-center gap-2"><Check className="text-green-600"/> Doğru</CardTitle><p className="text-2xl font-bold text-green-600">{test.correctAnswers}</p></Card>
-                            <Link href={`/education/retake/${test.id}?filter=incorrect`} passHref>
-                                <div
-                                    className={cn("p-4 rounded-lg border", hasIncorrect ? 'bg-red-500/10 cursor-pointer hover:bg-red-500/20' : 'bg-card')}
-                                >
-                                    <CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle>
-                                    <p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p>
-                                </div>
-                            </Link>
-                            <Link href={`/education/retake/${test.id}?filter=empty`} passHref>
-                                <div
-                                    className={cn("p-4 rounded-lg border", hasEmpty ? 'bg-gray-500/10 cursor-pointer hover:bg-gray-500/20' : 'bg-card')}
-                                >
-                                    <CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle>
-                                    <p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p>
-                                </div>
-                             </Link>
+                             <Card className="p-4 bg-red-500/10"><CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle><p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p></Card>
+                             <Card className="p-4 bg-gray-500/10"><CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle><p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p></Card>
                         </div>
-                        {hasMistakes && (
-                             <Button asChild className="w-full" size="lg">
-                                <Link href={`/education/retake/${test.id}`}>
-                                    <Sparkles className="mr-2 h-5 w-5"/>
-                                    Eksiklerini Tamamla ({(test.incorrectAnswers || 0) + (test.emptyAnswers || 0)} Soru)
-                                </Link>
-                            </Button>
-                        )}
-                         {!hasMistakes && test.status === 'Sonuçlandı' && (
-                             <div className="text-center p-4 rounded-lg bg-green-500/10 text-green-700 font-semibold">
-                                Tebrikler! Bu testteki tüm eksiklerini tamamladın.
-                             </div>
-                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -319,7 +291,7 @@ export default function OpticalFormPage() {
         ? Object.values(mcqAnswers).filter(a => a !== null).length
         : Object.values(textAnswers).filter(a => a.trim() !== "").length;
 
-    const isQuickTestWithImages = test.sourceType === 'quick' && test.questions && test.questions.length > 0;
+    const isQuickTestWithImages = (test.sourceType === 'quick' || test.sourceType === 'mistake') && test.questions && test.questions.length > 0;
     
     const currentQuestionNumber = currentQuestionIndex + 1;
     const currentQuestion = isQuickTestWithImages ? test.questions?.find(q => q.questionNumber === currentQuestionNumber) : null;
