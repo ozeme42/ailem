@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -143,7 +142,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
             const migrationResult = await migrateImage({ imageDataUri, destinationPath });
             if (migrationResult.success && migrationResult.newUrl) {
               append({
-                questionNumber: fields.length + 1,
+                questionNumber: fields.length + i + 1,
                 imageUrl: migrationResult.newUrl,
               });
             } else {
@@ -376,4 +375,3 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     </Tabs>
   );
 }
-

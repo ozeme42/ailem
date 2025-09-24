@@ -310,7 +310,7 @@ function SubjectManagement({ subjects, questionBanks, onOpenEditBank, onDeleteSu
 
     const topicsBySubject = React.useMemo(() => {
         const mapping: { [key: string]: { topic: Topic, bankName: string, bankId: string, subjectId: number }[] } = {};
-        subjects.forEach(s => mapping[s] = [];
+        subjects.forEach(s => mapping[s] = []);
         questionBanks.forEach(bank => {
             bank.subjects.forEach(subject => {
                 if (mapping[subject.name]) {
@@ -650,7 +650,6 @@ export default function EducationManagementPage() {
     
     const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
     const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
-    const [editingTest, setEditingTest] = React.useState<Test | null>(null);
     const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
     
@@ -763,11 +762,6 @@ export default function EducationManagementPage() {
         setIsExamDialogOpen(true);
     }
     
-    const openAssignTestDialog = (test: Test) => {
-        setEditingTest(test);
-        setIsTestDialogOpen(true);
-    }
-    
     const openEditMistakeDialog = (mistake: Mistake) => {
         setEditingMistake(mistake);
         setIsMistakeDialogOpen(true);
@@ -828,25 +822,6 @@ export default function EducationManagementPage() {
         }
     }
 
-    const handleTestSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
-        try {
-            if (id) {
-                await updateTest(id, testData);
-                toast({ title: "✅ Ödev Güncellendi" });
-            } else {
-                const questionCount = (testData as Test).questions ? (testData as Test).questions!.length : (testData as Test).questionCount;
-                let finalTestData = { ...testData, status: 'Atandı' as const, isArchived: false, questionCount: questionCount };
-                await addTest(finalTestData);
-                toast({ title: "✅ Ödev Atandı" });
-            }
-            setEditingTest(null);
-            setIsTestDialogOpen(false);
-        } catch (error) {
-             console.error("Error assigning test:", error);
-             toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
-        }
-    };
-
     const handleDeleteTest = async (testId: string) => {
         try {
             await deleteTest(testId);
@@ -905,30 +880,9 @@ export default function EducationManagementPage() {
                 <Link href="/education">
                     <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
                 </Link>
-                 <Dialog open={isTestDialogOpen} onOpenChange={(open) => { if (!open) setEditingTest(null); setIsTestDialogOpen(open); }}>
-                    <DialogTrigger asChild>
-                         <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
-                        <DialogHeader>
-                            <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
-                            <DialogDescription>
-                                {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-grow min-h-0 pr-6 -mr-6">
-                            <NewTestForm 
-                                students={studentMembers} 
-                                questionBanks={questionBanks}
-                                practiceExams={practiceExams}
-                                onAssign={handleTestSubmit}
-                                initialData={editingTest}
-                                availableSubjects={availableSubjects}
-                                onSubjectCreated={handleCreateSubject}
-                            />
-                        </ScrollArea>
-                    </DialogContent>
-                </Dialog>
+                 <Link href="/education/management/assign">
+                    <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
+                </Link>
             </PageHeader>
             
             {testsAwaitingGrading.length > 0 && (
@@ -989,7 +943,6 @@ export default function EducationManagementPage() {
                                 key={test.id} 
                                 test={test}
                                 familyMembers={familyMembers}
-                                onAssign={openAssignTestDialog}
                                 onGrade={openGradeDialog}
                                 onArchive={handleArchiveTest}
                                 onDelete={handleDeleteTest}
@@ -1099,10 +1052,9 @@ export default function EducationManagementPage() {
 }
 
 
-function TestManagementCard({ test, familyMembers, onAssign, onGrade, onArchive, onDelete }: {
+function TestManagementCard({ test, familyMembers, onGrade, onArchive, onDelete }: {
     test: Test,
     familyMembers: any[],
-    onAssign: (test: Test) => void,
     onGrade: (test: Test) => void,
     onArchive: (test: Test) => void,
     onDelete: (id: string) => void,
@@ -1135,11 +1087,12 @@ function TestManagementCard({ test, familyMembers, onAssign, onGrade, onArchive,
                 </CardContent>
             )}
             <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3 mt-auto">
+                <Link href={`/education/management/assign?edit=${test.id}`}>
+                    <Button variant="ghost" size="sm"><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
+                </Link>
                 {isCompleted ? (
                     <Button variant="outline" size="sm" onClick={() => onGrade(test)}><Edit className="w-4 h-4 mr-2"/>Yeniden Değerlendir</Button>
-                ) : (
-                     <Button variant="ghost" size="sm" onClick={() => onAssign(test)}><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
-                )}
+                ) : null}
                 
                 {isCompleted && <Button variant="secondary" size="sm" onClick={() => onArchive(test)}><Archive className="w-4 h-4 mr-2"/>Arşivle</Button>}
                 <AlertDialog>
@@ -1155,5 +1108,6 @@ function TestManagementCard({ test, familyMembers, onAssign, onGrade, onArchive,
         </Card>
     );
 }
+
 
 
