@@ -447,7 +447,7 @@ function StudyPlanManagement() {
     setIsPlanDialogOpen(true);
   };
   
-  const handleOpenAssignmentDialog = (planId: string) {
+  const handleOpenAssignmentDialog = (planId: string) => {
       setCurrentPlanForAssignment(planId);
       setIsAssignmentDialogOpen(true);
   }
@@ -1110,4 +1110,6 @@ function TestManagementCard({ test, familyMembers, onGrade, onArchive, onDelete 
 }
 
 
+    
 
+    
