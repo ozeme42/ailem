@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Mistake, Test, Question, EvaluationStatus } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -197,7 +198,7 @@ export default function RetakeTestPage() {
                                 accept="image/*"
                                 className="hidden"
                                 ref={fileInputRef}
-                                onChange={(e) => handleImageUploadForQuestion(e, originalQuestionNumber)}
+                                onChange={(e) => originalQuestionNumber && handleImageUploadForQuestion(e, originalQuestionNumber)}
                             />
 
                             <div className="space-y-2 my-2 p-3 rounded-lg border bg-muted">
@@ -211,8 +212,8 @@ export default function RetakeTestPage() {
                                    <div className="flex-grow flex items-center gap-2">
                                         <Input
                                             placeholder="Yeni cevabınızı buraya yazın..."
-                                            value={retakeAnswers[originalQuestionNumber] || ""}
-                                            onChange={(e) => setRetakeAnswers(prev => ({...prev, [originalQuestionNumber]: e.target.value}))}
+                                            value={originalQuestionNumber ? retakeAnswers[originalQuestionNumber] || "" : ""}
+                                            onChange={(e) => originalQuestionNumber && setRetakeAnswers(prev => ({...prev, [originalQuestionNumber]: e.target.value}))}
                                             className="flex-grow"
                                         />
                                     </div>
