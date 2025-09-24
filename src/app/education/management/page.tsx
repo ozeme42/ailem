@@ -57,7 +57,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { NewStudyAssignmentForm } from "@/components/new-study-assignment-form";
 import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { EditMistakeForm } from "@/components/edit-mistake-form";
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from "next/image";
@@ -639,18 +638,15 @@ export default function EducationManagementPage() {
     const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
     const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
     const [tests, setTests] = React.useState<Test[]>([]);
-    const [mistakes, setMistakes] = React.useState<Mistake[]>([]);
     const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
     
     const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
     const [isExamDialogOpen, setIsExamDialogOpen] = React.useState(false);
     const [isTestDialogOpen, setIsTestDialogOpen] = React.useState(false);
     const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
-    const [isMistakeDialogOpen, setIsMistakeDialogOpen] = React.useState(false);
     
     const [editingBank, setEditingBank] = React.useState<QuestionBank | null>(null);
     const [editingExam, setEditingExam] = React.useState<PracticeExam | null>(null);
-    const [editingMistake, setEditingMistake] = React.useState<Mistake | null>(null);
     const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
     
     const studentMembers = React.useMemo(() => 
@@ -662,14 +658,12 @@ export default function EducationManagementPage() {
         const unsubExams = onPracticeExamsUpdate(setPracticeExams);
         const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
         const unsubTests = onTestsUpdate(setTests);
-        const unsubMistakes = onMistakesUpdate(setMistakes);
 
         return () => {
             unsubBanks();
             unsubExams();
             unsubSubjects();
             unsubTests();
-            unsubMistakes();
         };
     }, []);
     
@@ -762,11 +756,6 @@ export default function EducationManagementPage() {
         setIsExamDialogOpen(true);
     }
     
-    const openEditMistakeDialog = (mistake: Mistake) => {
-        setEditingMistake(mistake);
-        setIsMistakeDialogOpen(true);
-    }
-
     const openGradeDialog = (test: Test) => {
         setGradingTest(test);
         setIsGradeDialogOpen(true);
@@ -868,12 +857,6 @@ export default function EducationManagementPage() {
         }
     };
     
-    const handleMistakeFormSubmit = async () => {
-        setIsMistakeDialogOpen(false);
-        setEditingMistake(null);
-        toast({title: "Geri Bildirim Kaydedildi"});
-    };
-
     return (
         <>
             <PageHeader title="İçerik Yönetimi">
@@ -1037,16 +1020,6 @@ export default function EducationManagementPage() {
                 </DialogContent>
             </Dialog>
             
-            <Dialog open={isMistakeDialogOpen} onOpenChange={(open) => {if (!open) setEditingMistake(null); setIsMistakeDialogOpen(open);}}>
-                <DialogContent>
-                    {editingMistake && (
-                        <EditMistakeForm 
-                            mistake={editingMistake}
-                            onFormSubmit={handleMistakeFormSubmit}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
         </>
     );
 }
@@ -1108,8 +1081,3 @@ function TestManagementCard({ test, familyMembers, onGrade, onArchive, onDelete 
         </Card>
     );
 }
-
-
-    
-
-    
