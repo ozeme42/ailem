@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { NewTestForm } from "@/components/new-test-form";
 import { QuestionBank, Test, PracticeExam, FamilyMember } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -70,12 +69,6 @@ export default function EducationPage() {
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   
   const [allTests, setAllTests] = React.useState<Test[]>([]);
-  const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
-  const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
-  const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
-
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
-  const [editingTest, setEditingTest] = React.useState<Test | null>(null);
   
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -89,15 +82,9 @@ export default function EducationPage() {
 
   React.useEffect(() => {
     const unsubTests = onTestsUpdate(setAllTests);
-    const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
-    const unsubExams = onPracticeExamsUpdate(setPracticeExams);
-    const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
     
     return () => {
       unsubTests();
-      unsubBanks();
-      unsubExams();
-      unsubSubjects();
     }
   }, []);
   
@@ -117,28 +104,6 @@ export default function EducationPage() {
       });
   }, [selectedStudent, allTests]);
   
-  const handleCreateSubject = async (subjectName: string) => {
-    const newSubjects = [...new Set([...availableSubjects, subjectName])];
-    await updateSubjects(newSubjects);
-  };
-
-
-  const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
-    try {
-        if (id) {
-            await updateTest(id, testData);
-            toast({ title: "✅ Ödev Güncellendi", description: "Ödev bilgileri başarıyla güncellendi." });
-        } else {
-            await addTest({ ...testData, status: 'Atandı', isArchived: false });
-            toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
-        }
-        setIsAssignDialogOpen(false);
-        setEditingTest(null);
-    } catch (error) {
-         toast({ title: "❌ Kaydetme Hatası", description: "Ödev kaydedilirken bir hata oluştu.", variant: 'destructive'});
-    }
-  };
-
   const overallStats = React.useMemo(() => {
     const evaluatedTests = tests.filter(t => t.status === 'Sonuçlandı');
     const totalQuestions = evaluatedTests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
@@ -193,31 +158,12 @@ export default function EducationPage() {
                 İçerik Yönetimi
             </Button>
         </Link>
-         <Dialog open={isAssignDialogOpen} onOpenChange={(open) => { if (!open) setEditingTest(null); setIsAssignDialogOpen(open); }}>
-            <DialogTrigger asChild>
-                <Button className="bg-white/20 text-white hover:bg-white/30 border-none">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Yeni Ödev Ata
-                </Button>
-            </DialogTrigger>
-             <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                <DialogTitle>{editingTest ? "Ödevi Düzenle" : "Yeni Ödev Ata"}</DialogTitle>
-                <DialogDescription>
-                    {editingTest ? "Mevcut ödevin ayrıntılarını düzenleyin." : "Öğrenciye yeni bir test, soru bankası konusu veya deneme sınavı atayın."}
-                </DialogDescription>
-                </DialogHeader>
-                <NewTestForm 
-                    students={studentMembers} 
-                    questionBanks={questionBanks}
-                    practiceExams={practiceExams}
-                    onAssign={handleAssignmentSubmit}
-                    initialData={editingTest}
-                    availableSubjects={availableSubjects}
-                    onSubjectCreated={handleCreateSubject}
-                />
-            </DialogContent>
-         </Dialog>
+        <Link href="/education/management/assign">
+            <Button className="bg-white/20 text-white hover:bg-white/30 border-none">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Yeni Ödev Ata
+            </Button>
+        </Link>
       </PageHeader>
 
 
