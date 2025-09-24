@@ -26,16 +26,17 @@ import { Calendar } from "./ui/calendar";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "./ui/badge";
+import { onTestsUpdate } from "@/lib/dataService";
 
-export type AssignmentType = "quick" | "bank" | "exam";
+export type AssignmentType = "quick" | "bank" | "exam" | "mistake";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  activeTab: z.enum(["quick", "bank", "exam"]),
+  activeTab: z.enum(["quick", "bank", "exam", "mistake"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 
-  // Quick Test Fields
+  // Quick & Mistake Test Fields
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
@@ -45,17 +46,20 @@ const formSchema = z.object({
     questionNumber: z.number(),
     imageUrl: z.string().url("Geçerli bir görsel URL'si girilmelidir."),
   })).optional(),
+  
+  // For Mistake Test
+  sourceTestId: z.string().optional(),
 
-  // Bank/Exam/Mistake Fields
+  // Bank/Exam Fields
   bankId: z.string().optional(),
   topicId: z.string().optional(),
   examId: z.string().optional(),
 }).refine((data) => {
-    if (data.activeTab === 'quick') return data.title && data.title.length >= 2;
+    if (data.activeTab === 'quick' || data.activeTab === 'mistake') return data.title && data.title.length >= 2;
     return true;
 }, { message: "Test başlığı en az 2 karakter olmalıdır.", path: ["title"] })
 .refine((data) => {
-    if (data.activeTab === 'quick') return !!data.subject;
+    if (data.activeTab === 'quick' || data.activeTab === 'mistake') return !!data.subject;
     return true;
 }, { message: "Lütfen bir ders seçin veya oluşturun.", path: ["subject"] })
 .refine((data) => {
@@ -66,6 +70,10 @@ const formSchema = z.object({
     if (data.activeTab === 'exam') return !!data.examId;
     return true;
 }, { message: "Lütfen bir deneme sınavı seçin.", path: ["examId"] })
+.refine((data) => {
+    if (data.activeTab === 'mistake') return !!data.sourceTestId;
+    return true;
+}, { message: "Lütfen bir referans test seçin.", path: ["sourceTestId"] })
 .refine((data) => {
     if (data.assignedDate && data.dueDate) return data.dueDate >= data.assignedDate;
     return true;
@@ -85,6 +93,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [allTests, setAllTests] = React.useState<Test[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -101,6 +110,7 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       bankId: initialData?.sourceType === 'bank' ? initialData.sourceId : undefined,
       topicId: initialData?.topicId || undefined,
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
+      sourceTestId: initialData?.sourceType === 'mistake' ? initialData.sourceId : undefined,
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
@@ -110,11 +120,22 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     control: form.control,
     name: "questions",
   });
+  
+  React.useEffect(() => {
+    const unsubTests = onTestsUpdate(setAllTests);
+    return () => unsubTests();
+  }, []);
 
   const activeTab = form.watch("activeTab");
   const bankId = form.watch("bankId");
   const gradingType = form.watch("gradingType");
   const questions = form.watch("questions") || [];
+  const selectedStudentId = form.watch("studentId");
+  
+  const studentCompletedTests = React.useMemo(() => {
+    return allTests.filter(t => t.studentId === selectedStudentId && t.status === 'Sonuçlandı');
+  }, [allTests, selectedStudentId]);
+
   
   const handleTabChange = (value: AssignmentType) => {
     form.setValue('activeTab', value);
@@ -180,13 +201,15 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
 
     switch (values.activeTab) {
       case 'quick':
+      case 'mistake':
         testData = {
           title: values.title!,
           subject: values.subject!,
           studentId: values.studentId,
           questionCount: values.questions?.length || 0,
           assignedDate, dueDate,
-          sourceType: 'quick',
+          sourceType: values.activeTab,
+          sourceId: values.activeTab === 'mistake' ? values.sourceTestId : undefined,
           gradingType: values.gradingType,
           answerKey: values.gradingType === 'auto' ? values.answerKey : {},
           questions: values.questions,
@@ -240,10 +263,11 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="quick" disabled={!!initialData}>Hızlı</TabsTrigger>
         <TabsTrigger value="bank" disabled={!!initialData}>Banka</TabsTrigger>
         <TabsTrigger value="exam" disabled={!!initialData}>Deneme</TabsTrigger>
+        <TabsTrigger value="mistake" disabled={!!initialData}>Yanlışlarım</TabsTrigger>
       </TabsList>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -367,6 +391,28 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
                 </Select><FormMessage /></FormItem>
             )} />
             <FormDescription>Seçilen deneme sınavı öğrenciye atanacaktır.</FormDescription>
+          </TabsContent>
+          
+          <TabsContent value="mistake" className="space-y-4 m-0">
+             <FormField control={form.control} name="sourceTestId" render={({ field }) => (
+                <FormItem><FormLabel>Referans Test</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedStudentId}>
+                  <FormControl><SelectTrigger><SelectValue placeholder={!selectedStudentId ? "Önce öğrenci seçin" : "Referans alınacak testi seçin"} /></SelectTrigger></FormControl>
+                  <SelectContent>{studentCompletedTests.map((test) => (<SelectItem key={test.id} value={test.id}>{test.title}</SelectItem>))}</SelectContent>
+                </Select><FormMessage /></FormItem>
+             )} />
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Matematik Yanlışlarım" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+             <FormField control={form.control} name="subject" render={({ field }) => (
+                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
+            )} />
+             <div className="space-y-2">
+                <FormLabel>Yanlış Soruların Resimleri ({questions.length} adet)</FormLabel>
+                <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleImageUpload}>
+                    <UploadCloud className="mr-2 h-4 w-4" />Soru Resimleri Yükle
+                </Button>
+                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
+            </div>
           </TabsContent>
 
           <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>

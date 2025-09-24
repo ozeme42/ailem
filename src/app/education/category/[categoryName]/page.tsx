@@ -28,7 +28,7 @@ type TopicStats = {
 // This function must be consistent with the one in `src/app/education/page.tsx`
 const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-    if (test.sourceType === 'mistake') return 'Yanlış Havuzu';
+    if (test.sourceType === 'mistake') return 'Yanlışlarım';
     return test.subject || 'Diğer';
 };
 
@@ -173,18 +173,12 @@ export default function CategoryDetailPage() {
           <h3 className="text-xl font-bold">Atanmış Sınavlar</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTests.map((test) => {
-              const hasMistakes = (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) || ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0);
               let buttonText = 'Sınava Gir';
               let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
               
               if (test.status === 'Sonuçlandı') {
-                  if (hasMistakes) {
-                      buttonText = 'Eksikleri Tamamla';
-                      buttonClass = "bg-destructive hover:bg-destructive/90";
-                  } else {
-                      buttonText = 'Sonuçları Göster';
-                      buttonClass = "bg-pink-600 hover:bg-pink-700";
-                  }
+                  buttonText = 'Sonuçları Göster';
+                  buttonClass = "bg-pink-600 hover:bg-pink-700";
               }
 
               const startDate = formatTestDate(test.assignedDate);
@@ -245,7 +239,6 @@ export default function CategoryDetailPage() {
                           size="lg" 
                           className={cn("w-full rounded-t-none h-12 text-base", buttonClass)}
                       >
-                        {hasMistakes && test.status === 'Sonuçlandı' && <Sparkles className="mr-2 h-4 w-4"/>}
                         {buttonText}
                       </Button>
                     </Link>

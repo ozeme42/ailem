@@ -59,6 +59,7 @@ const categoryProgressColors: { [key: string]: string } = {
 
 const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+    if (test.sourceType === 'mistake') return 'Yanlışlarım';
     return test.subject || 'Diğer';
 };
 
@@ -130,7 +131,7 @@ export default function EducationPage() {
         }
     });
 
-    const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Diğer'];
+    const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Yanlışlarım', 'Diğer'];
     
     return Object.entries(categories).sort(([a], [b]) => {
         const indexA = categoryOrder.indexOf(a);
@@ -254,15 +255,10 @@ export default function EducationPage() {
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
             tests.filter(test => test.status !== 'Değerlendirme Bekliyor').map(test => {
-                const hasMistakes = (test.remainingMistakeIds && test.remainingMistakeIds.length > 0) || ((test.incorrectAnswers || 0) > 0 || (test.emptyAnswers || 0) > 0);
                 let button;
 
                  if (test.status === 'Sonuçlandı') {
-                    if (hasMistakes) {
-                        button = <Link href={`/education/${test.id}`}><Button variant="destructive"><Sparkles className="mr-2 h-4 w-4"/>Eksikleri Tamamla</Button></Link>;
-                    } else {
-                        button = <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>;
-                    }
+                    button = <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>;
                 } else { // 'Atandı'
                     button = <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>;
                 }

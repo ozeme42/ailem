@@ -326,13 +326,6 @@ export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
 export interface QuickTestQuestion {
   questionNumber: number;
   imageUrl?: string | null;
-  // Add other fields like 'text' if needed later
-}
-
-// Renaming this to be more generic for the retake page
-export interface Question {
-  questionNumber: number;
-  imageUrl?: string | null;
 }
 
 
@@ -345,13 +338,12 @@ export interface Test {
   questionCount: number;
   assignedDate: string;
   dueDate: string;
-  status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
+  status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
   isArchived: boolean;
   sourceType: 'quick' | 'bank' | 'exam' | 'mistake';
   gradingType?: GradingType;
   sourceId?: string;
   topicId?: string;
-  mistakeIds?: string[]; // For mistake-pool generated tests
   score?: number;
   correctAnswers?: number;
   incorrectAnswers?: number;
@@ -360,10 +352,8 @@ export interface Test {
   studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
   studentTextAnswersEvaluation?: TextAnswerEvaluations;
-  retakeAnswers?: TextAnswerKey;
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
-  remainingMistakeIds?: string[]; // IDs of mistakes left to be corrected
   questions?: QuickTestQuestion[]; // For image-based quick tests
 }
 

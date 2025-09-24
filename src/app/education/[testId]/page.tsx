@@ -246,9 +246,6 @@ export default function OpticalFormPage() {
     }
 
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
-        const hasIncorrect = (test.incorrectAnswers || 0) > 0;
-        const hasEmpty = (test.emptyAnswers || 0) > 0;
-
         return (
             <div className="container mx-auto py-8 space-y-6">
                 <header className="mb-4">
