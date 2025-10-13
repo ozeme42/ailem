@@ -110,7 +110,7 @@ export function NewQuestionBankForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
         <DialogHeader>
             <DialogTitle>Soru Bankasına Yeni Soru Ekle</DialogTitle>
             <DialogDescription>
@@ -118,7 +118,8 @@ export function NewQuestionBankForm({
             </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-4 pr-6 py-4">
             <FormField
               control={form.control}
               name="subject"
@@ -192,7 +193,7 @@ export function NewQuestionBankForm({
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      value={field.value}
+                      defaultValue={field.value}
                       className="flex gap-4"
                     >
                       {['A', 'B', 'C', 'D'].map(option => (
@@ -202,7 +203,10 @@ export function NewQuestionBankForm({
                           </FormControl>
                           <FormLabel
                             htmlFor={`option-${option}`}
-                            className="flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary"
+                            className={cn(
+                                "flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground",
+                                field.value === option && "bg-primary text-primary-foreground border-primary"
+                            )}
                           >
                             {option}
                           </FormLabel>
@@ -214,7 +218,8 @@ export function NewQuestionBankForm({
                 </FormItem>
               )}
             />
-        </div>
+          </div>
+        </ScrollArea>
         <DialogFooter>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
