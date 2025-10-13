@@ -19,6 +19,7 @@ import { Combobox } from "./ui/combobox";
 import Image from 'next/image';
 import { ScrollArea } from "./ui/scroll-area";
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
