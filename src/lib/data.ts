@@ -323,6 +323,12 @@ export type GradingType = 'auto' | 'manual-text' | 'manual';
 export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
 export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
 
+export interface QuickTestQuestion {
+  questionId: string; // Corresponds to BankQuestion id
+  questionNumber: number;
+  imageUrl: string; // Copied from BankQuestion for the test
+}
+
 export interface BankQuestion {
   id: string;
   familyId: string;
@@ -333,11 +339,17 @@ export interface BankQuestion {
   createdAt: string; // ISO date string
 }
 
-export interface QuickTestQuestion {
-  questionId: string; // Corresponds to BankQuestion id
-  questionNumber: number;
-  imageUrl: string; // Copied from BankQuestion for the test
+export interface PracticeExam {
+  id: string;
+  familyId: string;
+  name: string;
+  source: 'bank' | 'other';
+  gradingType: GradingType;
+  answerKey?: AnswerKey;
+  subjects?: { id: number; name: string; questionCount: number; }[];
+  questions?: QuickTestQuestion[];
 }
+
 
 export interface Test {
   id: string;
@@ -350,7 +362,8 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
   isArchived: boolean;
-  sourceType: 'bank';
+  sourceType: 'bank' | 'quick' | 'exam' | 'mistake';
+  sourceId?: string;
   gradingType?: GradingType;
   score?: number;
   correctAnswers?: number;
@@ -361,6 +374,9 @@ export interface Test {
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   questions?: QuickTestQuestion[]; 
+  studentTextAnswers?: { [key: string]: string };
+  studentTextAnswersEvaluation?: TextAnswerEvaluations;
+  topicId?: string;
 }
 
 export interface ShoppingItem {
@@ -496,6 +512,35 @@ export const initialMealPlan: MealPlan = {
     "Akşam Yemeği": initialRecipes[1] as Recipe,
   },
 };
+
+export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
+         {
+            name: "LGS Deneme Sınavı 1",
+            gradingType: 'auto',
+            source: 'other',
+            subjects: [
+                { id: 1, name: "Matematik", questionCount: 20 },
+                { id: 2, name: "Türkçe", questionCount: 20 },
+                { id: 3, name: "Fen Bilimleri", questionCount: 20 },
+            ],
+            answerKey: {1: 'A', 2: 'C', 3: 'B'}
+        }
+    ];
+
+export const initialTests: Omit<Test, 'id' | 'status' | 'familyId' | 'studentId'>[] = [
+        {
+            title: "LGS Deneme Sınavı 1",
+            subject: "Deneme Sınavı",
+            questionCount: 60,
+            assignedDate: "01 Ağustos 2024",
+            dueDate: "15 Ağustos 2024",
+            sourceType: 'exam',
+            sourceId: '1',
+            gradingType: 'auto',
+            isArchived: false,
+        }
+    ];
+
 
 // Types for AI Coach
 const MediaPartSchema = z.object({
