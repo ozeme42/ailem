@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -28,6 +27,8 @@ import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "./ui/badge";
 import { onTestsUpdate } from "@/lib/dataService";
+import { ScrollArea } from "./ui/scroll-area";
+import { Checkbox } from "./ui/checkbox";
 
 export type AssignmentType = "quick" | "bank" | "exam" | "mistake";
 
@@ -52,8 +53,7 @@ const formSchema = z.object({
   sourceTestId: z.string().optional(),
 
   // Bank/Exam Fields
-  bankId: z.string().optional(),
-  topicId: z.string().optional(),
+  selectedBankQuestions: z.array(z.string()).optional(),
   examId: z.string().optional(),
 }).refine((data) => {
     if (data.activeTab === 'quick' || data.activeTab === 'mistake') return data.title && data.title.length >= 2;
@@ -64,9 +64,9 @@ const formSchema = z.object({
     return true;
 }, { message: "Lütfen bir ders seçin veya oluşturun.", path: ["subject"] })
 .refine((data) => {
-    if (data.activeTab === 'bank') return !!data.bankId && !!data.topicId;
+    if (data.activeTab === 'bank') return !!data.selectedBankQuestions && data.selectedBankQuestions.length > 0;
     return true;
-}, { message: "Lütfen bir soru bankası ve konu seçin.", path: ["topicId"] })
+}, { message: "Lütfen en az bir soru seçin.", path: ["selectedBankQuestions"] })
 .refine((data) => {
     if (data.activeTab === 'exam') return !!data.examId;
     return true;
@@ -96,6 +96,10 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
+  
+  // States for bank filtering
+  const [bankSubjectFilter, setBankSubjectFilter] = React.useState('');
+  const [bankTopicFilter, setBankTopicFilter] = React.useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -110,6 +114,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
       answerKey: initialData?.answerKey || {},
       questions: initialData?.questions || [],
       sourceTestId: initialData?.sourceType === 'mistake' ? initialData.sourceId : undefined,
+      selectedBankQuestions: [],
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
@@ -215,7 +220,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
         break;
       
       case 'bank':
-        const selectedQuestions = bankQuestions.filter(q => (values.topicId || []).includes(q.id));
+        const selectedQuestions = bankQuestions.filter(q => (values.selectedBankQuestions || []).includes(q.id));
         if (selectedQuestions.length === 0) return;
         const firstQuestion = selectedQuestions[0];
         testData = {
@@ -250,6 +255,14 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
   const topicOptions = availableTopics.map(t => ({ label: t, value: t }));
+
+  const filteredBankQuestions = React.useMemo(() => {
+    return bankQuestions.filter(q => {
+      const subjectMatch = !bankSubjectFilter || q.subject === bankSubjectFilter;
+      const topicMatch = !bankTopicFilter || q.topic === bankTopicFilter;
+      return subjectMatch && topicMatch;
+    })
+  }, [bankQuestions, bankSubjectFilter, bankTopicFilter]);
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
@@ -357,15 +370,73 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           </TabsContent>
 
           <TabsContent value="bank" className="space-y-4 m-0">
-             <FormField control={form.control} name="subject" render={({ field }) => (
-                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
-            )} />
-             <FormField control={form.control} name="topicId" render={({ field }) => (
-                <FormItem><FormLabel>Konu</FormLabel><Combobox options={topicOptions} value={field.value || ""} onChange={field.onChange} onCreate={onTopicCreated} placeholder="Konu seç..." notfoundText="Konu bulunamadı." createText="Yeni konu oluştur:" /><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="questionCount" render={({ field }) => (
-              <FormItem><FormLabel>Soru Sayısı</FormLabel><FormControl><Input type="number" placeholder="20" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
+            <div className="flex gap-2">
+                <Combobox
+                    options={[{ label: "Tüm Dersler", value: "" }, ...subjectOptions]}
+                    value={bankSubjectFilter}
+                    onChange={setBankSubjectFilter}
+                    placeholder="Derse göre filtrele..."
+                />
+                 <Combobox
+                    options={[{ label: "Tüm Konular", value: "" }, ...topicOptions]}
+                    value={bankTopicFilter}
+                    onChange={setBankTopicFilter}
+                    placeholder="Konuya göre filtrele..."
+                />
+            </div>
+            <FormField
+              control={form.control}
+              name="selectedBankQuestions"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Soruları Seçin ({field.value?.length || 0} seçildi)</FormLabel>
+                  <ScrollArea className="h-64 border rounded-md p-4">
+                    <div className="space-y-2">
+                        {filteredBankQuestions.map((q) => (
+                        <FormField
+                            key={q.id}
+                            control={form.control}
+                            name="selectedBankQuestions"
+                            render={({ field }) => {
+                            return (
+                                <FormItem
+                                key={q.id}
+                                className="flex items-center gap-4 p-2 rounded-md hover:bg-muted"
+                                >
+                                <FormControl>
+                                    <Checkbox
+                                        checked={field.value?.includes(q.id)}
+                                        onCheckedChange={(checked) => {
+                                            return checked
+                                            ? field.onChange([...(field.value || []), q.id])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                    (value) => value !== q.id
+                                                )
+                                                )
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormLabel className="flex-1 cursor-pointer">
+                                    <div className="flex items-center gap-2">
+                                        <Image src={q.imageUrl} alt={q.topic} width={60} height={40} className="object-contain rounded-sm border" data-ai-hint="question paper" />
+                                        <div className="text-xs">
+                                            <p className="font-semibold">{q.subject} - {q.topic}</p>
+                                            <p className="text-muted-foreground">Doğru Cevap: {q.correctAnswer}</p>
+                                        </div>
+                                    </div>
+                                </FormLabel>
+                                </FormItem>
+                            )
+                            }}
+                        />
+                        ))}
+                    </div>
+                  </ScrollArea>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </TabsContent>
 
           <TabsContent value="exam" className="space-y-4 m-0">
