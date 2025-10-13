@@ -110,15 +110,15 @@ export function NewQuestionBankForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow min-h-0">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <DialogHeader>
             <DialogTitle>Soru Bankasına Yeni Soru Ekle</DialogTitle>
             <DialogDescription>
                 Görsel ve doğru cevabıyla birlikte yeni bir soru oluşturun.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-grow min-h-0 pr-6 py-4">
-          <div className="space-y-4">
+        
+        <div className="space-y-4">
             <FormField
               control={form.control}
               name="subject"
@@ -214,9 +214,8 @@ export function NewQuestionBankForm({
                 </FormItem>
               )}
             />
-          </div>
-        </ScrollArea>
-         <DialogFooter className="pt-4 border-t flex-shrink-0">
+        </div>
+        <DialogFooter>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Soruyu Bankaya Ekle

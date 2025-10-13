@@ -99,7 +99,7 @@ export default function QuestionsClient() {
                             <PlusCircle className="mr-2 h-4 w-4" /> Yeni Soru Ekle
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-h-[90vh] flex flex-col">
+                    <DialogContent>
                         <NewQuestionBankForm
                             availableSubjects={allSubjects}
                             onSubjectCreated={handleCreateSubject}
