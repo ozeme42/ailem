@@ -3,9 +3,9 @@
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { onTestsUpdate, onQuestionBanksUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onBankQuestionsUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { Test, FamilyMember, QuestionBank, Topic } from "@/lib/data";
+import { Test, FamilyMember, BankQuestion, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles } from "lucide-react";
@@ -42,7 +42,7 @@ export default function CategoryDetailPage() {
 
   const { familyMembers } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
-  const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
+  const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const student = React.useMemo(() => 
@@ -58,15 +58,15 @@ export default function CategoryDetailPage() {
       setAllTests(tests.filter(t => t.studentId === studentId));
       if (loading) setLoading(false);
     });
-    const unsubscribeBanks = onQuestionBanksUpdate((banks) => {
-        setQuestionBanks(banks);
+    const unsubscribeBanks = onBankQuestionsUpdate((questions) => {
+        setBankQuestions(questions);
         if (loading) setLoading(false);
     });
 
     // Initial loading state management
     Promise.all([
         new Promise(resolve => onTestsUpdate(t => resolve(t), true)),
-        new Promise(resolve => onQuestionBanksUpdate(b => resolve(b), true))
+        new Promise(resolve => onBankQuestionsUpdate(b => resolve(b), true))
     ]).then(() => setLoading(false));
 
     return () => {
@@ -90,29 +90,30 @@ export default function CategoryDetailPage() {
       
     // Calculate Topic Stats
     const tempTopicStats = new Map<string, { name: string; correct: number; total: number }>();
-    const allTopics = questionBanks.flatMap(qb => qb.subjects.flatMap(s => s.topics.map(t => ({...t, subjectName: s.name} as Topic & { subjectName: string } ))));
+    const allTopicsForSubject = Array.from(new Set(bankQuestions.filter(q => q.subject === categoryName).map(q => q.topic)));
+
 
     testsForCategory
-      .filter(t => t.status === 'Sonuçlandı' && t.sourceType === 'bank' && t.topicId)
+      .filter(t => t.status === 'Sonuçlandı' && t.sourceType === 'bank')
       .forEach(test => {
-        const topicInfo = allTopics.find(t => t.id.toString() === test.topicId && t.subjectName === categoryName);
-        if (topicInfo) {
-          const stats = tempTopicStats.get(topicInfo.id.toString()) || { name: topicInfo.name, correct: 0, total: 0 };
-          stats.correct += test.correctAnswers || 0;
-          stats.total += test.questionCount || 0;
-          tempTopicStats.set(topicInfo.id.toString(), stats);
-        }
+          const testTopicName = bankQuestions.find(q => q.id === test.sourceId)?.topic;
+          if (testTopicName && test.subject === categoryName) {
+              const stats = tempTopicStats.get(testTopicName) || { name: testTopicName, correct: 0, total: 0 };
+              stats.correct += test.correctAnswers || 0;
+              stats.total += test.questionCount || 0;
+              tempTopicStats.set(testTopicName, stats);
+          }
       });
 
-    const finalTopicStats: TopicStats[] = Array.from(tempTopicStats.entries()).map(([id, data]) => ({
-      id,
+    const finalTopicStats: TopicStats[] = Array.from(tempTopicStats.entries()).map(([name, data]) => ({
+      id: name,
       ...data,
       successRate: data.total > 0 ? (data.correct / data.total) * 100 : 0,
     })).sort((a, b) => b.successRate - a.successRate);
 
     return { filteredTests: sortedTests, topicStats: finalTopicStats };
 
-  }, [allTests, categoryName, questionBanks]);
+  }, [allTests, categoryName, bankQuestions]);
   
   const formatTestDate = (dateString: string) => {
       try {
