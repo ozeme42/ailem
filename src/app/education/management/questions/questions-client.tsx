@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, CheckboxIcon } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
-import { BankQuestion, FamilyMember, Test } from "@/lib/data";
-import { onBankQuestionsUpdate, onSubjectsUpdate, updateSubjects, onTopicsUpdate, updateTopics, deleteBankQuestion } from "@/lib/dataService";
+import { BankQuestion, FamilyMember, Test, PracticeExam } from "@/lib/data";
+import { onBankQuestionsUpdate, onSubjectsUpdate, updateSubjects, onTopicsUpdate, updateTopics, deleteBankQuestion, addPracticeExam } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { Combobox } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { NewPracticeExamForm } from "@/components/new-practice-exam-form";
+
 
 export default function QuestionsClient() {
     const { toast } = useToast();
@@ -26,9 +29,11 @@ export default function QuestionsClient() {
     const [allTopics, setAllTopics] = React.useState<string[]>([]);
     
     const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [isCreateExamOpen, setIsCreateExamOpen] = React.useState(false);
 
     const [subjectFilter, setSubjectFilter] = React.useState<string>("");
     const [topicFilter, setTopicFilter] = React.useState<string>("");
+    const [selectedQuestions, setSelectedQuestions] = React.useState<string[]>([]);
     
     React.useEffect(() => {
         const unsubBankQuestions = onBankQuestionsUpdate(setBankQuestions);
@@ -74,6 +79,52 @@ export default function QuestionsClient() {
         });
     }, [bankQuestions, subjectFilter, topicFilter]);
 
+    const handleToggleQuestionSelection = (questionId: string) => {
+        setSelectedQuestions(prev => 
+            prev.includes(questionId) 
+                ? prev.filter(id => id !== questionId) 
+                : [...prev, questionId]
+        );
+    };
+    
+    const handleCreateExam = async (examData: Pick<PracticeExam, 'name'>) => {
+        const questionsForExam = bankQuestions.filter(q => selectedQuestions.includes(q.id))
+            .map((q, index) => ({
+                questionNumber: index + 1,
+                questionId: q.id,
+                imageUrl: q.imageUrl,
+            }));
+
+        const answerKey = questionsForExam.reduce((acc, q, index) => {
+            const originalQuestion = bankQuestions.find(bq => bq.id === q.questionId);
+            if (originalQuestion) {
+                acc[(index + 1).toString()] = originalQuestion.correctAnswer;
+            }
+            return acc;
+        }, {} as { [key: string]: string });
+
+        const newExam: Omit<PracticeExam, 'id' | 'familyId'> = {
+            name: examData.name,
+            source: 'bank',
+            gradingType: 'auto',
+            subjects: [],
+            questions: questionsForExam,
+            answerKey: answerKey,
+        };
+
+        try {
+            await addPracticeExam(newExam);
+            toast({
+                title: "Deneme Sınavı Oluşturuldu!",
+                description: `"${examData.name}" sınavı, ${selectedQuestions.length} soru ile oluşturuldu.`
+            });
+            setSelectedQuestions([]);
+            setIsCreateExamOpen(false);
+        } catch (error) {
+            toast({ title: "Hata", description: "Sınav oluşturulurken bir hata oluştu.", variant: "destructive" });
+        }
+    };
+
     return (
         <div className="mt-6">
              <div className="flex justify-between items-center mb-6">
@@ -93,28 +144,57 @@ export default function QuestionsClient() {
                         notfoundText="Konu bulunamadı."
                     />
                 </div>
-                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Yeni Soru Ekle
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <NewQuestionBankForm
-                            availableSubjects={allSubjects}
-                            onSubjectCreated={handleCreateSubject}
-                            availableTopics={allTopics}
-                            onTopicCreated={handleCreateTopic}
-                            onQuestionAdded={() => setIsFormOpen(false)}
-                        />
-                    </DialogContent>
-                </Dialog>
+                 <div className="flex items-center gap-2">
+                     <Dialog open={isCreateExamOpen} onOpenChange={setIsCreateExamOpen}>
+                        <DialogTrigger asChild>
+                             <Button onClick={() => setIsCreateExamOpen(true)} disabled={selectedQuestions.length === 0}>
+                                Seçilenlerle Deneme Sınavı Oluştur ({selectedQuestions.length})
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                             <DialogHeader>
+                                <DialogTitle>Yeni Deneme Sınavı Oluştur</DialogTitle>
+                                <DialogDescription>
+                                    Seçtiğiniz {selectedQuestions.length} soru ile yeni bir deneme sınavı oluşturun.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <NewPracticeExamForm 
+                                onSubmit={handleCreateExam} 
+                                availableSubjects={[]} 
+                                onSubjectCreated={() => {}} 
+                            />
+                        </DialogContent>
+                     </Dialog>
+                     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Yeni Soru Ekle
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+                            <NewQuestionBankForm
+                                availableSubjects={allSubjects}
+                                onSubjectCreated={handleCreateSubject}
+                                availableTopics={allTopics}
+                                onTopicCreated={handleCreateTopic}
+                                onQuestionAdded={() => setIsFormOpen(false)}
+                            />
+                        </DialogContent>
+                    </Dialog>
+                 </div>
             </div>
             
             {filteredQuestions.length > 0 ? (
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredQuestions.map(q => (
-                        <Card key={q.id} className="flex flex-col">
+                        <Card key={q.id} className="flex flex-col relative group">
+                             <div className="absolute top-2 left-2 z-10">
+                                <Checkbox 
+                                    className="bg-background border-2 w-6 h-6"
+                                    checked={selectedQuestions.includes(q.id)}
+                                    onCheckedChange={() => handleToggleQuestionSelection(q.id)}
+                                />
+                             </div>
                             <CardHeader>
                                <Badge variant="secondary" className="w-fit">{q.subject}</Badge>
                                <CardDescription>{q.topic}</CardDescription>
@@ -126,7 +206,7 @@ export default function QuestionsClient() {
                                 <p>Doğru Cevap: <Badge>{q.correctAnswer}</Badge></p>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive/70 group-hover:text-destructive transition-colors"><Trash2 className="h-4 w-4"/></Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader><AlertDialogTitle>Soruyu Sil</AlertDialogTitle><AlertDialogDescription>Bu soruyu bankadan kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
