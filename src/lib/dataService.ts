@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, QuestionBank, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -644,7 +644,13 @@ export const toggleShoppingNoteItemStatusInList = async (listId: string, itemId:
 
 
 // Education
-// ... existing education functions ...
+export const onBankQuestionsUpdate = (callback: (questions: BankQuestion[]) => void, runOnce = false) => onFamilyDataUpdate<BankQuestion>('bankQuestions', callback, runOnce);
+export const addBankQuestion = async (data: Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'bankQuestions'), { ...data, familyId, createdAt: new Date().toISOString() });
+};
+export const deleteBankQuestion = (id: string) => deleteDoc(doc(db, "bankQuestions", id));
 export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback, false, 'createdAt', 'desc');
 export const addMistake = async (data: Partial<Omit<Mistake, 'id' | 'familyId' | 'status'>>) => {
     const familyId = await getCurrentFamilyId();
@@ -717,7 +723,7 @@ export const updateTopics = async (topics: string[]) => {
 };
 
 
-export const onTestsUpdate = (callback: (tests: Test[]) => void) => onFamilyDataUpdate<Test>('tests', callback);
+export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
 export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
@@ -739,59 +745,6 @@ export const deleteTest = async (id: string) => {
     batch.delete(testRef);
 
     await batch.commit();
-};
-
-
-export const onQuestionBanksUpdate = (callback: (banks: QuestionBank[]) => void, runOnce = false) => onFamilyDataUpdate<QuestionBank>('questionBanks', callback, runOnce);
-export const addQuestionBank = async (data: Omit<QuestionBank, 'id' | 'familyId'>) => {
-    const familyId = await getCurrentFamilyId();
-    if (!familyId) throw new Error("User not in a family");
-    const docRef = await addDoc(collection(db, 'questionBanks'), { ...data, familyId });
-    return docRef.id;
-};
-export const updateQuestionBank = (id: string, data: Partial<Omit<QuestionBank, 'id'>>) => updateDoc(doc(db, 'questionBanks', id), data);
-export const deleteQuestionBank = (id: string) => deleteDoc(doc(db, "questionBanks", id));
-export const deleteTopicFromBank = async (bankId: string, subjectId: number, topicId: number) => {
-    const bankRef = doc(db, 'questionBanks', bankId);
-    const bankSnap = await getDoc(bankRef);
-    if (bankSnap.exists()) {
-        const bank = bankSnap.data() as QuestionBank;
-        const newSubjects = bank.subjects.map(subject => {
-            if (subject.id === subjectId) {
-                return {
-                    ...subject,
-                    topics: subject.topics.filter(topic => topic.id !== topicId)
-                };
-            }
-            return subject;
-        }).filter(subject => subject.topics.length > 0); // Remove subject if it has no topics left
-        
-        await updateDoc(bankRef, { subjects: newSubjects });
-    }
-};
-export const addTopicToBank = async (bankId: string, subjectName: string, topic: Topic) => {
-    const bankRef = doc(db, 'questionBanks', bankId);
-    const bankSnap = await getDoc(bankRef);
-    if (bankSnap.exists()) {
-        const bank = bankSnap.data() as QuestionBank;
-        let subjectExists = false;
-        const newSubjects = bank.subjects.map(subject => {
-            if (subject.name === subjectName) {
-                subjectExists = true;
-                return {
-                    ...subject,
-                    topics: [...subject.topics, topic]
-                };
-            }
-            return subject;
-        });
-
-        if(!subjectExists) {
-            newSubjects.push({ id: Date.now(), name: subjectName, topics: [topic] });
-        }
-        
-        await updateDoc(bankRef, { subjects: newSubjects });
-    }
 };
 
 
@@ -949,22 +902,6 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
       },
     };
 
-    const initialQuestionBanks: Omit<QuestionBank, 'id' | 'familyId'>[] = [
-        {
-            name: "5. Sınıf Matematik Soru Bankası",
-            subjects: [
-                {
-                    id: 1,
-                    name: "Matematik",
-                    topics: [
-                        { id: 1, name: "Doğal Sayılar", questionCount: 20, gradingType: 'auto', answerKey: {1: 'A', 2: 'B'} },
-                        { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text' },
-                    ]
-                }
-            ]
-        }
-    ];
-
     const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
          {
             name: "LGS Deneme Sınavı 1",
@@ -1040,10 +977,6 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     });
 
     // Initial Education Content
-    initialQuestionBanks.forEach(bank => {
-        const docRef = doc(collection(db, 'questionBanks'));
-        batch.set(docRef, { ...bank, familyId });
-    });
     initialPracticeExams.forEach(exam => {
         const docRef = doc(collection(db, 'practiceExams'));
         batch.set(docRef, { ...exam, familyId });

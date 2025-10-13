@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, QuestionBank, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, QuickTestQuestion } from "@/lib/data";
+import type { Student, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, QuickTestQuestion, BankQuestion } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
@@ -81,15 +82,16 @@ const formSchema = z.object({
 
 type NewTestFormProps = {
   students: FamilyMember[];
-  questionBanks: QuestionBank[];
-  practiceExams: PracticeExam[];
+  bankQuestions: BankQuestion[];
   onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => void;
   initialData?: Test | null;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
+  availableTopics: string[];
+  onTopicCreated: (topic: string) => void;
 };
 
-export function NewTestForm({ students, questionBanks, practiceExams, onAssign, initialData, availableSubjects, onSubjectCreated }: NewTestFormProps) {
+export function NewTestForm({ students, bankQuestions, onAssign, initialData, availableSubjects, onSubjectCreated, availableTopics, onTopicCreated }: NewTestFormProps) {
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -107,9 +109,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
       gradingType: initialData?.gradingType || "manual-text",
       answerKey: initialData?.answerKey || {},
       questions: initialData?.questions || [],
-      bankId: initialData?.sourceType === 'bank' ? initialData.sourceId : undefined,
-      topicId: initialData?.topicId || undefined,
-      examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
       sourceTestId: initialData?.sourceType === 'mistake' ? initialData.sourceId : undefined,
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -127,7 +126,6 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
   }, []);
 
   const activeTab = form.watch("activeTab");
-  const bankId = form.watch("bankId");
   const gradingType = form.watch("gradingType");
   const questions = form.watch("questions") || [];
   const selectedStudentId = form.watch("studentId");
@@ -217,39 +215,31 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
         break;
       
       case 'bank':
-        const bank = questionBanks.find(b => b.id === values.bankId);
-        const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === values.topicId);
-        if (!bank || !topic) return; 
-        const subjectName = bank.subjects.find(s => s.topics.some(t => t.id.toString() === values.topicId))?.name || "Ders";
+        const selectedQuestions = bankQuestions.filter(q => (values.topicId || []).includes(q.id));
+        if (selectedQuestions.length === 0) return;
+        const firstQuestion = selectedQuestions[0];
         testData = {
-          title: `${bank.name} - ${topic.name}`,
-          subject: subjectName,
+          title: `${firstQuestion.subject} - ${firstQuestion.topic} Testi`,
+          subject: firstQuestion.subject,
           studentId: values.studentId,
-          questionCount: topic.questionCount,
+          questionCount: selectedQuestions.length,
           assignedDate, dueDate,
-          sourceType: 'bank',
-          sourceId: bank.id,
-          topicId: topic.id.toString(),
-          gradingType: topic.gradingType,
-          answerKey: topic.answerKey,
+          sourceType: 'quick', // Treat as quick test with pre-filled questions
+          gradingType: 'auto',
+          answerKey: selectedQuestions.reduce((acc, q, index) => {
+              acc[(index + 1).toString()] = q.correctAnswer;
+              return acc;
+          }, {} as AnswerKey),
+          questions: selectedQuestions.map((q, index) => ({
+              questionId: q.id,
+              questionNumber: index + 1,
+              imageUrl: q.imageUrl,
+          })),
         };
         break;
 
       case 'exam':
-        const exam = practiceExams.find(e => e.id === values.examId);
-        if (!exam) return;
-        testData = {
-          title: exam.name,
-          subject: "Genel Deneme Sınavları",
-          studentId: values.studentId,
-          questionCount: exam.subjects.reduce((acc, s) => acc + s.questionCount, 0),
-          assignedDate, dueDate,
-          sourceType: 'exam',
-          sourceId: exam.id,
-          gradingType: exam.gradingType,
-          answerKey: exam.answerKey,
-        };
-        break;
+        return;
       
       default:
         return;
@@ -258,8 +248,8 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
     onAssign(testData, initialData?.id);
   }
   
-  const selectedBank = questionBanks.find(b => b.id === bankId);
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
+  const topicOptions = availableTopics.map(t => ({ label: t, value: t }));
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
@@ -367,30 +357,20 @@ export function NewTestForm({ students, questionBanks, practiceExams, onAssign, 
           </TabsContent>
 
           <TabsContent value="bank" className="space-y-4 m-0">
-            <FormField control={form.control} name="bankId" render={({ field }) => (
-              <FormItem><FormLabel>Soru Bankası</FormLabel><Select onValueChange={(value) => { field.onChange(value); form.resetField('topicId'); }} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Soru bankası seçin" /></SelectTrigger></FormControl>
-                  <SelectContent>{questionBanks.map((bank) => (<SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>))}</SelectContent>
-                </Select><FormMessage /></FormItem>
+             <FormField control={form.control} name="subject" render={({ field }) => (
+                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
             )} />
-            {selectedBank && (
-              <FormField control={form.control} name="topicId" render={({ field }) => (
-                <FormItem><FormLabel>Konu</FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Konu seçin" /></SelectTrigger></FormControl>
-                    <SelectContent>{selectedBank.subjects.map(subject => subject.topics.map(topic => (<SelectItem key={topic.id} value={topic.id.toString()}>{subject.name} - {topic.name} ({topic.questionCount} soru)</SelectItem>)))}</SelectContent>
-                  </Select><FormMessage /></FormItem>
-              )} />
-            )}
+             <FormField control={form.control} name="topicId" render={({ field }) => (
+                <FormItem><FormLabel>Konu</FormLabel><Combobox options={topicOptions} value={field.value || ""} onChange={field.onChange} onCreate={onTopicCreated} placeholder="Konu seç..." notfoundText="Konu bulunamadı." createText="Yeni konu oluştur:" /><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="questionCount" render={({ field }) => (
+              <FormItem><FormLabel>Soru Sayısı</FormLabel><FormControl><Input type="number" placeholder="20" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
           </TabsContent>
 
           <TabsContent value="exam" className="space-y-4 m-0">
-            <FormField control={form.control} name="examId" render={({ field }) => (
-              <FormItem><FormLabel>Deneme Sınavı</FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Deneme seçin" /></SelectTrigger></FormControl>
-                  <SelectContent>{practiceExams.map((exam) => (<SelectItem key={exam.id} value={exam.id}>{exam.name}</SelectItem>))}</SelectContent>
-                </Select><FormMessage /></FormItem>
-            )} />
-            <FormDescription>Seçilen deneme sınavı öğrenciye atanacaktır.</FormDescription>
+            {/* Kept empty as per new design */}
+            <p className="text-sm text-muted-foreground">Bu özellik yeni tasarımla kullanımdan kaldırılmıştır. Deneme sınavları için lütfen "Hızlı" test seçeneğini kullanın.</p>
           </TabsContent>
           
           <TabsContent value="mistake" className="space-y-4 m-0">
