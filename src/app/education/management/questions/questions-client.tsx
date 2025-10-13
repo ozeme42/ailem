@@ -171,7 +171,7 @@ export default function QuestionsClient() {
                                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Soru Ekle
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+                        <DialogContent className="sm:max-w-lg flex flex-col h-full max-h-[90vh]">
                             <NewQuestionBankForm
                                 availableSubjects={allSubjects}
                                 onSubjectCreated={handleCreateSubject}
@@ -203,7 +203,7 @@ export default function QuestionsClient() {
                                 <Image src={q.imageUrl} alt={`Soru ${q.id}`} width={400} height={300} className="rounded-md object-contain" data-ai-hint="question paper" />
                             </CardContent>
                             <CardFooter className="flex justify-between items-center bg-muted/50 p-3">
-                                <p>Doğru Cevap: <Badge>{q.correctAnswer}</Badge></p>
+                                <span>Doğru Cevap: <Badge>{q.correctAnswer}</Badge></span>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="text-destructive/70 group-hover:text-destructive transition-colors"><Trash2 className="h-4 w-4"/></Button>
