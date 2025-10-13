@@ -288,10 +288,10 @@ export default function OpticalFormPage() {
         ? Object.values(mcqAnswers).filter(a => a !== null).length
         : Object.values(textAnswers).filter(a => a.trim() !== "").length;
 
-    const isQuickTestWithImages = (test.sourceType === 'quick' || test.sourceType === 'mistake') && test.questions && test.questions.length > 0;
+    const hasImages = test.questions && test.questions.length > 0;
     
     const currentQuestionNumber = currentQuestionIndex + 1;
-    const currentQuestion = isQuickTestWithImages ? test.questions?.find(q => q.questionNumber === currentQuestionNumber) : null;
+    const currentQuestion = hasImages ? test.questions?.find(q => q.questionNumber === currentQuestionNumber) : null;
     const timePercentage = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0;
 
     return (
@@ -327,7 +327,7 @@ export default function OpticalFormPage() {
                             <CardDescription>{test.subject} - Soru {currentQuestionNumber} / {test.questionCount}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {isQuickTestWithImages && currentQuestion?.imageUrl && (
+                            {hasImages && currentQuestion?.imageUrl && (
                                 <Image src={currentQuestion.imageUrl} alt={`Soru ${currentQuestionNumber}`} width={800} height={600} className="rounded-lg border object-contain w-full" data-ai-hint="question paper" />
                             )}
 
