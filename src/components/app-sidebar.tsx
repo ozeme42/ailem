@@ -75,7 +75,7 @@ export function AppSidebar() {
       icon: GraduationCap,
       subItems: [
           { href: "/education", label: "Genel Bakış" },
-          { href: "/education/study", label: "Konu Anlatımı" },
+          { href: "/education/management/questions", label: "Soru Bankası" },
           { href: "/education/management", label: "Yönetim" },
       ]
     },

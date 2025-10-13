@@ -323,11 +323,21 @@ export type GradingType = 'auto' | 'manual-text' | 'manual';
 export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
 export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
 
-export interface QuickTestQuestion {
-  questionNumber: number;
-  imageUrl?: string | null;
+export interface BankQuestion {
+  id: string;
+  familyId: string;
+  subject: string;
+  topic: string;
+  imageUrl: string;
+  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  createdAt: string; // ISO date string
 }
 
+export interface QuickTestQuestion {
+  questionId: string; // Corresponds to BankQuestion id
+  questionNumber: number;
+  imageUrl: string; // Copied from BankQuestion for the test
+}
 
 export interface Test {
   id: string;
@@ -340,105 +350,18 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
   isArchived: boolean;
-  sourceType: 'quick' | 'bank' | 'exam' | 'mistake';
+  sourceType: 'bank';
   gradingType?: GradingType;
-  sourceId?: string;
-  topicId?: string;
   score?: number;
   correctAnswers?: number;
   incorrectAnswers?: number;
   emptyAnswers?: number;
   studentAnswers?: AnswerKey;
-  studentTextAnswers?: TextAnswerKey;
   answerKey?: AnswerKey;
-  studentTextAnswersEvaluation?: TextAnswerEvaluations;
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
-  questions?: QuickTestQuestion[]; // For image-based quick tests
+  questions?: QuickTestQuestion[]; 
 }
-
-export interface Topic {
-    id: number;
-    name: string;
-    questionCount: number;
-    gradingType: GradingType;
-    answerKey?: AnswerKey;
-}
-export interface SubjectInBank {
-    id: number;
-    name: string;
-    topics: Topic[];
-}
-export interface QuestionBank {
-    id: string;
-    familyId: string;
-    name: string;
-    subjects: SubjectInBank[];
-}
-
-export interface SubjectInExam {
-    id: number;
-    name: string;
-    questionCount: number;
-}
-export interface PracticeExam {
-    id: string;
-    familyId: string;
-    name: string;
-    subjects: SubjectInExam[];
-    gradingType: GradingType;
-    answerKey?: AnswerKey;
-}
-
-export interface StudyPlan {
-  id: string;
-  familyId: string;
-  title: string;
-  description: string;
-}
-
-export interface StudyAssignment {
-    id: string;
-    studyPlanId: string;
-    studentId: string;
-    subject: string;
-    topic: string;
-    sources: string[];
-    startDate: string; // ISO String
-    dueDate: string; // ISO String
-    status: 'assigned' | 'completed';
-    completedAt?: string; // ISO String
-}
-
-
-export interface ExamProgressStats {
-    questionsSolved: number;
-    correct: number;
-    incorrect: number;
-    empty: number;
-}
-export interface ExamProgress {
-    questionBank: { [bankId: string]: { [studentId: string]: ExamProgressStats } }; // studentId is string
-    practiceExam: { [examId: string]: { [studentId: string]: ExamProgressStats } }; // studentId is string
-}
-
-export const students: Student[] = [
-  { id: "3", name: 'Elif', grade: '5. Sınıf', avatar: '👧' },
-  { id: "4", name: 'Murat', grade: '8. Sınıf', avatar: '👦' },
-];
-
-export const examProgress: ExamProgress = {
-    questionBank: {
-        "1": { 
-            "3": { questionsSolved: 80, correct: 65, incorrect: 10, empty: 5 }
-        }
-    },
-    practiceExam: {
-        "1": {
-            "4": { questionsSolved: 60, correct: 45, incorrect: 12, empty: 3 }
-        }
-    }
-};
 
 export interface ShoppingItem {
   id: string;
@@ -574,49 +497,6 @@ export const initialMealPlan: MealPlan = {
   },
 };
 
-export const initialQuestionBanks: Omit<QuestionBank, 'id' | 'familyId'>[] = [
-    {
-        name: "5. Sınıf Matematik Soru Bankası",
-        subjects: [
-            {
-                id: 1,
-                name: "Matematik",
-                topics: [
-                    { id: 1, name: "Doğal Sayılar", questionCount: 20, gradingType: 'auto', answerKey: {1: 'A', 2: 'B'} },
-                    { id: 2, name: "Kesirler", questionCount: 20, gradingType: 'manual-text' },
-                ]
-            }
-        ]
-    }
-];
-
-export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
-     {
-        name: "LGS Deneme Sınavı 1",
-        gradingType: 'auto',
-        subjects: [
-            { id: 1, name: "Matematik", questionCount: 20 },
-            { id: 2, name: "Türkçe", questionCount: 20 },
-            { id: 3, name: "Fen Bilimleri", questionCount: 20 },
-        ],
-        answerKey: {1: 'A', 2: 'C', 3: 'B'}
-    }
-];
-
-export const initialTests: Omit<Test, 'id' | 'status' | 'familyId' | 'studentId'>[] = [
-    {
-        title: "LGS Deneme Sınavı 1",
-        subject: "Deneme Sınavı",
-        questionCount: 60,
-        assignedDate: "01 Ağustos 2024",
-        dueDate: "15 Ağustos 2024",
-        sourceType: 'exam',
-        sourceId: '1',
-        gradingType: 'auto',
-        isArchived: false,
-    }
-];
-
 // Types for AI Coach
 const MediaPartSchema = z.object({
   url: z.string(),
@@ -630,3 +510,43 @@ export const CoachMessageSchema = z.object({
   content: z.array(ContentPartSchema),
 });
 export type CoachMessage = z.infer<typeof CoachMessageSchema>;
+export interface Account {
+    id: string;
+    familyId: string;
+    name: string;
+    type: 'cash' | 'bank' | 'credit-card';
+    balance: number;
+    ownerId: string;
+    // For credit cards
+    creditLimit?: number;
+    statementDate?: number; // day of the month
+    dueDate?: number; // day of the month
+}
+
+export interface Transaction {
+    id: string;
+    familyId: string;
+    description: string;
+    amount: number;
+    type: 'income' | 'expense';
+    accountId: string;
+    ownerId: string;
+    category: string;
+    date: string; // YYYY-MM-DD
+    isInstallment: boolean;
+    installmentDetails?: {
+        current: number;
+        total: number;
+    };
+}
+
+export interface Budget {
+    id: string; // YYYY-MM
+    familyId: string;
+    categories: {
+        [categoryName: string]: {
+            limit: number;
+            spent: number;
+        };
+    };
+}

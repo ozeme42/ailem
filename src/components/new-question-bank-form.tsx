@@ -3,314 +3,212 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Key, PlusCircle, Trash2 } from "lucide-react";
-import { Card } from "./ui/card";
-import { AnswerKeyForm } from "./answer-key-form";
-import type { QuestionBank } from "@/lib/data";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { cn } from "@/lib/utils";
-import { Combobox } from "./ui/combobox";
+import { Loader2, PlusCircle, Trash2, UploadCloud } from "lucide-react";
+import { BankQuestion } from "@/lib/data";
+import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
-
-type AnswerKey = { [key: number]: string };
-
-const topicSchema = z.object({
-  id: z.number(),
-  name: z.string().min(3, "Konu adı en az 3 karakter olmalı."),
-  questionCount: z.coerce.number().min(1, "En az 1 soru olmalı.").default(1),
-  gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual"),
-  answerKey: z.record(z.string()).optional(),
-});
-
-const subjectSchema = z.object({
-  id: z.number(),
-  name: z.string({ required_error: "Lütfen bir ders seçin." }).min(1, "Ders adı boş olamaz."),
-  topics: z.array(topicSchema).min(1, "En az bir konu eklemelisiniz."),
-});
+import { addBankQuestion } from "@/lib/dataService";
+import { migrateImage } from "@/ai/flows/migrate-image-flow";
+import { Combobox } from "./ui/combobox";
+import Image from 'next/image';
 
 const formSchema = z.object({
-  name: z.string().min(5, { message: "Banka adı en az 5 karakter olmalıdır." }),
-  subjects: z.array(subjectSchema).min(1, "En az bir ders eklemelisiniz."),
+  subject: z.string().min(1, "Ders seçimi zorunludur."),
+  topic: z.string().min(1, "Konu seçimi zorunludur."),
+  imageDataUri: z.string().min(1, "Soru görseli yüklemek zorunludur."),
+  correctAnswer: z.enum(['A', 'B', 'C', 'D'], { required_error: "Doğru cevabı işaretlemelisiniz." }),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type NewQuestionFormProps = {
+  availableSubjects: string[];
+  onSubjectCreated: (subject: string) => void;
+  availableTopics: string[];
+  onTopicCreated: (topic: string) => void;
+  onQuestionAdded: () => void;
+};
 
-type NewQuestionBankFormProps = {
-    onSubmit: (data: Omit<QuestionBank, 'id' | 'familyId'>, id?: string) => void;
-    initialData?: QuestionBank | null;
-    availableSubjects: string[];
-    onSubjectCreated: (subject: string) => void;
-}
-
-export function NewQuestionBankForm({ onSubmit, initialData, availableSubjects, onSubjectCreated }: NewQuestionBankFormProps) {
+export function NewQuestionBankForm({ 
+  availableSubjects,
+  onSubjectCreated,
+  availableTopics,
+  onTopicCreated,
+  onQuestionAdded
+}: NewQuestionFormProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const form = useForm<FormData>({
+  const [loading, setLoading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      subjects: [],
+      subject: "",
+      topic: "",
+      imageDataUri: "",
+      correctAnswer: undefined,
     },
   });
-
-  React.useEffect(() => {
-    if (initialData) {
-        form.reset({
-            name: initialData.name,
-            subjects: initialData.subjects
-        });
-    } else {
-        form.reset({
-            name: "",
-            subjects: [],
-        });
-    }
-}, [initialData, form]);
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "subjects",
-  });
-
-  function handleFormSubmit(values: FormData) {
-    const cleanedSubjects = values.subjects.map(subject => ({
-        ...subject,
-        topics: subject.topics.map(topic => {
-            const { ...restOfTopic } = topic;
-            if (topic.gradingType !== 'auto') {
-                restOfTopic.answerKey = {};
-            }
-            return restOfTopic;
-        })
-    }));
-
-    onSubmit({ ...values, subjects: cleanedSubjects }, initialData?.id);
-  }
   
-  const handleSubjectCreate = (name: string) => {
-    onSubjectCreated(name);
-    toast({
-      title: "Yeni Ders Oluşturuldu",
-      description: `"${name}" dersi genel ders listesine eklendi.`
-    })
+  const watchedImageDataUri = form.watch("imageDataUri");
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        form.setValue('imageDataUri', reader.result as string, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast({ title: "Giriş yapmalısınız.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const destinationPath = `bank-questions/${user.uid}-${Date.now()}.jpg`;
+      const migrationResult = await migrateImage({
+        imageDataUri: values.imageDataUri,
+        destinationPath,
+      });
+
+      if (!migrationResult.success || !migrationResult.newUrl) {
+        throw new Error(migrationResult.error || "Görsel yüklenemedi.");
+      }
+
+      const questionData: Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'> = {
+        subject: values.subject,
+        topic: values.topic,
+        imageUrl: migrationResult.newUrl,
+        correctAnswer: values.correctAnswer,
+      };
+
+      await addBankQuestion(questionData);
+      toast({ title: "Soru Eklendi!", description: "Yeni soru başarıyla bankaya eklendi." });
+      form.reset();
+      onQuestionAdded();
+    } catch (error: any) {
+      toast({ title: "Hata", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
+  const topicOptions = availableTopics.map(t => ({ label: t, value: t }));
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto px-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="name"
+          name="subject"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Soru Bankası Adı</FormLabel>
+              <FormLabel>Ders</FormLabel>
+              <Combobox
+                options={subjectOptions}
+                value={field.value}
+                onChange={field.onChange}
+                onCreate={onSubjectCreated}
+                placeholder="Ders seç veya oluştur..."
+                notfoundText="Ders bulunamadı."
+                createText="Yeni ders oluştur:"
+              />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="topic"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Konu</FormLabel>
+              <Combobox
+                options={topicOptions}
+                value={field.value}
+                onChange={field.onChange}
+                onCreate={onTopicCreated}
+                placeholder="Konu seç veya oluştur..."
+                notfoundText="Konu bulunamadı."
+                createText="Yeni konu oluştur:"
+              />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormItem>
+          <FormLabel>Soru Görseli</FormLabel>
+          <FormControl>
+            <Input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+          </FormControl>
+          <div
+            className="w-full aspect-video border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground hover:border-primary cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {watchedImageDataUri ? (
+              <Image src={watchedImageDataUri} alt="Soru önizlemesi" width={400} height={225} className="max-h-full w-auto object-contain rounded-md" data-ai-hint="question paper" />
+            ) : (
+              <div className="text-center">
+                <UploadCloud className="mx-auto h-8 w-8" />
+                <p className="mt-2 text-sm">Görsel Yükle</p>
+              </div>
+            )}
+          </div>
+          <FormMessage />
+        </FormItem>
+        <FormField
+          control={form.control}
+          name="correctAnswer"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Doğru Cevap</FormLabel>
               <FormControl>
-                <Input placeholder="Örn: 5. Sınıf Matematik Yaprak Testler" {...field} />
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex gap-4"
+                >
+                  {['A', 'B', 'C', 'D'].map(option => (
+                    <FormItem key={option}>
+                      <FormControl>
+                        <RadioGroupItem value={option} id={`option-${option}`} className="sr-only" />
+                      </FormControl>
+                      <FormLabel
+                        htmlFor={`option-${option}`}
+                        className="flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary"
+                      >
+                        {option}
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        <div className="space-y-4">
-          <FormLabel>Dersler ve Konular</FormLabel>
-          {fields.map((subjectField, subjectIndex) => (
-            <Card key={subjectField.id} className="p-4 relative">
-              <div className="flex items-start gap-2">
-                 <FormField
-                    control={form.control}
-                    name={`subjects.${subjectIndex}.name`}
-                    render={({ field }) => (
-                        <FormItem className="flex-grow">
-                            <FormLabel>Ders</FormLabel>
-                             <Combobox
-                                options={subjectOptions}
-                                value={field.value}
-                                onChange={field.onChange}
-                                onCreate={handleSubjectCreate}
-                                placeholder="Ders seç veya oluştur..."
-                                notfoundText="Ders bulunamadı."
-                                createText="Yeni ders oluştur:"
-                            />
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1 right-1"
-                    onClick={() => remove(subjectIndex)}
-                >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-              <SubjectTopics control={form.control} subjectIndex={subjectIndex} form={form} />
-            </Card>
-          ))}
-           <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => append({ id: Date.now(), name: "", topics: [] })}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Ders Ekle
-          </Button>
-        </div>
-
-        <Button type="submit">{initialData ? "Değişiklikleri Kaydet" : "Soru Bankasını Kaydet"}</Button>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Soruyu Bankaya Ekle
+        </Button>
       </form>
     </Form>
   );
-}
-
-
-function SubjectTopics({ control, subjectIndex, form }: { control: any, subjectIndex: number, form: any }) {
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: `subjects.${subjectIndex}.topics`,
-  });
-
-  return (
-    <div className="mt-4 pl-2 border-l-2">
-      <FormLabel className="text-sm">Konular</FormLabel>
-       <div className="space-y-2 mt-2">
-            {fields.map((topicField, topicIndex) => {
-              const gradingTypePath = `subjects.${subjectIndex}.topics.${topicIndex}.gradingType`;
-              const gradingType = form.watch(gradingTypePath);
-
-              return (
-              <div key={topicField.id} className="flex items-start gap-2 p-3 border rounded-md">
-                 <div className="flex-grow space-y-3">
-                    <FormField
-                    control={control}
-                    name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
-                    render={({ field }) => (
-                        <FormItem>
-                         <FormLabel className="text-xs">Konu Adı</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Konu adı" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={control}
-                    name={`subjects.${subjectIndex}.topics.${topicIndex}.questionCount`}
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel className="text-xs">Soru Sayısı</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="Soru" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name={gradingTypePath}
-                        render={({ field }) => (
-                            <FormItem className="space-y-2">
-                            <FormLabel className="text-xs">Değerlendirme Tipi</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                className="flex flex-row space-x-2"
-                                >
-                                <FormItem className="flex items-center space-x-1.5 space-y-0">
-                                    <FormControl><RadioGroupItem value="auto" /></FormControl>
-                                    <FormLabel className="font-normal text-xs">Oto</FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-1.5 space-y-0">
-                                    <FormControl><RadioGroupItem value="manual-text" /></FormControl>
-                                    <FormLabel className="font-normal text-xs">Yazılı</FormLabel>
-                                </FormItem>
-                                    <FormItem className="flex items-center space-x-1.5 space-y-0">
-                                    <FormControl><RadioGroupItem value="manual" /></FormControl>
-                                    <FormLabel className="font-normal text-xs">Cevapsız</FormLabel>
-                                </FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                 </div>
-                <div className="flex flex-col gap-2 self-center">
-                     <Controller
-                        control={control}
-                        name={`subjects.${subjectIndex}.topics.${topicIndex}`}
-                        render={({ field }) => (
-                            <AnswerKeyDialog
-                                key={topicField.id} 
-                                topic={field.value}
-                                onSave={(newKey) => field.onChange({ ...field.value, answerKey: newKey })}
-                                isVisible={gradingType === 'auto'}
-                            />
-                        )}
-                    />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(topicIndex)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                </div>
-              </div>
-            )})}
-       </div>
-       <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => append({ id: Date.now(), name: "", questionCount: 20, gradingType: 'manual', answerKey: {} })}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Konu Ekle
-        </Button>
-    </div>
-  );
-}
-
-
-function AnswerKeyDialog({ topic, onSave, isVisible }: { topic: any, onSave: (key: AnswerKey) => void, isVisible: boolean }) {
-    const [isOpen, setIsOpen] = React.useState(false);
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="icon" className={cn(!isVisible && "invisible")}>
-                    <Key className="h-4 w-4" />
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-                 <DialogHeader>
-                    <DialogTitle>Cevap Anahtarı: {topic.name}</DialogTitle>
-                    <DialogDescription>
-                        Bu konu için cevapları girin. Toplam {topic.questionCount || 0} soru.
-                    </DialogDescription>
-                </DialogHeader>
-                <AnswerKeyForm
-                    key={`${topic.id}-${topic.questionCount}`}
-                    totalQuestions={topic.questionCount || 0}
-                    answerKey={topic.answerKey || {}}
-                    onSave={(newKey) => {
-                        onSave(newKey);
-                        setIsOpen(false);
-                    }}
-                />
-            </DialogContent>
-        </Dialog>
-    );
 }

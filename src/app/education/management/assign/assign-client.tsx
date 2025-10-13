@@ -5,12 +5,13 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { NewTestForm } from "@/components/new-test-form";
-import { QuestionBank, Test, PracticeExam, FamilyMember } from "@/lib/data";
+import { BankQuestion, Test, FamilyMember } from "@/lib/data";
 import {
-  onQuestionBanksUpdate,
-  onPracticeExamsUpdate,
+  onBankQuestionsUpdate,
   onSubjectsUpdate,
   updateSubjects,
+  onTopicsUpdate,
+  updateTopics,
   addTest,
   updateTest,
   onTestsUpdate,
@@ -26,9 +27,9 @@ export default function AssignClient() {
     const { toast } = useToast();
     const { familyMembers } = useAuth();
 
-    const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
-    const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
+    const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
     const [availableSubjects, setAvailableSubjects] = React.useState<string[]>([]);
+    const [availableTopics, setAvailableTopics] = React.useState<string[]>([]);
     const [initialData, setInitialData] = React.useState<Test | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
 
@@ -37,9 +38,9 @@ export default function AssignClient() {
     [familyMembers]);
 
      React.useEffect(() => {
-        const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
-        const unsubExams = onPracticeExamsUpdate(setPracticeExams);
+        const unsubBankQuestions = onBankQuestionsUpdate(setBankQuestions);
         const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
+        const unsubTopics = onTopicsUpdate(setAvailableTopics);
 
         const fetchInitialData = async () => {
             if (editTestId) {
@@ -54,9 +55,9 @@ export default function AssignClient() {
         fetchInitialData();
         
         return () => {
-            unsubBanks();
-            unsubExams();
+            unsubBankQuestions();
             unsubSubjects();
+            unsubTopics();
         };
     }, [editTestId]);
 
@@ -64,6 +65,11 @@ export default function AssignClient() {
     const handleCreateSubject = async (subjectName: string) => {
         const newSubjects = [...new Set([...availableSubjects, subjectName])];
         await updateSubjects(newSubjects);
+    };
+    
+    const handleCreateTopic = async (topicName: string) => {
+        const newTopics = [...new Set([...availableTopics, topicName])];
+        await updateTopics(newTopics);
     };
 
     const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
@@ -86,17 +92,17 @@ export default function AssignClient() {
     }
 
     return (
-        <div className="mt-6 max-w-xl mx-auto">
+        <div className="mt-6 max-w-4xl mx-auto">
              <NewTestForm 
                 students={studentMembers} 
-                questionBanks={questionBanks}
-                practiceExams={practiceExams}
+                bankQuestions={bankQuestions}
                 onAssign={handleAssignmentSubmit}
                 initialData={initialData}
                 availableSubjects={availableSubjects}
                 onSubjectCreated={handleCreateSubject}
+                availableTopics={availableTopics}
+                onTopicCreated={handleCreateTopic}
             />
         </div>
     );
 }
-
