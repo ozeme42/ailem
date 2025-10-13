@@ -246,6 +246,9 @@ export default function OpticalFormPage() {
     }
 
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
+        const studentAnswers = test.studentAnswers || {};
+        const answerKey = test.answerKey || {};
+
         return (
             <div className="container mx-auto py-8 space-y-6">
                 <header className="mb-4">
@@ -270,6 +273,39 @@ export default function OpticalFormPage() {
                              <Card className="p-4 bg-red-500/10"><CardTitle className="flex items-center justify-center gap-2"><X className="text-red-600"/> Yanlış</CardTitle><p className="text-2xl font-bold text-red-600">{test.incorrectAnswers}</p></Card>
                              <Card className="p-4 bg-gray-500/10"><CardTitle className="flex items-center justify-center gap-2"><MinusCircle className="text-gray-600"/> Boş</CardTitle><p className="text-2xl font-bold text-gray-600">{test.emptyAnswers}</p></Card>
                         </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader><CardTitle>Soru Analizi</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        {(test.questions || []).map(q => {
+                            const qNumStr = q.questionNumber.toString();
+                            const studentAns = studentAnswers[qNumStr];
+                            const correctAns = answerKey[qNumStr];
+                            const isCorrect = studentAns === correctAns;
+                            const isIncorrect = studentAns !== null && studentAns !== undefined && studentAns !== correctAns;
+                            const isEmpty = studentAns === null || studentAns === undefined;
+
+                            let statusIcon;
+                            if (isCorrect) statusIcon = <CheckCircle className="h-6 w-6 text-green-500"/>
+                            else if (isIncorrect) statusIcon = <XCircle className="h-6 w-6 text-red-500"/>
+                            else statusIcon = <MinusCircle className="h-6 w-6 text-gray-500"/>;
+
+                            return (
+                                <div key={q.questionNumber} className="p-4 border rounded-lg">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className="font-bold">Soru {q.questionNumber}</h4>
+                                        {statusIcon}
+                                    </div>
+                                    {q.imageUrl && <Image src={q.imageUrl} alt={`Soru ${q.questionNumber}`} width={600} height={400} className="rounded-md border object-contain w-full" data-ai-hint="question paper" />}
+                                    <div className="flex gap-4 mt-4">
+                                        <p>Senin Cevabın: <Badge variant={isCorrect ? 'default' : isIncorrect ? 'destructive' : 'secondary'}>{studentAns || 'Boş'}</Badge></p>
+                                        <p>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></p>
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </CardContent>
                 </Card>
             </div>
@@ -377,3 +413,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
