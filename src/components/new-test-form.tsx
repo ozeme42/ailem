@@ -31,11 +31,11 @@ import { onPracticeExamsUpdate, onTestsUpdate } from "@/lib/dataService";
 import { ScrollArea } from "./ui/scroll-area";
 import { Checkbox } from "./ui/checkbox";
 
-export type AssignmentType = "quick" | "bank" | "exam" | "mistake";
+export type AssignmentType = "quick" | "exam";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  activeTab: z.enum(["quick", "bank", "exam", "mistake"]),
+  activeTab: z.enum(["quick", "exam"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 
@@ -57,21 +57,17 @@ const formSchema = z.object({
   selectedBankQuestions: z.array(z.string()).optional(),
   examId: z.string().optional(),
 }).refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'mistake') return data.title && data.title.length >= 2;
+    if (data.activeTab === 'quick') return data.title && data.title.length >= 2;
     return true;
 }, { message: "Test başlığı en az 2 karakter olmalıdır.", path: ["title"] })
 .refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'mistake') return !!data.subject;
+    if (data.activeTab === 'quick') return !!data.subject;
     return true;
 }, { message: "Lütfen bir ders seçin veya oluşturun.", path: ["subject"] })
 .refine((data) => {
     if (data.activeTab === 'exam') return !!data.examId;
     return true;
 }, { message: "Lütfen bir deneme sınavı seçin.", path: ["examId"] })
-.refine((data) => {
-    if (data.activeTab === 'mistake') return !!data.sourceTestId;
-    return true;
-}, { message: "Lütfen bir referans test seçin.", path: ["sourceTestId"] })
 .refine((data) => {
     if (data.assignedDate && data.dueDate) return data.dueDate >= data.assignedDate;
     return true;
@@ -99,7 +95,7 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
     shouldUnregister: false,
     defaultValues: {
       studentId: initialData?.studentId || undefined,
-      activeTab: initialData?.sourceType || 'quick',
+      activeTab: initialData?.sourceType === 'exam' ? 'exam' : 'quick',
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       questionCount: initialData?.questionCount || 0,
@@ -201,15 +197,13 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
 
     switch (values.activeTab) {
       case 'quick':
-      case 'mistake':
         testData = {
           title: values.title!,
           subject: values.subject!,
           studentId: values.studentId,
           questionCount: values.questions?.length || 0,
           assignedDate, dueDate,
-          sourceType: values.activeTab,
-          sourceId: values.activeTab === 'mistake' ? values.sourceTestId : undefined,
+          sourceType: 'quick',
           gradingType: values.gradingType,
           answerKey: values.gradingType === 'auto' ? values.answerKey : {},
           questions: values.questions,
@@ -245,10 +239,9 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="quick" disabled={!!initialData}>Hızlı</TabsTrigger>
         <TabsTrigger value="exam" disabled={!!initialData}>Deneme</TabsTrigger>
-        <TabsTrigger value="mistake" disabled={!!initialData}>Yanlışlarım</TabsTrigger>
       </TabsList>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -356,31 +349,10 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
              )} />
           </TabsContent>
           
-          <TabsContent value="mistake" className="space-y-4 m-0">
-             <FormField control={form.control} name="sourceTestId" render={({ field }) => (
-                <FormItem><FormLabel>Referans Test</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedStudentId}>
-                  <FormControl><SelectTrigger><SelectValue placeholder={!selectedStudentId ? "Önce öğrenci seçin" : "Referans alınacak testi seçin"} /></SelectTrigger></FormControl>
-                  <SelectContent>{studentCompletedTests.map((test) => (<SelectItem key={test.id} value={test.id}>{test.title}</SelectItem>))}</SelectContent>
-                </Select><FormMessage /></FormItem>
-             )} />
-            <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Matematik Yanlışlarım" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-             <FormField control={form.control} name="subject" render={({ field }) => (
-                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
-            )} />
-             <div className="space-y-2">
-                <FormLabel>Yanlış Soruların Resimleri ({questions.length} adet)</FormLabel>
-                <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleImageUpload}>
-                    <UploadCloud className="mr-2 h-4 w-4" />Soru Resimleri Yükle
-                </Button>
-                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
-            </div>
-          </TabsContent>
-
           <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>
         </form>
       </Form>
     </Tabs>
   );
 }
+
