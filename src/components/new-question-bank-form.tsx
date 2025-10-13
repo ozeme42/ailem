@@ -18,7 +18,7 @@ import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { Combobox } from "./ui/combobox";
 import Image from 'next/image';
 import { ScrollArea } from "./ui/scroll-area";
-import { DialogFooter } from "./ui/dialog";
+import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 
 const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
@@ -111,7 +111,13 @@ export function NewQuestionBankForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow min-h-0">
-        <ScrollArea className="flex-grow min-h-0 pr-6">
+        <DialogHeader>
+            <DialogTitle>Soru Bankasına Yeni Soru Ekle</DialogTitle>
+            <DialogDescription>
+                Görsel ve doğru cevabıyla birlikte yeni bir soru oluşturun.
+            </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="flex-grow min-h-0 pr-6 py-4">
           <div className="space-y-4">
             <FormField
               control={form.control}
@@ -210,7 +216,7 @@ export function NewQuestionBankForm({
             />
           </div>
         </ScrollArea>
-         <DialogFooter className="flex-shrink-0">
+         <DialogFooter className="pt-4 border-t flex-shrink-0">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Soruyu Bankaya Ekle

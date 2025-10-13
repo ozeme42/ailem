@@ -100,12 +100,6 @@ export default function QuestionsClient() {
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-h-[90vh] flex flex-col">
-                        <DialogHeader>
-                            <DialogTitle>Soru Bankasına Yeni Soru Ekle</DialogTitle>
-                            <DialogDescription>
-                                Görsel ve doğru cevabıyla birlikte yeni bir soru oluşturun.
-                            </DialogDescription>
-                        </DialogHeader>
                         <NewQuestionBankForm
                             availableSubjects={allSubjects}
                             onSubjectCreated={handleCreateSubject}
@@ -151,4 +145,3 @@ export default function QuestionsClient() {
         </div>
     );
 }
-
