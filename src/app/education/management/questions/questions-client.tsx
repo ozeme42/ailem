@@ -102,12 +102,26 @@ export default function QuestionsClient() {
             }
             return acc;
         }, {} as { [key: string]: string });
+        
+        const subjectCounts = questionsForExam.reduce((acc, q) => {
+            const originalQuestion = bankQuestions.find(bq => bq.id === q.questionId);
+            if (originalQuestion) {
+                acc[originalQuestion.subject] = (acc[originalQuestion.subject] || 0) + 1;
+            }
+            return acc;
+        }, {} as { [key: string]: number });
+        
+        const subjects = Object.entries(subjectCounts).map(([name, questionCount], index) => ({
+            id: index + 1,
+            name,
+            questionCount
+        }));
 
         const newExam: Omit<PracticeExam, 'id' | 'familyId'> = {
             name: examData.name,
             source: 'bank',
             gradingType: 'auto',
-            subjects: [],
+            subjects: subjects,
             questions: questionsForExam,
             answerKey: answerKey,
         };
@@ -158,11 +172,7 @@ export default function QuestionsClient() {
                                     Seçtiğiniz {selectedQuestions.length} soru ile yeni bir deneme sınavı oluşturun.
                                 </DialogDescription>
                             </DialogHeader>
-                            <NewPracticeExamForm 
-                                onSubmit={handleCreateExam} 
-                                availableSubjects={[]} 
-                                onSubjectCreated={() => {}} 
-                            />
+                            <NewPracticeExamForm onSubmit={handleCreateExam} />
                         </DialogContent>
                      </Dialog>
                      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
