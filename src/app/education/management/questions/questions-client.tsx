@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BankQuestion, PracticeExam } from "@/lib/data";
 import { onBankQuestionsUpdate, onSubjectsUpdate, updateSubjects, onTopicsUpdate, updateTopics, deleteBankQuestion, addPracticeExam, addBankQuestion, addBulkBankQuestions, updateBankQuestion } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
@@ -39,7 +39,7 @@ interface UploadedQuestion {
     difficulty: string;
 }
 
-function AddQuestions({ onBack }: { onBack: () => void }) {
+function BulkAddQuestionsFlow({ onBack }: { onBack: () => void }) {
   const [subjects, setSubjects] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [uploadedQuestions, setUploadedQuestions] = React.useState<UploadedQuestion[]>([]);
@@ -258,6 +258,17 @@ function AddQuestions({ onBack }: { onBack: () => void }) {
                                         </div>
                                          <Button variant="outline" size="sm" onClick={() => addOption(q.id)}><Plus className="h-4 w-4 mr-2" />Şık Ekle</Button>
                                     </div>
+                                     <div className="space-y-2">
+                                        <Label>Zorluk</Label>
+                                        <Select value={q.difficulty} onValueChange={(val) => updateQuestionField(q.id, 'difficulty', val)}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Kolay">Kolay</SelectItem>
+                                                <SelectItem value="Orta">Orta</SelectItem>
+                                                <SelectItem value="Zor">Zor</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
                         </Card>
@@ -266,11 +277,11 @@ function AddQuestions({ onBack }: { onBack: () => void }) {
             )}
         </CardContent>
         {uploadedQuestions.length > 0 && (
-             <CardHeader>
+             <CardFooter>
                 <Button onClick={handleAddQuestionsToBank} className="w-full" disabled={isLoading}>
                     {isLoading ? `Sorular Ekleniyor...` : `${uploadedQuestions.length} Soruyu Bankaya Ekle`}
                 </Button>
-            </CardHeader>
+            </CardFooter>
         )}
       </Card>
     </div>
@@ -412,7 +423,7 @@ export default function QuestionsClient() {
     }
     
     if (isBulkAddMode) {
-        return <AddQuestions onBack={() => setIsBulkAddMode(false)} />;
+        return <BulkAddQuestionsFlow onBack={() => setIsBulkAddMode(false)} />;
     }
 
     return (
