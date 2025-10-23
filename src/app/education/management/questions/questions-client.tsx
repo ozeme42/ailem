@@ -164,9 +164,12 @@ function BulkAddQuestionsDialog({ open, onOpenChange, availableSubjects, availab
                                         </div>
                                     ))}
                                 </div>
-                                <Button type="button" variant="outline" className="w-full mt-4" onClick={() => fileInputRef.current?.click()}>Yeni Görsel(ler) Ekle</Button>
-                                <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
+                               
                            </ScrollArea>
+                        </div>
+                         <div className="flex-shrink-0">
+                            <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>Yeni Görsel(ler) Ekle</Button>
+                            <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
                         </div>
                        
                         <DialogFooter className="flex-shrink-0 pt-4 border-t">
