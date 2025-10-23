@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { BankQuestion, PracticeExam } from "@/lib/data";
 import { onBankQuestionsUpdate, onSubjectsUpdate, updateSubjects, onTopicsUpdate, updateTopics, deleteBankQuestion, addPracticeExam, addBankQuestion } from "@/lib/dataService";
@@ -345,7 +345,7 @@ export default function QuestionsClient() {
                              <DialogHeader>
                                 <DialogTitle>Yeni Deneme Sınavı Oluştur</DialogTitle>
                                 <DialogDescription>
-                                    Seçtiğiniz {selectedQuestions.length} soru ile yeni bir deneme sınavı oluşturun.
+                                    Seçtiğiniz ${selectedQuestions.length} soru ile yeni bir deneme sınavı oluşturun.
                                 </DialogDescription>
                             </DialogHeader>
                             <NewPracticeExamForm onSubmit={handleCreateExam} />
@@ -430,3 +430,5 @@ export default function QuestionsClient() {
         </div>
     );
 }
+
+    
