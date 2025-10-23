@@ -10,8 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BankQuestion, PracticeExam } from "@/lib/data";
 import { onBankQuestionsUpdate, onSubjectsUpdate, updateSubjects, onTopicsUpdate, updateTopics, deleteBankQuestion, addPracticeExam, addBankQuestion, addBulkBankQuestions, updateBankQuestion } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
@@ -49,7 +49,10 @@ function BulkAddQuestionsFlow({ onBack }: { onBack: () => void }) {
   const { toast } = useToast();
 
   React.useEffect(() => {
+    // This is a placeholder, in a real app you'd fetch this.
+    // For now, we'll rely on what's passed down or created.
     const unsub = onSubjectsUpdate(setSubjects);
+
     // Cleanup preview URLs on unmount
     return () => {
         unsub();
@@ -175,7 +178,7 @@ function BulkAddQuestionsFlow({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const subjectOptions = subjects.map(s => ({label: s.name, value: s.name}));
+  const subjectOptions = subjects.map(s => ({label: s, value: s}));
 
   return (
     <div className="space-y-6">
