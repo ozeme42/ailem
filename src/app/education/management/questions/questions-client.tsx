@@ -25,6 +25,7 @@ import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 
 
 const bulkFormSchema = z.object({
