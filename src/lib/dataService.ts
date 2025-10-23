@@ -650,6 +650,9 @@ export const addBankQuestion = async (data: Omit<BankQuestion, 'id' | 'familyId'
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'bankQuestions'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
+export const updateBankQuestion = (id: string, data: Partial<Omit<BankQuestion, 'id'|'familyId'|'createdAt'>>) => {
+    return updateDoc(doc(db, 'bankQuestions', id), data);
+}
 export const deleteBankQuestion = (id: string) => deleteDoc(doc(db, "bankQuestions", id));
 export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback, false, 'createdAt', 'desc');
 export const addMistake = async (data: Partial<Omit<Mistake, 'id' | 'familyId' | 'status'>>) => {
@@ -906,6 +909,7 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
          {
             name: "LGS Deneme Sınavı 1",
             gradingType: 'auto',
+            source: 'other',
             subjects: [
                 { id: 1, name: "Matematik", questionCount: 20 },
                 { id: 2, name: "Türkçe", questionCount: 20 },

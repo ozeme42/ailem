@@ -8,24 +8,22 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { Loader2, PlusCircle, Trash2, UploadCloud } from "lucide-react";
+import { Loader2, UploadCloud } from "lucide-react";
 import { BankQuestion } from "@/lib/data";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { addBankQuestion } from "@/lib/dataService";
+import { addBankQuestion, updateBankQuestion } from "@/lib/dataService";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { Combobox } from "./ui/combobox";
 import Image from 'next/image';
 import { ScrollArea } from "./ui/scroll-area";
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
-import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
   imageDataUri: z.string().min(1, "Soru görseli yüklemek zorunludur."),
-  correctAnswer: z.enum(['A', 'B', 'C', 'D'], { required_error: "Doğru cevabı işaretlemelisiniz." }),
+  correctAnswer: z.string().min(1, { message: "Doğru cevabı girmelisiniz." }),
 });
 
 type NewQuestionFormProps = {
@@ -33,7 +31,8 @@ type NewQuestionFormProps = {
   onSubjectCreated: (subject: string) => void;
   availableTopics: string[];
   onTopicCreated: (topic: string) => void;
-  onQuestionAdded: () => void;
+  onQuestionProcessed: () => void;
+  initialData?: BankQuestion | null;
 };
 
 export function NewQuestionBankForm({ 
@@ -41,7 +40,8 @@ export function NewQuestionBankForm({
   onSubjectCreated,
   availableTopics,
   onTopicCreated,
-  onQuestionAdded
+  onQuestionProcessed,
+  initialData
 }: NewQuestionFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -50,15 +50,27 @@ export function NewQuestionBankForm({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      subject: "",
-      topic: "",
-      imageDataUri: "",
-      correctAnswer: undefined,
-    },
   });
   
   const watchedImageDataUri = form.watch("imageDataUri");
+
+  React.useEffect(() => {
+    if (initialData) {
+        form.reset({
+            subject: initialData.subject,
+            topic: initialData.topic,
+            correctAnswer: initialData.correctAnswer,
+            imageDataUri: initialData.imageUrl, // For display
+        });
+    } else {
+        form.reset({
+            subject: "",
+            topic: "",
+            imageDataUri: "",
+            correctAnswer: "",
+        });
+    }
+  }, [initialData, form]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -78,27 +90,38 @@ export function NewQuestionBankForm({
     }
     setLoading(true);
     try {
-      const destinationPath = `bank-questions/${user.uid}-${Date.now()}.jpg`;
-      const migrationResult = await migrateImage({
-        imageDataUri: values.imageDataUri,
-        destinationPath,
-      });
+      let finalImageUrl = initialData?.imageUrl || "";
 
-      if (!migrationResult.success || !migrationResult.newUrl) {
-        throw new Error(migrationResult.error || "Görsel yüklenemedi.");
+      if (values.imageDataUri && values.imageDataUri.startsWith('data:image')) {
+          const destinationPath = `bank-questions/${user.uid}-${Date.now()}.jpg`;
+          const migrationResult = await migrateImage({
+            imageDataUri: values.imageDataUri,
+            destinationPath,
+          });
+    
+          if (!migrationResult.success || !migrationResult.newUrl) {
+            throw new Error(migrationResult.error || "Görsel yüklenemedi.");
+          }
+          finalImageUrl = migrationResult.newUrl;
       }
 
-      const questionData: Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'> = {
+      const questionData = {
         subject: values.subject,
         topic: values.topic,
-        imageUrl: migrationResult.newUrl,
+        imageUrl: finalImageUrl,
         correctAnswer: values.correctAnswer,
       };
 
-      await addBankQuestion(questionData);
-      toast({ title: "Soru Eklendi!", description: "Yeni soru başarıyla bankaya eklendi." });
+      if (initialData) {
+        await updateBankQuestion(initialData.id, questionData);
+        toast({ title: "Soru Güncellendi!", description: "Soru başarıyla güncellendi." });
+      } else {
+        await addBankQuestion(questionData);
+        toast({ title: "Soru Eklendi!", description: "Yeni soru başarıyla bankaya eklendi." });
+      }
+
       form.reset();
-      onQuestionAdded();
+      onQuestionProcessed();
     } catch (error: any) {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
     } finally {
@@ -113,9 +136,9 @@ export function NewQuestionBankForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
         <DialogHeader>
-            <DialogTitle>Soru Bankasına Yeni Soru Ekle</DialogTitle>
+            <DialogTitle>{initialData ? 'Soruyu Düzenle' : 'Soru Bankasına Yeni Soru Ekle'}</DialogTitle>
             <DialogDescription>
-                Görsel ve doğru cevabıyla birlikte yeni bir soru oluşturun.
+                {initialData ? 'Mevcut sorunun detaylarını güncelleyin.' : 'Görsel ve doğru cevabıyla birlikte yeni bir soru oluşturun.'}
             </DialogDescription>
         </DialogHeader>
         
@@ -185,46 +208,25 @@ export function NewQuestionBankForm({
               </div>
               <FormMessage />
             </FormItem>
-            <FormField
-              control={form.control}
-              name="correctAnswer"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Doğru Cevap</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex gap-4"
-                    >
-                      {['A', 'B', 'C', 'D'].map(option => (
-                        <FormItem key={option}>
-                          <FormControl>
-                            <RadioGroupItem value={option} id={`option-${option}`} className="sr-only" />
-                          </FormControl>
-                          <FormLabel
-                            htmlFor={`option-${option}`}
-                            className={cn(
-                                "flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground",
-                                field.value === option && "bg-primary text-primary-foreground border-primary"
-                            )}
-                          >
-                            {option}
-                          </FormLabel>
-                        </FormItem>
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+             <FormField
+                control={form.control}
+                name="correctAnswer"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Doğru Cevap</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Örn: B, 15, x=2" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
             />
           </div>
         </ScrollArea>
         <DialogFooter>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Soruyu Bankaya Ekle
+              {initialData ? 'Soruyu Güncelle' : 'Soruyu Bankaya Ekle'}
             </Button>
         </DialogFooter>
       </form>
