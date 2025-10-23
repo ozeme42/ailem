@@ -3,12 +3,12 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, UploadCloud } from "lucide-react";
+import { Loader2, UploadCloud, PlusCircle, Trash2 } from "lucide-react";
 import { BankQuestion } from "@/lib/data";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -18,12 +18,19 @@ import { Combobox } from "./ui/combobox";
 import Image from 'next/image';
 import { ScrollArea } from "./ui/scroll-area";
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+
+const optionSchema = z.object({
+    id: z.string(),
+    text: z.string().min(1, "Seçenek metni boş olamaz."),
+});
 
 const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
   imageDataUri: z.string().min(1, "Soru görseli yüklemek zorunludur."),
-  correctAnswer: z.string().min(1, { message: "Doğru cevabı girmelisiniz." }),
+  options: z.array(optionSchema).min(2, "En az 2 seçenek eklemelisiniz."),
+  correctAnswer: z.string().min(1, "Lütfen doğru seçeneği işaretleyin."),
 });
 
 type NewQuestionFormProps = {
@@ -50,17 +57,33 @@ export function NewQuestionBankForm({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+        options: [
+            { id: 'A', text: '' },
+            { id: 'B', text: '' },
+        ]
+    }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+      control: form.control,
+      name: 'options'
   });
   
   const watchedImageDataUri = form.watch("imageDataUri");
 
   React.useEffect(() => {
     if (initialData) {
+        const initialOptions = initialData.options 
+            ? Object.entries(initialData.options).map(([id, text]) => ({ id, text }))
+            : [{ id: 'A', text: '' }, { id: 'B', text: '' }];
+
         form.reset({
             subject: initialData.subject,
             topic: initialData.topic,
             correctAnswer: initialData.correctAnswer,
             imageDataUri: initialData.imageUrl, // For display
+            options: initialOptions,
         });
     } else {
         form.reset({
@@ -68,6 +91,10 @@ export function NewQuestionBankForm({
             topic: "",
             imageDataUri: "",
             correctAnswer: "",
+            options: [
+                { id: 'A', text: '' },
+                { id: 'B', text: '' },
+            ]
         });
     }
   }, [initialData, form]);
@@ -81,6 +108,11 @@ export function NewQuestionBankForm({
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const addOption = () => {
+      const nextLetter = String.fromCharCode(65 + fields.length);
+      append({ id: nextLetter, text: '' });
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -104,11 +136,17 @@ export function NewQuestionBankForm({
           }
           finalImageUrl = migrationResult.newUrl;
       }
+      
+      const optionsObject = values.options.reduce((acc, option) => {
+        acc[option.id] = option.text;
+        return acc;
+      }, {} as Record<string, string>);
 
       const questionData = {
         subject: values.subject,
         topic: values.topic,
         imageUrl: finalImageUrl,
+        options: optionsObject,
         correctAnswer: values.correctAnswer,
       };
 
@@ -208,15 +246,35 @@ export function NewQuestionBankForm({
               </div>
               <FormMessage />
             </FormItem>
-             <FormField
+            <FormField
                 control={form.control}
                 name="correctAnswer"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Doğru Cevap</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Örn: B, 15, x=2" {...field} />
-                        </FormControl>
+                        <FormLabel>Seçenekler ve Doğru Cevap</FormLabel>
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-2">
+                             {fields.map((option, index) => (
+                                <div key={option.id} className="flex items-center gap-2">
+                                    <FormControl>
+                                        <RadioGroupItem value={option.id} id={option.id} />
+                                    </FormControl>
+                                    <label htmlFor={option.id} className="font-bold">{option.id}</label>
+                                    <FormField
+                                        control={form.control}
+                                        name={`options.${index}.text`}
+                                        render={({ field: optionField }) => (
+                                            <Input {...optionField} placeholder={`${option.id} seçeneğinin metni...`}/>
+                                        )}
+                                    />
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 2}>
+                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                        <Button type="button" size="sm" variant="outline" onClick={addOption} className="mt-2">
+                            <PlusCircle className="mr-2 h-4 w-4"/> Seçenek Ekle
+                        </Button>
                         <FormMessage />
                     </FormItem>
                 )}

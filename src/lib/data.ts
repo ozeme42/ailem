@@ -333,7 +333,8 @@ export interface BankQuestion {
   subject: string;
   topic: string;
   imageUrl: string;
-  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  options?: { [key: string]: string };
+  correctAnswer: string;
   createdAt: string; // ISO date string
 }
 
@@ -593,3 +594,4 @@ export interface Budget {
         };
     };
 }
+

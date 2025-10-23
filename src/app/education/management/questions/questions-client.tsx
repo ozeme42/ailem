@@ -28,163 +28,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Label } from "@/components/ui/label";
 
 
-const bulkFormSchema = z.object({
-  subject: z.string().min(1, "Ders seçimi zorunludur."),
-  topic: z.string().min(1, "Konu seçimi zorunludur."),
-});
-
-type BulkFormSchema = z.infer<typeof bulkFormSchema>;
-
-interface BulkUploadFile {
-  file: File;
-  preview: string;
-  correctAnswer: string;
-}
-
-function BulkAddQuestionsDialog({ open, onOpenChange, availableSubjects, availableTopics, onSubjectCreated, onTopicCreated }: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    availableSubjects: string[];
-    availableTopics: string[];
-    onSubjectCreated: (subject: string) => void;
-    onTopicCreated: (topic: string) => void;
-}) {
-    const { toast } = useToast();
-    const { user } = useAuth();
-    const [files, setFiles] = React.useState<BulkUploadFile[]>([]);
-    const [isLoading, setIsLoading] = React.useState(false);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-    const form = useForm<BulkFormSchema>({
-        resolver: zodResolver(bulkFormSchema),
-        defaultValues: { subject: "", topic: "" },
-    });
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFiles = event.target.files;
-        if (!selectedFiles) return;
-
-        const newFiles = Array.from(selectedFiles).map(file => ({
-            file,
-            preview: URL.createObjectURL(file),
-            correctAnswer: ''
-        }));
-        setFiles(prev => [...prev, ...newFiles]);
-    };
-
-    const handleAnswerChange = (index: number, answer: string) => {
-        setFiles(prev => {
-            const newFiles = [...prev];
-            newFiles[index].correctAnswer = answer;
-            return newFiles;
-        });
-    };
-
-    const handleRemoveFile = (index: number) => {
-        setFiles(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const onSubmit = async (data: BulkFormSchema) => {
-        if (files.length === 0) {
-            toast({ title: "Hata", description: "Lütfen en az bir soru görseli yükleyin.", variant: "destructive" });
-            return;
-        }
-        if (!user) return;
-        setIsLoading(true);
-
-        try {
-            for (const fileData of files) {
-                const reader = new FileReader();
-                const imageDataUri = await new Promise<string>((resolve, reject) => {
-                    reader.onload = e => resolve(e.target?.result as string);
-                    reader.onerror = e => reject(e);
-                    reader.readAsDataURL(fileData.file);
-                });
-
-                const destinationPath = `bank-questions/${user.uid}-${Date.now()}-${fileData.file.name}`;
-                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
-
-                if (!migrationResult.success || !migrationResult.newUrl) {
-                    throw new Error(`Dosya yüklenemedi: ${fileData.file.name}`);
-                }
-
-                const questionData: Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'> = {
-                    subject: data.subject,
-                    topic: data.topic,
-                    imageUrl: migrationResult.newUrl,
-                    correctAnswer: fileData.correctAnswer,
-                };
-                await addBankQuestion(questionData);
-            }
-            toast({ title: "Başarılı!", description: `${files.length} soru başarıyla bankaya eklendi.` });
-            onOpenChange(false);
-            setFiles([]);
-            form.reset();
-        } catch (error: any) {
-            toast({ title: "Hata", description: error.message, variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-h-[90dvh]">
-                <DialogHeader>
-                    <DialogTitle>Toplu Soru Ekle</DialogTitle>
-                    <DialogDescription>Aynı ders ve konuya ait birden fazla soruyu tek seferde yükleyin.</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0 gap-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                           <FormField control={form.control} name="subject" render={({ field }) => (
-                                <FormItem><FormLabel>Ders</FormLabel><Combobox options={availableSubjects.map(s => ({label: s, value: s}))} value={field.value} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
-                            )}/>
-                             <FormField control={form.control} name="topic" render={({ field }) => (
-                                <FormItem><FormLabel>Konu</FormLabel><Combobox options={availableTopics.map(t => ({label: t, value: t}))} value={field.value} onChange={field.onChange} onCreate={onTopicCreated} placeholder="Konu seç..." notfoundText="Konu bulunamadı." createText="Yeni konu oluştur:" /><FormMessage /></FormItem>
-                            )}/>
-                        </div>
-                        
-                        <div className="flex-1 flex flex-col min-h-0">
-                          <Label>Sorular</Label>
-                           <ScrollArea className="flex-grow h-64 mt-2">
-                                <div className="space-y-4 pr-4">
-                                     {files.map((fileData, index) => (
-                                        <div key={index} className="flex items-start gap-4 p-2 border rounded-lg">
-                                            <Image src={fileData.preview} alt={`Preview ${index}`} width={100} height={100} className="w-24 h-24 object-contain rounded-md border" />
-                                            <div className="flex-grow space-y-2">
-                                                 <Input
-                                                    placeholder="Doğru cevap..."
-                                                    value={fileData.correctAnswer}
-                                                    onChange={(e) => handleAnswerChange(index, e.target.value)}
-                                                    required
-                                                />
-                                                <Button type="button" variant="destructive" size="sm" onClick={() => handleRemoveFile(index)}>Kaldır</Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                           </ScrollArea>
-                        </div>
-                         <div className="flex-shrink-0">
-                            <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>Yeni Görsel(ler) Ekle</Button>
-                            <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
-                        </div>
-                       
-                        <DialogFooter className="flex-shrink-0 pt-4 border-t">
-                            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>İptal</Button>
-                            <Button type="submit" disabled={isLoading || files.length === 0}>
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                {files.length} Soruyu Kaydet
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 export default function QuestionsClient() {
     const { toast } = useToast();
     const { user } = useAuth();
@@ -194,7 +37,6 @@ export default function QuestionsClient() {
     const [allTopics, setAllTopics] = React.useState<string[]>([]);
     
     const [isFormOpen, setIsFormOpen] = React.useState(false);
-    const [isBulkFormOpen, setIsBulkFormOpen] = React.useState(false);
     const [isCreateExamOpen, setIsCreateExamOpen] = React.useState(false);
 
     const [editingQuestion, setEditingQuestion] = React.useState<BankQuestion | null>(null);
@@ -353,9 +195,6 @@ export default function QuestionsClient() {
                             <NewPracticeExamForm onSubmit={handleCreateExam} />
                         </DialogContent>
                      </Dialog>
-                     <Button onClick={() => setIsBulkFormOpen(true)}>
-                        <FilePlus className="mr-2 h-4 w-4" /> Toplu Ekle
-                    </Button>
                     <Button onClick={openNewDialog}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Yeni Soru
                     </Button>
@@ -419,16 +258,6 @@ export default function QuestionsClient() {
                     />
                 </DialogContent>
             </Dialog>
-
-            <BulkAddQuestionsDialog 
-                open={isBulkFormOpen}
-                onOpenChange={setIsBulkFormOpen}
-                availableSubjects={allSubjects}
-                availableTopics={allTopics}
-                onSubjectCreated={handleCreateSubject}
-                onTopicCreated={handleCreateTopic}
-            />
-
         </div>
     );
 }
@@ -436,3 +265,4 @@ export default function QuestionsClient() {
     
 
     
+
