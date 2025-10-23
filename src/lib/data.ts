@@ -318,10 +318,8 @@ export interface Student {
 }
 
 export type AnswerKey = { [key: string]: string };
-export type TextAnswerKey = { [key: string]: string };
-export type GradingType = 'auto' | 'manual-text' | 'manual';
+export type GradingType = 'auto' | 'manual';
 export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
-export type TextAnswerEvaluations = { [key: string]: EvaluationStatus };
 
 export interface QuickTestQuestion {
   questionId: string; // Corresponds to BankQuestion id
@@ -375,7 +373,7 @@ export interface Test {
   timerStatus?: 'running' | 'paused' | 'finished';
   questions?: QuickTestQuestion[]; 
   studentTextAnswers?: { [key: string]: string };
-  studentTextAnswersEvaluation?: TextAnswerEvaluations;
+  studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus };
   topicId?: string;
 }
 

@@ -26,13 +26,8 @@ import { Progress } from "@/components/ui/progress";
 export default function EducationManagementPage() {
     const { toast } = useToast();
     const { familyMembers, familyId } = useAuth();
-    const gradeFormRef = React.useRef<{ submit: () => void }>(null);
-
-
-    const [tests, setTests] = React.useState<Test[]>([]);
     
-    const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
-    const [gradingTest, setGradingTest] = React.useState<Test | null>(null);
+    const [tests, setTests] = React.useState<Test[]>([]);
     
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -43,15 +38,6 @@ export default function EducationManagementPage() {
         return () => unsubTests();
     }, []);
     
-    const testsAwaitingGrading = React.useMemo(() => {
-        return tests.filter(test => test.status === 'Değerlendirme Bekliyor');
-    }, [tests]);
-
-    const openGradeDialog = (test: Test) => {
-        setGradingTest(test);
-        setIsGradeDialogOpen(true);
-    };
-
     const handleDeleteTest = async (testId: string) => {
         try {
             await deleteTest(testId);
@@ -69,32 +55,6 @@ export default function EducationManagementPage() {
             toast({ title: "❌ Arşivleme Hatası", variant: 'destructive'});
         }
     }
-
-    const handleGradeSubmit = async (gradeData: ManualGradeData) => {
-        if (!gradingTest || !familyId) return;
-        try {
-            const score = gradingTest.questionCount > 0
-                ? (gradeData.correct / gradingTest.questionCount) * 100
-                : 0;
-            
-            const updatedData: Partial<Test> = {
-                status: 'Sonuçlandı',
-                correctAnswers: gradeData.correct,
-                incorrectAnswers: gradeData.incorrect,
-                emptyAnswers: gradeData.empty,
-                score: score,
-            };
-
-            await updateTest(gradingTest.id, updatedData);
-            
-            toast({ title: "✅ Test Değerlendirildi", description: `${gradingTest.title} için sonuçlar kaydedildi.` });
-            setIsGradeDialogOpen(false);
-            setGradingTest(null);
-        } catch (error) {
-            console.error("Error grading test:", error);
-            toast({ title: "❌ Değerlendirme Hatası", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive' });
-        }
-    };
     
     return (
         <>
@@ -112,91 +72,25 @@ export default function EducationManagementPage() {
                 </Link>
             </PageHeader>
             
-            {testsAwaitingGrading.length > 0 && (
-                <Card className="mb-6 border-primary/50 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-primary">
-                            <ClipboardList />
-                            Değerlendirme Bekleyenler ({testsAwaitingGrading.length})
-                        </CardTitle>
-                        <CardDescription>
-                            Öğrenciler tarafından tamamlanan ve sonucunu girmeniz gereken testler.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        {testsAwaitingGrading.map(test => {
-                             const student = familyMembers.find(m => m.id === test.studentId);
-                             return (
-                                 <div key={test.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                                     <div>
-                                        <p className="font-semibold">{test.title}</p>
-                                        <p className="text-sm text-muted-foreground">{student?.name || 'Bilinmeyen Öğrenci'}</p>
-                                     </div>
-                                     <div className="flex items-center gap-1">
-                                        <Button size="sm" onClick={() => openGradeDialog(test)}>
-                                            Sonuç Gir
-                                        </Button>
-                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitleComponent>Ödevi sil?</AlertDialogTitleComponent>
-                                                    <AlertDialogDescription>"{test.title}" ödevi kalıcı olarak silinecektir.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                     </div>
-                                 </div>
-                             )
-                        })}
-                    </CardContent>
-                </Card>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 {tests.filter(t => !t.isArchived).map(test => (
                     <TestManagementCard 
                         key={test.id} 
                         test={test}
                         familyMembers={familyMembers}
-                        onGrade={openGradeDialog}
                         onArchive={handleArchiveTest}
                         onDelete={handleDeleteTest}
                     />
                 ))}
             </div>
-            
-            <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Testi Değerlendir: {gradingTest?.title}</DialogTitle>
-                    </DialogHeader>
-                    {gradingTest && (
-                        <ManualGradeForm
-                            ref={gradeFormRef}
-                            test={gradingTest}
-                            onSave={handleGradeSubmit}
-                        />
-                    )}
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsGradeDialogOpen(false)}>İptal</Button>
-                        <Button onClick={() => gradeFormRef.current?.submit()}>Değerlendirmeyi Tamamla</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            
         </>
     );
 }
 
 
-function TestManagementCard({ test, familyMembers, onGrade, onArchive, onDelete }: {
+function TestManagementCard({ test, familyMembers, onArchive, onDelete }: {
     test: Test,
     familyMembers: any[],
-    onGrade: (test: Test) => void,
     onArchive: (test: Test) => void,
     onDelete: (id: string) => void,
 }) {
@@ -231,10 +125,6 @@ function TestManagementCard({ test, familyMembers, onGrade, onArchive, onDelete 
                 <Link href={`/education/management/assign?edit=${test.id}`}>
                     <Button variant="ghost" size="sm"><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
                 </Link>
-                {isCompleted ? (
-                    <Button variant="outline" size="sm" onClick={() => onGrade(test)}><Edit className="w-4 h-4 mr-2"/>Yeniden Değerlendir</Button>
-                ) : null}
-                
                 {isCompleted && <Button variant="secondary" size="sm" onClick={() => onArchive(test)}><Archive className="w-4 h-4 mr-2"/>Arşivle</Button>}
                 <AlertDialog>
                     <AlertDialogTrigger asChild>

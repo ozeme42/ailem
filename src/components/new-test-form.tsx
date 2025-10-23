@@ -43,7 +43,7 @@ const formSchema = z.object({
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
-  gradingType: z.enum(["auto", "manual-text", "manual"]).default("manual-text"),
+  gradingType: z.enum(["auto", "manual"]).default("auto"),
   answerKey: z.record(z.string()).optional(),
   questions: z.array(z.object({
     questionNumber: z.number(),
@@ -99,7 +99,7 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       questionCount: initialData?.questionCount || 0,
-      gradingType: initialData?.gradingType || "manual-text",
+      gradingType: 'auto',
       answerKey: initialData?.answerKey || {},
       questions: initialData?.questions || [],
       sourceTestId: initialData?.sourceType === 'mistake' ? initialData.sourceId : undefined,
@@ -204,8 +204,8 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
           questionCount: values.questions?.length || 0,
           assignedDate, dueDate,
           sourceType: 'quick',
-          gradingType: values.gradingType,
-          answerKey: values.gradingType === 'auto' ? values.answerKey : {},
+          gradingType: 'auto',
+          answerKey: values.answerKey,
           questions: values.questions,
         };
         break;
@@ -322,22 +322,12 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
                 />
             </div>
             
-            <FormField control={form.control} name="gradingType" render={({ field }) => (
-              <FormItem className="space-y-3"><FormLabel>Değerlendirme Tipi</FormLabel><FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
-                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="auto" /></FormControl><FormLabel className="font-normal">Otomatik Kontrol (Çoktan Seçmeli)</FormLabel></FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="manual-text" /></FormControl><FormLabel className="font-normal">Manuel Kontrol (Açık Uçlu)</FormLabel></FormItem>
-                  </RadioGroup>
-              </FormControl><FormMessage /></FormItem>
-            )} />
-            {gradingType === 'auto' && (
-              <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
-                <DialogTrigger asChild><Button type="button" variant="secondary" disabled={questions.length === 0}><Key className="mr-2 h-4 w-4"/>Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questions.length})</Button></DialogTrigger>
-                <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Cevap Anahtarı</DialogTitle><DialogDescription>{form.getValues('title')} için cevapları girin. Toplam {questions.length} soru.</DialogDescription></DialogHeader>
-                  <AnswerKeyForm totalQuestions={questions.length} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: AnswerKey) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
-                </DialogContent>
-              </Dialog>
-            )}
+            <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
+              <DialogTrigger asChild><Button type="button" variant="secondary" disabled={questions.length === 0}><Key className="mr-2 h-4 w-4"/>Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questions.length})</Button></DialogTrigger>
+              <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Cevap Anahtarı</DialogTitle><DialogDescription>{form.getValues('title')} için cevapları girin. Toplam {questions.length} soru.</DialogDescription></DialogHeader>
+                <AnswerKeyForm totalQuestions={questions.length} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: AnswerKey) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="exam" className="space-y-4 m-0">
@@ -355,4 +345,3 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
     </Tabs>
   );
 }
-
