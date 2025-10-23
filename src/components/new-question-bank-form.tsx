@@ -124,6 +124,7 @@ export function NewQuestionBankForm({
     try {
       let finalImageUrl = initialData?.imageUrl || "";
 
+      // Only upload if the imageDataUri is a new data URI, not an existing URL
       if (values.imageDataUri && values.imageDataUri.startsWith('data:image')) {
           const destinationPath = `bank-questions/${user.uid}-${Date.now()}.jpg`;
           const migrationResult = await migrateImage({
