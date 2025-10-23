@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { BankQuestion, PracticeExam } from "@/lib/data";
 import { onBankQuestionsUpdate, onSubjectsUpdate, updateSubjects, onTopicsUpdate, updateTopics, deleteBankQuestion, addPracticeExam, addBankQuestion } from "@/lib/dataService";
@@ -129,7 +129,7 @@ function BulkAddQuestionsDialog({ open, onOpenChange, availableSubjects, availab
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl h-full max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-4xl max-h-[90dvh]">
                 <DialogHeader>
                     <DialogTitle>Toplu Soru Ekle</DialogTitle>
                     <DialogDescription>Aynı ders ve konuya ait birden fazla soruyu tek seferde yükleyin.</DialogDescription>
@@ -147,7 +147,7 @@ function BulkAddQuestionsDialog({ open, onOpenChange, availableSubjects, availab
                         
                         <div className="flex-1 flex flex-col min-h-0">
                           <Label>Sorular</Label>
-                           <ScrollArea className="flex-grow h-0 mt-2">
+                           <ScrollArea className="flex-grow h-64 mt-2">
                                 <div className="space-y-4 pr-4">
                                      {files.map((fileData, index) => (
                                         <div key={index} className="flex items-start gap-4 p-2 border rounded-lg">
@@ -164,7 +164,6 @@ function BulkAddQuestionsDialog({ open, onOpenChange, availableSubjects, availab
                                         </div>
                                     ))}
                                 </div>
-                               
                            </ScrollArea>
                         </div>
                          <div className="flex-shrink-0">
@@ -173,7 +172,7 @@ function BulkAddQuestionsDialog({ open, onOpenChange, availableSubjects, availab
                         </div>
                        
                         <DialogFooter className="flex-shrink-0 pt-4 border-t">
-                            <Button variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+                            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>İptal</Button>
                             <Button type="submit" disabled={isLoading || files.length === 0}>
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 {files.length} Soruyu Kaydet
@@ -348,7 +347,7 @@ export default function QuestionsClient() {
                              <DialogHeader>
                                 <DialogTitle>Yeni Deneme Sınavı Oluştur</DialogTitle>
                                 <DialogDescription>
-                                    Seçtiğiniz ${selectedQuestions.length} soru ile yeni bir deneme sınavı oluşturun.
+                                    Seçtiğiniz {selectedQuestions.length} soru ile yeni bir deneme sınavı oluşturun.
                                 </DialogDescription>
                             </DialogHeader>
                             <NewPracticeExamForm onSubmit={handleCreateExam} />
@@ -391,7 +390,7 @@ export default function QuestionsClient() {
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>Soruyu Sil</AlertDialogTitle><AlertDialogDescription>Bu soruyu bankadan kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteQuestion(q.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteQuestion(q.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </div>
