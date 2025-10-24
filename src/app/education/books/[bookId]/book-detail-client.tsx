@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Send, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic } from "@/lib/data";
@@ -23,6 +23,7 @@ import { CalendarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 export function BookDetailClient() {
@@ -34,6 +35,7 @@ export function BookDetailClient() {
 
   const [book, setBook] = useState<TrackedBook | null>(null);
   const [tests, setTests] = useState<TrackedBookTest[]>([]);
+  const [selectedTests, setSelectedTests] = useState<string[]>([]);
 
   // Dialog states
   const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
@@ -53,7 +55,7 @@ export function BookDetailClient() {
   // States for forms inside dialogs
   const [testFormData, setTestFormData] = useState<{name: string, questionCount: number, answerKey: {[key:string]: string}}>({ name: "", questionCount: 20, answerKey: {} });
   const [bulkTestFormData, setBulkTestFormData] = useState({ testCount: 10, questionCount: 20, prefix: "Test" });
-  const [assignFormData, setAssignFormData] = useState<{studentId: string, assignedDate: Date, dueDate: Date, studentIds: string[]}>({ studentIds: [], studentId: '', assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+  const [assignFormData, setAssignFormData] = useState<{studentIds: string[], assignedDate: Date, dueDate: Date}>({ studentIds: [], assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
 
   useEffect(() => {
     if (!bookId) return;
@@ -118,7 +120,7 @@ export function BookDetailClient() {
 
   const handleTestSave = async () => {
     if (!book || !currentSubject || !currentTopic || !testFormData.name.trim()) return;
-    const newTest: Omit<TrackedBookTest, 'id' | 'bookId' | 'familyId'> = {
+    const testPayload: Partial<Omit<TrackedBookTest, 'id'>> = {
       subjectId: currentSubject.id,
       topicId: currentTopic.id,
       name: testFormData.name,
@@ -126,9 +128,9 @@ export function BookDetailClient() {
       answerKey: testFormData.answerKey,
     };
     if (currentTest) { // Editing
-      await updateTrackedBookTest(currentTest.id, newTest);
+      await updateTrackedBookTest(currentTest.id, testPayload);
     } else { // Adding
-      await addTrackedBookTest(book.id, newTest);
+      await addTrackedBookTest(book.id, testPayload);
     }
     setIsTestDialogOpen(false);
   };
@@ -152,34 +154,50 @@ export function BookDetailClient() {
     }
   }
 
-  const handleAssignTest = async () => {
-    if (!book || !currentTest || assignFormData.studentIds.length === 0) {
-        toast({ title: "Eksik Bilgi", description: "Lütfen en az bir öğrenci seçin.", variant: "destructive"});
+  const handleAssignSelectedTests = async () => {
+    if (!book || selectedTests.length === 0 || assignFormData.studentIds.length === 0) {
+        toast({ title: "Eksik Bilgi", description: "Lütfen en az bir test ve bir öğrenci seçin.", variant: "destructive"});
         return;
     }
 
-    for (const studentId of assignFormData.studentIds) {
-        const testData = {
-            title: `${book.title} - ${currentTest.name}`,
-            subject: book.subjects?.find(s => s.id === currentTest.subjectId)?.name || "Bilinmiyor",
-            studentId: studentId,
-            questionCount: currentTest.questionCount,
-            assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
-            dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
-            sourceType: 'trackedBook' as const,
-            sourceId: currentTest.id,
-            gradingType: 'auto' as const,
-            status: 'Atandı' as const,
-            answerKey: currentTest.answerKey,
-        };
-    
-        await addTest(testData);
+    let assignedCount = 0;
+    for (const testId of selectedTests) {
+      const testToAssign = tests.find(t => t.id === testId);
+      if (!testToAssign) continue;
+
+      for (const studentId of assignFormData.studentIds) {
+          const testData = {
+              title: `${book.title} - ${testToAssign.name}`,
+              subject: book.subjects?.find(s => s.id === testToAssign.subjectId)?.name || "Bilinmiyor",
+              studentId: studentId,
+              questionCount: testToAssign.questionCount,
+              assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
+              dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
+              sourceType: 'trackedBook' as const,
+              sourceId: testToAssign.id,
+              gradingType: 'auto' as const,
+              status: 'Atandı' as const,
+              answerKey: testToAssign.answerKey,
+          };
+      
+          await addTest(testData);
+          assignedCount++;
+      }
     }
 
-    toast({title: "Ödev Atandı!", description: `${currentTest.name} testi başarıyla atandı.`});
+    toast({title: "Ödevler Atandı!", description: `${selectedTests.length} test, ${assignFormData.studentIds.length} öğrenciye başarıyla atandı.`});
     setIsAssignDialogOpen(false);
+    setSelectedTests([]);
     setAssignFormData(prev => ({ ...prev, studentIds: [] })); // Reset selection
   }
+
+  const toggleTestSelection = (testId: string) => {
+      setSelectedTests(prev => 
+        prev.includes(testId) 
+          ? prev.filter(id => id !== testId) 
+          : [...prev, testId]
+      );
+  };
 
 
   if (!book) return <div>Yükleniyor...</div>;
@@ -217,9 +235,14 @@ export function BookDetailClient() {
                     {subject.name}
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0 space-y-3">
-                   <Button variant="outline" size="sm" onClick={() => {setCurrentSubject(subject); setCurrentTopic(null); setNewTopicName(""); setIsTopicDialogOpen(true)}}>
-                       <Plus className="mr-2 h-4 w-4"/> Konu Ekle
-                   </Button>
+                   <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {setCurrentSubject(subject); setCurrentTopic(null); setNewTopicName(""); setIsTopicDialogOpen(true)}}>
+                          <Plus className="mr-2 h-4 w-4"/> Konu Ekle
+                      </Button>
+                       <Button variant="secondary" size="sm" onClick={() => { if(selectedTests.length > 0) setIsAssignDialogOpen(true) }} disabled={selectedTests.length === 0}>
+                          <Send className="mr-2 h-4 w-4"/> Seçilenleri Ata ({selectedTests.length})
+                      </Button>
+                   </div>
                     <Accordion type="multiple" className="w-full space-y-2">
                         {(subject.topics || []).map(topic => (
                              <AccordionItem key={topic.id} value={topic.id} className="border bg-background rounded-md px-4">
@@ -228,9 +251,14 @@ export function BookDetailClient() {
                                     <div className="space-y-2">
                                     {tests.filter(t => t.topicId === topic.id).map(test => (
                                         <div key={test.id} className="flex items-center justify-between p-2 border rounded-md">
-                                        <p>{test.name} ({test.questionCount} soru)</p>
-                                        <div className="flex gap-1">
-                                            <Button variant="outline" size="sm" onClick={() => { setCurrentTest(test); setIsAssignDialogOpen(true); }}>Ata</Button>
+                                          <div className="flex items-center gap-3">
+                                            <Checkbox
+                                              checked={selectedTests.includes(test.id)}
+                                              onCheckedChange={() => toggleTestSelection(test.id)}
+                                            />
+                                            <p>{test.name} ({test.questionCount} soru)</p>
+                                          </div>
+                                          <div className="flex gap-1">
                                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); handleOpenTestDialog(test); }}><Edit className="h-4 w-4" /></Button>
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
@@ -247,7 +275,7 @@ export function BookDetailClient() {
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
-                                        </div>
+                                          </div>
                                         </div>
                                     ))}
                                     <div className="grid grid-cols-2 gap-2">
@@ -331,11 +359,11 @@ export function BookDetailClient() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+      <Dialog open={isAssignDialogOpen} onOpenChange={(open) => { if (!open) setSelectedTests([]); setIsAssignDialogOpen(open)}}>
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Ödev Ata</DialogTitle>
-                <DialogDescription>"{currentTest?.name}" testini bir öğrenciye ata.</DialogDescription>
+                <DialogDescription>{selectedTests.length} adet test seçildi.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -343,12 +371,10 @@ export function BookDetailClient() {
                     <div className="space-y-2">
                         {familyMembers.filter(m => m.role.includes("Çocuk")).map(s => (
                             <div key={s.id} className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
+                                <Checkbox
                                     id={`student-${s.id}`}
                                     checked={assignFormData.studentIds.includes(s.id)}
-                                    onChange={(e) => {
-                                        const checked = e.target.checked;
+                                    onCheckedChange={(checked) => {
                                         setAssignFormData(prev => ({
                                             ...prev,
                                             studentIds: checked
@@ -381,7 +407,7 @@ export function BookDetailClient() {
             </div>
              <DialogFooter>
              <Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)}>İptal</Button>
-             <Button onClick={handleAssignTest}>Ödevi Ata</Button>
+             <Button onClick={handleAssignSelectedTests}>Ödevleri Ata</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
