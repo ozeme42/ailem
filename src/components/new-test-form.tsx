@@ -33,7 +33,7 @@ import { Checkbox } from "./ui/checkbox";
 export type AssignmentType = "quick" | "exam" | "bank" | "mistake";
 
 const formSchema = z.object({
-  studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
+  studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
   activeTab: z.enum(["quick", "exam", "bank", "mistake"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
@@ -109,7 +109,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     resolver: zodResolver(formSchema),
     shouldUnregister: false,
     defaultValues: {
-      studentId: initialData?.studentId || undefined,
+      studentIds: initialData?.studentId ? [initialData.studentId] : [],
       activeTab: initialData?.sourceType === 'exam' ? 'exam' : (initialData?.sourceType === 'bank' ? 'bank' : initialData?.sourceType === 'mistake' ? 'mistake' : 'quick'),
       title: initialData?.title || "",
       subject: initialData?.subject || "",
@@ -145,14 +145,14 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   const activeTab = form.watch("activeTab");
   const gradingType = form.watch("gradingType");
   const questions = form.watch("questions") || [];
-  const selectedStudentId = form.watch("studentId");
+  const selectedStudentIds = form.watch("studentIds");
   const selectedBankQuestions = form.watch("selectedBankQuestions") || [];
   const selectedMistakes = form.watch("selectedMistakes") || [];
   
   const studentMistakes = React.useMemo(() => {
-      if (!selectedStudentId) return [];
-      return allMistakes.filter(m => m.creatorId === selectedStudentId && m.status === 'active');
-  }, [allMistakes, selectedStudentId]);
+      if (!selectedStudentIds || selectedStudentIds.length === 0) return [];
+      return allMistakes.filter(m => selectedStudentIds.includes(m.creatorId) && m.status === 'active');
+  }, [allMistakes, selectedStudentIds]);
 
   
   const handleTabChange = (value: string) => {
@@ -203,7 +203,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
 
   React.useEffect(() => {
     if (students.length === 1 && !initialData) {
-      form.setValue("studentId", students[0].id);
+      form.setValue("studentIds", [students[0].id]);
     }
   }, [students, form, initialData]);
   
@@ -222,106 +222,108 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     const assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
     const dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
     
-    let testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>;
+    values.studentIds.forEach(studentId => {
+      let testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>;
 
-    switch (values.activeTab) {
-      case 'quick':
-        testData = {
-          title: values.title!,
-          subject: values.subject!,
-          studentId: values.studentId,
-          questionCount: values.questions?.length || 0,
-          assignedDate, dueDate,
-          sourceType: 'quick',
-          gradingType: 'auto',
-          answerKey: values.answerKey,
-          questions: values.questions,
-        };
-        break;
-      
-      case 'bank':
-        const questionsFromBank = (values.selectedBankQuestions || []).map((qId, index) => {
-          const question = bankQuestions.find(bq => bq.id === qId);
-          return {
-            questionId: qId,
-            questionNumber: index + 1,
-            imageUrl: question?.imageUrl || '',
+      switch (values.activeTab) {
+        case 'quick':
+          testData = {
+            title: values.title!,
+            subject: values.subject!,
+            studentId: studentId,
+            questionCount: values.questions?.length || 0,
+            assignedDate, dueDate,
+            sourceType: 'quick',
+            gradingType: 'auto',
+            answerKey: values.answerKey,
+            questions: values.questions,
           };
-        });
-        const answerKeyFromBank = (values.selectedBankQuestions || []).reduce((acc, qId, index) => {
+          break;
+        
+        case 'bank':
+          const questionsFromBank = (values.selectedBankQuestions || []).map((qId, index) => {
             const question = bankQuestions.find(bq => bq.id === qId);
-            if (question) {
-                acc[(index + 1).toString()] = question.correctAnswer;
-            }
-            return acc;
-        }, {} as AnswerKey);
+            return {
+              questionId: qId,
+              questionNumber: index + 1,
+              imageUrl: question?.imageUrl || '',
+            };
+          });
+          const answerKeyFromBank = (values.selectedBankQuestions || []).reduce((acc, qId, index) => {
+              const question = bankQuestions.find(bq => bq.id === qId);
+              if (question) {
+                  acc[(index + 1).toString()] = question.correctAnswer;
+              }
+              return acc;
+          }, {} as AnswerKey);
 
-        testData = {
-          title: values.title!,
-          subject: values.subject!,
-          studentId: values.studentId,
-          questionCount: questionsFromBank.length,
-          assignedDate, dueDate,
-          sourceType: 'bank',
-          gradingType: 'auto',
-          answerKey: answerKeyFromBank,
-          questions: questionsFromBank,
-        };
-        break;
-
-      case 'mistake':
-        const questionsFromMistakes = (values.selectedMistakes || []).map((mistakeId, index) => {
-          const mistake = allMistakes.find(m => m.id === mistakeId);
-          return {
-            questionId: mistakeId,
-            questionNumber: index + 1,
-            imageUrl: mistake?.imageUrl || '',
+          testData = {
+            title: values.title!,
+            subject: values.subject!,
+            studentId: studentId,
+            questionCount: questionsFromBank.length,
+            assignedDate, dueDate,
+            sourceType: 'bank',
+            gradingType: 'auto',
+            answerKey: answerKeyFromBank,
+            questions: questionsFromBank,
           };
-        });
-        const answerKeyFromMistakes = (values.selectedMistakes || []).reduce((acc, mistakeId, index) => {
+          break;
+
+        case 'mistake':
+          const questionsFromMistakes = (values.selectedMistakes || []).map((mistakeId, index) => {
             const mistake = allMistakes.find(m => m.id === mistakeId);
-            if (mistake && mistake.correctAnswer) {
-                acc[(index + 1).toString()] = mistake.correctAnswer;
-            }
-            return acc;
-        }, {} as AnswerKey);
+            return {
+              questionId: mistakeId,
+              questionNumber: index + 1,
+              imageUrl: mistake?.imageUrl || '',
+            };
+          });
+          const answerKeyFromMistakes = (values.selectedMistakes || []).reduce((acc, mistakeId, index) => {
+              const mistake = allMistakes.find(m => m.id === mistakeId);
+              if (mistake && mistake.correctAnswer) {
+                  acc[(index + 1).toString()] = mistake.correctAnswer;
+              }
+              return acc;
+          }, {} as AnswerKey);
 
-        testData = {
-          title: values.title!,
-          subject: values.subject!,
-          studentId: values.studentId,
-          questionCount: questionsFromMistakes.length,
-          assignedDate, dueDate,
-          sourceType: 'mistake',
-          gradingType: 'auto',
-          answerKey: answerKeyFromMistakes,
-          questions: questionsFromMistakes,
-        };
-        break;
+          testData = {
+            title: values.title!,
+            subject: values.subject!,
+            studentId: studentId,
+            questionCount: questionsFromMistakes.length,
+            assignedDate, dueDate,
+            sourceType: 'mistake',
+            gradingType: 'auto',
+            answerKey: answerKeyFromMistakes,
+            questions: questionsFromMistakes,
+          };
+          break;
 
-      case 'exam':
-        const selectedExam = practiceExams.find(e => e.id === values.examId);
-        if (!selectedExam) return;
-        testData = {
-          title: selectedExam.name,
-          subject: 'Deneme Sınavı',
-          studentId: values.studentId,
-          questionCount: selectedExam.subjects?.reduce((acc, s) => acc + s.questionCount, 0) || selectedExam.questions?.length || 0,
-          assignedDate, dueDate,
-          sourceType: 'exam',
-          sourceId: selectedExam.id,
-          gradingType: selectedExam.gradingType,
-          answerKey: selectedExam.answerKey,
-          questions: selectedExam.questions,
-        };
-        break;
+        case 'exam':
+          const selectedExam = practiceExams.find(e => e.id === values.examId);
+          if (!selectedExam) return;
+          testData = {
+            title: selectedExam.name,
+            subject: 'Deneme Sınavı',
+            studentId: studentId,
+            questionCount: selectedExam.subjects?.reduce((acc, s) => acc + s.questionCount, 0) || selectedExam.questions?.length || 0,
+            assignedDate, dueDate,
+            sourceType: 'exam',
+            sourceId: selectedExam.id,
+            gradingType: selectedExam.gradingType,
+            answerKey: selectedExam.answerKey,
+            questions: selectedExam.questions,
+          };
+          break;
 
-      default:
-        toast({ title: "Geçersiz seçim", description: "Lütfen geçerli bir ödev türü seçin.", variant: "destructive" });
-        return;
-    }
-    
-    onAssign(testData, initialData?.id);
+        default:
+          toast({ title: "Geçersiz seçim", description: "Lütfen geçerli bir ödev türü seçin.", variant: "destructive" });
+          return;
+      }
+      
+      onAssign(testData, initialData?.id);
+    });
   }
   
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
@@ -351,20 +353,49 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
       </TabsList>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-          <FormField
-            control={form.control}
-            name="studentId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Öğrenci</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Öğrenci seçin" /></SelectTrigger></FormControl>
-                  <SelectContent>{students.map((student) => (<SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>))}</SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+           <FormField
+              control={form.control}
+              name="studentIds"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Öğrenci(ler)</FormLabel>
+                  {students.map((student) => (
+                    <FormField
+                      key={student.id}
+                      control={form.control}
+                      name="studentIds"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={student.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(student.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), student.id])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== student.id
+                                        )
+                                      )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {student.name}
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           <div className="grid grid-cols-2 gap-4">
             <FormField control={form.control} name="assignedDate" render={({ field }) => (
               <FormItem className="flex flex-col">
@@ -403,7 +434,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
              <div className="p-4 border rounded-lg">
                 <h3 className="text-lg font-semibold mb-2">Soru Seçimi</h3>
                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <Select value={bankSubjectFilter} onValueChange={(value) => setBankSubjectFilter(value === 'all' ? '' : value)}>
+                    <Select value={bankSubjectFilter} onValueChange={(value) => {setBankSubjectFilter(value === 'all' ? '' : value); setBankTopicFilter('');}}>
                         <SelectTrigger><SelectValue placeholder="Derse göre filtrele"/></SelectTrigger>
                         <SelectContent><SelectItem value="all">Tüm Dersler</SelectItem>{availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                     </Select>
@@ -492,7 +523,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
 
           <TabsContent value="exam" className="space-y-4 m-0">
              <FormField control={form.control} name="examId" render={({ field }) => (
-                <FormItem><FormLabel>Deneme Sınavı</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedStudentId}>
+                <FormItem><FormLabel>Deneme Sınavı</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedStudentIds}>
                   <FormControl><SelectTrigger><SelectValue placeholder={"Bir deneme sınavı seçin"} /></SelectTrigger></FormControl>
                   <SelectContent>{practiceExams.map((exam) => (<SelectItem key={exam.id} value={exam.id}>{exam.name}</SelectItem>))}</SelectContent>
                 </Select><FormMessage /></FormItem>
