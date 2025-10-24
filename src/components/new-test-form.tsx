@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Student, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, QuickTestQuestion, BankQuestion } from "@/lib/data";
+import type { Student, PracticeExam, Test, AnswerKey, GradingType, FamilyMember, QuickTestQuestion, BankQuestion, Mistake } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
@@ -26,15 +26,15 @@ import { Calendar } from "./ui/calendar";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "./ui/badge";
-import { onPracticeExamsUpdate, onTestsUpdate } from "@/lib/dataService";
+import { onPracticeExamsUpdate, onTestsUpdate, onMistakesUpdate } from "@/lib/dataService";
 import { ScrollArea } from "./ui/scroll-area";
 import { Checkbox } from "./ui/checkbox";
 
-export type AssignmentType = "quick" | "exam" | "bank";
+export type AssignmentType = "quick" | "exam" | "bank" | "mistake";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  activeTab: z.enum(["quick", "exam", "bank"]),
+  activeTab: z.enum(["quick", "exam", "bank", "mistake"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 
@@ -47,20 +47,22 @@ const formSchema = z.object({
   questions: z.array(z.object({
     questionNumber: z.number(),
     imageUrl: z.string().url("Geçerli bir görsel URL'si girilmelidir."),
+    questionId: z.string(), // Represents the source id (e.g. bankQuestionId or mistakeId)
   })).optional(),
   
   // For Mistake Test
   sourceTestId: z.string().optional(),
+  selectedMistakes: z.array(z.string()).optional(),
 
   // Bank/Exam Fields
   selectedBankQuestions: z.array(z.string()).optional(),
   examId: z.string().optional(),
 }).refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'bank') return data.title && data.title.length >= 2;
+    if (data.activeTab === 'quick' || data.activeTab === 'bank' || data.activeTab === 'mistake') return data.title && data.title.length >= 2;
     return true;
 }, { message: "Test başlığı en az 2 karakter olmalıdır.", path: ["title"] })
 .refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'bank') return !!data.subject;
+    if (data.activeTab === 'quick' || data.activeTab === 'bank' || data.activeTab === 'mistake') return !!data.subject;
     return true;
 }, { message: "Lütfen bir ders seçin veya oluşturun.", path: ["subject"] })
 .refine((data) => {
@@ -71,6 +73,10 @@ const formSchema = z.object({
     if (data.activeTab === 'bank' && (!data.selectedBankQuestions || data.selectedBankQuestions.length === 0)) return false;
     return true;
 }, { message: "Lütfen soru bankasından en az bir soru seçin.", path: ["selectedBankQuestions"] })
+.refine((data) => {
+    if (data.activeTab === 'mistake' && (!data.selectedMistakes || data.selectedMistakes.length === 0)) return false;
+    return true;
+}, { message: "Lütfen en az bir yanlış soru seçin.", path: ["selectedMistakes"] })
 .refine((data) => {
     if (data.assignedDate && data.dueDate) return data.dueDate >= data.assignedDate;
     return true;
@@ -93,18 +99,18 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   const { toast } = useToast();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
+  const [allMistakes, setAllMistakes] = React.useState<Mistake[]>([]);
   
   // State for bank question filtering
   const [bankSubjectFilter, setBankSubjectFilter] = React.useState<string>("");
   const [bankTopicFilter, setBankTopicFilter] = React.useState<string>("");
-
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     shouldUnregister: false,
     defaultValues: {
       studentId: initialData?.studentId || undefined,
-      activeTab: initialData?.sourceType === 'exam' ? 'exam' : (initialData?.sourceType === 'bank' ? 'bank' : 'quick'),
+      activeTab: initialData?.sourceType === 'exam' ? 'exam' : (initialData?.sourceType === 'bank' ? 'bank' : initialData?.sourceType === 'mistake' ? 'mistake' : 'quick'),
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       questionCount: initialData?.questionCount || 0,
@@ -112,6 +118,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
       answerKey: initialData?.answerKey || {},
       questions: initialData?.questions || [],
       selectedBankQuestions: initialData?.sourceType === 'bank' ? (initialData.questions || []).map(q => q.questionId) : [],
+      selectedMistakes: initialData?.sourceType === 'mistake' ? (initialData.questions || []).map(q => q.questionId) : [],
       sourceTestId: initialData?.sourceType === 'mistake' ? initialData.sourceId : undefined,
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
@@ -127,9 +134,11 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   React.useEffect(() => {
     const unsubTests = onTestsUpdate(setAllTests);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
+    const unsubMistakes = onMistakesUpdate(setAllMistakes);
     return () => {
       unsubTests();
       unsubExams();
+      unsubMistakes();
     }
   }, []);
 
@@ -138,14 +147,16 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   const questions = form.watch("questions") || [];
   const selectedStudentId = form.watch("studentId");
   const selectedBankQuestions = form.watch("selectedBankQuestions") || [];
+  const selectedMistakes = form.watch("selectedMistakes") || [];
   
-  const studentCompletedTests = React.useMemo(() => {
-    return allTests.filter(t => t.studentId === selectedStudentId && t.status === 'Sonuçlandı');
-  }, [allTests, selectedStudentId]);
+  const studentMistakes = React.useMemo(() => {
+      if (!selectedStudentId) return [];
+      return allMistakes.filter(m => m.creatorId === selectedStudentId && m.status === 'active');
+  }, [allMistakes, selectedStudentId]);
 
   
   const handleTabChange = (value: string) => {
-    form.setValue('activeTab', value as "quick" | "exam" | "bank");
+    form.setValue('activeTab', value as "quick" | "exam" | "bank" | "mistake");
   };
   
    const handleImageUpload = () => {
@@ -170,6 +181,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             const migrationResult = await migrateImage({ imageDataUri, destinationPath });
             if (migrationResult.success && migrationResult.newUrl) {
               append({
+                questionId: `${fields.length + i + 1}`, // temp id
                 questionNumber: fields.length + i + 1,
                 imageUrl: migrationResult.newUrl,
               });
@@ -200,8 +212,10 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
       form.setValue('questionCount', questions.length);
     } else if (activeTab === 'bank') {
       form.setValue('questionCount', selectedBankQuestions.length);
+    } else if (activeTab === 'mistake') {
+      form.setValue('questionCount', selectedMistakes.length);
     }
-  }, [questions, selectedBankQuestions, form, activeTab]);
+  }, [questions, selectedBankQuestions, selectedMistakes, form, activeTab]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -255,6 +269,36 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
         };
         break;
 
+      case 'mistake':
+        const questionsFromMistakes = (values.selectedMistakes || []).map((mistakeId, index) => {
+          const mistake = allMistakes.find(m => m.id === mistakeId);
+          return {
+            questionId: mistakeId,
+            questionNumber: index + 1,
+            imageUrl: mistake?.imageUrl || '',
+          };
+        });
+        const answerKeyFromMistakes = (values.selectedMistakes || []).reduce((acc, mistakeId, index) => {
+            const mistake = allMistakes.find(m => m.id === mistakeId);
+            if (mistake && mistake.correctAnswer) {
+                acc[(index + 1).toString()] = mistake.correctAnswer;
+            }
+            return acc;
+        }, {} as AnswerKey);
+
+        testData = {
+          title: values.title!,
+          subject: values.subject!,
+          studentId: values.studentId,
+          questionCount: questionsFromMistakes.length,
+          assignedDate, dueDate,
+          sourceType: 'mistake',
+          gradingType: 'auto',
+          answerKey: answerKeyFromMistakes,
+          questions: questionsFromMistakes,
+        };
+        break;
+
       case 'exam':
         const selectedExam = practiceExams.find(e => e.id === values.examId);
         if (!selectedExam) return;
@@ -299,7 +343,8 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="mistake" disabled={!!initialData}>Yanlışlarım</TabsTrigger>
         <TabsTrigger value="bank" disabled={!!initialData}>Soru Bankası</TabsTrigger>
         <TabsTrigger value="quick" disabled={!!initialData}>Hızlı Test</TabsTrigger>
         <TabsTrigger value="exam" disabled={!!initialData}>Deneme Sınavı</TabsTrigger>
@@ -453,10 +498,52 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
                 </Select><FormMessage /></FormItem>
              )} />
           </TabsContent>
+
+           <TabsContent value="mistake" className="space-y-4 m-0">
+             <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Yanlış Soru Tekrar Testi" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+             <FormField control={form.control} name="subject" render={({ field }) => (
+                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
+            )} />
+            <FormField
+                control={form.control}
+                name="selectedMistakes"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Yanlış Sorular ({studentMistakes.length})</FormLabel>
+                         <ScrollArea className="h-72">
+                            <div className="space-y-2 pr-4">
+                            {studentMistakes.map(m => (
+                                <div key={m.id} className="flex items-center gap-2 p-2 border rounded-md">
+                                    <Checkbox 
+                                        checked={field.value?.includes(m.id)}
+                                        onCheckedChange={(checked) => {
+                                            return checked 
+                                                ? field.onChange([...(field.value || []), m.id])
+                                                : field.onChange(field.value?.filter(v => v !== m.id))
+                                        }}
+                                    />
+                                    <Image src={m.imageUrl!} alt={m.topic} width={60} height={40} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
+                                    <div className="flex-grow">
+                                        <p className="font-medium text-sm">{m.topic}</p>
+                                        <p className="text-xs text-muted-foreground">{m.subject}</p>
+                                    </div>
+                                </div>
+                            ))}
+                            </div>
+                        </ScrollArea>
+                         <FormMessage />
+                    </FormItem>
+                )}
+             />
+           </TabsContent>
           
-          <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : `Ödevi Ata (${activeTab === 'bank' ? selectedBankQuestions.length : questions.length} Soru)`}</Button>
+          <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : `Ödevi Ata`}</Button>
         </form>
       </Form>
     </Tabs>
   );
 }
+
+    
