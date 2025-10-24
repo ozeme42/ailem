@@ -35,17 +35,13 @@ export default function OpticalFormPage() {
     const { toast } = useToast();
     const testId = params.testId as string;
 
-    const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
+    const [test, setTest] = React.useState<TestType | null>(null);
+    const [isLoading, setIsLoading] = React.useState(true);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     
     // State for manual evaluation
     const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluation>({});
     
-    const [isClient, setIsClient] = React.useState(false);
-    React.useEffect(() => {
-        setIsClient(true);
-    }, []);
-
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
         
@@ -113,11 +109,14 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
-    }, [test, mcqAnswers, router, toast]);
+    }, [test, mcqAnswers, toast]);
     
 
     React.useEffect(() => {
-        if (!testId) return;
+        if (!testId) {
+            setIsLoading(false);
+            return;
+        };
         const testDocRef = doc(db, 'tests', testId);
         
         const unsubscribe = onSnapshot(testDocRef, async (docSnap) => {
@@ -148,9 +147,11 @@ export default function OpticalFormPage() {
             } else {
                 setTest(null);
             }
+            setIsLoading(false);
         }, (error) => {
             console.error("Error fetching test document:", error);
             setTest(null);
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
@@ -203,20 +204,13 @@ export default function OpticalFormPage() {
     };
 
 
-    if (!isClient) {
+    if (isLoading) {
          return (
              <div className="flex flex-col items-center justify-center h-screen bg-background">
+                <Loader2 className="w-16 h-16 animate-spin text-primary mb-4" />
                 <p>Test yükleniyor...</p>
             </div>
         );
-    }
-    
-    if (test === undefined) {
-        return (
-             <div className="flex flex-col items-center justify-center h-screen bg-background">
-                <p>Test yükleniyor...</p>
-            </div>
-        )
     }
 
     if (!test) {
@@ -412,4 +406,5 @@ export default function OpticalFormPage() {
 }
 
     
+
 
