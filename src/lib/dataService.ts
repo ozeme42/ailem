@@ -761,39 +761,10 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: BankQuestion[]) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    
-    let finalQuestions: QuickTestQuestion[] = [];
-    let finalAnswerKey: { [key: string]: string } = {};
-
-    if (questions && questions.length > 0) {
-        finalQuestions = questions.map((q, index) => ({
-            questionId: q.id,
-            questionNumber: index + 1,
-            imageUrl: q.imageUrl || '',
-        }));
-        finalAnswerKey = questions.reduce((acc, q, index) => {
-            if (q.correctAnswer) {
-                acc[(index + 1).toString()] = q.correctAnswer;
-            }
-            return acc;
-        }, {} as { [key: string]: string });
-    } else if (data.questions) { // For quick and mistake tests passed via form
-        finalQuestions = data.questions;
-        finalAnswerKey = data.answerKey || {};
-    }
-
-    const newTestData = {
-        ...data,
-        questions: finalQuestions,
-        answerKey: finalAnswerKey,
-        status: 'Atandı',
-        isArchived: false,
-    };
-
-    return addDoc(collection(db, 'tests'), { ...newTestData, familyId });
+    return addDoc(collection(db, 'tests'), { ...data, familyId });
 };
 export const deleteTest = async (id: string) => {
     const batch = writeBatch(db);
@@ -1852,7 +1823,25 @@ export const addTrackedBookTest = async (bookId: string, data: Omit<TrackedBookT
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'trackedBookTests'), { ...removeUndefined(data), familyId, bookId });
 };
+export const addBulkTrackedBookTests = async (bookId: string, subjectId: string, topicId: string, count: number, questionCount: number, prefix: string) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+
+    const batch = writeBatch(db);
+    for (let i = 1; i <= count; i++) {
+        const testRef = doc(collection(db, 'trackedBookTests'));
+        const newTest: Omit<TrackedBookTest, 'id'> = {
+            familyId,
+            bookId,
+            subjectId,
+            topicId,
+            name: `${prefix} ${i}`,
+            questionCount,
+            answerKey: {}
+        };
+        batch.set(testRef, newTest);
+    }
+    await batch.commit();
+};
 export const updateTrackedBookTest = (id: string, data: Partial<Omit<TrackedBookTest, 'id'>>) => updateDoc(doc(db, 'trackedBookTests', id), removeUndefined(data));
 export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
-
-    

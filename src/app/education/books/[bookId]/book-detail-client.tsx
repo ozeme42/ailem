@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest } from "@/lib/dataService";
+import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export function BookDetailClient() {
   const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isBulkTestDialogOpen, setIsBulkTestDialogOpen] = useState(false);
   
   // Form/Context states
   const [currentSubject, setCurrentSubject] = useState<TrackedBookSubject | null>(null);
@@ -48,10 +49,10 @@ export function BookDetailClient() {
   
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newTopicName, setNewTopicName] = useState("");
-  const [newTestName, setNewTestName] = useState("");
-  const [newTestQuestionCount, setNewTestQuestionCount] = useState(20);
-  const [currentAnswerKey, setCurrentAnswerKey] = useState({});
-
+  
+  // States for forms inside dialogs
+  const [testFormData, setTestFormData] = useState<{name: string, questionCount: number, answerKey: {[key:string]: string}}>({ name: "", questionCount: 20, answerKey: {} });
+  const [bulkTestFormData, setBulkTestFormData] = useState({ testCount: 10, questionCount: 20, prefix: "Test" });
   const [assignFormData, setAssignFormData] = useState({ studentId: '', assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
 
   useEffect(() => {
@@ -63,6 +64,20 @@ export function BookDetailClient() {
       unsubTests();
     };
   }, [bookId]);
+  
+  const handleOpenTestDialog = (test: TrackedBookTest | null) => {
+      setCurrentTest(test);
+      if (test) {
+          setTestFormData({
+              name: test.name,
+              questionCount: test.questionCount,
+              answerKey: test.answerKey || {}
+          });
+      } else {
+           setTestFormData({ name: "", questionCount: 20, answerKey: {} });
+      }
+      setIsTestDialogOpen(true);
+  }
 
   const handleSubjectSave = async () => {
     if (!book || !newSubjectName.trim()) return;
@@ -102,13 +117,13 @@ export function BookDetailClient() {
   };
 
   const handleTestSave = async () => {
-    if (!book || !currentSubject || !currentTopic || !newTestName.trim()) return;
+    if (!book || !currentSubject || !currentTopic || !testFormData.name.trim()) return;
     const newTest: Omit<TrackedBookTest, 'id' | 'bookId' | 'familyId'> = {
       subjectId: currentSubject.id,
       topicId: currentTopic.id,
-      name: newTestName,
-      questionCount: newTestQuestionCount,
-      answerKey: currentAnswerKey,
+      name: testFormData.name,
+      questionCount: testFormData.questionCount,
+      answerKey: testFormData.answerKey,
     };
     if (currentTest) { // Editing
       await updateTrackedBookTest(currentTest.id, newTest);
@@ -116,9 +131,27 @@ export function BookDetailClient() {
       await addTrackedBookTest(book.id, newTest);
     }
     setIsTestDialogOpen(false);
-    resetTestDialog();
   };
   
+  const handleBulkTestSave = async () => {
+    if (!book || !currentSubject || !currentTopic) return;
+    const { testCount, questionCount, prefix } = bulkTestFormData;
+    
+    await addBulkTrackedBookTests(book.id, currentSubject.id, currentTopic.id, testCount, questionCount, prefix);
+    
+    toast({ title: "Toplu Testler Eklendi", description: `${testCount} adet test başarıyla oluşturuldu.`});
+    setIsBulkTestDialogOpen(false);
+  };
+  
+  const handleDeleteTest = async (testId: string) => {
+    try {
+        await deleteTrackedBookTest(testId);
+        toast({ title: "Test Silindi", variant: "destructive" });
+    } catch(e) {
+        toast({ title: "Hata", variant: "destructive" });
+    }
+  }
+
   const handleAssignTest = async () => {
     if (!book || !currentTest || !assignFormData.studentId) {
         toast({ title: "Eksik Bilgi", description: "Lütfen bir öğrenci seçin.", variant: "destructive"});
@@ -143,12 +176,6 @@ export function BookDetailClient() {
     setIsAssignDialogOpen(false);
   }
 
-  const resetTestDialog = () => {
-    setNewTestName("");
-    setNewTestQuestionCount(20);
-    setCurrentAnswerKey({});
-    setCurrentTest(null);
-  };
 
   if (!book) return <div>Yükleniyor...</div>;
 
@@ -199,13 +226,33 @@ export function BookDetailClient() {
                                         <p>{test.name} ({test.questionCount} soru)</p>
                                         <div className="flex gap-1">
                                             <Button variant="outline" size="sm" onClick={() => { setCurrentTest(test); setIsAssignDialogOpen(true); }}>Ata</Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); setCurrentTest(test); setNewTestName(test.name); setNewTestQuestionCount(test.questionCount); setCurrentAnswerKey(test.answerKey || {}); setIsTestDialogOpen(true); }}><Edit className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); handleOpenTestDialog(test); }}><Edit className="h-4 w-4" /></Button>
+                                             <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                        <AlertDialogDescription>"{test.name}" testi kalıcı olarak silinecektir.</AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Evet, Sil</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
                                         </div>
                                     ))}
-                                    <Button variant="secondary" className="w-full" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); resetTestDialog(); setIsTestDialogOpen(true); }}>
-                                        <Plus className="mr-2 h-4 w-4" /> Bu Konuya Test Ekle
-                                    </Button>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button variant="secondary" className="w-full" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); handleOpenTestDialog(null); }}>
+                                            <Plus className="mr-2 h-4 w-4" /> Tek Test Ekle
+                                        </Button>
+                                        <Button variant="secondary" className="w-full" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); setIsBulkTestDialogOpen(true); }}>
+                                            <Plus className="mr-2 h-4 w-4" /> Toplu Test Ekle
+                                        </Button>
+                                    </div>
                                     </div>
                                 </AccordionContent>
                              </AccordionItem>
@@ -230,6 +277,33 @@ export function BookDetailClient() {
             </DialogFooter>
           </DialogContent>
       </Dialog>
+      
+       <Dialog open={isBulkTestDialogOpen} onOpenChange={setIsBulkTestDialogOpen}>
+        <DialogContent className="max-w-md">
+            <DialogHeader>
+                <DialogTitle>Toplu Test Oluştur</DialogTitle>
+                <DialogDescription>Ders: {currentSubject?.name} / Konu: {currentTopic?.name}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label>Oluşturulacak Test Sayısı</Label>
+                    <Input type="number" value={bulkTestFormData.testCount} onChange={e => setBulkTestFormData(prev => ({...prev, testCount: Number(e.target.value)}))} placeholder="10" />
+                </div>
+                <div className="space-y-2">
+                    <Label>Her Testteki Soru Sayısı</Label>
+                    <Input type="number" value={bulkTestFormData.questionCount} onChange={e => setBulkTestFormData(prev => ({...prev, questionCount: Number(e.target.value)}))} placeholder="20" />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Test Adı Ön Eki</Label>
+                    <Input value={bulkTestFormData.prefix} onChange={e => setBulkTestFormData(prev => ({...prev, prefix: e.target.value}))} placeholder="Test" />
+                </div>
+            </div>
+            <DialogFooter>
+             <Button variant="ghost" onClick={() => setIsBulkTestDialogOpen(false)}>İptal</Button>
+             <Button onClick={handleBulkTestSave}>Oluştur</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
         <DialogContent className="max-w-2xl">
@@ -238,9 +312,9 @@ export function BookDetailClient() {
             <DialogDescription>Ders: {currentSubject?.name} / Konu: {currentTopic?.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Input value={newTestName} onChange={e => setNewTestName(e.target.value)} placeholder="Test Adı (örn: Test 1)" />
-            <Input type="number" value={newTestQuestionCount} onChange={e => setNewTestQuestionCount(Number(e.target.value))} placeholder="Soru Sayısı" />
-            <AnswerKeyForm totalQuestions={newTestQuestionCount} answerKey={currentAnswerKey} onSave={setCurrentAnswerKey} />
+            <Input value={testFormData.name} onChange={e => setTestFormData(prev => ({...prev, name: e.target.value}))} placeholder="Test Adı (örn: Test 1)" />
+            <Input type="number" value={testFormData.questionCount} onChange={e => setTestFormData(prev => ({...prev, questionCount: Number(e.target.value)}))} placeholder="Soru Sayısı" />
+            <AnswerKeyForm totalQuestions={testFormData.questionCount} answerKey={testFormData.answerKey} onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} />
           </div>
           <DialogFooter>
              <Button variant="ghost" onClick={() => setIsTestDialogOpen(false)}>İptal</Button>
@@ -289,3 +363,4 @@ export function BookDetailClient() {
     </div>
   );
 }
+
