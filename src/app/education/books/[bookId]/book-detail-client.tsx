@@ -319,7 +319,10 @@ export function BookDetailClient() {
           <div className="space-y-4">
             <Input value={testFormData.name} onChange={e => setTestFormData(prev => ({...prev, name: e.target.value}))} placeholder="Test Adı (örn: Test 1)" />
             <Input type="number" value={testFormData.questionCount} onChange={e => setTestFormData(prev => ({...prev, questionCount: Number(e.target.value)}))} placeholder="Soru Sayısı" />
-            <AnswerKeyForm totalQuestions={testFormData.questionCount} answerKey={testFormData.answerKey} onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} />
+            <AnswerKeyForm 
+                totalQuestions={testFormData.questionCount} 
+                answerKey={testFormData.answerKey} 
+                onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} />
           </div>
           <DialogFooter>
              <Button variant="ghost" onClick={() => setIsTestDialogOpen(false)}>İptal</Button>
