@@ -102,36 +102,6 @@ function TestManagementCard({ test, familyMembers, onArchive, onDelete }: {
     const isCompleted = test.status === 'Sonuçlandı';
     const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
     const scorePercentage = test.score || 0;
-    const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
-
-    const handleSaveGrade = async (data: ManualGradeData) => {
-        const totalAnswers = data.correct + data.incorrect + data.empty;
-        if (totalAnswers > test.questionCount) {
-             toast({
-                title: "Hatalı Giriş",
-                description: `Girilen toplam cevap sayısı (${totalAnswers}), testteki soru sayısını (${test.questionCount}) aşamaz.`,
-                variant: "destructive",
-            });
-            return;
-        }
-
-        const score = (data.correct / test.questionCount) * 100;
-        
-        try {
-            await updateTest(test.id, {
-                status: 'Sonuçlandı',
-                correctAnswers: data.correct,
-                incorrectAnswers: data.incorrect,
-                emptyAnswers: data.empty,
-                score: score,
-            });
-            toast({ title: "Not Girişi Başarılı", description: `${test.title} testi için sonuçlar kaydedildi.` });
-            setIsGradeDialogOpen(false);
-        } catch (error) {
-            toast({ title: "❌ Hata", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive'});
-        }
-    };
-
 
     return (
         <Card className="flex flex-col">
@@ -158,20 +128,9 @@ function TestManagementCard({ test, familyMembers, onArchive, onDelete }: {
             )}
             <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3 mt-auto">
                  {isPendingGrade && (
-                     <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="secondary" size="sm">Not Ver</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                             <DialogHeader>
-                                <DialogTitle>Manuel Not Girişi: {test.title}</DialogTitle>
-                                <DialogDescription>
-                                    "{student?.name}" öğrencisinin sonuçlarını girin. Toplam soru sayısı: {test.questionCount}.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <ManualGradeForm test={test} onSave={handleSaveGrade} />
-                        </DialogContent>
-                    </Dialog>
+                     <Link href={`/education/${test.id}`}>
+                        <Button variant="secondary" size="sm">Not Ver</Button>
+                     </Link>
                 )}
                 <Link href={`/education/management/assign?edit=${test.id}`}>
                     <Button variant="ghost" size="sm"><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>

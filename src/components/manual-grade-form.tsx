@@ -14,8 +14,6 @@ import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 
 
-type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
-
 export type ManualGradeData = {
     correct: number;
     incorrect: number;
@@ -31,9 +29,6 @@ const formSchema = z.object({
     correct: z.coerce.number().min(0, "Değer negatif olamaz.").default(0),
     incorrect: z.coerce.number().min(0, "Değer negatif olamaz.").default(0),
     empty: z.coerce.number().min(0, "Değer negatif olamaz.").default(0),
-}).refine(data => (data.correct + data.incorrect + data.empty) <= 100, { // Assuming 100 is a reasonable max
-    message: "Toplam soru sayısı testin soru sayısını aşamaz.", // This message is generic
-    path: ['correct'],
 });
 
 
@@ -102,4 +97,3 @@ export const ManualGradeForm = React.forwardRef<
 });
 
 ManualGradeForm.displayName = 'ManualGradeForm';
-
