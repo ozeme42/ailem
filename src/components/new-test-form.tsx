@@ -403,13 +403,13 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
              <div className="p-4 border rounded-lg">
                 <h3 className="text-lg font-semibold mb-2">Soru Seçimi</h3>
                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <Select value={bankSubjectFilter} onValueChange={setBankSubjectFilter}>
+                    <Select value={bankSubjectFilter} onValueChange={(value) => setBankSubjectFilter(value === 'all' ? '' : value)}>
                         <SelectTrigger><SelectValue placeholder="Derse göre filtrele"/></SelectTrigger>
-                        <SelectContent><SelectItem value="">Tüm Dersler</SelectItem>{availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                        <SelectContent><SelectItem value="all">Tüm Dersler</SelectItem>{availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                     </Select>
-                    <Select value={bankTopicFilter} onValueChange={setBankTopicFilter} disabled={!bankSubjectFilter}>
+                    <Select value={bankTopicFilter} onValueChange={(value) => setBankTopicFilter(value === 'all' ? '' : value)} disabled={!bankSubjectFilter}>
                         <SelectTrigger><SelectValue placeholder="Konuya göre filtrele"/></SelectTrigger>
-                        <SelectContent><SelectItem value="">Tüm Konular</SelectItem>{bankTopicsOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                        <SelectContent><SelectItem value="all">Tüm Konular</SelectItem>{bankTopicsOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                     </Select>
                 </div>
                  <FormField
@@ -545,5 +545,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     </Tabs>
   );
 }
+
+    
 
     
