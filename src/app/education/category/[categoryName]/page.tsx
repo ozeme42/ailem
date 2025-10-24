@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -89,14 +90,15 @@ export default function CategoryDetailPage() {
     const testsForCategory = allTests.filter(test => getCategoryName(test) === categoryName);
 
     const sortedTests = [...testsForCategory].sort((a, b) => {
-          try {
-              const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-              const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-              return compareDesc(dateA, dateB);
-          } catch(e) {
-              return 0;
-          }
-      });
+        try {
+            const dateA = a.assignedDate ? parse(a.assignedDate, 'dd MMMM yyyy', new Date()) : 0;
+            const dateB = b.assignedDate ? parse(b.assignedDate, 'dd MMMM yyyy', new Date()) : 0;
+            if (!dateA || !dateB) return 0;
+            return compareDesc(dateA, dateB);
+        } catch(e) {
+            return 0;
+        }
+    });
       
     // Calculate Topic Stats
     const tempTopicStats = new Map<string, { name: string; correct: number; total: number }>();
@@ -127,7 +129,7 @@ export default function CategoryDetailPage() {
   
   const formatTestDate = (dateString: string) => {
       try {
-        const date = parse(dateString, 'dd MMMM yyyy', new Date(), { locale: tr });
+        const date = parse(dateString, 'dd MMMM yyyy', new Date());
         return {
             day: format(date, 'd', { locale: tr }),
             month: format(date, 'MMMM', { locale: tr }),
@@ -382,4 +384,5 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
+
 

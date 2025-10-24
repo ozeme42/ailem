@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -55,6 +56,11 @@ export function MemberDashboardCard({
     const { toast } = useToast();
     const { familyId, familyMembers } = useAuth();
     
+     const [isClient, setIsClient] = React.useState(false);
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
+    
     const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes, pendingVideos } = React.useMemo(() => {
         const memberId = member.id;
         let completedActivityCount = 0;
@@ -82,7 +88,7 @@ export function MemberDashboardCard({
         const todaysCompletedStudies = memberStudyAssignments.filter(sa =>
             sa.status === 'completed' &&
             sa.completedAt &&
-            isToday(parseISO(sa.completedAt))
+            isClient && isToday(parseISO(sa.completedAt))
         ).length;
         completedActivityCount += todaysCompletedStudies;
         
@@ -99,7 +105,7 @@ export function MemberDashboardCard({
         }
             
         const memberProgress = memorizationProgress.filter(p => p.memberId === memberId);
-        const completedMemorizationIds = new Set(memberProgress.filter(p => p.completed && p.completedAt && isToday(parseISO(p.completedAt))).map(p => p.itemId));
+        const completedMemorizationIds = new Set(memberProgress.filter(p => p.completed && p.completedAt && isClient && isToday(parseISO(p.completedAt))).map(p => p.itemId));
         completedActivityCount += completedMemorizationIds.size;
         
         const pendingMemorizationData = memberProgress
@@ -134,7 +140,7 @@ export function MemberDashboardCard({
             todaysPrayers: todaysPrayersData,
             earnedFreeTimeMinutes: earnedTime,
         };
-    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, videos, memorizationItems, memorizationProgress, prayerProgress]);
+    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, videos, memorizationItems, memorizationProgress, prayerProgress, isClient]);
 
     const handleTaskCompletion = async (task: Task) => {
         if (!familyId || !member) return;
