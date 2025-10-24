@@ -766,7 +766,7 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: B
     if (!familyId) throw new Error("User not in a family");
     
     let finalQuestions: QuickTestQuestion[] = [];
-    let finalAnswerKey: AnswerKey = {};
+    let finalAnswerKey: { [key: string]: string } = {};
 
     if (questions) {
         finalQuestions = questions.map((q, index) => ({
@@ -777,7 +777,7 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: B
         finalAnswerKey = questions.reduce((acc, q, index) => {
             acc[(index + 1).toString()] = q.correctAnswer;
             return acc;
-        }, {} as AnswerKey);
+        }, {} as { [key: string]: string });
     } else if (data.questions) {
         finalQuestions = data.questions;
         finalAnswerKey = data.answerKey || {};
