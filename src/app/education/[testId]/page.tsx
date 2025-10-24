@@ -206,6 +206,9 @@ export default function OpticalFormPage() {
             } else {
                 setTest(null);
             }
+        }, (error) => {
+            console.error("Error fetching test document:", error);
+            setTest(null);
         });
 
         return () => unsubscribe();
@@ -459,3 +462,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
