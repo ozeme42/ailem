@@ -761,14 +761,34 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: BankQuestion[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     
-    const newTestData: Omit<Test, 'id' | 'familyId'> = {
+    let finalQuestions: QuickTestQuestion[] = [];
+    let finalAnswerKey: AnswerKey = {};
+
+    if (questions) {
+        finalQuestions = questions.map((q, index) => ({
+            questionId: q.id,
+            questionNumber: index + 1,
+            imageUrl: q.imageUrl,
+        }));
+        finalAnswerKey = questions.reduce((acc, q, index) => {
+            acc[(index + 1).toString()] = q.correctAnswer;
+            return acc;
+        }, {} as AnswerKey);
+    } else if (data.questions) {
+        finalQuestions = data.questions;
+        finalAnswerKey = data.answerKey || {};
+    }
+
+    const newTestData = {
+        ...data,
+        questions: finalQuestions,
+        answerKey: finalAnswerKey,
         status: 'Atandı',
         isArchived: false,
-        ...data,
     };
 
     return addDoc(collection(db, 'tests'), { ...newTestData, familyId });

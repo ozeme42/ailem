@@ -3,12 +3,12 @@
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { onTestsUpdate, onBankQuestionsUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onBankQuestionsUpdate, addTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember, BankQuestion, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles, Send } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { compareDesc, format, parse } from 'date-fns';
@@ -16,6 +16,14 @@ import { tr } from 'date-fns/locale';
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 
 type TopicStats = {
   id: string;
@@ -40,10 +48,12 @@ export default function CategoryDetailPage() {
   const categoryName = decodeURIComponent(params.categoryName as string);
   const studentId = searchParams.get('studentId');
 
-  const { familyMembers } = useAuth();
+  const { familyMembers, user } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
+  const [selectedTopic, setSelectedTopic] = React.useState<TopicStats | null>(null);
 
   const student = React.useMemo(() => 
     familyMembers.find(m => m.id === studentId),
@@ -150,18 +160,23 @@ export default function CategoryDetailPage() {
           <Card>
               <CardHeader>
                   <CardTitle>Konu Başarı Durumu</CardTitle>
-                  <CardDescription>Bu dersteki konulara göre başarı dağılımı.</CardDescription>
+                  <CardDescription>Bu dersteki konulara göre başarı dağılımı. Zayıf konulardan hızlıca ödev oluşturun.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-2">
                   {topicStats.map(topic => {
                       const progressColor = topic.successRate >= 75 ? "bg-green-500" : topic.successRate >= 50 ? "bg-yellow-500" : "bg-red-500";
                       return (
-                           <div key={topic.id}>
-                              <div className="flex justify-between items-baseline mb-1">
-                                <p className="font-semibold text-sm">{topic.name}</p>
-                                <p className="text-xs text-muted-foreground">{topic.correct} / {topic.total} Doğru</p>
+                           <div key={topic.id} className="p-3 border rounded-lg">
+                              <div className="flex justify-between items-center mb-2">
+                                <p className="font-semibold">{topic.name}</p>
+                                <Button size="sm" variant="secondary" onClick={() => { setSelectedTopic(topic); setIsAssignDialogOpen(true); }}>
+                                    <Send className="mr-2 h-4 w-4"/> Ödev Ata
+                                </Button>
                               </div>
-                              <Progress value={topic.successRate} className="h-2" indicatorClassName={progressColor} />
+                              <div className="flex items-center gap-4">
+                                <Progress value={topic.successRate} className="h-2 flex-grow" indicatorClassName={progressColor} />
+                                <p className="text-xs text-muted-foreground font-medium">{topic.correct} / {topic.total} Doğru</p>
+                              </div>
                            </div>
                       )
                   })}
@@ -256,6 +271,115 @@ export default function CategoryDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {selectedTopic && student && (
+        <NewTestFromTopicForm
+          isOpen={isAssignDialogOpen}
+          onOpenChange={setIsAssignDialogOpen}
+          student={student}
+          subject={categoryName}
+          topic={selectedTopic.name}
+          allBankQuestions={bankQuestions}
+        />
+      )}
     </div>
   );
 }
+
+const formSchema = z.object({
+  title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
+  questionCount: z.coerce.number().min(1, "Soru sayısı en az 1 olmalıdır."),
+});
+
+type NewTestFromTopicFormProps = {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    student: FamilyMember;
+    subject: string;
+    topic: string;
+    allBankQuestions: BankQuestion[];
+}
+
+function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, allBankQuestions }: NewTestFromTopicFormProps) {
+    const { toast } = useToast();
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            title: `${topic} Tekrar Testi`,
+            questionCount: 10,
+        },
+    });
+    
+    const availableQuestions = React.useMemo(() => 
+        allBankQuestions.filter(q => q.subject === subject && q.topic === topic),
+    [allBankQuestions, subject, topic]);
+
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (values.questionCount > availableQuestions.length) {
+            toast({
+                title: "Yetersiz Soru",
+                description: `Bu konuda sadece ${availableQuestions.length} soru mevcut. Lütfen daha az soru sayısı girin.`,
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random());
+        const selectedQuestions = shuffled.slice(0, values.questionCount);
+
+        const testData = {
+          title: values.title,
+          subject: subject,
+          studentId: student.id,
+          questionCount: values.questionCount,
+          assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
+          dueDate: format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr }),
+          sourceType: 'bank' as const,
+          sourceId: topic, // Using topic as sourceId for simplicity
+          topicId: topic,
+          gradingType: 'auto' as const,
+        };
+
+        try {
+            await addTest(testData, selectedQuestions);
+            toast({
+                title: "✅ Ödev Atandı",
+                description: `${values.title} testi ${student.name} öğrencisine başarıyla atandı.`,
+            });
+            onOpenChange(false);
+            form.reset();
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Hata", variant: "destructive" });
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{topic} konusundan ödev ata</DialogTitle>
+                    <DialogDescription>
+                        {student.name} için {subject} dersinden yeni bir test oluşturun. 
+                        Soru bankasında bu konu için toplam {availableQuestions.length} soru bulunmaktadır.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                        <FormField control={form.control} name="title" render={({ field }) => (
+                            <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="questionCount" render={({ field }) => (
+                            <FormItem><FormLabel>Soru Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+                            <Button type="submit">Ödevi Ata</Button>
+                        </div>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
