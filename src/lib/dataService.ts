@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -761,7 +761,7 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: (BankQuestion | Mistake)[]) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: BankQuestion[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     
@@ -1781,3 +1781,76 @@ export const updateBudget = async (data: Partial<Omit<Budget, 'id' | 'familyId'>
     const docRef = doc(db, "budgets", budgetId);
     return setDoc(docRef, { ...removeUndefined(data), familyId }, { merge: true });
 };
+
+// Tracked Books
+export const onTrackedBooksUpdate = (callback: (books: TrackedBook[]) => void, runOnce = false) => {
+  return onFamilyDataUpdate<TrackedBook>('trackedBooks', async (books) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) {
+      callback([]);
+      return;
+    }
+    const enrichedBooks = await Promise.all(books.map(async (book) => {
+      const testsQuery = query(collection(db, 'trackedBookTests'), where('bookId', '==', book.id));
+      const testsSnapshot = await getDocs(testsQuery);
+      const tests = testsSnapshot.docs.map(d => d.data() as TrackedBookTest);
+
+      const subjectCount = new Set(tests.map(t => t.subjectId)).size;
+      const testCount = tests.length;
+      const questionCount = tests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
+
+      return {
+        ...book,
+        subjectCount,
+        testCount,
+        questionCount,
+      };
+    }));
+    callback(enrichedBooks);
+  }, runOnce);
+};
+export const addTrackedBook = async (data: Pick<TrackedBook, 'title' | 'publisher'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'trackedBooks'), { ...data, familyId, subjects: [], createdAt: new Date().toISOString() });
+};
+export const onTrackedBookUpdate = (bookId: string, callback: (book: TrackedBook | null) => void) => {
+  return onSnapshot(doc(db, 'trackedBooks', bookId), (docSnap) => {
+    if (docSnap.exists()) {
+      callback({ id: docSnap.id, ...docSnap.data() } as TrackedBook);
+    } else {
+      callback(null);
+    }
+  });
+};
+export const updateTrackedBook = (id: string, data: Partial<TrackedBook>) => updateDoc(doc(db, 'trackedBooks', id), data);
+export const deleteTrackedBook = async (id: string) => {
+  const batch = writeBatch(db);
+  const bookRef = doc(db, 'trackedBooks', id);
+  batch.delete(bookRef);
+
+  // Delete associated tests
+  const testsQuery = query(collection(db, 'trackedBookTests'), where('bookId', '==', id));
+  const testsSnapshot = await getDocs(testsQuery);
+  testsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+  return batch.commit();
+};
+
+// Tracked Book Tests
+export const onTrackedBookTestsUpdate = (bookId: string, callback: (tests: TrackedBookTest[]) => void) => {
+  const q = query(collection(db, 'trackedBookTests'), where('bookId', '==', bookId));
+  return onSnapshot(q, (snapshot) => {
+    const tests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TrackedBookTest));
+    callback(tests);
+  });
+};
+export const addTrackedBookTest = async (bookId: string, data: Omit<TrackedBookTest, 'id' | 'bookId' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'trackedBookTests'), { ...data, familyId, bookId });
+};
+export const updateTrackedBookTest = (id: string, data: Partial<Omit<TrackedBookTest, 'id'>>) => updateDoc(doc(db, 'trackedBookTests', id), data);
+export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
+
+    
