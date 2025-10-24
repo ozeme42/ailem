@@ -1,0 +1,234 @@
+
+"use client";
+
+import * as React from "react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest } from "@/lib/dataService";
+import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember } from "@/lib/data";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAuth } from "@/components/auth-provider";
+import { AnswerKeyForm } from "@/components/answer-key-form";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+
+export function BookDetailClient() {
+  const router = useRouter();
+  const params = useParams();
+  const bookId = params.bookId as string;
+  const { toast } = useToast();
+  const { familyMembers } = useAuth();
+
+  const [book, setBook] = useState<TrackedBook | null>(null);
+  const [tests, setTests] = useState<TrackedBookTest[]>([]);
+  const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
+  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  
+  const [currentSubject, setCurrentSubject] = useState<TrackedBookSubject | null>(null);
+  const [currentTest, setCurrentTest] = useState<TrackedBookTest | null>(null);
+  const [newSubjectName, setNewSubjectName] = useState("");
+  const [newTestName, setNewTestName] = useState("");
+  const [newTestQuestionCount, setNewTestQuestionCount] = useState(20);
+  const [currentAnswerKey, setCurrentAnswerKey] = useState({});
+
+  const [assignFormData, setAssignFormData] = useState({ studentId: '', assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+
+  useEffect(() => {
+    const unsubBook = onTrackedBookUpdate(bookId, setBook);
+    const unsubTests = onTrackedBookTestsUpdate(bookId, setTests);
+    return () => {
+      unsubBook();
+      unsubTests();
+    };
+  }, [bookId]);
+
+  const handleSubjectSave = async () => {
+    if (!book || !newSubjectName.trim()) return;
+    const subjects = book.subjects || [];
+    if (currentSubject) { // Editing
+      const updatedSubjects = subjects.map(s => s.id === currentSubject.id ? { ...s, name: newSubjectName } : s);
+      await updateTrackedBook(book.id, { subjects: updatedSubjects });
+    } else { // Adding
+      const newSubject = { id: Date.now().toString(), name: newSubjectName };
+      await updateTrackedBook(book.id, { subjects: [...subjects, newSubject] });
+    }
+    setIsSubjectDialogOpen(false);
+    setNewSubjectName("");
+    setCurrentSubject(null);
+  };
+
+  const handleTestSave = async () => {
+    if (!book || !currentSubject || !newTestName.trim()) return;
+    const newTest: Omit<TrackedBookTest, 'id' | 'bookId' | 'familyId'> = {
+      subjectId: currentSubject.id,
+      name: newTestName,
+      questionCount: newTestQuestionCount,
+      answerKey: currentAnswerKey,
+    };
+    if (currentTest) { // Editing
+      await updateTrackedBookTest(currentTest.id, newTest);
+    } else { // Adding
+      await addTrackedBookTest(book.id, newTest);
+    }
+    setIsTestDialogOpen(false);
+    resetTestDialog();
+  };
+  
+  const handleAssignTest = async () => {
+    if (!book || !currentTest || !assignFormData.studentId) {
+        toast({ title: "Eksik Bilgi", description: "Lütfen bir öğrenci seçin.", variant: "destructive"});
+        return;
+    }
+
+    const testData = {
+        title: `${book.title} - ${currentTest.name}`,
+        subject: book.subjects?.find(s => s.id === currentTest.subjectId)?.name || "Bilinmiyor",
+        studentId: assignFormData.studentId,
+        questionCount: currentTest.questionCount,
+        assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
+        dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
+        sourceType: 'trackedBook' as const,
+        sourceId: currentTest.id,
+        gradingType: 'auto' as const,
+        answerKey: currentTest.answerKey,
+    };
+
+    await addTest(testData);
+    toast({title: "Ödev Atandı!", description: `${testData.title} testi başarıyla atandı.`});
+    setIsAssignDialogOpen(false);
+  }
+
+  const resetTestDialog = () => {
+    setNewTestName("");
+    setNewTestQuestionCount(20);
+    setCurrentAnswerKey({});
+    setCurrentTest(null);
+  };
+
+  if (!book) return <div>Yükleniyor...</div>;
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title={book.title}>
+        <Button variant="outline" onClick={() => router.push('/education/books')}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
+        </Button>
+        <Dialog open={isSubjectDialogOpen} onOpenChange={setIsSubjectDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => { setCurrentSubject(null); setNewSubjectName(""); }}>
+              <Plus className="mr-2 h-4 w-4" /> Ders Ekle
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{currentSubject ? 'Dersi Düzenle' : 'Yeni Ders Ekle'}</DialogTitle>
+            </DialogHeader>
+            <Input value={newSubjectName} onChange={e => setNewSubjectName(e.target.value)} placeholder="Ders Adı (örn: Matematik)" />
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsSubjectDialogOpen(false)}>İptal</Button>
+              <Button onClick={handleSubjectSave}>Kaydet</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </PageHeader>
+
+      <Accordion type="multiple" className="w-full space-y-4" defaultValue={(book.subjects || []).map(s => s.id)}>
+        {(book.subjects || []).map(subject => (
+          <AccordionItem key={subject.id} value={subject.id} className="border-b-0">
+             <div className="bg-muted/50 rounded-lg">
+                <AccordionTrigger className="p-4 font-semibold text-lg hover:no-underline">
+                    {subject.name}
+                </AccordionTrigger>
+                <AccordionContent className="p-4 pt-0">
+                    <div className="space-y-2">
+                    {tests.filter(t => t.subjectId === subject.id).map(test => (
+                        <div key={test.id} className="flex items-center justify-between p-3 border rounded-md bg-background">
+                        <p>{test.name} ({test.questionCount} soru)</p>
+                        <div className="flex gap-1">
+                            <Button variant="outline" size="sm" onClick={() => { setCurrentTest(test); setIsAssignDialogOpen(true); }}>Ata</Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTest(test); setNewTestName(test.name); setNewTestQuestionCount(test.questionCount); setCurrentAnswerKey(test.answerKey || {}); setIsTestDialogOpen(true); }}><Edit className="h-4 w-4" /></Button>
+                        </div>
+                        </div>
+                    ))}
+                     <Button variant="secondary" className="w-full" onClick={() => { setCurrentSubject(subject); resetTestDialog(); setIsTestDialogOpen(true); }}>
+                        <Plus className="mr-2 h-4 w-4" /> Yeni Test Ekle
+                    </Button>
+                    </div>
+                </AccordionContent>
+             </div>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
+      <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{currentTest ? 'Testi Düzenle' : 'Yeni Test Ekle'}</DialogTitle>
+            <DialogDescription>Ders: {currentSubject?.name}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input value={newTestName} onChange={e => setNewTestName(e.target.value)} placeholder="Test Adı (örn: Test 1)" />
+            <Input type="number" value={newTestQuestionCount} onChange={e => setNewTestQuestionCount(Number(e.target.value))} placeholder="Soru Sayısı" />
+            <AnswerKeyForm totalQuestions={newTestQuestionCount} answerKey={currentAnswerKey} onSave={setCurrentAnswerKey} />
+          </div>
+          <DialogFooter>
+             <Button variant="ghost" onClick={() => setIsTestDialogOpen(false)}>İptal</Button>
+             <Button onClick={handleTestSave}>Kaydet</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Ödev Ata</DialogTitle>
+                <DialogDescription>"{currentTest?.name}" testini bir öğrenciye ata.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label>Öğrenci</Label>
+                    <Select value={assignFormData.studentId} onValueChange={(val) => setAssignFormData(prev => ({...prev, studentId: val}))}>
+                        <SelectTrigger><SelectValue placeholder="Öğrenci seçin" /></SelectTrigger>
+                        <SelectContent>{familyMembers.filter(m => m.role.includes("Çocuk")).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Başlangıç Tarihi</Label>
+                        <Popover>
+                            <PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !assignFormData.assignedDate && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{assignFormData.assignedDate ? format(assignFormData.assignedDate, "PPP", { locale: tr }) : <span>Tarih seç</span>}</Button></PopoverTrigger>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={assignFormData.assignedDate} onSelect={(d) => setAssignFormData(prev => ({...prev, assignedDate: d || new Date()}))} initialFocus /></PopoverContent>
+                        </Popover>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Bitiş Tarihi</Label>
+                         <Popover>
+                            <PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !assignFormData.dueDate && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{assignFormData.dueDate ? format(assignFormData.dueDate, "PPP", { locale: tr }) : <span>Tarih seç</span>}</Button></PopoverTrigger>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={assignFormData.dueDate} onSelect={(d) => setAssignFormData(prev => ({...prev, dueDate: d || new Date()}))} initialFocus /></PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+            </div>
+             <DialogFooter>
+             <Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)}>İptal</Button>
+             <Button onClick={handleAssignTest}>Ödevi Ata</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

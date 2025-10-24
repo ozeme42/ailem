@@ -5,7 +5,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3, PiggyBank } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3, PiggyBank, BookMarked } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
@@ -75,6 +75,7 @@ export function AppSidebar() {
       icon: GraduationCap,
       subItems: [
           { href: "/education", label: "Genel Bakış" },
+          { href: "/education/books", label: "Kitap Takibi" },
           { href: "/education/management/questions", label: "Soru Bankası" },
           { href: "/education/management", label: "Yönetim" },
       ]

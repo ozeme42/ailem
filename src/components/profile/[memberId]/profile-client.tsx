@@ -24,7 +24,6 @@ const badgeDefinitions: { [key: string]: { name: string; description: string } }
     '🔥': { name: 'Görev Ustası', description: '10 görev tamamladın!' },
     '🚀': { name: 'Süper Kahraman', description: '50 görev tamamladın!' },
     '🏆': { name: 'Efsane', description: '100 görev tamamladın!' },
-    '💪': { name: 'Güçlü', description: 'Zor seviyede bir görev tamamladın!' },
     
     // Alışkanlık & Seri Rozetleri
     '📅': { name: 'Azimli', description: '7 günlük görev serisi yakaladın!' },
@@ -42,7 +41,7 @@ const badgeDefinitions: { [key: string]: { name: string; description: string } }
     '📖': { name: 'Kitap Kurdu', description: 'İlk kitabını bitirdin!' },
     '📚': { name: 'Koleksiyoner', description: '10 kitap bitirdin!' },
     '🏛️': { name: 'Kütüphaneci', description: '25 kitap bitirdin!' },
-    ' marathon': { name: 'Maratoncu', description: '500 sayfadan uzun bir kitap bitirdin!' },
+    'marathon': { name: 'Maratoncu', description: '500 sayfadan uzun bir kitap bitirdin!' },
     '🧐': { name: 'Sayfa Canavarı', description: 'Toplam 5000 sayfa okudun!'},
     '🎭': { name: 'Türlerin Efendisi', description: '5 farklı türde kitap okudun!'},
 
