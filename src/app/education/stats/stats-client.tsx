@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useAuth } from "@/components/auth-provider";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onBankQuestionsUpdate, onPracticeExamsUpdate } from "@/lib/dataService";
 import { Test, QuestionBank, PracticeExam, Topic } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
@@ -50,7 +50,7 @@ export default function StatsClient() {
       setTests(allTests.filter(t => t.studentId === studentId && t.status === 'Sonuçlandı'));
       setLoading(false);
     });
-    const unsubBanks = onQuestionBanksUpdate(setQuestionBanks);
+    const unsubBanks = onBankQuestionsUpdate(setQuestionBanks);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
 
     return () => {
