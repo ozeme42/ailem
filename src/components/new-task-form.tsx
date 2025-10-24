@@ -298,6 +298,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                   </FormItem>
                 )}
               />
+              
               {recurrenceType === 'weekly' && (
                 <FormField
                   control={form.control}
@@ -329,6 +330,7 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
                           />
                         ))}
                       </div>
+                       <FormMessage />
                     </FormItem>
                   )}
                 />
