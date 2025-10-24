@@ -6,20 +6,12 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import type { Test, Mistake } from "@/lib/data";
-import { ScrollArea } from "./ui/scroll-area";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { cn } from "@/lib/utils";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { Loader2, UploadCloud } from "lucide-react";
+import type { Test } from "@/lib/data";
+import { Loader2 } from "lucide-react";
 import { Input } from "./ui/input";
-import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "./ui/badge";
 
 
 type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
@@ -36,15 +28,13 @@ type ManualGradeFormProps = {
 };
 
 const formSchema = z.object({
-    evaluations: z.record(z.enum(['correct', 'incorrect', 'unevaluated', 'empty'])),
+    correct: z.coerce.number().min(0, "Değer negatif olamaz.").default(0),
+    incorrect: z.coerce.number().min(0, "Değer negatif olamaz.").default(0),
+    empty: z.coerce.number().min(0, "Değer negatif olamaz.").default(0),
+}).refine(data => (data.correct + data.incorrect + data.empty) <= 100, { // Assuming 100 is a reasonable max
+    message: "Toplam soru sayısı testin soru sayısını aşamaz.", // This message is generic
+    path: ['correct'],
 });
-
-type QuestionForGrading = { 
-    id: string; // The ID of the question number
-    qNum: string; // The display number/text for the question
-    studentAnswer: string;
-    imageUrl?: string | null;
-};
 
 
 export const ManualGradeForm = React.forwardRef<
@@ -52,50 +42,64 @@ export const ManualGradeForm = React.forwardRef<
     ManualGradeFormProps
 >(({ test, onSave }, ref) => {
     const [isSaving, setIsSaving] = React.useState(false);
+    const { toast } = useToast();
     
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            evaluations: {},
+            correct: test.correctAnswers || 0,
+            incorrect: test.incorrectAnswers || 0,
+            empty: test.emptyAnswers || 0,
         },
     });
     
-    const { setValue, watch, handleSubmit } = form;
-    
     React.useImperativeHandle(ref, () => ({
         submit: () => {
-            handleSubmit(onSubmit)();
+            form.handleSubmit(onSubmit)();
         },
     }));
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsSaving(true);
-        let correct = 0;
-        let incorrect = 0;
-        let empty = 0;
-
-        for (const qId in values.evaluations) {
-            const status = values.evaluations[qId];
-             if (status === 'correct') {
-                correct++;
-            } else if (status === 'incorrect') {
-                incorrect++;
-            } else if (status === 'empty') {
-                empty++;
-            }
+        if((values.correct + values.incorrect + values.empty) > test.questionCount) {
+            toast({
+                title: "Hata",
+                description: `Toplam sayı (${values.correct + values.incorrect + values.empty}), toplam soru sayısını (${test.questionCount}) geçemez.`,
+                variant: 'destructive',
+            });
+            return;
         }
 
+        setIsSaving(true);
         onSave({
-            correct,
-            incorrect,
-            empty,
+            correct: values.correct,
+            incorrect: values.incorrect,
+            empty: values.empty,
         });
         setIsSaving(false);
     }
     
     return (
-        <p>Manuel not girişi artık desteklenmemektedir.</p>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                <div className="grid grid-cols-3 gap-4">
+                    <FormField control={form.control} name="correct" render={({ field }) => (
+                        <FormItem><FormLabel>Doğru</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="incorrect" render={({ field }) => (
+                        <FormItem><FormLabel>Yanlış</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="empty" render={({ field }) => (
+                        <FormItem><FormLabel>Boş</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                <Button type="submit" className="w-full" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Sonuçları Kaydet
+                </Button>
+            </form>
+        </Form>
     );
 });
 
 ManualGradeForm.displayName = 'ManualGradeForm';
+

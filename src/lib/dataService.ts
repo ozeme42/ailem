@@ -761,24 +761,26 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: BankQuestion[]) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: (BankQuestion | Mistake)[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     
     let finalQuestions: QuickTestQuestion[] = [];
     let finalAnswerKey: { [key: string]: string } = {};
 
-    if (questions) {
+    if (questions && questions.length > 0) {
         finalQuestions = questions.map((q, index) => ({
             questionId: q.id,
             questionNumber: index + 1,
-            imageUrl: q.imageUrl,
+            imageUrl: q.imageUrl || '',
         }));
         finalAnswerKey = questions.reduce((acc, q, index) => {
-            acc[(index + 1).toString()] = q.correctAnswer;
+            if (q.correctAnswer) {
+                acc[(index + 1).toString()] = q.correctAnswer;
+            }
             return acc;
         }, {} as { [key: string]: string });
-    } else if (data.questions) { // For quick and mistake tests
+    } else if (data.questions) { // For quick and mistake tests passed via form
         finalQuestions = data.questions;
         finalAnswerKey = data.answerKey || {};
     }

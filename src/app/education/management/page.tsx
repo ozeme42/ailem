@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -59,17 +60,19 @@ export default function EducationManagementPage() {
     return (
         <>
             <PageHeader title="İçerik Yönetimi">
-                <Link href="/education">
-                    <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
-                </Link>
-                 <Link href="/education/management/assign">
-                    <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
-                </Link>
-                 <Link href="/education/management/questions">
-                    <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                        <BookCopy className="mr-2 h-4 w-4" /> Soru Bankası
-                    </Button>
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                    <Link href="/education">
+                        <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
+                    </Link>
+                    <Link href="/education/management/assign">
+                        <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
+                    </Link>
+                    <Link href="/education/management/questions">
+                        <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                            <BookCopy className="mr-2 h-4 w-4" /> Soru Bankası
+                        </Button>
+                    </Link>
+                </div>
             </PageHeader>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -95,15 +98,47 @@ function TestManagementCard({ test, familyMembers, onArchive, onDelete }: {
     onDelete: (id: string) => void,
 }) {
     const student = familyMembers.find(m => m.id === test.studentId);
+    const { toast } = useToast();
     const isCompleted = test.status === 'Sonuçlandı';
+    const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
     const scorePercentage = test.score || 0;
+    const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
+
+    const handleSaveGrade = async (data: ManualGradeData) => {
+        const totalAnswers = data.correct + data.incorrect + data.empty;
+        if (totalAnswers > test.questionCount) {
+             toast({
+                title: "Hatalı Giriş",
+                description: `Girilen toplam cevap sayısı (${totalAnswers}), testteki soru sayısını (${test.questionCount}) aşamaz.`,
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const score = (data.correct / test.questionCount) * 100;
+        
+        try {
+            await updateTest(test.id, {
+                status: 'Sonuçlandı',
+                correctAnswers: data.correct,
+                incorrectAnswers: data.incorrect,
+                emptyAnswers: data.empty,
+                score: score,
+            });
+            toast({ title: "Not Girişi Başarılı", description: `${test.title} testi için sonuçlar kaydedildi.` });
+            setIsGradeDialogOpen(false);
+        } catch (error) {
+            toast({ title: "❌ Hata", description: "Sonuçlar kaydedilirken bir hata oluştu.", variant: 'destructive'});
+        }
+    };
+
 
     return (
         <Card className="flex flex-col">
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">{test.title}</CardTitle>
-                    <Badge variant={isCompleted ? "default" : "outline"} className={cn(isCompleted && "bg-green-600")}>{test.status}</Badge>
+                    <Badge variant={isCompleted ? "default" : "outline"} className={cn(isCompleted && "bg-green-600", isPendingGrade && "bg-yellow-500 text-yellow-900")}>{test.status}</Badge>
                 </div>
                 <CardDescription>
                     {student?.name || 'Bilinmeyen'} - {test.subject}
@@ -122,6 +157,22 @@ function TestManagementCard({ test, familyMembers, onArchive, onDelete }: {
                 </CardContent>
             )}
             <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3 mt-auto">
+                 {isPendingGrade && (
+                     <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="secondary" size="sm">Not Ver</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                             <DialogHeader>
+                                <DialogTitle>Manuel Not Girişi: {test.title}</DialogTitle>
+                                <DialogDescription>
+                                    "{student?.name}" öğrencisinin sonuçlarını girin. Toplam soru sayısı: {test.questionCount}.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <ManualGradeForm test={test} onSave={handleSaveGrade} />
+                        </DialogContent>
+                    </Dialog>
+                )}
                 <Link href={`/education/management/assign?edit=${test.id}`}>
                     <Button variant="ghost" size="sm"><Edit className="w-4 h-4 mr-2"/>Düzenle</Button>
                 </Link>
