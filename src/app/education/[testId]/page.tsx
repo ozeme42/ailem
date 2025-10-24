@@ -63,24 +63,7 @@ export default function OpticalFormPage() {
             };
             
             updatedData.studentAnswers = allStudentMcqAnswers;
-            let answerKey: { [key: string]: string } | undefined = undefined;
-
-            if (test.sourceType === 'bank' && test.sourceId && test.topicId) {
-                const bankDoc = await getDoc(doc(db, 'questionBanks', test.sourceId));
-                if (bankDoc.exists()) {
-                    const bank = bankDoc.data() as QuestionBank;
-                    const topic = bank?.subjects.flatMap(s => s.topics).find(t => t.id.toString() === test.topicId);
-                    answerKey = topic?.answerKey;
-                }
-            } else if (test.sourceType === 'exam' && test.sourceId) {
-                const examDoc = await getDoc(doc(db, 'practiceExams', test.sourceId));
-                if (examDoc.exists()) {
-                    const exam = examDoc.data() as PracticeExam;
-                    answerKey = exam?.answerKey;
-                }
-            } else if (test.sourceType === 'quick' || test.sourceType === 'mistake') {
-                answerKey = test.answerKey;
-            }
+            const answerKey = test.answerKey;
 
             if (answerKey && Object.keys(answerKey).length > 0) {
                 let correct = 0;
