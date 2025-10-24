@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -26,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 
 type McqAnswers = { [key: string]: string | null };
 type AnswerKey = { [key: string]: string };
+type EvaluationStatus = 'correct' | 'incorrect' | 'empty' | 'unevaluated';
+type ManualEvaluations = { [key: string]: EvaluationStatus };
 
 
 export default function OpticalFormPage() {
@@ -36,6 +37,7 @@ export default function OpticalFormPage() {
 
     const [test, setTest] = React.useState<TestType | null | undefined>(undefined);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
+    const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluations>({});
 
     const [timeLeft, setTimeLeft] = React.useState(0);
     const [totalTime, setTotalTime] = React.useState(0);
@@ -59,10 +61,10 @@ export default function OpticalFormPage() {
         try {
             let updatedData: Partial<TestType> = {
                 timerStatus: 'finished',
-                timeSpentSeconds: timeSpent
+                timeSpentSeconds: timeSpent,
+                studentAnswers: allStudentMcqAnswers
             };
             
-            updatedData.studentAnswers = allStudentMcqAnswers;
             const answerKey = test.answerKey;
 
             if (answerKey && Object.keys(answerKey).length > 0) {
@@ -130,6 +132,37 @@ export default function OpticalFormPage() {
             await updateTest(test.id, { timerStatus: 'paused', timeSpentSeconds: timeSpent });
         }
     };
+    
+    const handleSaveManualEvaluation = async () => {
+        if (!test) return;
+        let correct = 0;
+        let incorrect = 0;
+        let empty = 0;
+
+        for (const qNumStr in manualEvaluations) {
+            switch (manualEvaluations[qNumStr]) {
+                case 'correct': correct++; break;
+                case 'incorrect': incorrect++; break;
+                case 'empty': empty++; break;
+                default: empty++; // Or handle as error
+            }
+        }
+        const score = (correct / test.questionCount) * 100;
+        const updatedData: Partial<TestType> = {
+            status: 'Sonuçlandı',
+            correctAnswers: correct,
+            incorrectAnswers: incorrect,
+            emptyAnswers: empty,
+            score: score,
+        };
+        try {
+            await updateTest(test.id, updatedData);
+            toast({ title: "✅ Değerlendirme Kaydedildi!", description: "Sonuçlar başarıyla güncellendi." });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "❌ Hata!", description: "Sonuçlar kaydedilirken bir hata oluştu." });
+        }
+    };
+
 
     React.useEffect(() => {
         if (!testId) return;
@@ -147,6 +180,28 @@ export default function OpticalFormPage() {
                 setIsPaused(currentTest.timerStatus === 'paused');
                 
                 setMcqAnswers(currentTest.studentAnswers || {});
+
+                // Initialize manual evaluations if test is pending
+                if (currentTest.status === 'Değerlendirme Bekliyor') {
+                    const initialEvals: ManualEvaluations = {};
+                    const answerKey = currentTest.answerKey || {};
+                    const studentAnswers = currentTest.studentAnswers || {};
+
+                    for (let i = 1; i <= currentTest.questionCount; i++) {
+                        const qNumStr = i.toString();
+                        const studentAns = studentAnswers[qNumStr];
+                        const correctAns = answerKey[qNumStr];
+
+                        if (!studentAns) {
+                            initialEvals[qNumStr] = 'empty';
+                        } else if (studentAns === correctAns) {
+                            initialEvals[qNumStr] = 'correct';
+                        } else {
+                            initialEvals[qNumStr] = 'incorrect';
+                        }
+                    }
+                    setManualEvaluations(initialEvals);
+                }
                 
             } else {
                 setTest(null);
@@ -243,7 +298,6 @@ export default function OpticalFormPage() {
                             const correctAns = answerKey[qNumStr];
                             const isCorrect = studentAns === correctAns;
                             const isIncorrect = studentAns !== null && studentAns !== undefined && studentAns !== correctAns;
-                            const isEmpty = studentAns === null || studentAns === undefined;
 
                             let statusIcon;
                             if (isCorrect) statusIcon = <CheckCircle className="h-6 w-6 text-green-500"/>
@@ -268,6 +322,55 @@ export default function OpticalFormPage() {
                 </Card>
             </div>
         );
+    }
+    
+    if (test.status === 'Değerlendirme Bekliyor') {
+        const studentAnswers = test.studentAnswers || {};
+        const answerKey = test.answerKey || {};
+
+        return (
+             <div className="container mx-auto py-8 space-y-6">
+                <header className="mb-4">
+                    <Button variant="ghost" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Geri
+                    </Button>
+                </header>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl">{test.title} - Manuel Değerlendirme</CardTitle>
+                        <CardDescription>Öğrenci cevaplarını kontrol edin ve doğruluğunu onaylayın.</CardDescription>
+                    </CardHeader>
+                </Card>
+
+                <div className="space-y-4">
+                    {(test.questions || []).map(q => {
+                        const qNumStr = q.questionNumber.toString();
+                        const studentAns = studentAnswers[qNumStr] || null;
+                        const correctAns = answerKey[qNumStr] || '-';
+                        const evalStatus = manualEvaluations[qNumStr];
+                        
+                        return (
+                             <Card key={q.questionNumber} className="p-4">
+                                <CardTitle className="mb-4">Soru {q.questionNumber}</CardTitle>
+                                {q.imageUrl && <Image src={q.imageUrl} alt={`Soru ${q.questionNumber}`} width={600} height={400} className="rounded-md border object-contain w-full" data-ai-hint="question paper" />}
+                                <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
+                                    <div className="flex gap-4 text-lg">
+                                        <p>Öğrenci Cevabı: <Badge className="text-lg" variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'BOŞ'}</Badge></p>
+                                        <p>Doğru Cevap: <Badge className="text-lg" variant="default" className="bg-green-600">{correctAns}</Badge></p>
+                                    </div>
+                                     <div className="flex gap-2">
+                                        <Button size="sm" variant={evalStatus === 'correct' ? 'default' : 'outline'} onClick={() => setManualEvaluations(prev => ({...prev, [qNumStr]: 'correct'}))}><Check className="mr-2 h-4 w-4"/>Doğru</Button>
+                                        <Button size="sm" variant={evalStatus === 'incorrect' ? 'destructive' : 'outline'} onClick={() => setManualEvaluations(prev => ({...prev, [qNumStr]: 'incorrect'}))}><X className="mr-2 h-4 w-4"/>Yanlış</Button>
+                                        <Button size="sm" variant={evalStatus === 'empty' ? 'secondary' : 'outline'} onClick={() => setManualEvaluations(prev => ({...prev, [qNumStr]: 'empty'}))}><MinusCircle className="mr-2 h-4 w-4"/>Boş</Button>
+                                    </div>
+                                </div>
+                            </Card>
+                        )
+                    })}
+                </div>
+                 <Button onClick={handleSaveManualEvaluation} className="w-full" size="lg">Değerlendirmeyi Tamamla ve Kaydet</Button>
+            </div>
+        )
     }
 
     const handleMcqAnswerChange = (questionNumber: number, value: string) => {
