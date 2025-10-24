@@ -8,7 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, UploadCloud, PlusCircle, Trash2 } from "lucide-react";
+import { Loader2, UploadCloud, PlusCircle, Trash2, Plus, Minus } from "lucide-react";
 import { BankQuestion } from "@/lib/data";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +29,7 @@ const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
   imageDataUri: z.string().min(1, "Soru görseli yüklemek zorunludur."),
-  options: z.array(optionSchema).min(2, "En az 2 seçenek eklemelisiniz."),
+  options: z.array(optionSchema).min(2, "En az 2 seçenek eklemelisiniz.").max(5, "En fazla 5 seçenek ekleyebilirsiniz."),
   correctAnswer: z.string().min(1, "Lütfen doğru seçeneği işaretleyin."),
 });
 
@@ -61,11 +61,13 @@ export function NewQuestionBankForm({
         options: [
             { id: 'A', text: '' },
             { id: 'B', text: '' },
-        ]
+            { id: 'C', text: '' },
+        ],
+        correctAnswer: 'A',
     }
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
       control: form.control,
       name: 'options'
   });
@@ -76,7 +78,7 @@ export function NewQuestionBankForm({
     if (initialData) {
         const initialOptions = initialData.options 
             ? Object.entries(initialData.options).map(([id, text]) => ({ id, text }))
-            : [{ id: 'A', text: '' }, { id: 'B', text: '' }];
+            : [{ id: 'A', text: '' }, { id: 'B', text: '' }, { id: 'C', text: '' }];
 
         form.reset({
             subject: initialData.subject,
@@ -90,10 +92,11 @@ export function NewQuestionBankForm({
             subject: "",
             topic: "",
             imageDataUri: "",
-            correctAnswer: "",
+            correctAnswer: "A",
             options: [
                 { id: 'A', text: '' },
                 { id: 'B', text: '' },
+                { id: 'C', text: '' },
             ]
         });
     }
@@ -110,10 +113,19 @@ export function NewQuestionBankForm({
     }
   };
 
-  const addOption = () => {
-      const nextLetter = String.fromCharCode(65 + fields.length);
-      append({ id: nextLetter, text: '' });
+  const handleOptionCountChange = (newCount: number) => {
+      const currentCount = fields.length;
+      if (newCount > currentCount) {
+          for (let i = currentCount; i < newCount; i++) {
+              append({ id: String.fromCharCode(65 + i), text: '' });
+          }
+      } else if (newCount < currentCount) {
+          for (let i = currentCount - 1; i >= newCount; i--) {
+              remove(i);
+          }
+      }
   };
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -247,19 +259,27 @@ export function NewQuestionBankForm({
               </div>
               <FormMessage />
             </FormItem>
+            
             <FormField
                 control={form.control}
                 name="correctAnswer"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Seçenekler ve Doğru Cevap</FormLabel>
+                         <div className="flex justify-between items-center">
+                            <FormLabel>Seçenekler ve Doğru Cevap</FormLabel>
+                            <div className="flex items-center gap-2">
+                                <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length - 1)} disabled={fields.length <= 2}><Minus className="h-4 w-4"/></Button>
+                                <span className="text-sm font-medium">{fields.length} Şık</span>
+                                <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length + 1)} disabled={fields.length >= 5}><Plus className="h-4 w-4"/></Button>
+                            </div>
+                        </div>
                         <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-2">
                              {fields.map((option, index) => (
                                 <div key={option.id} className="flex items-center gap-2">
                                     <FormControl>
                                         <RadioGroupItem value={option.id} id={option.id} />
                                     </FormControl>
-                                    <label htmlFor={option.id} className="font-bold">{option.id}</label>
+                                    <label htmlFor={option.id} className="font-bold w-4 text-center">{option.id}</label>
                                     <FormField
                                         control={form.control}
                                         name={`options.${index}.text`}
@@ -267,15 +287,9 @@ export function NewQuestionBankForm({
                                             <Input {...optionField} placeholder={`${option.id} seçeneğinin metni...`}/>
                                         )}
                                     />
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 2}>
-                                        <Trash2 className="h-4 w-4 text-destructive"/>
-                                    </Button>
                                 </div>
                             ))}
                         </RadioGroup>
-                        <Button type="button" size="sm" variant="outline" onClick={addOption} className="mt-2">
-                            <PlusCircle className="mr-2 h-4 w-4"/> Seçenek Ekle
-                        </Button>
                         <FormMessage />
                     </FormItem>
                 )}
