@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -31,11 +30,11 @@ import { onPracticeExamsUpdate, onTestsUpdate } from "@/lib/dataService";
 import { ScrollArea } from "./ui/scroll-area";
 import { Checkbox } from "./ui/checkbox";
 
-export type AssignmentType = "quick" | "exam";
+export type AssignmentType = "quick" | "exam" | "bank";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "Lütfen bir öğrenci seçin." }),
-  activeTab: z.enum(["quick", "exam"]),
+  activeTab: z.enum(["quick", "exam", "bank"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 
@@ -57,11 +56,11 @@ const formSchema = z.object({
   selectedBankQuestions: z.array(z.string()).optional(),
   examId: z.string().optional(),
 }).refine((data) => {
-    if (data.activeTab === 'quick') return data.title && data.title.length >= 2;
+    if (data.activeTab === 'quick' || data.activeTab === 'bank') return data.title && data.title.length >= 2;
     return true;
 }, { message: "Test başlığı en az 2 karakter olmalıdır.", path: ["title"] })
 .refine((data) => {
-    if (data.activeTab === 'quick') return !!data.subject;
+    if (data.activeTab === 'quick' || data.activeTab === 'bank') return !!data.subject;
     return true;
 }, { message: "Lütfen bir ders seçin veya oluşturun.", path: ["subject"] })
 .refine((data) => {
@@ -69,12 +68,17 @@ const formSchema = z.object({
     return true;
 }, { message: "Lütfen bir deneme sınavı seçin.", path: ["examId"] })
 .refine((data) => {
+    if (data.activeTab === 'bank' && (!data.selectedBankQuestions || data.selectedBankQuestions.length === 0)) return false;
+    return true;
+}, { message: "Lütfen soru bankasından en az bir soru seçin.", path: ["selectedBankQuestions"] })
+.refine((data) => {
     if (data.assignedDate && data.dueDate) return data.dueDate >= data.assignedDate;
     return true;
 }, { message: "Bitiş tarihi, başlangıç tarihinden önce olamaz.", path: ["dueDate"] });
 
 type NewTestFormProps = {
   students: FamilyMember[];
+  bankQuestions: BankQuestion[];
   onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => void;
   initialData?: Test | null;
   availableSubjects: string[];
@@ -83,25 +87,31 @@ type NewTestFormProps = {
   onTopicCreated: (topic: string) => void;
 };
 
-export function NewTestForm({ students, onAssign, initialData, availableSubjects, onSubjectCreated, availableTopics, onTopicCreated }: NewTestFormProps) {
+export function NewTestForm({ students, bankQuestions, onAssign, initialData, availableSubjects, onSubjectCreated, availableTopics, onTopicCreated }: NewTestFormProps) {
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
+  
+  // State for bank question filtering
+  const [bankSubjectFilter, setBankSubjectFilter] = React.useState<string>("");
+  const [bankTopicFilter, setBankTopicFilter] = React.useState<string>("");
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     shouldUnregister: false,
     defaultValues: {
       studentId: initialData?.studentId || undefined,
-      activeTab: initialData?.sourceType === 'exam' ? 'exam' : 'quick',
+      activeTab: initialData?.sourceType === 'exam' ? 'exam' : (initialData?.sourceType === 'bank' ? 'bank' : 'quick'),
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       questionCount: initialData?.questionCount || 0,
       gradingType: 'auto',
       answerKey: initialData?.answerKey || {},
       questions: initialData?.questions || [],
+      selectedBankQuestions: initialData?.sourceType === 'bank' ? (initialData.questions || []).map(q => q.questionId) : [],
       sourceTestId: initialData?.sourceType === 'mistake' ? initialData.sourceId : undefined,
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
@@ -127,14 +137,15 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
   const gradingType = form.watch("gradingType");
   const questions = form.watch("questions") || [];
   const selectedStudentId = form.watch("studentId");
+  const selectedBankQuestions = form.watch("selectedBankQuestions") || [];
   
   const studentCompletedTests = React.useMemo(() => {
     return allTests.filter(t => t.studentId === selectedStudentId && t.status === 'Sonuçlandı');
   }, [allTests, selectedStudentId]);
 
   
-  const handleTabChange = (value: AssignmentType) => {
-    form.setValue('activeTab', value);
+  const handleTabChange = (value: string) => {
+    form.setValue('activeTab', value as "quick" | "exam" | "bank");
   };
   
    const handleImageUpload = () => {
@@ -185,8 +196,12 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
   }, [students, form, initialData]);
   
   React.useEffect(() => {
-    form.setValue('questionCount', questions.length);
-  }, [questions, form]);
+    if (activeTab === 'quick') {
+      form.setValue('questionCount', questions.length);
+    } else if (activeTab === 'bank') {
+      form.setValue('questionCount', selectedBankQuestions.length);
+    }
+  }, [questions, selectedBankQuestions, form, activeTab]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -210,6 +225,36 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
         };
         break;
       
+      case 'bank':
+        const questionsFromBank = (values.selectedBankQuestions || []).map((qId, index) => {
+          const question = bankQuestions.find(bq => bq.id === qId);
+          return {
+            questionId: qId,
+            questionNumber: index + 1,
+            imageUrl: question?.imageUrl || '',
+          };
+        });
+        const answerKeyFromBank = (values.selectedBankQuestions || []).reduce((acc, qId, index) => {
+            const question = bankQuestions.find(bq => bq.id === qId);
+            if (question) {
+                acc[(index + 1).toString()] = question.correctAnswer;
+            }
+            return acc;
+        }, {} as AnswerKey);
+
+        testData = {
+          title: values.title!,
+          subject: values.subject!,
+          studentId: values.studentId,
+          questionCount: questionsFromBank.length,
+          assignedDate, dueDate,
+          sourceType: 'bank',
+          gradingType: 'auto',
+          answerKey: answerKeyFromBank,
+          questions: questionsFromBank,
+        };
+        break;
+
       case 'exam':
         const selectedExam = practiceExams.find(e => e.id === values.examId);
         if (!selectedExam) return;
@@ -237,11 +282,27 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
   
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
+  const filteredBankQuestions = React.useMemo(() => {
+    return bankQuestions.filter(q => {
+      const subjectMatch = !bankSubjectFilter || q.subject === bankSubjectFilter;
+      const topicMatch = !bankTopicFilter || q.topic === bankTopicFilter;
+      return subjectMatch && topicMatch;
+    });
+  }, [bankQuestions, bankSubjectFilter, bankTopicFilter]);
+
+  const bankTopicsOptions = React.useMemo(() => {
+    if (!bankSubjectFilter) return [];
+    const topics = new Set(bankQuestions.filter(q => q.subject === bankSubjectFilter).map(q => q.topic));
+    return Array.from(topics).map(t => ({ label: t, value: t }));
+  }, [bankQuestions, bankSubjectFilter]);
+
+
   return (
-    <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as AssignmentType)} className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="quick" disabled={!!initialData}>Hızlı</TabsTrigger>
-        <TabsTrigger value="exam" disabled={!!initialData}>Deneme</TabsTrigger>
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="bank" disabled={!!initialData}>Soru Bankası</TabsTrigger>
+        <TabsTrigger value="quick" disabled={!!initialData}>Hızlı Test</TabsTrigger>
+        <TabsTrigger value="exam" disabled={!!initialData}>Deneme Sınavı</TabsTrigger>
       </TabsList>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -285,6 +346,60 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
               </FormItem>
             )} />
           </div>
+
+           <TabsContent value="bank" className="space-y-4 m-0">
+             <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Rasyonel Sayılar Değerlendirme" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+             <FormField control={form.control} name="subject" render={({ field }) => (
+                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
+            )} />
+
+             <div className="p-4 border rounded-lg">
+                <h3 className="text-lg font-semibold mb-2">Soru Seçimi</h3>
+                 <div className="grid grid-cols-2 gap-4 mb-4">
+                    <Select value={bankSubjectFilter} onValueChange={setBankSubjectFilter}>
+                        <SelectTrigger><SelectValue placeholder="Derse göre filtrele"/></SelectTrigger>
+                        <SelectContent><SelectItem value="">Tüm Dersler</SelectItem>{availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={bankTopicFilter} onValueChange={setBankTopicFilter} disabled={!bankSubjectFilter}>
+                        <SelectTrigger><SelectValue placeholder="Konuya göre filtrele"/></SelectTrigger>
+                        <SelectContent><SelectItem value="">Tüm Konular</SelectItem>{bankTopicsOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+                 <FormField
+                    control={form.control}
+                    name="selectedBankQuestions"
+                    render={({ field }) => (
+                        <FormItem>
+                             <ScrollArea className="h-72">
+                                <div className="space-y-2 pr-4">
+                                {filteredBankQuestions.map(q => (
+                                    <div key={q.id} className="flex items-center gap-2 p-2 border rounded-md">
+                                        <Checkbox 
+                                            checked={field.value?.includes(q.id)}
+                                            onCheckedChange={(checked) => {
+                                                return checked 
+                                                    ? field.onChange([...(field.value || []), q.id])
+                                                    : field.onChange(field.value?.filter(v => v !== q.id))
+                                            }}
+                                        />
+                                        <Image src={q.imageUrl} alt={q.topic} width={60} height={40} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
+                                        <div className="flex-grow">
+                                            <p className="font-medium text-sm">{q.topic}</p>
+                                            <p className="text-xs text-muted-foreground">{q.subject}</p>
+                                        </div>
+                                        <Badge variant="outline">{Object.keys(q.options || {}).length} şık</Badge>
+                                    </div>
+                                ))}
+                                </div>
+                            </ScrollArea>
+                             <FormMessage />
+                        </FormItem>
+                    )}
+                 />
+            </div>
+           </TabsContent>
 
           <TabsContent value="quick" className="space-y-4 m-0">
             <FormField control={form.control} name="title" render={({ field }) => (
@@ -339,7 +454,7 @@ export function NewTestForm({ students, onAssign, initialData, availableSubjects
              )} />
           </TabsContent>
           
-          <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : 'Ödevi Ata'}</Button>
+          <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : `Ödevi Ata (${activeTab === 'bank' ? selectedBankQuestions.length : questions.length} Soru)`}</Button>
         </form>
       </Form>
     </Tabs>
