@@ -10,7 +10,7 @@ import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, To
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -53,7 +53,7 @@ export function BookDetailClient() {
   // States for forms inside dialogs
   const [testFormData, setTestFormData] = useState<{name: string, questionCount: number, answerKey: {[key:string]: string}}>({ name: "", questionCount: 20, answerKey: {} });
   const [bulkTestFormData, setBulkTestFormData] = useState({ testCount: 10, questionCount: 20, prefix: "Test" });
-  const [assignFormData, setAssignFormData] = useState({ studentId: '', assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+  const [assignFormData, setAssignFormData] = useState<{studentId: string, assignedDate: Date, dueDate: Date, studentIds: string[]}>({ studentIds: [], studentId: '', assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
 
   useEffect(() => {
     if (!bookId) return;
@@ -153,28 +153,32 @@ export function BookDetailClient() {
   }
 
   const handleAssignTest = async () => {
-    if (!book || !currentTest || !assignFormData.studentId) {
-        toast({ title: "Eksik Bilgi", description: "Lütfen bir öğrenci seçin.", variant: "destructive"});
+    if (!book || !currentTest || assignFormData.studentIds.length === 0) {
+        toast({ title: "Eksik Bilgi", description: "Lütfen en az bir öğrenci seçin.", variant: "destructive"});
         return;
     }
 
-    const testData = {
-        title: `${book.title} - ${currentTest.name}`,
-        subject: book.subjects?.find(s => s.id === currentTest.subjectId)?.name || "Bilinmiyor",
-        studentId: assignFormData.studentId,
-        questionCount: currentTest.questionCount,
-        assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
-        dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
-        sourceType: 'trackedBook' as const,
-        sourceId: currentTest.id,
-        gradingType: 'auto' as const,
-        answerKey: currentTest.answerKey,
-        status: 'Atandı' as const,
-    };
+    for (const studentId of assignFormData.studentIds) {
+        const testData = {
+            title: `${book.title} - ${currentTest.name}`,
+            subject: book.subjects?.find(s => s.id === currentTest.subjectId)?.name || "Bilinmiyor",
+            studentId: studentId,
+            questionCount: currentTest.questionCount,
+            assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
+            dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
+            sourceType: 'trackedBook' as const,
+            sourceId: currentTest.id,
+            gradingType: 'auto' as const,
+            status: 'Atandı' as const,
+            answerKey: currentTest.answerKey,
+        };
+    
+        await addTest(testData);
+    }
 
-    await addTest(testData);
-    toast({title: "Ödev Atandı!", description: `${testData.title} testi başarıyla atandı.`});
+    toast({title: "Ödev Atandı!", description: `${currentTest.name} testi başarıyla atandı.`});
     setIsAssignDialogOpen(false);
+    setAssignFormData(prev => ({ ...prev, studentIds: [] })); // Reset selection
   }
 
 
@@ -332,11 +336,28 @@ export function BookDetailClient() {
             </DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                    <Label>Öğrenci</Label>
-                    <Select value={assignFormData.studentId} onValueChange={(val) => setAssignFormData(prev => ({...prev, studentId: val}))}>
-                        <SelectTrigger><SelectValue placeholder="Öğrenci seçin" /></SelectTrigger>
-                        <SelectContent>{familyMembers.filter(m => m.role.includes("Çocuk")).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Label>Öğrenci(ler)</Label>
+                    <div className="space-y-2">
+                        {familyMembers.filter(m => m.role.includes("Çocuk")).map(s => (
+                            <div key={s.id} className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id={`student-${s.id}`}
+                                    checked={assignFormData.studentIds.includes(s.id)}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setAssignFormData(prev => ({
+                                            ...prev,
+                                            studentIds: checked
+                                                ? [...prev.studentIds, s.id]
+                                                : prev.studentIds.filter(id => id !== s.id)
+                                        }));
+                                    }}
+                                />
+                                <label htmlFor={`student-${s.id}`}>{s.name}</label>
+                            </div>
+                        ))}
+                    </div>
                 </div>
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
