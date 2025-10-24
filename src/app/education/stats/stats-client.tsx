@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onBankQuestionsUpdate, onPracticeExamsUpdate } from "@/lib/dataService";
-import { Test, QuestionBank, PracticeExam, Topic } from "@/lib/data";
+import { Test, BankQuestion, PracticeExam, Topic } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
 type SubjectStats = {
@@ -34,7 +34,7 @@ export default function StatsClient() {
 
   const { familyMembers } = useAuth();
   const [tests, setTests] = React.useState<Test[]>([]);
-  const [questionBanks, setQuestionBanks] = React.useState<QuestionBank[]>([]);
+  const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -50,7 +50,7 @@ export default function StatsClient() {
       setTests(allTests.filter(t => t.studentId === studentId && t.status === 'Sonuçlandı'));
       setLoading(false);
     });
-    const unsubBanks = onBankQuestionsUpdate(setQuestionBanks);
+    const unsubBanks = onBankQuestionsUpdate(setBankQuestions);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
 
     return () => {
@@ -104,18 +104,24 @@ export default function StatsClient() {
     })).sort((a,b) => b.successRate - a.successRate);
     
     // Topic Analysis
-    const allTopics = questionBanks.flatMap(qb => qb.subjects.flatMap(s => s.topics.map(t => ({...t, subjectName: s.name} as TopicWithSubject))));
+    const allTopics = bankQuestions.map(q => ({ subject: q.subject, topic: q.topic, id: q.topic }));
     const topicStatsMap = new Map<string, { total: number; correct: number; successRate: number, subject: string, name: string }>();
-
-    tests.filter(t => t.sourceType === 'bank').forEach(test => {
-        const topic = allTopics.find(t => t.id.toString() === test.topicId);
-        if(topic) {
-            const topicKey = `${topic.subjectName} - ${topic.name}`;
-            const current = topicStatsMap.get(topicKey) || { total: 0, correct: 0, successRate: 0, subject: topic.subjectName, name: topic.name };
-            current.total += test.questionCount;
-            current.correct += test.correctAnswers || 0;
-            topicStatsMap.set(topicKey, current);
-        }
+    
+    tests.filter(t => t.sourceType === 'bank' && t.questions).forEach(test => {
+        test.questions?.forEach(q => {
+            const bankQ = bankQuestions.find(bq => bq.id === q.questionId);
+            if (bankQ) {
+                const topicKey = `${bankQ.subject} - ${bankQ.topic}`;
+                const current = topicStatsMap.get(topicKey) || { total: 0, correct: 0, successRate: 0, subject: bankQ.subject, name: bankQ.topic };
+                current.total++;
+                if (test.answerKey && test.studentAnswers) {
+                    if(test.studentAnswers[q.questionNumber.toString()] === test.answerKey[q.questionNumber.toString()]) {
+                        current.correct++;
+                    }
+                }
+                topicStatsMap.set(topicKey, current);
+            }
+        });
     });
     
      Array.from(topicStatsMap.entries()).forEach(([key, data]) => {
@@ -131,7 +137,7 @@ export default function StatsClient() {
       totalQuestions, totalCorrect, totalIncorrect, totalEmpty, successRate,
       subjectStats, strongTopics, weakTopics
     };
-  }, [tests, practiceExams, questionBanks]);
+  }, [tests, practiceExams, bankQuestions]);
 
   const chartConfig = {
     Başarı: { label: "Başarı %", color: "hsl(var(--chart-1))" },
@@ -293,4 +299,6 @@ export default function StatsClient() {
     </>
   );
 }
+    
+
     
