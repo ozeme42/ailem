@@ -169,6 +169,7 @@ export function BookDetailClient() {
         sourceId: currentTest.id,
         gradingType: 'auto' as const,
         answerKey: currentTest.answerKey,
+        status: 'Atandı' as const,
     };
 
     await addTest(testData);
@@ -363,4 +364,3 @@ export function BookDetailClient() {
     </div>
   );
 }
-
