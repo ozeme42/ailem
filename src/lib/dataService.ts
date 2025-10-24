@@ -778,7 +778,7 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: B
             acc[(index + 1).toString()] = q.correctAnswer;
             return acc;
         }, {} as { [key: string]: string });
-    } else if (data.questions) {
+    } else if (data.questions) { // For quick and mistake tests
         finalQuestions = data.questions;
         finalAnswerKey = data.answerKey || {};
     }
