@@ -311,6 +311,10 @@ export interface TrackedBook {
   subjectCount?: number;
   testCount?: number;
   questionCount?: number;
+  // Solution stats
+  solvedTestCount?: number;
+  totalCorrectAnswers?: number;
+  totalIncorrectAnswers?: number;
 }
 
 export interface TrackedBookTest {
@@ -629,6 +633,7 @@ export interface Budget {
         };
     };
 }
+
 
 
 

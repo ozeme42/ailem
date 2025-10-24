@@ -1761,20 +1761,28 @@ export const onTrackedBooksUpdate = (callback: (books: TrackedBook[]) => void, r
       callback([]);
       return;
     }
+    
+    // Get all tests for the family in one go
+    const allTestsQuery = query(collection(db, 'tests'), where('familyId', '==', familyId));
+    const allTestsSnapshot = await getDocs(allTestsQuery);
+    const allTests = allTestsSnapshot.docs.map(d => d.data() as Test);
+    
     const enrichedBooks = await Promise.all(books.map(async (book) => {
       const testsQuery = query(collection(db, 'trackedBookTests'), where('bookId', '==', book.id));
       const testsSnapshot = await getDocs(testsQuery);
-      const tests = testsSnapshot.docs.map(d => d.data() as TrackedBookTest);
+      const bookTests = testsSnapshot.docs.map(d => ({id: d.id, ...d.data()}) as TrackedBookTest & {id: string});
+      const bookTestIds = new Set(bookTests.map(t => t.id));
 
-      const subjectCount = new Set(tests.map(t => t.subjectId)).size;
-      const testCount = tests.length;
-      const questionCount = tests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
+      const solvedTests = allTests.filter(t => t.sourceType === 'trackedBook' && bookTestIds.has(t.sourceId!) && t.status === 'Sonuçlandı');
 
       return {
         ...book,
-        subjectCount,
-        testCount,
-        questionCount,
+        subjectCount: new Set(bookTests.map(t => t.subjectId)).size,
+        testCount: bookTests.length,
+        questionCount: bookTests.reduce((sum, test) => sum + (test.questionCount || 0), 0),
+        solvedTestCount: solvedTests.length,
+        totalCorrectAnswers: solvedTests.reduce((sum, test) => sum + (test.correctAnswers || 0), 0),
+        totalIncorrectAnswers: solvedTests.reduce((sum, test) => sum + (test.incorrectAnswers || 0), 0),
       };
     }));
     callback(enrichedBooks);

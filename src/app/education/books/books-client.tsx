@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -163,21 +163,21 @@ export function BooksClient() {
                 </div>
                 <CardDescription>{book.publisher}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Library className="h-4 w-4" />
-                    <span>{book.subjectCount || 0} Ders</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span>{book.testCount || 0} Test</span>
-                  </div>
-                   <div className="flex items-center gap-2">
-                    <HelpCircle className="h-4 w-4" />
-                    <span>{book.questionCount || 0} Soru</span>
-                  </div>
+              <CardContent className="flex-grow space-y-4">
+                 <div className="space-y-3 text-sm text-muted-foreground">
+                    <h4 className="font-semibold text-foreground">Kitap İçeriği</h4>
+                    <div className="flex items-center gap-2"><Library className="h-4 w-4" /><span>{book.subjectCount || 0} Ders</span></div>
+                    <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>{book.testCount || 0} Test</span></div>
+                    <div className="flex items-center gap-2"><HelpCircle className="h-4 w-4" /><span>{book.questionCount || 0} Soru</span></div>
                 </div>
+                {(book.solvedTestCount || 0) > 0 && (
+                    <div className="space-y-3 text-sm text-muted-foreground pt-4 border-t">
+                        <h4 className="font-semibold text-foreground">Çözüm İstatistikleri</h4>
+                        <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>{book.solvedTestCount || 0} Test Çözüldü</span></div>
+                        <div className="flex items-center gap-2 text-green-600"><CheckCircle className="h-4 w-4" /><span>{book.totalCorrectAnswers || 0} Doğru</span></div>
+                        <div className="flex items-center gap-2 text-red-600"><XCircle className="h-4 w-4" /><span>{book.totalIncorrectAnswers || 0} Yanlış</span></div>
+                    </div>
+                )}
               </CardContent>
               <CardHeader>
                 <Button className="w-full" onClick={() => handleManageBook(book.id)}>Kitabı Yönet</Button>
