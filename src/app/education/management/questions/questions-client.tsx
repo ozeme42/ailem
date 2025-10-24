@@ -18,6 +18,7 @@ import { Loader2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/components/auth-provider";
+import { Badge } from "@/components/ui/badge";
 
 interface BulkAddQuestionsFlowProps {
   onBack: () => void;
