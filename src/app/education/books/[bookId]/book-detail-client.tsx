@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest } from "@/lib/dataService";
-import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember } from "@/lib/data";
+import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,7 +20,6 @@ import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
@@ -34,13 +33,20 @@ export function BookDetailClient() {
 
   const [book, setBook] = useState<TrackedBook | null>(null);
   const [tests, setTests] = useState<TrackedBookTest[]>([]);
+
+  // Dialog states
   const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
+  const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   
+  // Form/Context states
   const [currentSubject, setCurrentSubject] = useState<TrackedBookSubject | null>(null);
+  const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
   const [currentTest, setCurrentTest] = useState<TrackedBookTest | null>(null);
+  
   const [newSubjectName, setNewSubjectName] = useState("");
+  const [newTopicName, setNewTopicName] = useState("");
   const [newTestName, setNewTestName] = useState("");
   const [newTestQuestionCount, setNewTestQuestionCount] = useState(20);
   const [currentAnswerKey, setCurrentAnswerKey] = useState({});
@@ -48,6 +54,7 @@ export function BookDetailClient() {
   const [assignFormData, setAssignFormData] = useState({ studentId: '', assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
 
   useEffect(() => {
+    if (!bookId) return;
     const unsubBook = onTrackedBookUpdate(bookId, setBook);
     const unsubTests = onTrackedBookTestsUpdate(bookId, setTests);
     return () => {
@@ -63,18 +70,41 @@ export function BookDetailClient() {
       const updatedSubjects = subjects.map(s => s.id === currentSubject.id ? { ...s, name: newSubjectName } : s);
       await updateTrackedBook(book.id, { subjects: updatedSubjects });
     } else { // Adding
-      const newSubject = { id: Date.now().toString(), name: newSubjectName };
+      const newSubject: TrackedBookSubject = { id: Date.now().toString(), name: newSubjectName, topics: [] };
       await updateTrackedBook(book.id, { subjects: [...subjects, newSubject] });
     }
     setIsSubjectDialogOpen(false);
     setNewSubjectName("");
     setCurrentSubject(null);
   };
+  
+  const handleTopicSave = async () => {
+    if (!book || !currentSubject || !newTopicName.trim()) return;
+    
+    const subjects = book.subjects.map(subject => {
+        if(subject.id === currentSubject.id) {
+            const topics = subject.topics || [];
+            if (currentTopic) { // Editing topic
+                return {...subject, topics: topics.map(t => t.id === currentTopic.id ? { ...t, name: newTopicName } : t)};
+            } else { // Adding new topic
+                 const newTopic: Topic = { id: Date.now().toString(), name: newTopicName };
+                 return {...subject, topics: [...topics, newTopic]};
+            }
+        }
+        return subject;
+    });
+
+    await updateTrackedBook(book.id, { subjects });
+    setIsTopicDialogOpen(false);
+    setNewTopicName("");
+    setCurrentTopic(null);
+  };
 
   const handleTestSave = async () => {
-    if (!book || !currentSubject || !newTestName.trim()) return;
+    if (!book || !currentSubject || !currentTopic || !newTestName.trim()) return;
     const newTest: Omit<TrackedBookTest, 'id' | 'bookId' | 'familyId'> = {
       subjectId: currentSubject.id,
+      topicId: currentTopic.id,
       name: newTestName,
       questionCount: newTestQuestionCount,
       answerKey: currentAnswerKey,
@@ -153,32 +183,58 @@ export function BookDetailClient() {
                 <AccordionTrigger className="p-4 font-semibold text-lg hover:no-underline">
                     {subject.name}
                 </AccordionTrigger>
-                <AccordionContent className="p-4 pt-0">
-                    <div className="space-y-2">
-                    {tests.filter(t => t.subjectId === subject.id).map(test => (
-                        <div key={test.id} className="flex items-center justify-between p-3 border rounded-md bg-background">
-                        <p>{test.name} ({test.questionCount} soru)</p>
-                        <div className="flex gap-1">
-                            <Button variant="outline" size="sm" onClick={() => { setCurrentTest(test); setIsAssignDialogOpen(true); }}>Ata</Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTest(test); setNewTestName(test.name); setNewTestQuestionCount(test.questionCount); setCurrentAnswerKey(test.answerKey || {}); setIsTestDialogOpen(true); }}><Edit className="h-4 w-4" /></Button>
-                        </div>
-                        </div>
-                    ))}
-                     <Button variant="secondary" className="w-full" onClick={() => { setCurrentSubject(subject); resetTestDialog(); setIsTestDialogOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" /> Yeni Test Ekle
-                    </Button>
-                    </div>
+                <AccordionContent className="p-4 pt-0 space-y-3">
+                   <Button variant="outline" size="sm" onClick={() => {setCurrentSubject(subject); setCurrentTopic(null); setNewTopicName(""); setIsTopicDialogOpen(true)}}>
+                       <Plus className="mr-2 h-4 w-4"/> Konu Ekle
+                   </Button>
+                    <Accordion type="multiple" className="w-full space-y-2">
+                        {(subject.topics || []).map(topic => (
+                             <AccordionItem key={topic.id} value={topic.id} className="border bg-background rounded-md px-4">
+                                <AccordionTrigger>{topic.name}</AccordionTrigger>
+                                <AccordionContent className="pt-2">
+                                    <div className="space-y-2">
+                                    {tests.filter(t => t.topicId === topic.id).map(test => (
+                                        <div key={test.id} className="flex items-center justify-between p-2 border rounded-md">
+                                        <p>{test.name} ({test.questionCount} soru)</p>
+                                        <div className="flex gap-1">
+                                            <Button variant="outline" size="sm" onClick={() => { setCurrentTest(test); setIsAssignDialogOpen(true); }}>Ata</Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); setCurrentTest(test); setNewTestName(test.name); setNewTestQuestionCount(test.questionCount); setCurrentAnswerKey(test.answerKey || {}); setIsTestDialogOpen(true); }}><Edit className="h-4 w-4" /></Button>
+                                        </div>
+                                        </div>
+                                    ))}
+                                    <Button variant="secondary" className="w-full" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); resetTestDialog(); setIsTestDialogOpen(true); }}>
+                                        <Plus className="mr-2 h-4 w-4" /> Bu Konuya Test Ekle
+                                    </Button>
+                                    </div>
+                                </AccordionContent>
+                             </AccordionItem>
+                        ))}
+                    </Accordion>
                 </AccordionContent>
              </div>
           </AccordionItem>
         ))}
       </Accordion>
 
+      <Dialog open={isTopicDialogOpen} onOpenChange={setIsTopicDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{currentTopic ? 'Konuyu Düzenle' : 'Yeni Konu Ekle'}</DialogTitle>
+              <DialogDescription>Ders: {currentSubject?.name}</DialogDescription>
+            </DialogHeader>
+            <Input value={newTopicName} onChange={e => setNewTopicName(e.target.value)} placeholder="Konu Adı (örn: Üslü Sayılar)" />
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsTopicDialogOpen(false)}>İptal</Button>
+              <Button onClick={handleTopicSave}>Kaydet</Button>
+            </DialogFooter>
+          </DialogContent>
+      </Dialog>
+
       <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{currentTest ? 'Testi Düzenle' : 'Yeni Test Ekle'}</DialogTitle>
-            <DialogDescription>Ders: {currentSubject?.name}</DialogDescription>
+            <DialogDescription>Ders: {currentSubject?.name} / Konu: {currentTopic?.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Input value={newTestName} onChange={e => setNewTestName(e.target.value)} placeholder="Test Adı (örn: Test 1)" />

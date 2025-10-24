@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, TrackedBookSubject } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -1823,7 +1823,9 @@ export const onTrackedBookUpdate = (bookId: string, callback: (book: TrackedBook
     }
   });
 };
-export const updateTrackedBook = (id: string, data: Partial<TrackedBook>) => updateDoc(doc(db, 'trackedBooks', id), data);
+export const updateTrackedBook = (id: string, data: Partial<Omit<TrackedBook, 'id' | 'familyId'>>) => {
+    return updateDoc(doc(db, 'trackedBooks', id), removeUndefined(data));
+};
 export const deleteTrackedBook = async (id: string) => {
   const batch = writeBatch(db);
   const bookRef = doc(db, 'trackedBooks', id);
@@ -1848,9 +1850,9 @@ export const onTrackedBookTestsUpdate = (bookId: string, callback: (tests: Track
 export const addTrackedBookTest = async (bookId: string, data: Omit<TrackedBookTest, 'id' | 'bookId' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'trackedBookTests'), { ...data, familyId, bookId });
+    return addDoc(collection(db, 'trackedBookTests'), { ...removeUndefined(data), familyId, bookId });
 };
-export const updateTrackedBookTest = (id: string, data: Partial<Omit<TrackedBookTest, 'id'>>) => updateDoc(doc(db, 'trackedBookTests', id), data);
+export const updateTrackedBookTest = (id: string, data: Partial<Omit<TrackedBookTest, 'id'>>) => updateDoc(doc(db, 'trackedBookTests', id), removeUndefined(data));
 export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
 
     

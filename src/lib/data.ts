@@ -288,6 +288,41 @@ export interface DailyTracking {
     date: string; // 'yyyy-MM-dd'
 }
 
+// Education Models
+export interface Topic {
+  id: string;
+  name: string;
+}
+
+export interface TrackedBookSubject {
+  id: string;
+  name: string;
+  topics: Topic[];
+}
+
+export interface TrackedBook {
+  id: string;
+  familyId: string;
+  title: string;
+  publisher: string;
+  subjects: TrackedBookSubject[];
+  createdAt: string;
+  // Denormalized counts for quick display
+  subjectCount?: number;
+  testCount?: number;
+  questionCount?: number;
+}
+
+export interface TrackedBookTest {
+    id: string;
+    familyId: string;
+    bookId: string;
+    subjectId: string;
+    topicId: string;
+    name: string;
+    questionCount: number;
+    answerKey?: { [key: string]: string };
+}
 
 
 // Static data that doesn't change often can remain here.
@@ -361,7 +396,7 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
   isArchived: boolean;
-  sourceType: 'bank' | 'quick' | 'exam' | 'mistake';
+  sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook';
   sourceId?: string;
   gradingType?: GradingType;
   score?: number;
@@ -594,4 +629,5 @@ export interface Budget {
         };
     };
 }
+
 
