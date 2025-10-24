@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -391,7 +390,7 @@ export default function OpticalFormPage() {
                                 <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestions} / {test.questionCount}</p>
                             </div>
                            <AlertDialog>
-                            <AlertDialogTrigger asChild><Button className="w-full" size="lg" disabled={test.status !== 'Atandı'}>Testi Bitir</Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button className="w-full" size="lg">Testi Bitir</Button></AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
                                 <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
@@ -404,7 +403,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    
-
-
