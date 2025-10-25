@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Send, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onStudyPlanUpdate, addStudyAssignment } from "@/lib/dataService";
+import { onStudyPlanUpdate, addStudyAssignment, updateStudyPlan } from "@/lib/dataService";
 import type { StudyPlan, StudyPlanSubject, StudyTopic, FamilyMember, StudyAssignment } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export function PlanDetailClient() {
   const router = useRouter();
@@ -33,6 +34,8 @@ export function PlanDetailClient() {
 
   // Dialog states
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState("");
   
   // Form/Context states
   const [assignFormData, setAssignFormData] = useState<{studentIds: string[], assignedDate: Date, dueDate: Date}>({ studentIds: [], assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
@@ -77,6 +80,25 @@ export function PlanDetailClient() {
     setAssignFormData(prev => ({ ...prev, studentIds: [] })); // Reset student selection
   }
 
+  const handleAddSubject = async () => {
+    if (!plan || !newSubjectName.trim()) return;
+    const newSubject: StudyPlanSubject = {
+        id: Date.now().toString(),
+        name: newSubjectName.trim(),
+        topics: [],
+    };
+    try {
+        await updateStudyPlan(plan.id, {
+            subjects: [...plan.subjects, newSubject]
+        });
+        toast({ title: "Ders Eklendi" });
+        setNewSubjectName("");
+        setIsSubjectDialogOpen(false);
+    } catch(e) {
+        toast({ title: "Hata", variant: "destructive" });
+    }
+  };
+
   const toggleTopicSelection = (topic: StudyTopic) => {
       setSelectedTopics(prev => 
         prev.some(t => t.id === topic.id) 
@@ -93,6 +115,9 @@ export function PlanDetailClient() {
         <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push('/education/management/study-plans')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
+            </Button>
+            <Button variant="secondary" onClick={() => setIsSubjectDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" /> Ders Ekle
             </Button>
             <Button onClick={() => { if(selectedTopics.length > 0) setIsAssignDialogOpen(true) }} disabled={selectedTopics.length === 0}>
                 <Send className="mr-2 h-4 w-4"/> Seçilenleri Ata ({selectedTopics.length})
@@ -178,6 +203,29 @@ export function PlanDetailClient() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isSubjectDialogOpen} onOpenChange={setIsSubjectDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Yeni Ders Ekle</DialogTitle>
+              <DialogDescription>Plana yeni bir ders ekleyin.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Label htmlFor="new-subject-name">Ders Adı</Label>
+                <Input 
+                    id="new-subject-name" 
+                    value={newSubjectName} 
+                    onChange={e => setNewSubjectName(e.target.value)} 
+                    placeholder="Ders Adı (örn: Türkçe)" 
+                />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsSubjectDialogOpen(false)}>İptal</Button>
+              <Button onClick={handleAddSubject}>Kaydet</Button>
+            </DialogFooter>
+          </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
