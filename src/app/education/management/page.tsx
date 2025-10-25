@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, ClipboardList, Send, Archive, Settings, MoreVertical, BarChart3, CheckCircle, X, MinusCircle } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, ClipboardList, Send, Archive, Settings, MoreVertical, BarChart3, CheckCircle, X, MinusCircle, BookHeart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,11 @@ export default function EducationManagementPage() {
                     </Link>
                     <Link href="/education/management/assign">
                         <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
+                    </Link>
+                    <Link href="/education/management/study-plans">
+                        <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                            <BookHeart className="mr-2 h-4 w-4" /> Konu Anlatımı Planları
+                        </Button>
                     </Link>
                     <Link href="/education/management/questions">
                         <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
