@@ -73,6 +73,7 @@ export default function EducationPage() {
   
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
+  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
   
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -87,10 +88,12 @@ export default function EducationPage() {
   React.useEffect(() => {
     const unsubTests = onTestsUpdate(setAllTests);
     const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
+    const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
     
     return () => {
       unsubTests();
       unsubStudyAssignments();
+      unsubStudyPlans();
     }
   }, []);
   
@@ -114,6 +117,13 @@ export default function EducationPage() {
     if (!selectedStudent) return [];
     return studyAssignments.filter(sa => sa.studentId === selectedStudent.id);
   }, [selectedStudent, studyAssignments]);
+
+  const pendingStudies = React.useMemo(() => {
+    return studentStudyAssignments
+      .filter(sa => sa.status === 'assigned')
+      .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }))
+      .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
+  }, [studentStudyAssignments, studyPlans]);
   
   const overallStats = React.useMemo(() => {
     const evaluatedTests = tests.filter(t => t.status === 'Sonuçlandı');
@@ -310,58 +320,38 @@ export default function EducationPage() {
           )}
         </CardContent>
       </Card>
+      
        <Card className="mt-8">
         <CardHeader>
           <CardTitle>Konu Anlatımı Takibi</CardTitle>
-          <CardDescription>Öğrencilerin konu anlatımı görevlerindeki ilerlemesi.</CardDescription>
+          <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmamış konu anlatımı görevleri.</CardDescription>
         </CardHeader>
         <CardContent>
-             <Accordion type="multiple" className="w-full space-y-4">
-                {studentMembers.map(student => {
-                    const studentAssignments = studyAssignments.filter(sa => sa.studentId === student.id && sa.status !== 'completed');
-                    if (studentAssignments.length === 0) return null;
-
-                    return (
-                        <AccordionItem key={student.id} value={student.id} className="border-b-0">
-                           <Card className="overflow-hidden">
-                             <AccordionTrigger className="p-4 hover:no-underline">
-                                <div className="flex justify-between items-center w-full">
-                                    <p className="font-semibold">{student.name}</p>
-                                </div>
-                             </AccordionTrigger>
-                             <AccordionContent className="px-4 pb-4">
-                               <div className="space-y-2">
-                                {studentAssignments.map(assignment => (
-                                    <div key={assignment.id} className="flex justify-between items-center p-3 border rounded-md bg-muted/50">
-                                       <div className="flex items-center gap-3">
-                                            <Checkbox
-                                                id={`study-${assignment.id}`}
-                                                checked={assignment.status === 'completed'}
-                                                onCheckedChange={() => handleStudyAssignmentStatusChange(assignment)}
-                                            />
-                                            <div>
-                                                <label htmlFor={`study-${assignment.id}`} className="font-medium cursor-pointer">{assignment.topic}</label>
-                                                <p className="text-xs text-muted-foreground">{assignment.subject}</p>
-                                            </div>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">Bitiş: {format(parseISO(assignment.dueDate), "dd MMM", {locale: tr})}</p>
-                                    </div>
-                                ))}
-                               </div>
-                             </AccordionContent>
-                           </Card>
-                        </AccordionItem>
-                    )
-                })}
-             </Accordion>
-           {studyAssignments.filter(sa => sa.status !== 'completed').length === 0 && (
-            <p className="text-center text-muted-foreground p-4">Atanmış ve tamamlanmamış konu anlatımı görevi bulunmuyor.</p>
-           )}
+          {pendingStudies.length > 0 ? (
+            <div className="space-y-2">
+              {pendingStudies.map(study => (
+                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 hover:bg-blue-500/20">
+                   <Checkbox
+                        id={`study-${study.id}`}
+                        onCheckedChange={() => handleStudyAssignmentStatusChange(study)}
+                        className="border-primary"
+                    />
+                  <div className="flex-grow">
+                    <label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label>
+                    <p className="text-xs text-blue-800/80">
+                      {study.studyPlanTitle} - {study.subject}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-xs">Bitiş: {format(parseISO(study.dueDate), "dd MMM", {locale: tr})}</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground p-4">Tamamlanmamış konu anlatımı görevi bulunmuyor.</p>
+          )}
         </CardContent>
       </Card>
+
     </>
   );
 }
-
-
-    
