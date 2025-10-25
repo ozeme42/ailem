@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { NewQuestionBankForm } from "@/components/new-question-bank-form";
+
 import { Test, FamilyMember } from "@/lib/data";
 import {
   onTestsUpdate,
@@ -20,7 +20,7 @@ import {
 } from "@/lib/dataService";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
-import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
+
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
