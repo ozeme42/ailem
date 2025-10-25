@@ -329,7 +329,7 @@ export interface TrackedBook {
   publisher: string;
   subjects: TrackedBookSubject[];
   createdAt: string;
-  bookType?: 'standard' | 'open_ended'; // New field
+  bookType?: 'standard' | 'open_ended';
   // Denormalized counts for quick display
   subjectCount?: number;
   testCount?: number;
@@ -398,6 +398,7 @@ export interface BankQuestion {
   options?: { [key: string]: string };
   correctAnswer: string;
   createdAt: string; // ISO date string
+  type?: 'mcq' | 'open_ended';
 }
 
 export interface PracticeExam {

@@ -251,7 +251,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           });
           const answerKeyFromBank = (values.selectedBankQuestions || []).reduce((acc, qId, index) => {
               const question = bankQuestions.find(bq => bq.id === qId);
-              if (question) {
+              if (question && question.type !== 'open_ended') {
                   acc[(index + 1).toString()] = question.correctAnswer;
               }
               return acc;
@@ -265,6 +265,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             assignedDate, dueDate,
             sourceType: 'bank',
             gradingType: 'auto',
+            openEnded: (values.selectedBankQuestions || []).some(qId => bankQuestions.find(bq => bq.id === qId)?.type === 'open_ended'),
             answerKey: answerKeyFromBank,
             questions: questionsFromBank,
           };
@@ -465,7 +466,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
                                             <p className="font-medium text-sm">{q.topic}</p>
                                             <p className="text-xs text-muted-foreground">{q.subject}</p>
                                         </div>
-                                        <Badge variant="outline">{Object.keys(q.options || {}).length} şık</Badge>
+                                        <Badge variant={q.type === 'open_ended' ? 'outline' : 'secondary'}>{q.type === 'open_ended' ? 'Açık Uçlu' : `${Object.keys(q.options || {}).length} şık`}</Badge>
                                     </div>
                                 ))}
                                 </div>
@@ -576,7 +577,3 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     </Tabs>
   );
 }
-
-    
-
-    
