@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { PlusCircle, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { onStudyPlansUpdate, onStudyAssignmentsUpdate, addStudyPlan, updateStudyPlan, deleteStudyPlan } from '@/lib/dataService';
-import type { StudyPlan } from '@/lib/data';
+import type { StudyPlan, StudyAssignment } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { NewStudyPlanForm } from '@/components/new-study-plan-form';
 import Link from 'next/link';
@@ -21,14 +21,17 @@ export function StudyPlansClient() {
     const { toast } = useToast();
     const router = useRouter();
     const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
+    const [assignments, setAssignments] = useState<StudyAssignment[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
 
     useEffect(() => {
         if (!familyId) return;
         const unsubPlans = onStudyPlansUpdate(setStudyPlans);
+        const unsubAssignments = onStudyAssignmentsUpdate(setAssignments);
         return () => {
             unsubPlans();
+            unsubAssignments();
         };
     }, [familyId]);
 
@@ -82,15 +85,20 @@ export function StudyPlansClient() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {studyPlans.map(plan => {
                     const totalTopics = plan.subjects?.reduce((acc, s) => acc + (s.topics?.length || 0), 0) || 0;
+                    const planAssignments = assignments.filter(a => a.studyPlanId === plan.id);
+                    const completedAssignments = planAssignments.filter(a => a.status === 'completed').length;
+
                     return (
                         <Card key={plan.id} className="flex flex-col">
                             <CardHeader>
                                 <CardTitle>{plan.title}</CardTitle>
                                 <CardDescription>{plan.description}</CardDescription>
                             </CardHeader>
-                            <CardContent className="flex-grow">
-                                <p className="text-sm font-semibold">{plan.subjects?.length || 0} Ders</p>
-                                <p className="text-sm text-muted-foreground">{totalTopics} Konu</p>
+                            <CardContent className="flex-grow space-y-2">
+                                <p className="text-sm"><span className="font-semibold">{plan.subjects?.length || 0}</span> Ders</p>
+                                <p className="text-sm text-muted-foreground"><span className="font-semibold">{totalTopics}</span> Konu</p>
+                                <p className="text-sm text-muted-foreground"><span className="font-semibold">{planAssignments.length}</span> Atanan Ödev</p>
+                                <p className="text-sm text-green-600"><span className="font-semibold">{completedAssignments}</span> Tamamlanan Ödev</p>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3">
                                  <Button size="sm" variant="secondary" onClick={() => handleManagePlan(plan.id)}>Planı Yönet</Button>
