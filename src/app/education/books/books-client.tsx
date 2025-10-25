@@ -15,6 +15,7 @@ import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook } from "@/lib/d
 import type { TrackedBook } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 
 export function BooksClient() {
   const router = useRouter();
