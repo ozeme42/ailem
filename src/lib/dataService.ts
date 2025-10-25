@@ -829,40 +829,17 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'studyPlans'), { ...data, familyId });
 };
-export const updateStudyPlan = async (id: string, data: Partial<Omit<StudyPlan, 'id' | 'familyId'>>) => {
-    const planRef = doc(db, 'studyPlans', id);
-    const cleanedData = removeUndefined(data);
-    
-    // If we're adding subjects, we should use arrayUnion to avoid overwriting.
-    if (cleanedData.subjects && Array.isArray(cleanedData.subjects)) {
-        const planSnap = await getDoc(planRef);
-        if (planSnap.exists()) {
-            const existingSubjects = planSnap.data().subjects || [];
-            
-            // This is a simplified merge. A more robust solution would handle topic updates within subjects.
-            const newSubjects = cleanedData.subjects.filter((s: StudyPlanSubject) => 
-                !existingSubjects.some((es: StudyPlanSubject) => es.id === s.id)
-            );
-            
-            if (newSubjects.length > 0) {
-                 return updateDoc(planRef, {
-                    subjects: arrayUnion(...newSubjects)
-                });
-            }
-            // If we are just updating existing subjects (like adding topics)
-            // A more complex merge is needed. Let's do a full overwrite for simplicity now if no new subjects.
-             const finalSubjects = existingSubjects.map((es: StudyPlanSubject) => {
-                const updatedVersion = cleanedData.subjects.find((ms: StudyPlanSubject) => ms.id === es.id);
-                return updatedVersion ? updatedVersion : es;
-            });
-            
-             return updateDoc(planRef, {
-                subjects: finalSubjects
-            });
-        }
-    }
+export const updateStudyPlan = (id: string, data: Partial<Omit<StudyPlan, 'id' | 'familyId'>>) => {
+  const planRef = doc(db, 'studyPlans', id);
+  const cleanedData = removeUndefined(data);
 
-    return updateDoc(planRef, cleanedData);
+  if (cleanedData.subjects) {
+    return updateDoc(planRef, {
+      subjects: arrayUnion(...cleanedData.subjects)
+    });
+  }
+  
+  return updateDoc(planRef, cleanedData);
 };
 
 
@@ -1862,7 +1839,7 @@ export const onTrackedBooksUpdate = (callback: (books: TrackedBook[]) => void, r
     callback(enrichedBooks);
   }, runOnce);
 };
-export const addTrackedBook = async (data: Pick<TrackedBook, 'title' | 'publisher'>) => {
+export const addTrackedBook = async (data: Pick<TrackedBook, 'title' | 'publisher' | 'bookType'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'trackedBooks'), { ...data, familyId, subjects: [], createdAt: new Date().toISOString() });

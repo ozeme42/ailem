@@ -329,6 +329,7 @@ export interface TrackedBook {
   publisher: string;
   subjects: TrackedBookSubject[];
   createdAt: string;
+  bookType?: 'standard' | 'open_ended'; // New field
   // Denormalized counts for quick display
   subjectCount?: number;
   testCount?: number;
@@ -434,8 +435,8 @@ export interface Test {
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   questions?: QuickTestQuestion[]; 
-  studentTextAnswers?: { [key: string]: string };
-  studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus };
+  studentTextAnswers?: { [key: string]: string }; // For open-ended questions
+  studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
   topicId?: string;
 }
 

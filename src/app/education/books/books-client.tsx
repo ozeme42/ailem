@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook } from "@/lib/dataService";
 import type { TrackedBook } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export function BooksClient() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export function BooksClient() {
   const [books, setBooks] = useState<TrackedBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newBook, setNewBook] = useState({ title: "", publisher: "" });
+  const [newBook, setNewBook] = useState({ title: "", publisher: "", bookType: "standard" as "standard" | "open_ended" });
 
   useEffect(() => {
     const unsubscribe = onTrackedBooksUpdate((books) => {
@@ -43,7 +44,7 @@ export function BooksClient() {
 
     try {
       await addTrackedBook(newBook);
-      setNewBook({ title: "", publisher: "" });
+      setNewBook({ title: "", publisher: "", bookType: "standard" });
       setIsDialogOpen(false);
       toast({ title: "Kitap başarıyla eklendi!" });
     } catch (error: any) {
@@ -108,6 +109,23 @@ export function BooksClient() {
                     placeholder="Örn: Merkez Yayınları"
                     />
                 </div>
+                 <div className="space-y-3">
+                    <Label>Kitap Türü</Label>
+                    <RadioGroup
+                        value={newBook.bookType}
+                        onValueChange={(value: "standard" | "open_ended") => setNewBook({ ...newBook, bookType: value })}
+                        className="flex gap-4"
+                    >
+                        <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="standard" id="standard" />
+                        <Label htmlFor="standard">Standart Soru Bankası</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="open_ended" id="open_ended" />
+                        <Label htmlFor="open_ended">Açık Uçlu Kitap</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
                 </div>
                 <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>İptal</Button>
@@ -138,7 +156,10 @@ export function BooksClient() {
             <Card key={book.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{book.title}</CardTitle>
+                    <div>
+                        <CardTitle className="text-lg">{book.title}</CardTitle>
+                        <CardDescription>{book.publisher}</CardDescription>
+                    </div>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive -mt-2 -mr-2">
@@ -161,7 +182,7 @@ export function BooksClient() {
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
-                <CardDescription>{book.publisher}</CardDescription>
+                 <Badge variant={book.bookType === 'open_ended' ? 'outline' : 'secondary'} className="w-fit mt-2">{book.bookType === 'open_ended' ? 'Açık Uçlu' : 'Standart Soru Bankası'}</Badge>
               </CardHeader>
               <CardContent className="flex-grow space-y-4">
                  <div className="space-y-3 text-sm text-muted-foreground">
