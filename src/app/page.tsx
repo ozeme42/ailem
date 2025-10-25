@@ -515,62 +515,6 @@ export default function Home() {
             ))}
       </section>
       
-       <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Çözülecek Testler</CardTitle>
-          <CardDescription>Öğrencilere atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {tests.length > 0 ? (
-            tests.filter(test => test.status === 'Atandı').map(test => {
-                const student = familyMembers.find(m => m.id === test.studentId);
-                return (
-                    <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
-                        <div className="flex-grow">
-                            <Badge variant={"outline"} className="border-cyan-500/50 text-cyan-600">{student?.name || 'Bilinmiyor'}</Badge>
-                            <h3 className="font-semibold text-lg">{test.title}</h3>
-                            <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-3 sm:mt-0">
-                             <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>
-                        </div>
-                    </Card>
-                );
-            })
-          ) : (
-            <p className="text-center text-muted-foreground p-4">Çözülecek test bulunmuyor.</p>
-          )}
-        </CardContent>
-      </Card>
-      
-       <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Konu Anlatımı Takibi</CardTitle>
-          <CardDescription>Öğrencilerin konu anlatımı görevlerindeki ilerlemesi.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {familyMembers.filter(m => m.role.includes("Çocuk")).map(student => {
-            const studentAssignments = studyAssignments.filter(sa => sa.studentId === student.id);
-            if(studentAssignments.length === 0) return null;
-            
-            const totalAssignments = studentAssignments.length;
-            const completedAssignments = studentAssignments.filter(sa => sa.status === 'completed').length;
-            const progress = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
-            
-            return (
-              <div key={student.id} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-center">
-                  <p className="font-semibold">{student.name}</p>
-                  <p className="text-sm text-muted-foreground">{completedAssignments} / {totalAssignments} tamamlandı</p>
-                </div>
-                <Progress value={progress} className="mt-2 h-2" />
-              </div>
-            )
-          })}
-           {studyAssignments.length === 0 && <p className="text-center text-muted-foreground p-4">Atanmış konu anlatımı görevi bulunmuyor.</p>}
-        </CardContent>
-      </Card>
-
       <section>
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>

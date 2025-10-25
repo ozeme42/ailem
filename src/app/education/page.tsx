@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { QuestionBank, Test, PracticeExam, FamilyMember } from "@/lib/data";
+import { QuestionBank, Test, PracticeExam, FamilyMember, StudyAssignment, StudyPlan } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -70,6 +70,7 @@ export default function EducationPage() {
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   
   const [allTests, setAllTests] = React.useState<Test[]>([]);
+  const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
   
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -83,9 +84,11 @@ export default function EducationPage() {
 
   React.useEffect(() => {
     const unsubTests = onTestsUpdate(setAllTests);
+    const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
     
     return () => {
       unsubTests();
+      unsubStudyAssignments();
     }
   }, []);
   
@@ -249,30 +252,21 @@ export default function EducationPage() {
        
        <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Atanmış ve Bekleyen Tüm Testler</CardTitle>
-          <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmış tüm testlerin birleşik listesi.</CardDescription>
+          <CardTitle>Çözülecek Testler</CardTitle>
+          <CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {tests.length > 0 ? (
-            tests.filter(test => test.status !== 'Değerlendirme Bekliyor').map(test => {
-                let button;
-
-                 if (test.status === 'Sonuçlandı') {
-                    button = <Link href={`/education/${test.id}`}><Button variant="secondary">Sonuçları Göster</Button></Link>;
-                } else { // 'Atandı'
-                    button = <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>;
-                }
-
-
+            tests.filter(test => test.status === 'Atandı').map(test => {
                 return (
                     <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
                         <div className="flex-grow">
-                            <Badge variant={test.status === 'Sonuçlandı' ? "default" : "outline"}>{test.status}</Badge>
+                            <Badge variant={"outline"}>{test.subject}</Badge>
                             <h3 className="font-semibold text-lg">{test.title}</h3>
-                            <p className="text-sm text-muted-foreground">{test.subject} - Son Teslim: {test.dueDate}</p>
+                            <p className="text-sm text-muted-foreground">Son Teslim: {test.dueDate}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-3 sm:mt-0">
-                             {button}
+                             <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>
                         </div>
                     </Card>
                 );
@@ -280,6 +274,36 @@ export default function EducationPage() {
           ) : (
             <p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>
           )}
+          {tests.filter(test => test.status === 'Atandı').length === 0 && tests.length > 0 && (
+              <p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>
+          )}
+        </CardContent>
+      </Card>
+       <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Konu Anlatımı Takibi</CardTitle>
+          <CardDescription>Öğrencilerin konu anlatımı görevlerindeki ilerlemesi.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {studentMembers.map(student => {
+            const studentAssignments = studyAssignments.filter(sa => sa.studentId === student.id);
+            if(studentAssignments.length === 0) return null;
+            
+            const totalAssignments = studentAssignments.length;
+            const completedAssignments = studentAssignments.filter(sa => sa.status === 'completed').length;
+            const progress = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
+            
+            return (
+              <div key={student.id} className="p-4 border rounded-lg">
+                <div className="flex justify-between items-center">
+                  <p className="font-semibold">{student.name}</p>
+                  <p className="text-sm text-muted-foreground">{completedAssignments} / {totalAssignments} tamamlandı</p>
+                </div>
+                <Progress value={progress} className="mt-2 h-2" />
+              </div>
+            )
+          })}
+           {studyAssignments.length === 0 && <p className="text-center text-muted-foreground p-4">Atanmış konu anlatımı görevi bulunmuyor.</p>}
         </CardContent>
       </Card>
     </>
