@@ -22,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export function PlanDetailClient() {
   const router = useRouter();
@@ -36,7 +37,10 @@ export function PlanDetailClient() {
   // Dialog states
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
+  const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
+  const [newTopicData, setNewTopicData] = useState<{name: string, sources: string}>({ name: "", sources: ""});
+  const [editingSubject, setEditingSubject] = useState<StudyPlanSubject | null>(null);
   
   // Form/Context states
   const [assignFormData, setAssignFormData] = useState<{studentIds: string[], assignedDate: Date, dueDate: Date}>({ studentIds: [], assignedDate: new Date(), dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
@@ -90,15 +94,52 @@ export function PlanDetailClient() {
     };
     try {
         await updateStudyPlan(plan.id, {
-            subjects: [newSubject] // Use arrayUnion in the backend logic
+            subjects: [newSubject]
         });
         toast({ title: "Ders Eklendi" });
         setNewSubjectName("");
         setIsSubjectDialogOpen(false);
     } catch(e) {
-        toast({ title: "Hata", variant: "destructive" });
+        console.error(e);
+        toast({ title: "Hata", description: "Ders eklenirken bir hata oluştu.", variant: "destructive" });
     }
   };
+  
+  const handleOpenTopicDialog = (subject: StudyPlanSubject) => {
+    setEditingSubject(subject);
+    setNewTopicData({ name: "", sources: "" });
+    setIsTopicDialogOpen(true);
+  };
+  
+  const handleAddTopic = async () => {
+    if (!plan || !editingSubject || !newTopicData.name.trim()) return;
+    const newTopic: StudyTopic = {
+        id: Date.now().toString(),
+        name: newTopicData.name.trim(),
+        sources: newTopicData.sources.split('\n').filter(s => s.trim() !== ''),
+    };
+
+    const updatedSubjects = plan.subjects.map(subject => {
+        if (subject.id === editingSubject.id) {
+            return {
+                ...subject,
+                topics: [...(subject.topics || []), newTopic]
+            };
+        }
+        return subject;
+    });
+    
+    try {
+        await updateStudyPlan(plan.id, { subjects: updatedSubjects });
+        toast({ title: "Konu Eklendi" });
+        setIsTopicDialogOpen(false);
+        setEditingSubject(null);
+    } catch(e) {
+        console.error(e);
+        toast({ title: "Hata", description: "Konu eklenirken bir hata oluştu.", variant: "destructive" });
+    }
+  };
+
 
   const toggleTopicSelection = (topic: StudyTopic) => {
       setSelectedTopics(prev => 
@@ -117,7 +158,7 @@ export function PlanDetailClient() {
             <Button variant="outline" onClick={() => router.push('/education/management/study-plans')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
             </Button>
-            <Button variant="secondary" onClick={() => setIsSubjectDialogOpen(true)}>
+            <Button variant="outline" onClick={() => setIsSubjectDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Ders Ekle
             </Button>
             <Button onClick={() => { if(selectedTopics.length > 0) setIsAssignDialogOpen(true) }} disabled={selectedTopics.length === 0}>
@@ -134,6 +175,9 @@ export function PlanDetailClient() {
                     {subject.name}
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0 space-y-3">
+                    <Button variant="outline" size="sm" onClick={() => handleOpenTopicDialog(subject)}>
+                        <Plus className="mr-2 h-4 w-4" /> Konu Ekle
+                    </Button>
                     {(subject.topics || []).map(topic => (
                         <div key={topic.id} className="flex items-center justify-between p-3 border bg-background rounded-md">
                         <div className="flex items-center gap-3">
@@ -223,6 +267,39 @@ export function PlanDetailClient() {
             <DialogFooter>
               <Button variant="ghost" onClick={() => setIsSubjectDialogOpen(false)}>İptal</Button>
               <Button onClick={handleAddSubject}>Kaydet</Button>
+            </DialogFooter>
+          </DialogContent>
+      </Dialog>
+      
+       <Dialog open={isTopicDialogOpen} onOpenChange={setIsTopicDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Yeni Konu Ekle</DialogTitle>
+              <DialogDescription>Ders: {editingSubject?.name}</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+                <div>
+                    <Label htmlFor="new-topic-name">Konu Adı</Label>
+                    <Input 
+                        id="new-topic-name" 
+                        value={newTopicData.name} 
+                        onChange={e => setNewTopicData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Konu adı (örn: Cümlenin Öğeleri)" 
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="new-topic-sources">Kaynak Linkleri (Her satıra bir link)</Label>
+                    <Textarea 
+                        id="new-topic-sources" 
+                        value={newTopicData.sources} 
+                        onChange={e => setNewTopicData(prev => ({ ...prev, sources: e.target.value }))}
+                        placeholder="https://www.youtube.com/watch?v=...&#10;https://www.derslinki.com/..." 
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsTopicDialogOpen(false)}>İptal</Button>
+              <Button onClick={handleAddTopic}>Kaydet</Button>
             </DialogFooter>
           </DialogContent>
       </Dialog>

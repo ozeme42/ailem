@@ -831,20 +831,44 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
 };
 export const updateStudyPlan = async (id: string, data: Partial<Omit<StudyPlan, 'id' | 'familyId'>>) => {
     const planRef = doc(db, 'studyPlans', id);
-    
-    // If updating subjects, especially for adding a new one.
-    if (data.subjects) {
-      // arrayUnion is better for adding new elements without reading first.
-      // This assumes data.subjects contains ONLY the new subject to add.
-      // The client logic must be adjusted for this.
-      return updateDoc(planRef, {
-        subjects: arrayUnion(...data.subjects)
-      });
-    }
+    const cleanedData = removeUndefined(data);
 
-    // For other fields, a simple update is fine.
-    return updateDoc(planRef, removeUndefined(data));
+    // If adding a new subject, use arrayUnion to prevent overwriting existing ones.
+    if (cleanedData.subjects && Array.isArray(cleanedData.subjects) && cleanedData.subjects.every(s => s.id && s.name)) {
+      const planSnap = await getDoc(planRef);
+      if (planSnap.exists()) {
+        const existingPlan = planSnap.data() as StudyPlan;
+        const existingSubjectIds = new Set(existingPlan.subjects.map(s => s.id));
+        const newSubjects = cleanedData.subjects.filter((s: StudyPlanSubject) => !existingSubjectIds.has(s.id));
+        
+        if (newSubjects.length > 0) {
+            // Add new subjects
+            await updateDoc(planRef, { subjects: arrayUnion(...newSubjects) });
+        }
+        
+        // Handle updates to existing subjects (like adding a topic)
+        const updatedSubjects = cleanedData.subjects.filter((s: StudyPlanSubject) => existingSubjectIds.has(s.id));
+        if (updatedSubjects.length > 0) {
+            const finalSubjects = existingPlan.subjects.map(es => {
+                const updatedVersion = updatedSubjects.find(us => us.id === es.id);
+                return updatedVersion ? updatedVersion : es;
+            });
+             await updateDoc(planRef, { subjects: finalSubjects });
+        }
+
+        // Handle other field updates (title, description) without affecting subjects if they aren't in the payload
+        const { subjects, ...otherData } = cleanedData;
+        if (Object.keys(otherData).length > 0) {
+           await updateDoc(planRef, otherData);
+        }
+        return; // Exit after custom logic
+      }
+    }
+    
+    // Fallback for general updates
+    return updateDoc(planRef, cleanedData);
 };
+
 
 export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, 'studyPlans', id));
 
