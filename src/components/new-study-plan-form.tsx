@@ -34,7 +34,7 @@ type NewStudyPlanFormProps = {
 export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+    defaultValues: {
       title: "",
       description: "",
       topics: [{ name: "", subject: "", sources: [""] }],
@@ -46,8 +46,14 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
       form.reset({
         title: initialData.title,
         description: initialData.description || "",
-        topics: initialData.topics.map(t => ({...t, sources: t.sources || [""]})),
+        topics: (initialData.topics || []).map(t => ({...t, sources: t.sources || [""]})),
       });
+    } else {
+        form.reset({
+            title: "",
+            description: "",
+            topics: [{ name: "", subject: "", sources: [""] }],
+        })
     }
   }, [initialData, form]);
 
