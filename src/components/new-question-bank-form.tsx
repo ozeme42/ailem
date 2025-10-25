@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -48,6 +47,7 @@ type NewQuestionFormProps = {
   onTopicCreated: (topic: string) => void;
   onQuestionProcessed: () => void;
   initialData?: BankQuestion | null;
+  defaultType?: 'mcq' | 'open_ended';
 };
 
 export function NewQuestionBankForm({ 
@@ -56,7 +56,8 @@ export function NewQuestionBankForm({
   availableTopics,
   onTopicCreated,
   onQuestionProcessed,
-  initialData
+  initialData,
+  defaultType = 'mcq'
 }: NewQuestionFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -70,9 +71,10 @@ export function NewQuestionBankForm({
             { id: 'A', text: '' },
             { id: 'B', text: '' },
             { id: 'C', text: '' },
+            { id: 'D', text: '' },
         ],
         correctAnswer: 'A',
-        type: 'mcq',
+        type: defaultType,
     }
   });
 
@@ -85,34 +87,18 @@ export function NewQuestionBankForm({
   const questionType = form.watch("type");
 
   React.useEffect(() => {
-    if (initialData) {
-        const initialOptions = initialData.options 
+    let type = initialData?.type || defaultType;
+    form.reset({
+        subject: initialData?.subject || "",
+        topic: initialData?.topic || "",
+        imageDataUri: initialData?.imageUrl || "",
+        correctAnswer: initialData?.type !== 'open_ended' ? initialData?.correctAnswer : 'A',
+        options: initialData?.options 
             ? Object.entries(initialData.options).map(([id, text]) => ({ id, text }))
-            : [{ id: 'A', text: '' }, { id: 'B', text: '' }, { id: 'C', text: '' }];
-
-        form.reset({
-            subject: initialData.subject,
-            topic: initialData.topic,
-            correctAnswer: initialData.correctAnswer,
-            imageDataUri: initialData.imageUrl, // For display
-            options: initialOptions,
-            type: initialData.type || 'mcq',
-        });
-    } else {
-        form.reset({
-            subject: "",
-            topic: "",
-            imageDataUri: "",
-            correctAnswer: "A",
-            options: [
-                { id: 'A', text: '' },
-                { id: 'B', text: '' },
-                { id: 'C', text: '' },
-            ],
-            type: 'mcq',
-        });
-    }
-  }, [initialData, form]);
+            : [{ id: 'A', text: '' }, { id: 'B', text: '' }, { id: 'C', text: '' }, { id: 'D', text: '' }],
+        type: type,
+    });
+  }, [initialData, form, defaultType]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -275,7 +261,7 @@ export function NewQuestionBankForm({
             <FormField control={form.control} name="type" render={({field}) => (
                 <FormItem>
                     <FormLabel>Soru Tipi</FormLabel>
-                     <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4">
+                     <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4" disabled>
                         <FormItem className="flex items-center space-x-2">
                           <FormControl><RadioGroupItem value="mcq" /></FormControl>
                           <FormLabel>Çoktan Seçmeli</FormLabel>
