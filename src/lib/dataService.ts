@@ -645,12 +645,12 @@ export const toggleShoppingNoteItemStatusInList = async (listId: string, itemId:
 
 // Education
 export const onBankQuestionsUpdate = (callback: (questions: BankQuestion[]) => void, runOnce = false) => onFamilyDataUpdate<BankQuestion>('bankQuestions', callback, runOnce);
-export const addBankQuestion = async (data: Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'>) => {
+export const addBankQuestion = async (data: Partial<Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'>>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'bankQuestions'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
-export const addBulkBankQuestions = async (questionsData: any[]) => {
+export const addBulkBankQuestions = async (questionsData: Partial<BankQuestion>[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
 
@@ -659,11 +659,11 @@ export const addBulkBankQuestions = async (questionsData: any[]) => {
         const questionDocRef = doc(collection(db, 'bankQuestions'));
         const newQuestion: Omit<BankQuestion, 'id'> = {
             familyId,
-            subject: qData.subject,
-            topic: qData.topic,
-            imageUrl: qData.imageUrl,
+            subject: qData.subject!,
+            topic: qData.topic!,
+            imageUrl: qData.imageUrl!,
             options: qData.options,
-            correctAnswer: qData.correctAnswer,
+            correctAnswer: qData.correctAnswer!,
             createdAt: new Date().toISOString(),
             type: qData.type,
         };
