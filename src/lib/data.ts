@@ -294,6 +294,28 @@ export interface Topic {
   name: string;
 }
 
+export interface StudyTopic {
+    id: string;
+    name: string;
+    sources?: string[];
+}
+
+export interface StudyPlanSubject {
+    id: string;
+    name: string;
+    topics: StudyTopic[];
+}
+
+
+export interface StudyPlan {
+    id: string;
+    familyId: string;
+    title: string;
+    description?: string;
+    subjects: StudyPlanSubject[];
+}
+
+
 export interface TrackedBookSubject {
   id: string;
   name: string;
@@ -635,5 +657,21 @@ export interface Budget {
 }
 
 
+export interface StudyAssignment {
+  id: string;
+  familyId: string;
+  studentId: string;
+  studyPlanId: string;
+  subject: string;
+  topic: string;
+  sources: string[];
+  status: 'assigned' | 'completed';
+  startDate: string;
+  dueDate: string;
+  completedAt?: string;
+}
 
 
+
+
+```

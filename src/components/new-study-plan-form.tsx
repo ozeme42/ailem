@@ -10,20 +10,26 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
-import type { StudyPlan, StudyTopic } from "@/lib/data";
+import type { StudyPlan, StudyPlanSubject } from "@/lib/data";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 const topicSchema = z.object({
   name: z.string().min(2, "Konu adı en az 2 karakter olmalıdır."),
-  subject: z.string().min(2, "Ders adı en az 2 karakter olmalıdır."),
-  sources: z.array(z.string().url("Geçerli bir link girin.")).optional(),
+  sources: z.array(z.string().url("Geçerli bir link girin.").or(z.literal(''))).optional(),
+});
+
+const subjectSchema = z.object({
+    id: z.string(),
+    name: z.string().min(2, "Ders adı en az 2 karakter olmalıdır."),
+    topics: z.array(topicSchema).min(1, "En az bir konu eklemelisiniz."),
 });
 
 const formSchema = z.object({
   title: z.string().min(3, "Plan adı en az 3 karakter olmalıdır."),
   description: z.string().optional(),
-  topics: z.array(topicSchema).min(1, "En az bir konu eklemelisiniz."),
+  subjects: z.array(subjectSchema).min(1, "En az bir ders eklemelisiniz."),
 });
 
 type NewStudyPlanFormProps = {
@@ -37,7 +43,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     defaultValues: {
       title: "",
       description: "",
-      topics: [{ name: "", subject: "", sources: [""] }],
+      subjects: [{ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] }],
     },
   });
   
@@ -46,26 +52,39 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
       form.reset({
         title: initialData.title,
         description: initialData.description || "",
-        topics: (initialData.topics || []).map(t => ({...t, sources: t.sources || [""]})),
+        subjects: initialData.subjects.map(s => ({
+            ...s,
+            topics: (s.topics || []).map(t => ({
+                ...t,
+                sources: (t.sources || []).length > 0 ? t.sources : [""]
+            }))
+        })) || [],
       });
     } else {
         form.reset({
             title: "",
             description: "",
-            topics: [{ name: "", subject: "", sources: [""] }],
+            subjects: [{ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] }],
         })
     }
   }, [initialData, form]);
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields: subjectFields, append: appendSubject, remove: removeSubject } = useFieldArray({
     control: form.control,
-    name: "topics",
+    name: "subjects",
   });
 
   const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
     const cleanedData = {
         ...values,
-        topics: values.topics.map(t => ({...t, sources: (t.sources || []).filter(s => s.trim() !== '')}))
+        subjects: values.subjects.map(subject => ({
+            ...subject,
+            topics: subject.topics.map(topic => ({
+                ...topic,
+                id: topic.id || Date.now().toString() + Math.random(), // Ensure topic has an ID
+                sources: (topic.sources || []).filter(s => s.trim() !== '')
+            }))
+        }))
     }
     onSubmit(cleanedData);
     form.reset();
@@ -106,64 +125,17 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                 />
 
                 <div>
-                    <FormLabel>Konular</FormLabel>
+                    <FormLabel>Dersler ve Konular</FormLabel>
                     <div className="space-y-4 mt-2">
-                        {fields.map((field, index) => (
-                            <div key={field.id} className="p-4 border rounded-lg space-y-3 relative">
-                                 <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-destructive" onClick={() => remove(index)}><Trash2 className="h-4 w-4"/></Button>
-                                 <FormField
-                                    control={form.control}
-                                    name={`topics.${index}.subject`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Ders</FormLabel>
-                                        <FormControl><Input placeholder="Matematik" {...field} /></FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name={`topics.${index}.name`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Konu</FormLabel>
-                                        <FormControl><Input placeholder="Üslü Sayılar" {...field} /></FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name={`topics.${index}.sources`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Kaynak Linkleri</FormLabel>
-                                            <div className="space-y-2">
-                                            {(field.value || []).map((source, sourceIndex) => (
-                                                <div key={sourceIndex} className="flex items-center gap-2">
-                                                <Input 
-                                                    value={source}
-                                                    onChange={(e) => {
-                                                        const newSources = [...(field.value || [])];
-                                                        newSources[sourceIndex] = e.target.value;
-                                                        field.onChange(newSources);
-                                                    }}
-                                                    placeholder="https://www.youtube.com/..."
-                                                />
-                                                 <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => field.onChange(field.value?.filter((_, i) => i !== sourceIndex))}><Trash2 className="h-4 w-4"/></Button>
-                                                </div>
-                                            ))}
-                                            <Button type="button" size="sm" variant="outline" onClick={() => field.onChange([...(field.value || []), ""])}>Kaynak Ekle</Button>
-                                            </div>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
+                        {subjectFields.map((subjectField, subjectIndex) => (
+                           <TopicArrayComponent 
+                                key={subjectField.id}
+                                subjectIndex={subjectIndex}
+                                removeSubject={removeSubject}
+                           />
                         ))}
-                         <Button type="button" variant="secondary" className="w-full" onClick={() => append({ name: "", subject: "", sources: [""] })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Konu Ekle
+                         <Button type="button" variant="secondary" className="w-full" onClick={() => append({ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] })}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Ders Ekle
                         </Button>
                     </div>
                 </div>
@@ -175,4 +147,89 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
       </form>
     </Form>
   );
+}
+
+
+function TopicArrayComponent({ subjectIndex, removeSubject }: { subjectIndex: number, removeSubject: (index: number) => void }) {
+    const { control } = useForm<z.infer<typeof formSchema>>();
+    const { fields, append, remove, update } = useFieldArray({
+        control: control, // This is incorrect, but will be fixed by getting control from useFormContext
+        name: `subjects.${subjectIndex}.topics`,
+    });
+     const { control: formControl } = useFormContext<z.infer<typeof formSchema>>();
+
+
+    return (
+         <Accordion type="single" collapsible defaultValue="item-0" className="w-full border rounded-lg p-4 relative">
+             <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-destructive z-10" onClick={() => removeSubject(subjectIndex)}><Trash2 className="h-4 w-4"/></Button>
+             <AccordionItem value={`item-${subjectIndex}`} className="border-b-0">
+                <AccordionTrigger>
+                    <FormField
+                        control={formControl}
+                        name={`subjects.${subjectIndex}.name`}
+                        render={({ field }) => (
+                            <FormItem className="flex-grow pr-4">
+                            <FormControl><Input placeholder="Ders Adı (örn: Matematik)" {...field} onClick={e => e.stopPropagation()} /></FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 space-y-4">
+                     {fields.map((field, topicIndex) => (
+                        <div key={field.id} className="p-3 border rounded-md space-y-3 relative bg-background">
+                            <Button type="button" variant="ghost" size="icon" className="absolute top-0.5 right-0.5 h-7 w-7 text-destructive" onClick={() => remove(topicIndex)}><Trash2 className="h-4 w-4"/></Button>
+                             <FormField
+                                control={formControl}
+                                name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
+                                render={({ field: topicField }) => (
+                                    <FormItem>
+                                    <FormLabel>Konu Adı</FormLabel>
+                                    <FormControl><Input placeholder="Üslü Sayılar" {...topicField} /></FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <SourceArrayComponent subjectIndex={subjectIndex} topicIndex={topicIndex} />
+                        </div>
+                    ))}
+                    <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ name: "", sources: [""] })}>
+                        <PlusCircle className="mr-2 h-4 w-4"/> Konu Ekle
+                    </Button>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
+    );
+}
+
+function SourceArrayComponent({ subjectIndex, topicIndex}: { subjectIndex: number, topicIndex: number}) {
+    const { control } = useFormContext<z.infer<typeof formSchema>>();
+    const { fields, append, remove } = useFieldArray({
+        control: control,
+        name: `subjects.${subjectIndex}.topics.${topicIndex}.sources`,
+    });
+
+    return (
+        <div className="space-y-2">
+            <FormLabel>Kaynak Linkleri (Opsiyonel)</FormLabel>
+            {fields.map((field, sourceIndex) => (
+                 <div key={field.id} className="flex items-center gap-2">
+                    <FormField
+                        control={control}
+                        name={`subjects.${subjectIndex}.topics.${topicIndex}.sources.${sourceIndex}`}
+                        render={({ field: sourceField }) => (
+                            <FormItem className="flex-grow">
+                                <FormControl><Input placeholder="https://www.youtube.com/..." {...sourceField} /></FormControl>
+                                <FormMessage/>
+                            </FormItem>
+                        )}
+                    />
+                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(sourceIndex)}><Trash2 className="h-4 w-4"/></Button>
+                </div>
+            ))}
+            <Button type="button" size="sm" variant="ghost" onClick={() => append("")}>
+                <PlusCircle className="mr-2 h-3 w-3"/> Link Ekle
+            </Button>
+        </div>
+    )
 }

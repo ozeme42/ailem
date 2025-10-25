@@ -69,7 +69,7 @@ export default function EducationManagementPage() {
                     </Link>
                     <Link href="/education/management/study-plans">
                         <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                            <BookHeart className="mr-2 h-4 w-4" /> Konu Anlatımı Planları
+                            <BookHeart className="mr-2 h-4 w-4" /> Konu Anlatım Planları
                         </Button>
                     </Link>
                     <Link href="/education/management/questions">
