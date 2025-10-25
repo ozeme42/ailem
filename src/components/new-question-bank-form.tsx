@@ -93,9 +93,14 @@ export function NewQuestionBankForm({
         { id: 'C', text: '' }, { id: 'D', text: '' }
     ];
 
-    if (initialData?.options) {
+    if (initialData?.options && Object.keys(initialData.options).length > 0) {
         const optionKeys = Object.keys(initialData.options);
         initialOptions = optionKeys.map(key => ({ id: key, text: initialData.options![key] }));
+    } else if (initialData?.type === 'mcq' && (!initialData.options || Object.keys(initialData.options).length === 0)) {
+         initialOptions = [
+            { id: 'A', text: '' }, { id: 'B', text: '' },
+            { id: 'C', text: '' }, { id: 'D', text: '' }
+        ];
     }
     
     form.reset({
