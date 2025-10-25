@@ -10,7 +10,7 @@ import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, To
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -351,14 +351,18 @@ export function BookDetailClient() {
             <DialogTitle>{currentTest ? 'Testi Düzenle' : 'Yeni Test Ekle'}</DialogTitle>
             <DialogDescription>Ders: {currentSubject?.name} / Konu: {currentTopic?.name}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 py-4">
             <Input value={testFormData.name} onChange={e => setTestFormData(prev => ({...prev, name: e.target.value}))} placeholder="Test Adı (örn: Test 1)" />
             <Input type="number" value={testFormData.questionCount} onChange={e => setTestFormData(prev => ({...prev, questionCount: Number(e.target.value)}))} placeholder="Soru Sayısı" />
-            {book?.bookType !== 'open_ended' && (
-                 <AnswerKeyForm 
+            {book.bookType !== 'open_ended' ? (
+                <AnswerKeyForm 
                     totalQuestions={testFormData.questionCount} 
                     answerKey={testFormData.answerKey} 
                     onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} />
+            ) : (
+                <div className="p-4 text-center text-sm text-muted-foreground bg-muted rounded-md">
+                    Bu test açık uçlu olduğu için cevap anahtarı gerekmemektedir. Değerlendirme manuel olarak yapılacaktır.
+                </div>
             )}
           </div>
           <DialogFooter>
