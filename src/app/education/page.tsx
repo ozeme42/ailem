@@ -23,6 +23,7 @@ import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
@@ -284,25 +285,48 @@ export default function EducationPage() {
           <CardTitle>Konu Anlatımı Takibi</CardTitle>
           <CardDescription>Öğrencilerin konu anlatımı görevlerindeki ilerlemesi.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {studentMembers.map(student => {
-            const studentAssignments = studyAssignments.filter(sa => sa.studentId === student.id);
-            if(studentAssignments.length === 0) return null;
-            
-            const totalAssignments = studentAssignments.length;
-            const completedAssignments = studentAssignments.filter(sa => sa.status === 'completed').length;
-            const progress = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
-            
-            return (
-              <div key={student.id} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-center">
-                  <p className="font-semibold">{student.name}</p>
-                  <p className="text-sm text-muted-foreground">{completedAssignments} / {totalAssignments} tamamlandı</p>
-                </div>
-                <Progress value={progress} className="mt-2 h-2" />
-              </div>
-            )
-          })}
+        <CardContent>
+             <Accordion type="multiple" className="w-full space-y-4">
+                {studentMembers.map(student => {
+                    const studentAssignments = studyAssignments.filter(sa => sa.studentId === student.id);
+                    if (studentAssignments.length === 0) return null;
+
+                    const totalAssignments = studentAssignments.length;
+                    const completedAssignments = studentAssignments.filter(sa => sa.status === 'completed').length;
+                    const progress = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
+
+                    return (
+                        <AccordionItem key={student.id} value={student.id} className="border-b-0">
+                           <Card className="overflow-hidden">
+                             <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="flex justify-between items-center w-full">
+                                    <p className="font-semibold">{student.name}</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-32">
+                                            <Progress value={progress} className="h-2" />
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{completedAssignments} / {totalAssignments} tamamlandı</p>
+                                    </div>
+                                </div>
+                             </AccordionTrigger>
+                             <AccordionContent className="px-4 pb-4">
+                               <div className="space-y-2">
+                                {studentAssignments.map(assignment => (
+                                    <div key={assignment.id} className="flex justify-between items-center p-3 border rounded-md bg-muted/50">
+                                        <div>
+                                            <p className={cn("font-medium", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</p>
+                                            <p className="text-xs text-muted-foreground">{assignment.subject}</p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Bitiş: {format(parseISO(assignment.dueDate), "dd MMM", {locale: tr})}</p>
+                                    </div>
+                                ))}
+                               </div>
+                             </AccordionContent>
+                           </Card>
+                        </AccordionItem>
+                    )
+                })}
+             </Accordion>
            {studyAssignments.length === 0 && <p className="text-center text-muted-foreground p-4">Atanmış konu anlatımı görevi bulunmuyor.</p>}
         </CardContent>
       </Card>
