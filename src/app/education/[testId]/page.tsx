@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/components/auth-provider";
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
@@ -34,6 +35,7 @@ export default function OpticalFormPage() {
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
+    const { user, familyMembers } = useAuth();
     const testId = params.testId as string;
 
     const [test, setTest] = React.useState<TestType | null>(null);
@@ -104,11 +106,13 @@ export default function OpticalFormPage() {
                 if (test.familyId && test.studentId) {
                      await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
                 }
+                 router.push('/education');
             } else {
                  toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                     description: "Cevapların kaydedildi. Testin yakında manuel olarak değerlendirilecek.",
                 });
+                router.push('/education');
             }
 
         } catch (error) {
@@ -119,7 +123,7 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
-    }, [test, mcqAnswers, textAnswers, toast]);
+    }, [test, mcqAnswers, textAnswers, toast, router]);
     
 
     React.useEffect(() => {
@@ -225,6 +229,11 @@ export default function OpticalFormPage() {
         }
     };
 
+    const currentUserIsStudent = React.useMemo(() => {
+        if (!user || !test) return false;
+        return user.uid === test.studentId;
+    }, [user, test]);
+
 
     if (isLoading) {
          return (
@@ -320,6 +329,29 @@ export default function OpticalFormPage() {
     }
     
     if (test.status === 'Değerlendirme Bekliyor') {
+        // If the current user is the student, show a waiting message.
+        if (currentUserIsStudent) {
+            return (
+                <div className="container mx-auto py-8 text-center">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Değerlendirme Bekleniyor</CardTitle>
+                            <CardDescription>Testini tamamladın! Sonuçların yakında açıklanacak.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Link href="/education">
+                                <Button>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Eğitim Sayfasına Geri Dön
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+                </div>
+            )
+        }
+
+        // If not the student (i.e., a parent), show the grading interface.
         return (
             <div className="container mx-auto py-8 space-y-6">
                  <header className="mb-4">
@@ -443,3 +475,5 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+
+    
