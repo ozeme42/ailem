@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Send, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onStudyPlanUpdate, addStudyAssignment } from "@/lib/dataService";
-import type { StudyPlan, StudyPlanSubject, StudyTopic, FamilyMember } from "@/lib/data";
+import type { StudyPlan, StudyPlanSubject, StudyTopic, FamilyMember, StudyAssignment } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";

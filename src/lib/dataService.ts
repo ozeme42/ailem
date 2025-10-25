@@ -761,11 +761,37 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: BankQuestion[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'tests'), { ...data, familyId });
+
+    const batch = writeBatch(db);
+    const testDocRef = doc(collection(db, 'tests'));
+
+    let finalTestData: any = { ...data, familyId };
+
+    if (questions && questions.length > 0) {
+        const questionIds = questions.map((q, index) => ({
+            questionId: q.id,
+            questionNumber: index + 1,
+            imageUrl: q.imageUrl,
+        }));
+        const answerKey = questions.reduce((acc, q, index) => {
+            acc[(index + 1).toString()] = q.correctAnswer;
+            return acc;
+        }, {} as AnswerKey);
+
+        finalTestData = {
+            ...finalTestData,
+            questions: questionIds,
+            answerKey: answerKey,
+            questionCount: questions.length,
+        };
+    }
+    batch.set(testDocRef, finalTestData);
+    await batch.commit();
 };
+
 export const deleteTest = async (id: string) => {
     const batch = writeBatch(db);
 
@@ -788,6 +814,16 @@ export const deletePracticeExam = (id: string) => deleteDoc(doc(db, "practiceExa
 
 // Study Plans
 export const onStudyPlansUpdate = (callback: (plans: StudyPlan[]) => void) => onFamilyDataUpdate<StudyPlan>('studyPlans', callback);
+export const onStudyPlanUpdate = (planId: string, callback: (plan: StudyPlan | null) => void) => {
+  const docRef = doc(db, 'studyPlans', planId);
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback({ id: snapshot.id, ...snapshot.data() } as StudyPlan);
+    } else {
+      callback(null);
+    }
+  });
+};
 export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
