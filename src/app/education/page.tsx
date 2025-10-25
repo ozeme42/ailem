@@ -20,7 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { format, parseISO, parse, compareDesc } from 'date-fns';
+import { format, parseISO, parse, compareDesc, compareAsc, isToday } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -191,12 +191,6 @@ export default function EducationPage() {
   return (
     <>
       <PageHeader title="Eğitim & Sınav 🎓">
-        <Link href="/education/study">
-            <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                <BookHeart className="mr-2 h-4 w-4" />
-                Konu Anlatımı
-            </Button>
-        </Link>
          <Link href="/education/management">
             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Settings className="mr-2 h-4 w-4" />
