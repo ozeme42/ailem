@@ -46,7 +46,6 @@ const nextConfig = {
       }
     ],
   },
-  serverExternalPackages: ['framer-motion'],
 };
 
 module.exports = nextConfig;
