@@ -13,7 +13,7 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui
 import type { StudyPlan, StudyPlanSubject, StudyTopic } from "@/lib/data";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { Card, CardContent } from "./ui/card";
 
 const topicSchema = z.object({
   id: z.string().optional(),
@@ -44,7 +44,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     defaultValues: {
       title: "",
       description: "",
-      subjects: [{ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] }],
+      subjects: [],
     },
   });
   
@@ -82,7 +82,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
             ...subject,
             topics: subject.topics.map(topic => ({
                 ...topic,
-                id: topic.id || Date.now().toString() + Math.random(), // Ensure topic has an ID
+                id: topic.id || Date.now().toString() + Math.random(),
                 sources: (topic.sources || []).filter(s => s && s.trim() !== '')
             }))
         }))
@@ -125,21 +125,33 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                 )}
                 />
 
-                <div>
+                <div className="space-y-4">
                     <FormLabel>Dersler ve Konular</FormLabel>
-                    <div className="space-y-4 mt-2">
-                        {subjectFields.map((subjectField, subjectIndex) => (
-                           <TopicArrayComponent 
-                                key={subjectField.id}
-                                control={form.control}
-                                subjectIndex={subjectIndex}
-                                removeSubject={removeSubject}
-                           />
-                        ))}
-                         <Button type="button" variant="secondary" className="w-full" onClick={() => appendSubject({ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Ders Ekle
-                        </Button>
-                    </div>
+                    {subjectFields.map((subjectField, subjectIndex) => (
+                       <Card key={subjectField.id} className="p-4 bg-muted/50 relative">
+                           <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-destructive z-10" onClick={() => removeSubject(subjectIndex)}><Trash2 className="h-4 w-4"/></Button>
+                           <CardContent className="p-0 space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name={`subjects.${subjectIndex}.name`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Ders Adı</FormLabel>
+                                        <FormControl><Input placeholder="Matematik" {...field} /></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <TopicArrayComponent 
+                                   control={form.control}
+                                   subjectIndex={subjectIndex}
+                               />
+                           </CardContent>
+                       </Card>
+                    ))}
+                     <Button type="button" variant="secondary" className="w-full" onClick={() => appendSubject({ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Ders Ekle
+                    </Button>
                 </div>
             </div>
         </ScrollArea>
@@ -152,52 +164,36 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 }
 
 
-function TopicArrayComponent({ subjectIndex, removeSubject, control }: { subjectIndex: number, removeSubject: (index: number) => void, control: Control<z.infer<typeof formSchema>> }) {
+function TopicArrayComponent({ subjectIndex, control }: { subjectIndex: number, control: Control<z.infer<typeof formSchema>> }) {
     const { fields, append, remove } = useFieldArray({
         control,
         name: `subjects.${subjectIndex}.topics`,
     });
 
     return (
-         <Accordion type="single" collapsible defaultValue="item-0" className="w-full border rounded-lg p-4 relative">
-             <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-destructive z-10" onClick={() => removeSubject(subjectIndex)}><Trash2 className="h-4 w-4"/></Button>
-             <AccordionItem value={`item-${subjectIndex}`} className="border-b-0">
-                <AccordionTrigger>
-                    <FormField
+        <div className="space-y-3 pl-2 border-l-2 ml-2">
+             <FormLabel className="text-xs">Konular</FormLabel>
+             {fields.map((field, topicIndex) => (
+                <div key={field.id} className="p-3 border rounded-md space-y-3 relative bg-background">
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-0.5 right-0.5 h-7 w-7 text-destructive" onClick={() => remove(topicIndex)}><Trash2 className="h-4 w-4"/></Button>
+                     <FormField
                         control={control}
-                        name={`subjects.${subjectIndex}.name`}
-                        render={({ field }) => (
-                            <FormItem className="flex-grow pr-4">
-                            <FormControl><Input placeholder="Ders Adı (örn: Matematik)" {...field} onClick={e => e.stopPropagation()} /></FormControl>
+                        name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
+                        render={({ field: topicField }) => (
+                            <FormItem>
+                            <FormLabel>Konu Adı</FormLabel>
+                            <FormControl><Input placeholder="Üslü Sayılar" {...topicField} /></FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                     />
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                     {fields.map((field, topicIndex) => (
-                        <div key={field.id} className="p-3 border rounded-md space-y-3 relative bg-background">
-                            <Button type="button" variant="ghost" size="icon" className="absolute top-0.5 right-0.5 h-7 w-7 text-destructive" onClick={() => remove(topicIndex)}><Trash2 className="h-4 w-4"/></Button>
-                             <FormField
-                                control={control}
-                                name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
-                                render={({ field: topicField }) => (
-                                    <FormItem>
-                                    <FormLabel>Konu Adı</FormLabel>
-                                    <FormControl><Input placeholder="Üslü Sayılar" {...topicField} /></FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <SourceArrayComponent control={control} subjectIndex={subjectIndex} topicIndex={topicIndex} />
-                        </div>
-                    ))}
-                    <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ name: "", sources: [""] })}>
-                        <PlusCircle className="mr-2 h-4 w-4"/> Konu Ekle
-                    </Button>
-                </AccordionContent>
-            </AccordionItem>
-        </Accordion>
+                     <SourceArrayComponent control={control} subjectIndex={subjectIndex} topicIndex={topicIndex} />
+                </div>
+            ))}
+            <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ name: "", sources: [""] })}>
+                <PlusCircle className="mr-2 h-4 w-4"/> Konu Ekle
+            </Button>
+        </div>
     );
 }
 
