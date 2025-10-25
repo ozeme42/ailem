@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 
 export function QuestionsClient() {
   const { user } = useAuth();
@@ -114,7 +118,7 @@ export function QuestionsClient() {
             <QuestionList 
               questions={mcqQuestions} 
               onAdd={() => handleOpenForm(null, 'mcq')}
-              onBulkAdd={() => setIsBulkDialogOpen(true)}
+              onBulkAdd={() => { /* Implement bulk MCQ add later if needed */ toast({title: "Henüz Aktif Değil", description: "Bu özellik yakında eklenecektir."})}}
               onEdit={(q) => handleOpenForm(q, 'mcq')} 
               onDelete={handleDeleteQuestion} 
               type="mcq"
@@ -145,7 +149,7 @@ export function QuestionsClient() {
           />
         </DialogContent>
       </Dialog>
-      <BulkAddTextDialog 
+      <BulkAddImagesDialog 
         open={isBulkDialogOpen} 
         onOpenChange={setIsBulkDialogOpen} 
         onImport={handleBulkImport}
@@ -249,7 +253,13 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, type }: Q
   );
 }
 
-function BulkAddTextDialog({ 
+const bulkAddSchema = z.object({
+  subject: z.string().min(1, "Ders seçimi zorunludur."),
+  topic: z.string().min(1, "Konu seçimi zorunludur."),
+  images: z.array(z.string()).min(1, "En az bir resim yüklemelisiniz."),
+});
+
+function BulkAddImagesDialog({ 
     open, 
     onOpenChange, 
     onImport,
@@ -266,85 +276,109 @@ function BulkAddTextDialog({
     onSubjectCreate: (name: string) => void,
     onTopicCreate: (name: string) => void
 }) {
-    const [textInput, setTextInput] = useState('');
-    const [subject, setSubject] = useState('');
-    const [topic, setTopic] = useState('');
     const [isImporting, setIsImporting] = useState(false);
-    const { toast } = useToast();
+    
+    const form = useForm<z.infer<typeof bulkAddSchema>>({
+        resolver: zodResolver(bulkAddSchema),
+        defaultValues: { subject: '', topic: '', images: [] },
+    });
+    
+    const onDrop = useCallback((acceptedFiles: File[]) => {
+        const currentImages = form.getValues('images') || [];
+        const filePromises = acceptedFiles.map(file => 
+            new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+            })
+        );
+        Promise.all(filePromises).then(newImages => {
+            form.setValue('images', [...currentImages, ...newImages], { shouldValidate: true });
+        });
+    }, [form]);
 
-    const handleImportClick = () => {
-        if (!subject || !topic) {
-            toast({ title: "Hata", description: "Lütfen bir ders ve konu seçin.", variant: "destructive" });
-            return;
-        }
-        const titles = textInput.split('\n').map(t => t.trim()).filter(Boolean);
-        if (titles.length === 0) {
-            toast({ title: "Hata", description: "Lütfen en az bir soru başlığı girin.", variant: "destructive" });
-            return;
-        }
-        
-        setIsImporting(true);
-        const questionsToImport = titles.map(title => ({
-            title,
-            subject,
-            topic,
-            type: 'open_ended' as const,
-            imageUrl: 'https://placehold.co/600x400.png', // Placeholder image
-        }));
-
-        onImport(questionsToImport).finally(() => setIsImporting(false));
-        setTextInput('');
-        setSubject('');
-        setTopic('');
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] }
+    });
+    
+    const handleRemoveImage = (index: number) => {
+        const currentImages = form.getValues('images') || [];
+        form.setValue('images', currentImages.filter((_, i) => i !== index));
     };
 
+    const handleImportClick = (values: z.infer<typeof bulkAddSchema>) => {
+        setIsImporting(true);
+        const questionsToImport = values.images.map((imageDataUri, index) => ({
+            title: `${values.topic} - Soru ${index + 1}`,
+            subject: values.subject,
+            topic: values.topic,
+            type: 'open_ended' as const,
+            imageUrl: imageDataUri, // This is a data URI, will be uploaded by the handler
+        }));
+
+        onImport(questionsToImport).finally(() => {
+            setIsImporting(false);
+            form.reset();
+        });
+    };
+    
+    const subjectOptions = existingSubjects.map(s => ({label: s, value: s}));
+    const topicOptions = existingTopics.map(s => ({label: s, value: s}));
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl">
+        <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Toplu Açık Uçlu Soru Ekle</DialogTitle>
                     <DialogDescription>
-                       Her satıra bir soru başlığı gelecek şekilde yapıştırın. Tüm sorular seçili ders ve konuya eklenecektir.
+                       Birden çok soru görseli seçin. Tüm sorular seçili ders ve konuya eklenecektir.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="h-[60vh] pr-4">
-                  <div className="space-y-4 mt-4">
-                      <Combobox
-                          options={existingSubjects.map(s => ({label: s, value: s}))}
-                          value={subject}
-                          onChange={setSubject}
-                          onCreate={onSubjectCreate}
-                          placeholder="Ders seç veya oluştur..."
-                          notfoundText="Ders bulunamadı."
-                          createText="Yeni ders oluştur:"
-                      />
-                       <Combobox
-                          options={existingTopics.map(s => ({label: s, value: s}))}
-                          value={topic}
-                          onChange={setTopic}
-                          onCreate={onTopicCreate}
-                          placeholder="Konu seç veya oluştur..."
-                          notfoundText="Konu bulunamadı."
-                          createText="Yeni konu oluştur:"
-                      />
-                      <Textarea 
-                        id="text-input" 
-                        value={textInput} 
-                        onChange={(e) => setTextInput(e.target.value)} 
-                        className="h-48 font-mono text-sm" 
-                        placeholder="1. Dünya Savaşı'nın nedenleri nelerdir?&#10;Osmanlı Devleti'nin duraklama dönemine girmesinin iç sebepleri..."
-                        disabled={isImporting} 
-                      />
-                  </div>
-                </ScrollArea>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
-                    <Button onClick={handleImportClick} disabled={isImporting}>
-                        {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        İçeri Aktar
-                    </Button>
-                </DialogFooter>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-4">
+                        <ScrollArea className="h-[60vh] pr-4">
+                          <div className="space-y-4 mt-4">
+                               <div 
+                                  {...getRootProps()} 
+                                  className={`w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer ${isDragActive ? 'border-primary bg-primary/10' : ''}`}
+                               >
+                                  <input {...getInputProps()} />
+                                  <UploadCloud className="h-10 w-10"/>
+                                  <p className="mt-2 text-sm">Resimleri sürükle bırak veya tıkla</p>
+                               </div>
+                               
+                               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                  {(form.watch('images') || []).map((image, index) => (
+                                      <div key={index} className="relative group">
+                                          <NextImage src={image} alt={`Önizleme ${index}`} width={100} height={100} className="w-full h-auto object-cover rounded-md border"/>
+                                          <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveImage(index)}>
+                                             <X className="h-4 w-4"/>
+                                          </Button>
+                                      </div>
+                                  ))}
+                               </div>
+                               
+                               <FormField control={form.control} name="subject" render={({field}) => (
+                                 <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value} onChange={field.onChange} onCreate={onSubjectCreate} placeholder="Ders seç veya oluştur..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:"/><FormMessage/></FormItem>
+                               )}/>
+                               <FormField control={form.control} name="topic" render={({field}) => (
+                                 <FormItem><FormLabel>Konu</FormLabel><Combobox options={topicOptions} value={field.value} onChange={field.onChange} onCreate={onTopicCreate} placeholder="Konu seç veya oluştur..." notfoundText="Konu bulunamadı." createText="Yeni konu oluştur:"/><FormMessage/></FormItem>
+                               )}/>
+                          </div>
+                        </ScrollArea>
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
+                            <Button type="submit" disabled={isImporting}>
+                                {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {form.getValues('images')?.length || 0} Soruyu İçe Aktar
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     );
 }
+
+    
