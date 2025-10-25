@@ -822,13 +822,6 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
 export const updateStudyPlan = (id: string, data: Partial<Omit<StudyPlan, 'id' | 'familyId'>>) => {
   const planRef = doc(db, 'studyPlans', id);
   const cleanedData = removeUndefined(data);
-
-  if (cleanedData.subjects) {
-    return updateDoc(planRef, {
-      subjects: arrayUnion(...cleanedData.subjects)
-    });
-  }
-  
   return updateDoc(planRef, cleanedData);
 };
 
