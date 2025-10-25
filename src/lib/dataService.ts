@@ -822,7 +822,7 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
 export const updateStudyPlan = (id: string, data: Partial<Omit<StudyPlan, 'id' | 'familyId'>>) => {
   const planRef = doc(db, 'studyPlans', id);
   const cleanedData = removeUndefined(data);
-  return updateDoc(planRef, cleanedData);
+  return setDoc(planRef, cleanedData, { merge: true });
 };
 
 
@@ -1398,7 +1398,10 @@ export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'crea
     };
     return addDoc(collection(db, 'notebooks'), newNotebook);
 };
-export const updateNotebook = (id: string, data: Partial<Omit<Notebook, 'id' | 'familyId'>>) => updateDoc(doc(db, 'notebooks', id), data);
+export const updateNotebook = (id: string, data: Partial<Omit<Notebook, 'id' | 'familyId'>>) => {
+    const cleanedData = removeUndefined(data);
+    return updateDoc(doc(db, 'notebooks', id), cleanedData);
+};
 export const deleteNotebook = (id: string) => deleteDoc(doc(db, "notebooks", id));
 
 export const updateNotebookFolder = async (notebookId: string, sectionId: string, oldName: string, newName: string) => {
@@ -1887,5 +1890,7 @@ export const addBulkTrackedBookTests = async (bookId: string, subjectId: string,
 };
 export const updateTrackedBookTest = (id: string, data: Partial<Omit<TrackedBookTest, 'id'>>) => updateDoc(doc(db, 'trackedBookTests', id), removeUndefined(data));
 export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
+
+    
 
     
