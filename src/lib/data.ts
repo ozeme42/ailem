@@ -421,7 +421,7 @@ export interface Test {
   questionCount: number;
   assignedDate: string;
   dueDate: string;
-  status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı';
+  status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
   isArchived: boolean;
   sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook';
   sourceId?: string;
@@ -435,6 +435,7 @@ export interface Test {
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   questions?: QuickTestQuestion[]; 
+  openEnded?: boolean; // New flag for open-ended tests
   studentTextAnswers?: { [key: string]: string }; // For open-ended questions
   studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
   topicId?: string;

@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 
 export function BookDetailClient() {
@@ -120,13 +121,18 @@ export function BookDetailClient() {
 
   const handleTestSave = async () => {
     if (!book || !currentSubject || !currentTopic || !testFormData.name.trim()) return;
+
     const testPayload: Partial<Omit<TrackedBookTest, 'id'>> = {
       subjectId: currentSubject.id,
       topicId: currentTopic.id,
       name: testFormData.name,
       questionCount: testFormData.questionCount,
-      answerKey: testFormData.answerKey,
     };
+    
+    if (book.bookType !== 'open_ended') {
+        testPayload.answerKey = testFormData.answerKey;
+    }
+
     if (currentTest) { // Editing
       await updateTrackedBookTest(currentTest.id, testPayload);
     } else { // Adding
@@ -175,9 +181,10 @@ export function BookDetailClient() {
               dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
               sourceType: 'trackedBook' as const,
               sourceId: testToAssign.id,
-              gradingType: 'auto' as const,
+              gradingType: book.bookType === 'open_ended' ? 'manual' as const : 'auto' as const,
               status: 'Atandı' as const,
-              answerKey: testToAssign.answerKey,
+              answerKey: book.bookType !== 'open_ended' ? testToAssign.answerKey : undefined,
+              openEnded: book.bookType === 'open_ended',
           };
       
           await addTest(testData);
@@ -347,10 +354,12 @@ export function BookDetailClient() {
           <div className="space-y-4">
             <Input value={testFormData.name} onChange={e => setTestFormData(prev => ({...prev, name: e.target.value}))} placeholder="Test Adı (örn: Test 1)" />
             <Input type="number" value={testFormData.questionCount} onChange={e => setTestFormData(prev => ({...prev, questionCount: Number(e.target.value)}))} placeholder="Soru Sayısı" />
-            <AnswerKeyForm 
-                totalQuestions={testFormData.questionCount} 
-                answerKey={testFormData.answerKey} 
-                onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} />
+            {book?.bookType !== 'open_ended' && (
+                 <AnswerKeyForm 
+                    totalQuestions={testFormData.questionCount} 
+                    answerKey={testFormData.answerKey} 
+                    onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} />
+            )}
           </div>
           <DialogFooter>
              <Button variant="ghost" onClick={() => setIsTestDialogOpen(false)}>İptal</Button>

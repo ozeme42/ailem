@@ -22,8 +22,10 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 type McqAnswers = { [key: string]: string | null };
+type TextAnswers = { [key: string]: string };
 type AnswerKey = { [key: string]: string };
 type EvaluationStatus = "correct" | "incorrect" | "unevaluated" | "empty";
 type ManualEvaluation = { [key: string]: EvaluationStatus };
@@ -37,6 +39,7 @@ export default function OpticalFormPage() {
     const [test, setTest] = React.useState<TestType | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
+    const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     
     // State for manual evaluation
     const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluation>({});
@@ -44,59 +47,67 @@ export default function OpticalFormPage() {
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
         
-        let allStudentMcqAnswers: McqAnswers = {};
-        for (let i = 1; i <= test.questionCount; i++) {
-            const qNumStr = i.toString();
-            allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
-        }
-
+        const isMcqTest = !test.openEnded;
+        
         try {
             let updatedData: Partial<TestType> = {
                 timerStatus: 'finished',
-                studentAnswers: allStudentMcqAnswers
             };
-            
-            const answerKey = test.answerKey;
 
-            if (answerKey && Object.keys(answerKey).length > 0) {
-                let correct = 0;
-                let incorrect = 0;
-                let empty = 0;
-
+            if (isMcqTest) {
+                let allStudentMcqAnswers: McqAnswers = {};
                 for (let i = 1; i <= test.questionCount; i++) {
                     const qNumStr = i.toString();
-                    if (!allStudentMcqAnswers[qNumStr] || allStudentMcqAnswers[qNumStr] === null) {
-                        empty++;
-                    } else if (allStudentMcqAnswers[qNumStr] === (answerKey as any)[qNumStr]) {
-                        correct++;
-                    } else {
-                        incorrect++;
-                    }
+                    allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
                 }
-                
-                const score = (correct / test.questionCount) * 100;
-                updatedData.status = 'Sonuçlandı';
-                updatedData.correctAnswers = correct;
-                updatedData.incorrectAnswers = incorrect;
-                updatedData.emptyAnswers = empty;
-                updatedData.score = score;
-                
-                await updateTest(test.id, updatedData);
-                
-                toast({
+                updatedData.studentAnswers = allStudentMcqAnswers;
+
+                const answerKey = test.answerKey;
+                if (answerKey && Object.keys(answerKey).length > 0) {
+                    let correct = 0;
+                    let incorrect = 0;
+                    let empty = 0;
+
+                    for (let i = 1; i <= test.questionCount; i++) {
+                        const qNumStr = i.toString();
+                        if (!allStudentMcqAnswers[qNumStr] || allStudentMcqAnswers[qNumStr] === null) {
+                            empty++;
+                        } else if (allStudentMcqAnswers[qNumStr] === (answerKey as any)[qNumStr]) {
+                            correct++;
+                        } else {
+                            incorrect++;
+                        }
+                    }
+                    
+                    const score = (correct / test.questionCount) * 100;
+                    updatedData.status = 'Sonuçlandı';
+                    updatedData.correctAnswers = correct;
+                    updatedData.incorrectAnswers = incorrect;
+                    updatedData.emptyAnswers = empty;
+                    updatedData.score = score;
+                } else {
+                     updatedData.status = 'Değerlendirme Bekliyor';
+                }
+
+            } else { // Open-ended test
+                updatedData.studentTextAnswers = textAnswers;
+                updatedData.status = 'Değerlendirme Bekliyor';
+            }
+            
+            await updateTest(test.id, updatedData);
+            
+            if (updatedData.status === 'Sonuçlandı') {
+                 toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı ve Değerlendirildi!",
                     description: "Cevapların başarıyla kaydedildi ve testin anında değerlendirildi.",
                 });
-
                 if (test.familyId && test.studentId) {
                      await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
                 }
             } else {
-                updatedData.status = 'Değerlendirme Bekliyor';
-                await updateTest(test.id, updatedData);
-                toast({
+                 toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
-                    description: "Cevapların kaydedildi ama cevap anahtarı bulunamadı. Testin yakında manuel olarak değerlendirilecek.",
+                    description: "Cevapların kaydedildi. Testin yakında manuel olarak değerlendirilecek.",
                 });
             }
 
@@ -108,7 +119,7 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
-    }, [test, mcqAnswers, toast]);
+    }, [test, mcqAnswers, textAnswers, toast]);
     
 
     React.useEffect(() => {
@@ -122,23 +133,33 @@ export default function OpticalFormPage() {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 setTest(currentTest);
-                setMcqAnswers(currentTest.studentAnswers || {});
+                if (currentTest.openEnded) {
+                    setTextAnswers(currentTest.studentTextAnswers || {});
+                } else {
+                    setMcqAnswers(currentTest.studentAnswers || {});
+                }
 
                 if (currentTest.status === 'Değerlendirme Bekliyor') {
                     const initialEvals: ManualEvaluation = {};
-                    for (let i = 1; i <= currentTest.questionCount; i++) {
+                     for (let i = 1; i <= currentTest.questionCount; i++) {
                         const qNumStr = i.toString();
-                        const studentAns = currentTest.studentAnswers?.[qNumStr];
-                        const correctAns = currentTest.answerKey?.[qNumStr];
-
-                        if (!studentAns) {
-                            initialEvals[qNumStr] = 'empty';
-                        } else if (correctAns && studentAns === correctAns) {
-                            initialEvals[qNumStr] = 'correct';
-                        } else if (correctAns && studentAns !== correctAns) {
-                            initialEvals[qNumStr] = 'incorrect';
+                        
+                        if(currentTest.openEnded){
+                            // If there is an evaluation already, use it. Otherwise, unevaluated.
+                            initialEvals[qNumStr] = currentTest.studentTextAnswersEvaluation?.[qNumStr] || 'unevaluated';
                         } else {
-                            initialEvals[qNumStr] = 'unevaluated';
+                            const studentAns = currentTest.studentAnswers?.[qNumStr];
+                            const correctAns = currentTest.answerKey?.[qNumStr];
+
+                            if (!studentAns) {
+                                initialEvals[qNumStr] = 'empty';
+                            } else if (correctAns && studentAns === correctAns) {
+                                initialEvals[qNumStr] = 'correct';
+                            } else if (correctAns && studentAns !== correctAns) {
+                                initialEvals[qNumStr] = 'incorrect';
+                            } else {
+                                initialEvals[qNumStr] = 'unevaluated';
+                            }
                         }
                     }
                     setManualEvaluations(initialEvals);
@@ -170,11 +191,12 @@ export default function OpticalFormPage() {
         Object.values(manualEvaluations).forEach(status => {
             if (status === 'correct') correct++;
             else if (status === 'incorrect') incorrect++;
-            else if (status === 'empty') empty++;
+            else if (status === 'empty' || status === 'unevaluated') empty++;
         });
 
-        const unevaluatedCount = test.questionCount - (correct + incorrect + empty);
-        if (unevaluatedCount > 0) {
+        const unevaluatedCount = Object.values(manualEvaluations).filter(s => s === 'unevaluated').length;
+        
+        if (unevaluatedCount > 0 && test.openEnded) {
             toast({
                 title: "Eksik Değerlendirme",
                 description: `${unevaluatedCount} soru henüz değerlendirilmedi.`,
@@ -191,6 +213,7 @@ export default function OpticalFormPage() {
                 incorrectAnswers: incorrect,
                 emptyAnswers: empty,
                 score: score,
+                studentTextAnswersEvaluation: manualEvaluations,
             };
             await updateTest(test.id, updatedData);
             toast({ title: "Değerlendirme Kaydedildi!", description: "Test sonuçları başarıyla güncellendi." });
@@ -264,14 +287,13 @@ export default function OpticalFormPage() {
                     <CardContent className="space-y-4">
                         {Array.from({ length: test.questionCount }).map((_, i) => {
                             const qNumStr = (i + 1).toString();
-                            const studentAns = studentAnswers[qNumStr];
-                            const correctAns = answerKey[qNumStr];
-                            const isCorrect = studentAns === correctAns;
-                            const isIncorrect = studentAns !== null && studentAns !== undefined && studentAns !== correctAns;
+                            const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : studentAnswers[qNumStr];
+                            const correctAns = test.openEnded ? undefined : answerKey[qNumStr];
+                            const evalStatus = test.openEnded ? test.studentTextAnswersEvaluation?.[qNumStr] : (studentAnswers[qNumStr] === answerKey[qNumStr] ? 'correct' : (studentAnswers[qNumStr] ? 'incorrect' : 'empty'));
 
                             let statusIcon;
-                            if (isCorrect) statusIcon = <CheckCircle className="h-6 w-6 text-green-500"/>
-                            else if (isIncorrect) statusIcon = <XCircle className="h-6 w-6 text-red-500"/>
+                            if (evalStatus === 'correct') statusIcon = <CheckCircle className="h-6 w-6 text-green-500"/>
+                            else if (evalStatus === 'incorrect') statusIcon = <XCircle className="h-6 w-6 text-red-500"/>
                             else statusIcon = <MinusCircle className="h-6 w-6 text-gray-500"/>;
 
                             return (
@@ -280,10 +302,14 @@ export default function OpticalFormPage() {
                                         <h4 className="font-bold">Soru {qNumStr}</h4>
                                         {statusIcon}
                                     </div>
-                                    <div className="flex gap-4 mt-4">
-                                        <p>Senin Cevabın: <Badge variant={isCorrect ? 'default' : isIncorrect ? 'destructive' : 'secondary'}>{studentAns || 'Boş'}</Badge></p>
-                                        <p>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></p>
-                                    </div>
+                                    {test.openEnded ? (
+                                        <p className="p-3 bg-muted rounded-md whitespace-pre-wrap">{studentAns || "Cevap verilmedi."}</p>
+                                    ) : (
+                                        <div className="flex gap-4 mt-4">
+                                            <p>Senin Cevabın: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'Boş'}</Badge></p>
+                                            <p>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></p>
+                                        </div>
+                                    )}
                                 </div>
                             )
                         })}
@@ -311,26 +337,25 @@ export default function OpticalFormPage() {
                  <div className="space-y-4">
                     {Array.from({ length: test.questionCount }).map((_, i) => {
                         const qNumStr = (i + 1).toString();
-                        const studentAns = test.studentAnswers?.[qNumStr];
-                        const correctAns = test.answerKey?.[qNumStr];
+                        const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : test.studentAnswers?.[qNumStr];
+                        const correctAns = test.openEnded ? undefined : test.answerKey?.[qNumStr];
                         const evalStatus = manualEvaluations[qNumStr];
-                        const questionImage = test.questions?.find(q => q.questionNumber === i + 1)?.imageUrl;
 
                         return (
                             <Card key={qNumStr} className="p-4">
                                 <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
-                                {questionImage && (
-                                     <div className="mb-4 border rounded-md overflow-hidden">
-                                        <Image src={questionImage} alt={`Soru ${qNumStr}`} width={800} height={400} className="w-full h-auto object-contain" data-ai-hint="question paper"/>
+                                {test.openEnded ? (
+                                    <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
+                                ) : (
+                                     <div className="flex gap-4 items-center mb-4">
+                                        <div>Öğrenci Cevabı: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'BOŞ'}</Badge></div>
+                                        <div>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns || 'Belirtilmemiş'}</Badge></div>
                                     </div>
                                 )}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                                    <div>Öğrenci Cevabı: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'BOŞ'}</Badge></div>
-                                    <div>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns || 'Belirtilmemiş'}</Badge></div>
-                                    <div className="flex gap-2 justify-self-end">
-                                        <Button size="sm" variant={evalStatus === 'correct' ? 'default' : 'outline'} className="bg-green-100 text-green-800 data-[state=active]:bg-green-600" onClick={() => handleEvaluationChange(qNumStr, 'correct')}>Doğru</Button>
-                                        <Button size="sm" variant={evalStatus === 'incorrect' ? 'destructive' : 'outline'} onClick={() => handleEvaluationChange(qNumStr, 'incorrect')}>Yanlış</Button>
-                                    </div>
+                               <div className="flex gap-2 justify-end">
+                                    <Button size="sm" variant={evalStatus === 'correct' ? 'default' : 'outline'} className="bg-green-100 text-green-800 data-[state=active]:bg-green-600" onClick={() => handleEvaluationChange(qNumStr, 'correct')}>Doğru</Button>
+                                    <Button size="sm" variant={evalStatus === 'incorrect' ? 'destructive' : 'outline'} onClick={() => handleEvaluationChange(qNumStr, 'incorrect')}>Yanlış</Button>
+                                    <Button size="sm" variant={evalStatus === 'empty' ? 'secondary' : 'outline'} onClick={() => handleEvaluationChange(qNumStr, 'empty')}>Boş</Button>
                                 </div>
                             </Card>
                         )
@@ -345,7 +370,13 @@ export default function OpticalFormPage() {
         setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
     };
 
-    const answeredQuestions = Object.values(mcqAnswers).filter(a => a !== null).length
+    const handleTextAnswerChange = (questionNumber: number, value: string) => {
+        setTextAnswers(prev => ({...prev, [questionNumber]: value}));
+    }
+
+    const answeredQuestions = test.openEnded 
+        ? Object.values(textAnswers).filter(a => a?.trim() !== '').length
+        : Object.values(mcqAnswers).filter(a => a !== null).length;
 
     return (
         <div className="container mx-auto py-8">
@@ -367,13 +398,22 @@ export default function OpticalFormPage() {
                                 {Array.from({ length: test.questionCount }).map((_, i) => {
                                     const qNum = i + 1;
                                     return (
-                                        <div key={qNum} className="flex items-start sm:items-center gap-4 p-3 rounded-lg border">
+                                        <div key={qNum} className="flex flex-col sm:flex-row items-start gap-4 p-3 rounded-lg border">
                                             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{qNum}</div>
-                                            <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
-                                                {['A', 'B', 'C', 'D'].map(option => (
-                                                    <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
-                                                ))}
-                                            </RadioGroup>
+                                            {test.openEnded ? (
+                                                <Textarea 
+                                                    placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
+                                                    value={textAnswers[qNum] || ""} 
+                                                    onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
+                                                    className="flex-grow min-h-[100px]"
+                                                />
+                                            ) : (
+                                                <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
+                                                    {['A', 'B', 'C', 'D'].map(option => (
+                                                        <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
+                                                    ))}
+                                                </RadioGroup>
+                                            )}
                                         </div>
                                     )
                                 })}
@@ -386,7 +426,7 @@ export default function OpticalFormPage() {
                         <CardHeader className="text-center"><CardTitle>Test Bilgisi</CardTitle></CardHeader>
                         <CardContent className="space-y-6">
                             <div className="text-center">
-                                <p className="text-muted-foreground">İşaretlenen Soru</p>
+                                <p className="text-muted-foreground">Cevaplanan Soru</p>
                                 <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestions} / {test.questionCount}</p>
                             </div>
                            <AlertDialog>
@@ -403,5 +443,3 @@ export default function OpticalFormPage() {
         </div>
     )
 }
-
-    
