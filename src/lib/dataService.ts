@@ -829,16 +829,17 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'studyPlans'), { ...data, familyId });
 };
-export const updateStudyPlan = async (id: string, data: Partial<Omit<StudyPlan, 'id'>>) => {
+export const updateStudyPlan = async (id: string, data: Partial<Omit<StudyPlan, 'id' | 'familyId'>>) => {
     const planRef = doc(db, 'studyPlans', id);
-    const planSnap = await getDoc(planRef);
-    if (!planSnap.exists()) {
-        throw new Error("Study plan not found.");
+    if (data.subjects) {
+      // If we are updating subjects, use arrayUnion to add new ones without overwriting.
+      // This is a simplified approach. For complex edits (reordering, deleting), a read-modify-write is better.
+      return updateDoc(planRef, {
+        subjects: arrayUnion(...data.subjects)
+      });
     }
-    const currentData = planSnap.data();
-    const updatedData = { ...currentData, ...data };
-    
-    return updateDoc(planRef, removeUndefined(updatedData));
+    // For other fields, a simple update is fine.
+    return updateDoc(planRef, removeUndefined(data));
 };
 
 export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, 'studyPlans', id));
