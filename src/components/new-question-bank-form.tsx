@@ -30,15 +30,16 @@ const formSchema = z.object({
   topic: z.string().min(1, "Konu seçimi zorunludur."),
   imageDataUri: z.string().min(1, "Soru görseli yüklemek zorunludur."),
   type: z.enum(['mcq', 'open_ended']).default('mcq'),
-  options: z.array(optionSchema).optional(),
+  options: z.record(z.string()).optional(), // Changed to a record object
   correctAnswer: z.string().optional(),
-}).refine(data => data.type === 'open_ended' || (data.options && data.options.length >= 2), {
+}).refine(data => data.type === 'open_ended' || (data.options && Object.keys(data.options).length >= 2), {
     message: "Çoktan seçmeli sorular için en az 2 seçenek gereklidir.",
     path: ["options"],
 }).refine(data => data.type === 'open_ended' || (!!data.correctAnswer), {
     message: "Lütfen doğru seçeneği işaretleyin.",
     path: ["correctAnswer"],
 });
+
 
 type NewQuestionFormProps = {
   availableSubjects: string[];
@@ -63,44 +64,27 @@ export function NewQuestionBankForm({
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [optionKeys, setOptionKeys] = React.useState(['A', 'B', 'C', 'D']);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-        options: [
-            { id: 'A', text: '' },
-            { id: 'B', text: '' },
-            { id: 'C', text: '' },
-            { id: 'D', text: '' },
-        ],
+        options: { 'A': '', 'B': '', 'C': '', 'D': '' },
         correctAnswer: 'A',
         type: defaultType,
     }
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
-      control: form.control,
-      name: 'options'
-  });
-  
   const watchedImageDataUri = form.watch("imageDataUri");
   const questionType = form.watch("type");
 
   React.useEffect(() => {
     let type = initialData?.type || defaultType;
-    let initialOptions = [
-        { id: 'A', text: '' }, { id: 'B', text: '' },
-        { id: 'C', text: '' }, { id: 'D', text: '' }
-    ];
+    let initialOptions = { 'A': '', 'B': '', 'C': '', 'D': '' };
 
     if (initialData?.options && Object.keys(initialData.options).length > 0) {
-        const optionKeys = Object.keys(initialData.options);
-        initialOptions = optionKeys.map(key => ({ id: key, text: initialData.options![key] }));
-    } else if (initialData?.type === 'mcq' && (!initialData.options || Object.keys(initialData.options).length === 0)) {
-         initialOptions = [
-            { id: 'A', text: '' }, { id: 'B', text: '' },
-            { id: 'C', text: '' }, { id: 'D', text: '' }
-        ];
+        initialOptions = initialData.options;
+        setOptionKeys(Object.keys(initialData.options));
     }
     
     form.reset({
@@ -111,8 +95,7 @@ export function NewQuestionBankForm({
         options: initialOptions,
         type: type,
     });
-    replace(initialOptions); // Ensure useFieldArray is synced
-  }, [initialData, form, defaultType, replace]);
+  }, [initialData, form, defaultType]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,16 +110,15 @@ export function NewQuestionBankForm({
   };
 
   const handleOptionCountChange = (newCount: number) => {
-      const currentCount = fields.length;
-      if (newCount > currentCount) {
-          for (let i = currentCount; i < newCount; i++) {
-              append({ id: String.fromCharCode(65 + i), text: '' });
+      const currentKeys = [...optionKeys];
+      if (newCount > currentKeys.length) {
+          for (let i = currentKeys.length; i < newCount; i++) {
+              currentKeys.push(String.fromCharCode(65 + i));
           }
-      } else if (newCount < currentCount) {
-          for (let i = currentCount - 1; i >= newCount; i--) {
-              remove(i);
-          }
+      } else if (newCount < currentKeys.length) {
+          currentKeys.length = newCount;
       }
+      setOptionKeys(currentKeys);
   };
 
 
@@ -162,10 +144,7 @@ export function NewQuestionBankForm({
           finalImageUrl = migrationResult.newUrl;
       }
       
-      const optionsObject = values.type === 'mcq' ? (values.options || []).reduce((acc, option) => {
-        acc[option.id] = option.text;
-        return acc;
-      }, {} as Record<string, string>) : undefined;
+      const optionsObject = values.type === 'mcq' ? (values.options || {}) : undefined;
 
       const questionData: Partial<Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'>> = {
         subject: values.subject,
@@ -298,23 +277,23 @@ export function NewQuestionBankForm({
                             <div className="flex justify-between items-center">
                                 <FormLabel>Seçenekler ve Doğru Cevap</FormLabel>
                                 <div className="flex items-center gap-2">
-                                    <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length - 1)} disabled={fields.length <= 2}><Minus className="h-4 w-4"/></Button>
-                                    <span className="text-sm font-medium">{fields.length} Şık</span>
-                                    <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length + 1)} disabled={fields.length >= 5}><Plus className="h-4 w-4"/></Button>
+                                    <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(optionKeys.length - 1)} disabled={optionKeys.length <= 2}><Minus className="h-4 w-4"/></Button>
+                                    <span className="text-sm font-medium">{optionKeys.length} Şık</span>
+                                    <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(optionKeys.length + 1)} disabled={optionKeys.length >= 5}><Plus className="h-4 w-4"/></Button>
                                 </div>
                             </div>
                             <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-2">
-                                {fields.map((option, index) => (
-                                    <div key={option.id} className="flex items-center gap-2">
+                                {optionKeys.map((key) => (
+                                    <div key={key} className="flex items-center gap-2">
                                         <FormControl>
-                                            <RadioGroupItem value={option.id} id={option.id} />
+                                            <RadioGroupItem value={key} id={key} />
                                         </FormControl>
-                                        <label htmlFor={option.id} className="font-bold w-4 text-center">{option.id}</label>
+                                        <label htmlFor={key} className="font-bold w-4 text-center">{key}</label>
                                         <FormField
                                             control={form.control}
-                                            name={`options.${index}.text`}
+                                            name={`options.${key}`}
                                             render={({ field: optionField }) => (
-                                                <Input {...optionField} placeholder={`${option.id} seçeneğinin metni...`}/>
+                                                <Input {...optionField} placeholder={`${key} seçeneğinin metni...`} />
                                             )}
                                         />
                                     </div>
