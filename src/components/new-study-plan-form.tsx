@@ -3,19 +3,20 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useFormContext } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
-import type { StudyPlan, StudyPlanSubject } from "@/lib/data";
+import type { StudyPlan, StudyPlanSubject, StudyTopic } from "@/lib/data";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 const topicSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(2, "Konu adı en az 2 karakter olmalıdır."),
   sources: z.array(z.string().url("Geçerli bir link girin.").or(z.literal(''))).optional(),
 });
@@ -52,7 +53,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
       form.reset({
         title: initialData.title,
         description: initialData.description || "",
-        subjects: initialData.subjects.map(s => ({
+        subjects: (initialData.subjects || []).map(s => ({
             ...s,
             topics: (s.topics || []).map(t => ({
                 ...t,
@@ -82,7 +83,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
             topics: subject.topics.map(topic => ({
                 ...topic,
                 id: topic.id || Date.now().toString() + Math.random(), // Ensure topic has an ID
-                sources: (topic.sources || []).filter(s => s.trim() !== '')
+                sources: (topic.sources || []).filter(s => s && s.trim() !== '')
             }))
         }))
     }
@@ -151,13 +152,11 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 
 
 function TopicArrayComponent({ subjectIndex, removeSubject }: { subjectIndex: number, removeSubject: (index: number) => void }) {
-    const { control } = useForm<z.infer<typeof formSchema>>();
-    const { fields, append, remove, update } = useFieldArray({
-        control: control, // This is incorrect, but will be fixed by getting control from useFormContext
+    const { control } = useFormContext<z.infer<typeof formSchema>>();
+    const { fields, append, remove } = useFieldArray({
+        control,
         name: `subjects.${subjectIndex}.topics`,
     });
-     const { control: formControl } = useFormContext<z.infer<typeof formSchema>>();
-
 
     return (
          <Accordion type="single" collapsible defaultValue="item-0" className="w-full border rounded-lg p-4 relative">
@@ -165,7 +164,7 @@ function TopicArrayComponent({ subjectIndex, removeSubject }: { subjectIndex: nu
              <AccordionItem value={`item-${subjectIndex}`} className="border-b-0">
                 <AccordionTrigger>
                     <FormField
-                        control={formControl}
+                        control={control}
                         name={`subjects.${subjectIndex}.name`}
                         render={({ field }) => (
                             <FormItem className="flex-grow pr-4">
@@ -180,7 +179,7 @@ function TopicArrayComponent({ subjectIndex, removeSubject }: { subjectIndex: nu
                         <div key={field.id} className="p-3 border rounded-md space-y-3 relative bg-background">
                             <Button type="button" variant="ghost" size="icon" className="absolute top-0.5 right-0.5 h-7 w-7 text-destructive" onClick={() => remove(topicIndex)}><Trash2 className="h-4 w-4"/></Button>
                              <FormField
-                                control={formControl}
+                                control={control}
                                 name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
                                 render={({ field: topicField }) => (
                                     <FormItem>
