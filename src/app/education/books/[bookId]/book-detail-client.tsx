@@ -172,7 +172,7 @@ export function BookDetailClient() {
       if (!testToAssign) continue;
 
       for (const studentId of assignFormData.studentIds) {
-          const testData = {
+          const testData: any = {
               title: `${book.title} - ${testToAssign.name}`,
               subject: book.subjects?.find(s => s.id === testToAssign.subjectId)?.name || "Bilinmiyor",
               studentId: studentId,
@@ -185,6 +185,9 @@ export function BookDetailClient() {
               openEnded: book.bookType === 'open_ended',
               answerKey: book.bookType !== 'open_ended' ? testToAssign.answerKey : undefined,
           };
+          if (testData.answerKey === undefined) {
+              delete testData.answerKey;
+          }
       
           await addTest(testData);
           assignedCount++;
