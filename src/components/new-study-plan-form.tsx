@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, useFormContext } from "react-hook-form";
+import { useForm, useFieldArray, Control } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -131,11 +131,12 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                         {subjectFields.map((subjectField, subjectIndex) => (
                            <TopicArrayComponent 
                                 key={subjectField.id}
+                                control={form.control}
                                 subjectIndex={subjectIndex}
                                 removeSubject={removeSubject}
                            />
                         ))}
-                         <Button type="button" variant="secondary" className="w-full" onClick={() => append({ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] })}>
+                         <Button type="button" variant="secondary" className="w-full" onClick={() => appendSubject({ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] })}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Ders Ekle
                         </Button>
                     </div>
@@ -151,8 +152,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 }
 
 
-function TopicArrayComponent({ subjectIndex, removeSubject }: { subjectIndex: number, removeSubject: (index: number) => void }) {
-    const { control } = useFormContext<z.infer<typeof formSchema>>();
+function TopicArrayComponent({ subjectIndex, removeSubject, control }: { subjectIndex: number, removeSubject: (index: number) => void, control: Control<z.infer<typeof formSchema>> }) {
     const { fields, append, remove } = useFieldArray({
         control,
         name: `subjects.${subjectIndex}.topics`,
@@ -189,7 +189,7 @@ function TopicArrayComponent({ subjectIndex, removeSubject }: { subjectIndex: nu
                                     </FormItem>
                                 )}
                             />
-                             <SourceArrayComponent subjectIndex={subjectIndex} topicIndex={topicIndex} />
+                             <SourceArrayComponent control={control} subjectIndex={subjectIndex} topicIndex={topicIndex} />
                         </div>
                     ))}
                     <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ name: "", sources: [""] })}>
@@ -201,8 +201,7 @@ function TopicArrayComponent({ subjectIndex, removeSubject }: { subjectIndex: nu
     );
 }
 
-function SourceArrayComponent({ subjectIndex, topicIndex}: { subjectIndex: number, topicIndex: number}) {
-    const { control } = useFormContext<z.infer<typeof formSchema>>();
+function SourceArrayComponent({ subjectIndex, topicIndex, control}: { subjectIndex: number, topicIndex: number, control: Control<z.infer<typeof formSchema>>}) {
     const { fields, append, remove } = useFieldArray({
         control: control,
         name: `subjects.${subjectIndex}.topics.${topicIndex}.sources`,
