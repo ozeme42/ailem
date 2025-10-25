@@ -24,6 +24,7 @@ import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function QuestionsClient() {
   const { user } = useAuth();
@@ -306,34 +307,36 @@ function BulkAddTextDialog({
                        Her satıra bir soru başlığı gelecek şekilde yapıştırın. Tüm sorular seçili ders ve konuya eklenecektir.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 mt-4">
-                    <Combobox
-                        options={existingSubjects.map(s => ({label: s, value: s}))}
-                        value={subject}
-                        onChange={setSubject}
-                        onCreate={onSubjectCreate}
-                        placeholder="Ders seç veya oluştur..."
-                        notfoundText="Ders bulunamadı."
-                        createText="Yeni ders oluştur:"
-                    />
-                     <Combobox
-                        options={existingTopics.map(s => ({label: s, value: s}))}
-                        value={topic}
-                        onChange={setTopic}
-                        onCreate={onTopicCreate}
-                        placeholder="Konu seç veya oluştur..."
-                        notfoundText="Konu bulunamadı."
-                        createText="Yeni konu oluştur:"
-                    />
-                    <Textarea 
-                      id="text-input" 
-                      value={textInput} 
-                      onChange={(e) => setTextInput(e.target.value)} 
-                      className="h-48 font-mono text-sm" 
-                      placeholder="1. Dünya Savaşı'nın nedenleri nelerdir?&#10;Osmanlı Devleti'nin duraklama dönemine girmesinin iç sebepleri..."
-                      disabled={isImporting} 
-                    />
-                </div>
+                <ScrollArea className="h-[60vh] pr-4">
+                  <div className="space-y-4 mt-4">
+                      <Combobox
+                          options={existingSubjects.map(s => ({label: s, value: s}))}
+                          value={subject}
+                          onChange={setSubject}
+                          onCreate={onSubjectCreate}
+                          placeholder="Ders seç veya oluştur..."
+                          notfoundText="Ders bulunamadı."
+                          createText="Yeni ders oluştur:"
+                      />
+                       <Combobox
+                          options={existingTopics.map(s => ({label: s, value: s}))}
+                          value={topic}
+                          onChange={setTopic}
+                          onCreate={onTopicCreate}
+                          placeholder="Konu seç veya oluştur..."
+                          notfoundText="Konu bulunamadı."
+                          createText="Yeni konu oluştur:"
+                      />
+                      <Textarea 
+                        id="text-input" 
+                        value={textInput} 
+                        onChange={(e) => setTextInput(e.target.value)} 
+                        className="h-48 font-mono text-sm" 
+                        placeholder="1. Dünya Savaşı'nın nedenleri nelerdir?&#10;Osmanlı Devleti'nin duraklama dönemine girmesinin iç sebepleri..."
+                        disabled={isImporting} 
+                      />
+                  </div>
+                </ScrollArea>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
                     <Button onClick={handleImportClick} disabled={isImporting}>
