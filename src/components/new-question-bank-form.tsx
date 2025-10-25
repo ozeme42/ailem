@@ -261,7 +261,7 @@ export function NewQuestionBankForm({
             <FormField control={form.control} name="type" render={({field}) => (
                 <FormItem>
                     <FormLabel>Soru Tipi</FormLabel>
-                     <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4" disabled>
+                     <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4" disabled={!!initialData}>
                         <FormItem className="flex items-center space-x-2">
                           <FormControl><RadioGroupItem value="mcq" /></FormControl>
                           <FormLabel>Çoktan Seçmeli</FormLabel>
