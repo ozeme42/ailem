@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
@@ -37,6 +37,8 @@ export function QuestionsClient() {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [bulkDialogType, setBulkDialogType] = useState<'mcq' | 'open_ended'>('mcq');
+
 
   const [editingQuestion, setEditingQuestion] = useState<BankQuestion | null>(null);
   const [defaultQuestionType, setDefaultQuestionType] = useState<'mcq' | 'open_ended'>('mcq');
@@ -88,12 +90,17 @@ export function QuestionsClient() {
     }
   }
 
-  const handleBulkImport = async (questions: any[]) => {
-    toast({ title: "İçe Aktarma Başlatıldı", description: "Sorular ve görseller havuza aktarılıyor." });
+  const handleBulkImport = async (questions: any[], type: 'mcq' | 'open_ended') => {
+    toast({ title: "İçe Aktarma Başlatıldı", description: "Sorular havuza aktarılıyor." });
     setIsBulkDialogOpen(false);
 
     try {
-        await addBulkBankQuestions(questions);
+        const questionsToImport = questions.map((q, index) => ({
+            ...q,
+            title: q.title || `${q.topic} - Soru ${index + 1}`,
+            type: type
+        }))
+        await addBulkBankQuestions(questionsToImport);
         toast({ title: "✅ Toplu Ekleme Başarılı", description: `${questions.length} soru başarıyla bankaya eklendi.` });
     } catch (e) {
       toast({ title: "❌ Toplu Ekleme Hatası", description: "Toplu ekleme sırasında bir hata oluştu.", variant: 'destructive' });
@@ -118,7 +125,7 @@ export function QuestionsClient() {
             <QuestionList 
               questions={mcqQuestions} 
               onAdd={() => handleOpenForm(null, 'mcq')}
-              onBulkAdd={() => { /* Implement bulk MCQ add later if needed */ toast({title: "Henüz Aktif Değil", description: "Bu özellik yakında eklenecektir."})}}
+              onBulkAdd={() => { setBulkDialogType('mcq'); setIsBulkDialogOpen(true); }}
               onEdit={(q) => handleOpenForm(q, 'mcq')} 
               onDelete={handleDeleteQuestion} 
               type="mcq"
@@ -128,7 +135,7 @@ export function QuestionsClient() {
             <QuestionList 
               questions={openEndedQuestions} 
               onAdd={() => handleOpenForm(null, 'open_ended')} 
-              onBulkAdd={() => setIsBulkDialogOpen(true)}
+              onBulkAdd={() => { setBulkDialogType('open_ended'); setIsBulkDialogOpen(true); }}
               onEdit={(q) => handleOpenForm(q, 'open_ended')} 
               onDelete={handleDeleteQuestion} 
               type="open_ended"
@@ -157,6 +164,7 @@ export function QuestionsClient() {
         existingTopics={allTopics}
         onSubjectCreate={handleCreateSubject}
         onTopicCreate={handleCreateTopic}
+        type={bulkDialogType}
       />
     </div>
   );
@@ -266,15 +274,17 @@ function BulkAddImagesDialog({
     existingSubjects,
     existingTopics,
     onSubjectCreate,
-    onTopicCreate
+    onTopicCreate,
+    type
 }: { 
     open: boolean, 
     onOpenChange: (open: boolean) => void, 
-    onImport: (questions: Partial<BankQuestion>[]) => void,
+    onImport: (questions: Partial<BankQuestion>[], type: 'mcq' | 'open_ended') => void,
     existingSubjects: string[],
     existingTopics: string[],
     onSubjectCreate: (name: string) => void,
-    onTopicCreate: (name: string) => void
+    onTopicCreate: (name: string) => void,
+    type: 'mcq' | 'open_ended';
 }) {
     const [isImporting, setIsImporting] = useState(false);
     
@@ -313,11 +323,10 @@ function BulkAddImagesDialog({
             title: `${values.topic} - Soru ${index + 1}`,
             subject: values.subject,
             topic: values.topic,
-            type: 'open_ended' as const,
             imageUrl: imageDataUri, // This is a data URI, will be uploaded by the handler
         }));
 
-        onImport(questionsToImport).finally(() => {
+        onImport(questionsToImport, type).finally(() => {
             setIsImporting(false);
             form.reset();
         });
@@ -330,7 +339,7 @@ function BulkAddImagesDialog({
         <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Toplu Açık Uçlu Soru Ekle</DialogTitle>
+                    <DialogTitle>Toplu Soru Ekle</DialogTitle>
                     <DialogDescription>
                        Birden çok soru görseli seçin. Tüm sorular seçili ders ve konuya eklenecektir.
                     </DialogDescription>
@@ -380,5 +389,3 @@ function BulkAddImagesDialog({
         </Dialog>
     );
 }
-
-    
