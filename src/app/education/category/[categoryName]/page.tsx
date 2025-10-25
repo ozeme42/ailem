@@ -193,10 +193,18 @@ export default function CategoryDetailPage() {
             {filteredTests.map((test) => {
               let buttonText = 'Sınava Gir';
               let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
+              let buttonDisabled = false;
+              let statusBadge: React.ReactNode = <Badge variant="outline" className="w-fit text-cyan-600 border-cyan-500/50 bg-cyan-500/10">Atandı</Badge>;
               
               if (test.status === 'Sonuçlandı') {
                   buttonText = 'Sonuçları Göster';
                   buttonClass = "bg-pink-600 hover:bg-pink-700";
+                  statusBadge = <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>;
+              } else if (test.status === 'Değerlendirme Bekliyor') {
+                  buttonText = 'Değerlendiriliyor...';
+                  buttonDisabled = true;
+                  buttonClass = "bg-yellow-500 hover:bg-yellow-600";
+                   statusBadge = <Badge variant="outline" className="w-fit text-yellow-600 border-yellow-500/50 bg-yellow-500/10">Değerlendiriliyor</Badge>;
               }
 
               const startDate = formatTestDate(test.assignedDate);
@@ -213,11 +221,7 @@ export default function CategoryDetailPage() {
                           <p className="text-xs text-muted-foreground">{test.subject}</p>
                           <h3 className="font-bold text-lg leading-tight">{test.title}</h3>
                       </div>
-                      {test.status !== 'Atandı' ? (
-                          <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>
-                      ) : (
-                          <Box className="w-8 h-8 text-muted-foreground/70" />
-                      )}
+                      {statusBadge}
                     </div>
                     
                     <div className="flex flex-col justify-between items-center px-4 border-l border-r">
@@ -256,6 +260,7 @@ export default function CategoryDetailPage() {
                       <Button 
                           size="lg" 
                           className={cn("w-full rounded-t-none h-12 text-base", buttonClass)}
+                          disabled={buttonDisabled}
                       >
                         {buttonText}
                       </Button>
