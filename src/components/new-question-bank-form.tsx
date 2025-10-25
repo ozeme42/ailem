@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -29,8 +30,15 @@ const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
   imageDataUri: z.string().min(1, "Soru görseli yüklemek zorunludur."),
-  options: z.array(optionSchema).min(2, "En az 2 seçenek eklemelisiniz.").max(5, "En fazla 5 seçenek ekleyebilirsiniz."),
-  correctAnswer: z.string().min(1, "Lütfen doğru seçeneği işaretleyin."),
+  type: z.enum(['mcq', 'open_ended']).default('mcq'),
+  options: z.array(optionSchema).optional(),
+  correctAnswer: z.string().optional(),
+}).refine(data => data.type === 'open_ended' || (data.options && data.options.length >= 2), {
+    message: "Çoktan seçmeli sorular için en az 2 seçenek gereklidir.",
+    path: ["options"],
+}).refine(data => data.type === 'open_ended' || (!!data.correctAnswer), {
+    message: "Lütfen doğru seçeneği işaretleyin.",
+    path: ["correctAnswer"],
 });
 
 type NewQuestionFormProps = {
@@ -64,15 +72,17 @@ export function NewQuestionBankForm({
             { id: 'C', text: '' },
         ],
         correctAnswer: 'A',
+        type: 'mcq',
     }
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
       control: form.control,
       name: 'options'
   });
   
   const watchedImageDataUri = form.watch("imageDataUri");
+  const questionType = form.watch("type");
 
   React.useEffect(() => {
     if (initialData) {
@@ -86,6 +96,7 @@ export function NewQuestionBankForm({
             correctAnswer: initialData.correctAnswer,
             imageDataUri: initialData.imageUrl, // For display
             options: initialOptions,
+            type: initialData.type || 'mcq',
         });
     } else {
         form.reset({
@@ -97,7 +108,8 @@ export function NewQuestionBankForm({
                 { id: 'A', text: '' },
                 { id: 'B', text: '' },
                 { id: 'C', text: '' },
-            ]
+            ],
+            type: 'mcq',
         });
     }
   }, [initialData, form]);
@@ -136,7 +148,6 @@ export function NewQuestionBankForm({
     try {
       let finalImageUrl = initialData?.imageUrl || "";
 
-      // Only upload if the imageDataUri is a new data URI, not an existing URL
       if (values.imageDataUri && values.imageDataUri.startsWith('data:image')) {
           const destinationPath = `bank-questions/${user.uid}-${Date.now()}.jpg`;
           const migrationResult = await migrateImage({
@@ -150,24 +161,25 @@ export function NewQuestionBankForm({
           finalImageUrl = migrationResult.newUrl;
       }
       
-      const optionsObject = values.options.reduce((acc, option) => {
+      const optionsObject = values.type === 'mcq' ? (values.options || []).reduce((acc, option) => {
         acc[option.id] = option.text;
         return acc;
-      }, {} as Record<string, string>);
+      }, {} as Record<string, string>) : undefined;
 
-      const questionData = {
+      const questionData: Partial<Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'>> = {
         subject: values.subject,
         topic: values.topic,
         imageUrl: finalImageUrl,
+        type: values.type,
         options: optionsObject,
-        correctAnswer: values.correctAnswer,
+        correctAnswer: values.type === 'mcq' ? values.correctAnswer : undefined,
       };
 
       if (initialData) {
         await updateBankQuestion(initialData.id, questionData);
         toast({ title: "Soru Güncellendi!", description: "Soru başarıyla güncellendi." });
       } else {
-        await addBankQuestion(questionData);
+        await addBankQuestion(questionData as any);
         toast({ title: "Soru Eklendi!", description: "Yeni soru başarıyla bankaya eklendi." });
       }
 
@@ -260,40 +272,58 @@ export function NewQuestionBankForm({
               <FormMessage />
             </FormItem>
             
-            <FormField
-                control={form.control}
-                name="correctAnswer"
-                render={({ field }) => (
-                    <FormItem>
-                         <div className="flex justify-between items-center">
-                            <FormLabel>Seçenekler ve Doğru Cevap</FormLabel>
-                            <div className="flex items-center gap-2">
-                                <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length - 1)} disabled={fields.length <= 2}><Minus className="h-4 w-4"/></Button>
-                                <span className="text-sm font-medium">{fields.length} Şık</span>
-                                <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length + 1)} disabled={fields.length >= 5}><Plus className="h-4 w-4"/></Button>
-                            </div>
-                        </div>
-                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-2">
-                             {fields.map((option, index) => (
-                                <div key={option.id} className="flex items-center gap-2">
-                                    <FormControl>
-                                        <RadioGroupItem value={option.id} id={option.id} />
-                                    </FormControl>
-                                    <label htmlFor={option.id} className="font-bold w-4 text-center">{option.id}</label>
-                                    <FormField
-                                        control={form.control}
-                                        name={`options.${index}.text`}
-                                        render={({ field: optionField }) => (
-                                            <Input {...optionField} placeholder={`${option.id} seçeneğinin metni...`}/>
-                                        )}
-                                    />
+            <FormField control={form.control} name="type" render={({field}) => (
+                <FormItem>
+                    <FormLabel>Soru Tipi</FormLabel>
+                     <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4">
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl><RadioGroupItem value="mcq" /></FormControl>
+                          <FormLabel>Çoktan Seçmeli</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl><RadioGroupItem value="open_ended" /></FormControl>
+                          <FormLabel>Açık Uçlu</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                </FormItem>
+            )}/>
+            
+            {questionType === 'mcq' && (
+                <FormField
+                    control={form.control}
+                    name="correctAnswer"
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex justify-between items-center">
+                                <FormLabel>Seçenekler ve Doğru Cevap</FormLabel>
+                                <div className="flex items-center gap-2">
+                                    <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length - 1)} disabled={fields.length <= 2}><Minus className="h-4 w-4"/></Button>
+                                    <span className="text-sm font-medium">{fields.length} Şık</span>
+                                    <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => handleOptionCountChange(fields.length + 1)} disabled={fields.length >= 5}><Plus className="h-4 w-4"/></Button>
                                 </div>
-                            ))}
-                        </RadioGroup>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
+                            </div>
+                            <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-2">
+                                {fields.map((option, index) => (
+                                    <div key={option.id} className="flex items-center gap-2">
+                                        <FormControl>
+                                            <RadioGroupItem value={option.id} id={option.id} />
+                                        </FormControl>
+                                        <label htmlFor={option.id} className="font-bold w-4 text-center">{option.id}</label>
+                                        <FormField
+                                            control={form.control}
+                                            name={`options.${index}.text`}
+                                            render={({ field: optionField }) => (
+                                                <Input {...optionField} placeholder={`${option.id} seçeneğinin metni...`}/>
+                                            )}
+                                        />
+                                    </div>
+                                ))}
+                            </RadioGroup>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
           </div>
         </ScrollArea>
         <DialogFooter>

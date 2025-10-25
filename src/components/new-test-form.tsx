@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -241,6 +242,8 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           break;
         
         case 'bank':
+          const isTestOpenEnded = (values.selectedBankQuestions || []).some(qId => bankQuestions.find(bq => bq.id === qId)?.type === 'open_ended');
+
           const questionsFromBank = (values.selectedBankQuestions || []).map((qId, index) => {
             const question = bankQuestions.find(bq => bq.id === qId);
             return {
@@ -251,7 +254,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           });
           const answerKeyFromBank = (values.selectedBankQuestions || []).reduce((acc, qId, index) => {
               const question = bankQuestions.find(bq => bq.id === qId);
-              if (question && question.type !== 'open_ended') {
+              if (question && question.type !== 'open_ended' && question.correctAnswer) {
                   acc[(index + 1).toString()] = question.correctAnswer;
               }
               return acc;
@@ -264,8 +267,8 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             questionCount: questionsFromBank.length,
             assignedDate, dueDate,
             sourceType: 'bank',
-            gradingType: 'auto',
-            openEnded: (values.selectedBankQuestions || []).some(qId => bankQuestions.find(bq => bq.id === qId)?.type === 'open_ended'),
+            gradingType: isTestOpenEnded ? 'manual' : 'auto',
+            openEnded: isTestOpenEnded,
             answerKey: answerKeyFromBank,
             questions: questionsFromBank,
           };
