@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, TrackedBookSubject } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, TrackedBookSubject, StudyPlanSubject } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -829,7 +829,18 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'studyPlans'), { ...data, familyId });
 };
-export const updateStudyPlan = (id: string, data: Partial<Omit<StudyPlan, 'id'>>) => updateDoc(doc(db, 'studyPlans', id), data);
+export const updateStudyPlan = async (id: string, data: Partial<Omit<StudyPlan, 'id'>>) => {
+    const planRef = doc(db, 'studyPlans', id);
+    const planSnap = await getDoc(planRef);
+    if (!planSnap.exists()) {
+        throw new Error("Study plan not found.");
+    }
+    const currentData = planSnap.data();
+    const updatedData = { ...currentData, ...data };
+    
+    return updateDoc(planRef, removeUndefined(updatedData));
+};
+
 export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, 'studyPlans', id));
 
 // Study Assignments
@@ -1889,3 +1900,5 @@ export const addBulkTrackedBookTests = async (bookId: string, subjectId: string,
 };
 export const updateTrackedBookTest = (id: string, data: Partial<Omit<TrackedBookTest, 'id'>>) => updateDoc(doc(db, 'trackedBookTests', id), removeUndefined(data));
 export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
+
+    
