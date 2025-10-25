@@ -22,7 +22,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 const optionSchema = z.object({
     id: z.string(),
-    text: z.string().min(1, "Seçenek metni boş olamaz."),
+    text: z.string(), // Allow empty string for initial state
 });
 
 const formSchema = z.object({
@@ -78,7 +78,7 @@ export function NewQuestionBankForm({
     }
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
       control: form.control,
       name: 'options'
   });
@@ -88,17 +88,27 @@ export function NewQuestionBankForm({
 
   React.useEffect(() => {
     let type = initialData?.type || defaultType;
+    let initialOptions = [
+        { id: 'A', text: '' }, { id: 'B', text: '' },
+        { id: 'C', text: '' }, { id: 'D', text: '' }
+    ];
+
+    if (initialData?.options) {
+        const optionKeys = Object.keys(initialData.options);
+        initialOptions = optionKeys.map(key => ({ id: key, text: initialData.options![key] }));
+    }
+    
     form.reset({
         subject: initialData?.subject || "",
         topic: initialData?.topic || "",
         imageDataUri: initialData?.imageUrl || "",
         correctAnswer: initialData?.type !== 'open_ended' ? initialData?.correctAnswer : 'A',
-        options: initialData?.options 
-            ? Object.entries(initialData.options).map(([id, text]) => ({ id, text }))
-            : [{ id: 'A', text: '' }, { id: 'B', text: '' }, { id: 'C', text: '' }, { id: 'D', text: '' }],
+        options: initialOptions,
         type: type,
     });
-  }, [initialData, form, defaultType]);
+    replace(initialOptions); // Ensure useFieldArray is synced
+  }, [initialData, form, defaultType, replace]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
