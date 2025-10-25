@@ -6,11 +6,12 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Send, Edit, Trash2, Clock, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onStudyPlanUpdate, onStudyAssignmentsUpdate, addStudyAssignment, updateStudyPlan, updateStudyAssignment } from "@/lib/dataService";
+import { onStudyPlanUpdate, onStudyAssignmentsUpdate, addStudyAssignment, updateStudyPlan, updateStudyAssignment, deleteStudyAssignment } from "@/lib/dataService";
 import type { StudyPlan, StudyPlanSubject, StudyTopic, FamilyMember, StudyAssignment } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO } from "date-fns";
@@ -98,7 +99,7 @@ export function PlanDetailClient() {
     };
     try {
         await updateStudyPlan(plan.id, {
-            subjects: [newSubject]
+            subjects: [...(plan.subjects || []), newSubject]
         });
         toast({ title: "Ders Eklendi" });
         setNewSubjectName("");
@@ -106,6 +107,31 @@ export function PlanDetailClient() {
     } catch(e) {
         console.error(e);
         toast({ title: "Hata", description: "Ders eklenirken bir hata oluştu.", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteSubject = async (subjectId: string) => {
+    if (!plan) return;
+    
+    const subjectToDelete = plan.subjects.find(s => s.id === subjectId);
+    if (!subjectToDelete) return;
+
+    // Filter out the subject to delete
+    const updatedSubjects = plan.subjects.filter(s => s.id !== subjectId);
+
+    // Find and delete all assignments related to topics within that subject
+    const topicIdsToDelete = new Set(subjectToDelete.topics.map(t => t.id));
+    const assignmentsToDelete = assignments.filter(a => topicIdsToDelete.has(a.topicId));
+
+    try {
+        await updateStudyPlan(plan.id, { subjects: updatedSubjects });
+        for (const assignment of assignmentsToDelete) {
+            await deleteStudyAssignment(assignment.id);
+        }
+        toast({ title: "Ders Silindi", description: `"${subjectToDelete.name}" dersi ve tüm içeriği silindi.`, variant: "destructive" });
+    } catch(e) {
+        console.error("Error deleting subject:", e);
+        toast({ title: "Hata", description: "Ders silinirken bir sorun oluştu.", variant: "destructive" });
     }
   };
   
@@ -141,6 +167,37 @@ export function PlanDetailClient() {
     } catch(e) {
         console.error(e);
         toast({ title: "Hata", description: "Konu eklenirken bir hata oluştu.", variant: "destructive" });
+    }
+  };
+
+    const handleDeleteTopic = async (subjectId: string, topicId: string) => {
+    if (!plan) return;
+
+    let topicName = "";
+    const updatedSubjects = plan.subjects.map(subject => {
+        if (subject.id === subjectId) {
+            const topicToDelete = subject.topics.find(t => t.id === topicId);
+            topicName = topicToDelete?.name || "";
+            return {
+                ...subject,
+                topics: subject.topics.filter(t => t.id !== topicId)
+            };
+        }
+        return subject;
+    });
+
+    // Find and delete all assignments related to this topic
+    const assignmentsToDelete = assignments.filter(a => a.topicId === topicId);
+    
+    try {
+        await updateStudyPlan(plan.id, { subjects: updatedSubjects });
+        for (const assignment of assignmentsToDelete) {
+            await deleteStudyAssignment(assignment.id);
+        }
+        toast({ title: "Konu Silindi", description: `"${topicName}" konusu silindi.`, variant: "destructive" });
+    } catch (e) {
+        console.error("Error deleting topic:", e);
+        toast({ title: "Hata", description: "Konu silinirken bir sorun oluştu.", variant: "destructive" });
     }
   };
 
@@ -186,9 +243,28 @@ export function PlanDetailClient() {
         {(plan.subjects || []).map(subject => (
           <AccordionItem key={subject.id} value={subject.id} className="border-b-0">
              <div className="bg-muted/50 rounded-lg">
-                <AccordionTrigger className="p-4 font-semibold text-lg hover:no-underline">
-                    {subject.name}
-                </AccordionTrigger>
+                <div className="p-4 flex justify-between items-center">
+                    <AccordionTrigger className="p-0 font-semibold text-lg hover:no-underline flex-grow">
+                        {subject.name}
+                    </AccordionTrigger>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Dersi Sil</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    "{subject.name}" dersini silmek istediğinize emin misiniz? Bu işlem, derse ait tüm konuları ve atanmış ödevleri kalıcı olarak silecektir. Bu işlem geri alınamaz.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>Evet, Sil</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
                 <AccordionContent className="p-4 pt-0 space-y-3">
                     <Button variant="outline" size="sm" onClick={() => handleOpenTopicDialog(subject)}>
                         <Plus className="mr-2 h-4 w-4" /> Konu Ekle
@@ -206,7 +282,23 @@ export function PlanDetailClient() {
                                     />
                                     <label htmlFor={`topic-${topic.id}`} className="font-medium cursor-pointer">{topic.name}</label>
                                 </div>
-                                {/* Add Edit/Delete for topic here later */}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Konuyu Sil</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                "{topic.name}" konusunu silmek istediğinize emin misiniz? Bu işlem, bu konuyla ilgili tüm atanmış ödevleri de silecektir. Bu işlem geri alınamaz.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteTopic(subject.id, topic.id)}>Evet, Sil</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                                 </div>
                                 {topicAssignments.length > 0 && (
                                     <div className="pl-8 mt-3 space-y-2">
@@ -349,3 +441,4 @@ export function PlanDetailClient() {
     </div>
   );
 }
+
