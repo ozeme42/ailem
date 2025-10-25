@@ -650,41 +650,31 @@ export const addBankQuestion = async (data: Omit<BankQuestion, 'id' | 'familyId'
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'bankQuestions'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
-export const addBulkBankQuestions = async (questionsData: {imageDataUri: string, subject: string, topic: string, options: {[key:string]: string}, correctAnswer: string}[]) => {
+export const addBulkBankQuestions = async (questionsData: any[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
 
     const batch = writeBatch(db);
     for (const qData of questionsData) {
-        // Upload image and get URL
-        const destinationPath = `bank-questions/${familyId}-${Date.now()}-${Math.random()}.jpg`;
-        const migrationResult = await migrateImage({
-            imageDataUri: qData.imageDataUri,
-            destinationPath,
-        });
-
-        if (!migrationResult.success || !migrationResult.newUrl) {
-            throw new Error(migrationResult.error || `Görsel yüklenemedi: ${qData.imageDataUri.substring(0, 30)}...`);
-        }
-
         const questionDocRef = doc(collection(db, 'bankQuestions'));
         const newQuestion: Omit<BankQuestion, 'id'> = {
             familyId,
             subject: qData.subject,
             topic: qData.topic,
-            imageUrl: migrationResult.newUrl,
+            imageUrl: qData.imageUrl,
             options: qData.options,
             correctAnswer: qData.correctAnswer,
             createdAt: new Date().toISOString(),
+            type: qData.type,
         };
-        batch.set(questionDocRef, newQuestion);
+        batch.set(questionDocRef, removeUndefined(newQuestion));
     }
-
     await batch.commit();
 };
 
+
 export const updateBankQuestion = (id: string, data: Partial<Omit<BankQuestion, 'id'|'familyId'|'createdAt'>>) => {
-    return updateDoc(doc(db, 'bankQuestions', id), data);
+    return updateDoc(doc(db, 'bankQuestions', data));
 }
 export const deleteBankQuestion = (id: string) => deleteDoc(doc(db, "bankQuestions", id));
 export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback, false, 'createdAt', 'desc');

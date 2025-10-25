@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText } from "lucide-react";
+import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
@@ -21,7 +21,9 @@ import { useAuth } from "@/components/auth-provider";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { z } from "zod";
+import { Textarea } from "@/components/ui/textarea";
 
 export function QuestionsClient() {
   const { user } = useAuth();
@@ -29,6 +31,9 @@ export function QuestionsClient() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isBulkJsonOpen, setIsBulkJsonOpen] = useState(false);
+  const [bulkJsonType, setBulkJsonType] = useState<'mcq' | 'open_ended'>('mcq');
+
   const [editingQuestion, setEditingQuestion] = useState<BankQuestion | null>(null);
   const [defaultQuestionType, setDefaultQuestionType] = useState<'mcq' | 'open_ended'>('mcq');
 
@@ -79,6 +84,18 @@ export function QuestionsClient() {
     }
   }
 
+  const handleBulkImport = async (importedQuestions: any[]) => {
+    toast({ title: "İçe Aktarma Başlatıldı", description: "Sorular ve görseller havuza aktarılıyor." });
+    setIsBulkJsonOpen(false);
+
+    try {
+        await addBulkBankQuestions(importedQuestions);
+        toast({ title: "✅ Toplu Ekleme Başarılı", description: `${importedQuestions.length} soru başarıyla bankaya eklendi.` });
+    } catch (e) {
+      toast({ title: "❌ Toplu Ekleme Hatası", description: "Toplu ekleme sırasında bir hata oluştu.", variant: 'destructive' });
+    }
+  };
+
   const mcqQuestions = useMemo(() => bankQuestions.filter(q => q.type !== 'open_ended'), [bankQuestions]);
   const openEndedQuestions = useMemo(() => bankQuestions.filter(q => q.type === 'open_ended'), [bankQuestions]);
 
@@ -96,7 +113,8 @@ export function QuestionsClient() {
         <TabsContent value="mcq">
             <QuestionList 
               questions={mcqQuestions} 
-              onAdd={() => handleOpenForm(null, 'mcq')} 
+              onAdd={() => handleOpenForm(null, 'mcq')}
+              onBulkAdd={() => { setBulkJsonType('mcq'); setIsBulkJsonOpen(true); }}
               onEdit={(q) => handleOpenForm(q, 'mcq')} 
               onDelete={handleDeleteQuestion} 
               type="mcq"
@@ -106,6 +124,7 @@ export function QuestionsClient() {
             <QuestionList 
               questions={openEndedQuestions} 
               onAdd={() => handleOpenForm(null, 'open_ended')} 
+              onBulkAdd={() => { setBulkJsonType('open_ended'); setIsBulkJsonOpen(true); }}
               onEdit={(q) => handleOpenForm(q, 'open_ended')} 
               onDelete={handleDeleteQuestion} 
               type="open_ended"
@@ -126,6 +145,7 @@ export function QuestionsClient() {
           />
         </DialogContent>
       </Dialog>
+      <BulkAddJsonDialog open={isBulkJsonOpen} onOpenChange={setIsBulkJsonOpen} onImport={handleBulkImport} type={bulkJsonType} />
     </div>
   );
 }
@@ -133,12 +153,13 @@ export function QuestionsClient() {
 interface QuestionListProps {
   questions: BankQuestion[];
   onAdd: () => void;
+  onBulkAdd: () => void;
   onEdit: (q: BankQuestion) => void;
   onDelete: (id: string) => void;
   type: 'mcq' | 'open_ended';
 }
 
-function QuestionList({ questions, onAdd, onEdit, onDelete, type }: QuestionListProps) {
+function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, type }: QuestionListProps) {
     const groupedQuestions = useMemo(() => {
         const grouped: Record<string, Record<string, BankQuestion[]>> = {};
         questions.forEach(q => {
@@ -156,13 +177,18 @@ function QuestionList({ questions, onAdd, onEdit, onDelete, type }: QuestionList
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-            <CardTitle>Mevcut Sorular</CardTitle>
-            <Button onClick={onAdd}><Plus className="mr-2 h-4 w-4" /> Yeni Soru Ekle</Button>
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+            <div>
+                <CardTitle>Mevcut Sorular</CardTitle>
+                <CardDescription>
+                Bu kategorideki tüm soruları buradan görüntüleyebilirsiniz.
+                </CardDescription>
+            </div>
+            <div className="flex gap-2 self-start sm:self-center">
+                 <Button variant="secondary" onClick={onBulkAdd}><FilePlus className="mr-2 h-4 w-4" /> Toplu Ekle</Button>
+                 <Button onClick={onAdd}><Plus className="mr-2 h-4 w-4" /> Yeni Soru Ekle</Button>
+            </div>
         </div>
-        <CardDescription>
-          Bu kategorideki tüm soruları buradan görüntüleyebilirsiniz.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         {Object.keys(groupedQuestions).length > 0 ? (
@@ -213,4 +239,100 @@ function QuestionList({ questions, onAdd, onEdit, onDelete, type }: QuestionList
       </CardContent>
     </Card>
   );
+}
+
+// BULK ADD JSON DIALOG
+const bulkAddMcqSchema = z.array(z.object({
+  subject: z.string().min(1),
+  topic: z.string().min(1),
+  imageUrl: z.string().url(),
+  options: z.record(z.string()),
+  correctAnswer: z.string(),
+  type: z.literal('mcq').optional().default('mcq'),
+}));
+
+const bulkAddOpenEndedSchema = z.array(z.object({
+  subject: z.string().min(1),
+  topic: z.string().min(1),
+  imageUrl: z.string().url(),
+  type: z.literal('open_ended').optional().default('open_ended'),
+}));
+
+
+function BulkAddJsonDialog({ open, onOpenChange, onImport, type }: { open: boolean, onOpenChange: (open: boolean) => void, onImport: (books: any[]) => void, type: 'mcq' | 'open_ended' }) {
+    const [jsonInput, setJsonInput] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
+
+    const validationSchema = type === 'mcq' ? bulkAddMcqSchema : bulkAddOpenEndedSchema;
+    const exampleJson = type === 'mcq' ? `[
+  {
+    "subject": "Matematik",
+    "topic": "Üslü Sayılar",
+    "imageUrl": "https://ornek.com/soru1.png",
+    "options": { "A": "2", "B": "4", "C": "8", "D": "16" },
+    "correctAnswer": "C"
+  }
+]` : `[
+  {
+    "subject": "Tarih",
+    "topic": "Osmanlı Yükselme Dönemi",
+    "imageUrl": "https://ornek.com/soru2.png",
+    "type": "open_ended"
+  }
+]`;
+
+
+    const handleImportClick = () => {
+        setError(null);
+        if (!jsonInput.trim()) return setError("Lütfen geçerli bir JSON verisi girin.");
+
+        try {
+            const parsed = JSON.parse(jsonInput);
+            const result = validationSchema.safeParse(parsed);
+            if (!result.success) {
+                 const formattedErrors = result.error.errors.map(err => `[${err.path.join('.')}] ${err.message}`).join('\n');
+                 setError(`JSON verisi doğrulanamadı:\n${formattedErrors}`);
+                 return;
+            }
+            setIsImporting(true);
+            onImport(result.data).finally(() => setIsImporting(false));
+            setJsonInput('');
+        } catch (e) {
+            setError("Geçersiz JSON formatı. Lütfen veriyi kontrol edin.");
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Toplu Soru Ekle (JSON)</DialogTitle>
+                    <DialogDescription>
+                        {type === 'mcq' ? 'Çoktan seçmeli' : 'Açık uçlu'} soruları JSON formatında yapıştırın. Görseller URL olarak belirtilmelidir.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div>
+                         <Label htmlFor="json-input" className="mb-2 block">JSON Verisi</Label>
+                         <Textarea id="json-input" value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} className="h-64 font-mono text-xs" disabled={isImporting} />
+                         {error && <p className="text-sm font-medium text-destructive mt-2 whitespace-pre-wrap">{error}</p>}
+                    </div>
+                    <div>
+                         <Label className="mb-2 block">Örnek Format</Label>
+                         <Card className="bg-muted/50 p-4 h-64 overflow-auto">
+                            <pre className="text-xs font-mono"><code>{exampleJson}</code></pre>
+                         </Card>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
+                    <Button onClick={handleImportClick} disabled={isImporting}>
+                        {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        İçeri Aktar
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
