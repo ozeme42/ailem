@@ -123,8 +123,13 @@ export function MemberDashboardCard({
             completed: todaysCompletions.includes(prayer),
         }));
 
-        const memberVideos = videos.filter(v => v.assigneeId === memberId && (v.completedVideos || 0) > 0 && (v.completedVideos || 0) < v.totalVideos);
-        completedActivityCount += memberVideos.reduce((sum, video) => sum + (video.completedVideos || 0), 0); // This might be tricky, let's assume each completed video counts
+        const memberVideos = videos.filter(v => v.assigneeId === memberId && (v.completedVideos || 0) < v.totalVideos);
+        
+        // This logic is tricky. How do we count a "completed" video activity for the day?
+        // Let's assume for now any progress is an activity.
+        // A better approach would be to use the daily tracking system.
+        // For simplicity, we are not counting videos towards daily free time yet.
+
 
         const earnedTime = completedActivityCount * 15;
 
@@ -201,11 +206,11 @@ export function MemberDashboardCard({
         ...pendingStudies,
         ...readingBooks,
         ...pendingMemorization,
-        ...todaysPrayers,
+        ...todaysPrayers.filter(p => !p.completed),
         ...pendingVideos,
     ];
 
-    if (allPendingItems.filter(item => 'title' in item || 'topic' in item || 'name' in item).length === 0 && todaysPrayers.filter(p => !p.completed).length === 0) return null;
+    if (allPendingItems.length === 0) return null;
     
     const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
 
@@ -231,7 +236,7 @@ export function MemberDashboardCard({
                          </div>
                     </div>
                 )}
-                {member.role.includes('Çocuk') && (
+                {member.role.includes('Çocuk') && (todaysPrayers.filter(p=>!p.completed).length > 0) && (
                     <div>
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Check className="h-4 w-4 text-green-600"/> Bugünkü Namazlar</h4>
                         <Link href="/prayers">
@@ -272,8 +277,8 @@ export function MemberDashboardCard({
                                 <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-red-500/10 text-red-900 hover:bg-red-500/20">
                                     <div className="truncate"><p className="font-semibold truncate text-sm">{video.title}</p></div>
                                     <div>
-                                        <Progress value={(video.completedVideos / video.totalVideos) * 100} className="h-1.5" indicatorClassName="bg-red-500"/>
-                                        <p className="text-xs text-red-800/80 mt-1 text-right">{video.completedVideos} / {video.totalVideos} video</p>
+                                        <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-1.5" indicatorClassName="bg-red-500"/>
+                                        <p className="text-xs text-red-800/80 mt-1 text-right">{video.completedVideos || 0} / {video.totalVideos} video</p>
                                     </div>
                                 </div>
                             </Link>
