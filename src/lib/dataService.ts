@@ -831,13 +831,17 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
 };
 export const updateStudyPlan = async (id: string, data: Partial<Omit<StudyPlan, 'id' | 'familyId'>>) => {
     const planRef = doc(db, 'studyPlans', id);
+    
+    // If updating subjects, especially for adding a new one.
     if (data.subjects) {
-      // If we are updating subjects, use arrayUnion to add new ones without overwriting.
-      // This is a simplified approach. For complex edits (reordering, deleting), a read-modify-write is better.
+      // arrayUnion is better for adding new elements without reading first.
+      // This assumes data.subjects contains ONLY the new subject to add.
+      // The client logic must be adjusted for this.
       return updateDoc(planRef, {
         subjects: arrayUnion(...data.subjects)
       });
     }
+
     // For other fields, a simple update is fine.
     return updateDoc(planRef, removeUndefined(data));
 };

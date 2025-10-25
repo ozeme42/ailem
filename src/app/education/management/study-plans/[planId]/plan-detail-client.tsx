@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -89,7 +90,7 @@ export function PlanDetailClient() {
     };
     try {
         await updateStudyPlan(plan.id, {
-            subjects: [...plan.subjects, newSubject]
+            subjects: [newSubject] // Use arrayUnion in the backend logic
         });
         toast({ title: "Ders Eklendi" });
         setNewSubjectName("");
@@ -228,4 +229,3 @@ export function PlanDetailClient() {
     </div>
   );
 }
-
