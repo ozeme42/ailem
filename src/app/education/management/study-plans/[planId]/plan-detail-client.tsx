@@ -4,16 +4,16 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Send, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Send, Edit, Trash2, Clock, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onStudyPlanUpdate, addStudyAssignment, updateStudyPlan } from "@/lib/dataService";
+import { onStudyPlanUpdate, onStudyAssignmentsUpdate, addStudyAssignment, updateStudyPlan, updateStudyAssignment } from "@/lib/dataService";
 import type { StudyPlan, StudyPlanSubject, StudyTopic, FamilyMember, StudyAssignment } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/components/auth-provider";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -32,6 +32,7 @@ export function PlanDetailClient() {
   const { familyMembers } = useAuth();
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
+  const [assignments, setAssignments] = useState<StudyAssignment[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<StudyTopic[]>([]);
 
   // Dialog states
@@ -48,8 +49,10 @@ export function PlanDetailClient() {
   useEffect(() => {
     if (!planId) return;
     const unsubPlan = onStudyPlanUpdate(planId, setPlan);
+    const unsubAssignments = onStudyAssignmentsUpdate(setAssignments);
     return () => {
       unsubPlan();
+      unsubAssignments();
     };
   }, [planId]);
 
@@ -69,6 +72,7 @@ export function PlanDetailClient() {
             studyPlanId: plan.id,
             subject: subject.name,
             topic: topic.name,
+            topicId: topic.id,
             sources: topic.sources || [],
             status: 'assigned',
             startDate: assignFormData.assignedDate.toISOString(),
@@ -148,6 +152,17 @@ export function PlanDetailClient() {
           : [...prev, topic]
       );
   };
+  
+  const handleToggleAssignmentStatus = async (assignment: StudyAssignment) => {
+    const newStatus = assignment.status === 'completed' ? 'assigned' : 'completed';
+    const completedAt = newStatus === 'completed' ? new Date().toISOString() : undefined;
+    try {
+      await updateStudyAssignment(assignment.id, { status: newStatus, completedAt });
+      toast({ title: `Görev ${newStatus === 'completed' ? 'tamamlandı' : 'geri alındı'}` });
+    } catch (error) {
+      toast({ title: 'Hata', description: 'Görev durumu güncellenemedi', variant: 'destructive' });
+    }
+  }
 
   if (!plan) return <div>Yükleniyor...</div>;
 
@@ -178,18 +193,46 @@ export function PlanDetailClient() {
                     <Button variant="outline" size="sm" onClick={() => handleOpenTopicDialog(subject)}>
                         <Plus className="mr-2 h-4 w-4" /> Konu Ekle
                     </Button>
-                    {(subject.topics || []).map(topic => (
-                        <div key={topic.id} className="flex items-center justify-between p-3 border bg-background rounded-md">
-                        <div className="flex items-center gap-3">
-                            <Checkbox
-                                id={`topic-${topic.id}`}
-                                checked={selectedTopics.some(t => t.id === topic.id)}
-                                onCheckedChange={() => toggleTopicSelection(topic)}
-                            />
-                            <label htmlFor={`topic-${topic.id}`} className="font-medium cursor-pointer">{topic.name}</label>
-                        </div>
-                        </div>
-                    ))}
+                    {(subject.topics || []).map(topic => {
+                        const topicAssignments = assignments.filter(a => a.topicId === topic.id);
+                        return (
+                            <div key={topic.id} className="p-3 border bg-background rounded-md">
+                                <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Checkbox
+                                        id={`topic-${topic.id}`}
+                                        checked={selectedTopics.some(t => t.id === topic.id)}
+                                        onCheckedChange={() => toggleTopicSelection(topic)}
+                                    />
+                                    <label htmlFor={`topic-${topic.id}`} className="font-medium cursor-pointer">{topic.name}</label>
+                                </div>
+                                {/* Add Edit/Delete for topic here later */}
+                                </div>
+                                {topicAssignments.length > 0 && (
+                                    <div className="pl-8 mt-3 space-y-2">
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Atanan Öğrenciler:</h4>
+                                        {topicAssignments.map(assignment => {
+                                            const student = familyMembers.find(m => m.id === assignment.studentId);
+                                            return (
+                                                <div key={assignment.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-5 h-5 rounded-full" style={{backgroundColor: student?.color || '#ccc'}}></div>
+                                                        <span>{student?.name}</span>
+                                                    </div>
+                                                    <div className='flex items-center gap-3'>
+                                                         <span className='text-xs text-muted-foreground flex items-center gap-1'><Clock className='h-3 w-3'/> {format(parseISO(assignment.dueDate), 'dd MMM', {locale: tr})}</span>
+                                                        <Button size="sm" variant={assignment.status === 'completed' ? 'default' : 'secondary'} className="h-7" onClick={() => handleToggleAssignmentStatus(assignment)}>
+                                                            {assignment.status === 'completed' ? <Check className='h-4 w-4'/> : <Clock className='h-4 w-4'/>}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
                 </AccordionContent>
              </div>
           </AccordionItem>

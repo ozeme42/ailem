@@ -664,14 +664,10 @@ export interface StudyAssignment {
   studyPlanId: string;
   subject: string;
   topic: string;
+  topicId: string;
   sources: string[];
   status: 'assigned' | 'completed';
   startDate: string;
   dueDate: string;
   completedAt?: string;
 }
-
-
-
-
-```

@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, TrackedBookSubject, StudyPlanSubject } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 
@@ -833,39 +833,45 @@ export const updateStudyPlan = async (id: string, data: Partial<Omit<StudyPlan, 
     const planRef = doc(db, 'studyPlans', id);
     const cleanedData = removeUndefined(data);
 
-    // If adding a new subject, use arrayUnion to prevent overwriting existing ones.
-    if (cleanedData.subjects && Array.isArray(cleanedData.subjects) && cleanedData.subjects.every(s => s.id && s.name)) {
-      const planSnap = await getDoc(planRef);
-      if (planSnap.exists()) {
-        const existingPlan = planSnap.data() as StudyPlan;
-        const existingSubjectIds = new Set(existingPlan.subjects.map(s => s.id));
-        const newSubjects = cleanedData.subjects.filter((s: StudyPlanSubject) => !existingSubjectIds.has(s.id));
-        
-        if (newSubjects.length > 0) {
-            // Add new subjects
-            await updateDoc(planRef, { subjects: arrayUnion(...newSubjects) });
-        }
-        
-        // Handle updates to existing subjects (like adding a topic)
-        const updatedSubjects = cleanedData.subjects.filter((s: StudyPlanSubject) => existingSubjectIds.has(s.id));
-        if (updatedSubjects.length > 0) {
-            const finalSubjects = existingPlan.subjects.map(es => {
-                const updatedVersion = updatedSubjects.find(us => us.id === es.id);
-                return updatedVersion ? updatedVersion : es;
-            });
-             await updateDoc(planRef, { subjects: finalSubjects });
-        }
+    if (cleanedData.subjects && Array.isArray(cleanedData.subjects)) {
+        const planSnap = await getDoc(planRef);
+        if (planSnap.exists()) {
+            const existingSubjects = planSnap.data().subjects || [];
+            const newSubjects = cleanedData.subjects.filter((s: StudyPlanSubject) => 
+                !existingSubjects.find((es: StudyPlanSubject) => es.id === s.id)
+            );
 
-        // Handle other field updates (title, description) without affecting subjects if they aren't in the payload
-        const { subjects, ...otherData } = cleanedData;
-        if (Object.keys(otherData).length > 0) {
-           await updateDoc(planRef, otherData);
+            // Use arrayUnion for adding completely new subjects
+            if (newSubjects.length > 0) {
+                 await updateDoc(planRef, {
+                    subjects: arrayUnion(...newSubjects)
+                });
+            }
+
+            // For existing subjects that are being modified (e.g., adding a topic)
+            const modifiedSubjects = cleanedData.subjects.filter((s: StudyPlanSubject) => 
+                existingSubjects.find((es: StudyPlanSubject) => es.id === s.id)
+            );
+            if (modifiedSubjects.length > 0) {
+                const finalSubjects = existingSubjects.map((es: StudyPlanSubject) => {
+                    const updatedVersion = modifiedSubjects.find(ms => ms.id === es.id);
+                    return updatedVersion ? updatedVersion : es;
+                });
+                 await updateDoc(planRef, {
+                    subjects: finalSubjects
+                });
+            }
+
+            // Handle other field updates (title, description) separately
+            const { subjects, ...otherData } = cleanedData;
+            if (Object.keys(otherData).length > 0) {
+               await updateDoc(planRef, otherData);
+            }
+            return;
         }
-        return; // Exit after custom logic
-      }
     }
-    
-    // Fallback for general updates
+
+    // Fallback for general updates or if the document doesn't exist yet
     return updateDoc(planRef, cleanedData);
 };
 
@@ -879,7 +885,9 @@ export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'fam
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'studyAssignments'), { ...data, familyId });
 };
-export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id'>>) => updateDoc(doc(db, 'studyAssignments', id), data);
+export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id' | 'familyId'>>) => {
+    return updateDoc(doc(db, 'studyAssignments', id), removeUndefined(data));
+};
 export const deleteStudyAssignment = (id: string) => deleteDoc(doc(db, 'studyAssignments', id));
 
 // Goals (Roadmaps)
