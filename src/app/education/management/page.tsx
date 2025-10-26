@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { Test, FamilyMember } from "@/lib/data";
@@ -111,22 +111,23 @@ export default function EducationManagementPage() {
 
                     return (
                         <Card key={subject} className="flex flex-col">
-                            <CardHeader>
-                                <div className="flex items-center gap-3">
-                                    <Icon className="h-6 w-6 text-primary" />
-                                    <CardTitle>{subject}</CardTitle>
-                                </div>
-                                <div className="flex justify-between text-sm text-muted-foreground pt-2">
-                                    <span>Toplam: <Badge>{total}</Badge></span>
-                                    <span>Bekleyen: <Badge variant="secondary">{pending}</Badge></span>
-                                    <span>Çözülen: <Badge variant="outline">{completed}</Badge></span>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <Accordion type="single" collapsible className="w-full">
-                                    <AccordionItem value="item-1">
-                                        <AccordionTrigger>Tüm Testler ({total})</AccordionTrigger>
-                                        <AccordionContent className="space-y-3 pt-2">
+                           <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="item-1" className="border-b-0">
+                                    <AccordionTrigger className="p-4 hover:no-underline">
+                                         <div className="flex flex-col items-start text-left gap-3 w-full">
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="h-6 w-6 text-primary" />
+                                                <CardTitle>{subject}</CardTitle>
+                                            </div>
+                                            <div className="flex justify-between text-xs text-muted-foreground w-full pr-4">
+                                                <span>Toplam: <Badge variant="outline">{total}</Badge></span>
+                                                <span>Bekleyen: <Badge variant="secondary">{pending}</Badge></span>
+                                                <span>Çözülen: <Badge variant="default" className="bg-green-600">{completed}</Badge></span>
+                                            </div>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="p-4 pt-0">
+                                        <div className="space-y-3 pt-2">
                                             {subjectTests.map(test => (
                                                  <TestManagementCard 
                                                     key={test.id} 
@@ -136,10 +137,10 @@ export default function EducationManagementPage() {
                                                     onDelete={handleDeleteTest}
                                                 />
                                             ))}
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
-                            </CardContent>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
                         </Card>
                     )
                 })}
