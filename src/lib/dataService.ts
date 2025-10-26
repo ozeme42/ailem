@@ -1840,7 +1840,9 @@ export const onTrackedBookUpdate = (bookId: string, callback: (book: TrackedBook
   });
 };
 export const updateTrackedBook = (id: string, data: Partial<Omit<TrackedBook, 'id' | 'familyId'>>) => {
-    return updateDoc(doc(db, 'trackedBooks', id), removeUndefined(data));
+    const docRef = doc(db, 'trackedBooks', id);
+    const cleanedData = removeUndefined(data);
+    return setDoc(docRef, cleanedData, { merge: true });
 };
 export const deleteTrackedBook = async (id: string) => {
   const batch = writeBatch(db);
