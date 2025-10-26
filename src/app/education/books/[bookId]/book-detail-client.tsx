@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit, Trash2, Send, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic } from "@/lib/dataService";
+import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,17 @@ export function BookDetailClient() {
     setIsSubjectDialogOpen(false);
     setNewSubjectName("");
     setCurrentSubject(null);
+  };
+
+  const handleDeleteSubject = async (subjectId: string) => {
+    if (!book) return;
+    try {
+      await deleteTrackedBookSubject(book.id, subjectId);
+      toast({ title: "Ders Silindi", description: "Ders, konuları ve testleriyle birlikte silindi.", variant: "destructive" });
+    } catch (e) {
+      console.error("Error deleting subject:", e);
+      toast({ title: "Hata", description: "Ders silinirken bir sorun oluştu.", variant: "destructive" });
+    }
   };
   
   const handleTopicSave = async () => {
@@ -228,7 +239,7 @@ export function BookDetailClient() {
         <Button variant="outline" onClick={() => router.push('/education/books')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
         </Button>
-        <Dialog open={isSubjectDialogOpen} onOpenChange={setIsSubjectDialogOpen}>
+        <Dialog open={isSubjectDialogOpen} onOpenChange={(open) => { if(!open) setCurrentSubject(null); setIsSubjectDialogOpen(open)}}>
           <DialogTrigger asChild>
             <Button onClick={() => { setCurrentSubject(null); setNewSubjectName(""); }}>
               <Plus className="mr-2 h-4 w-4" /> Ders Ekle
@@ -251,9 +262,31 @@ export function BookDetailClient() {
         {(book.subjects || []).map(subject => (
           <AccordionItem key={subject.id} value={subject.id} className="border-b-0">
              <div className="bg-muted/50 rounded-lg">
-                <AccordionTrigger className="p-4 font-semibold text-lg hover:no-underline">
-                    {subject.name}
-                </AccordionTrigger>
+                <div className="flex justify-between items-center w-full p-4">
+                    <AccordionTrigger className="p-0 font-semibold text-lg hover:no-underline flex-grow">
+                        {subject.name}
+                    </AccordionTrigger>
+                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setNewSubjectName(subject.name); setIsSubjectDialogOpen(true); }}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                    <AlertDialogDescription>"{subject.name}" dersi ve içindeki tüm konular/testler kalıcı olarak silinecektir.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>Evet, Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </div>
                 <AccordionContent className="p-4 pt-0 space-y-3">
                    <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={() => {setCurrentSubject(subject); setCurrentTopic(null); setNewTopicName(""); setIsTopicDialogOpen(true)}}>

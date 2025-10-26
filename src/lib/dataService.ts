@@ -1919,6 +1919,37 @@ export const deleteTrackedBookTopic = async (bookId: string, subjectId: string, 
         await batch.commit();
     }
 };
+
+export const deleteTrackedBookSubject = async (bookId: string, subjectId: string) => {
+    const bookRef = doc(db, 'trackedBooks', bookId);
+    const bookSnap = await getDoc(bookRef);
+
+    if (bookSnap.exists()) {
+        const book = bookSnap.data() as TrackedBook;
+        
+        // Find all test IDs to be deleted
+        const subjectToDelete = book.subjects.find(s => s.id === subjectId);
+        if (!subjectToDelete) return;
+        const topicIdsToDelete = (subjectToDelete.topics || []).map(t => t.id);
+
+        const batch = writeBatch(db);
+
+        // Delete tests belonging to the topics of the subject
+        if (topicIdsToDelete.length > 0) {
+            const testsQuery = query(collection(db, 'trackedBookTests'), where('topicId', 'in', topicIdsToDelete));
+            const testsSnapshot = await getDocs(testsQuery);
+            testsSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+        }
+        
+        // Update the book document to remove the subject
+        const updatedSubjects = book.subjects.filter(s => s.id !== subjectId);
+        batch.update(bookRef, { subjects: updatedSubjects });
+
+        await batch.commit();
+    }
+};
     
 
     
