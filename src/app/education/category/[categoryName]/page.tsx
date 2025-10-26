@@ -4,12 +4,12 @@
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { onTestsUpdate, onBankQuestionsUpdate, addTest } from "@/lib/dataService";
+import { onTestsUpdate, onBankQuestionsUpdate, addTest, deleteTest, updateTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember, BankQuestion, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles, Send, Edit, Trash2, CheckCircle, X as XIcon, MinusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { compareDesc, format, parse } from 'date-fns';
@@ -24,6 +24,9 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 
 
 type TopicStats = {
@@ -57,17 +60,13 @@ export default function CategoryDetailPage() {
   const [selectedTopic, setSelectedTopic] = React.useState<TopicStats | null>(null);
 
   const student = React.useMemo(() => 
-    familyMembers.find(m => m.id === studentId),
+    studentId ? familyMembers.find(m => m.id === studentId) : null,
   [familyMembers, studentId]);
 
   React.useEffect(() => {
-    if (!studentId) {
-      setLoading(false);
-      return;
-    }
     const unsubscribeTests = onTestsUpdate((tests) => {
-      setAllTests(tests.filter(t => t.studentId === studentId));
-      if (loading) setLoading(false);
+        setAllTests(tests);
+        if (loading) setLoading(false);
     });
     const unsubscribeBanks = onBankQuestionsUpdate((questions) => {
         setBankQuestions(questions);
@@ -84,10 +83,14 @@ export default function CategoryDetailPage() {
         unsubscribeTests();
         unsubscribeBanks();
     };
-  }, [studentId, loading]);
+  }, [loading]);
 
   const { filteredTests, topicStats } = React.useMemo(() => {
-    const testsForCategory = allTests.filter(test => getCategoryName(test) === categoryName);
+    let testsForCategory = allTests.filter(test => getCategoryName(test) === categoryName);
+    
+    if (studentId) {
+        testsForCategory = testsForCategory.filter(test => test.studentId === studentId);
+    }
 
     const sortedTests = [...testsForCategory].sort((a, b) => {
         try {
@@ -103,7 +106,6 @@ export default function CategoryDetailPage() {
     // Calculate Topic Stats
     const tempTopicStats = new Map<string, { name: string; correct: number; total: number }>();
     const allTopicsForSubject = Array.from(new Set(bankQuestions.filter(q => q.subject === categoryName).map(q => q.topic)));
-
 
     testsForCategory
       .filter(t => t.status === 'Sonuçlandı' && t.sourceType === 'bank')
@@ -125,20 +127,16 @@ export default function CategoryDetailPage() {
 
     return { filteredTests: sortedTests, topicStats: finalTopicStats };
 
-  }, [allTests, categoryName, bankQuestions]);
+  }, [allTests, categoryName, bankQuestions, studentId]);
+
+  const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
   
-  const formatTestDate = (dateString: string) => {
-      try {
-        const date = parse(dateString, 'dd MMMM yyyy', new Date());
-        return {
-            day: format(date, 'd', { locale: tr }),
-            month: format(date, 'MMMM', { locale: tr }),
-            year: format(date, 'yyyy', { locale: tr }),
-            time: format(date, 'HH:mm'),
-        }
-      } catch (e) {
-          return { day: '?', month: '?', year: '?', time: '?' };
-      }
+   const handleDeleteTest = async (testId: string) => {
+    try {
+        await deleteTest(testId);
+    } catch (error) {
+        console.error("Error deleting test:", error);
+    }
   };
 
 
@@ -146,19 +144,19 @@ export default function CategoryDetailPage() {
     return <div>Yükleniyor...</div>;
   }
 
-  if (!student) {
+  if (studentId && !student) {
     return <div className="text-center p-8">Öğrenci bulunamadı.</div>;
   }
 
   return (
     <div className="space-y-8">
-      <PageHeader title={`${student.name} - ${categoryName}`}>
+      <PageHeader title={pageTitle}>
         <Button onClick={() => router.back()} variant="outline" className="bg-background/20 text-foreground hover:bg-background/30">
           <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
         </Button>
       </PageHeader>
       
-      {topicStats.length > 0 && (
+      {student && topicStats.length > 0 && (
           <Card>
               <CardHeader>
                   <CardTitle>Konu Başarı Durumu</CardTitle>
@@ -188,88 +186,22 @@ export default function CategoryDetailPage() {
 
       {filteredTests.length > 0 ? (
         <div className="space-y-4">
-          <h3 className="text-xl font-bold">Atanmış Sınavlar</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredTests.map((test) => {
-              let buttonText = 'Sınava Gir';
-              let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
-              let buttonDisabled = false;
-              let statusBadge: React.ReactNode = <Badge variant="outline" className="w-fit text-cyan-600 border-cyan-500/50 bg-cyan-500/10">Atandı</Badge>;
-              
-              if (test.status === 'Sonuçlandı') {
-                  buttonText = 'Sonuçları Göster';
-                  buttonClass = "bg-pink-600 hover:bg-pink-700";
-                  statusBadge = <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>;
-              } else if (test.status === 'Değerlendirme Bekliyor') {
-                  buttonText = 'Değerlendiriliyor...';
-                  buttonDisabled = true;
-                  buttonClass = "bg-yellow-500 hover:bg-yellow-600";
-                   statusBadge = <Badge variant="outline" className="w-fit text-yellow-600 border-yellow-500/50 bg-yellow-500/10">Değerlendiriliyor</Badge>;
-              }
+          <h3 className="text-xl font-bold">Atanmış Sınavlar ({filteredTests.length})</h3>
+           <Accordion type="multiple" className="w-full" defaultValue={studentId ? [] : filteredTests.map(t => t.id)}>
+                {filteredTests.map((test) => {
+                const student = familyMembers.find(m => m.id === test.studentId);
+                const isTestForSingleStudentView = studentId && test.studentId === studentId;
+                const isManagementView = !studentId;
 
-              const startDate = formatTestDate(test.assignedDate);
-              const endDate = formatTestDate(test.dueDate);
-              const isMistakeTest = test.sourceType === 'mistake';
-              const duration = test.questionCount * 1.5;
-
-              return (
-                <Card key={test.id} className="flex flex-col shadow-lg overflow-hidden">
-                  <CardContent className="p-4 flex-grow grid grid-cols-[1fr_auto_auto] gap-4">
-                    
-                    <div className="flex flex-col justify-between">
-                      <div>
-                          <p className="text-xs text-muted-foreground">{test.subject}</p>
-                          <h3 className="font-bold text-lg leading-tight">{test.title}</h3>
-                      </div>
-                      {statusBadge}
-                    </div>
-                    
-                    <div className="flex flex-col justify-between items-center px-4 border-l border-r">
-                      <div className="text-center">
-                          <p className="text-xs text-muted-foreground">Başlangıç:</p>
-                          <p className="text-sm font-semibold">{startDate.day}</p>
-                          <p className="text-sm">{startDate.month}</p>
-                          <p className="text-xs">{startDate.year}</p>
-                      </div>
-                      <div className="text-center">
-                          <p className="text-xs text-muted-foreground">Bitiş:</p>
-                          <p className="text-sm font-semibold">{endDate.day}</p>
-                          <p className="text-sm">{endDate.month}</p>
-                          <p className="text-xs">{endDate.year}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col justify-center items-center text-center">
-                       {isMistakeTest ? (
-                           <>
-                                <NotebookText className="w-8 h-8 text-primary/80 mb-2"/>
-                                <p className="text-2xl font-bold">{test.questionCount}</p>
-                                <p className="text-sm text-muted-foreground">SORU</p>
-                           </>
-                       ) : (
-                           <>
-                                <Clock className="w-8 h-8 text-primary/80 mb-2"/>
-                                <p className="text-2xl font-bold">{duration}</p>
-                                <p className="text-sm text-muted-foreground">DK</p>
-                           </>
-                       )}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-0">
-                    <Link href={`/education/${test.id}`} passHref className="w-full">
-                      <Button 
-                          size="lg" 
-                          className={cn("w-full rounded-t-none h-12 text-base", buttonClass)}
-                          disabled={buttonDisabled}
-                      >
-                        {buttonText}
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              )
-            })}
-          </div>
+                return (
+                    isTestForSingleStudentView ? (
+                      <SingleStudentTestCard key={test.id} test={test} />
+                    ) : isManagementView ? (
+                        <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />
+                    ) : null
+                )
+                })}
+          </Accordion>
         </div>
       ) : (
         <Card>
@@ -291,6 +223,116 @@ export default function CategoryDetailPage() {
       )}
     </div>
   );
+}
+
+
+function SingleStudentTestCard({ test }: { test: Test }) {
+    let buttonText = 'Sınava Gir';
+    let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
+    let buttonDisabled = false;
+    let statusBadge: React.ReactNode = <Badge variant="outline" className="w-fit text-cyan-600 border-cyan-500/50 bg-cyan-500/10">Atandı</Badge>;
+    
+    if (test.status === 'Sonuçlandı') {
+        buttonText = 'Sonuçları Göster';
+        buttonClass = "bg-pink-600 hover:bg-pink-700";
+        statusBadge = <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>;
+    } else if (test.status === 'Değerlendirme Bekliyor') {
+        buttonText = 'Değerlendiriliyor...';
+        buttonDisabled = true;
+        buttonClass = "bg-yellow-500 hover:bg-yellow-600";
+        statusBadge = <Badge variant="outline" className="w-fit text-yellow-600 border-yellow-500/50 bg-yellow-500/10">Değerlendiriliyor</Badge>;
+    }
+
+    const isMistakeTest = test.sourceType === 'mistake';
+    const duration = test.questionCount * 1.5;
+
+    return (
+        <Card key={test.id} className="flex flex-col shadow-sm overflow-hidden">
+            <CardHeader>
+                <div className="flex justify-between items-start gap-2">
+                    <CardTitle>{test.title}</CardTitle>
+                    {statusBadge}
+                </div>
+                 <CardDescription>
+                    {test.assignedDate} - {test.dueDate}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow flex items-center justify-between">
+                <div className="text-center">
+                    <p className="text-3xl font-bold">{test.questionCount}</p>
+                    <p className="text-sm text-muted-foreground">SORU</p>
+                </div>
+                {!isMistakeTest && (
+                    <div className="text-center">
+                        <p className="text-3xl font-bold">{duration}</p>
+                        <p className="text-sm text-muted-foreground">DAKİKA</p>
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter className="p-0">
+            <Link href={`/education/${test.id}`} passHref className="w-full">
+                <Button 
+                    size="lg" 
+                    className={cn("w-full rounded-t-none h-12 text-base", buttonClass)}
+                    disabled={buttonDisabled}
+                >
+                {buttonText}
+                </Button>
+            </Link>
+            </CardFooter>
+        </Card>
+    );
+}
+
+function ManagementTestCard({ test, student, onDelete }: { test: Test, student?: FamilyMember, onDelete: (id: string) => void }) {
+    const isCompleted = test.status === 'Sonuçlandı';
+    const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
+    const scorePercentage = test.score || 0;
+
+    return (
+        <AccordionItem value={test.id} className="border bg-background rounded-md mb-2">
+            <AccordionTrigger className="p-4">
+                <div className="flex justify-between items-center w-full pr-4">
+                    <div>
+                        <p className="font-semibold">{test.title}</p>
+                        <p className="text-sm text-muted-foreground">{student?.name}</p>
+                    </div>
+                     <Badge variant={isCompleted ? "default" : "outline"} className={cn("text-xs", isCompleted && "bg-green-600", isPendingGrade && "bg-yellow-500 text-yellow-900")}>{test.status}</Badge>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent className="p-4 pt-0">
+                 {isCompleted && (
+                     <div className="space-y-2 mb-4">
+                        <Progress value={scorePercentage} className="h-1.5" />
+                        <div className="flex justify-between text-xs font-medium">
+                            <span className="flex items-center gap-1 text-green-600"><CheckCircle className="h-3 w-3"/> D: {test.correctAnswers}</span>
+                            <span className="flex items-center gap-1 text-red-600"><XIcon className="h-3 w-3"/> Y: {test.incorrectAnswers}</span>
+                            <span className="flex items-center gap-1 text-gray-500"><MinusCircle className="h-3 w-3"/> B: {test.emptyAnswers}</span>
+                        </div>
+                    </div>
+                )}
+                <div className="flex justify-end gap-2">
+                     {isPendingGrade && (
+                        <Link href={`/education/${test.id}`}>
+                            <Button variant="secondary" size="sm">Not Ver</Button>
+                        </Link>
+                    )}
+                     <Link href={`/education/management/assign?edit=${test.id}`}>
+                        <Button variant="outline" size="sm"><Edit className="w-3 h-3 mr-1"/>Düzenle</Button>
+                    </Link>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm"><Trash2 className="w-3 h-3 mr-1"/>Sil</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+    );
 }
 
 const formSchema = z.object({
@@ -389,5 +431,4 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
-
 
