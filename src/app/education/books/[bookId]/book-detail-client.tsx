@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit, Trash2, Send, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests } from "@/lib/dataService";
+import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -160,6 +160,17 @@ export function BookDetailClient() {
     }
   }
 
+  const handleDeleteTopic = async (subjectId: string, topicId: string) => {
+    if (!book) return;
+    try {
+        await deleteTrackedBookTopic(book.id, subjectId, topicId);
+        toast({ title: "Konu Silindi", description: "Konu ve içindeki tüm testler silindi.", variant: "destructive"});
+    } catch (e) {
+        console.error("Error deleting topic:", e);
+        toast({ title: "Hata", description: "Konu silinirken bir sorun oluştu.", variant: "destructive"});
+    }
+  }
+
   const handleAssignSelectedTests = async () => {
     if (!book || selectedTests.length === 0 || assignFormData.studentIds.length === 0) {
         toast({ title: "Eksik Bilgi", description: "Lütfen en az bir test ve bir öğrenci seçin.", variant: "destructive"});
@@ -255,7 +266,31 @@ export function BookDetailClient() {
                     <Accordion type="multiple" className="w-full space-y-2">
                         {(subject.topics || []).map(topic => (
                              <AccordionItem key={topic.id} value={topic.id} className="border bg-background rounded-md px-4">
-                                <AccordionTrigger>{topic.name}</AccordionTrigger>
+                                <AccordionTrigger>
+                                  <div className="flex justify-between items-center w-full">
+                                    <span>{topic.name}</span>
+                                    <div className="flex items-center gap-1 mr-2" onClick={e => e.stopPropagation()}>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); setNewTopicName(topic.name); setIsTopicDialogOpen(true); }}>
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                                  <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                  <AlertDialogDescription>"{topic.name}" konusu ve içindeki tüm testler kalıcı olarak silinecektir.</AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                  <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                  <AlertDialogAction onClick={() => handleDeleteTopic(subject.id, topic.id)}>Evet, Sil</AlertDialogAction>
+                                              </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                    </div>
+                                  </div>
+                                </AccordionTrigger>
                                 <AccordionContent className="pt-2">
                                     <div className="space-y-2">
                                     {tests.filter(t => t.topicId === topic.id).map(test => (

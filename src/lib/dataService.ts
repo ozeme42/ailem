@@ -1891,6 +1891,32 @@ export const addBulkTrackedBookTests = async (bookId: string, subjectId: string,
 export const updateTrackedBookTest = (id: string, data: Partial<Omit<TrackedBookTest, 'id'>>) => updateDoc(doc(db, 'trackedBookTests', id), removeUndefined(data));
 export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
 
+export const deleteTrackedBookTopic = async (bookId: string, subjectId: string, topicId: string) => {
+    const bookRef = doc(db, 'trackedBooks', bookId);
+    const bookSnap = await getDoc(bookRef);
+
+    if (bookSnap.exists()) {
+        const book = bookSnap.data() as TrackedBook;
+        const updatedSubjects = book.subjects.map(subject => {
+            if (subject.id === subjectId) {
+                return {
+                    ...subject,
+                    topics: (subject.topics || []).filter(topic => topic.id !== topicId),
+                };
+            }
+            return subject;
+        });
+
+        const batch = writeBatch(db);
+        batch.update(bookRef, { subjects: updatedSubjects });
+
+        const testsQuery = query(collection(db, 'trackedBookTests'), where('topicId', '==', topicId));
+        const testsSnapshot = await getDocs(testsQuery);
+        testsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        await batch.commit();
+    }
+};
     
 
     
