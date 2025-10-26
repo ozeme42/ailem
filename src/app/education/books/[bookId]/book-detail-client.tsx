@@ -258,7 +258,7 @@ export function BookDetailClient() {
         </Dialog>
       </PageHeader>
 
-      <Accordion type="multiple" className="w-full space-y-4" defaultValue={(book.subjects || []).map(s => s.id)}>
+      <Accordion type="multiple" className="w-full space-y-4">
         {(book.subjects || []).map(subject => (
           <AccordionItem key={subject.id} value={subject.id} className="border-b-0">
              <div className="bg-muted/50 rounded-lg">
