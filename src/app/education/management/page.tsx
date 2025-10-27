@@ -71,6 +71,11 @@ export default function EducationManagementPage() {
                     <Link href="/education/management/assign">
                         <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
                     </Link>
+                    <Link href="/education/management/practice-exams">
+                        <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                            <ClipboardList className="mr-2 h-4 w-4" /> Deneme Sınavları
+                        </Button>
+                    </Link>
                     <Link href="/education/management/study-plans">
                         <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                             <BookHeart className="mr-2 h-4 w-4" /> Konu Anlatım Planları
