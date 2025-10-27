@@ -33,6 +33,11 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
 };
 
+const getCategoryName = (test: Test): string => {
+    if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+    return test.subject || 'Diğer';
+};
+
 export default function EducationManagementPage() {
     const { toast } = useToast();
     const { familyMembers, familyId } = useAuth();
@@ -51,7 +56,7 @@ export default function EducationManagementPage() {
     const testsBySubject = React.useMemo(() => {
         const grouped: { [subject: string]: Test[] } = {};
         tests.filter(t => !t.isArchived).forEach(test => {
-            const subject = test.subject || 'Diğer';
+            const subject = getCategoryName(test);
             if (!grouped[subject]) {
                 grouped[subject] = [];
             }

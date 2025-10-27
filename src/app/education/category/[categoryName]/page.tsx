@@ -192,14 +192,16 @@ export default function CategoryDetailPage() {
                 const student = familyMembers.find(m => m.id === test.studentId);
                 const isTestForSingleStudentView = studentId && test.studentId === studentId;
                 const isManagementView = !studentId;
-
-                return (
-                    isTestForSingleStudentView ? (
-                      <SingleStudentTestCard key={test.id} test={test} />
-                    ) : isManagementView ? (
-                        <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />
-                    ) : null
-                )
+                
+                if (isTestForSingleStudentView) {
+                    return <SingleStudentTestCard key={test.id} test={test} />;
+                }
+                
+                if (isManagementView) {
+                    return <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />;
+                }
+                
+                return null;
                 })}
           </Accordion>
         </div>
@@ -431,4 +433,3 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
-
