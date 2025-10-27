@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardDescription, CardTitle } from "@/components/ui/card";
 
 const subjectSchema = z.object({
   name: z.string().min(2, "Ders adı zorunludur."),
