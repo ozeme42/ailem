@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Test as TestType, TrackedBookTest, BankQuestion, QuickTestQuestion } from "@/lib/data";
+import { Test as TestType, QuickTestQuestion } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -42,10 +42,7 @@ export default function OpticalFormPage() {
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
     
-    // State for manual evaluation
     const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluation>({});
-    
-    // State for single question view
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
@@ -127,7 +124,7 @@ export default function OpticalFormPage() {
         }
     }, [test, mcqAnswers, textAnswers, toast, router]);
     
-    React.useEffect(() => {
+     React.useEffect(() => {
         if (!testId) {
             setIsLoading(false);
             return;
@@ -139,13 +136,13 @@ export default function OpticalFormPage() {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 
-                // Fetch questions subcollection
-                const questionsColRef = collection(db, 'tests', testId, 'questions');
-                const questionsQuery = query(questionsColRef, orderBy("questionNumber"));
-                const questionsSnap = await getDocs(questionsQuery);
-                const fetchedQuestions = questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
-                
-                currentTest.questions = fetchedQuestions;
+                // Fetch questions subcollection if they are not already on the test doc
+                if (!currentTest.questions || currentTest.questions.length === 0) {
+                  const questionsColRef = collection(db, 'tests', testId, 'questions');
+                  const questionsQuery = query(questionsColRef, orderBy("questionNumber"));
+                  const questionsSnap = await getDocs(questionsQuery);
+                  currentTest.questions = questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
+                }
 
                 setTest(currentTest);
 
@@ -306,35 +303,61 @@ export default function OpticalFormPage() {
                 <Card>
                     <CardHeader><CardTitle>Soru Analizi</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        {(test.questions || []).map((question) => {
-                            const qNumStr = question.questionNumber.toString();
-                            const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : studentAnswers[qNumStr];
-                            const correctAns = test.openEnded ? undefined : answerKey[qNumStr];
-                            const evalStatus = test.openEnded ? test.studentTextAnswersEvaluation?.[qNumStr] : (studentAnswers[qNumStr] === answerKey[qNumStr] ? 'correct' : (studentAnswers[qNumStr] ? 'incorrect' : 'empty'));
+                        {(test.questions && test.questions.length > 0) ? (
+                            test.questions.map((question) => {
+                                const qNumStr = question.questionNumber.toString();
+                                const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : studentAnswers[qNumStr];
+                                const correctAns = test.openEnded ? undefined : answerKey[qNumStr];
+                                const evalStatus = test.openEnded ? test.studentTextAnswersEvaluation?.[qNumStr] : (studentAnswers[qNumStr] === answerKey[qNumStr] ? 'correct' : (studentAnswers[qNumStr] ? 'incorrect' : 'empty'));
 
-                            let statusIcon;
-                            if (evalStatus === 'correct') statusIcon = <CheckCircle className="h-6 w-6 text-green-500"/>
-                            else if (evalStatus === 'incorrect') statusIcon = <XCircle className="h-6 w-6 text-red-500"/>
-                            else statusIcon = <MinusCircle className="h-6 w-6 text-gray-500"/>;
+                                let statusIcon;
+                                if (evalStatus === 'correct') statusIcon = <CheckCircle className="h-6 w-6 text-green-500"/>
+                                else if (evalStatus === 'incorrect') statusIcon = <XCircle className="h-6 w-6 text-red-500"/>
+                                else statusIcon = <MinusCircle className="h-6 w-6 text-gray-500"/>;
 
-                            return (
-                                <div key={question.questionId} className="p-4 border rounded-lg">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold">Soru {qNumStr}</h4>
-                                        {statusIcon}
+                                return (
+                                    <div key={question.questionId} className="p-4 border rounded-lg">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="font-bold">Soru {qNumStr}</h4>
+                                            {statusIcon}
+                                        </div>
+                                        {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
+                                        {test.openEnded ? (
+                                            <p className="p-3 bg-muted rounded-md whitespace-pre-wrap">{studentAns || "Cevap verilmedi."}</p>
+                                        ) : (
+                                            <div className="flex gap-4 mt-4">
+                                                <p>Senin Cevabın: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'Boş'}</Badge></p>
+                                                {correctAns && <p>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></p>}
+                                            </div>
+                                        )}
                                     </div>
-                                    {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
-                                    {test.openEnded ? (
-                                        <p className="p-3 bg-muted rounded-md whitespace-pre-wrap">{studentAns || "Cevap verilmedi."}</p>
-                                    ) : (
-                                        <div className="flex gap-4 mt-4">
+                                )
+                            })
+                        ) : (
+                             Array.from({ length: test.questionCount }).map((_, index) => {
+                                const qNumStr = (index + 1).toString();
+                                const studentAns = studentAnswers[qNumStr];
+                                const correctAns = answerKey[qNumStr];
+                                const evalStatus = studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty');
+                                let statusIcon;
+                                if (evalStatus === 'correct') statusIcon = <CheckCircle className="h-6 w-6 text-green-500"/>
+                                else if (evalStatus === 'incorrect') statusIcon = <XCircle className="h-6 w-6 text-red-500"/>
+                                else statusIcon = <MinusCircle className="h-6 w-6 text-gray-500"/>;
+
+                                return (
+                                    <div key={qNumStr} className="p-4 border rounded-lg">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="font-bold">Soru {qNumStr}</h4>
+                                            {statusIcon}
+                                        </div>
+                                         <div className="flex gap-4 mt-4">
                                             <p>Senin Cevabın: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'Boş'}</Badge></p>
                                             {correctAns && <p>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></p>}
                                         </div>
-                                    )}
-                                </div>
-                            )
-                        })}
+                                    </div>
+                                )
+                             })
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -342,7 +365,6 @@ export default function OpticalFormPage() {
     }
     
     if (test.status === 'Değerlendirme Bekliyor') {
-        // If the current user is the student, show a waiting message.
         if (currentUserIsStudent) {
             return (
                 <div className="container mx-auto py-8 text-center">
@@ -364,7 +386,6 @@ export default function OpticalFormPage() {
             )
         }
 
-        // If not the student (i.e., a parent), show the grading interface.
         return (
             <div className="container mx-auto py-8 space-y-6">
                  <header className="mb-4">
@@ -380,7 +401,7 @@ export default function OpticalFormPage() {
                 </Card>
 
                  <div className="space-y-4">
-                    {(test.questions || []).map((question) => {
+                    {(test.questions && test.questions.length > 0) ? (test.questions.map((question) => {
                         const qNumStr = question.questionNumber.toString();
                         const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : test.studentAnswers?.[qNumStr];
                         const correctAns = test.openEnded ? undefined : test.answerKey?.[qNumStr];
@@ -405,7 +426,9 @@ export default function OpticalFormPage() {
                                 </div>
                             </Card>
                         )
-                    })}
+                    })) : (
+                        <Card><CardContent className="p-6">Bu test için soru görselleri bulunmuyor. Lütfen doğru, yanlış, boş sayılarını manuel girin.</CardContent></Card>
+                    )}
                 </div>
                 <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full">Değerlendirmeyi Tamamla ve Kaydet</Button>
             </div>
@@ -420,25 +443,130 @@ export default function OpticalFormPage() {
         setTextAnswers(prev => ({...prev, [questionNumber]: value}));
     };
     
-    const handleNextQuestion = () => {
-        setCurrentQuestionIndex(prev => Math.min(prev + 1, test.questionCount - 1));
-    };
+    // Check if test has images or not
+    const hasImages = test.questions && test.questions.length > 0;
 
-    const handlePrevQuestion = () => {
-        setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
-    };
-    
-    const handleJumpToQuestion = (index: number) => {
-        setCurrentQuestionIndex(index);
-    };
+    if (hasImages) {
+        // Single question view for tests with images
+        const handleNextQuestion = () => {
+            setCurrentQuestionIndex(prev => Math.min(prev + 1, test.questionCount - 1));
+        };
 
-    const answeredQuestionsCount = test.openEnded
-      ? Object.values(textAnswers).filter(a => a?.trim() !== '').length
-      : Object.keys(mcqAnswers).length;
-      
-    const currentQuestion = test.questions?.[currentQuestionIndex];
-    const qNum = currentQuestion?.questionNumber;
+        const handlePrevQuestion = () => {
+            setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
+        };
+        
+        const handleJumpToQuestion = (index: number) => {
+            setCurrentQuestionIndex(index);
+        };
 
+        const answeredQuestionsCount = test.openEnded
+        ? Object.values(textAnswers).filter(a => a?.trim() !== '').length
+        : Object.keys(mcqAnswers).length;
+        
+        const currentQuestion = test.questions?.[currentQuestionIndex];
+        const qNum = currentQuestion?.questionNumber;
+
+        return (
+            <div className="container mx-auto py-8">
+                <header className="mb-4">
+                    <Button variant="ghost" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Geri
+                    </Button>
+                </header>
+                
+                <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-2xl">{test.title}</CardTitle>
+                                <CardDescription>{test.subject}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {currentQuestion && qNum && (
+                                        <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
+                                                <h3 className="font-semibold">Soru {qNum}</h3>
+                                            </div>
+                                            {currentQuestion.imageUrl && <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" data-ai-hint="question paper" />}
+                                            <div className="pl-12">
+                                                {test.openEnded ? (
+                                                    <Textarea 
+                                                        placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
+                                                        value={textAnswers[qNum] || ""} 
+                                                        onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
+                                                        className="flex-grow min-h-[100px]"
+                                                    />
+                                                ) : (
+                                                    <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
+                                                        {Object.keys(test.answerKey || {A: '', B: '', C: '', D: ''}).sort().map(option => (
+                                                            <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
+                                                        ))}
+                                                    </RadioGroup>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between mt-6">
+                                        <Button onClick={handlePrevQuestion} disabled={currentQuestionIndex === 0}>Önceki Soru</Button>
+                                        {currentQuestionIndex < test.questionCount - 1 ? (
+                                            <Button onClick={handleNextQuestion}>Sonraki Soru</Button>
+                                        ) : (
+                                        <AlertDialog>
+                                                <AlertDialogTrigger asChild><Button>Testi Bitir</Button></AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <aside className="lg:sticky top-8 self-start">
+                        <Card>
+                            <CardHeader className="text-center"><CardTitle>Soru Takibi</CardTitle></CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="text-center">
+                                    <p className="text-muted-foreground">Cevaplanan Soru</p>
+                                    <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestionsCount} / {test.questionCount}</p>
+                                </div>
+                                <div className="grid grid-cols-5 gap-2">
+                                    {Array.from({length: test.questionCount}, (_, i) => {
+                                        const qNum = i + 1;
+                                        const isAnswered = test.openEnded ? !!textAnswers[qNum] : !!mcqAnswers[qNum];
+                                        return (
+                                            <Button
+                                                key={i}
+                                                variant={currentQuestionIndex === i ? 'default' : (isAnswered ? 'secondary' : 'outline')}
+                                                className="h-10 w-10"
+                                                onClick={() => handleJumpToQuestion(i)}
+                                            >
+                                                {qNum}
+                                            </Button>
+                                        )
+                                    })}
+                                </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild><Button className="w-full" size="lg">Testi Bitir</Button></AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                                </AlertDialog>
+                            </CardContent>
+                        </Card>
+                    </aside>
+                </main>
+            </div>
+        )
+    }
+
+    // Optical form view for tests without images
     return (
         <div className="container mx-auto py-8">
             <header className="mb-4">
@@ -446,97 +574,53 @@ export default function OpticalFormPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                 </Button>
             </header>
-            
-            <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-2xl">{test.title}</CardTitle>
-                            <CardDescription>{test.subject}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="space-y-4">
-                                {currentQuestion && qNum && (
-                                     <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
-                                            <h3 className="font-semibold">Soru {qNum}</h3>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-2xl">{test.title}</CardTitle>
+                    <CardDescription>{test.subject}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                    {Array.from({ length: test.questionCount }).map((_, index) => {
+                        const qNum = index + 1;
+                        return (
+                        <div key={qNum} className="flex items-center gap-4 p-3 rounded-lg border">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
+                             {test.openEnded ? (
+                                <Textarea 
+                                    placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
+                                    value={textAnswers[qNum] || ""} 
+                                    onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
+                                    className="flex-grow"
+                                />
+                            ) : (
+                                <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-x-4 gap-y-2">
+                                    {Object.keys(test.answerKey || {A:'', B:'', C:'', D:''}).sort().map(option => (
+                                        <div key={option} className="flex items-center space-x-2">
+                                            <RadioGroupItem value={option} id={`q${qNum}-${option}`} />
+                                            <Label htmlFor={`q${qNum}-${option}`}>{option}</Label>
                                         </div>
-                                        {currentQuestion.imageUrl && <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" data-ai-hint="question paper" />}
-                                        <div className="pl-12">
-                                            {test.openEnded ? (
-                                                <Textarea 
-                                                    placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
-                                                    value={textAnswers[qNum] || ""} 
-                                                    onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
-                                                    className="flex-grow min-h-[100px]"
-                                                />
-                                            ) : (
-                                                <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
-                                                    {Object.keys(test.answerKey || {A: '', B: '', C: '', D: ''}).sort().map(option => (
-                                                        <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
-                                                    ))}
-                                                </RadioGroup>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                                 <div className="flex justify-between mt-6">
-                                    <Button onClick={handlePrevQuestion} disabled={currentQuestionIndex === 0}>Önceki Soru</Button>
-                                    {currentQuestionIndex < test.questionCount - 1 ? (
-                                        <Button onClick={handleNextQuestion}>Sonraki Soru</Button>
-                                    ) : (
-                                       <AlertDialog>
-                                            <AlertDialogTrigger asChild><Button>Testi Bitir</Button></AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    )}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-                <aside className="lg:sticky top-8 self-start">
-                     <Card>
-                        <CardHeader className="text-center"><CardTitle>Soru Takibi</CardTitle></CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="text-center">
-                                <p className="text-muted-foreground">Cevaplanan Soru</p>
-                                <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestionsCount} / {test.questionCount}</p>
-                            </div>
-                            <div className="grid grid-cols-5 gap-2">
-                                {Array.from({length: test.questionCount}, (_, i) => {
-                                    const qNum = i + 1;
-                                    const isAnswered = test.openEnded ? !!textAnswers[qNum] : !!mcqAnswers[qNum];
-                                    return (
-                                        <Button
-                                            key={i}
-                                            variant={currentQuestionIndex === i ? 'default' : (isAnswered ? 'secondary' : 'outline')}
-                                            className="h-10 w-10"
-                                            onClick={() => handleJumpToQuestion(i)}
-                                        >
-                                            {qNum}
-                                        </Button>
-                                    )
-                                })}
-                            </div>
-                           <AlertDialog>
-                            <AlertDialogTrigger asChild><Button className="w-full" size="lg">Testi Bitir</Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                            </AlertDialog>
-                        </CardContent>
-                    </Card>
-                </aside>
-            </main>
+                                    ))}
+                                </RadioGroup>
+                            )}
+                        </div>
+                        );
+                    })}
+                    </div>
+                </CardContent>
+                <CardHeader>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild><Button size="lg" className="w-full">Testi Bitir</Button></AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardHeader>
+            </Card>
         </div>
-    )
+    );
 }
-    
+
 
     
