@@ -585,9 +585,9 @@ export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
          {
             name: "LGS Deneme Sınavı 1",
             subjects: [
-                { id: "1", name: "Matematik", questionCount: 20, answerKey: {} },
-                { id: "2", name: "Türkçe", questionCount: 20, answerKey: {} },
-                { id: "3", name: "Fen Bilimleri", questionCount: 20, answerKey: {} },
+                { id: "1", name: "Matematik", questionCount: 20 },
+                { id: "2", name: "Türkçe", questionCount: 20 },
+                { id: "3", name: "Fen Bilimleri", questionCount: 20 },
             ],
         }
     ];
@@ -676,4 +676,3 @@ export interface StudyAssignment {
   dueDate: string;
   completedAt?: string;
 }
-

@@ -815,7 +815,8 @@ export const onSinglePracticeExamUpdate = (examId: string, callback: (exam: Prac
 export const addPracticeExam = async (data: Omit<PracticeExam, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'practiceExams'), { ...data, familyId });
+    const docRef = await addDoc(collection(db, 'practiceExams'), { ...data, familyId });
+    return docRef;
 };
 export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id' | 'familyId'>>) => updateDoc(doc(db, 'practiceExams', id), removeUndefined(data));
 export const deletePracticeExam = (id: string) => deleteDoc(doc(db, "practiceExams", id));
@@ -1930,7 +1931,37 @@ export const deleteTrackedBookSubject = async (bookId: string, subjectId: string
     }
 };
     
+export const updateNotebookFolder = async (notebookId: string, sectionId: string, oldFolderName: string, newFolderName: string) => {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
 
-    
+    if (notebookSnap.exists()) {
+        const notebook = notebookSnap.data() as Notebook;
+        const updatedSections = (notebook.sections || []).map(section => {
+            if (section.id === sectionId) {
+                const updatedFolders = (section.folders || []).map(folder => 
+                    folder === oldFolderName ? newFolderName : folder
+                );
+                return { ...section, folders: updatedFolders };
+            }
+            return section;
+        });
 
+        const batch = writeBatch(db);
+        batch.update(notebookRef, { sections: updatedSections });
+
+        // Update all notes in that folder
+        const notesQuery = query(collection(db, "notes"), 
+            where("notebookId", "==", notebookId), 
+            where("sectionId", "==", sectionId),
+            where("folder", "==", oldFolderName)
+        );
+        const notesSnapshot = await getDocs(notesQuery);
+        notesSnapshot.forEach(noteDoc => {
+            batch.update(noteDoc.ref, { folder: newFolderName });
+        });
+
+        await batch.commit();
+    }
+};
     

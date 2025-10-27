@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
 const subjectSchema = z.object({
   name: z.string().min(2, "Ders adı zorunludur."),
@@ -91,13 +92,13 @@ export function ExamDetailClient() {
     <div className="space-y-6">
       <PageHeader title={exam.name}>
         <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/education/management/practice-exams')}>
+            <Button variant="outline" onClick={() => router.push('/education/management/practice-exams')} className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
             </Button>
-            <Button onClick={() => setIsSubjectDialogOpen(true)}>
+            <Button onClick={() => setIsSubjectDialogOpen(true)} className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Plus className="mr-2 h-4 w-4" /> Ders Ekle
             </Button>
-            <Button onClick={() => setIsAssignDialogOpen(true)} disabled={totalQuestions === 0}>
+            <Button onClick={() => setIsAssignDialogOpen(true)} disabled={totalQuestions === 0} className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Send className="mr-2 h-4 w-4"/> Ödev Ata
             </Button>
         </div>

@@ -42,8 +42,12 @@ export function PracticeExamsClient() {
                 await updatePracticeExam(editingExam.id, data);
                 toast({ title: "Deneme Güncellendi" });
             } else {
-                await addPracticeExam({ ...data, subjects: [] });
+                const newExamId = await addPracticeExam({ ...data, subjects: [] });
                 toast({ title: "Yeni Deneme Sınavı Oluşturuldu" });
+                // Automatically navigate to the new exam's detail page
+                if (newExamId) {
+                    router.push(`/education/management/practice-exams/${newExamId.id}`);
+                }
             }
             setIsFormOpen(false);
             setEditingExam(null);
@@ -74,7 +78,7 @@ export function PracticeExamsClient() {
                             <ArrowLeft className="mr-2 h-4 w-4" /> İçerik Yönetimi
                         </Button>
                     </Link>
-                    <Button onClick={() => handleOpenForm(null)}>
+                    <Button onClick={() => handleOpenForm(null)} className="bg-white/20 text-white hover:bg-white/30 border-none">
                         <PlusCircle className="mr-2 h-4 w-4"/> Yeni Deneme Oluştur
                     </Button>
                 </div>
