@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Test as TestType, TrackedBookTest, BankQuestion } from "@/lib/data";
+import { Test as TestType, TrackedBookTest, BankQuestion, QuickTestQuestion } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -13,7 +13,7 @@ import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onSnapshot } from "firebase/firestore";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
@@ -136,6 +136,14 @@ export default function OpticalFormPage() {
         const unsubscribe = onSnapshot(testDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
+                
+                // Fetch subcollection of questions
+                const questionsColRef = collection(db, 'tests', testId, 'questions');
+                const questionsSnapshot = await getDocs(questionsColRef);
+                const questions = questionsSnapshot.docs.map(d => d.data() as QuickTestQuestion);
+                currentTest.questions = questions.sort((a,b) => a.questionNumber - b.questionNumber);
+
+
                 setTest(currentTest);
                 if (currentTest.openEnded) {
                     setTextAnswers(currentTest.studentTextAnswers || {});
@@ -294,8 +302,8 @@ export default function OpticalFormPage() {
                 <Card>
                     <CardHeader><CardTitle>Soru Analizi</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        {Array.from({ length: test.questionCount }).map((_, i) => {
-                            const qNumStr = (i + 1).toString();
+                        {(test.questions || []).map((question, i) => {
+                            const qNumStr = question.questionNumber.toString();
                             const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : studentAnswers[qNumStr];
                             const correctAns = test.openEnded ? undefined : answerKey[qNumStr];
                             const evalStatus = test.openEnded ? test.studentTextAnswersEvaluation?.[qNumStr] : (studentAnswers[qNumStr] === answerKey[qNumStr] ? 'correct' : (studentAnswers[qNumStr] ? 'incorrect' : 'empty'));
@@ -311,6 +319,7 @@ export default function OpticalFormPage() {
                                         <h4 className="font-bold">Soru {qNumStr}</h4>
                                         {statusIcon}
                                     </div>
+                                    {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" />}
                                     {test.openEnded ? (
                                         <p className="p-3 bg-muted rounded-md whitespace-pre-wrap">{studentAns || "Cevap verilmedi."}</p>
                                     ) : (
@@ -427,25 +436,31 @@ export default function OpticalFormPage() {
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
-                                {Array.from({ length: test.questionCount }).map((_, i) => {
-                                    const qNum = i + 1;
+                                {(test.questions || []).map((question) => {
+                                    const qNum = question.questionNumber;
                                     return (
-                                        <div key={qNum} className="flex flex-col sm:flex-row items-start gap-4 p-3 rounded-lg border">
-                                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0 mt-1 sm:mt-0">{qNum}</div>
-                                            {test.openEnded ? (
-                                                <Textarea 
-                                                    placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
-                                                    value={textAnswers[qNum] || ""} 
-                                                    onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
-                                                    className="flex-grow min-h-[100px]"
-                                                />
-                                            ) : (
-                                                <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
-                                                    {['A', 'B', 'C', 'D'].map(option => (
-                                                        <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
-                                                    ))}
-                                                </RadioGroup>
-                                            )}
+                                        <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
+                                                <h3 className="font-semibold">Soru {qNum}</h3>
+                                            </div>
+                                            {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" />}
+                                            <div className="pl-12">
+                                                {test.openEnded ? (
+                                                    <Textarea 
+                                                        placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
+                                                        value={textAnswers[qNum] || ""} 
+                                                        onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
+                                                        className="flex-grow min-h-[100px]"
+                                                    />
+                                                ) : (
+                                                    <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
+                                                        {['A', 'B', 'C', 'D', 'E'].slice(0, Object.keys(test.answerKey || {}).length > 0 ? 5 : 4).map(option => (
+                                                            <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
+                                                        ))}
+                                                    </RadioGroup>
+                                                )}
+                                            </div>
                                         </div>
                                     )
                                 })}
@@ -475,5 +490,6 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+    
 
     
