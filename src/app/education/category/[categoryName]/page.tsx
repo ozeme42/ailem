@@ -189,19 +189,12 @@ export default function CategoryDetailPage() {
           <h3 className="text-xl font-bold">Atanmış Sınavlar ({filteredTests.length})</h3>
            <Accordion type="multiple" className="w-full" defaultValue={studentId ? [] : filteredTests.map(t => t.id)}>
                 {filteredTests.map((test) => {
-                const student = familyMembers.find(m => m.id === test.studentId);
-                const isTestForSingleStudentView = studentId && test.studentId === studentId;
-                const isManagementView = !studentId;
-                
-                if (isTestForSingleStudentView) {
+                  if (studentId) { // If a student is selected, show their specific cards
                     return <SingleStudentTestCard key={test.id} test={test} />;
-                }
-                
-                if (isManagementView) {
-                    return <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />;
-                }
-                
-                return null;
+                  } else { // Otherwise, show the management cards
+                    const studentForTest = familyMembers.find(m => m.id === test.studentId);
+                    return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
+                  }
                 })}
           </Accordion>
         </div>
