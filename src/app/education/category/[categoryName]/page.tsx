@@ -25,7 +25,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-
+import { getCategoryName } from "@/app/education/page";
 
 
 type TopicStats = {
@@ -34,13 +34,6 @@ type TopicStats = {
   correct: number;
   total: number;
   successRate: number;
-};
-
-// This function must be consistent with the one in `src/app/education/page.tsx`
-const getCategoryName = (test: Test): string => {
-    if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-    if (test.sourceType === 'mistake') return 'Yanlışlarım';
-    return test.subject || 'Diğer';
 };
 
 export default function CategoryDetailPage() {

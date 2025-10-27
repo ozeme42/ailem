@@ -59,7 +59,7 @@ const categoryProgressColors: { [key: string]: string } = {
     'Diğer': 'bg-gray-500',
 };
 
-const getCategoryName = (test: Test): string => {
+export const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
     if (test.sourceType === 'mistake') return 'Yanlışlarım';
     return test.subject || 'Diğer';

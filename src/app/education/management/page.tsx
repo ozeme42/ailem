@@ -19,6 +19,7 @@ import {
 } from "@/lib/dataService";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
+import { getCategoryName } from "@/app/education/page";
 
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -31,11 +32,6 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'İngilizce': FileText,
     'Diğer': FileText,
     'Genel Deneme Sınavları': ClipboardList,
-};
-
-const getCategoryName = (test: Test): string => {
-    if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-    return test.subject || 'Diğer';
 };
 
 export default function EducationManagementPage() {
