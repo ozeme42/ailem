@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -187,16 +186,20 @@ export default function CategoryDetailPage() {
       {filteredTests.length > 0 ? (
         <div className="space-y-4">
           <h3 className="text-xl font-bold">Atanmış Sınavlar ({filteredTests.length})</h3>
-           <Accordion type="multiple" className="w-full" defaultValue={studentId ? [] : filteredTests.map(t => t.id)}>
-                {filteredTests.map((test) => {
-                  if (studentId) { // If a student is selected, show their specific cards
-                    return <SingleStudentTestCard key={test.id} test={test} />;
-                  } else { // Otherwise, show the management cards
-                    const studentForTest = familyMembers.find(m => m.id === test.studentId);
-                    return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
-                  }
-                })}
-          </Accordion>
+          {studentId ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTests.map((test) => (
+                <SingleStudentTestCard key={test.id} test={test} />
+              ))}
+            </div>
+          ) : (
+            <Accordion type="multiple" className="w-full space-y-2" defaultValue={filteredTests.map(t => t.id)}>
+              {filteredTests.map((test) => {
+                const studentForTest = familyMembers.find(m => m.id === test.studentId);
+                return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
+              })}
+            </Accordion>
+          )}
         </div>
       ) : (
         <Card>
