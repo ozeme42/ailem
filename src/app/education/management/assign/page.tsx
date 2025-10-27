@@ -1,21 +1,29 @@
 
+
 import { Suspense } from 'react';
 import AssignClient from './assign-client';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, BookCopy } from 'lucide-react';
 
 export default function AssignTestPage() {
   return (
     <div className="h-full">
         <PageHeader title="Ödev Ata">
-             <Link href="/education/management">
-                <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Yönetim Paneline Geri Dön
-                </Button>
-            </Link>
+             <div className="flex gap-2 flex-wrap">
+                <Link href="/education/management">
+                    <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Yönetim Paneline Geri Dön
+                    </Button>
+                </Link>
+                 <Link href="/education/management/practice-exams">
+                    <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                        <BookCopy className="mr-2 h-4 w-4" /> Deneme Sınavları
+                    </Button>
+                </Link>
+            </div>
         </PageHeader>
       <Suspense fallback={<AssignSkeleton />}>
         <AssignClient />

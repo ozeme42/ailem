@@ -403,15 +403,20 @@ export interface BankQuestion {
   type?: 'mcq' | 'open_ended';
 }
 
+export interface PracticeExamSubject {
+    id: string;
+    name: string;
+    questionCount: number;
+    answerKey?: AnswerKey;
+}
+
 export interface PracticeExam {
   id: string;
   familyId: string;
   name: string;
   source: 'bank' | 'other';
   gradingType: GradingType;
-  answerKey?: AnswerKey;
-  subjects?: { id: number; name: string; questionCount: number; }[];
-  questions?: QuickTestQuestion[];
+  subjects?: PracticeExamSubject[];
 }
 
 
@@ -584,11 +589,10 @@ export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
             gradingType: 'auto',
             source: 'other',
             subjects: [
-                { id: 1, name: "Matematik", questionCount: 20 },
-                { id: 2, name: "Türkçe", questionCount: 20 },
-                { id: 3, name: "Fen Bilimleri", questionCount: 20 },
+                { id: "1", name: "Matematik", questionCount: 20, answerKey: {} },
+                { id: "2", name: "Türkçe", questionCount: 20, answerKey: {} },
+                { id: "3", name: "Fen Bilimleri", questionCount: 20, answerKey: {} },
             ],
-            answerKey: {1: 'A', 2: 'C', 3: 'B'}
         }
     ];
 
