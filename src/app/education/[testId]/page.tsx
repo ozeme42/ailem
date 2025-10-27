@@ -13,9 +13,8 @@ import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { doc, getDoc, getDocs, collection } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { onSnapshot } from "firebase/firestore";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { Progress } from "@/components/ui/progress";
@@ -39,6 +38,7 @@ export default function OpticalFormPage() {
     const testId = params.testId as string;
 
     const [test, setTest] = React.useState<TestType | null>(null);
+    const [questions, setQuestions] = React.useState<QuickTestQuestion[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
@@ -130,20 +130,14 @@ export default function OpticalFormPage() {
         if (!testId) {
             setIsLoading(false);
             return;
-        };
+        }
+
         const testDocRef = doc(db, 'tests', testId);
-        
-        const unsubscribe = onSnapshot(testDocRef, async (docSnap) => {
+        const questionsColRef = collection(db, 'tests', testId, 'questions');
+
+        const unsubTest = onSnapshot(testDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
-                
-                // Fetch subcollection of questions
-                const questionsColRef = collection(db, 'tests', testId, 'questions');
-                const questionsSnapshot = await getDocs(questionsColRef);
-                const questions = questionsSnapshot.docs.map(d => d.data() as QuickTestQuestion);
-                currentTest.questions = questions.sort((a,b) => a.questionNumber - b.questionNumber);
-
-
                 setTest(currentTest);
                 if (currentTest.openEnded) {
                     setTextAnswers(currentTest.studentTextAnswers || {});
@@ -151,13 +145,12 @@ export default function OpticalFormPage() {
                     setMcqAnswers(currentTest.studentAnswers || {});
                 }
 
-                if (currentTest.status === 'Değerlendirme Bekliyor') {
+                 if (currentTest.status === 'Değerlendirme Bekliyor') {
                     const initialEvals: ManualEvaluation = {};
                      for (let i = 1; i <= currentTest.questionCount; i++) {
                         const qNumStr = i.toString();
                         
                         if(currentTest.openEnded){
-                            // If there is an evaluation already, use it. Otherwise, unevaluated.
                             initialEvals[qNumStr] = currentTest.studentTextAnswersEvaluation?.[qNumStr] || 'unevaluated';
                         } else {
                             const studentAns = currentTest.studentAnswers?.[qNumStr];
@@ -182,11 +175,22 @@ export default function OpticalFormPage() {
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching test document:", error);
-            setTest(null);
             setIsLoading(false);
         });
+        
+        const unsubQuestions = onSnapshot(questionsColRef, (snapshot) => {
+            const fetchedQuestions = snapshot.docs
+                .map(d => d.data() as QuickTestQuestion)
+                .sort((a,b) => a.questionNumber - b.questionNumber);
+            setQuestions(fetchedQuestions);
+        }, (error) => {
+             console.error("Error fetching questions subcollection:", error);
+        });
 
-        return () => unsubscribe();
+        return () => {
+            unsubTest();
+            unsubQuestions();
+        };
     }, [testId]);
 
     const handleEvaluationChange = (questionNumber: string, status: EvaluationStatus) => {
@@ -302,7 +306,7 @@ export default function OpticalFormPage() {
                 <Card>
                     <CardHeader><CardTitle>Soru Analizi</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        {(test.questions || []).map((question, i) => {
+                        {questions.map((question) => {
                             const qNumStr = question.questionNumber.toString();
                             const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : studentAnswers[qNumStr];
                             const correctAns = test.openEnded ? undefined : answerKey[qNumStr];
@@ -314,7 +318,7 @@ export default function OpticalFormPage() {
                             else statusIcon = <MinusCircle className="h-6 w-6 text-gray-500"/>;
 
                             return (
-                                <div key={i} className="p-4 border rounded-lg">
+                                <div key={question.questionId} className="p-4 border rounded-lg">
                                     <div className="flex justify-between items-start mb-2">
                                         <h4 className="font-bold">Soru {qNumStr}</h4>
                                         {statusIcon}
@@ -325,7 +329,7 @@ export default function OpticalFormPage() {
                                     ) : (
                                         <div className="flex gap-4 mt-4">
                                             <p>Senin Cevabın: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'Boş'}</Badge></p>
-                                            <p>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></p>
+                                            {correctAns && <p>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></p>}
                                         </div>
                                     )}
                                 </div>
@@ -376,8 +380,8 @@ export default function OpticalFormPage() {
                 </Card>
 
                  <div className="space-y-4">
-                    {Array.from({ length: test.questionCount }).map((_, i) => {
-                        const qNumStr = (i + 1).toString();
+                    {questions.map((question) => {
+                        const qNumStr = question.questionNumber.toString();
                         const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : test.studentAnswers?.[qNumStr];
                         const correctAns = test.openEnded ? undefined : test.answerKey?.[qNumStr];
                         const evalStatus = manualEvaluations[qNumStr];
@@ -385,12 +389,13 @@ export default function OpticalFormPage() {
                         return (
                             <Card key={qNumStr} className="p-4">
                                 <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
+                                {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" />}
                                 {test.openEnded ? (
                                     <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
                                 ) : (
                                      <div className="flex gap-4 items-center mb-4">
                                         <div>Öğrenci Cevabı: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'BOŞ'}</Badge></div>
-                                        <div>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns || 'Belirtilmemiş'}</Badge></div>
+                                        {correctAns && <div>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></div>}
                                     </div>
                                 )}
                                <div className="flex gap-2 justify-end">
@@ -436,7 +441,7 @@ export default function OpticalFormPage() {
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
-                                {(test.questions || []).map((question) => {
+                                {questions.map((question) => {
                                     const qNum = question.questionNumber;
                                     return (
                                         <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
@@ -455,7 +460,7 @@ export default function OpticalFormPage() {
                                                     />
                                                 ) : (
                                                     <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
-                                                        {['A', 'B', 'C', 'D', 'E'].slice(0, Object.keys(test.answerKey || {}).length > 0 ? 5 : 4).map(option => (
+                                                        {Object.keys(test.answerKey || {A: '', B: '', C: '', D: ''}).sort().map(option => (
                                                             <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
                                                         ))}
                                                     </RadioGroup>
