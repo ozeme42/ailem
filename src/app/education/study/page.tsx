@@ -17,6 +17,7 @@ import { BookCopy, Check, Clock, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Matematik': BookCopy,
@@ -127,13 +128,25 @@ export default function StudyPage() {
             {Object.keys(studentAssignments).length > 0 ? Object.entries(studentAssignments).map(([planId, planAssignments]) => {
                 const plan = studyPlans.find(p => p.id === planId);
                 if (!plan) return null;
+
+                const completedCount = planAssignments.filter(a => a.status === 'completed').length;
+                const totalCount = planAssignments.length;
+                const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
                 return (
-                    <Card key={planId}>
+                    <Card key={planId} className="shadow-lg">
                         <CardHeader>
                             <CardTitle>{plan.title}</CardTitle>
                             <CardDescription>{plan.description}</CardDescription>
                         </CardHeader>
                         <CardContent>
+                             <div className="space-y-2 mb-6">
+                                <div className="flex justify-between text-sm text-muted-foreground">
+                                    <span>İlerleme</span>
+                                    <span className="font-medium">{completedCount} / {totalCount} konu tamamlandı</span>
+                                </div>
+                                <Progress value={progress} />
+                            </div>
                             <Accordion type="multiple" className="w-full">
                                 {planAssignments.map((assignment) => {
                                      const Icon = categoryIcons[assignment.subject] || BookCopy;
@@ -162,18 +175,20 @@ export default function StudyPage() {
                                                         <span><Clock className="inline size-4 mr-2"/> Başlangıç: {format(parseISO(assignment.startDate), 'dd MMMM yyyy', {locale: tr})}</span>
                                                         <span><Clock className="inline size-4 mr-2"/> Bitiş: {format(parseISO(assignment.dueDate), 'dd MMMM yyyy', {locale: tr})}</span>
                                                     </div>
-                                                    <div>
-                                                        <h4 className="font-semibold mb-2">Çalışma Kaynakları:</h4>
-                                                        <ul className="list-disc pl-5 space-y-1">
-                                                            {assignment.sources.map((source, index) => (
-                                                                <li key={index} className="text-sm">
-                                                                    <a href={source.startsWith('http') ? source : `https://${source}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                                                        {source} <ExternalLink className="inline size-3 ml-1"/>
-                                                                    </a>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
+                                                    {assignment.sources.length > 0 && (
+                                                        <div>
+                                                            <h4 className="font-semibold mb-2">Çalışma Kaynakları:</h4>
+                                                            <ul className="list-disc pl-5 space-y-1">
+                                                                {assignment.sources.map((source, index) => (
+                                                                    <li key={index} className="text-sm">
+                                                                        <a href={source.startsWith('http') ? source : `https://${source}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                                                            {source} <ExternalLink className="inline size-3 ml-1"/>
+                                                                        </a>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </AccordionContent>
                                         </AccordionItem>
