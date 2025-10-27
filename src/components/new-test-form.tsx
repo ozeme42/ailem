@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -31,15 +30,15 @@ import { onPracticeExamsUpdate, onTestsUpdate, onMistakesUpdate } from "@/lib/da
 import { ScrollArea } from "./ui/scroll-area";
 import { Checkbox } from "./ui/checkbox";
 
-export type AssignmentType = "quick" | "exam" | "bank" | "mistake";
+export type AssignmentType = "quick" | "exam" | "bank";
 
 const formSchema = z.object({
   studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
-  activeTab: z.enum(["quick", "exam", "bank", "mistake"]),
+  activeTab: z.enum(["quick", "exam", "bank"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 
-  // Quick & Mistake Test Fields
+  // Quick Test Fields
   title: z.string().optional(),
   subject: z.string().optional(),
   questionCount: z.coerce.number().optional(),
@@ -48,22 +47,18 @@ const formSchema = z.object({
   questions: z.array(z.object({
     questionNumber: z.number(),
     imageUrl: z.string().url("Geçerli bir görsel URL'si girilmelidir."),
-    questionId: z.string(), // Represents the source id (e.g. bankQuestionId or mistakeId)
+    questionId: z.string(),
   })).optional(),
   
-  // For Mistake Test
-  sourceTestId: z.string().optional(),
-  selectedMistakes: z.array(z.string()).optional(),
-
   // Bank/Exam Fields
   selectedBankQuestions: z.array(z.string()).optional(),
   examId: z.string().optional(),
 }).refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'bank' || data.activeTab === 'mistake') return data.title && data.title.length >= 2;
+    if (data.activeTab === 'quick' || data.activeTab === 'bank') return data.title && data.title.length >= 2;
     return true;
 }, { message: "Test başlığı en az 2 karakter olmalıdır.", path: ["title"] })
 .refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'bank' || data.activeTab === 'mistake') return !!data.subject;
+    if (data.activeTab === 'quick' || data.activeTab === 'bank') return !!data.subject;
     return true;
 }, { message: "Lütfen bir ders seçin veya oluşturun.", path: ["subject"] })
 .refine((data) => {
@@ -74,10 +69,6 @@ const formSchema = z.object({
     if (data.activeTab === 'bank' && (!data.selectedBankQuestions || data.selectedBankQuestions.length === 0)) return false;
     return true;
 }, { message: "Lütfen soru bankasından en az bir soru seçin.", path: ["selectedBankQuestions"] })
-.refine((data) => {
-    if (data.activeTab === 'mistake' && (!data.selectedMistakes || data.selectedMistakes.length === 0)) return false;
-    return true;
-}, { message: "Lütfen en az bir yanlış soru seçin.", path: ["selectedMistakes"] })
 .refine((data) => {
     if (data.assignedDate && data.dueDate) return data.dueDate >= data.assignedDate;
     return true;
@@ -100,7 +91,6 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   const { toast } = useToast();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
-  const [allMistakes, setAllMistakes] = React.useState<Mistake[]>([]);
   
   // State for bank question filtering
   const [bankSubjectFilter, setBankSubjectFilter] = React.useState<string>("");
@@ -111,7 +101,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     shouldUnregister: false,
     defaultValues: {
       studentIds: initialData?.studentId ? [initialData.studentId] : [],
-      activeTab: initialData?.sourceType === 'exam' ? 'exam' : (initialData?.sourceType === 'bank' ? 'bank' : initialData?.sourceType === 'mistake' ? 'mistake' : 'quick'),
+      activeTab: initialData?.sourceType === 'exam' ? 'exam' : (initialData?.sourceType === 'bank' ? 'bank' : 'quick'),
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       questionCount: initialData?.questionCount || 0,
@@ -119,8 +109,6 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
       answerKey: initialData?.answerKey || {},
       questions: initialData?.questions || [],
       selectedBankQuestions: initialData?.sourceType === 'bank' ? (initialData.questions || []).map(q => q.questionId) : [],
-      selectedMistakes: initialData?.sourceType === 'mistake' ? (initialData.questions || []).map(q => q.questionId) : [],
-      sourceTestId: initialData?.sourceType === 'mistake' ? initialData.sourceId : undefined,
       examId: initialData?.sourceType === 'exam' ? initialData.sourceId : undefined,
       assignedDate: initialData?.assignedDate ? parse(initialData.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -135,11 +123,9 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   React.useEffect(() => {
     const unsubTests = onTestsUpdate(setAllTests);
     const unsubExams = onPracticeExamsUpdate(setPracticeExams);
-    const unsubMistakes = onMistakesUpdate(setAllMistakes);
     return () => {
       unsubTests();
       unsubExams();
-      unsubMistakes();
     }
   }, []);
 
@@ -148,16 +134,9 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
   const questions = form.watch("questions") || [];
   const selectedStudentIds = form.watch("studentIds");
   const selectedBankQuestions = form.watch("selectedBankQuestions") || [];
-  const selectedMistakes = form.watch("selectedMistakes") || [];
-  
-  const studentMistakes = React.useMemo(() => {
-      if (!selectedStudentIds || selectedStudentIds.length === 0) return [];
-      return allMistakes.filter(m => selectedStudentIds.includes(m.creatorId) && m.status === 'active');
-  }, [allMistakes, selectedStudentIds]);
-
   
   const handleTabChange = (value: string) => {
-    form.setValue('activeTab', value as "quick" | "exam" | "bank" | "mistake");
+    form.setValue('activeTab', value as "quick" | "exam" | "bank");
   };
   
    const handleImageUpload = () => {
@@ -213,10 +192,8 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
       form.setValue('questionCount', questions.length);
     } else if (activeTab === 'bank') {
       form.setValue('questionCount', selectedBankQuestions.length);
-    } else if (activeTab === 'mistake') {
-      form.setValue('questionCount', selectedMistakes.length);
     }
-  }, [questions, selectedBankQuestions, selectedMistakes, form, activeTab]);
+  }, [questions, selectedBankQuestions, form, activeTab]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -267,37 +244,6 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           questionsForSubcollection = selectedQuestionsFromBank;
           break;
 
-        case 'mistake':
-          const questionsFromMistakes = (values.selectedMistakes || []).map((mistakeId) => allMistakes.find(m => m.id === mistakeId)).filter((m): m is Mistake => !!m);
-          
-          const mistakeBankQuestions = questionsFromMistakes.map(m => ({
-              id: m.id,
-              imageUrl: m.imageUrl || '',
-              subject: m.subject,
-              topic: m.topic,
-              correctAnswer: m.correctAnswer || '',
-          } as BankQuestion)); // Cast to BankQuestion for compatibility
-
-          const answerKeyFromMistakes = mistakeBankQuestions.reduce((acc, q, index) => {
-              if (q.correctAnswer) {
-                  acc[(index + 1).toString()] = q.correctAnswer;
-              }
-              return acc;
-          }, {} as AnswerKey);
-
-          testData = {
-            title: values.title!,
-            subject: values.subject!,
-            studentId: studentId,
-            questionCount: questionsFromMistakes.length,
-            assignedDate, dueDate,
-            sourceType: 'mistake',
-            gradingType: 'auto',
-            answerKey: answerKeyFromMistakes,
-          };
-          questionsForSubcollection = mistakeBankQuestions;
-          break;
-
         case 'exam':
           const selectedExam = practiceExams.find(e => e.id === values.examId);
           if (!selectedExam) return;
@@ -343,8 +289,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="mistake" disabled={!!initialData}>Yanlışlarım</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="bank" disabled={!!initialData}>Soru Bankası</TabsTrigger>
         <TabsTrigger value="quick" disabled={!!initialData}>Hızlı Test</TabsTrigger>
         <TabsTrigger value="exam" disabled={!!initialData}>Deneme Sınavı</TabsTrigger>
@@ -527,46 +472,6 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
                 </Select><FormMessage /></FormItem>
              )} />
           </TabsContent>
-
-           <TabsContent value="mistake" className="space-y-4 m-0">
-             <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Yanlış Soru Tekrar Testi" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-             <FormField control={form.control} name="subject" render={({ field }) => (
-                <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
-            )} />
-            <FormField
-                control={form.control}
-                name="selectedMistakes"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Yanlış Sorular ({studentMistakes.length})</FormLabel>
-                         <ScrollArea className="h-72">
-                            <div className="space-y-2 pr-4">
-                            {studentMistakes.map(m => (
-                                <div key={m.id} className="flex items-center gap-2 p-2 border rounded-md">
-                                    <Checkbox 
-                                        checked={field.value?.includes(m.id)}
-                                        onCheckedChange={(checked) => {
-                                            return checked 
-                                                ? field.onChange([...(field.value || []), m.id])
-                                                : field.onChange(field.value?.filter(v => v !== m.id))
-                                        }}
-                                    />
-                                    <Image src={m.imageUrl!} alt={m.topic} width={60} height={40} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
-                                    <div className="flex-grow">
-                                        <p className="font-medium text-sm">{m.topic}</p>
-                                        <p className="text-xs text-muted-foreground">{m.subject}</p>
-                                    </div>
-                                </div>
-                            ))}
-                            </div>
-                        </ScrollArea>
-                         <FormMessage />
-                    </FormItem>
-                )}
-             />
-           </TabsContent>
           
           <Button type="submit" className="w-full">{initialData ? 'Ödevi Güncelle' : `Ödevi Ata`}</Button>
         </form>
@@ -574,3 +479,5 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     </Tabs>
   );
 }
+
+    
