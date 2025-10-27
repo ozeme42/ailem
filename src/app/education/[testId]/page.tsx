@@ -38,7 +38,6 @@ export default function OpticalFormPage() {
     const testId = params.testId as string;
 
     const [test, setTest] = React.useState<TestType | null>(null);
-    const [questions, setQuestions] = React.useState<QuickTestQuestion[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
@@ -133,12 +132,22 @@ export default function OpticalFormPage() {
         }
 
         const testDocRef = doc(db, 'tests', testId);
-        const questionsColRef = collection(db, 'tests', testId, 'questions');
-
-        const unsubTest = onSnapshot(testDocRef, (docSnap) => {
+        
+        const unsubTest = onSnapshot(testDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
+                
+                // Fetch questions subcollection
+                const questionsColRef = collection(db, 'tests', testId, 'questions');
+                const questionsSnap = await getDocs(questionsColRef);
+                const fetchedQuestions = questionsSnap.docs
+                    .map(d => d.data() as QuickTestQuestion)
+                    .sort((a,b) => a.questionNumber - b.questionNumber);
+                
+                currentTest.questions = fetchedQuestions;
+
                 setTest(currentTest);
+
                 if (currentTest.openEnded) {
                     setTextAnswers(currentTest.studentTextAnswers || {});
                 } else {
@@ -177,19 +186,9 @@ export default function OpticalFormPage() {
             console.error("Error fetching test document:", error);
             setIsLoading(false);
         });
-        
-        const unsubQuestions = onSnapshot(questionsColRef, (snapshot) => {
-            const fetchedQuestions = snapshot.docs
-                .map(d => d.data() as QuickTestQuestion)
-                .sort((a,b) => a.questionNumber - b.questionNumber);
-            setQuestions(fetchedQuestions);
-        }, (error) => {
-             console.error("Error fetching questions subcollection:", error);
-        });
 
         return () => {
             unsubTest();
-            unsubQuestions();
         };
     }, [testId]);
 
@@ -306,7 +305,7 @@ export default function OpticalFormPage() {
                 <Card>
                     <CardHeader><CardTitle>Soru Analizi</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        {questions.map((question) => {
+                        {(test.questions || []).map((question) => {
                             const qNumStr = question.questionNumber.toString();
                             const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : studentAnswers[qNumStr];
                             const correctAns = test.openEnded ? undefined : answerKey[qNumStr];
@@ -323,7 +322,7 @@ export default function OpticalFormPage() {
                                         <h4 className="font-bold">Soru {qNumStr}</h4>
                                         {statusIcon}
                                     </div>
-                                    {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" />}
+                                    {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
                                     {test.openEnded ? (
                                         <p className="p-3 bg-muted rounded-md whitespace-pre-wrap">{studentAns || "Cevap verilmedi."}</p>
                                     ) : (
@@ -380,7 +379,7 @@ export default function OpticalFormPage() {
                 </Card>
 
                  <div className="space-y-4">
-                    {questions.map((question) => {
+                    {(test.questions || []).map((question) => {
                         const qNumStr = question.questionNumber.toString();
                         const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : test.studentAnswers?.[qNumStr];
                         const correctAns = test.openEnded ? undefined : test.answerKey?.[qNumStr];
@@ -389,7 +388,7 @@ export default function OpticalFormPage() {
                         return (
                             <Card key={qNumStr} className="p-4">
                                 <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
-                                {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" />}
+                                {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
                                 {test.openEnded ? (
                                     <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
                                 ) : (
@@ -441,7 +440,7 @@ export default function OpticalFormPage() {
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
-                                {questions.map((question) => {
+                                {(test.questions || []).map((question) => {
                                     const qNum = question.questionNumber;
                                     return (
                                         <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
@@ -449,7 +448,7 @@ export default function OpticalFormPage() {
                                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
                                                 <h3 className="font-semibold">Soru {qNum}</h3>
                                             </div>
-                                            {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" />}
+                                            {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" data-ai-hint="question paper" />}
                                             <div className="pl-12">
                                                 {test.openEnded ? (
                                                     <Textarea 
@@ -495,6 +494,8 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+    
+
     
 
     
