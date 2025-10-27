@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from "@/components/ui/checkbox";
-import { format, isPast, isToday, isFuture, parseISO } from 'date-fns';
+import { format, isPast, isToday, isFuture, parseISO, compareAsc } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { BookCopy, Check, Clock, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +47,9 @@ export default function StudyPage() {
   const studentAssignments = React.useMemo(() => {
     if (!selectedStudent) return {};
     
-    const studentAssignments = assignments.filter(a => a.studentId === selectedStudent.id);
+    const studentAssignments = assignments.filter(a => a.studentId === selectedStudent.id)
+      .sort((a,b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
+      
     const groupedByPlan: { [planId: string]: StudyAssignment[] } = {};
 
     studentAssignments.forEach(assignment => {
@@ -114,7 +116,7 @@ export default function StudyPage() {
       </div>
       
       {selectedStudent ? (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {Object.keys(studentAssignments).length > 0 ? Object.entries(studentAssignments).map(([planId, planAssignments]) => {
                 const plan = studyPlans.find(p => p.id === planId);
                 if (!plan) return null;
@@ -124,51 +126,54 @@ export default function StudyPage() {
                 const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
                 return (
-                    <Card key={planId} className="shadow-lg">
-                        <CardHeader>
-                            <CardTitle>{plan.title}</CardTitle>
-                            <CardDescription>{plan.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="space-y-2 mb-6">
-                                <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>İlerleme</span>
-                                    <span className="font-medium">{completedCount} / {totalCount} konu tamamlandı</span>
+                    <div key={planId} className="space-y-4">
+                        <Card className="shadow-md border-l-4 border-primary">
+                            <CardHeader>
+                                <CardTitle>{plan.title}</CardTitle>
+                                <CardDescription>{plan.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm text-muted-foreground">
+                                        <span>İlerleme</span>
+                                        <span className="font-medium">{completedCount} / {totalCount} konu tamamlandı</span>
+                                    </div>
+                                    <Progress value={progress} />
                                 </div>
-                                <Progress value={progress} />
-                            </div>
-                            <div className="space-y-3">
-                                {planAssignments.map((assignment) => (
-                                    <div key={assignment.id} className="p-3 border rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                        <div className="flex items-center gap-3 flex-grow">
-                                            <Checkbox 
-                                                id={`checkbox-${assignment.id}`}
-                                                checked={assignment.status === 'completed'} 
-                                                onCheckedChange={() => handleStatusChange(assignment)}
-                                                className="size-5"
-                                            />
-                                            <div className="flex-grow">
-                                                <label htmlFor={`checkbox-${assignment.id}`} className={cn("font-semibold cursor-pointer", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</label>
-                                                <p className="text-sm text-muted-foreground">{assignment.subject}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between sm:justify-end gap-2 pl-8 sm:pl-0">
-                                           <div className="flex items-center gap-2">
-                                              {getStatusBadge(assignment)}
-                                              {(assignment.sources || []).length > 0 && (
-                                                <a href={assignment.sources[0].startsWith('http') ? assignment.sources[0] : `https://${assignment.sources[0]}`} target="_blank" rel="noopener noreferrer">
-                                                    <Button size="sm" variant="outline">
-                                                        <ExternalLink className="size-4 mr-2"/> Kaynağa Git
-                                                    </Button>
-                                                </a>
-                                              )}
-                                           </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <div className="space-y-3 pl-4">
+                            {planAssignments.map((assignment) => (
+                                <div key={assignment.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg bg-muted/30">
+                                    <div className="flex items-center gap-3 flex-grow">
+                                        <Checkbox 
+                                            id={`checkbox-${assignment.id}`}
+                                            checked={assignment.status === 'completed'} 
+                                            onCheckedChange={() => handleStatusChange(assignment)}
+                                            className="size-5"
+                                        />
+                                        <div className="flex-grow">
+                                            <label htmlFor={`checkbox-${assignment.id}`} className={cn("font-semibold cursor-pointer", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</label>
+                                            <p className="text-sm text-muted-foreground">{assignment.subject}</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    <div className="flex items-center justify-between sm:justify-end gap-2 pl-8 sm:pl-0">
+                                       <div className="flex items-center gap-2">
+                                          {getStatusBadge(assignment)}
+                                          {(assignment.sources || []).length > 0 && (
+                                            <a href={assignment.sources[0].startsWith('http') ? assignment.sources[0] : `https://${assignment.sources[0]}`} target="_blank" rel="noopener noreferrer">
+                                                <Button size="sm" variant="outline">
+                                                    <ExternalLink className="size-4 mr-2"/> Kaynağa Git
+                                                </Button>
+                                            </a>
+                                          )}
+                                       </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )
             }) : (
                 <Card>
