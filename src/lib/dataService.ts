@@ -802,12 +802,22 @@ export const deleteTest = async (id: string) => {
 
 
 export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void, runOnce = false) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback, runOnce);
+export const onSinglePracticeExamUpdate = (examId: string, callback: (exam: PracticeExam | null) => void) => {
+    const examRef = doc(db, "practiceExams", examId);
+    return onSnapshot(examRef, (doc) => {
+        if(doc.exists()) {
+            callback({id: doc.id, ...doc.data()} as PracticeExam);
+        } else {
+            callback(null);
+        }
+    });
+}
 export const addPracticeExam = async (data: Omit<PracticeExam, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'practiceExams'), { ...data, familyId });
 };
-export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id'>>) => updateDoc(doc(db, 'practiceExams', id), data);
+export const updatePracticeExam = (id: string, data: Partial<Omit<PracticeExam, 'id' | 'familyId'>>) => updateDoc(doc(db, 'practiceExams', id), removeUndefined(data));
 export const deletePracticeExam = (id: string) => deleteDoc(doc(db, "practiceExams", id));
 
 // Study Plans
@@ -977,11 +987,11 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
          {
             name: "LGS Deneme Sınavı 1",
             gradingType: 'auto',
-            source: 'other',
+            sourceType: 'other',
             subjects: [
-                { id: 1, name: "Matematik", questionCount: 20 },
-                { id: 2, name: "Türkçe", questionCount: 20 },
-                { id: 3, name: "Fen Bilimleri", questionCount: 20 },
+                { id: "1", name: "Matematik", questionCount: 20 },
+                { id: "2", name: "Türkçe", questionCount: 20 },
+                { id: "3", name: "Fen Bilimleri", questionCount: 20 },
             ],
             answerKey: {1: 'A', 2: 'C', 3: 'B'}
         }
@@ -1411,42 +1421,6 @@ export const updateNotebook = (id: string, data: Partial<Omit<Notebook, 'id' | '
     return updateDoc(doc(db, 'notebooks', id), cleanedData);
 };
 export const deleteNotebook = (id: string) => deleteDoc(doc(db, "notebooks", id));
-
-export const updateNotebookFolder = async (notebookId: string, sectionId: string, oldName: string, newName: string) => {
-  const familyId = await getCurrentFamilyId();
-  if (!familyId) return;
-
-  const notebookRef = doc(db, 'notebooks', notebookId);
-  const notebookSnap = await getDoc(notebookRef);
-
-  if (notebookSnap.exists()) {
-    const notebook = notebookSnap.data() as Notebook;
-    const updatedSections = notebook.sections.map(section => {
-      if (section.id === sectionId) {
-        const updatedFolders = (section.folders || []).map(f => f === oldName ? newName : f);
-        return { ...section, folders: updatedFolders };
-      }
-      return section;
-    });
-
-    const batch = writeBatch(db);
-    batch.update(notebookRef, { sections: updatedSections });
-
-    const notesQuery = query(
-      collection(db, 'notes'),
-      where('notebookId', '==', notebookId),
-      where('sectionId', '==', sectionId),
-      where('folder', '==', oldName)
-    );
-    const notesSnapshot = await getDocs(notesQuery);
-    notesSnapshot.forEach(noteDoc => {
-      batch.update(noteDoc.ref, { folder: newName });
-    });
-
-    await batch.commit();
-  }
-};
-
 
 // Fetches a single notebook and its associated notes
 export const onNotebookDetailsUpdate = (

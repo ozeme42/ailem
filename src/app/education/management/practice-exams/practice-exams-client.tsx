@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Dialog } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, FileText, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
@@ -14,8 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { NewPracticeExamForm } from '@/components/new-practice-exam-form';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { DialogContent } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
 
 
 export function PracticeExamsClient() {
@@ -47,6 +46,7 @@ export function PracticeExamsClient() {
                 toast({ title: "Yeni Deneme Sınavı Oluşturuldu" });
             }
             setIsFormOpen(false);
+            setEditingExam(null);
         } catch (error) {
             toast({ title: "Hata", variant: "destructive" });
         }
@@ -123,7 +123,7 @@ export function PracticeExamsClient() {
                 )}
             </div>
             
-             <Dialog open={isFormOpen} onOpenChange={(open) => {if(!open) setEditingExam(null); setIsFormOpen(open)}}>
+             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <NewPracticeExamForm
                         onSubmit={handleFormSubmit}

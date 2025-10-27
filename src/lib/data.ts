@@ -414,9 +414,11 @@ export interface PracticeExam {
   id: string;
   familyId: string;
   name: string;
-  source: 'bank' | 'other';
+  sourceType: 'bank' | 'other';
   gradingType: GradingType;
-  subjects?: PracticeExamSubject[];
+  subjects: PracticeExamSubject[];
+  questions?: QuickTestQuestion[]; // For non-bank exams
+  answerKey?: AnswerKey; // For non-bank exams
 }
 
 
@@ -587,7 +589,7 @@ export const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
          {
             name: "LGS Deneme Sınavı 1",
             gradingType: 'auto',
-            source: 'other',
+            sourceType: 'other',
             subjects: [
                 { id: "1", name: "Matematik", questionCount: 20, answerKey: {} },
                 { id: "2", name: "Türkçe", questionCount: 20, answerKey: {} },
