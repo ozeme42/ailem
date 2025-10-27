@@ -761,35 +761,34 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: BankQuestion[]) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questionsForSubcollection?: BankQuestion[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
 
     const batch = writeBatch(db);
     const testDocRef = doc(collection(db, 'tests'));
-
+    
     // Determine openEnded and gradingType from questions if provided
     let isTestOpenEnded = data.openEnded || false;
-    if (questions && questions.length > 0) {
-        isTestOpenEnded = questions.some(q => q.type === 'open_ended');
+    if (questionsForSubcollection && questionsForSubcollection.length > 0) {
+        isTestOpenEnded = questionsForSubcollection.some(q => q.type === 'open_ended');
     }
     
     const finalTestData = {
         ...data,
+        familyId,
         openEnded: isTestOpenEnded,
-        gradingType: isTestOpenEnded ? 'manual' : 'auto'
+        gradingType: isTestOpenEnded ? 'manual' : 'auto',
     };
 
-    const { questions: omit, ...testDataForDoc } = finalTestData;
-
-    batch.set(testDocRef, removeUndefined({ ...testDataForDoc, familyId }));
+    batch.set(testDocRef, removeUndefined(finalTestData));
     
-    const questionsToSave = questions ? questions : data.questions as BankQuestion[];
+    const questionsToSave = questionsForSubcollection ? questionsForSubcollection : data.questions as BankQuestion[];
 
     if (questionsToSave && questionsToSave.length > 0) {
         const questionsColRef = collection(db, 'tests', testDocRef.id, 'questions');
         questionsToSave.forEach((q, index) => {
-            const questionDocRef = doc(questionsColRef);
+            const questionDocRef = doc(questionsColRef, `${index + 1}`);
             const questionPayload: QuickTestQuestion = {
                 questionId: q.id,
                 questionNumber: index + 1,
@@ -801,6 +800,7 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: B
     
     await batch.commit();
 };
+
 
 export const deleteTest = async (id: string) => {
     const batch = writeBatch(db);
@@ -1976,6 +1976,8 @@ export const updateNotebookFolder = async (notebookId: string, sectionId: string
         await batch.commit();
     }
 };
+    
+
     
 
     
