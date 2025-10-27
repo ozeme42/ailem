@@ -86,7 +86,7 @@ const formSchema = z.object({
 type NewTestFormProps = {
   students: FamilyMember[];
   bankQuestions: BankQuestion[];
-  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => void;
+  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, questions?: BankQuestion[]) => void;
   initialData?: Test | null;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
@@ -225,6 +225,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     
     values.studentIds.forEach(studentId => {
       let testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>;
+      let questionsForSubcollection: BankQuestion[] | undefined = undefined;
 
       switch (values.activeTab) {
         case 'quick':
@@ -242,20 +243,12 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           break;
         
         case 'bank':
-          const isTestOpenEnded = (values.selectedBankQuestions || []).some(qId => bankQuestions.find(bq => bq.id === qId)?.type === 'open_ended');
+          const selectedQuestionsFromBank = (values.selectedBankQuestions || []).map(qId => bankQuestions.find(bq => bq.id === qId)).filter((q): q is BankQuestion => !!q);
+          const isTestOpenEnded = selectedQuestionsFromBank.some(q => q.type === 'open_ended');
 
-          const questionsFromBank = (values.selectedBankQuestions || []).map((qId, index) => {
-            const question = bankQuestions.find(bq => bq.id === qId);
-            return {
-              questionId: qId,
-              questionNumber: index + 1,
-              imageUrl: question?.imageUrl || '',
-            };
-          });
-          const answerKeyFromBank = (values.selectedBankQuestions || []).reduce((acc, qId, index) => {
-              const question = bankQuestions.find(bq => bq.id === qId);
-              if (question && question.type !== 'open_ended' && question.correctAnswer) {
-                  acc[(index + 1).toString()] = question.correctAnswer;
+          const answerKeyFromBank = selectedQuestionsFromBank.reduce((acc, q, index) => {
+              if (q.type !== 'open_ended' && q.correctAnswer) {
+                  acc[(index + 1).toString()] = q.correctAnswer;
               }
               return acc;
           }, {} as AnswerKey);
@@ -264,29 +257,30 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             title: values.title!,
             subject: values.subject!,
             studentId: studentId,
-            questionCount: questionsFromBank.length,
+            questionCount: selectedQuestionsFromBank.length,
             assignedDate, dueDate,
             sourceType: 'bank',
             gradingType: isTestOpenEnded ? 'manual' : 'auto',
             openEnded: isTestOpenEnded,
             answerKey: answerKeyFromBank,
-            questions: questionsFromBank,
           };
+          questionsForSubcollection = selectedQuestionsFromBank;
           break;
 
         case 'mistake':
-          const questionsFromMistakes = (values.selectedMistakes || []).map((mistakeId, index) => {
-            const mistake = allMistakes.find(m => m.id === mistakeId);
-            return {
-              questionId: mistakeId,
-              questionNumber: index + 1,
-              imageUrl: mistake?.imageUrl || '',
-            };
-          });
-          const answerKeyFromMistakes = (values.selectedMistakes || []).reduce((acc, mistakeId, index) => {
-              const mistake = allMistakes.find(m => m.id === mistakeId);
-              if (mistake && mistake.correctAnswer) {
-                  acc[(index + 1).toString()] = mistake.correctAnswer;
+          const questionsFromMistakes = (values.selectedMistakes || []).map((mistakeId) => allMistakes.find(m => m.id === mistakeId)).filter((m): m is Mistake => !!m);
+          
+          const mistakeBankQuestions = questionsFromMistakes.map(m => ({
+              id: m.id,
+              imageUrl: m.imageUrl || '',
+              subject: m.subject,
+              topic: m.topic,
+              correctAnswer: m.correctAnswer || '',
+          } as BankQuestion)); // Cast to BankQuestion for compatibility
+
+          const answerKeyFromMistakes = mistakeBankQuestions.reduce((acc, q, index) => {
+              if (q.correctAnswer) {
+                  acc[(index + 1).toString()] = q.correctAnswer;
               }
               return acc;
           }, {} as AnswerKey);
@@ -300,8 +294,8 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             sourceType: 'mistake',
             gradingType: 'auto',
             answerKey: answerKeyFromMistakes,
-            questions: questionsFromMistakes,
           };
+          questionsForSubcollection = mistakeBankQuestions;
           break;
 
         case 'exam':
@@ -326,7 +320,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           return;
       }
       
-      onAssign(testData, initialData?.id);
+      onAssign(testData, questionsForSubcollection);
     });
   }
   

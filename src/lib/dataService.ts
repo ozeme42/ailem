@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
+import { getCategoryName } from '@/app/education/page';
 
 const getCurrentFamilyId = async (): Promise<string | null> => {
     const auth = getAuth();
@@ -767,27 +768,25 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: B
     const batch = writeBatch(db);
     const testDocRef = doc(collection(db, 'tests'));
 
-    let finalTestData: any = { ...data, familyId };
+    const { questions: omit, ...testData } = data; // Exclude questions from the main doc
 
-    if (questions && questions.length > 0) {
-        const questionIds = questions.map((q, index) => ({
-            questionId: q.id,
-            questionNumber: index + 1,
-            imageUrl: q.imageUrl,
-        }));
-        const answerKey = questions.reduce((acc, q, index) => {
-            acc[(index + 1).toString()] = q.correctAnswer;
-            return acc;
-        }, {} as AnswerKey);
+    batch.set(testDocRef, { ...testData, familyId });
+    
+    const questionsToSave = questions ? questions : data.questions as BankQuestion[];
 
-        finalTestData = {
-            ...finalTestData,
-            questions: questionIds,
-            answerKey: answerKey,
-            questionCount: questions.length,
-        };
+    if (questionsToSave && questionsToSave.length > 0) {
+        const questionsColRef = collection(db, 'tests', testDocRef.id, 'questions');
+        questionsToSave.forEach((q, index) => {
+            const questionDocRef = doc(questionsColRef);
+            const questionPayload: QuickTestQuestion = {
+                questionId: q.id,
+                questionNumber: index + 1,
+                imageUrl: q.imageUrl,
+            };
+            batch.set(questionDocRef, questionPayload);
+        });
     }
-    batch.set(testDocRef, finalTestData);
+    
     await batch.commit();
 };
 
