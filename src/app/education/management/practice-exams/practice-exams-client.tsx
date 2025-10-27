@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { NewPracticeExamForm } from '@/components/new-practice-exam-form';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 export function PracticeExamsClient() {
