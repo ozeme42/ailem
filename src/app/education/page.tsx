@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, Sparkles } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, Sparkles, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
@@ -20,11 +20,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { format, parseISO, parse, compareDesc, compareAsc, isToday } from 'date-fns';
+import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfMonth, endOfDay, isWithinInterval, startOfMonth, addMonths, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
@@ -75,6 +77,10 @@ export default function EducationPage() {
   const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
   
+  const [viewMode, setViewMode] = React.useState<'cards' | 'weekly' | 'monthly' | 'list'>('cards');
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+
+
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
   [familyMembers]);
@@ -187,6 +193,101 @@ export default function EducationPage() {
     }
   };
 
+    const allAssignments = React.useMemo(() => {
+        const testAssignments = tests.map(t => ({
+            id: t.id,
+            title: t.title,
+            type: 'test' as const,
+            Icon: GraduationCap,
+            startDate: parse(t.assignedDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
+            endDate: parse(t.dueDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
+            isCompleted: t.status !== 'Atandı',
+        }));
+        const studyAssignmentsData = studentStudyAssignments.map(s => ({
+            id: s.id,
+            title: s.topic,
+            type: 'study' as const,
+            Icon: BookHeart,
+            startDate: parseISO(s.startDate),
+            endDate: parseISO(s.dueDate),
+            isCompleted: s.status === 'completed',
+        }));
+        return [...testAssignments, ...studyAssignmentsData].sort((a,b) => compareAsc(a.startDate, b.startDate));
+    }, [tests, studentStudyAssignments]);
+    
+    const renderCalendarView = () => {
+        if (viewMode === 'weekly') {
+             const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+             const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
+             
+             return (
+                 <div className="border rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-7 border-b">
+                        {weekDays.map(day => (
+                            <div key={day.toISOString()} className="p-2 text-center border-r last:border-r-0">
+                                <p className="font-semibold text-sm capitalize">{format(day, 'EEE', {locale: tr})}</p>
+                                <p className="text-xs text-muted-foreground">{format(day, 'd')}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 h-[60vh]">
+                       {weekDays.map(day => (
+                           <div key={day.toISOString()} className="p-2 border-r last:border-r-0 space-y-1 overflow-y-auto">
+                               {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
+                                   <div key={a.id} className={cn("p-1.5 rounded-md text-xs", a.type === 'test' ? 'bg-red-500/10 text-red-900' : 'bg-blue-500/10 text-blue-900')}>
+                                       <p className="font-semibold truncate flex items-center gap-1"><a.Icon className="h-3 w-3 shrink-0"/>{a.title}</p>
+                                   </div>
+                               ))}
+                           </div>
+                       ))}
+                    </div>
+                 </div>
+             )
+        }
+        
+        if (viewMode === 'monthly') {
+            const monthStart = startOfMonth(currentDate);
+            const monthDays = Array.from({ length: 42 }).map((_, i) => addDays(startOfWeek(monthStart, {weekStartsOn: 1}), i));
+            
+            return (
+                <div className="grid grid-cols-7 border-l border-t rounded-lg overflow-hidden">
+                    {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => (
+                        <div key={day} className="p-2 text-center border-r border-b font-semibold text-sm">{day}</div>
+                    ))}
+                    {monthDays.map(day => (
+                        <div key={day.toISOString()} className={cn("p-1.5 border-r border-b h-32 flex flex-col", format(day, 'M') !== format(currentDate, 'M') && 'bg-muted/50')}>
+                           <span className={cn("font-semibold", isToday(day) && 'text-primary')}>{format(day, 'd')}</span>
+                           <div className="space-y-0.5 overflow-y-auto mt-1">
+                               {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
+                                   <div key={a.id} className={cn("h-1.5 w-full rounded-full", a.type === 'test' ? 'bg-red-500' : 'bg-blue-500')} title={a.title}></div>
+                               ))}
+                           </div>
+                        </div>
+                    ))}
+                </div>
+            )
+        }
+        
+        if (viewMode === 'list') {
+            return (
+                <div className="space-y-2">
+                    {allAssignments.map(a => (
+                        <Card key={a.id} className="flex items-center p-3 gap-3">
+                            <a.Icon className={cn("h-5 w-5 shrink-0", a.type === 'test' ? 'text-red-500' : 'text-blue-500')} />
+                            <div className="flex-grow">
+                                <p className="font-semibold">{a.title}</p>
+                                <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
+                            </div>
+                            <Badge variant={a.isCompleted ? 'default' : 'outline'}>{a.isCompleted ? 'Tamamlandı' : 'Bekliyor'}</Badge>
+                        </Card>
+                    ))}
+                </div>
+            )
+        }
+        
+        return null;
+    }
+
 
   return (
     <>
@@ -225,128 +326,108 @@ export default function EducationPage() {
         ))}
       </div>
       
-      {selectedStudent && (
-        <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="block mb-8 group">
-          <Card className="transition-all duration-300 group-hover:shadow-primary/20 group-hover:border-primary/50 group-hover:shadow-lg">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <BarChart3 className="text-primary"/>
-                  Genel Durum
-                </CardTitle>
-                <CardDescription>
-                  {selectedStudent.name} için genel başarı durumu özeti. Detaylar için tıklayın.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-2 gap-6 items-center">
-                    <div>
-                        <div className="text-4xl font-bold">{overallStats.testCount}</div>
-                        <p className="text-muted-foreground">Sonuçlanan Test</p>
-                    </div>
-                     <div>
-                        <div className="flex items-baseline gap-2">
-                           <span className="text-4xl font-bold">{overallStats.successRate.toFixed(1)}</span>
-                           <span className="text-xl text-muted-foreground">%</span>
-                        </div>
-                        <p className="text-muted-foreground">Genel Başarı Oranı</p>
-                        <Progress value={overallStats.successRate} className="mt-2 h-2" />
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
-        </Link>
-      )}
-
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-            {testsByCategory.map(([category, data]) => {
-                if (data.total === 0) return null;
-                const Icon = categoryIcons[category] || FileText;
-                const colorClass = categoryColors[category] || 'border-gray-500/80 text-gray-600';
-                const progressColor = categoryProgressColors[category] || 'bg-gray-500';
-                const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
-
-                return (
-                    <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
-                        <Card className={cn("flex flex-col border-t-4 shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
-                            <CardHeader className="text-center">
-                                <Icon className="w-16 h-16 mx-auto mb-4" />
-                                <CardTitle className={cn("text-xl", colorClass)}>{category}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
-                                <p className="text-lg text-foreground">{data.total} Adet Sınav</p>
-                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
-                            </CardContent>
-                            <CardFooter className="p-0">
-                                <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none" indicatorClassName={progressColor} />
-                            </CardFooter>
-                        </Card>
-                    </Link>
-                )
-            })}
-        </div>
-       
-       <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Çözülecek Testler</CardTitle>
-          <CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {tests.length > 0 ? (
-            tests.filter(test => test.status === 'Atandı').map(test => {
-                return (
-                    <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
-                        <div className="flex-grow">
-                            <Badge variant={"outline"}>{test.subject}</Badge>
-                            <h3 className="font-semibold text-lg">{test.title}</h3>
-                            <p className="text-sm text-muted-foreground">Son Teslim: {test.dueDate}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-3 sm:mt-0">
-                             <Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link>
-                        </div>
-                    </Card>
-                );
-            })
-          ) : (
-            <p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>
-          )}
-          {tests.filter(test => test.status === 'Atandı').length === 0 && tests.length > 0 && (
-              <p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>
-          )}
-        </CardContent>
-      </Card>
-      
-       <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Konu Anlatımı Takibi</CardTitle>
-          <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmamış konu anlatımı görevleri.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {pendingStudies.length > 0 ? (
-            <div className="space-y-2">
-              {pendingStudies.map(study => (
-                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 dark:bg-blue-500/20 dark:text-blue-200 hover:bg-blue-500/20">
-                   <Checkbox
-                        id={`study-${study.id}`}
-                        onCheckedChange={() => handleStudyAssignmentStatusChange(study)}
-                        className="border-primary"
-                    />
-                  <div className="flex-grow">
-                    <label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label>
-                    <p className="text-xs text-blue-800/80 dark:text-blue-300/80">
-                      {study.studyPlanTitle} - {study.subject}
+       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="cards">Kartlar</TabsTrigger>
+                <TabsTrigger value="weekly">Haftalık</TabsTrigger>
+                <TabsTrigger value="monthly">Aylık</TabsTrigger>
+                <TabsTrigger value="list">Liste</TabsTrigger>
+            </TabsList>
+            
+             {(viewMode === 'weekly' || viewMode === 'monthly') && (
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => viewMode === 'weekly' ? addDays(d, -7) : subMonths(d, 1))}><ChevronLeft className="h-4 w-4"/></Button>
+                    <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+                     <p className="font-semibold text-center text-lg w-48">
+                       {format(currentDate, viewMode === 'weekly' ? 'dd MMMM yyyy' : 'MMMM yyyy', { locale: tr })}
                     </p>
-                  </div>
-                  <Badge variant="outline" className="text-xs">Bitiş: {format(parseISO(study.dueDate), "dd MMM", {locale: tr})}</Badge>
+                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => viewMode === 'weekly' ? addDays(d, 7) : addMonths(d, 1))}><ChevronRight className="h-4 w-4"/></Button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground p-4">Tamamlanmamış konu anlatımı görevi bulunmuyor.</p>
-          )}
-        </CardContent>
-      </Card>
+             )}
 
+            {viewMode === 'cards' ? (
+                 <>
+                    {selectedStudent && (
+                        <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="block mb-8 group">
+                        <Card className="transition-all duration-300 group-hover:shadow-primary/20 group-hover:border-primary/50 group-hover:shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-3"><BarChart3 className="text-primary"/> Genel Durum</CardTitle>
+                                <CardDescription>{selectedStudent.name} için genel başarı durumu özeti. Detaylar için tıklayın.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 gap-6 items-center">
+                                    <div>
+                                        <div className="text-4xl font-bold">{overallStats.testCount}</div>
+                                        <p className="text-muted-foreground">Sonuçlanan Test</p>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-baseline gap-2"><span className="text-4xl font-bold">{overallStats.successRate.toFixed(1)}</span><span className="text-xl text-muted-foreground">%</span></div>
+                                        <p className="text-muted-foreground">Genel Başarı Oranı</p>
+                                        <Progress value={overallStats.successRate} className="mt-2 h-2" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        </Link>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                            {testsByCategory.map(([category, data]) => {
+                                if (data.total === 0) return null;
+                                const Icon = categoryIcons[category] || FileText;
+                                const colorClass = categoryColors[category] || 'border-gray-500/80 text-gray-600';
+                                const progressColor = categoryProgressColors[category] || 'bg-gray-500';
+                                const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
+
+                                return (
+                                    <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
+                                        <Card className={cn("flex flex-col border-t-4 shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                                            <CardHeader className="text-center"><Icon className="w-16 h-16 mx-auto mb-4" /><CardTitle className={cn("text-xl", colorClass)}>{category}</CardTitle></CardHeader>
+                                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center"><p className="text-lg text-foreground">{data.total} Adet Sınav</p><p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p></CardContent>
+                                            <CardFooter className="p-0"><Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none" indicatorClassName={progressColor} /></CardFooter>
+                                        </Card>
+                                    </Link>
+                                )
+                            })}
+                        </div>
+                    
+                    <Card className="mt-8">
+                        <CardHeader><CardTitle>Çözülecek Testler</CardTitle><CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription></CardHeader>
+                        <CardContent className="space-y-3">
+                        {tests.length > 0 ? (
+                            tests.filter(test => test.status === 'Atandı').map(test => {
+                                return (
+                                    <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
+                                        <div className="flex-grow"><Badge variant={"outline"}>{test.subject}</Badge><h3 className="font-semibold text-lg">{test.title}</h3><p className="text-sm text-muted-foreground">Son Teslim: {test.dueDate}</p></div>
+                                        <div className="flex items-center gap-2 mt-3 sm:mt-0"><Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link></div>
+                                    </Card>
+                                );
+                            })
+                        ) : (<p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>)}
+                        {tests.filter(test => test.status === 'Atandı').length === 0 && tests.length > 0 && (<p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>)}
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="mt-8">
+                        <CardHeader><CardTitle>Konu Anlatımı Takibi</CardTitle><CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmamış konu anlatımı görevleri.</CardDescription></CardHeader>
+                        <CardContent>
+                        {pendingStudies.length > 0 ? (
+                            <div className="space-y-2">
+                            {pendingStudies.map(study => (
+                                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 dark:bg-blue-500/20 dark:text-blue-200 hover:bg-blue-500/20">
+                                <Checkbox id={`study-${study.id}`} onCheckedChange={() => handleStudyAssignmentStatusChange(study)} className="border-primary"/>
+                                <div className="flex-grow"><label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label><p className="text-xs text-blue-800/80 dark:text-blue-300/80">{study.studyPlanTitle} - {study.subject}</p></div>
+                                <Badge variant="outline" className="text-xs">Bitiş: {format(parseISO(study.dueDate), "dd MMM", {locale: tr})}</Badge>
+                                </div>
+                            ))}
+                            </div>
+                        ) : (<p className="text-center text-muted-foreground p-4">Tamamlanmamış konu anlatımı görevi bulunmuyor.</p>)}
+                        </CardContent>
+                    </Card>
+                 </>
+            ) : renderCalendarView() }
+
+        </Tabs>
     </>
   );
 }
-
