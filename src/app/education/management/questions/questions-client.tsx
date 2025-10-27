@@ -226,10 +226,15 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, type }: Q
                             {questions.map((q) => (
                               <div key={q.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-md">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <NextImage src={q.imageUrl} alt={q.topic} width={80} height={60} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
+                                  <div className="relative shrink-0">
+                                      <NextImage src={q.imageUrl} alt={q.topic} width={80} height={60} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 rounded-b-sm">
+                                         <p className="text-white text-[10px] font-semibold truncate" title={q.title}>{q.title}</p>
+                                      </div>
+                                  </div>
                                   <div className="flex-grow min-w-0">
-                                      <p className="font-semibold truncate">{q.title}</p>
-                                      <p className="text-sm text-muted-foreground truncate">{q.topic}</p>
+                                      <p className="font-semibold truncate text-sm">{q.topic}</p>
+                                      <p className="text-xs text-muted-foreground truncate">{q.subject}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
