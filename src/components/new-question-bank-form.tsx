@@ -182,7 +182,7 @@ export function NewQuestionBankForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
         <DialogHeader>
             <DialogTitle>{initialData ? 'Soruyu Düzenle' : 'Soru Bankasına Yeni Soru Ekle'}</DialogTitle>
             <DialogDescription>
@@ -190,7 +190,7 @@ export function NewQuestionBankForm({
             </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="h-[60vh]">
           <div className="space-y-4 pr-6 py-4">
             <FormField
               control={form.control}
