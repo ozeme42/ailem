@@ -6,13 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud } from "lucide-react";
+import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud, Send } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
 import NextImage from 'next/image';
-import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions } from "@/lib/dataService";
-import { BankQuestion } from "@/lib/data";
+import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions, addTest } from "@/lib/dataService";
+import { BankQuestion, FamilyMember, Test } from "@/lib/data";
 import { Combobox } from "@/components/ui/combobox";
 import { Loader2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -29,15 +29,22 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
+import { Calendar } from "@/components/ui/calendar";
 
 
 export function QuestionsClient() {
-  const { user } = useAuth();
+  const { user, familyMembers } = useAuth();
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [bulkDialogType, setBulkDialogType] = useState<'mcq' | 'open_ended'>('mcq');
 
 
@@ -146,6 +153,7 @@ export function QuestionsClient() {
               selectedQuestions={selectedQuestions}
               setSelectedQuestions={setSelectedQuestions}
               type="mcq"
+              onAssign={() => setIsAssignDialogOpen(true)}
             />
         </TabsContent>
         <TabsContent value="open_ended">
@@ -159,6 +167,7 @@ export function QuestionsClient() {
               selectedQuestions={selectedQuestions}
               setSelectedQuestions={setSelectedQuestions}
               type="open_ended"
+              onAssign={() => setIsAssignDialogOpen(true)}
             />
         </TabsContent>
       </Tabs>
@@ -186,6 +195,14 @@ export function QuestionsClient() {
         onTopicCreate={handleCreateTopic}
         type={bulkDialogType}
       />
+      <AssignTestDialog
+          isOpen={isAssignDialogOpen}
+          onOpenChange={setIsAssignDialogOpen}
+          students={familyMembers.filter(m => m.role.includes("Çocuk"))}
+          allBankQuestions={bankQuestions}
+          selectedQuestionIds={selectedQuestions}
+          onAssignComplete={() => setSelectedQuestions([])}
+      />
     </div>
   );
 }
@@ -200,9 +217,10 @@ interface QuestionListProps {
   selectedQuestions: string[];
   setSelectedQuestions: React.Dispatch<React.SetStateAction<string[]>>;
   type: 'mcq' | 'open_ended';
+  onAssign: () => void;
 }
 
-function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, onDeleteSelected, selectedQuestions, setSelectedQuestions, type }: QuestionListProps) {
+function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, onDeleteSelected, selectedQuestions, setSelectedQuestions, type, onAssign }: QuestionListProps) {
     const groupedQuestions = useMemo(() => {
         const grouped: Record<string, Record<string, BankQuestion[]>> = {};
         questions.forEach(q => {
@@ -240,17 +258,20 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, onDeleteS
             </div>
             <div className="flex gap-2 self-start sm:self-center flex-wrap">
                  {selectedQuestions.length > 0 && (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> {selectedQuestions.length} Soruyu Sil</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Emin misiniz?</AlertDialogTitle><AlertDialogDescription>{selectedQuestions.length} soruyu kalıcı olarak silmek üzeresiniz. Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={onDeleteSelected}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                     <>
+                        <Button variant="secondary" onClick={onAssign}><Send className="mr-2 h-4 w-4"/> {selectedQuestions.length} Soruyu Ata</Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Sil</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Emin misiniz?</AlertDialogTitle><AlertDialogDescription>{selectedQuestions.length} soruyu kalıcı olarak silmek üzeresiniz. Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={onDeleteSelected}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
                  )}
-                 <Button variant="secondary" onClick={onBulkAdd}><FilePlus className="mr-2 h-4 w-4" /> Toplu Ekle</Button>
+                 <Button variant="outline" onClick={onBulkAdd}><FilePlus className="mr-2 h-4 w-4" /> Toplu Ekle</Button>
                  <Button onClick={onAdd}><Plus className="mr-2 h-4 w-4" /> Yeni Soru Ekle</Button>
             </div>
         </div>
@@ -466,5 +487,156 @@ function BulkAddImagesDialog({
         </Dialog>
     );
 }
+
+const assignFormSchema = z.object({
+  studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
+  title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
+  subject: z.string().min(1, "Ders seçimi zorunludur."),
+  assignedDate: z.date(),
+  dueDate: z.date(),
+});
+
+
+function AssignTestDialog({
+  isOpen,
+  onOpenChange,
+  students,
+  allBankQuestions,
+  selectedQuestionIds,
+  onAssignComplete,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  students: FamilyMember[];
+  allBankQuestions: BankQuestion[];
+  selectedQuestionIds: string[];
+  onAssignComplete: () => void;
+}) {
+  const { toast } = useToast();
+  const form = useForm<z.infer<typeof assignFormSchema>>({
+    resolver: zodResolver(assignFormSchema),
+    defaultValues: {
+      studentIds: [],
+      title: "",
+      subject: "",
+      assignedDate: new Date(),
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+  
+  const selectedQuestions = useMemo(() => 
+    selectedQuestionIds.map(id => allBankQuestions.find(q => q.id === id)).filter((q): q is BankQuestion => !!q)
+  , [selectedQuestionIds, allBankQuestions]);
+
+  useEffect(() => {
+    if (selectedQuestions.length > 0) {
+      const firstQuestion = selectedQuestions[0];
+      form.reset({
+        ...form.getValues(),
+        title: `${firstQuestion.topic} Tekrar Testi`,
+        subject: firstQuestion.subject,
+      })
+    }
+  }, [selectedQuestions, form]);
+
+  async function onSubmit(values: z.infer<typeof assignFormSchema>) {
+    
+    const isTestOpenEnded = selectedQuestions.some(q => q.type === 'open_ended');
+    const answerKey = selectedQuestions.reduce((acc, q, index) => {
+        if (q.type !== 'open_ended' && q.correctAnswer) {
+            acc[(index + 1).toString()] = q.correctAnswer;
+        }
+        return acc;
+    }, {} as { [key: string]: string });
+
+    for (const studentId of values.studentIds) {
+        const testData: Omit<Test, 'id' | 'familyId'> = {
+            title: values.title,
+            subject: values.subject,
+            studentId,
+            questionCount: selectedQuestions.length,
+            assignedDate: format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }),
+            dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
+            sourceType: 'bank',
+            status: 'Atandı',
+            isArchived: false,
+            openEnded: isTestOpenEnded,
+            gradingType: isTestOpenEnded ? 'manual' : 'auto',
+            answerKey,
+        };
+        try {
+            await addTest(testData, selectedQuestions);
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Hata", description: `${values.title} testi ${students.find(s=>s.id === studentId)?.name} öğrencisine atanırken hata oluştu.`, variant: "destructive" });
+        }
+    }
+
+    toast({
+      title: "✅ Ödev Atandı",
+      description: `${values.title} testi ${values.studentIds.length} öğrenciye başarıyla atandı.`,
+    });
+    onOpenChange(false);
+    onAssignComplete();
+    form.reset();
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{selectedQuestionIds.length} Soruyu Ata</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+             <FormField control={form.control} name="title" render={({ field }) => (
+                <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+             <FormField control={form.control} name="subject" render={({ field }) => (
+                <FormItem><FormLabel>Ders</FormLabel><FormControl><Input {...field} readOnly /></FormControl><FormMessage /></FormItem>
+            )}/>
+            <FormField control={form.control} name="studentIds" render={() => (
+                <FormItem>
+                    <FormLabel>Öğrenci(ler)</FormLabel>
+                    {students.map(s => (
+                        <FormField key={s.id} control={form.control} name="studentIds" render={({ field }) => (
+                            <FormItem className="flex items-center gap-2"><FormControl>
+                                <Checkbox checked={field.value?.includes(s.id)} onCheckedChange={checked => {
+                                    return checked ? field.onChange([...(field.value || []), s.id]) : field.onChange(field.value?.filter(id => id !== s.id))
+                                }}/>
+                            </FormControl><FormLabel className="font-normal">{s.name}</FormLabel></FormItem>
+                        )}/>
+                    ))}
+                    <FormMessage/>
+                </FormItem>
+            )}/>
+             <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="assignedDate" render={({ field }) => (
+                  <FormItem className="flex flex-col"><FormLabel>Başlangıç Tarihi</FormLabel>
+                    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}</Button></FormControl></PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                    </Popover><FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="dueDate" render={({ field }) => (
+                  <FormItem className="flex flex-col"><FormLabel>Bitiş Tarihi</FormLabel>
+                    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}</Button></FormControl></PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => form.getValues('assignedDate') ? date < form.getValues('assignedDate')! : false} initialFocus/></PopoverContent>
+                    </Popover><FormMessage />
+                  </FormItem>
+                )} />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+              <Button type="submit">Ödevi Ata</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+    
 
     
