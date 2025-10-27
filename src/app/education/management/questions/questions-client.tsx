@@ -97,7 +97,7 @@ export function QuestionsClient() {
     try {
         const questionsToImport = questions.map((q, index) => ({
             ...q,
-            title: q.title || `${q.topic} - Soru ${index + 1}`,
+            title: q.originalFilename || `${q.topic} - Soru ${index + 1}`,
             type: type
         }))
         await addBulkBankQuestions(questionsToImport);
@@ -229,7 +229,7 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, type }: Q
                                   <div className="relative shrink-0">
                                       <NextImage src={q.imageUrl} alt={q.topic} width={80} height={60} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
                                       <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 rounded-b-sm">
-                                         <p className="text-white text-[10px] font-semibold truncate" title={q.title}>{q.title}</p>
+                                         <p className="text-white text-[10px] font-semibold truncate" title={q.originalFilename || q.title}>{q.originalFilename || q.title}</p>
                                       </div>
                                   </div>
                                   <div className="flex-grow min-w-0">
@@ -272,7 +272,10 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, type }: Q
 const bulkAddSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
-  images: z.array(z.string()).min(1, "En az bir resim yüklemelisiniz."),
+  images: z.array(z.object({
+      dataUri: z.string(),
+      filename: z.string(),
+  })).min(1, "En az bir resim yüklemelisiniz."),
 });
 
 function BulkAddImagesDialog({ 
@@ -304,9 +307,12 @@ function BulkAddImagesDialog({
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const currentImages = form.getValues('images') || [];
         const filePromises = acceptedFiles.map(file => 
-            new Promise<string>((resolve) => {
+            new Promise<{dataUri: string, filename: string}>((resolve) => {
                 const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
+                reader.onloadend = () => resolve({
+                    dataUri: reader.result as string,
+                    filename: file.name
+                });
                 reader.readAsDataURL(file);
             })
         );
@@ -327,11 +333,12 @@ function BulkAddImagesDialog({
 
     const handleImportClick = (values: z.infer<typeof bulkAddSchema>) => {
         setIsImporting(true);
-        const questionsToImport = values.images.map((imageDataUri, index) => ({
-            title: `${values.topic} - Soru ${index + 1}`,
+        const questionsToImport = values.images.map((image, index) => ({
+            title: image.filename,
+            originalFilename: image.filename,
             subject: values.subject,
             topic: values.topic,
-            imageUrl: imageDataUri, // This is a data URI, will be uploaded by the handler
+            imageUrl: image.dataUri, // This is a data URI, will be uploaded by the handler
         }));
 
         onImport(questionsToImport, type).finally(() => {
@@ -368,7 +375,7 @@ function BulkAddImagesDialog({
                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                   {(form.watch('images') || []).map((image, index) => (
                                       <div key={index} className="relative group">
-                                          <NextImage src={image} alt={`Önizleme ${index}`} width={100} height={100} className="w-full h-auto object-cover rounded-md border"/>
+                                          <NextImage src={image.dataUri} alt={`Önizleme ${index}`} width={100} height={100} className="w-full h-auto object-cover rounded-md border"/>
                                           <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveImage(index)}>
                                              <X className="h-4 w-4"/>
                                           </Button>

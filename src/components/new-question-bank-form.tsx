@@ -29,6 +29,7 @@ const formSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
   imageDataUri: z.string().min(1, "Soru görseli yüklemek zorunludur."),
+  originalFilename: z.string().optional(),
   type: z.enum(['mcq', 'open_ended']).default('mcq'),
   options: z.record(z.string()).optional(), // Changed to a record object
   correctAnswer: z.string().optional(),
@@ -91,6 +92,7 @@ export function NewQuestionBankForm({
         subject: initialData?.subject || "",
         topic: initialData?.topic || "",
         imageDataUri: initialData?.imageUrl || "",
+        originalFilename: initialData?.originalFilename || "",
         correctAnswer: initialData?.type !== 'open_ended' ? initialData?.correctAnswer : 'A',
         options: initialOptions,
         type: type,
@@ -101,6 +103,7 @@ export function NewQuestionBankForm({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      form.setValue('originalFilename', file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
         form.setValue('imageDataUri', reader.result as string, { shouldValidate: true });
@@ -147,9 +150,11 @@ export function NewQuestionBankForm({
       const optionsObject = values.type === 'mcq' ? (values.options || {}) : undefined;
 
       const questionData: Partial<Omit<BankQuestion, 'id' | 'familyId' | 'createdAt'>> = {
+        title: values.originalFilename || values.topic, // Use filename as title, fallback to topic
         subject: values.subject,
         topic: values.topic,
         imageUrl: finalImageUrl,
+        originalFilename: values.originalFilename,
         type: values.type,
         options: optionsObject,
         correctAnswer: values.type === 'mcq' ? values.correctAnswer : undefined,

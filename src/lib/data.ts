@@ -394,7 +394,9 @@ export interface BankQuestion {
   familyId: string;
   subject: string;
   topic: string;
+  title: string;
   imageUrl: string;
+  originalFilename?: string;
   options?: { [key: string]: string };
   correctAnswer: string;
   createdAt: string; // ISO date string
