@@ -141,10 +141,9 @@ export default function OpticalFormPage() {
                 
                 // Fetch questions subcollection
                 const questionsColRef = collection(db, 'tests', testId, 'questions');
-                const questionsSnap = await getDocs(query(questionsColRef, orderBy("questionNumber")));
-                const fetchedQuestions = questionsSnap.docs
-                    .map(d => d.data() as QuickTestQuestion)
-                    .sort((a,b) => a.questionNumber - b.questionNumber);
+                const questionsQuery = query(questionsColRef, orderBy("questionNumber"));
+                const questionsSnap = await getDocs(questionsQuery);
+                const fetchedQuestions = questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
                 
                 currentTest.questions = fetchedQuestions;
 
@@ -539,10 +538,3 @@ export default function OpticalFormPage() {
     )
 }
     
-
-    
-
-    
-
-    
-
