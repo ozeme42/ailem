@@ -225,9 +225,12 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, type }: Q
                           <div className="space-y-3">
                             {questions.map((q) => (
                               <div key={q.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-md">
-                                <div className="flex items-center gap-3 flex-1">
-                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
                                   <NextImage src={q.imageUrl} alt={q.topic} width={80} height={60} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
+                                  <div className="flex-grow min-w-0">
+                                      <p className="font-semibold truncate">{q.title}</p>
+                                      <p className="text-sm text-muted-foreground truncate">{q.topic}</p>
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {q.type !== 'open_ended' && <Badge variant="outline">Doğru: {q.correctAnswer}</Badge>}
@@ -389,4 +392,3 @@ function BulkAddImagesDialog({
         </Dialog>
     );
 }
-
