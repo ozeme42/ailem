@@ -154,8 +154,8 @@ export default function StudyPage() {
                                             className="size-5"
                                         />
                                         <div className="flex-grow">
-                                            <label htmlFor={`checkbox-${assignment.id}`} className={cn("font-semibold cursor-pointer", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</label>
-                                            <p className="text-sm text-muted-foreground">{assignment.subject}</p>
+                                            <label htmlFor={`checkbox-${assignment.id}`} className={cn("font-semibold cursor-pointer", assignment.status === 'completed' && "line-through text-muted-foreground dark:text-muted-foreground/70")}>{assignment.topic}</label>
+                                            <p className="text-sm text-muted-foreground dark:text-muted-foreground/80">{assignment.subject}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between sm:justify-end gap-2 pl-8 sm:pl-0">
