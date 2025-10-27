@@ -10,7 +10,6 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format, isPast, isToday, isFuture, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { BookCopy, Check, Clock, ExternalLink } from "lucide-react";
@@ -18,15 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-
-const categoryIcons: { [key: string]: React.ElementType } = {
-    'Matematik': BookCopy,
-    'Fen Bilimleri': BookCopy,
-    'Türkçe': BookCopy,
-    'Sosyal Bilgiler': BookCopy,
-    'İngilizce': BookCopy,
-    'Diğer': BookCopy
-};
 
 export default function StudyPage() {
   const { familyMembers } = useAuth();
@@ -147,54 +137,36 @@ export default function StudyPage() {
                                 </div>
                                 <Progress value={progress} />
                             </div>
-                            <Accordion type="multiple" className="w-full">
-                                {planAssignments.map((assignment) => {
-                                     const Icon = categoryIcons[assignment.subject] || BookCopy;
-                                    return (
-                                        <AccordionItem key={assignment.id} value={assignment.id}>
-                                            <div className="flex items-center gap-4 w-full">
-                                                <Checkbox 
-                                                    id={`checkbox-${assignment.id}`}
-                                                    checked={assignment.status === 'completed'} 
-                                                    onCheckedChange={() => handleStatusChange(assignment)}
-                                                    className="size-5"
-                                                />
-                                                <AccordionTrigger className="flex-grow">
-                                                    <div className="flex items-center justify-between w-full">
-                                                        <div className="text-left">
-                                                            <p className={cn("font-semibold", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</p>
-                                                            <p className="text-sm text-muted-foreground">{assignment.subject}</p>
-                                                        </div>
-                                                        {getStatusBadge(assignment)}
-                                                    </div>
-                                                </AccordionTrigger>
+                            <div className="space-y-3">
+                                {planAssignments.map((assignment) => (
+                                    <div key={assignment.id} className="p-3 border rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div className="flex items-center gap-3 flex-grow">
+                                            <Checkbox 
+                                                id={`checkbox-${assignment.id}`}
+                                                checked={assignment.status === 'completed'} 
+                                                onCheckedChange={() => handleStatusChange(assignment)}
+                                                className="size-5"
+                                            />
+                                            <div className="flex-grow">
+                                                <label htmlFor={`checkbox-${assignment.id}`} className={cn("font-semibold cursor-pointer", assignment.status === 'completed' && "line-through text-muted-foreground")}>{assignment.topic}</label>
+                                                <p className="text-sm text-muted-foreground">{assignment.subject}</p>
                                             </div>
-                                            <AccordionContent>
-                                                <div className="pl-10 space-y-4">
-                                                    <div className="flex justify-between text-sm text-muted-foreground">
-                                                        <span><Clock className="inline size-4 mr-2"/> Başlangıç: {format(parseISO(assignment.startDate), 'dd MMMM yyyy', {locale: tr})}</span>
-                                                        <span><Clock className="inline size-4 mr-2"/> Bitiş: {format(parseISO(assignment.dueDate), 'dd MMMM yyyy', {locale: tr})}</span>
-                                                    </div>
-                                                    {assignment.sources.length > 0 && (
-                                                        <div>
-                                                            <h4 className="font-semibold mb-2">Çalışma Kaynakları:</h4>
-                                                            <ul className="list-disc pl-5 space-y-1">
-                                                                {assignment.sources.map((source, index) => (
-                                                                    <li key={index} className="text-sm">
-                                                                        <a href={source.startsWith('http') ? source : `https://${source}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                                                            {source} <ExternalLink className="inline size-3 ml-1"/>
-                                                                        </a>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    )
-                                })}
-                            </Accordion>
+                                        </div>
+                                        <div className="flex items-center justify-between sm:justify-end gap-2 pl-8 sm:pl-0">
+                                           <div className="flex items-center gap-2">
+                                              {getStatusBadge(assignment)}
+                                              {(assignment.sources || []).length > 0 && (
+                                                <a href={assignment.sources[0].startsWith('http') ? assignment.sources[0] : `https://${assignment.sources[0]}`} target="_blank" rel="noopener noreferrer">
+                                                    <Button size="sm" variant="outline">
+                                                        <ExternalLink className="size-4 mr-2"/> Kaynağa Git
+                                                    </Button>
+                                                </a>
+                                              )}
+                                           </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
                 )
