@@ -324,7 +324,7 @@ export default function EducationPage() {
           {pendingStudies.length > 0 ? (
             <div className="space-y-2">
               {pendingStudies.map(study => (
-                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 hover:bg-blue-500/20">
+                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 dark:bg-blue-500/20 dark:text-blue-200 hover:bg-blue-500/20">
                    <Checkbox
                         id={`study-${study.id}`}
                         onCheckedChange={() => handleStudyAssignmentStatusChange(study)}
@@ -332,7 +332,7 @@ export default function EducationPage() {
                     />
                   <div className="flex-grow">
                     <label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label>
-                    <p className="text-xs text-blue-800/80">
+                    <p className="text-xs text-blue-800/80 dark:text-blue-300/80">
                       {study.studyPlanTitle} - {study.subject}
                     </p>
                   </div>
@@ -349,3 +349,4 @@ export default function EducationPage() {
     </>
   );
 }
+
