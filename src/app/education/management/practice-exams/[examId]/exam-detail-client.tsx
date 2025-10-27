@@ -312,4 +312,3 @@ function AssignExamForm({ isOpen, onOpenChange, exam, students }: {isOpen: boole
         </Dialog>
     )
 }
-
