@@ -45,6 +45,9 @@ export default function OpticalFormPage() {
     // State for manual evaluation
     const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluation>({});
     
+    // State for single question view
+    const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+    
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
         
@@ -139,7 +142,7 @@ export default function OpticalFormPage() {
                 
                 // Fetch questions subcollection
                 const questionsColRef = collection(db, 'tests', testId, 'questions');
-                const questionsSnap = await getDocs(questionsColRef);
+                const questionsSnap = await getDocs(query(questionsColRef, (a, b) => a.questionNumber - b.questionNumber));
                 const fetchedQuestions = questionsSnap.docs
                     .map(d => d.data() as QuickTestQuestion)
                     .sort((a,b) => a.questionNumber - b.questionNumber);
@@ -417,11 +420,26 @@ export default function OpticalFormPage() {
 
     const handleTextAnswerChange = (questionNumber: number, value: string) => {
         setTextAnswers(prev => ({...prev, [questionNumber]: value}));
-    }
+    };
+    
+    const handleNextQuestion = () => {
+        setCurrentQuestionIndex(prev => Math.min(prev + 1, test.questionCount - 1));
+    };
 
-    const answeredQuestions = test.openEnded 
-        ? Object.values(textAnswers).filter(a => a?.trim() !== '').length
-        : Object.values(mcqAnswers).filter(a => a !== null).length;
+    const handlePrevQuestion = () => {
+        setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
+    };
+    
+    const handleJumpToQuestion = (index: number) => {
+        setCurrentQuestionIndex(index);
+    };
+
+    const answeredQuestionsCount = test.openEnded
+      ? Object.values(textAnswers).filter(a => a?.trim() !== '').length
+      : Object.keys(mcqAnswers).length;
+      
+    const currentQuestion = test.questions?.[currentQuestionIndex];
+    const qNum = currentQuestion?.questionNumber;
 
     return (
         <div className="container mx-auto py-8">
@@ -440,45 +458,72 @@ export default function OpticalFormPage() {
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
-                                {(test.questions || []).map((question) => {
-                                    const qNum = question.questionNumber;
-                                    return (
-                                        <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
-                                                <h3 className="font-semibold">Soru {qNum}</h3>
-                                            </div>
-                                            {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" data-ai-hint="question paper" />}
-                                            <div className="pl-12">
-                                                {test.openEnded ? (
-                                                    <Textarea 
-                                                        placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
-                                                        value={textAnswers[qNum] || ""} 
-                                                        onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
-                                                        className="flex-grow min-h-[100px]"
-                                                    />
-                                                ) : (
-                                                    <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
-                                                        {Object.keys(test.answerKey || {A: '', B: '', C: '', D: ''}).sort().map(option => (
-                                                            <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
-                                                        ))}
-                                                    </RadioGroup>
-                                                )}
-                                            </div>
+                                {currentQuestion && qNum && (
+                                     <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
+                                            <h3 className="font-semibold">Soru {qNum}</h3>
                                         </div>
-                                    )
-                                })}
+                                        {currentQuestion.imageUrl && <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" data-ai-hint="question paper" />}
+                                        <div className="pl-12">
+                                            {test.openEnded ? (
+                                                <Textarea 
+                                                    placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
+                                                    value={textAnswers[qNum] || ""} 
+                                                    onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
+                                                    className="flex-grow min-h-[100px]"
+                                                />
+                                            ) : (
+                                                <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
+                                                    {Object.keys(test.answerKey || {A: '', B: '', C: '', D: ''}).sort().map(option => (
+                                                        <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
+                                                    ))}
+                                                </RadioGroup>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                 <div className="flex justify-between mt-6">
+                                    <Button onClick={handlePrevQuestion} disabled={currentQuestionIndex === 0}>Önceki Soru</Button>
+                                    {currentQuestionIndex < test.questionCount - 1 ? (
+                                        <Button onClick={handleNextQuestion}>Sonraki Soru</Button>
+                                    ) : (
+                                       <AlertDialog>
+                                            <AlertDialogTrigger asChild><Button>Testi Bitir</Button></AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>Testi bitirmek istediğine emin misin?</AlertDialogTitle><AlertDialogDescription>Testi bitirdikten sonra cevaplarını değiştiremezsin. Sonuçların kaydedilecek.</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)}>Onayla ve Bitir</AlertDialogAction></AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
                 <aside className="lg:sticky top-8 self-start">
                      <Card>
-                        <CardHeader className="text-center"><CardTitle>Test Bilgisi</CardTitle></CardHeader>
+                        <CardHeader className="text-center"><CardTitle>Soru Takibi</CardTitle></CardHeader>
                         <CardContent className="space-y-6">
                             <div className="text-center">
                                 <p className="text-muted-foreground">Cevaplanan Soru</p>
-                                <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestions} / {test.questionCount}</p>
+                                <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestionsCount} / {test.questionCount}</p>
+                            </div>
+                            <div className="grid grid-cols-5 gap-2">
+                                {Array.from({length: test.questionCount}, (_, i) => {
+                                    const qNum = i + 1;
+                                    const isAnswered = test.openEnded ? !!textAnswers[qNum] : !!mcqAnswers[qNum];
+                                    return (
+                                        <Button
+                                            key={i}
+                                            variant={currentQuestionIndex === i ? 'default' : (isAnswered ? 'secondary' : 'outline')}
+                                            className="h-10 w-10"
+                                            onClick={() => handleJumpToQuestion(i)}
+                                        >
+                                            {qNum}
+                                        </Button>
+                                    )
+                                })}
                             </div>
                            <AlertDialog>
                             <AlertDialogTrigger asChild><Button className="w-full" size="lg">Testi Bitir</Button></AlertDialogTrigger>
@@ -494,6 +539,8 @@ export default function OpticalFormPage() {
         </div>
     )
 }
+    
+
     
 
     
