@@ -13,7 +13,7 @@ import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { doc, getDoc, getDocs, collection, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
@@ -142,7 +142,7 @@ export default function OpticalFormPage() {
                 
                 // Fetch questions subcollection
                 const questionsColRef = collection(db, 'tests', testId, 'questions');
-                const questionsSnap = await getDocs(query(questionsColRef, (a, b) => a.questionNumber - b.questionNumber));
+                const questionsSnap = await getDocs(query(questionsColRef, orderBy("questionNumber")));
                 const fetchedQuestions = questionsSnap.docs
                     .map(d => d.data() as QuickTestQuestion)
                     .sort((a,b) => a.questionNumber - b.questionNumber);
