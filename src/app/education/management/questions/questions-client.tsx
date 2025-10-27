@@ -164,7 +164,7 @@ export function QuestionsClient() {
       </Tabs>
       
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-lg">
           <NewQuestionBankForm
             availableSubjects={allSubjects}
             onSubjectCreated={handleCreateSubject}
