@@ -659,6 +659,8 @@ export const addBulkBankQuestions = async (questionsData: Partial<BankQuestion>[
         const questionDocRef = doc(collection(db, 'bankQuestions'));
         const newQuestion: Omit<BankQuestion, 'id'> = {
             familyId,
+            title: qData.title!,
+            originalFilename: qData.originalFilename,
             subject: qData.subject!,
             topic: qData.topic!,
             imageUrl: qData.imageUrl!,
@@ -674,9 +676,16 @@ export const addBulkBankQuestions = async (questionsData: Partial<BankQuestion>[
 
 
 export const updateBankQuestion = (id: string, data: Partial<Omit<BankQuestion, 'id'|'familyId'|'createdAt'>>) => {
-    return updateDoc(doc(db, 'bankQuestions', data));
+    return updateDoc(doc(db, 'bankQuestions', id), data);
 }
 export const deleteBankQuestion = (id: string) => deleteDoc(doc(db, "bankQuestions", id));
+export const deleteBulkBankQuestions = async (ids: string[]) => {
+    const batch = writeBatch(db);
+    ids.forEach(id => {
+        batch.delete(doc(db, "bankQuestions", id));
+    });
+    await batch.commit();
+}
 export const onMistakesUpdate = (callback: (mistakes: Mistake[]) => void) => onFamilyDataUpdate<Mistake>('mistakes', callback, false, 'createdAt', 'desc');
 export const addMistake = async (data: Partial<Omit<Mistake, 'id' | 'familyId' | 'status'>>) => {
     const familyId = await getCurrentFamilyId();
@@ -1950,6 +1959,8 @@ export const deleteTrackedBookSubject = async (bookId: string, subjectId: string
         await batch.commit();
     }
 };
+    
+
     
 
     
