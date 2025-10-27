@@ -768,9 +768,21 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questions?: B
     const batch = writeBatch(db);
     const testDocRef = doc(collection(db, 'tests'));
 
-    const { questions: omit, ...testData } = data; // Exclude questions from the main doc
+    // Determine openEnded and gradingType from questions if provided
+    let isTestOpenEnded = data.openEnded || false;
+    if (questions && questions.length > 0) {
+        isTestOpenEnded = questions.some(q => q.type === 'open_ended');
+    }
+    
+    const finalTestData = {
+        ...data,
+        openEnded: isTestOpenEnded,
+        gradingType: isTestOpenEnded ? 'manual' : 'auto'
+    };
 
-    batch.set(testDocRef, { ...testData, familyId });
+    const { questions: omit, ...testDataForDoc } = finalTestData;
+
+    batch.set(testDocRef, removeUndefined({ ...testDataForDoc, familyId }));
     
     const questionsToSave = questions ? questions : data.questions as BankQuestion[];
 
@@ -1964,4 +1976,6 @@ export const updateNotebookFolder = async (notebookId: string, sectionId: string
         await batch.commit();
     }
 };
+    
+
     
