@@ -42,7 +42,7 @@ export function PracticeExamsClient() {
                 await updatePracticeExam(editingExam.id, data);
                 toast({ title: "Deneme Güncellendi" });
             } else {
-                await addPracticeExam({ ...data, sourceType: 'other', gradingType: 'auto', subjects: [] });
+                await addPracticeExam({ ...data, subjects: [] });
                 toast({ title: "Yeni Deneme Sınavı Oluşturuldu" });
             }
             setIsFormOpen(false);
@@ -90,7 +90,7 @@ export function PracticeExamsClient() {
                             <Card key={exam.id} className="flex flex-col">
                                 <CardHeader>
                                     <CardTitle>{exam.name}</CardTitle>
-                                    <CardDescription>{exam.gradingType === 'auto' ? 'Otomatik Değerlendirme' : 'Manuel Değerlendirme'}</CardDescription>
+                                    <CardDescription>{totalSubjects} ders, {totalQuestions} soru</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow space-y-3 text-sm text-muted-foreground">
                                     <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>{totalSubjects} Ders</span></div>

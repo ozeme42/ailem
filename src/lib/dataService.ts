@@ -514,7 +514,7 @@ export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void)
 export const addShoppingList = async (name: string, icon: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'shoppingLists'), { name: name, icon: icon, items: [], boughtItems: [], familyId, createdAt: new Date().toISOString() });
+    return addDoc(collection(db, 'shoppingLists'), { name, icon, items: [], boughtItems: [], familyId, createdAt: new Date().toISOString() });
 };
 export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
 export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
@@ -801,7 +801,7 @@ export const deleteTest = async (id: string) => {
 };
 
 
-export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void, runOnce = false) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback, runOnce);
+export const onPracticeExamsUpdate = (callback: (exams: PracticeExam[]) => void) => onFamilyDataUpdate<PracticeExam>('practiceExams', callback);
 export const onSinglePracticeExamUpdate = (examId: string, callback: (exam: PracticeExam | null) => void) => {
     const examRef = doc(db, "practiceExams", examId);
     return onSnapshot(examRef, (doc) => {
@@ -986,14 +986,11 @@ export const initializeDefaultData = async (familyId: string, userId: string) =>
     const initialPracticeExams: Omit<PracticeExam, 'id' | 'familyId'>[] = [
          {
             name: "LGS Deneme Sınavı 1",
-            gradingType: 'auto',
-            sourceType: 'other',
             subjects: [
                 { id: "1", name: "Matematik", questionCount: 20 },
                 { id: "2", name: "Türkçe", questionCount: 20 },
                 { id: "3", name: "Fen Bilimleri", questionCount: 20 },
             ],
-            answerKey: {1: 'A', 2: 'C', 3: 'B'}
         }
     ];
 
