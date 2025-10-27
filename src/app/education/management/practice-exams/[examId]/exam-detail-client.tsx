@@ -159,6 +159,7 @@ export function ExamDetailClient() {
                       <DialogDescription>Toplam {currentSubject.questionCount} soru için cevapları girin.</DialogDescription>
                   </DialogHeader>
                   <AnswerKeyForm 
+                    key={currentSubject.id} // Add a key to force re-mount
                     totalQuestions={currentSubject.questionCount} 
                     answerKey={currentSubject.answerKey || {}}
                     onSave={(newKey) => handleAnswerKeySave(currentSubject.id, newKey)}
@@ -196,12 +197,17 @@ function SubjectFormDialog({ isOpen, onOpenChange, onSave }: { isOpen: boolean, 
                     <DialogTitle>Yeni Ders Ekle</DialogTitle>
                 </DialogHeader>
                 <FormProvider {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <Input {...form.register("name")} placeholder="Ders adı (örn: Matematik)" />
-                        {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
-                        
-                        <Input type="number" {...form.register("questionCount")} placeholder="Soru Sayısı" />
-                        {form.formState.errors.questionCount && <p className="text-sm text-destructive">{form.formState.errors.questionCount.message}</p>}
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2 sm:col-span-1">
+                                <Input {...form.register("name")} placeholder="Ders adı (örn: Matematik)" />
+                                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+                            </div>
+                            <div className="col-span-2 sm:col-span-1">
+                                <Input type="number" {...form.register("questionCount")} placeholder="Soru Sayısı" />
+                                {form.formState.errors.questionCount && <p className="text-sm text-destructive mt-1">{form.formState.errors.questionCount.message}</p>}
+                            </div>
+                        </div>
 
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
@@ -313,5 +319,3 @@ function AssignExamForm({ isOpen, onOpenChange, exam, students }: {isOpen: boole
         </Dialog>
     )
 }
-
-    

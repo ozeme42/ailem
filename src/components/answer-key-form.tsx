@@ -31,22 +31,28 @@ type AnswerKeyFormProps = {
 
 export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFormProps) {
   const { toast } = useToast();
+
+  // Initialize form with defaultValues derived from props directly.
+  // This ensures the form re-initializes when the key (in the parent) or props change.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      answers: [],
-    },
-  });
-  
-  React.useEffect(() => {
-    form.reset({
-       answers: Array.from({ length: totalQuestions }, (_, i) => ({
+      answers: Array.from({ length: totalQuestions }, (_, i) => ({
         questionNumber: i + 1,
         value: answerKey[i + 1] || null,
       })),
-    })
-  }, [totalQuestions, answerKey, form])
+    },
+  });
 
+  // This effect will re-sync the form if the props change *after* the initial render.
+  React.useEffect(() => {
+    form.reset({
+      answers: Array.from({ length: totalQuestions }, (_, i) => ({
+        questionNumber: i + 1,
+        value: answerKey[i + 1] || null,
+      })),
+    });
+  }, [totalQuestions, answerKey, form.reset, form]);
 
   const { fields } = useFieldArray({
     control: form.control,
@@ -85,7 +91,7 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
                         value={field.value || ""}
                         className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
                       >
-                        {["A", "B", "C", "D"].map((option) => (
+                        {["A", "B", "C", "D", "E"].map((option) => (
                           <FormItem
                             key={option}
                             className="flex items-center space-x-2"
@@ -111,5 +117,3 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
     </Form>
   );
 }
-
-    
