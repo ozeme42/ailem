@@ -59,6 +59,7 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, initialData }: {
 }) => {
     const form = useForm<CreateListFormData>({
         resolver: zodResolver(createListSchema),
+        defaultValues: { name: '', icon: 'ShoppingCart' },
     });
     
     React.useEffect(() => {
@@ -138,6 +139,12 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
     const pendingItems = (list.items || []).filter(item => !item.isBought);
     const hasBoughtItems = (list.boughtItems || []).length > 0;
     
+    const description = pendingItems.length > 0 
+        ? `${pendingItems.length} ihtiyaç kaldı` 
+        : (list.items.length > 0 || hasBoughtItems) 
+            ? 'Tüm ihtiyaçlar tamam' 
+            : 'Liste boş';
+
     return (
         <div className="relative group">
             <div onClick={onClick} className={cn("flex flex-col text-white p-4 cursor-pointer rounded-xl shadow-lg border-0 h-full min-h-[160px]", colorClass)}>
@@ -427,9 +434,10 @@ export default function ShoppingPage() {
             
              <div className={cn("flex-grow flex flex-col min-h-0", "-mx-4 sm:mx-0")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
-                    <TabsList className="grid w-full grid-cols-2 flex-shrink-0 rounded-none p-0 h-auto bg-background">
-                        <TabsTrigger value="pending" className="rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
-                        <TabsTrigger value="bought" className="rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınanlar ({boughtItems.length})</TabsTrigger>
+                    <TabsList className="flex w-full h-auto flex-shrink-0 bg-background p-0 rounded-none">
+                        <TabsTrigger value="pending" className="flex-1 text-base rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
+                        <Separator orientation="vertical" className="h-6 self-center" />
+                        <TabsTrigger value="bought" className="flex-1 text-base rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-sky-50 dark:bg-sky-900/20">
                         <div className="divide-y divide-sky-200 dark:divide-sky-800">
