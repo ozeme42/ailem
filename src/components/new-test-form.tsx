@@ -229,7 +229,6 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             questionCount: selectedQuestionsFromBank.length,
             assignedDate, dueDate,
             sourceType: 'bank',
-            // These will be determined by dataService
           };
           questionsForSubcollection = selectedQuestionsFromBank;
           break;
@@ -469,6 +468,8 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     </Tabs>
   );
 }
+
+    
 
     
 
