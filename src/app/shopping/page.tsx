@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, Archive } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, Archive, Separator } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -22,7 +22,6 @@ import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
-import { Separator } from '@/components/ui/separator';
 
 
 const brightColors = [
@@ -137,8 +136,6 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
     const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
     const pendingItems = (list.items || []).filter(item => !item.isBought);
     const hasBoughtItems = (list.boughtItems || []).length > 0;
-
-    const description = pendingItems.length > 0 ? `${pendingItems.length} ihtiyaç kaldı` : (list.items.length > 0 || hasBoughtItems) ? 'Tüm ihtiyaçlar tamam' : 'Liste boş';
 
     return (
         <div className="relative group">
@@ -433,12 +430,12 @@ export default function ShoppingPage() {
                         <TabsTrigger value="pending">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="pending" className="flex-grow bg-yellow-100 dark:bg-yellow-900/40">
-                        <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
+                    <TabsContent value="pending" className="flex-grow bg-sky-50 dark:bg-sky-900/20">
+                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
                             {sortedPendingCategories.map(([category, items]) => (
                                 <div key={category} className="px-4">
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                    <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
+                                    <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                       {items.map((item, index) => (
                                           <div key={item.id} className="flex items-center gap-4 py-3 group">
                                               <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md" />
@@ -446,11 +443,11 @@ export default function ShoppingPage() {
                                               <div className={cn("flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity", item.isBought && "opacity-100")}>
                                                   {item.isBought && (
                                                       <>
-                                                      <Separator orientation="vertical" className="h-6" />
+                                                      <Separator orientation="vertical" className="h-6 mx-1" />
                                                       <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
                                                         <Archive className="h-4 w-4" />
                                                       </Button>
-                                                      <Separator orientation="vertical" className="h-6" />
+                                                      <Separator orientation="vertical" className="h-6 mx-1" />
                                                       </>
                                                   )}
                                                   <AlertDialog>
@@ -470,14 +467,14 @@ export default function ShoppingPage() {
                             ))}
                         </div>
                     </TabsContent>
-                    <TabsContent value="bought" className="flex-grow bg-yellow-100 dark:bg-yellow-900/40">
+                    <TabsContent value="bought" className="flex-grow bg-sky-50 dark:bg-sky-900/20">
                         {boughtItems.length === 0 ? (
                         <div className="text-center py-16 text-muted-foreground">
                                 <p>Henüz alınan bir ürün yok.</p>
                             </div>
                         ) : (
                         <div>
-                            <div className="flex justify-end p-2 border-b border-yellow-300 dark:divide-yellow-700/50">
+                            <div className="flex justify-end p-2 border-b border-sky-200 dark:border-sky-800">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -486,11 +483,11 @@ export default function ShoppingPage() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </div>
-                             <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
+                             <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                 {sortedBoughtCategories.map(([category, items]) => (
                                     <div key={category} className="px-4">
                                         {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                        <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
+                                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                             {items.map((item) => (
                                                 <div key={item.id} className="flex items-center gap-4 py-3 group">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
