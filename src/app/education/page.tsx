@@ -20,7 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
 import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfMonth, endOfDay, isWithinInterval, startOfMonth, addMonths, subMonths } from 'date-fns';
+import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfMonth, endOfDay, isWithinInterval, startOfMonth, addMonths, subMonths, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -229,21 +229,39 @@ export default function EducationPage() {
                             </div>
                         ))}
                     </div>
-                    {weekDays.map(day => (
-                       <div key={day.toISOString()} className="p-2 border-b md:border-b-0 md:border-r last:border-r-0 last:border-b-0 min-h-[10rem] flex flex-row md:flex-col gap-2">
-                           <div className="w-20 text-center md:text-left md:w-auto shrink-0">
-                                <p className="font-semibold text-sm capitalize">{format(day, 'd MMM', { locale: tr })}</p>
-                                <p className="text-xs capitalize text-muted-foreground hidden md:block">{format(day, 'EEE', {locale: tr})}</p>
+                     <div className="md:hidden col-span-full divide-y">
+                        {weekDays.map(day => (
+                           <div key={day.toISOString()} className="p-2 flex flex-row md:flex-col gap-2">
+                               <div className="w-20 text-center md:text-left md:w-auto shrink-0">
+                                    <p className="font-semibold text-sm capitalize">{format(day, 'd MMM', { locale: tr })}</p>
+                                    <p className="text-xs capitalize text-muted-foreground">{format(day, 'EEE', {locale: tr})}</p>
+                               </div>
+                               <div className="space-y-1 overflow-y-auto flex-grow">
+                                   {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
+                                       <div key={a.id} className={cn("p-1.5 rounded-md text-xs", a.type === 'test' ? 'bg-red-500/10 text-red-900' : 'bg-blue-500/10 text-blue-900')}>
+                                           <p className="font-semibold truncate flex items-center gap-1"><a.Icon className="h-3 w-3 shrink-0"/>{a.title}</p>
+                                       </div>
+                                   ))}
+                               </div>
                            </div>
-                           <div className="space-y-1 overflow-y-auto flex-grow">
-                               {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
-                                   <div key={a.id} className={cn("p-1.5 rounded-md text-xs", a.type === 'test' ? 'bg-red-500/10 text-red-900' : 'bg-blue-500/10 text-blue-900')}>
-                                       <p className="font-semibold truncate flex items-center gap-1"><a.Icon className="h-3 w-3 shrink-0"/>{a.title}</p>
-                                   </div>
-                               ))}
+                        ))}
+                     </div>
+                     <div className="hidden md:grid md:grid-cols-7 col-span-full">
+                         {weekDays.map(day => (
+                           <div key={day.toISOString()} className="p-2 border-r last:border-r-0 min-h-[10rem] flex flex-col gap-2">
+                               <div className="w-auto text-left">
+                                    <p className="font-semibold text-sm capitalize">{format(day, 'd MMM', { locale: tr })}</p>
+                               </div>
+                               <div className="space-y-1 overflow-y-auto flex-grow">
+                                   {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
+                                       <div key={a.id} className={cn("p-1.5 rounded-md text-xs", a.type === 'test' ? 'bg-red-500/10 text-red-900' : 'bg-blue-500/10 text-blue-900')}>
+                                           <p className="font-semibold truncate flex items-center gap-1"><a.Icon className="h-3 w-3 shrink-0"/>{a.title}</p>
+                                       </div>
+                                   ))}
+                               </div>
                            </div>
-                       </div>
-                    ))}
+                        ))}
+                    </div>
                  </div>
              )
         }
@@ -272,6 +290,7 @@ export default function EducationPage() {
         }
         
         if (viewMode === 'list') {
+            const now = new Date();
             const pendingAssignments = allAssignments.filter(a => !a.isCompleted);
             const completedAssignments = allAssignments.filter(a => a.isCompleted).sort((a,b) => compareDesc(a.endDate, b.endDate));
 
@@ -288,16 +307,25 @@ export default function EducationPage() {
                                     <div>
                                         <h4 className="text-lg font-medium mb-2 text-muted-foreground">Testler ve Denemeler ({pendingTestAssignments.length})</h4>
                                         <div className="space-y-2">
-                                            {pendingTestAssignments.map(a => (
-                                                <Card key={a.id} className="flex items-center p-3 gap-3">
-                                                    <a.Icon className="h-5 w-5 shrink-0 text-red-500" />
-                                                    <div className="flex-grow">
-                                                        <p className="font-semibold">{a.title}</p>
-                                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
-                                                    </div>
-                                                    <Badge variant="outline">Bekliyor</Badge>
-                                                </Card>
-                                            ))}
+                                            {pendingTestAssignments.map(a => {
+                                                const daysDiff = differenceInDays(a.endDate, now);
+                                                const isDue = isPast(a.endDate) && !isToday(a.endDate);
+                                                return (
+                                                    <Card key={a.id} className="flex items-center p-3 gap-3">
+                                                        <a.Icon className="h-5 w-5 shrink-0 text-red-500" />
+                                                        <div className="flex-grow">
+                                                            <p className="font-semibold">{a.title}</p>
+                                                             <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})}</p>
+                                                        </div>
+                                                        {isDue
+                                                            ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                                            : isToday(a.endDate)
+                                                                ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                                                : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                                        }
+                                                    </Card>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -305,16 +333,25 @@ export default function EducationPage() {
                                      <div>
                                         <h4 className="text-lg font-medium mb-2 text-muted-foreground">Konu Anlatımları ({pendingStudyAssignments.length})</h4>
                                         <div className="space-y-2">
-                                        {pendingStudyAssignments.map(a => (
-                                            <Card key={a.id} className="flex items-center p-3 gap-3">
-                                                <a.Icon className="h-5 w-5 shrink-0 text-blue-500" />
-                                                <div className="flex-grow">
-                                                    <p className="font-semibold">{a.title}</p>
-                                                    <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
-                                                </div>
-                                                <Badge variant="outline">Bekliyor</Badge>
-                                            </Card>
-                                        ))}
+                                        {pendingStudyAssignments.map(a => {
+                                            const daysDiff = differenceInDays(a.endDate, now);
+                                            const isDue = isPast(a.endDate) && !isToday(a.endDate);
+                                            return (
+                                                <Card key={a.id} className="flex items-center p-3 gap-3">
+                                                    <a.Icon className="h-5 w-5 shrink-0 text-blue-500" />
+                                                    <div className="flex-grow">
+                                                        <p className="font-semibold">{a.title}</p>
+                                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})}</p>
+                                                    </div>
+                                                    {isDue
+                                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                                        : isToday(a.endDate)
+                                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                                    }
+                                                </Card>
+                                            )
+                                        })}
                                         </div>
                                     </div>
                                 )}
