@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, Archive } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, Archive, Separator } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -136,6 +135,8 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
     const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
     const pendingItems = (list.items || []).filter(item => !item.isBought);
     const hasBoughtItems = (list.boughtItems || []).length > 0;
+
+    const description = pendingItems.length > 0 ? `${pendingItems.length} ihtiyaç kaldı` : (list.items.length > 0 || hasBoughtItems) ? 'Tüm ihtiyaçlar tamam' : 'Liste boş';
 
     return (
         <div className="relative group">
@@ -442,9 +443,12 @@ export default function ShoppingPage() {
                                               <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                               <div className={cn("flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity", item.isBought && "opacity-100")}>
                                                   {item.isBought && (
+                                                      <>
                                                       <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
                                                         <Archive className="h-4 w-4" />
                                                       </Button>
+                                                      <Separator orientation="vertical" className="h-6" />
+                                                      </>
                                                   )}
                                                   <AlertDialog>
                                                       <AlertDialogTrigger asChild>
