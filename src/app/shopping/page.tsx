@@ -134,24 +134,44 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
     onDelete: (id: string) => void;
 }) => {
     const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
-    const items = list.items || [];
-    const pendingItems = items.filter(item => !item.isBought).length;
-    const description = pendingItems > 0 ? `${pendingItems} öğe kaldı` : (items.length > 0 ? 'Tüm öğeler alındı' : 'Liste boş');
+    const pendingItems = (list.items || []).filter(item => !item.isBought);
+    const hasBoughtItems = (list.boughtItems || []).length > 0;
 
     return (
         <div className="relative group">
-            <div onClick={onClick} className={cn("flex items-center gap-4 text-white px-4 py-3 cursor-pointer rounded-xl shadow-lg border-0", colorClass)}>
-                <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                    <Icon className="h-6 w-6" />
+            <div onClick={onClick} className={cn("flex flex-col text-white p-4 cursor-pointer rounded-xl shadow-lg border-0 h-full min-h-[160px]", colorClass)}>
+                <div className="flex items-start gap-4">
+                    <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
+                        <Icon className="h-6 w-6" />
+                    </div>
+                    <div className="flex flex-col justify-center min-w-0">
+                        <p className="text-lg font-bold leading-tight truncate">{list.name}</p>
+                    </div>
                 </div>
-                <div className="flex flex-col justify-center min-w-0">
-                    <p className="text-lg font-bold leading-tight truncate">{list.name}</p>
-                    <p className="text-white/80 text-sm font-normal truncate">
-                        {description}
-                    </p>
+                <div className="flex-grow mt-3 space-y-1">
+                    {pendingItems.length > 0 ? (
+                        <>
+                            {pendingItems.slice(0, 3).map(item => (
+                                <div key={item.id} className="flex items-center gap-2 text-sm">
+                                    <div className="w-4 h-4 rounded-sm border-2 border-white/50 bg-white/20 shrink-0"/>
+                                    <span className="truncate">{item.name}</span>
+                                </div>
+                            ))}
+                            {pendingItems.length > 3 && (
+                                <p className="text-xs text-white/80 pt-1">+ {pendingItems.length - 3} ürün daha...</p>
+                            )}
+                        </>
+                    ) : (list.items.length > 0 || hasBoughtItems) ? (
+                        <div className="flex items-center gap-2 text-sm p-2 rounded-md bg-white/20">
+                            <ListChecks className="h-4 w-4"/>
+                            <span>Tüm ihtiyaçlar tamam!</span>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-white/80">Liste boş</p>
+                    )}
                 </div>
             </div>
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="h-4 w-4" /></Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
