@@ -770,33 +770,27 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questionsForS
     
     // Determine openEnded and gradingType from questions if provided
     let isTestOpenEnded = data.openEnded || false;
-    if (questionsForSubcollection && questionsForSubcollection.length > 0) {
-        isTestOpenEnded = questionsForSubcollection.some(q => q.type === 'open_ended');
+    let questionsForTestDoc: QuickTestQuestion[] = [];
+    const questionsToSave = questionsForSubcollection ? questionsForSubcollection : data.questions as BankQuestion[];
+
+    if (questionsToSave && questionsToSave.length > 0) {
+        isTestOpenEnded = questionsToSave.some(q => q.type === 'open_ended');
+        questionsForTestDoc = questionsToSave.map((q, index) => ({
+            questionId: q.id,
+            questionNumber: index + 1,
+            imageUrl: q.imageUrl,
+        }));
     }
     
-    const finalTestData = {
+    const finalTestData: Omit<Test, 'id'> = {
         ...data,
+        questions: questionsForTestDoc, // This is the crucial part
         familyId,
         openEnded: isTestOpenEnded,
         gradingType: isTestOpenEnded ? 'manual' : 'auto',
     };
 
     batch.set(testDocRef, removeUndefined(finalTestData));
-    
-    const questionsToSave = questionsForSubcollection ? questionsForSubcollection : data.questions as BankQuestion[];
-
-    if (questionsToSave && questionsToSave.length > 0) {
-        const questionsColRef = collection(db, 'tests', testDocRef.id, 'questions');
-        questionsToSave.forEach((q, index) => {
-            const questionDocRef = doc(questionsColRef, `${index + 1}`);
-            const questionPayload: QuickTestQuestion = {
-                questionId: q.id,
-                questionNumber: index + 1,
-                imageUrl: q.imageUrl,
-            };
-            batch.set(questionDocRef, questionPayload);
-        });
-    }
     
     await batch.commit();
 };
@@ -1976,6 +1970,8 @@ export const updateNotebookFolder = async (notebookId: string, sectionId: string
         await batch.commit();
     }
 };
+    
+
     
 
     
