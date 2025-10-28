@@ -221,7 +221,7 @@ export default function EducationPage() {
              const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
              
              return (
-                 <div className="border rounded-lg overflow-hidden grid grid-cols-1 md:grid-cols-7">
+                <div className="border rounded-lg overflow-hidden grid grid-cols-1 md:grid-cols-7">
                     <div className="hidden md:grid md:grid-cols-7 col-span-full border-b">
                          {weekDays.map(day => (
                             <div key={day.toISOString()} className="p-2 text-center border-r last:border-r-0">
@@ -230,11 +230,12 @@ export default function EducationPage() {
                         ))}
                     </div>
                     {weekDays.map(day => (
-                       <div key={day.toISOString()} className="p-2 border-b md:border-b-0 md:border-r last:border-r-0 last:border-b-0 min-h-[10rem] flex flex-col md:flex-col">
-                           <div className="text-center md:text-left mb-2 md:mb-0">
-                                <p className="font-semibold text-sm capitalize">{format(day, 'EEE, d MMM', {locale: tr})}</p>
+                       <div key={day.toISOString()} className="p-2 border-b md:border-b-0 md:border-r last:border-r-0 last:border-b-0 min-h-[10rem] flex flex-row md:flex-col gap-2">
+                           <div className="w-20 text-center md:text-left md:w-auto shrink-0">
+                                <p className="font-semibold text-sm capitalize">{format(day, 'd MMM', { locale: tr })}</p>
+                                <p className="text-xs capitalize text-muted-foreground hidden md:block">{format(day, 'EEE', {locale: tr})}</p>
                            </div>
-                           <div className="space-y-1 overflow-y-auto flex-grow mt-2">
+                           <div className="space-y-1 overflow-y-auto flex-grow">
                                {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
                                    <div key={a.id} className={cn("p-1.5 rounded-md text-xs", a.type === 'test' ? 'bg-red-500/10 text-red-900' : 'bg-blue-500/10 text-blue-900')}>
                                        <p className="font-semibold truncate flex items-center gap-1"><a.Icon className="h-3 w-3 shrink-0"/>{a.title}</p>
@@ -273,26 +274,58 @@ export default function EducationPage() {
         if (viewMode === 'list') {
             const pendingAssignments = allAssignments.filter(a => !a.isCompleted);
             const completedAssignments = allAssignments.filter(a => a.isCompleted).sort((a,b) => compareDesc(a.endDate, b.endDate));
+
+            const pendingTestAssignments = pendingAssignments.filter(a => a.type === 'test');
+            const pendingStudyAssignments = pendingAssignments.filter(a => a.type === 'study');
             
             return (
-                 <div className="space-y-6">
-                    <div>
-                        <h3 className="text-lg font-semibold mb-2">Devam Edenler ({pendingAssignments.length})</h3>
-                        <div className="space-y-2">
-                            {pendingAssignments.length > 0 ? pendingAssignments.map(a => (
-                                <Card key={a.id} className="flex items-center p-3 gap-3">
-                                    <a.Icon className={cn("h-5 w-5 shrink-0", a.type === 'test' ? 'text-red-500' : 'text-blue-500')} />
-                                    <div className="flex-grow">
-                                        <p className="font-semibold">{a.title}</p>
-                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
+                 <div className="space-y-8">
+                    {pendingAssignments.length > 0 ? (
+                        <div>
+                             <h3 className="text-xl font-semibold mb-3">Devam Edenler ({pendingAssignments.length})</h3>
+                             <div className="space-y-6">
+                                {pendingTestAssignments.length > 0 && (
+                                    <div>
+                                        <h4 className="text-lg font-medium mb-2 text-muted-foreground">Testler ve Denemeler ({pendingTestAssignments.length})</h4>
+                                        <div className="space-y-2">
+                                            {pendingTestAssignments.map(a => (
+                                                <Card key={a.id} className="flex items-center p-3 gap-3">
+                                                    <a.Icon className="h-5 w-5 shrink-0 text-red-500" />
+                                                    <div className="flex-grow">
+                                                        <p className="font-semibold">{a.title}</p>
+                                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
+                                                    </div>
+                                                    <Badge variant="outline">Bekliyor</Badge>
+                                                </Card>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <Badge variant="outline">Bekliyor</Badge>
-                                </Card>
-                            )) : <Card className="p-4 text-center text-muted-foreground text-sm">Bekleyen görev yok.</Card>}
+                                )}
+                                {pendingStudyAssignments.length > 0 && (
+                                     <div>
+                                        <h4 className="text-lg font-medium mb-2 text-muted-foreground">Konu Anlatımları ({pendingStudyAssignments.length})</h4>
+                                        <div className="space-y-2">
+                                        {pendingStudyAssignments.map(a => (
+                                            <Card key={a.id} className="flex items-center p-3 gap-3">
+                                                <a.Icon className="h-5 w-5 shrink-0 text-blue-500" />
+                                                <div className="flex-grow">
+                                                    <p className="font-semibold">{a.title}</p>
+                                                    <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
+                                                </div>
+                                                <Badge variant="outline">Bekliyor</Badge>
+                                            </Card>
+                                        ))}
+                                        </div>
+                                    </div>
+                                )}
+                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <Card className="p-4 text-center text-muted-foreground text-sm">Bekleyen görev yok.</Card>
+                    )}
+
                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Tamamlananlar ({completedAssignments.length})</h3>
+                        <h3 className="text-xl font-semibold mb-3">Tamamlananlar ({completedAssignments.length})</h3>
                          <div className="space-y-2">
                              {completedAssignments.length > 0 ? completedAssignments.map(a => (
                                 <Card key={a.id} className="flex items-center p-3 gap-3 bg-muted/50">
@@ -470,4 +503,3 @@ export default function EducationPage() {
     </>
   );
 }
-
