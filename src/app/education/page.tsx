@@ -77,7 +77,7 @@ export default function EducationPage() {
   const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
   
-  const [viewMode, setViewMode] = React.useState<'cards' | 'weekly' | 'monthly' | 'list'>('cards');
+  const [viewMode, setViewMode] = React.useState<'cards' | 'weekly' | 'list'>('cards');
   const [currentDate, setCurrentDate] = React.useState(new Date());
 
 
@@ -266,29 +266,6 @@ export default function EducationPage() {
              )
         }
         
-        if (viewMode === 'monthly') {
-            const monthStart = startOfMonth(currentDate);
-            const monthDays = Array.from({ length: 42 }).map((_, i) => addDays(startOfWeek(monthStart, {weekStartsOn: 1}), i));
-            
-            return (
-                <div className="grid grid-cols-7 border-l border-t rounded-lg overflow-hidden">
-                    {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => (
-                        <div key={day} className="p-2 text-center border-r border-b font-semibold text-sm">{day}</div>
-                    ))}
-                    {monthDays.map(day => (
-                        <div key={day.toISOString()} className={cn("p-1.5 border-r border-b h-32 flex flex-col", format(day, 'M') !== format(currentDate, 'M') && 'bg-muted/50')}>
-                           <span className={cn("font-semibold", isToday(day) && 'text-primary')}>{format(day, 'd')}</span>
-                           <div className="space-y-0.5 overflow-y-auto mt-1">
-                               {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
-                                   <div key={a.id} className={cn("h-1.5 w-full rounded-full", a.type === 'test' ? 'bg-red-500' : 'bg-blue-500')} title={a.title}></div>
-                               ))}
-                           </div>
-                        </div>
-                    ))}
-                </div>
-            )
-        }
-        
         if (viewMode === 'list') {
             const now = new Date();
             const pendingAssignments = allAssignments.filter(a => !a.isCompleted);
@@ -422,21 +399,20 @@ export default function EducationPage() {
       </div>
       
        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="cards">Kartlar</TabsTrigger>
                 <TabsTrigger value="weekly">Haftalık</TabsTrigger>
-                <TabsTrigger value="monthly">Aylık</TabsTrigger>
                 <TabsTrigger value="list">Liste</TabsTrigger>
             </TabsList>
             
-             {(viewMode === 'weekly' || viewMode === 'monthly') && (
+             {(viewMode === 'weekly') && (
                 <div className="flex items-center justify-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => viewMode === 'weekly' ? addDays(d, -7) : subMonths(d, 1))}><ChevronLeft className="h-4 w-4"/></Button>
+                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, -7))}><ChevronLeft className="h-4 w-4"/></Button>
                     <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
                      <p className="font-semibold text-center text-lg w-48">
-                       {format(currentDate, viewMode === 'weekly' ? 'dd MMMM yyyy' : 'MMMM yyyy', { locale: tr })}
+                       {format(currentDate, 'dd MMMM yyyy', { locale: tr })}
                     </p>
-                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => viewMode === 'weekly' ? addDays(d, 7) : addMonths(d, 1))}><ChevronRight className="h-4 w-4"/></Button>
+                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, 7))}><ChevronRight className="h-4 w-4"/></Button>
                 </div>
              )}
 
