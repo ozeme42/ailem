@@ -431,11 +431,11 @@ export default function ShoppingPage() {
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-yellow-100 dark:bg-yellow-900/40">
-                        <div className="divide-y divide-yellow-200 dark:divide-yellow-800/50">
+                        <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
                             {sortedPendingCategories.map(([category, items]) => (
                                 <div key={category} className="px-4">
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                    <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
+                                    <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
                                       {items.map((item, index) => (
                                           <div key={item.id} className="flex items-center gap-4 py-3 group">
                                               <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md" />
@@ -470,7 +470,7 @@ export default function ShoppingPage() {
                             </div>
                         ) : (
                         <div>
-                            <div className="flex justify-end p-2 border-b border-yellow-200 dark:border-yellow-800/50">
+                            <div className="flex justify-end p-2 border-b border-yellow-300 dark:divide-yellow-700/50">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2"/>Alınanları Temizle</Button></AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -479,11 +479,11 @@ export default function ShoppingPage() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </div>
-                             <div className="divide-y divide-yellow-200 dark:divide-yellow-800/50">
+                             <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
                                 {sortedBoughtCategories.map(([category, items]) => (
                                     <div key={category} className="px-4">
                                         {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                        <div className="divide-y divide-yellow-200 dark:divide-yellow-800/20">
+                                        <div className="divide-y divide-yellow-300 dark:divide-yellow-700/50">
                                             {items.map((item) => (
                                                 <div key={item.id} className="flex items-center gap-4 py-3 group">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
