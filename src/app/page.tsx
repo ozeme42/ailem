@@ -301,7 +301,12 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4 p-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl shadow-lg">
+      <header className={cn(
+        "flex items-center justify-between gap-4 p-4",
+        "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg",
+        "-mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6", // Full-bleed on mobile
+        "rounded-b-xl"
+      )}>
           <div className="flex items-center gap-4">
               <SidebarTrigger />
               <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
