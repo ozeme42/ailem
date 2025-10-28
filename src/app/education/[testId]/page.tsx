@@ -209,7 +209,7 @@ export default function OpticalFormPage() {
 
         const unevaluatedCount = Object.values(manualEvaluations).filter(s => s === 'unevaluated').length;
         
-        if (unevaluatedCount > 0 && test.openEnded) {
+        if (unevaluatedCount > 0 && (test.openEnded || test.sourceType === 'exam')) {
             toast({
                 title: "Eksik Değerlendirme",
                 description: `${unevaluatedCount} soru henüz değerlendirilmedi.`,
@@ -226,8 +226,10 @@ export default function OpticalFormPage() {
                 incorrectAnswers: incorrect,
                 emptyAnswers: empty,
                 score: score,
-                studentTextAnswersEvaluation: manualEvaluations,
             };
+             if (test.openEnded) {
+                updatedData.studentTextAnswersEvaluation = manualEvaluations;
+             }
             await updateTest(test.id, updatedData);
             toast({ title: "Değerlendirme Kaydedildi!", description: "Test sonuçları başarıyla güncellendi." });
              if (test.familyId && test.studentId) {
@@ -386,6 +388,50 @@ export default function OpticalFormPage() {
             )
         }
 
+        // Teacher/Parent grading view
+        if (test.openEnded) {
+            return (
+                <div className="container mx-auto py-8 space-y-6">
+                     <header className="mb-4">
+                        <Button variant="ghost" onClick={() => router.back()}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Geri
+                        </Button>
+                    </header>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-2xl">{test.title} - Manuel Değerlendirme</CardTitle>
+                            <CardDescription>{test.subject}</CardDescription>
+                        </CardHeader>
+                    </Card>
+
+                     <div className="space-y-4">
+                        {(test.questions && test.questions.length > 0) ? (test.questions.map((question) => {
+                            const qNumStr = question.questionNumber.toString();
+                            const studentAns = test.studentTextAnswers?.[qNumStr];
+                            const evalStatus = manualEvaluations[qNumStr];
+
+                            return (
+                                <Card key={qNumStr} className="p-4">
+                                    <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
+                                    {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
+                                    <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
+                                   <div className="flex gap-2 justify-end">
+                                        <Button size="sm" variant={evalStatus === 'correct' ? 'default' : 'outline'} className="bg-green-100 text-green-800 data-[state=active]:bg-green-600" onClick={() => handleEvaluationChange(qNumStr, 'correct')}>Doğru</Button>
+                                        <Button size="sm" variant={evalStatus === 'incorrect' ? 'destructive' : 'outline'} onClick={() => handleEvaluationChange(qNumStr, 'incorrect')}>Yanlış</Button>
+                                        <Button size="sm" variant={evalStatus === 'empty' ? 'secondary' : 'outline'} onClick={() => handleEvaluationChange(qNumStr, 'empty')}>Boş</Button>
+                                    </div>
+                                </Card>
+                            )
+                        })) : (
+                            <Card><CardContent className="p-6">Bu test için soru görselleri bulunmuyor. Lütfen doğru, yanlış, boş sayılarını manuel girin.</CardContent></Card>
+                        )}
+                    </div>
+                    <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full">Değerlendirmeyi Tamamla ve Kaydet</Button>
+                </div>
+            )
+        }
+        
+         // Optical Form for MCQ grading (including practice exams)
         return (
             <div className="container mx-auto py-8 space-y-6">
                  <header className="mb-4">
@@ -395,44 +441,37 @@ export default function OpticalFormPage() {
                 </header>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-2xl">{test.title} - Manuel Değerlendirme</CardTitle>
+                        <CardTitle className="text-2xl">{test.title} - Optik Form Değerlendirme</CardTitle>
                         <CardDescription>{test.subject}</CardDescription>
                     </CardHeader>
                 </Card>
-
-                 <div className="space-y-4">
-                    {(test.questions && test.questions.length > 0) ? (test.questions.map((question) => {
-                        const qNumStr = question.questionNumber.toString();
-                        const studentAns = test.openEnded ? test.studentTextAnswers?.[qNumStr] : test.studentAnswers?.[qNumStr];
-                        const correctAns = test.openEnded ? undefined : test.answerKey?.[qNumStr];
+                <div className="space-y-4">
+                   {Array.from({ length: test.questionCount }).map((_, index) => {
+                        const qNumStr = (index + 1).toString();
+                        const studentAns = test.studentAnswers?.[qNumStr];
+                        const correctAns = test.answerKey?.[qNumStr];
                         const evalStatus = manualEvaluations[qNumStr];
 
                         return (
-                            <Card key={qNumStr} className="p-4">
-                                <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
-                                {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
-                                {test.openEnded ? (
-                                    <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
-                                ) : (
-                                     <div className="flex gap-4 items-center mb-4">
-                                        <div>Öğrenci Cevabı: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'BOŞ'}</Badge></div>
-                                        {correctAns && <div>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></div>}
-                                    </div>
-                                )}
-                               <div className="flex gap-2 justify-end">
+                            <div key={qNumStr} className="flex items-center gap-4 p-3 rounded-lg border">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNumStr}</div>
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <div>Öğrenci Cevabı: <Badge variant={evalStatus === 'correct' ? 'default' : evalStatus === 'incorrect' ? 'destructive' : 'secondary'}>{studentAns || 'BOŞ'}</Badge></div>
+                                    {correctAns && <div>Doğru Cevap: <Badge variant="default" className="bg-green-600">{correctAns}</Badge></div>}
+                                </div>
+                                <div className="ml-auto flex gap-2">
                                     <Button size="sm" variant={evalStatus === 'correct' ? 'default' : 'outline'} className="bg-green-100 text-green-800 data-[state=active]:bg-green-600" onClick={() => handleEvaluationChange(qNumStr, 'correct')}>Doğru</Button>
                                     <Button size="sm" variant={evalStatus === 'incorrect' ? 'destructive' : 'outline'} onClick={() => handleEvaluationChange(qNumStr, 'incorrect')}>Yanlış</Button>
                                     <Button size="sm" variant={evalStatus === 'empty' ? 'secondary' : 'outline'} onClick={() => handleEvaluationChange(qNumStr, 'empty')}>Boş</Button>
                                 </div>
-                            </Card>
+                            </div>
                         )
-                    })) : (
-                        <Card><CardContent className="p-6">Bu test için soru görselleri bulunmuyor. Lütfen doğru, yanlış, boş sayılarını manuel girin.</CardContent></Card>
-                    )}
+                   })}
                 </div>
-                <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full">Değerlendirmeyi Tamamla ve Kaydet</Button>
+                 <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full">Değerlendirmeyi Tamamla ve Kaydet</Button>
             </div>
         )
+
     }
 
     const handleMcqAnswerChange = (questionNumber: number, value: string) => {
@@ -622,5 +661,7 @@ export default function OpticalFormPage() {
         </div>
     );
 }
+
+    
 
     
