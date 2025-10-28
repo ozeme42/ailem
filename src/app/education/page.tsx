@@ -271,18 +271,41 @@ export default function EducationPage() {
         }
         
         if (viewMode === 'list') {
+            const pendingAssignments = allAssignments.filter(a => !a.isCompleted);
+            const completedAssignments = allAssignments.filter(a => a.isCompleted).sort((a,b) => compareDesc(a.endDate, b.endDate));
+            
             return (
-                <div className="space-y-2">
-                    {allAssignments.map(a => (
-                        <Card key={a.id} className="flex items-center p-3 gap-3">
-                            <a.Icon className={cn("h-5 w-5 shrink-0", a.type === 'test' ? 'text-red-500' : 'text-blue-500')} />
-                            <div className="flex-grow">
-                                <p className="font-semibold">{a.title}</p>
-                                <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
-                            </div>
-                            <Badge variant={a.isCompleted ? 'default' : 'outline'}>{a.isCompleted ? 'Tamamlandı' : 'Bekliyor'}</Badge>
-                        </Card>
-                    ))}
+                 <div className="space-y-6">
+                    <div>
+                        <h3 className="text-lg font-semibold mb-2">Devam Edenler ({pendingAssignments.length})</h3>
+                        <div className="space-y-2">
+                            {pendingAssignments.length > 0 ? pendingAssignments.map(a => (
+                                <Card key={a.id} className="flex items-center p-3 gap-3">
+                                    <a.Icon className={cn("h-5 w-5 shrink-0", a.type === 'test' ? 'text-red-500' : 'text-blue-500')} />
+                                    <div className="flex-grow">
+                                        <p className="font-semibold">{a.title}</p>
+                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})} tarihinde bitiyor</p>
+                                    </div>
+                                    <Badge variant="outline">Bekliyor</Badge>
+                                </Card>
+                            )) : <Card className="p-4 text-center text-muted-foreground text-sm">Bekleyen görev yok.</Card>}
+                        </div>
+                    </div>
+                     <div>
+                        <h3 className="text-lg font-semibold mb-2">Tamamlananlar ({completedAssignments.length})</h3>
+                         <div className="space-y-2">
+                             {completedAssignments.length > 0 ? completedAssignments.map(a => (
+                                <Card key={a.id} className="flex items-center p-3 gap-3 bg-muted/50">
+                                    <a.Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                                    <div className="flex-grow">
+                                        <p className="font-semibold text-muted-foreground line-through">{a.title}</p>
+                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})}</p>
+                                    </div>
+                                    <Badge variant="secondary">Tamamlandı</Badge>
+                                </Card>
+                            )) : <Card className="p-4 text-center text-muted-foreground text-sm">Henüz tamamlanan görev yok.</Card>}
+                        </div>
+                    </div>
                 </div>
             )
         }
@@ -447,3 +470,4 @@ export default function EducationPage() {
     </>
   );
 }
+
