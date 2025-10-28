@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -445,6 +446,7 @@ export default function ShoppingPage() {
                                               <div className={cn("flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity", item.isBought && "opacity-100")}>
                                                   {item.isBought && (
                                                       <>
+                                                      <Separator orientation="vertical" className="h-6" />
                                                       <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
                                                         <Archive className="h-4 w-4" />
                                                       </Button>
