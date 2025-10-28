@@ -440,7 +440,7 @@ export default function ShoppingPage() {
                                           <div key={item.id} className="flex items-center gap-4 py-3 group">
                                               <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md" />
                                               <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
-                                              <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <div className={cn("flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity", item.isBought && "opacity-100")}>
                                                   {item.isBought && (
                                                       <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
                                                         <Archive className="h-4 w-4" />
