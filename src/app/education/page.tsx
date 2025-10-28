@@ -396,10 +396,24 @@ export default function EducationPage() {
                         <CardContent className="space-y-3">
                         {tests.length > 0 ? (
                             tests.filter(test => test.status === 'Atandı').map(test => {
+                                const categoryName = getCategoryName(test);
+                                const Icon = categoryIcons[categoryName] || FileText;
+                                const colorClass = categoryColors[categoryName] || 'border-gray-500/80 text-gray-600';
+
                                 return (
-                                    <Card key={test.id} className="flex flex-col sm:flex-row justify-between items-center p-4">
-                                        <div className="flex-grow"><Badge variant={"outline"}>{test.subject}</Badge><h3 className="font-semibold text-lg">{test.title}</h3><p className="text-sm text-muted-foreground">Son Teslim: {test.dueDate}</p></div>
-                                        <div className="flex items-center gap-2 mt-3 sm:mt-0"><Link href={`/education/${test.id}`}><Button>Teste Git</Button></Link></div>
+                                     <Card key={test.id} className={cn("overflow-hidden border-l-4", colorClass.replace('text-', 'border-'))}>
+                                        <div className="flex items-center p-4 gap-4">
+                                            <div className="flex-grow">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Icon className={cn("w-4 h-4", colorClass)} />
+                                                    <h3 className="font-semibold text-lg">{test.title}</h3>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground ml-6">Son Teslim: {test.dueDate}</p>
+                                            </div>
+                                            <Link href={`/education/${test.id}`} className="ml-auto">
+                                                <Button size="sm">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
+                                            </Link>
+                                        </div>
                                     </Card>
                                 );
                             })
