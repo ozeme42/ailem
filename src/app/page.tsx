@@ -414,7 +414,7 @@ export default function Home() {
                             <div className="-mx-6 px-6 overflow-x-auto pb-4 -mb-4">
                                 <div className="flex flex-nowrap gap-4">
                                     {latestBooks.map(book => (
-                                        <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="group/book relative w-40 sm:w-48 shrink-0 cursor-pointer">
+                                        <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="group/book relative w-32 sm:w-40 shrink-0 cursor-pointer">
                                             <Image 
                                                 src={book.image || `https://placehold.co/300x450.png`} 
                                                 alt={book.title} 
@@ -425,7 +425,7 @@ export default function Home() {
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
                                             <div className="absolute bottom-0 left-0 p-2 text-white">
-                                                <p className="font-bold text-xs whitespace-normal break-words line-clamp-2" title={book.title}>{book.title}</p>
+                                                <p className="font-bold text-[11px] leading-tight whitespace-normal break-words line-clamp-2" title={book.title}>{book.title}</p>
                                             </div>
                                         </div>
                                     ))}
