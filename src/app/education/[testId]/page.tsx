@@ -445,6 +445,7 @@ export default function OpticalFormPage() {
     
     // Check if test has images or not
     const hasImages = test.questions && test.questions.length > 0;
+    const options = ['A', 'B', 'C', 'D'];
 
     if (hasImages) {
         // Single question view for tests with images
@@ -501,7 +502,7 @@ export default function OpticalFormPage() {
                                                     />
                                                 ) : (
                                                     <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-4">
-                                                        {Object.keys(test.answerKey || {A: '', B: '', C: '', D: ''}).sort().map(option => (
+                                                        {options.map(option => (
                                                             <div key={option}><RadioGroupItem value={option} id={`q${qNum}-${option}`} className="sr-only" /><Label htmlFor={`q${qNum}-${option}`} className={cn("flex items-center justify-center w-12 h-12 text-xl font-bold rounded-lg border-2 cursor-pointer transition-colors", "hover:bg-accent hover:text-accent-foreground", mcqAnswers[qNum] === option ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input")}>{option}</Label></div>
                                                         ))}
                                                     </RadioGroup>
@@ -595,7 +596,7 @@ export default function OpticalFormPage() {
                                 />
                             ) : (
                                 <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(value) => handleMcqAnswerChange(qNum, value)} className="flex flex-wrap gap-x-4 gap-y-2">
-                                    {Object.keys(test.answerKey || {A:'', B:'', C:'', D:''}).sort().map(option => (
+                                    {options.map(option => (
                                         <div key={option} className="flex items-center space-x-2">
                                             <RadioGroupItem value={option} id={`q${qNum}-${option}`} />
                                             <Label htmlFor={`q${qNum}-${option}`}>{option}</Label>
@@ -621,6 +622,5 @@ export default function OpticalFormPage() {
         </div>
     );
 }
-
 
     

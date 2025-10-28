@@ -45,9 +45,9 @@ const formSchema = z.object({
   gradingType: z.enum(["auto", "manual"]).default("auto"),
   answerKey: z.record(z.string()).optional(),
   questions: z.array(z.object({
+    questionId: z.string(),
     questionNumber: z.number(),
     imageUrl: z.string().url("Geçerli bir görsel URL'si girilmelidir."),
-    questionId: z.string(),
   })).optional(),
   
   // Bank/Exam Fields
@@ -77,7 +77,7 @@ const formSchema = z.object({
 type NewTestFormProps = {
   students: FamilyMember[];
   bankQuestions: BankQuestion[];
-  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, questions?: BankQuestion[]) => void;
+  onAssign: (test: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, questions?: (QuickTestQuestion | BankQuestion)[]) => void;
   initialData?: Test | null;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
@@ -202,7 +202,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     
     values.studentIds.forEach(studentId => {
       let testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>;
-      let questionsForSubcollection: BankQuestion[] | undefined = undefined;
+      let questionsForSubcollection: (QuickTestQuestion | BankQuestion)[] | undefined = undefined;
 
       switch (values.activeTab) {
         case 'quick':
@@ -217,6 +217,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             answerKey: values.answerKey,
             questions: values.questions,
           };
+          questionsForSubcollection = values.questions;
           break;
         
         case 'bank':
@@ -240,7 +241,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             title: selectedExam.name,
             subject: 'Deneme Sınavı',
             studentId: studentId,
-            questionCount: selectedExam.subjects?.reduce((acc, s) => acc + s.questionCount, 0) || selectedExam.questions?.length || 0,
+            questionCount: selectedExam.subjects?.reduce((acc, s) => acc + s.questionCount, 0) || (selectedExam.questions || []).length || 0,
             assignedDate, dueDate,
             sourceType: 'exam',
             sourceId: selectedExam.id,
@@ -468,9 +469,5 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     </Tabs>
   );
 }
-
-    
-
-    
 
     
