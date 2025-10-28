@@ -163,7 +163,7 @@ export default function OpticalFormPage() {
                             const studentAns = currentTest.studentAnswers?.[qNumStr];
                             const correctAns = currentTest.answerKey?.[qNumStr];
 
-                            if (!studentAns) {
+                            if (!studentAns || studentAns === null) {
                                 initialEvals[qNumStr] = 'empty';
                             } else if (correctAns && studentAns === correctAns) {
                                 initialEvals[qNumStr] = 'correct';
@@ -661,6 +661,8 @@ export default function OpticalFormPage() {
         </div>
     );
 }
+
+    
 
     
 
