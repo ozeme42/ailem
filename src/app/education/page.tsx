@@ -221,26 +221,28 @@ export default function EducationPage() {
              const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
              
              return (
-                 <div className="border rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-7 border-b">
-                        {weekDays.map(day => (
+                 <div className="border rounded-lg overflow-hidden grid grid-cols-1 md:grid-cols-7">
+                    <div className="hidden md:grid md:grid-cols-7 col-span-full border-b">
+                         {weekDays.map(day => (
                             <div key={day.toISOString()} className="p-2 text-center border-r last:border-r-0">
                                 <p className="font-semibold text-sm capitalize">{format(day, 'EEE', {locale: tr})}</p>
-                                <p className="text-xs text-muted-foreground">{format(day, 'd')}</p>
                             </div>
                         ))}
                     </div>
-                    <div className="grid grid-cols-7 h-[60vh]">
-                       {weekDays.map(day => (
-                           <div key={day.toISOString()} className="p-2 border-r last:border-r-0 space-y-1 overflow-y-auto">
+                    {weekDays.map(day => (
+                       <div key={day.toISOString()} className="p-2 border-b md:border-b-0 md:border-r last:border-r-0 last:border-b-0 min-h-[10rem] flex flex-col md:flex-col">
+                           <div className="text-center md:text-left mb-2 md:mb-0">
+                                <p className="font-semibold text-sm capitalize">{format(day, 'EEE, d MMM', {locale: tr})}</p>
+                           </div>
+                           <div className="space-y-1 overflow-y-auto flex-grow mt-2">
                                {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
                                    <div key={a.id} className={cn("p-1.5 rounded-md text-xs", a.type === 'test' ? 'bg-red-500/10 text-red-900' : 'bg-blue-500/10 text-blue-900')}>
                                        <p className="font-semibold truncate flex items-center gap-1"><a.Icon className="h-3 w-3 shrink-0"/>{a.title}</p>
                                    </div>
                                ))}
                            </div>
-                       ))}
-                    </div>
+                       </div>
+                    ))}
                  </div>
              )
         }
