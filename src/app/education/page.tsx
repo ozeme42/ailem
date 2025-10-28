@@ -534,13 +534,26 @@ export default function EducationPage() {
                         <CardContent>
                         {pendingStudies.length > 0 ? (
                             <div className="space-y-2">
-                            {pendingStudies.map(study => (
-                                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 dark:bg-blue-500/20 dark:text-blue-200 hover:bg-blue-500/20">
-                                <Checkbox id={`study-${study.id}`} onCheckedChange={() => handleStudyAssignmentStatusChange(study)} className="border-primary"/>
-                                <div className="flex-grow"><label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label><p className="text-xs text-blue-800/80 dark:text-blue-300/80">{study.studyPlanTitle} - {study.subject}</p></div>
-                                <Badge variant="outline" className="text-xs">Bitiş: {format(parseISO(study.dueDate), "dd MMM", {locale: tr})}</Badge>
+                            {pendingStudies.map(study => {
+                                const dueDate = parseISO(study.dueDate);
+                                const now = new Date();
+                                const daysDiff = differenceInDays(dueDate, now);
+                                const isDue = isPast(dueDate) && !isToday(dueDate);
+                                return (
+                                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20">
+                                    <Checkbox id={`study-${study.id}`} onCheckedChange={() => handleStudyAssignmentStatusChange(study)} className="border-primary"/>
+                                    <div className="flex-grow">
+                                        <label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label>
+                                        <p className="text-xs text-blue-800/80 dark:text-blue-300/80">{study.studyPlanTitle} - {study.subject}</p>
+                                    </div>
+                                    {isDue
+                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                        : isToday(dueDate)
+                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                    }
                                 </div>
-                            ))}
+                            )})}
                             </div>
                         ) : (<p className="text-center text-muted-foreground p-4">Tamamlanmamış konu anlatımı görevi bulunmuyor.</p>)}
                         </CardContent>
