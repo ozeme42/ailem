@@ -5,6 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, Archive } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -21,7 +22,6 @@ import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
-import { Separator } from '@/components/ui/separator';
 
 
 const brightColors = [
@@ -489,7 +489,7 @@ export default function ShoppingPage() {
                                         <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                             {items.map((item) => (
                                                 <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
                                                         <Repeat className="h-4 w-4"/>
                                                     </Button>
                                                     <p className="font-semibold flex-grow line-through text-muted-foreground">{item.name}</p>
