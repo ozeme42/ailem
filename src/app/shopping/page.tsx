@@ -430,7 +430,7 @@ export default function ShoppingPage() {
                         <TabsTrigger value="pending">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
                         <TabsTrigger value="bought">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="pending" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
+                    <TabsContent value="pending" className="flex-grow bg-yellow-100 dark:bg-yellow-900/40">
                         <div className="divide-y divide-yellow-200 dark:divide-yellow-800/50">
                             {sortedPendingCategories.map(([category, items]) => (
                                 <div key={category} className="px-4">
@@ -463,7 +463,7 @@ export default function ShoppingPage() {
                             ))}
                         </div>
                     </TabsContent>
-                    <TabsContent value="bought" className="flex-grow bg-yellow-50 dark:bg-yellow-900/20">
+                    <TabsContent value="bought" className="flex-grow bg-yellow-100 dark:bg-yellow-900/40">
                         {boughtItems.length === 0 ? (
                         <div className="text-center py-16 text-muted-foreground">
                                 <p>Henüz alınan bir ürün yok.</p>
