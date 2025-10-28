@@ -15,9 +15,9 @@ export function PageHeader({ title, children }: PageHeaderProps) {
     <header className={cn(
         "flex flex-col items-start gap-4 p-4",
         "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg",
-        // Mobile: Full-width, top/sides flush, margin bottom.
-        "-m-4 mb-4",
-        // SM and up: Restore margins and add rounded corners.
+        // Mobile: Full-width, top/sides flush with sharp bottom corners
+        "-m-4 mb-4 rounded-b-none",
+        // SM and up: Restore margins and add rounded corners to all sides
         "sm:m-0 sm:mb-8 sm:rounded-xl"
     )}>
       <div className="w-full flex items-center justify-between gap-4">
