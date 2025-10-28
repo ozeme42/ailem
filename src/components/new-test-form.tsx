@@ -221,15 +221,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
         
         case 'bank':
           const selectedQuestionsFromBank = (values.selectedBankQuestions || []).map(qId => bankQuestions.find(bq => bq.id === qId)).filter((q): q is BankQuestion => !!q);
-          const isTestOpenEnded = selectedQuestionsFromBank.some(q => q.type === 'open_ended');
-
-          const answerKeyFromBank = selectedQuestionsFromBank.reduce((acc, q, index) => {
-              if (q.type !== 'open_ended' && q.correctAnswer) {
-                  acc[(index + 1).toString()] = q.correctAnswer;
-              }
-              return acc;
-          }, {} as AnswerKey);
-
+          
           testData = {
             title: values.title!,
             subject: values.subject!,
@@ -237,9 +229,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             questionCount: selectedQuestionsFromBank.length,
             assignedDate, dueDate,
             sourceType: 'bank',
-            gradingType: isTestOpenEnded ? 'manual' : 'auto',
-            openEnded: isTestOpenEnded,
-            answerKey: answerKeyFromBank,
+            // These will be determined by dataService
           };
           questionsForSubcollection = selectedQuestionsFromBank;
           break;
@@ -479,5 +469,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     </Tabs>
   );
 }
+
+    
 
     
