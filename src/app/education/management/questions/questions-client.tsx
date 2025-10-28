@@ -540,17 +540,8 @@ function AssignTestDialog({
   }, [selectedQuestions, form]);
 
   async function onSubmit(values: z.infer<typeof assignFormSchema>) {
-    
-    const isTestOpenEnded = selectedQuestions.some(q => q.type === 'open_ended');
-    const answerKey = selectedQuestions.reduce((acc, q, index) => {
-        if (q.type !== 'open_ended' && q.correctAnswer) {
-            acc[(index + 1).toString()] = q.correctAnswer;
-        }
-        return acc;
-    }, {} as { [key: string]: string });
-
     for (const studentId of values.studentIds) {
-        const testData: Omit<Test, 'id' | 'familyId'> = {
+        const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
             title: values.title,
             subject: values.subject,
             studentId,
@@ -558,11 +549,6 @@ function AssignTestDialog({
             assignedDate: format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }),
             dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
             sourceType: 'bank',
-            status: 'Atandı',
-            isArchived: false,
-            openEnded: isTestOpenEnded,
-            gradingType: isTestOpenEnded ? 'manual' : 'auto',
-            answerKey,
         };
         try {
             await addTest(testData, selectedQuestions);
@@ -636,6 +622,8 @@ function AssignTestDialog({
     </Dialog>
   );
 }
+
+    
 
     
 
