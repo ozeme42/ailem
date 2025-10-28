@@ -646,6 +646,22 @@ function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, o
     return (
         <Dialog>
              <Card className="flex flex-col group transition-all hover:shadow-md hover:-translate-y-0.5">
+                 {item.imageUrl && (
+                    <CardHeader className="p-0 relative">
+                        <DialogTrigger asChild>
+                            <div className="cursor-pointer aspect-video w-full relative">
+                                <Image
+                                    src={item.imageUrl}
+                                    alt={item.title}
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="rounded-t-lg"
+                                    data-ai-hint="religious illustration"
+                                />
+                            </div>
+                        </DialogTrigger>
+                    </CardHeader>
+                 )}
                 <DialogTrigger asChild>
                     <CardContent className="p-4 flex-grow cursor-pointer">
                         <CardTitle className="text-lg group-hover:text-primary transition-colors">{item.title}</CardTitle>
