@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, Archive, Separator } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, Archive } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -22,6 +22,7 @@ import { type ShoppingList, type ShoppingItem as ShoppingListItemType } from '@/
 import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
+import { Separator } from '@/components/ui/separator';
 
 
 const brightColors = [
@@ -388,7 +389,7 @@ export default function ShoppingPage() {
     });
     
     const sortedBoughtCategories = Object.entries(groupedBoughtItems).sort(([catA], [catB]) => {
-        return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
+        return (categoryOrder[catB] || 99) - (categoryOrder[catA] || 99);
     });
 
      return (
@@ -430,12 +431,12 @@ export default function ShoppingPage() {
                         <TabsTrigger value="pending" className="rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
                         <TabsTrigger value="bought" className="rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="pending" className="flex-grow bg-sky-100 dark:bg-sky-900/40">
-                        <div className="divide-y divide-sky-300 dark:divide-sky-700/50">
+                    <TabsContent value="pending" className="flex-grow bg-sky-50 dark:bg-sky-900/20">
+                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
                             {sortedPendingCategories.map(([category, items]) => (
                                 <div key={category} className="px-4">
                                     {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                    <div className="divide-y divide-sky-300 dark:divide-sky-700/50">
+                                    <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                       {items.map((item, index) => (
                                           <div key={item.id} className="flex items-center gap-4 py-3 group">
                                               <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md" />
@@ -467,7 +468,7 @@ export default function ShoppingPage() {
                             ))}
                         </div>
                     </TabsContent>
-                    <TabsContent value="bought" className="flex-grow bg-sky-100 dark:bg-sky-900/40">
+                    <TabsContent value="bought" className="flex-grow bg-sky-50 dark:bg-sky-900/20">
                         {boughtItems.length === 0 ? (
                         <div className="text-center py-16 text-muted-foreground">
                                 <p>Henüz alınan bir ürün yok.</p>
@@ -487,7 +488,7 @@ export default function ShoppingPage() {
                                 {sortedBoughtCategories.map(([category, items]) => (
                                     <div key={category} className="px-4">
                                         {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                        <div className="divide-y divide-sky-300 dark:divide-sky-700/50">
+                                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                             {items.map((item) => (
                                                 <div key={item.id} className="flex items-center gap-4 py-3 group">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
