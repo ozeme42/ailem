@@ -215,7 +215,6 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             sourceType: 'quick',
             gradingType: 'auto',
             answerKey: values.answerKey,
-            questions: values.questions,
           };
           questionsForSubcollection = values.questions;
           break;
@@ -226,10 +225,10 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
           testData = {
             title: values.title!,
             subject: values.subject!,
+            sourceType: 'bank',
             studentId: studentId,
             questionCount: selectedQuestionsFromBank.length,
             assignedDate, dueDate,
-            sourceType: 'bank',
           };
           questionsForSubcollection = selectedQuestionsFromBank;
           break;
@@ -279,8 +278,7 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="bank" disabled={!!initialData}>Soru Bankası</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="quick" disabled={!!initialData}>Hızlı Test</TabsTrigger>
         <TabsTrigger value="exam" disabled={!!initialData}>Deneme Sınavı</TabsTrigger>
       </TabsList>
