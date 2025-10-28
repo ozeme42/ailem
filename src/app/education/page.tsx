@@ -494,6 +494,10 @@ export default function EducationPage() {
                                 const categoryName = getCategoryName(test);
                                 const Icon = categoryIcons[categoryName] || FileText;
                                 const colorClass = categoryColors[categoryName] || 'border-gray-500/80 text-gray-600';
+                                const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                                const now = new Date();
+                                const daysDiff = differenceInDays(dueDate, now);
+                                const isTestDue = isPast(dueDate) && !isToday(dueDate);
 
                                 return (
                                      <Card key={test.id} className={cn("overflow-hidden border-l-4", colorClass.replace('text-', 'border-'))}>
@@ -503,7 +507,15 @@ export default function EducationPage() {
                                                     <Icon className={cn("w-4 h-4", colorClass)} />
                                                     <h3 className="font-semibold text-lg">{test.title}</h3>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground ml-6">Son Teslim: {test.dueDate}</p>
+                                                <div className="flex items-center gap-4 ml-6">
+                                                    <p className="text-sm text-muted-foreground">Son Teslim: {test.dueDate}</p>
+                                                     {isTestDue
+                                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                                        : isToday(dueDate)
+                                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                                    }
+                                                </div>
                                             </div>
                                             <Link href={`/education/${test.id}`} className="ml-auto">
                                                 <Button size="sm">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
@@ -540,3 +552,4 @@ export default function EducationPage() {
     </>
   );
 }
+
