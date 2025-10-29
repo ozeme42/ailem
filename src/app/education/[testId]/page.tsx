@@ -42,10 +42,13 @@ function formatTime(seconds: number) {
 
 function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeUp: () => void }) {
   const [timeLeft, setTimeLeft] = React.useState(durationMinutes * 60);
+  const [isRunning, setIsRunning] = React.useState(true);
 
   React.useEffect(() => {
-    if (timeLeft <= 0) {
-      onTimeUp();
+    if (!isRunning || timeLeft <= 0) {
+      if (timeLeft <= 0) {
+          onTimeUp();
+      }
       return;
     }
 
@@ -54,12 +57,17 @@ function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeU
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft, onTimeUp]);
+  }, [timeLeft, onTimeUp, isRunning]);
 
   return (
-    <div className="flex items-center gap-2 font-semibold text-lg">
-      <Clock className="h-5 w-5" />
-      <span>{formatTime(timeLeft)}</span>
+    <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 font-semibold text-lg bg-background p-2 rounded-lg border">
+            <Clock className="h-5 w-5" />
+            <span>{formatTime(timeLeft)}</span>
+        </div>
+        <Button size="icon" variant="outline" onClick={() => setIsRunning(!isRunning)}>
+            {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+        </Button>
     </div>
   );
 }
@@ -547,7 +555,7 @@ export default function OpticalFormPage() {
     
     const hasImages = test.questions && test.questions.length > 0;
     const options = ['A', 'B', 'C', 'D'];
-    const testDurationMinutes = test.durationMinutes || (test.questionCount * 2);
+    const testDurationMinutes = test.questionCount * 2;
 
     if (hasImages) {
         // Single question view for tests with images
@@ -582,13 +590,13 @@ export default function OpticalFormPage() {
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-2xl">{test.title}</CardTitle>
-                                <CardDescription>{test.subject}</CardDescription>
-                                {testDurationMinutes > 0 && (
-                                    <Card className="mt-4 p-2 w-fit">
-                                        <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
-                                    </Card>
-                                )}
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <CardTitle className="text-2xl">{test.title}</CardTitle>
+                                        <CardDescription>{test.subject}</CardDescription>
+                                    </div>
+                                    <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                                </div>
                             </CardHeader>
                             <CardContent className="p-0 sm:p-0">
                                 <div className="space-y-4">
@@ -698,13 +706,13 @@ export default function OpticalFormPage() {
             </header>
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl">{test.title}</CardTitle>
-                    <CardDescription>{test.subject}</CardDescription>
-                    {testDurationMinutes > 0 && (
-                        <Card className="mt-4 p-2 w-fit">
-                            <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
-                        </Card>
-                    )}
+                     <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="text-2xl">{test.title}</CardTitle>
+                            <CardDescription>{test.subject}</CardDescription>
+                        </div>
+                        <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
