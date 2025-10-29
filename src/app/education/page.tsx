@@ -490,50 +490,63 @@ export default function EducationPage() {
                            </CardFooter>
                         </Card>
                     )}
+                    
+                    <div className="space-y-8">
+                      <div>
+                        <h2 className="text-xl font-bold mb-4">Test Kategorileri</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {testsByCategory.map(([category, data]) => {
+                                if (data.total === 0) return null;
+                                const Icon = categoryIcons[category] || FileText;
+                                const colorClass = categoryCardColors[category] || 'bg-gray-500/10 text-gray-800';
+                                const progressColor = categoryProgressColors[category] || 'bg-gray-500';
+                                const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
+                    
+                                return (
+                                    <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
+                                        <Card className={cn("flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                                            <CardHeader className="text-center">
+                                                <Icon className="w-16 h-16 mx-auto mb-4 opacity-80" />
+                                                <CardTitle className="text-xl text-current">{category}</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
+                                                <p className="text-lg font-semibold">{data.total} Adet Sınav</p>
+                                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
+                                            </CardContent>
+                                            <CardFooter className="p-0">
+                                                <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
+                                            </CardFooter>
+                                        </Card>
+                                    </Link>
+                                )
+                            })}
+                        </div>
+                      </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                        {studyPlanStats.map(({ plan, progress }) => (
-                            <Link key={plan.id} href={`/education/study`} className="block group">
-                                <Card className="flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full bg-pink-500/10 text-pink-900 dark:bg-pink-500/10 dark:text-pink-200">
-                                     <CardHeader className="text-center">
-                                        <BookHeart className="w-16 h-16 mx-auto mb-4 opacity-80 text-current" />
-                                        <CardTitle className="text-xl text-current">{plan.title}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
-                                         <p className="text-lg font-semibold">{progress.total} Konu</p>
-                                         <p className="text-sm text-green-600 font-medium">{progress.completed} Tamamlandı</p>
-                                    </CardContent>
-                                    <CardFooter className="p-0">
-                                        <Progress value={(progress.completed / progress.total) * 100} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName="bg-pink-500" />
-                                    </CardFooter>
-                                </Card>
-                            </Link>
-                        ))}
-                        {testsByCategory.map(([category, data]) => {
-                            if (data.total === 0) return null;
-                            const Icon = categoryIcons[category] || FileText;
-                            const colorClass = categoryCardColors[category] || 'bg-gray-500/10 text-gray-800';
-                            const progressColor = categoryProgressColors[category] || 'bg-gray-500';
-                            const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
-                
-                            return (
-                                <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
-                                    <Card className={cn("flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                      {studyPlanStats.length > 0 && (
+                        <div>
+                          <h2 className="text-xl font-bold mb-4">Konu Anlatım Planları</h2>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                             {studyPlanStats.map(({ plan, progress }) => (
+                                <Link key={plan.id} href={`/education/study`} className="block group">
+                                    <Card className="flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full bg-pink-500/10 text-pink-900 dark:bg-pink-500/10 dark:text-pink-200">
                                         <CardHeader className="text-center">
-                                            <Icon className="w-16 h-16 mx-auto mb-4 opacity-80" />
-                                            <CardTitle className="text-xl text-current">{category}</CardTitle>
+                                            <BookHeart className="w-16 h-16 mx-auto mb-4 opacity-80 text-current" />
+                                            <CardTitle className="text-xl text-current">{plan.title}</CardTitle>
                                         </CardHeader>
                                         <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
-                                            <p className="text-lg font-semibold">{data.total} Adet Sınav</p>
-                                            <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
+                                            <p className="text-lg font-semibold">{progress.total} Konu</p>
+                                            <p className="text-sm text-green-600 font-medium">{progress.completed} Tamamlandı</p>
                                         </CardContent>
                                         <CardFooter className="p-0">
-                                            <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
+                                            <Progress value={(progress.completed / progress.total) * 100} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName="bg-pink-500" />
                                         </CardFooter>
                                     </Card>
                                 </Link>
-                            )
-                        })}
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <Card className="mt-8">
@@ -586,5 +599,7 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
 
     
