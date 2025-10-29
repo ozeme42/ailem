@@ -188,6 +188,30 @@ export default function EducationPage() {
     });
 
   }, [tests]);
+  
+    const studyPlanStats = React.useMemo(() => {
+        if (!selectedStudent) return [];
+
+        const studentAssignments = studyAssignments.filter(sa => sa.studentId === selectedStudent.id);
+        const assignmentsByPlan = new Map<string, { completed: number, total: number }>();
+        
+        studentAssignments.forEach(sa => {
+            const current = assignmentsByPlan.get(sa.studyPlanId) || { completed: 0, total: 0 };
+            current.total++;
+            if (sa.status === 'completed') {
+                current.completed++;
+            }
+            assignmentsByPlan.set(sa.studyPlanId, current);
+        });
+
+        return studyPlans
+            .filter(plan => assignmentsByPlan.has(plan.id))
+            .map(plan => ({
+                plan,
+                progress: assignmentsByPlan.get(plan.id)!,
+            }));
+    }, [selectedStudent, studyPlans, studyAssignments]);
+
 
   const handleStudyAssignmentStatusChange = async (assignment: StudyAssignment) => {
     const newStatus = assignment.status === 'completed' ? 'assigned' : 'completed';
@@ -439,11 +463,10 @@ export default function EducationPage() {
             {viewMode === 'cards' ? (
                  <>
                     {selectedStudent && (
-                        <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="block mb-8 group">
-                        <Card className="transition-all duration-300 group-hover:shadow-primary/20 group-hover:border-primary/50 group-hover:shadow-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                        <Card className="transition-all duration-300 mb-8 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-3"><BarChart3/> Genel Durum</CardTitle>
-                                <CardDescription className="text-white/80">{selectedStudent.name} için genel başarı durumu özeti. Detaylar için tıklayın.</CardDescription>
+                                <CardDescription className="text-white/80">{selectedStudent.name} için genel başarı durumu özeti.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-2 gap-6 items-center">
@@ -458,37 +481,60 @@ export default function EducationPage() {
                                     </div>
                                 </div>
                             </CardContent>
+                            <CardFooter>
+                                <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="w-full">
+                                    <Button variant="secondary" className="w-full bg-white/20 text-white hover:bg-white/30">
+                                        Tüm İstatistikleri Gör <ArrowRight className="h-4 w-4 ml-2"/>
+                                    </Button>
+                                </Link>
+                           </CardFooter>
                         </Card>
-                        </Link>
                     )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                            {testsByCategory.map(([category, data]) => {
-                                if (data.total === 0) return null;
-                                const Icon = categoryIcons[category] || FileText;
-                                const colorClass = categoryCardColors[category] || 'bg-gray-500/10 text-gray-800';
-                                const progressColor = categoryProgressColors[category] || 'bg-gray-500';
-                                const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
-                    
-                                return (
-                                    <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
-                                        <Card className={cn("flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
-                                            <CardHeader className="text-center">
-                                                <Icon className="w-16 h-16 mx-auto mb-4 opacity-80" />
-                                                <CardTitle className="text-xl text-current">{category}</CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
-                                                <p className="text-lg font-semibold">{data.total} Adet Sınav</p>
-                                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
-                                            </CardContent>
-                                            <CardFooter className="p-0">
-                                                <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
-                                            </CardFooter>
-                                        </Card>
-                                    </Link>
-                                )
-                            })}
-                        </div>
+                        {studyPlanStats.map(({ plan, progress }) => (
+                            <Link key={plan.id} href={`/education/study`} className="block group">
+                                <Card className="flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full bg-pink-500/10 text-pink-900 dark:bg-pink-500/10 dark:text-pink-200">
+                                     <CardHeader className="text-center">
+                                        <BookHeart className="w-16 h-16 mx-auto mb-4 opacity-80 text-current" />
+                                        <CardTitle className="text-xl text-current">{plan.title}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
+                                         <p className="text-lg font-semibold">{progress.total} Konu</p>
+                                         <p className="text-sm text-green-600 font-medium">{progress.completed} Tamamlandı</p>
+                                    </CardContent>
+                                    <CardFooter className="p-0">
+                                        <Progress value={(progress.completed / progress.total) * 100} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName="bg-pink-500" />
+                                    </CardFooter>
+                                </Card>
+                            </Link>
+                        ))}
+                        {testsByCategory.map(([category, data]) => {
+                            if (data.total === 0) return null;
+                            const Icon = categoryIcons[category] || FileText;
+                            const colorClass = categoryCardColors[category] || 'bg-gray-500/10 text-gray-800';
+                            const progressColor = categoryProgressColors[category] || 'bg-gray-500';
+                            const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
+                
+                            return (
+                                <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
+                                    <Card className={cn("flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                                        <CardHeader className="text-center">
+                                            <Icon className="w-16 h-16 mx-auto mb-4 opacity-80" />
+                                            <CardTitle className="text-xl text-current">{category}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
+                                            <p className="text-lg font-semibold">{data.total} Adet Sınav</p>
+                                            <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
+                                        </CardContent>
+                                        <CardFooter className="p-0">
+                                            <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
+                                        </CardFooter>
+                                    </Card>
+                                </Link>
+                            )
+                        })}
+                    </div>
                     
                     <Card className="mt-8">
                         <CardHeader><CardTitle>Çözülecek Testler</CardTitle><CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription></CardHeader>
@@ -533,52 +579,6 @@ export default function EducationPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card className="mt-8">
-                        <CardHeader>
-                            <CardTitle>Konu Anlatımı Takibi</CardTitle>
-                            <CardDescription>{selectedStudent?.name} için atanmış konu anlatımı görevleri.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {pendingStudies.length > 0 ? (
-                                pendingStudies.map(study => (
-                                    <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20">
-                                        <Checkbox 
-                                            id={`study-${study.id}`} 
-                                            onCheckedChange={() => handleStudyAssignmentStatusChange(study)} 
-                                            className="border-primary"
-                                        />
-                                        <div className="flex-grow">
-                                            <label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label>
-                                            <p className="text-xs text-blue-800/80 dark:text-blue-300/80">{study.studyPlanTitle} - {study.subject}</p>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-center text-muted-foreground p-4">Tamamlanmamış konu anlatımı görevi bulunmuyor.</p>
-                            )}
-
-                            {completedStudies.length > 0 && (
-                                <Accordion type="single" collapsible className="w-full pt-4">
-                                    <AccordionItem value="item-1" className="border-b-0">
-                                        <AccordionTrigger className="text-sm text-muted-foreground hover:no-underline justify-start gap-1 p-1">
-                                            Tamamlanan {completedStudies.length} konuyu göster
-                                        </AccordionTrigger>
-                                        <AccordionContent className="space-y-2 pt-2">
-                                            {completedStudies.map(study => (
-                                                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-500/10">
-                                                    <Check className="h-4 w-4 text-gray-500" />
-                                                    <div className="truncate">
-                                                        <p className="font-semibold truncate text-sm text-muted-foreground line-through">{study.topic}</p>
-                                                        <p className="text-xs text-muted-foreground/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
-                            )}
-                        </CardContent>
-                    </Card>
                  </>
             ) : renderCalendarView() }
 
