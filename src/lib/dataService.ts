@@ -761,38 +761,43 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questionsForSubcollection?: BankQuestion[]) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questionsForSubcollection?: (BankQuestion | QuickTestQuestion)[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
 
-    const batch = writeBatch(db);
     const testDocRef = doc(collection(db, 'tests'));
     
     // Determine openEnded and gradingType from questions if provided
     let isTestOpenEnded = data.openEnded || false;
     let questionsForTestDoc: QuickTestQuestion[] = [];
-    const questionsToSave = questionsForSubcollection ? questionsForSubcollection : data.questions as BankQuestion[];
-
-    if (questionsToSave && questionsToSave.length > 0) {
-        isTestOpenEnded = questionsToSave.some(q => q.type === 'open_ended');
-        questionsForTestDoc = questionsToSave.map((q, index) => ({
-            questionId: q.id,
-            questionNumber: index + 1,
-            imageUrl: q.imageUrl,
-        }));
-    }
     
+    if (questionsForSubcollection && questionsForSubcollection.length > 0) {
+        const hasOpenEnded = questionsForSubcollection.some(q => 'type' in q && q.type === 'open_ended');
+        if (hasOpenEnded) {
+            isTestOpenEnded = true;
+        }
+
+        questionsForTestDoc = questionsForSubcollection.map((q, index) => {
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
+            return {
+                questionId: questionId,
+                questionNumber: index + 1,
+                imageUrl: q.imageUrl,
+            };
+        });
+    }
+
+    const { questions, ...restOfData } = data; // Exclude questions from the main data object if it exists
+
     const finalTestData: Omit<Test, 'id'> = {
-        ...data,
-        questions: questionsForTestDoc, // This is the crucial part
+        ...restOfData,
+        questions: questionsForTestDoc,
         familyId,
         openEnded: isTestOpenEnded,
         gradingType: isTestOpenEnded ? 'manual' : 'auto',
     };
 
-    batch.set(testDocRef, removeUndefined(finalTestData));
-    
-    await batch.commit();
+    await setDoc(testDocRef, removeUndefined(finalTestData));
 };
 
 
@@ -1208,11 +1213,26 @@ export const updateTask = async (id: string, data: Partial<Task>) => {
     await updateDoc(taskRef, updateData);
 };
 
-export const updateTest = async (id: string, updateData: Partial<Omit<Test, 'id'>>) => {
+export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'familyId'>>, questionsForSubcollection?: (BankQuestion | QuickTestQuestion)[]) => {
     const testDocRef = doc(db, 'tests', id);
-    const cleanedData = removeUndefined(updateData);
-    await updateDoc(testDocRef, cleanedData);
+    let finalData = removeUndefined(data);
+
+    // If questions are provided, process and include them in the update
+    if (questionsForSubcollection && questionsForSubcollection.length > 0) {
+        const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
+            return {
+                questionId: questionId,
+                questionNumber: index + 1,
+                imageUrl: q.imageUrl,
+            };
+        });
+        finalData = { ...finalData, questions: questionsForTestDoc };
+    }
+
+    await updateDoc(testDocRef, finalData);
 };
+
 
 
 // Ambient Sounds
@@ -1754,7 +1774,7 @@ export const deleteTransaction = async (id: string) => {
     const accountSnap = await getDoc(accountRef);
     if (accountSnap.exists()) {
         const currentBalance = accountSnap.data().balance;
-        const newBalance = data.type === 'income' ? currentBalance - data.amount : currentBalance + data.amount;
+        const newBalance = data.type === 'income' ? currentBalance - data.amount : currentBalance - data.amount;
         batch.update(accountRef, { balance: newBalance });
     }
 
@@ -1970,6 +1990,8 @@ export const updateNotebookFolder = async (notebookId: string, sectionId: string
         await batch.commit();
     }
 };
+    
+
     
 
     
