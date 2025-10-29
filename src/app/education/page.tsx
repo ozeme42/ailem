@@ -481,7 +481,7 @@ export default function EducationPage() {
                                     </div>
                                 </div>
                             </CardContent>
-                            <CardFooter>
+                             <CardFooter>
                                 <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="w-full">
                                     <Button variant="secondary" className="w-full bg-white/20 text-white hover:bg-white/30">
                                         Tüm İstatistikleri Gör <ArrowRight className="h-4 w-4 ml-2"/>
@@ -523,6 +523,52 @@ export default function EducationPage() {
                         </div>
                       </div>
 
+                       <Card>
+                            <CardHeader>
+                                <CardTitle>Çözülecek Testler</CardTitle>
+                                <CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                            {tests.length > 0 ? (
+                                tests.filter(test => test.status === 'Atandı').map(test => {
+                                    const categoryName = getCategoryName(test);
+                                    const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
+                                    const iconColor = `text-${categoryColors[categoryName] || 'gray-500'}`;
+                                    const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                                    const now = new Date();
+                                    const daysDiff = differenceInDays(dueDate, now);
+                                    const isTestDue = isPast(dueDate) && !isToday(dueDate);
+
+                                    return (
+                                        <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
+                                            <div className="flex items-center p-4 gap-4">
+                                                <div className="flex-grow">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <div className={cn('w-4 h-4 text-current')}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4" })}</div>
+                                                        <h3 className="font-semibold text-lg">{test.title}</h3>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 ml-6">
+                                                        <p className="text-sm text-current/80">Son Teslim: {test.dueDate}</p>
+                                                        {isTestDue
+                                                            ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                                            : isToday(dueDate)
+                                                                ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                                                : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <Link href={`/education/${test.id}`} className="ml-auto">
+                                                    <Button size="sm" variant="default">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
+                                                </Link>
+                                            </div>
+                                        </Card>
+                                    );
+                                })
+                            ) : (<p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>)}
+                            {tests.filter(test => test.status === 'Atandı').length === 0 && tests.length > 0 && (<p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>)}
+                            </CardContent>
+                        </Card>
+                        
                       {studyPlanStats.length > 0 && (
                         <div>
                           <h2 className="text-xl font-bold mb-4">Konu Anlatım Planları</h2>
@@ -549,49 +595,6 @@ export default function EducationPage() {
                       )}
                     </div>
                     
-                    <Card className="mt-8">
-                        <CardHeader><CardTitle>Çözülecek Testler</CardTitle><CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription></CardHeader>
-                        <CardContent className="space-y-3">
-                        {tests.length > 0 ? (
-                            tests.filter(test => test.status === 'Atandı').map(test => {
-                                const categoryName = getCategoryName(test);
-                                const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
-                                const iconColor = `text-${categoryColors[categoryName] || 'gray-500'}`;
-                                const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                                const now = new Date();
-                                const daysDiff = differenceInDays(dueDate, now);
-                                const isTestDue = isPast(dueDate) && !isToday(dueDate);
-
-                                return (
-                                     <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
-                                        <div className="flex items-center p-4 gap-4">
-                                            <div className="flex-grow">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <div className={cn('w-4 h-4 text-current')}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4" })}</div>
-                                                    <h3 className="font-semibold text-lg">{test.title}</h3>
-                                                </div>
-                                                <div className="flex items-center gap-4 ml-6">
-                                                    <p className="text-sm text-current/80">Son Teslim: {test.dueDate}</p>
-                                                     {isTestDue
-                                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
-                                                        : isToday(dueDate)
-                                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
-                                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
-                                                    }
-                                                </div>
-                                            </div>
-                                            <Link href={`/education/${test.id}`} className="ml-auto">
-                                                <Button size="sm" variant="default">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
-                                            </Link>
-                                        </div>
-                                    </Card>
-                                );
-                            })
-                        ) : (<p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>)}
-                        {tests.filter(test => test.status === 'Atandı').length === 0 && tests.length > 0 && (<p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>)}
-                        </CardContent>
-                    </Card>
-                    
                  </>
             ) : renderCalendarView() }
 
@@ -599,6 +602,8 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
 
     
 
