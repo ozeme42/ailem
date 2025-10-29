@@ -432,21 +432,21 @@ export default function EducationPage() {
                  <>
                     {selectedStudent && (
                         <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="block mb-8 group">
-                        <Card className="transition-all duration-300 group-hover:shadow-primary/20 group-hover:border-primary/50 group-hover:shadow-lg">
+                        <Card className="transition-all duration-300 group-hover:shadow-primary/20 group-hover:border-primary/50 group-hover:shadow-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-3"><BarChart3 className="text-primary"/> Genel Durum</CardTitle>
-                                <CardDescription>{selectedStudent.name} için genel başarı durumu özeti. Detaylar için tıklayın.</CardDescription>
+                                <CardTitle className="flex items-center gap-3"><BarChart3/> Genel Durum</CardTitle>
+                                <CardDescription className="text-white/80">{selectedStudent.name} için genel başarı durumu özeti. Detaylar için tıklayın.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-2 gap-6 items-center">
                                     <div>
                                         <div className="text-4xl font-bold">{overallStats.testCount}</div>
-                                        <p className="text-muted-foreground">Sonuçlanan Test</p>
+                                        <p className="text-white/80">Sonuçlanan Test</p>
                                     </div>
                                     <div>
-                                        <div className="flex items-baseline gap-2"><span className="text-4xl font-bold">{overallStats.successRate.toFixed(1)}</span><span className="text-xl text-muted-foreground">%</span></div>
-                                        <p className="text-muted-foreground">Genel Başarı Oranı</p>
-                                        <Progress value={overallStats.successRate} className="mt-2 h-2" />
+                                        <div className="flex items-baseline gap-2"><span className="text-4xl font-bold">{overallStats.successRate.toFixed(1)}</span><span className="text-xl text-white/80">%</span></div>
+                                        <p className="text-white/80">Genel Başarı Oranı</p>
+                                        <Progress value={overallStats.successRate} className="mt-2 h-2 bg-white/30" indicatorClassName="bg-white" />
                                     </div>
                                 </div>
                             </CardContent>
