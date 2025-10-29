@@ -75,12 +75,6 @@ const formSchema = z.object({
     return true;
 }, { message: "Lütfen bir deneme sınavı seçin.", path: ["examId"] })
 .refine((data) => {
-    if (data.activeTab === 'bank' && (!data.selectedBankQuestions || data.selectedBankQuestions.length === 0)) {
-        return false;
-    }
-    return true;
-}, { message: "Lütfen soru bankasından en az bir soru seçin.", path: ["selectedBankQuestions"] })
-.refine((data) => {
     if (data.assignedDate && data.dueDate) {
         return data.dueDate >= data.assignedDate;
     }
@@ -92,6 +86,8 @@ export default function AssignClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const editTestId = searchParams.get('edit');
+    const questionIdsFromUrl = searchParams.get('questions');
+
     const { toast } = useToast();
     const { familyMembers } = useAuth();
 
@@ -135,17 +131,25 @@ export default function AssignClient() {
                 if (testDoc.exists()) {
                     const data = { id: testDoc.id, ...testDoc.data() } as Test;
                     setInitialData(data);
+                     const questions = data.questions ? data.questions.map(q => q.questionId) : [];
                     form.reset({
                         studentIds: data.studentId ? [data.studentId] : [],
                         activeTab: data.sourceType === 'exam' ? 'exam' : 'bank',
                         title: data.title || "",
                         subject: data.subject || "",
-                        selectedBankQuestions: data.sourceType === 'bank' ? (data.questions || []).map(q => q.questionId) : [],
+                        selectedBankQuestions: questions,
                         examId: data.sourceType === 'exam' ? data.sourceId : undefined,
                         assignedDate: data.assignedDate ? parse(data.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
                         dueDate: data.dueDate ? parse(data.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                     });
+                     if (questions.length > 0 && bankQuestions.length > 0) {
+                        const firstQuestion = bankQuestions.find(bq => bq.id === questions[0]);
+                        if(firstQuestion?.subject) setBankSubjectFilter(firstQuestion.subject);
+                    }
                 }
+            } else if (questionIdsFromUrl) {
+                const ids = questionIdsFromUrl.split(',');
+                form.setValue('selectedBankQuestions', ids);
             }
             setIsLoading(false);
         }
@@ -158,7 +162,7 @@ export default function AssignClient() {
             unsubTopics();
             unsubExams();
         };
-    }, [editTestId, form]);
+    }, [editTestId, form, questionIdsFromUrl, bankQuestions]);
 
 
     const handleCreateSubject = async (subjectName: string) => {
@@ -172,6 +176,15 @@ export default function AssignClient() {
     };
 
     const handleAssignmentSubmit = async (values: z.infer<typeof formSchema>) => {
+        if (values.activeTab === 'bank' && (!values.selectedBankQuestions || values.selectedBankQuestions.length === 0)) {
+            toast({
+                title: "Eksik Bilgi",
+                description: "Lütfen soru bankasından en az bir soru seçin.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         const assignedDate = values.assignedDate ? format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(), 'dd MMMM yyyy', { locale: tr });
         const dueDate = values.dueDate ? format(values.dueDate, 'dd MMMM yyyy', { locale: tr }) : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr });
     
@@ -254,8 +267,8 @@ export default function AssignClient() {
     return (
       <Tabs value={activeTab} onValueChange={(val) => form.setValue('activeTab', val as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="bank" disabled={!!initialData}>Soru Bankası</TabsTrigger>
-                <TabsTrigger value="exam" disabled={!!initialData}>Deneme Sınavı</TabsTrigger>
+                <TabsTrigger value="bank" disabled={!!initialData && initialData.sourceType !== 'bank'}>Soru Bankası</TabsTrigger>
+                <TabsTrigger value="exam" disabled={!!initialData && initialData.sourceType !== 'exam'}>Deneme Sınavı</TabsTrigger>
             </TabsList>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-4 pt-4">
