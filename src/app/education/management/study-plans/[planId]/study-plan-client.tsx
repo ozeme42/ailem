@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Send, Edit, Trash2, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onStudyPlanUpdate, addStudyAssignment } from "@/lib/dataService";
-import type { StudyPlan, StudyPlanSubject, StudyTopic, FamilyMember } from "@/lib/data";
+import type { StudyPlan, StudyPlanSubject, StudyTopic, FamilyMember, StudyAssignment } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useAuth } from "@/components/auth-provider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format, addDays } from "date-fns";
+import { format, addDays, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -25,6 +25,7 @@ import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/com
 import { useForm } from 'react-hook-form';
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Form } from "@/components/ui/form";
 
 
 const assignSchema = z.object({
