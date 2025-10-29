@@ -324,7 +324,7 @@ export default function OpticalFormPage() {
                                             {statusIcon}
                                         </div>
                                         {question.imageUrl && (
-                                            <div className="relative w-full aspect-video">
+                                            <div className="relative w-full min-h-[50vh]">
                                                 <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
                                             </div>
                                         )}
@@ -418,7 +418,7 @@ export default function OpticalFormPage() {
                                 <Card key={qNumStr} className="p-4">
                                     <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
                                     {question.imageUrl && (
-                                        <div className="relative w-full aspect-video">
+                                        <div className="relative w-full min-h-[50vh]">
                                             <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
                                         </div>
                                     )}
@@ -539,7 +539,7 @@ export default function OpticalFormPage() {
                                                 <h3 className="font-semibold">Soru {qNum}</h3>
                                             </div>
                                             {currentQuestion.imageUrl && (
-                                                <div className="relative w-full aspect-video">
+                                                <div className="relative w-full min-h-[50vh]">
                                                     <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
                                                 </div>
                                             )}
