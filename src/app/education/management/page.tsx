@@ -68,7 +68,7 @@ export default function EducationManagementPage() {
                     <Link href="/education">
                         <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><ArrowLeft className="mr-2 h-4 w-4" /> Eğitim Sayfası</Button>
                     </Link>
-                    <Link href="/education/management/assign">
+                    <Link href="/education/management/questions">
                         <Button className="bg-white/20 text-white hover:bg-white/30 border-none"><PlusCircle className="mr-2 h-4 w-4" /> Yeni Ödev Ata</Button>
                     </Link>
                     <Link href="/education/management/practice-exams">
