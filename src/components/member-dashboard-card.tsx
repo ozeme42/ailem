@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -16,6 +15,7 @@ import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily } from '@/l
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video } from '@/lib/data';
 import { Progress } from './ui/progress';
 import { format, isToday, parseISO } from 'date-fns';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface MemberDashboardCardProps {
     member: FamilyMember;
@@ -61,7 +61,7 @@ export function MemberDashboardCard({
         setIsClient(true);
     }, []);
     
-    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes, pendingVideos } = React.useMemo(() => {
+    const { habits, pendingTasks, pendingTests, pendingStudies, completedStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes, pendingVideos } = React.useMemo(() => {
         const memberId = member.id;
         let completedActivityCount = 0;
         const todayKey = format(new Date(), 'yyyy-MM-dd');
@@ -83,6 +83,10 @@ export function MemberDashboardCard({
         const memberStudyAssignments = studyAssignments.filter(sa => sa.studentId === memberId);
         const pendingStudies = memberStudyAssignments
             .filter(sa => sa.status === 'assigned')
+            .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
+            
+        const completedStudies = memberStudyAssignments
+            .filter(sa => sa.status === 'completed')
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
         
         const todaysCompletedStudies = memberStudyAssignments.filter(sa =>
@@ -139,6 +143,7 @@ export function MemberDashboardCard({
             pendingTasks: otherTasks, 
             pendingTests, 
             pendingStudies, 
+            completedStudies,
             readingBooks: readingBooksData,
             pendingVideos: memberVideos,
             pendingMemorization: pendingMemorizationData,
@@ -210,7 +215,7 @@ export function MemberDashboardCard({
         ...pendingVideos,
     ];
 
-    if (allPendingItems.length === 0) return null;
+    if (allPendingItems.length === 0 && completedStudies.length === 0) return null;
     
     const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
 
@@ -326,7 +331,7 @@ export function MemberDashboardCard({
                         </div>
                     </div>
                 )}
-                {(pendingTests.length > 0 || pendingStudies.length > 0) && (
+                {(pendingTests.length > 0 || pendingStudies.length > 0 || completedStudies.length > 0) && (
                    <div>
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><GraduationCap className="h-4 w-4 text-red-600"/> Ödevler</h4>
                         <div className="space-y-2">
@@ -347,6 +352,26 @@ export function MemberDashboardCard({
                                     </div>
                                 </Link>
                             ))}
+                             {completedStudies.length > 0 && (
+                                <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="item-1">
+                                    <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline justify-start gap-1 p-1">
+                                        Tamamlanan {completedStudies.length} Konuyu Göster
+                                    </AccordionTrigger>
+                                    <AccordionContent className="space-y-2 pt-2">
+                                    {completedStudies.map(study => (
+                                        <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-500/10">
+                                            <Check className="h-4 w-4 text-gray-500" />
+                                            <div className="truncate">
+                                                <p className="font-semibold truncate text-sm text-muted-foreground line-through">{study.topic}</p>
+                                                <p className="text-xs text-muted-foreground/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    </AccordionContent>
+                                </AccordionItem>
+                                </Accordion>
+                            )}
                         </div>
                     </div>
                 )}
@@ -373,3 +398,5 @@ export function MemberDashboardCard({
         </Card>
     );
 }
+
+    
