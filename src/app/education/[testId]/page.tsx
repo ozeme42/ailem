@@ -61,11 +61,11 @@ function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeU
 
   return (
     <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 font-semibold text-lg bg-background p-2 rounded-lg border">
+        <div className="flex items-center gap-2 font-semibold text-lg bg-white/20 backdrop-blur-sm p-2 rounded-lg border border-white/30">
             <Clock className="h-5 w-5" />
             <span>{formatTime(timeLeft)}</span>
         </div>
-        <Button size="icon" variant="outline" onClick={() => setIsRunning(!isRunning)}>
+        <Button size="icon" variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-white/30" onClick={() => setIsRunning(!isRunning)}>
             {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </Button>
     </div>
