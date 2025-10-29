@@ -61,6 +61,18 @@ const categoryProgressColors: { [key: string]: string } = {
     'Diğer': 'bg-gray-500',
 };
 
+const categoryCardColors: { [key: string]: string } = {
+    'Genel Deneme Sınavları': 'bg-yellow-500/10 text-yellow-900 dark:bg-yellow-500/10 dark:text-yellow-200',
+    'Matematik': 'bg-red-500/10 text-red-900 dark:bg-red-500/10 dark:text-red-200',
+    'Fen Bilimleri': 'bg-orange-500/10 text-orange-900 dark:bg-orange-500/10 dark:text-orange-200',
+    'Türkçe': 'bg-yellow-400/10 text-yellow-800 dark:bg-yellow-400/10 dark:text-yellow-200',
+    'Sosyal Bilgiler': 'bg-cyan-500/10 text-cyan-900 dark:bg-cyan-500/10 dark:text-cyan-200',
+    'İngilizce': 'bg-blue-500/10 text-blue-900 dark:bg-blue-500/10 dark:text-blue-200',
+    'Serbest Etkinlikler': 'bg-purple-500/10 text-purple-900 dark:bg-purple-500/10 dark:text-purple-200',
+    'Diğer': 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200',
+};
+
+
 export const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
     if (test.sourceType === 'mistake') return 'Yanlışlarım';
@@ -469,23 +481,23 @@ export default function EducationPage() {
                         {tests.length > 0 ? (
                             tests.filter(test => test.status === 'Atandı').map(test => {
                                 const categoryName = getCategoryName(test);
-                                const Icon = categoryIcons[categoryName] || FileText;
-                                const colorName = categoryColors[categoryName] || 'gray-500';
+                                const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
+                                const iconColor = categoryColors[categoryName] || 'gray-500';
                                 const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                                 const now = new Date();
                                 const daysDiff = differenceInDays(dueDate, now);
                                 const isTestDue = isPast(dueDate) && !isToday(dueDate);
 
                                 return (
-                                     <Card key={test.id} className={`overflow-hidden border-l-4 border-${colorName}`}>
+                                     <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
                                         <div className="flex items-center p-4 gap-4">
                                             <div className="flex-grow">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Icon className={`w-4 h-4 text-${colorName}`} />
+                                                    <div className={cn('w-4 h-4', `text-${iconColor.replace('-400', '-500')}`)}>{React.createElement(categoryIcons[categoryName] || FileText)}</div>
                                                     <h3 className="font-semibold text-lg">{test.title}</h3>
                                                 </div>
                                                 <div className="flex items-center gap-4 ml-6">
-                                                    <p className="text-sm text-muted-foreground">Son Teslim: {test.dueDate}</p>
+                                                    <p className="text-sm text-current/80">Son Teslim: {test.dueDate}</p>
                                                      {isTestDue
                                                         ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
                                                         : isToday(dueDate)
@@ -495,7 +507,7 @@ export default function EducationPage() {
                                                 </div>
                                             </div>
                                             <Link href={`/education/${test.id}`} className="ml-auto">
-                                                <Button size="sm">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
+                                                <Button size="sm" variant="default">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
                                             </Link>
                                         </div>
                                     </Card>
