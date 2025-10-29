@@ -21,30 +21,18 @@ import { useAuth } from "@/components/auth-provider";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { z } from "zod";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
 
 
 export function QuestionsClient() {
   const { user, familyMembers } = useAuth();
+  const router = useRouter();
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [bulkDialogType, setBulkDialogType] = useState<'mcq' | 'open_ended'>('mcq');
 
 
@@ -128,6 +116,17 @@ export function QuestionsClient() {
     }
   };
 
+  const handleAssignSelected = () => {
+      if (selectedQuestions.length === 0) return;
+      // This is just a placeholder implementation.
+      // We are now navigating to a new page.
+      // The actual assignment logic is in `assign-client.tsx`.
+      // For now, we'll just log it.
+      console.log("Navigating to assignment page with questions:", selectedQuestions);
+      router.push(`/education/management/assign?questions=${selectedQuestions.join(',')}`);
+
+  }
+
   const mcqQuestions = useMemo(() => bankQuestions.filter(q => q.type !== 'open_ended'), [bankQuestions]);
   const openEndedQuestions = useMemo(() => bankQuestions.filter(q => q.type === 'open_ended'), [bankQuestions]);
 
@@ -153,7 +152,7 @@ export function QuestionsClient() {
               selectedQuestions={selectedQuestions}
               setSelectedQuestions={setSelectedQuestions}
               type="mcq"
-              onAssign={() => setIsAssignDialogOpen(true)}
+              onAssign={handleAssignSelected}
             />
         </TabsContent>
         <TabsContent value="open_ended">
@@ -167,7 +166,7 @@ export function QuestionsClient() {
               selectedQuestions={selectedQuestions}
               setSelectedQuestions={setSelectedQuestions}
               type="open_ended"
-              onAssign={() => setIsAssignDialogOpen(true)}
+              onAssign={handleAssignSelected}
             />
         </TabsContent>
       </Tabs>
@@ -194,14 +193,6 @@ export function QuestionsClient() {
         onSubjectCreate={handleCreateSubject}
         onTopicCreate={handleCreateTopic}
         type={bulkDialogType}
-      />
-      <AssignTestDialog
-          isOpen={isAssignDialogOpen}
-          onOpenChange={setIsAssignDialogOpen}
-          students={familyMembers.filter(m => m.role.includes("Çocuk"))}
-          allBankQuestions={bankQuestions}
-          selectedQuestionIds={selectedQuestions}
-          onAssignComplete={() => setSelectedQuestions([])}
       />
     </div>
   );
@@ -487,160 +478,3 @@ function BulkAddImagesDialog({
         </Dialog>
     );
 }
-
-function AssignTestDialog({
-  isOpen,
-  onOpenChange,
-  students,
-  allBankQuestions,
-  selectedQuestionIds,
-  onAssignComplete,
-}: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  students: FamilyMember[];
-  allBankQuestions: BankQuestion[];
-  selectedQuestionIds: string[];
-  onAssignComplete: () => void;
-}) {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Simplified state management
-  const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-    from: new Date(),
-    to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  });
-
-  const selectedQuestions = useMemo(() => 
-    selectedQuestionIds.map(id => allBankQuestions.find(q => q.id === id)).filter((q): q is BankQuestion => !!q)
-  , [selectedQuestionIds, allBankQuestions]);
-
-  useEffect(() => {
-    if (isOpen && selectedQuestions.length > 0) {
-      const firstQuestion = selectedQuestions[0];
-      setTitle(`${firstQuestion.topic} Tekrar Testi`);
-      setSubject(firstQuestion.subject);
-      setSelectedStudentIds([]);
-      setDateRange({ from: new Date(), to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
-    }
-  }, [isOpen, selectedQuestions]);
-
-  const handleStudentSelect = (studentId: string, checked: boolean) => {
-    setSelectedStudentIds(prev => 
-      checked ? [...prev, studentId] : prev.filter(id => id !== studentId)
-    );
-  };
-  
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (selectedStudentIds.length === 0 || !title || !subject) {
-        toast({ title: "Eksik Bilgi", description: "Lütfen başlık, ders ve en az bir öğrenci seçin.", variant: "destructive"});
-        return;
-    }
-
-    setIsSubmitting(true);
-    
-    for (const studentId of selectedStudentIds) {
-        const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
-            title: title,
-            subject: subject,
-            studentId,
-            questionCount: selectedQuestions.length,
-            assignedDate: format(dateRange.from, 'dd MMMM yyyy', { locale: tr }),
-            dueDate: format(dateRange.to, 'dd MMMM yyyy', { locale: tr }),
-            sourceType: 'bank',
-        };
-        try {
-            await addTest(testData, selectedQuestions);
-        } catch (error) {
-            console.error(error);
-            toast({ title: "Hata", description: `${title} testi ${students.find(s=>s.id === studentId)?.name} öğrencisine atanırken hata oluştu.`, variant: "destructive" });
-        }
-    }
-
-    toast({
-      title: "✅ Ödev Atandı",
-      description: `${title} testi ${selectedStudentIds.length} öğrenciye başarıyla atandı.`,
-    });
-    
-    setIsSubmitting(false);
-    onOpenChange(false);
-    onAssignComplete();
-  }
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{selectedQuestionIds.length} Soruyu Ata</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            <div className="space-y-2">
-                <Label htmlFor="title">Test Başlığı</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="subject">Ders</Label>
-                <Input id="subject" value={subject} readOnly disabled />
-            </div>
-             <div className="space-y-2">
-                <Label>Öğrenci(ler)</Label>
-                {students.map(s => (
-                    <div key={s.id} className="flex items-center gap-2">
-                        <Checkbox 
-                            id={`student-${s.id}`} 
-                            checked={selectedStudentIds.includes(s.id)} 
-                            onCheckedChange={(checked) => handleStudentSelect(s.id, !!checked)} 
-                        />
-                        <Label htmlFor={`student-${s.id}`} className="font-normal">{s.name}</Label>
-                    </div>
-                ))}
-            </div>
-             <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col space-y-2">
-                    <Label>Başlangıç Tarihi</Label>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !dateRange.from && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange.from ? format(dateRange.from, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={dateRange.from} onSelect={(d) => setDateRange(prev => ({...prev, from: d || new Date()}))} initialFocus />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-                 <div className="flex flex-col space-y-2">
-                    <Label>Bitiş Tarihi</Label>
-                     <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !dateRange.to && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange.to ? format(dateRange.to, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={dateRange.to} onSelect={(d) => setDateRange(prev => ({...prev, to: d || new Date()}))} disabled={(date) => date < dateRange.from} initialFocus />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                  Ödevi Ata
-              </Button>
-            </DialogFooter>
-          </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-    

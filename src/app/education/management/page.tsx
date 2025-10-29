@@ -51,7 +51,7 @@ export default function EducationManagementPage() {
     
     const testsBySubject = React.useMemo(() => {
         const grouped: { [subject: string]: Test[] } = {};
-        tests.filter(t => !t.isArchived).forEach(test => {
+        tests.forEach(test => {
             const subject = getCategoryName(test);
             if (!grouped[subject]) {
                 grouped[subject] = [];
