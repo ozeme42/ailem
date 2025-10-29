@@ -589,11 +589,11 @@ export default function OpticalFormPage() {
                 <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <Card>
-                            <CardHeader>
+                            <CardHeader className="bg-gradient-to-br from-blue-500 to-purple-600 text-primary-foreground rounded-t-lg">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <CardTitle className="text-2xl">{test.title}</CardTitle>
-                                        <CardDescription>{test.subject}</CardDescription>
+                                        <CardDescription className="text-primary-foreground/80">{test.subject}</CardDescription>
                                     </div>
                                     <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                                 </div>
@@ -705,11 +705,11 @@ export default function OpticalFormPage() {
                 </Button>
             </header>
             <Card>
-                <CardHeader>
+                <CardHeader className="bg-gradient-to-br from-blue-500 to-purple-600 text-primary-foreground rounded-t-lg">
                      <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="text-2xl">{test.title}</CardTitle>
-                            <CardDescription>{test.subject}</CardDescription>
+                            <CardDescription className="text-primary-foreground/80">{test.subject}</CardDescription>
                         </div>
                         <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                     </div>
