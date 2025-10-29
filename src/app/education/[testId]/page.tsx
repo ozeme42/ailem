@@ -325,7 +325,7 @@ export default function OpticalFormPage() {
                                         </div>
                                         {question.imageUrl && (
                                             <div className="relative w-full min-h-[50vh]">
-                                                <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                                <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, 50vw" className="rounded-md object-contain" data-ai-hint="question paper" />
                                             </div>
                                         )}
                                         {test.openEnded ? (
@@ -419,7 +419,7 @@ export default function OpticalFormPage() {
                                     <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
                                     {question.imageUrl && (
                                         <div className="relative w-full min-h-[50vh]">
-                                            <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                            <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, 50vw" className="rounded-md object-contain" data-ai-hint="question paper" />
                                         </div>
                                     )}
                                     <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
@@ -530,7 +530,7 @@ export default function OpticalFormPage() {
                                 <CardTitle className="text-2xl">{test.title}</CardTitle>
                                 <CardDescription>{test.subject}</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-0 sm:p-6 sm:pt-0">
                                 <div className="space-y-4">
                                     {currentQuestion && qNum && (
                                         <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
@@ -540,7 +540,7 @@ export default function OpticalFormPage() {
                                             </div>
                                             {currentQuestion.imageUrl && (
                                                 <div className="relative w-full min-h-[50vh]">
-                                                    <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                                    <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} fill sizes="(max-width: 768px) 100vw, 50vw" className="rounded-md object-contain" data-ai-hint="question paper" />
                                                 </div>
                                             )}
                                             <div className="pl-12">
@@ -561,7 +561,7 @@ export default function OpticalFormPage() {
                                             </div>
                                         </div>
                                     )}
-                                    <div className="flex justify-between mt-6">
+                                    <div className="flex justify-between mt-6 px-3 pb-3">
                                         <Button onClick={handlePrevQuestion} disabled={currentQuestionIndex === 0}>Önceki Soru</Button>
                                         {currentQuestionIndex < test.questionCount - 1 ? (
                                             <Button onClick={handleNextQuestion}>Sonraki Soru</Button>
@@ -673,6 +673,8 @@ export default function OpticalFormPage() {
         </div>
     );
 }
+
+    
 
     
 
