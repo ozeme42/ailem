@@ -411,10 +411,10 @@ export default function EducationPage() {
       </div>
       
        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="cards">Kartlar</TabsTrigger>
-                <TabsTrigger value="weekly">Haftalık</TabsTrigger>
-                <TabsTrigger value="list">Liste</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-1">
+                <TabsTrigger value="cards" className="data-[state=active]:bg-white/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md text-white/90">Kartlar</TabsTrigger>
+                <TabsTrigger value="weekly" className="data-[state=active]:bg-white/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md text-white/90">Haftalık</TabsTrigger>
+                <TabsTrigger value="list" className="data-[state=active]:bg-white/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md text-white/90">Liste</TabsTrigger>
             </TabsList>
             
              {(viewMode === 'weekly') && (
@@ -500,7 +500,7 @@ export default function EducationPage() {
                                         <div className="flex items-center p-4 gap-4">
                                             <div className="flex-grow">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <div className={cn('w-4 h-4', iconColor)}>{React.createElement(categoryIcons[categoryName] || FileText)}</div>
+                                                    <div className={cn('w-4 h-4', iconColor)}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4 text-current" })}</div>
                                                     <h3 className="font-semibold text-lg">{test.title}</h3>
                                                 </div>
                                                 <div className="flex items-center gap-4 ml-6">
