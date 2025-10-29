@@ -761,43 +761,49 @@ export const updateTopics = async (topics: string[]) => {
 
 export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
 
-export const addTest = async (data: Omit<Test, 'id' | 'familyId'>, questionsForSubcollection?: (BankQuestion | QuickTestQuestion)[]) => {
+export const addTest = async (data: Omit<Test, 'id' | 'familyId' | 'questions'>, questionsForSubcollection?: (BankQuestion | QuickTestQuestion)[]) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
 
+    const batch = writeBatch(db);
     const testDocRef = doc(collection(db, 'tests'));
-    
-    // Determine openEnded and gradingType from questions if provided
+
     let isTestOpenEnded = data.openEnded || false;
-    let questionsForTestDoc: QuickTestQuestion[] = [];
     
+    // Set openEnded status based on questions if provided
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
-        const hasOpenEnded = questionsForSubcollection.some(q => 'type' in q && q.type === 'open_ended');
-        if (hasOpenEnded) {
+        if (questionsForSubcollection.some(q => 'type' in q && q.type === 'open_ended')) {
             isTestOpenEnded = true;
         }
-
-        questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
-            return {
-                questionId: questionId,
-                questionNumber: index + 1,
-                imageUrl: q.imageUrl,
-            };
-        });
     }
-
-    const { questions, ...restOfData } = data; // Exclude questions from the main data object if it exists
-
-    const finalTestData: Omit<Test, 'id'> = {
-        ...restOfData,
-        questions: questionsForTestDoc,
+    
+    // Prepare the main test document data, excluding the full questions array.
+    const mainTestData: Omit<Test, 'id'> = {
+        ...data,
         familyId,
         openEnded: isTestOpenEnded,
         gradingType: isTestOpenEnded ? 'manual' : 'auto',
     };
+    
+    batch.set(testDocRef, removeUndefined(mainTestData));
 
-    await setDoc(testDocRef, removeUndefined(finalTestData));
+    // If there are questions, add them to the 'questions' subcollection
+    if (questionsForSubcollection && questionsForSubcollection.length > 0) {
+        const questionsCollectionRef = collection(testDocRef, 'questions');
+        questionsForSubcollection.forEach((question, index) => {
+            const questionDocRef = doc(questionsCollectionRef);
+            const questionId = 'id' in question ? question.id : ('questionId' in question ? question.questionId : '');
+            
+            const questionSubDoc: QuickTestQuestion = {
+                questionId: questionId,
+                questionNumber: index + 1,
+                imageUrl: question.imageUrl,
+            };
+            batch.set(questionDocRef, questionSubDoc);
+        });
+    }
+
+    await batch.commit();
 };
 
 
