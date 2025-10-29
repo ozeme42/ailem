@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud, Send } from "lucide-react";
+import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud, Send, Calendar as CalendarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
@@ -29,11 +29,15 @@ import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form as RhfForm, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { tr } from 'date-fns/locale';
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
 
 
 export function QuestionsClient() {
   const { user, familyMembers } = useAuth();
-  const router = useRouter();
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -49,6 +53,7 @@ export function QuestionsClient() {
   const [allTopics, setAllTopics] = useState<string[]>([]);
 
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -122,12 +127,6 @@ export function QuestionsClient() {
     }
   };
 
-  const handleAssignSelected = () => {
-      if (selectedQuestions.length === 0) return;
-      router.push(`/education/management/assign?questions=${selectedQuestions.join(',')}`);
-
-  }
-
   const mcqQuestions = useMemo(() => bankQuestions.filter(q => q.type !== 'open_ended'), [bankQuestions]);
   const openEndedQuestions = useMemo(() => bankQuestions.filter(q => q.type === 'open_ended'), [bankQuestions]);
 
@@ -153,7 +152,7 @@ export function QuestionsClient() {
               selectedQuestions={selectedQuestions}
               setSelectedQuestions={setSelectedQuestions}
               type="mcq"
-              onAssign={handleAssignSelected}
+              onAssign={() => setIsAssignDialogOpen(true)}
             />
         </TabsContent>
         <TabsContent value="open_ended">
@@ -167,7 +166,7 @@ export function QuestionsClient() {
               selectedQuestions={selectedQuestions}
               setSelectedQuestions={setSelectedQuestions}
               type="open_ended"
-              onAssign={handleAssignSelected}
+              onAssign={() => setIsAssignDialogOpen(true)}
             />
         </TabsContent>
       </Tabs>
@@ -194,6 +193,13 @@ export function QuestionsClient() {
         onSubjectCreate={handleCreateSubject}
         onTopicCreate={handleCreateTopic}
         type={bulkDialogType}
+      />
+       <AssignTestDialog
+        isOpen={isAssignDialogOpen}
+        onOpenChange={setIsAssignDialogOpen}
+        allQuestions={bankQuestions}
+        selectedQuestionIds={selectedQuestions}
+        onAssignmentComplete={() => setSelectedQuestions([])}
       />
     </div>
   );
@@ -478,4 +484,217 @@ function BulkAddImagesDialog({
             </DialogContent>
         </Dialog>
     );
+}
+
+const assignFormSchema = z.object({
+  title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
+  studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
+  dateRange: z.object({
+      from: z.date(),
+      to: z.date(),
+  }),
+});
+
+function AssignTestDialog({ isOpen, onOpenChange, allQuestions, selectedQuestionIds, onAssignmentComplete }: {
+  isOpen: boolean,
+  onOpenChange: (open: boolean) => void,
+  allQuestions: BankQuestion[],
+  selectedQuestionIds: string[],
+  onAssignmentComplete: () => void,
+}) {
+  const { toast } = useToast();
+  const { familyMembers } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const students = useMemo(() => familyMembers.filter(m => m.role.includes('Çocuk')), [familyMembers]);
+
+  const form = useForm<z.infer<typeof assignFormSchema>>({
+    resolver: zodResolver(assignFormSchema),
+    defaultValues: {
+      title: "",
+      studentIds: [],
+      dateRange: {
+        from: new Date(),
+        to: addDays(new Date(), 7),
+      },
+    },
+  });
+
+  const selectedQuestions = useMemo(() => {
+    return allQuestions.filter(q => selectedQuestionIds.includes(q.id));
+  }, [allQuestions, selectedQuestionIds]);
+
+  useEffect(() => {
+    if (isOpen && selectedQuestions.length > 0) {
+        const firstQuestion = selectedQuestions[0];
+        const subject = firstQuestion.subject;
+        const topic = firstQuestion.topic;
+        const areAllSameSubject = selectedQuestions.every(q => q.subject === subject);
+        const areAllSameTopic = selectedQuestions.every(q => q.topic === topic);
+
+        let defaultTitle = "Karma Tekrar Testi";
+        if (areAllSameSubject && areAllSameTopic) {
+            defaultTitle = `${subject} - ${topic} Tekrar Testi`;
+        } else if (areAllSameSubject) {
+            defaultTitle = `${subject} Karma Tekrar Testi`;
+        }
+
+        form.reset({
+            ...form.getValues(),
+            title: defaultTitle
+        });
+    }
+  }, [isOpen, selectedQuestions, form]);
+
+  const handleAssignmentSubmit = async (values: z.infer<typeof assignFormSchema>) => {
+    setLoading(true);
+
+    const answerKey: { [key: string]: string } = {};
+    selectedQuestions.forEach((q, index) => {
+        if (q.correctAnswer) {
+            answerKey[(index + 1).toString()] = q.correctAnswer;
+        }
+    });
+
+    const isTestOpenEnded = selectedQuestions.some(q => q.type === 'open_ended');
+
+    try {
+        for (const studentId of values.studentIds) {
+            const testData: Omit<Test, 'id' | 'familyId'> = {
+                title: values.title,
+                subject: selectedQuestions[0]?.subject || 'Karma',
+                studentId: studentId,
+                questionCount: selectedQuestions.length,
+                assignedDate: format(values.dateRange.from, 'dd MMMM yyyy', { locale: tr }),
+                dueDate: format(values.dateRange.to, 'dd MMMM yyyy', { locale: tr }),
+                sourceType: 'bank',
+                status: 'Atandı',
+                isArchived: false,
+                answerKey: isTestOpenEnded ? undefined : answerKey,
+                openEnded: isTestOpenEnded,
+            };
+            await addTest(testData, selectedQuestions);
+        }
+        toast({
+            title: "✅ Ödevler Atandı",
+            description: `${values.title} testi ${values.studentIds.length} öğrenciye başarıyla atandı.`,
+        });
+        onAssignmentComplete();
+        onOpenChange(false);
+    } catch (error) {
+        console.error(error);
+        toast({ title: "❌ Kaydetme Hatası", description: "Ödev atanırken bir sorun oluştu.", variant: "destructive" });
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Ödev Ata ({selectedQuestionIds.length} Soru)</DialogTitle>
+          <DialogDescription>Seçilen sorularla yeni bir test oluşturun ve öğrencilere atayın.</DialogDescription>
+        </DialogHeader>
+        <RhfForm {...form}>
+          <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-4 pt-4">
+             <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Test Başlığı</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+              control={form.control}
+              name="studentIds"
+              render={() => (
+                <FormItem>
+                    <FormLabel>Öğrenciler</FormLabel>
+                    <div className="space-y-2">
+                        {students.map((student) => (
+                            <FormField
+                                key={student.id}
+                                control={form.control}
+                                name="studentIds"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value?.includes(student.id)}
+                                                onCheckedChange={(checked) => {
+                                                    return checked
+                                                    ? field.onChange([...(field.value || []), student.id])
+                                                    : field.onChange(field.value?.filter((value) => value !== student.id));
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">{student.name}</FormLabel>
+                                    </FormItem>
+                                )}
+                            />
+                        ))}
+                    </div>
+                    <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+                control={form.control}
+                name="dateRange"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Ödev Tarihleri</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn("w-full justify-start text-left font-normal", !field.value.from && "text-muted-foreground")}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {field.value?.from ? (
+                                field.value.to ? (
+                                    <>
+                                    {format(field.value.from, "LLL dd, y", { locale: tr })} -{" "}
+                                    {format(field.value.to, "LLL dd, y", { locale: tr })}
+                                    </>
+                                ) : (
+                                    format(field.value.from, "LLL dd, y", { locale: tr })
+                                )
+                                ) : (
+                                <span>Tarih aralığı seçin</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={field.value?.from}
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                numberOfMonths={1}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Ödevi Ata
+              </Button>
+            </DialogFooter>
+          </form>
+        </RhfForm>
+      </DialogContent>
+    </Dialog>
+  );
 }
