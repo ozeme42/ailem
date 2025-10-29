@@ -1,18 +1,17 @@
 
-
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, CheckCircle2, Calendar, BookOpen, Target, Zap, Notebook, GraduationCap, BrainCircuit, Columns3 } from "lucide-react";
+import { Users, ShoppingCart, Calendar, BookOpen, Target, Zap, Notebook, GraduationCap, BrainCircuit, Columns3 } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
   { href: "/", label: "Ailem", icon: Users },
-  { href: "/tasks", label: "Görevler", icon: CheckCircle2 },
+  { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
   { href: "/tracking", label: "Takip", icon: Columns3 },
   { href: "/education", label: "Eğitim", icon: GraduationCap },
   { href: "/library", label: "Kütüphane", icon: BookOpen },
