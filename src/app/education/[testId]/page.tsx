@@ -323,7 +323,11 @@ export default function OpticalFormPage() {
                                             <h4 className="font-bold">Soru {qNumStr}</h4>
                                             {statusIcon}
                                         </div>
-                                        {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
+                                        {question.imageUrl && (
+                                            <div className="relative w-full aspect-video">
+                                                <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                            </div>
+                                        )}
                                         {test.openEnded ? (
                                             <p className="p-3 bg-muted rounded-md whitespace-pre-wrap">{studentAns || "Cevap verilmedi."}</p>
                                         ) : (
@@ -413,7 +417,11 @@ export default function OpticalFormPage() {
                             return (
                                 <Card key={qNumStr} className="p-4">
                                     <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
-                                    {question.imageUrl && <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} width={400} height={200} className="rounded-md object-contain mb-4" data-ai-hint="question paper" />}
+                                    {question.imageUrl && (
+                                        <div className="relative w-full aspect-video">
+                                            <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                        </div>
+                                    )}
                                     <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
                                    <div className="flex gap-2 justify-end">
                                         <Button size="sm" variant={evalStatus === 'correct' ? 'default' : 'outline'} className="bg-green-100 text-green-800 data-[state=active]:bg-green-600" onClick={() => handleEvaluationChange(qNumStr, 'correct')}>Doğru</Button>
@@ -530,7 +538,11 @@ export default function OpticalFormPage() {
                                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
                                                 <h3 className="font-semibold">Soru {qNum}</h3>
                                             </div>
-                                            {currentQuestion.imageUrl && <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} width={600} height={300} className="rounded-md object-contain self-center" data-ai-hint="question paper" />}
+                                            {currentQuestion.imageUrl && (
+                                                <div className="relative w-full aspect-video">
+                                                    <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                                </div>
+                                            )}
                                             <div className="pl-12">
                                                 {test.openEnded ? (
                                                     <Textarea 
