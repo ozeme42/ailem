@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,9 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth-provider";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogContent as DialogContentComponent, DialogTrigger as DialogTriggerComponent } from "@/components/ui/dialog";
+
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
@@ -44,6 +47,7 @@ export default function OpticalFormPage() {
     
     const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluation>({});
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+    const [fullscreenImage, setFullscreenImage] = React.useState<string | null>(null);
     
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test) return;
@@ -325,7 +329,17 @@ export default function OpticalFormPage() {
                                         </div>
                                         {question.imageUrl && (
                                             <div className="relative w-full min-h-[50vh]">
-                                                <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, 50vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                                <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="100vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                         <Button variant="outline" size="icon" className="absolute top-2 right-2 bg-background/50 backdrop-blur-sm">
+                                                            <Expand />
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-4xl h-[90vh]">
+                                                        <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="100vw" className="object-contain p-4" data-ai-hint="question paper"/>
+                                                    </DialogContent>
+                                                </Dialog>
                                             </div>
                                         )}
                                         {test.openEnded ? (
@@ -419,7 +433,17 @@ export default function OpticalFormPage() {
                                     <h4 className="font-bold mb-2">Soru {qNumStr}</h4>
                                     {question.imageUrl && (
                                         <div className="relative w-full min-h-[50vh]">
-                                            <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="(max-width: 768px) 100vw, 50vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                            <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="100vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                             <Dialog>
+                                                <DialogTrigger asChild>
+                                                     <Button variant="outline" size="icon" className="absolute top-2 right-2 bg-background/50 backdrop-blur-sm">
+                                                        <Expand />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="sm:max-w-4xl h-[90vh]">
+                                                    <Image src={question.imageUrl} alt={`Soru ${qNumStr}`} fill sizes="100vw" className="object-contain p-4" data-ai-hint="question paper"/>
+                                                </DialogContent>
+                                            </Dialog>
                                         </div>
                                     )}
                                     <div className="p-3 mb-4 border rounded-md bg-muted whitespace-pre-wrap">{studentAns || "Cevap verilmemiş."}</div>
@@ -530,20 +554,30 @@ export default function OpticalFormPage() {
                                 <CardTitle className="text-2xl">{test.title}</CardTitle>
                                 <CardDescription>{test.subject}</CardDescription>
                             </CardHeader>
-                            <CardContent className="p-0 sm:p-6 sm:pt-0">
+                            <CardContent className="p-0 sm:p-0">
                                 <div className="space-y-4">
                                     {currentQuestion && qNum && (
-                                        <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border">
+                                        <div key={qNum} className="flex flex-col gap-4 p-3 rounded-lg border-b">
                                             <div className="flex items-center gap-4">
                                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">{qNum}</div>
                                                 <h3 className="font-semibold">Soru {qNum}</h3>
                                             </div>
                                             {currentQuestion.imageUrl && (
                                                 <div className="relative w-full min-h-[50vh]">
-                                                    <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} fill sizes="(max-width: 768px) 100vw, 50vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                                    <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} fill sizes="100vw" className="rounded-md object-contain" data-ai-hint="question paper" />
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                             <Button variant="outline" size="icon" className="absolute top-2 right-2 bg-background/50 backdrop-blur-sm">
+                                                                <Expand />
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="sm:max-w-4xl h-[90vh]">
+                                                            <Image src={currentQuestion.imageUrl} alt={`Soru ${qNum}`} fill sizes="100vw" className="object-contain p-4" data-ai-hint="question paper"/>
+                                                        </DialogContent>
+                                                    </Dialog>
                                                 </div>
                                             )}
-                                            <div className="pl-12">
+                                            <div className="pl-4 sm:pl-12">
                                                 {test.openEnded ? (
                                                     <Textarea 
                                                         placeholder={`${qNum}. sorunun cevabını buraya yazın...`} 
@@ -673,6 +707,8 @@ export default function OpticalFormPage() {
         </div>
     );
 }
+
+    
 
     
 
