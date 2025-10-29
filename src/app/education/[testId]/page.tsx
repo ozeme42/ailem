@@ -23,8 +23,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth-provider";
-import { Dialog } from "@/components/ui/dialog";
-import { DialogContent as DialogContentComponent, DialogTrigger as DialogTriggerComponent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 
 type McqAnswers = { [key: string]: string | null };
