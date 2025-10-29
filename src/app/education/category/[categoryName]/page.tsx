@@ -235,7 +235,7 @@ function SingleStudentTestCard({ test }: { test: Test }) {
     }
 
     const isMistakeTest = test.sourceType === 'mistake';
-    const duration = test.questionCount * 1.5;
+    const duration = test.durationMinutes || test.questionCount * 1.5;
 
     return (
         <Card key={test.id} className="flex flex-col shadow-sm overflow-hidden">
@@ -422,3 +422,4 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
+
