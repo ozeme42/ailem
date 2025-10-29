@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import * as React from "react";
 import Link from 'next/link';
-import { format, addDays, startOfWeek, isSameDay, parseISO, subDays } from "date-fns";
+import { format, addDays, startOfWeek, isSameDay, parseISO, subDays, isFuture } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,34 +30,52 @@ export function HabitTrackerCard({ task, assignee, onToggleDay, onEdit, onDelete
   }, [task.completedDates]);
   
   const streak = React.useMemo(() => {
-    if (!task.completedDates || task.completedDates.length === 0) return 0;
+    const allCompletedDates = new Set(task.completedDates || []);
+    if (allCompletedDates.size === 0) return 0;
     
-    // Create a set of date strings for efficient lookup
-    const completedDateSet = new Set(task.completedDates);
     let currentStreak = 0;
-    
-    // Start checking from today
-    let checkDate = new Date();
-    checkDate.setHours(0, 0, 0, 0);
 
-    // If today is not completed, start checking from yesterday
-    if (!completedDateSet.has(format(checkDate, 'yyyy-MM-dd'))) {
-        checkDate = subDays(checkDate, 1);
-    }
+    if (task.recurrenceType === 'daily') {
+        let checkDate = new Date();
+        checkDate.setHours(0, 0, 0, 0);
 
-    // Iterate backwards from checkDate
-    while (true) {
-        const dateKey = format(checkDate, 'yyyy-MM-dd');
-        if (completedDateSet.has(dateKey)) {
+        if (!allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+            checkDate = subDays(checkDate, 1);
+        }
+        
+        while (allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
             currentStreak++;
             checkDate = subDays(checkDate, 1);
-        } else {
-            break; // Streak is broken
+        }
+
+    } else if (task.recurrenceType === 'weekly' && task.recurrenceDays && task.recurrenceDays.length > 0) {
+        let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+
+        const isWeekComplete = (weekStart: Date): boolean => {
+            return task.recurrenceDays!.every(dayId => {
+                const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
+                const dateToCheck = addDays(weekStart, dayIndex);
+                 if (isFuture(dateToCheck) && !isSameDay(dateToCheck, new Date())) {
+                    return false;
+                }
+                return allCompletedDates.has(format(dateToCheck, 'yyyy-MM-dd'));
+            });
+        };
+
+        // Check if current week is complete. If not, start checking from last week.
+        if (!isWeekComplete(checkWeekStart)) {
+            checkWeekStart = subDays(checkWeekStart, 7);
+        }
+        
+        while(isWeekComplete(checkWeekStart)) {
+            currentStreak++;
+            checkWeekStart = subDays(checkWeekStart, 7);
         }
     }
 
     return currentStreak;
-  }, [task.completedDates]);
+  }, [task.completedDates, task.recurrenceType, task.recurrenceDays]);
+
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
 

@@ -1348,70 +1348,63 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
         console.error("Task not found for habit update:", taskId);
         return;
     }
-    
+
     const taskData = taskSnap.data() as Task;
     if (!taskData.isRecurring) return;
 
     const dayKey = format(day, 'yyyy-MM-dd');
-    const completedDatesSet = new Set(taskData.completedDates || []);
+    const allCompletedDates = new Set(taskData.completedDates || []);
 
     if (isCompleted) {
-        completedDatesSet.add(dayKey);
+        allCompletedDates.add(dayKey);
     } else {
-        completedDatesSet.delete(dayKey);
+        allCompletedDates.delete(dayKey);
     }
-    
-    const completedDates = Array.from(completedDatesSet);
+
+    const completedDates = Array.from(allCompletedDates);
     const updatePayload: Partial<Task> = {
         completedDates: completedDates,
     };
-
+    
     let streak = 0;
     if (taskData.recurrenceType === 'daily') {
-        const sortedDates = completedDates.map(d => parseISO(d)).sort((a, b) => b.getTime() - a.getTime());
-        if (sortedDates.length > 0) {
-            let lastDate = new Date();
-            lastDate.setHours(0,0,0,0);
-            
-            // If today is not in the list, check from yesterday
-            if (!sortedDates.some(d => isSameDay(d, lastDate))) {
-                lastDate = subDays(lastDate, 1);
-            }
+        let checkDate = new Date();
+        checkDate.setHours(0, 0, 0, 0);
 
-            for (const date of sortedDates) {
-                if (differenceInDays(lastDate, date) === streak) {
-                    streak++;
-                } else {
-                    // Check if the break is because we skipped to yesterday
-                    if (streak === 0 && differenceInDays(lastDate, date) === 0) {
-                       streak++;
-                    } else {
-                       break;
-                    }
-                }
-            }
+        if (!allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+            checkDate = subDays(checkDate, 1);
         }
+        
+        while (allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+            streak++;
+            checkDate = subDays(checkDate, 1);
+        }
+
     } else if (taskData.recurrenceType === 'weekly' && taskData.recurrenceDays && taskData.recurrenceDays.length > 0) {
         let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
-        const isWeekComplete = (weekStart: Date) => {
+        const isWeekComplete = (weekStart: Date): boolean => {
             return taskData.recurrenceDays!.every(dayId => {
                 const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
-                const checkDate = addDays(weekStart, dayIndex);
-                return completedDatesSet.has(format(checkDate, 'yyyy-MM-dd'));
+                const dateToCheck = addDays(weekStart, dayIndex);
+                // A week is only complete if all required days are in the past or today.
+                if (isFuture(dateToCheck) && !isSameDay(dateToCheck, new Date())) {
+                    return false;
+                }
+                return allCompletedDates.has(format(dateToCheck, 'yyyy-MM-dd'));
             });
         };
         
-        // Start counting from the most recent week that *should* be complete or is complete
         while(isWeekComplete(checkWeekStart)) {
             streak++;
             checkWeekStart = subWeeks(checkWeekStart, 1);
         }
     }
 
+
     updatePayload.streak = streak;
     updatePayload.bestStreak = Math.max(taskData.bestStreak || 0, streak);
-    
+
     if (isCompleted) {
         if (streak > (taskData.streak || 0)) {
             await checkAndAwardBadges(taskData.assigneeId, taskData.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
