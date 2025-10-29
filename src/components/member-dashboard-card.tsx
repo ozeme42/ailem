@@ -333,7 +333,7 @@ export function MemberDashboardCard({
                 )}
                 {(pendingTests.length > 0 || pendingStudies.length > 0 || completedStudies.length > 0) && (
                    <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><GraduationCap className="h-4 w-4 text-red-600"/> Ödevler</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary"/> Eğitim</h4>
                         <div className="space-y-2">
                             {pendingTests.map(test => (
                                 <Link href={`/education/${test.id}`} key={test.id} className="block">
@@ -354,7 +354,7 @@ export function MemberDashboardCard({
                             ))}
                              {completedStudies.length > 0 && (
                                 <Accordion type="single" collapsible className="w-full">
-                                <AccordionItem value="item-1">
+                                <AccordionItem value="item-1" className="border-b-0">
                                     <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline justify-start gap-1 p-1">
                                         Tamamlanan {completedStudies.length} Konuyu Göster
                                     </AccordionTrigger>
