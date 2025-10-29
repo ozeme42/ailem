@@ -1,20 +1,21 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, ArrowLeft, BookHeart, FileText, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
-import { onStudyPlansUpdate, addStudyPlan, updateStudyPlan, deleteStudyPlan } from '@/lib/dataService';
-import type { StudyPlan } from '@/lib/data';
+import { onStudyPlansUpdate, addStudyPlan, updateStudyPlan, deleteStudyPlan, onStudyAssignmentsUpdate } from '@/lib/dataService';
+import type { StudyPlan, StudyAssignment } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { NewStudyPlanForm } from '@/components/new-study-plan-form';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Progress } from '@/components/ui/progress';
 
 
 export function StudyPlansClient() {
@@ -22,13 +23,18 @@ export function StudyPlansClient() {
     const router = useRouter();
     const { toast } = useToast();
     const [plans, setPlans] = useState<StudyPlan[]>([]);
+    const [assignments, setAssignments] = useState<StudyAssignment[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
 
     useEffect(() => {
         if (!familyId) return;
-        const unsub = onStudyPlansUpdate(setPlans);
-        return () => unsub();
+        const unsubPlans = onStudyPlansUpdate(setPlans);
+        const unsubAssignments = onStudyAssignmentsUpdate(setAssignments);
+        return () => {
+            unsubPlans();
+            unsubAssignments();
+        };
     }, [familyId]);
 
     const handleOpenForm = (plan: StudyPlan | null) => {
@@ -65,6 +71,20 @@ export function StudyPlansClient() {
         router.push(`/education/management/study-plans/${planId}`);
     }
 
+    const planProgress = useMemo(() => {
+        const progressMap = new Map<string, { completed: number, total: number }>();
+        assignments.forEach(assignment => {
+            const planId = assignment.studyPlanId;
+            const current = progressMap.get(planId) || { completed: 0, total: 0 };
+            current.total++;
+            if (assignment.status === 'completed') {
+                current.completed++;
+            }
+            progressMap.set(planId, current);
+        });
+        return progressMap;
+    }, [assignments]);
+
     return (
         <div className="space-y-6">
             <PageHeader title="Konu Anlatım Planları">
@@ -85,6 +105,8 @@ export function StudyPlansClient() {
                     plans.map(plan => {
                         const totalSubjects = plan.subjects?.length || 0;
                         const totalTopics = plan.subjects?.reduce((sum, s) => sum + (s.topics?.length || 0), 0) || 0;
+                        const progress = planProgress.get(plan.id);
+                        const progressPercentage = progress && progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
                         
                         return (
                             <Card key={plan.id} className="flex flex-col">
@@ -92,9 +114,20 @@ export function StudyPlansClient() {
                                     <CardTitle>{plan.title}</CardTitle>
                                     <CardDescription>{plan.description}</CardDescription>
                                 </CardHeader>
-                                <CardContent className="flex-grow space-y-3 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>{totalSubjects} Ders</span></div>
-                                    <div className="flex items-center gap-2"><CheckCircle className="h-4 w-4" /><span>{totalTopics} Konu</span></div>
+                                <CardContent className="flex-grow space-y-4">
+                                     <div className="space-y-3 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>{totalSubjects} Ders</span></div>
+                                        <div className="flex items-center gap-2"><CheckCircle className="h-4 w-4" /><span>{totalTopics} Konu</span></div>
+                                    </div>
+                                    {progress && progress.total > 0 && (
+                                        <div className="pt-2">
+                                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                                <span>İlerleme</span>
+                                                <span>{progress.completed} / {progress.total} atama</span>
+                                            </div>
+                                            <Progress value={progressPercentage} className="h-2"/>
+                                        </div>
+                                    )}
                                 </CardContent>
                                 <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3">
                                     <Button size="sm" variant="secondary" onClick={() => handleManagePlan(plan.id)}>Yönet</Button>
@@ -102,7 +135,7 @@ export function StudyPlansClient() {
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild><Button size="sm" variant="destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>Planı Sil</AlertDialogTitle><AlertDialogDescription>"{plan.title}" planını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogHeader><AlertDialogTitle>Planı Sil</AlertDialogTitle><AlertDialogDescription>"{plan.title}" planını ve ilgili tüm atamaları kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>

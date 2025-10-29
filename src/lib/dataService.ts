@@ -886,7 +886,15 @@ export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'fam
 export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id' | 'familyId'>>) => {
     return updateDoc(doc(db, 'studyAssignments', id), removeUndefined(data));
 };
-export const deleteStudyAssignment = (id: string) => deleteDoc(doc(db, 'studyAssignments', id));
+export const deleteStudyAssignment = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, 'studyAssignments', id));
+  } catch (error) {
+    console.error("Error deleting study assignment:", error);
+    throw error;
+  }
+};
+
 
 // Goals (Roadmaps)
 export const onGoalsUpdate = (callback: (goals: Goal[]) => void) => onFamilyDataUpdate<Goal>('goals', callback);
@@ -1379,29 +1387,24 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
     };
     
     let streak = 0;
+    let checkDate = isCompleted && isSameDay(day, new Date()) ? new Date() : subDays(new Date(), 1);
+    checkDate.setHours(0,0,0,0);
+    
     if (taskData.recurrenceType === 'daily') {
-        let checkDate = new Date();
-        checkDate.setHours(0, 0, 0, 0);
-
-        if (!allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
-            checkDate = subDays(checkDate, 1);
-        }
-        
-        while (allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+        while(allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
             streak++;
             checkDate = subDays(checkDate, 1);
         }
 
     } else if (taskData.recurrenceType === 'weekly' && taskData.recurrenceDays && taskData.recurrenceDays.length > 0) {
-        let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+        let checkWeekStart = startOfWeek(checkDate, { weekStartsOn: 1 });
 
         const isWeekComplete = (weekStart: Date): boolean => {
             return taskData.recurrenceDays!.every(dayId => {
                 const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
                 const dateToCheck = addDays(weekStart, dayIndex);
-                // A week is only complete if all required days are in the past or today.
                 if (isFuture(dateToCheck) && !isSameDay(dateToCheck, new Date())) {
-                    return false;
+                    return true; // Ignore future required days
                 }
                 return allCompletedDates.has(format(dateToCheck, 'yyyy-MM-dd'));
             });
