@@ -540,6 +540,7 @@ function AssignTestDialog({
   }, [selectedQuestions, form]);
 
   async function onSubmit(values: z.infer<typeof assignFormSchema>) {
+    
     for (const studentId of values.studentIds) {
         const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
             title: values.title,
@@ -622,11 +623,3 @@ function AssignTestDialog({
     </Dialog>
   );
 }
-
-    
-
-    
-
-    
-
-    
