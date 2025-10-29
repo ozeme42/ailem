@@ -152,7 +152,7 @@ export default function EducationPage() {
             categories[categoryName] = { total: 0, completed: 0 };
         }
         categories[categoryName].total++;
-        if (test.status !== 'Atandı') {
+        if (test.status === 'Sonuçlandı') {
             categories[categoryName].completed++;
         }
     });
@@ -541,4 +541,5 @@ export default function EducationPage() {
     </>
   );
 }
+
 
