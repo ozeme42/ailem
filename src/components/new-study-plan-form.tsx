@@ -22,7 +22,7 @@ const topicSchema = z.object({
 });
 
 const subjectSchema = z.object({
-    id: z.string(),
+    id: z.string().optional(),
     name: z.string().min(2, "Ders adı en az 2 karakter olmalıdır."),
     topics: z.array(topicSchema).min(1, "En az bir konu eklemelisiniz."),
 });
@@ -80,6 +80,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
         ...values,
         subjects: values.subjects.map(subject => ({
             ...subject,
+            id: subject.id || Date.now().toString() + Math.random(),
             topics: subject.topics.map(topic => ({
                 ...topic,
                 id: topic.id || Date.now().toString() + Math.random(),
@@ -218,7 +219,7 @@ function SourceArrayComponent({ subjectIndex, topicIndex, control}: { subjectInd
                             </FormItem>
                         )}
                     />
-                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(sourceIndex)}><Trash2 className="h-4 w-4"/></Button>
+                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => remove(sourceIndex)}><Trash2 className="h-4 w-4"/></Button>
                 </div>
             ))}
             <Button type="button" size="sm" variant="ghost" onClick={() => append("")}>

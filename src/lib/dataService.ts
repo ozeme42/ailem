@@ -862,14 +862,26 @@ export const updateStudyPlan = (id: string, data: Partial<Omit<StudyPlan, 'id' |
 };
 
 
-export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, 'studyPlans', id));
+export const deleteStudyPlan = async (id: string) => {
+  const batch = writeBatch(db);
+  const planRef = doc(db, 'studyPlans', id);
+  batch.delete(planRef);
+
+  // Delete associated assignments
+  const assignmentsQuery = query(collection(db, 'studyAssignments'), where('studyPlanId', '==', id));
+  const assignmentsSnapshot = await getDocs(assignmentsQuery);
+  assignmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+  return batch.commit();
+};
 
 // Study Assignments
 export const onStudyAssignmentsUpdate = (callback: (assignments: StudyAssignment[]) => void) => onFamilyDataUpdate<StudyAssignment>('studyAssignments', callback);
 export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'studyAssignments'), { ...data, familyId });
+    const assignmentData = { ...data, familyId, status: 'assigned' as const };
+    return addDoc(collection(db, 'studyAssignments'), assignmentData);
 };
 export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id' | 'familyId'>>) => {
     return updateDoc(doc(db, 'studyAssignments', id), removeUndefined(data));
