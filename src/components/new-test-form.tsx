@@ -447,14 +447,14 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
             <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
               <DialogTrigger asChild><Button type="button" variant="secondary" disabled={questions.length === 0}><Key className="mr-2 h-4 w-4"/>Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questions.length})</Button></DialogTrigger>
               <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Cevap Anahtarı</DialogTitle><DialogDescription>{form.getValues('title')} için cevapları girin. Toplam {questions.length} soru.</DialogDescription></DialogHeader>
-                <AnswerKeyForm totalQuestions={questions.length} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: AnswerKey) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
+                <AnswerKeyForm totalQuestions={questions.length} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: any) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
               </DialogContent>
             </Dialog>
           </TabsContent>
 
           <TabsContent value="exam" className="space-y-4 m-0">
              <FormField control={form.control} name="examId" render={({ field }) => (
-                <FormItem><FormLabel>Deneme Sınavı</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedStudentIds}>
+                <FormItem><FormLabel>Deneme Sınavı</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!initialData}>
                   <FormControl><SelectTrigger><SelectValue placeholder={"Bir deneme sınavı seçin"} /></SelectTrigger></FormControl>
                   <SelectContent>{practiceExams.map((exam) => (<SelectItem key={exam.id} value={exam.id}>{exam.name}</SelectItem>))}</SelectContent>
                 </Select><FormMessage /></FormItem>
@@ -467,5 +467,3 @@ export function NewTestForm({ students, bankQuestions, onAssign, initialData, av
     </Tabs>
   );
 }
-
-    

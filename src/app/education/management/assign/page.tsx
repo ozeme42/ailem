@@ -1,5 +1,4 @@
 
-
 import { Suspense } from 'react';
 import AssignClient from './assign-client';
 import { PageHeader } from '@/components/page-header';
@@ -7,6 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookCopy } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AssignTestPage() {
   return (
@@ -25,9 +26,17 @@ export default function AssignTestPage() {
                 </Link>
             </div>
         </PageHeader>
-      <Suspense fallback={<AssignSkeleton />}>
-        <AssignClient />
-      </Suspense>
+        <Card className="mt-6">
+            <CardHeader>
+                <CardTitle>Yeni Test Oluştur</CardTitle>
+                <CardDescription>Oluşturmak istediğiniz ödev türünü seçin ve detayları doldurun.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Suspense fallback={<AssignSkeleton />}>
+                    <AssignClient />
+                </Suspense>
+            </CardContent>
+        </Card>
     </div>
   );
 }
