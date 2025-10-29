@@ -40,37 +40,30 @@ import Image from "next/image";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export type AssignmentType = "quick" | "exam" | "bank";
+export type AssignmentType = "bank" | "exam";
 
 const formSchema = z.object({
   studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
-  activeTab: z.enum(["quick", "exam", "bank"]),
+  activeTab: z.enum(["bank", "exam"]),
   assignedDate: z.date().optional(),
   dueDate: z.date().optional(),
 
-  // Quick Test Fields
+  // Bank Test Fields
   title: z.string().optional(),
   subject: z.string().optional(),
-  questionCount: z.coerce.number().optional(),
-  answerKey: z.record(z.string()).optional(),
-  questions: z.array(z.object({
-    questionId: z.string(),
-    questionNumber: z.number(),
-    imageUrl: z.string().url("Geçerli bir görsel URL'si girilmelidir."),
-  })).optional(),
-  
-  // Bank/Exam Fields
   selectedBankQuestions: z.array(z.string()).optional(),
+  
+  // Exam Fields
   examId: z.string().optional(),
 })
 .refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'bank') {
+    if (data.activeTab === 'bank') {
         return data.title && data.title.length >= 2;
     }
     return true;
 }, { message: "Test başlığı en az 2 karakter olmalıdır.", path: ["title"] })
 .refine((data) => {
-    if (data.activeTab === 'quick' || data.activeTab === 'bank') {
+    if (data.activeTab === 'bank') {
         return !!data.subject;
     }
     return true;
@@ -109,9 +102,6 @@ export default function AssignClient() {
     const [initialData, setInitialData] = React.useState<Test | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     
-    // UI State
-    const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = React.useState(false);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [bankSubjectFilter, setBankSubjectFilter] = React.useState<string>("");
     const [bankTopicFilter, setBankTopicFilter] = React.useState<string>("");
 
@@ -123,22 +113,14 @@ export default function AssignClient() {
         resolver: zodResolver(formSchema),
         shouldUnregister: false,
         defaultValues: {
-          activeTab: 'quick',
+          activeTab: 'bank',
           studentIds: [],
           title: "",
           subject: "",
-          questionCount: 0,
-          answerKey: {},
-          questions: [],
           selectedBankQuestions: [],
           assignedDate: new Date(),
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
-    });
-
-    const { fields, append, remove } = useFieldArray({
-        control: form.control,
-        name: "questions",
     });
 
      React.useEffect(() => {
@@ -155,12 +137,9 @@ export default function AssignClient() {
                     setInitialData(data);
                     form.reset({
                         studentIds: data.studentId ? [data.studentId] : [],
-                        activeTab: data.sourceType === 'exam' ? 'exam' : (data.sourceType === 'bank' ? 'bank' : 'quick'),
+                        activeTab: data.sourceType === 'exam' ? 'exam' : 'bank',
                         title: data.title || "",
                         subject: data.subject || "",
-                        questionCount: data.questionCount || 0,
-                        answerKey: data.answerKey || {},
-                        questions: data.questions || [],
                         selectedBankQuestions: data.sourceType === 'bank' ? (data.questions || []).map(q => q.questionId) : [],
                         examId: data.sourceType === 'exam' ? data.sourceId : undefined,
                         assignedDate: data.assignedDate ? parse(data.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
@@ -199,22 +178,9 @@ export default function AssignClient() {
         try {
             for (const studentId of values.studentIds) {
                 let testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>;
-                let questionsForSubcollection: (QuickTestQuestion | BankQuestion)[] | undefined = undefined;
+                let questionsForSubcollection: (BankQuestion)[] | undefined = undefined;
 
                 switch (values.activeTab) {
-                    case 'quick':
-                        testData = {
-                            title: values.title!,
-                            subject: values.subject!,
-                            studentId: studentId,
-                            questionCount: values.questions?.length || 0,
-                            assignedDate, dueDate,
-                            sourceType: 'quick',
-                            answerKey: values.answerKey,
-                        };
-                        questionsForSubcollection = values.questions;
-                        break;
-                    
                     case 'bank':
                         const selectedQuestionsFromBank = (values.selectedBankQuestions || []).map(qId => bankQuestions.find(bq => bq.id === qId)).filter((q): q is BankQuestion => !!q);
                         testData = {
@@ -267,7 +233,6 @@ export default function AssignClient() {
     }
     
     const activeTab = form.watch("activeTab");
-    const questions = form.watch("questions") || [];
 
      const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
 
@@ -284,99 +249,22 @@ export default function AssignClient() {
         const topics = new Set(bankQuestions.filter(q => q.subject === bankSubjectFilter).map(q => q.topic));
         return Array.from(topics).map(t => ({ label: t, value: t }));
     }, [bankQuestions, bankSubjectFilter]);
-    
-    const handleImageUpload = () => fileInputRef.current?.click();
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (!files) return;
-
-        toast({ title: 'Görseller Yükleniyor...', description: 'Bu işlem biraz zaman alabilir.' });
-
-        for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        await new Promise<void>(resolve => {
-            reader.onload = async () => {
-            const imageDataUri = reader.result as string;
-            try {
-                const destinationPath = `test-questions/${Date.now()}-${file.name}`;
-                const migrationResult = await migrateImage({ imageDataUri, destinationPath });
-                if (migrationResult.success && migrationResult.newUrl) {
-                append({
-                    questionId: `${fields.length + i + 1}`, // temp id
-                    questionNumber: fields.length + i + 1,
-                    imageUrl: migrationResult.newUrl,
-                });
-                } else {
-                toast({ title: "Görsel Yükleme Hatası", description: migrationResult.error, variant: "destructive" });
-                }
-            } catch(e) {
-                toast({ title: "Görsel Yükleme Hatası", variant: "destructive" });
-            }
-            resolve();
-            };
-        });
-        }
-        if (event.target) {
-        event.target.value = ''; // Reset file input
-        }
-    };
 
 
     return (
       <Tabs value={activeTab} onValueChange={(val) => form.setValue('activeTab', val as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="quick" disabled={!!initialData}>Hızlı Test</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="bank" disabled={!!initialData}>Soru Bankası</TabsTrigger>
                 <TabsTrigger value="exam" disabled={!!initialData}>Deneme Sınavı</TabsTrigger>
             </TabsList>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-4 pt-4">
-                <TabsContent value="quick" className="space-y-4 m-0">
-                    <FormField control={form.control} name="title" render={({ field }) => (
-                        <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: 2. Dönem Genel Tekrar" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    
-                    <FormField control={form.control} name="subject" render={({ field }) => (
-                        <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
-                    )} />
-                    
-                    <div className="space-y-2">
-                        <FormLabel>Sorular ({questions.length} adet)</FormLabel>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {fields.map((field, index) => (
-                                <div key={field.id} className="relative group">
-                                    <Badge className="absolute top-1 left-1 z-10">Soru {index + 1}</Badge>
-                                    <Image src={(field as any).imageUrl} alt={`Soru ${index + 1}`} width={100} height={100} className="w-full h-auto object-contain rounded-md border" data-ai-hint="question paper" />
-                                    <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => remove(index)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                        <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleImageUpload}>
-                            <UploadCloud className="mr-2 h-4 w-4" />
-                            Soru Resimleri Yükle
-                        </Button>
-                        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
-                    </div>
-                    
-                    <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
-                    <DialogTrigger asChild><Button type="button" variant="secondary" disabled={questions.length === 0}><Key className="mr-2 h-4 w-4"/>Cevap Anahtarını Düzenle ({Object.keys(form.getValues('answerKey') || {}).length} / {questions.length})</Button></DialogTrigger>
-                    <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Cevap Anahtarı</DialogTitle></DialogHeader>
-                        <AnswerKeyForm totalQuestions={questions.length} answerKey={form.getValues('answerKey') || {}} onSave={(newKey: any) => { form.setValue('answerKey', newKey); setIsAnswerKeyDialogOpen(false); }} />
-                    </DialogContent>
-                    </Dialog>
-                </TabsContent>
-
                 <TabsContent value="bank" className="space-y-4 m-0">
                     <FormField control={form.control} name="title" render={({ field }) => (
                         <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: Rasyonel Sayılar Değerlendirme" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="subject" render={({ field }) => (
-                        <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value || ""} onChange={field.onChange} onCreate={handleCreateSubject} placeholder="Ders seç..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:" /><FormMessage /></FormItem>
                     )} />
 
                     <div className="p-4 border rounded-lg">
@@ -440,7 +328,7 @@ export default function AssignClient() {
                         render={() => (
                             <FormItem>
                             <FormLabel>Öğrenci(ler)</FormLabel>
-                            {students.map((student) => (
+                            {studentMembers.map((student) => (
                                 <FormField
                                 key={student.id}
                                 control={form.control}
