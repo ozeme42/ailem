@@ -545,9 +545,9 @@ export default function OpticalFormPage() {
         setTextAnswers(prev => ({...prev, [questionNumber]: value}));
     };
     
-    // Check if test has images or not
     const hasImages = test.questions && test.questions.length > 0;
     const options = ['A', 'B', 'C', 'D'];
+    const testDurationMinutes = test.durationMinutes || (test.questionCount * 2);
 
     if (hasImages) {
         // Single question view for tests with images
@@ -576,9 +576,6 @@ export default function OpticalFormPage() {
                     <Button variant="ghost" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                     </Button>
-                    {test.durationMinutes && (
-                         <Timer durationMinutes={test.durationMinutes} onTimeUp={() => handleSubmit(true)} />
-                    )}
                 </header>
                 
                 <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -587,6 +584,11 @@ export default function OpticalFormPage() {
                             <CardHeader>
                                 <CardTitle className="text-2xl">{test.title}</CardTitle>
                                 <CardDescription>{test.subject}</CardDescription>
+                                {testDurationMinutes > 0 && (
+                                    <Card className="mt-4 p-2 w-fit">
+                                        <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                                    </Card>
+                                )}
                             </CardHeader>
                             <CardContent className="p-0 sm:p-0">
                                 <div className="space-y-4">
@@ -693,14 +695,16 @@ export default function OpticalFormPage() {
                 <Button variant="ghost" onClick={() => router.back()}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                 </Button>
-                 {test.durationMinutes && (
-                    <Timer durationMinutes={test.durationMinutes} onTimeUp={() => handleSubmit(true)} />
-                )}
             </header>
             <Card>
                 <CardHeader>
                     <CardTitle className="text-2xl">{test.title}</CardTitle>
                     <CardDescription>{test.subject}</CardDescription>
+                    {testDurationMinutes > 0 && (
+                        <Card className="mt-4 p-2 w-fit">
+                            <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                        </Card>
+                    )}
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
