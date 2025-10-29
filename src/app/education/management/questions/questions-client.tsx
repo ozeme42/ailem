@@ -488,6 +488,7 @@ function BulkAddImagesDialog({
 
 const assignFormSchema = z.object({
   title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
+  durationMinutes: z.coerce.number().min(1, "Süre en az 1 dakika olmalıdır.").optional(),
   studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
   dateRange: z.object({
       from: z.date(),
@@ -538,10 +539,13 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, selectedQuestion
         } else if (areAllSameSubject) {
             defaultTitle = `${subject} Karma Tekrar Testi`;
         }
+        
+        const defaultDuration = Math.round(selectedQuestions.length * 1.5);
 
         form.reset({
             ...form.getValues(),
-            title: defaultTitle
+            title: defaultTitle,
+            durationMinutes: defaultDuration,
         });
     }
   }, [isOpen, selectedQuestions, form]);
@@ -565,6 +569,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, selectedQuestion
                 subject: selectedQuestions[0]?.subject || 'Karma',
                 studentId: studentId,
                 questionCount: selectedQuestions.length,
+                durationMinutes: values.durationMinutes,
                 assignedDate: format(values.dateRange.from, 'dd MMMM yyyy', { locale: tr }),
                 dueDate: format(values.dateRange.to, 'dd MMMM yyyy', { locale: tr }),
                 sourceType: 'bank',
@@ -605,6 +610,17 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, selectedQuestion
                   <FormItem>
                     <FormLabel>Test Başlığı</FormLabel>
                     <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="durationMinutes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Süre (dakika)</FormLabel>
+                    <FormControl><Input type="number" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

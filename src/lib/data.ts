@@ -425,6 +425,7 @@ export interface Test {
   subject: string;
   studentId: string; // Changed to string to match FamilyMember.id
   questionCount: number;
+  durationMinutes?: number;
   assignedDate: string;
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
