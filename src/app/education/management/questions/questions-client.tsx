@@ -488,15 +488,6 @@ function BulkAddImagesDialog({
     );
 }
 
-const assignFormSchema = z.object({
-  studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
-  title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
-  subject: z.string().min(1, "Ders seçimi zorunludur."),
-  assignedDate: z.date(),
-  dueDate: z.date(),
-});
-
-
 function AssignTestDialog({
   isOpen,
   onOpenChange,
@@ -513,59 +504,72 @@ function AssignTestDialog({
   onAssignComplete: () => void;
 }) {
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof assignFormSchema>>({
-    resolver: zodResolver(assignFormSchema),
-    defaultValues: {
-      studentIds: [],
-      title: "",
-      subject: "",
-      assignedDate: new Date(),
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Simplified state management
+  const [title, setTitle] = useState('');
+  const [subject, setSubject] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(),
+    to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+
   const selectedQuestions = useMemo(() => 
     selectedQuestionIds.map(id => allBankQuestions.find(q => q.id === id)).filter((q): q is BankQuestion => !!q)
   , [selectedQuestionIds, allBankQuestions]);
 
   useEffect(() => {
-    if (selectedQuestions.length > 0) {
+    if (isOpen && selectedQuestions.length > 0) {
       const firstQuestion = selectedQuestions[0];
-      form.reset({
-        ...form.getValues(),
-        title: `${firstQuestion.topic} Tekrar Testi`,
-        subject: firstQuestion.subject,
-      })
+      setTitle(`${firstQuestion.topic} Tekrar Testi`);
+      setSubject(firstQuestion.subject);
+      setSelectedStudentIds([]);
+      setDateRange({ from: new Date(), to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
     }
-  }, [selectedQuestions, form]);
+  }, [isOpen, selectedQuestions]);
 
-  async function onSubmit(values: z.infer<typeof assignFormSchema>) {
+  const handleStudentSelect = (studentId: string, checked: boolean) => {
+    setSelectedStudentIds(prev => 
+      checked ? [...prev, studentId] : prev.filter(id => id !== studentId)
+    );
+  };
+  
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (selectedStudentIds.length === 0 || !title || !subject) {
+        toast({ title: "Eksik Bilgi", description: "Lütfen başlık, ders ve en az bir öğrenci seçin.", variant: "destructive"});
+        return;
+    }
+
+    setIsSubmitting(true);
     
-    for (const studentId of values.studentIds) {
+    for (const studentId of selectedStudentIds) {
         const testData: Omit<Test, 'id' | 'familyId' | 'status' | 'isArchived'> = {
-            title: values.title,
-            subject: values.subject,
+            title: title,
+            subject: subject,
             studentId,
             questionCount: selectedQuestions.length,
-            assignedDate: format(values.assignedDate, 'dd MMMM yyyy', { locale: tr }),
-            dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
+            assignedDate: format(dateRange.from, 'dd MMMM yyyy', { locale: tr }),
+            dueDate: format(dateRange.to, 'dd MMMM yyyy', { locale: tr }),
             sourceType: 'bank',
         };
         try {
             await addTest(testData, selectedQuestions);
         } catch (error) {
             console.error(error);
-            toast({ title: "Hata", description: `${values.title} testi ${students.find(s=>s.id === studentId)?.name} öğrencisine atanırken hata oluştu.`, variant: "destructive" });
+            toast({ title: "Hata", description: `${title} testi ${students.find(s=>s.id === studentId)?.name} öğrencisine atanırken hata oluştu.`, variant: "destructive" });
         }
     }
 
     toast({
       title: "✅ Ödev Atandı",
-      description: `${values.title} testi ${values.studentIds.length} öğrenciye başarıyla atandı.`,
+      description: `${title} testi ${selectedStudentIds.length} öğrenciye başarıyla atandı.`,
     });
+    
+    setIsSubmitting(false);
     onOpenChange(false);
     onAssignComplete();
-    form.reset();
   }
 
   return (
@@ -574,52 +578,69 @@ function AssignTestDialog({
         <DialogHeader>
           <DialogTitle>{selectedQuestionIds.length} Soruyu Ata</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-             <FormField control={form.control} name="title" render={({ field }) => (
-                <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-             <FormField control={form.control} name="subject" render={({ field }) => (
-                <FormItem><FormLabel>Ders</FormLabel><FormControl><Input {...field} readOnly /></FormControl><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="studentIds" render={() => (
-                <FormItem>
-                    <FormLabel>Öğrenci(ler)</FormLabel>
-                    {students.map(s => (
-                        <FormField key={s.id} control={form.control} name="studentIds" render={({ field }) => (
-                            <FormItem className="flex items-center gap-2"><FormControl>
-                                <Checkbox checked={field.value?.includes(s.id)} onCheckedChange={checked => {
-                                    return checked ? field.onChange([...(field.value || []), s.id]) : field.onChange(field.value?.filter(id => id !== s.id))
-                                }}/>
-                            </FormControl><FormLabel className="font-normal">{s.name}</FormLabel></FormItem>
-                        )}/>
-                    ))}
-                    <FormMessage/>
-                </FormItem>
-            )}/>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+                <Label htmlFor="title">Test Başlığı</Label>
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="subject">Ders</Label>
+                <Input id="subject" value={subject} readOnly disabled />
+            </div>
+             <div className="space-y-2">
+                <Label>Öğrenci(ler)</Label>
+                {students.map(s => (
+                    <div key={s.id} className="flex items-center gap-2">
+                        <Checkbox 
+                            id={`student-${s.id}`} 
+                            checked={selectedStudentIds.includes(s.id)} 
+                            onCheckedChange={(checked) => handleStudentSelect(s.id, !!checked)} 
+                        />
+                        <Label htmlFor={`student-${s.id}`} className="font-normal">{s.name}</Label>
+                    </div>
+                ))}
+            </div>
              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="assignedDate" render={({ field }) => (
-                  <FormItem className="flex flex-col"><FormLabel>Başlangıç Tarihi</FormLabel>
-                    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}</Button></FormControl></PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                    </Popover><FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="dueDate" render={({ field }) => (
-                  <FormItem className="flex flex-col"><FormLabel>Bitiş Tarihi</FormLabel>
-                    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}</Button></FormControl></PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => form.getValues('assignedDate') ? date < form.getValues('assignedDate')! : false} initialFocus/></PopoverContent>
-                    </Popover><FormMessage />
-                  </FormItem>
-                )} />
+                <div className="flex flex-col space-y-2">
+                    <Label>Başlangıç Tarihi</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !dateRange.from && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRange.from ? format(dateRange.from, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateRange.from} onSelect={(d) => setDateRange(prev => ({...prev, from: d || new Date()}))} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                 <div className="flex flex-col space-y-2">
+                    <Label>Bitiş Tarihi</Label>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !dateRange.to && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRange.to ? format(dateRange.to, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateRange.to} onSelect={(d) => setDateRange(prev => ({...prev, to: d || new Date()}))} disabled={(date) => date < dateRange.from} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-              <Button type="submit">Ödevi Ata</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                  Ödevi Ata
+              </Button>
             </DialogFooter>
           </form>
-        </Form>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
