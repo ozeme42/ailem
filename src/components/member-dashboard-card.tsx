@@ -123,7 +123,7 @@ export function MemberDashboardCard({
             completed: todaysCompletions.includes(prayer),
         }));
 
-        const memberVideos = videos.filter(v => v.assigneeId === memberId && (v.completedVideos || 0) < v.totalVideos);
+        const memberVideos = videos.filter(v => v.assigneeId === memberId && (v.completedVideos || 0) > 0 && (v.completedVideos || 0) < v.totalVideos);
         
         // This logic is tricky. How do we count a "completed" video activity for the day?
         // Let's assume for now any progress is an activity.
@@ -373,3 +373,5 @@ export function MemberDashboardCard({
         </Card>
     );
 }
+
+    
