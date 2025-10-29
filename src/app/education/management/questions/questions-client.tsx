@@ -24,8 +24,10 @@ import { useAuth } from "@/components/auth-provider";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Form as RhfForm, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 
 export function QuestionsClient() {
@@ -121,11 +123,6 @@ export function QuestionsClient() {
 
   const handleAssignSelected = () => {
       if (selectedQuestions.length === 0) return;
-      // This is just a placeholder implementation.
-      // We are now navigating to a new page.
-      // The actual assignment logic is in `assign-client.tsx`.
-      // For now, we'll just log it.
-      console.log("Navigating to assignment page with questions:", selectedQuestions);
       router.push(`/education/management/assign?questions=${selectedQuestions.join(',')}`);
 
   }
@@ -436,7 +433,8 @@ function BulkAddImagesDialog({
                        Birden çok soru görseli seçin. Tüm sorular seçili ders ve konuya eklenecektir.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-4">
+                <RhfForm {...form}>
+                    <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-4">
                         <ScrollArea className="h-[60vh] pr-4">
                           <div className="space-y-4 mt-4">
                                <div 
@@ -475,6 +473,7 @@ function BulkAddImagesDialog({
                             </Button>
                         </DialogFooter>
                     </form>
+                </RhfForm>
             </DialogContent>
         </Dialog>
     );
