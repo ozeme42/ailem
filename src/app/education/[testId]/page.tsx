@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -31,6 +32,37 @@ type TextAnswers = { [key: string]: string };
 type AnswerKey = { [key: string]: string };
 type EvaluationStatus = "correct" | "incorrect" | "unevaluated" | "empty";
 type ManualEvaluation = { [key: string]: EvaluationStatus };
+
+function formatTime(seconds: number) {
+  if (seconds < 0) seconds = 0;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeUp: () => void }) {
+  const [timeLeft, setTimeLeft] = React.useState(durationMinutes * 60);
+
+  React.useEffect(() => {
+    if (timeLeft <= 0) {
+      onTimeUp();
+      return;
+    }
+
+    const timerId = setInterval(() => {
+      setTimeLeft(prevTime => prevTime - 1);
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [timeLeft, onTimeUp]);
+
+  return (
+    <div className="flex items-center gap-2 font-semibold text-lg">
+      <Clock className="h-5 w-5" />
+      <span>{formatTime(timeLeft)}</span>
+    </div>
+  );
+}
 
 export default function OpticalFormPage() {
     const router = useRouter();
@@ -540,10 +572,13 @@ export default function OpticalFormPage() {
 
         return (
             <div className="py-8 px-0 sm:container sm:mx-auto">
-                <header className="mb-4 px-4 sm:px-0">
+                <header className="mb-4 px-4 sm:px-0 flex justify-between items-center">
                     <Button variant="ghost" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                     </Button>
+                    {test.durationMinutes && (
+                         <Timer durationMinutes={test.durationMinutes} onTimeUp={() => handleSubmit(true)} />
+                    )}
                 </header>
                 
                 <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -654,10 +689,13 @@ export default function OpticalFormPage() {
     // Optical form view for tests without images
     return (
         <div className="container mx-auto py-8">
-            <header className="mb-4">
+            <header className="mb-4 flex justify-between items-center">
                 <Button variant="ghost" onClick={() => router.back()}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                 </Button>
+                 {test.durationMinutes && (
+                    <Timer durationMinutes={test.durationMinutes} onTimeUp={() => handleSubmit(true)} />
+                )}
             </header>
             <Card>
                 <CardHeader>
