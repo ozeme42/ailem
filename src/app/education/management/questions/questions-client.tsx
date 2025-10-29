@@ -2,6 +2,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -433,8 +436,7 @@ function BulkAddImagesDialog({
                        Birden çok soru görseli seçin. Tüm sorular seçili ders ve konuya eklenecektir.
                     </DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-4">
                         <ScrollArea className="h-[60vh] pr-4">
                           <div className="space-y-4 mt-4">
                                <div 
@@ -473,7 +475,6 @@ function BulkAddImagesDialog({
                             </Button>
                         </DialogFooter>
                     </form>
-                </Form>
             </DialogContent>
         </Dialog>
     );
