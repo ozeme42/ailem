@@ -5,7 +5,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { NewTestForm } from "@/components/new-test-form";
-import { BankQuestion, Test, FamilyMember } from "@/lib/data";
+import { BankQuestion, Test, FamilyMember, QuickTestQuestion } from "@/lib/data";
 import {
   onBankQuestionsUpdate,
   onSubjectsUpdate,
@@ -72,13 +72,13 @@ export default function AssignClient() {
         await updateTopics(newTopics);
     };
 
-    const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, id?: string) => {
+    const handleAssignmentSubmit = async (testData: Omit<Test, 'id' | 'status' | 'familyId' | 'isArchived'>, selectedQuestionsFromBank?: BankQuestion[]) => {
         try {
-            if (id) {
-                await updateTest(id, testData);
+            if (editTestId) {
+                await updateTest(editTestId, testData, selectedQuestionsFromBank);
                 toast({ title: "✅ Ödev Güncellendi", description: "Ödev bilgileri başarıyla güncellendi." });
             } else {
-                await addTest({ ...testData, status: 'Atandı', isArchived: false });
+                await addTest({ ...testData, status: 'Atandı', isArchived: false }, selectedQuestionsFromBank);
                 toast({ title: "✅ Ödev Atandı", description: "Yeni ödev başarıyla öğrenciye atandı." });
             }
             router.push('/education/management');
