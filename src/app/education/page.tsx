@@ -131,17 +131,25 @@ export default function EducationPage() {
       });
   }, [selectedStudent, allTests]);
 
-  const studentStudyAssignments = React.useMemo(() => {
-    if (!selectedStudent) return [];
-    return studyAssignments.filter(sa => sa.studentId === selectedStudent.id);
-  }, [selectedStudent, studyAssignments]);
+  const { pendingStudies, completedStudies } = React.useMemo(() => {
+    if (!selectedStudent) return { pendingStudies: [], completedStudies: [] };
 
-  const pendingStudies = React.useMemo(() => {
-    return studentStudyAssignments
+    const studentAssignments = studyAssignments
+      .filter(sa => sa.studentId === selectedStudent.id)
+      .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
+      
+    const pending = studentAssignments
       .filter(sa => sa.status === 'assigned')
-      .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }))
       .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
-  }, [studentStudyAssignments, studyPlans]);
+
+    const completed = studentAssignments
+      .filter(sa => sa.status === 'completed')
+      .sort((a, b) => compareDesc(parseISO(a.completedAt || '1970-01-01'), parseISO(b.completedAt || '1970-01-01')));
+
+    return { pendingStudies: pending, completedStudies: completed };
+}, [selectedStudent, studyAssignments, studyPlans]);
+
+
   
   const overallStats = React.useMemo(() => {
     const evaluatedTests = tests.filter(t => t.status === 'Sonuçlandı');
@@ -215,6 +223,7 @@ export default function EducationPage() {
             endDate: parse(t.dueDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
             isCompleted: t.status !== 'Atandı',
         }));
+        const studentStudyAssignments = studyAssignments.filter(sa => sa.studentId === selectedStudent?.id);
         const studyAssignmentsData = studentStudyAssignments.map(s => ({
             id: s.id,
             title: s.topic,
@@ -225,7 +234,7 @@ export default function EducationPage() {
             isCompleted: s.status === 'completed',
         }));
         return [...testAssignments, ...studyAssignmentsData].sort((a,b) => compareAsc(a.startDate, b.startDate));
-    }, [tests, studentStudyAssignments]);
+    }, [tests, studyAssignments, selectedStudent]);
     
     const renderCalendarView = () => {
         if (viewMode === 'weekly') {
@@ -526,32 +535,49 @@ export default function EducationPage() {
                     </Card>
                     
                     <Card className="mt-8">
-                        <CardHeader><CardTitle>Konu Anlatımı Takibi</CardTitle><CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmamış konu anlatımı görevleri.</CardDescription></CardHeader>
-                        <CardContent>
-                        {pendingStudies.length > 0 ? (
-                            <div className="space-y-2">
-                            {pendingStudies.map(study => {
-                                const dueDate = parseISO(study.dueDate);
-                                const now = new Date();
-                                const daysDiff = differenceInDays(dueDate, now);
-                                const isDue = isPast(dueDate) && !isToday(dueDate);
-                                return (
-                                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20">
-                                    <Checkbox id={`study-${study.id}`} onCheckedChange={() => handleStudyAssignmentStatusChange(study)} className="border-primary"/>
-                                    <div className="flex-grow">
-                                        <label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label>
-                                        <p className="text-xs text-blue-800/80 dark:text-blue-300/80">{study.studyPlanTitle} - {study.subject}</p>
+                        <CardHeader>
+                            <CardTitle>Konu Anlatımı Takibi</CardTitle>
+                            <CardDescription>{selectedStudent?.name} için atanmış konu anlatımı görevleri.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {pendingStudies.length > 0 ? (
+                                pendingStudies.map(study => (
+                                    <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20">
+                                        <Checkbox 
+                                            id={`study-${study.id}`} 
+                                            onCheckedChange={() => handleStudyAssignmentStatusChange(study)} 
+                                            className="border-primary"
+                                        />
+                                        <div className="flex-grow">
+                                            <label htmlFor={`study-${study.id}`} className="font-semibold cursor-pointer text-sm">{study.topic}</label>
+                                            <p className="text-xs text-blue-800/80 dark:text-blue-300/80">{study.studyPlanTitle} - {study.subject}</p>
+                                        </div>
                                     </div>
-                                    {isDue
-                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
-                                        : isToday(dueDate)
-                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
-                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
-                                    }
-                                </div>
-                            )})}
-                            </div>
-                        ) : (<p className="text-center text-muted-foreground p-4">Tamamlanmamış konu anlatımı görevi bulunmuyor.</p>)}
+                                ))
+                            ) : (
+                                <p className="text-center text-muted-foreground p-4">Tamamlanmamış konu anlatımı görevi bulunmuyor.</p>
+                            )}
+
+                            {completedStudies.length > 0 && (
+                                <Accordion type="single" collapsible className="w-full pt-4">
+                                    <AccordionItem value="item-1" className="border-b-0">
+                                        <AccordionTrigger className="text-sm text-muted-foreground hover:no-underline justify-start gap-1 p-1">
+                                            Tamamlanan {completedStudies.length} konuyu göster
+                                        </AccordionTrigger>
+                                        <AccordionContent className="space-y-2 pt-2">
+                                            {completedStudies.map(study => (
+                                                <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-500/10">
+                                                    <Check className="h-4 w-4 text-gray-500" />
+                                                    <div className="truncate">
+                                                        <p className="font-semibold truncate text-sm text-muted-foreground line-through">{study.topic}</p>
+                                                        <p className="text-xs text-muted-foreground/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+                            )}
                         </CardContent>
                     </Card>
                  </>
