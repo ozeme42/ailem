@@ -539,8 +539,8 @@ export default function OpticalFormPage() {
         const qNum = currentQuestion?.questionNumber;
 
         return (
-            <div className="container mx-auto py-8">
-                <header className="mb-4">
+            <div className="py-8 px-0 sm:container sm:mx-auto">
+                <header className="mb-4 px-4 sm:px-0">
                     <Button variant="ghost" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Geri
                     </Button>
@@ -706,6 +706,8 @@ export default function OpticalFormPage() {
         </div>
     );
 }
+
+    
 
     
 
