@@ -659,8 +659,8 @@ export default function OpticalFormPage() {
                     </div>
                     <aside className="lg:sticky top-8 self-start">
                         <Card>
-                            <CardHeader className="text-center"><CardTitle>Soru Takibi</CardTitle></CardHeader>
-                            <CardContent className="space-y-6">
+                             <CardHeader className="text-center bg-gradient-to-br from-blue-500 to-purple-600 text-primary-foreground rounded-t-lg"><CardTitle>Soru Takibi</CardTitle></CardHeader>
+                             <CardContent className="space-y-6 pt-6">
                                 <div className="text-center">
                                     <p className="text-muted-foreground">Cevaplanan Soru</p>
                                     <p className="text-4xl font-bold text-foreground"><CheckCircle className="inline-block h-8 w-8 mr-2 text-green-500 align-text-bottom"/>{answeredQuestionsCount} / {test.questionCount}</p>
