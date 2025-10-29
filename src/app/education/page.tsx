@@ -458,17 +458,24 @@ export default function EducationPage() {
                             {testsByCategory.map(([category, data]) => {
                                 if (data.total === 0) return null;
                                 const Icon = categoryIcons[category] || FileText;
-                                const colorName = categoryColors[category] || 'gray-500';
-                                const colorClass = `border-${colorName} text-${colorName.replace('-500', '-600').replace('-400', '-500')}`;
+                                const colorClass = categoryCardColors[category] || 'bg-gray-500/10 text-gray-800';
                                 const progressColor = categoryProgressColors[category] || 'bg-gray-500';
                                 const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
-
+                    
                                 return (
                                     <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
-                                        <Card className={cn(`flex flex-col border-t-4 shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full border-${colorName}`)}>
-                                            <CardHeader className="text-center"><Icon className={`w-16 h-16 mx-auto mb-4 text-${colorName}`} /><CardTitle className={cn("text-xl", `text-${colorName.replace('-500', '-600').replace('-400', '-500')}`)}>{category}</CardTitle></CardHeader>
-                                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center"><p className="text-lg text-foreground">{data.total} Adet Sınav</p><p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p></CardContent>
-                                            <CardFooter className="p-0"><Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none" indicatorClassName={progressColor} /></CardFooter>
+                                        <Card className={cn("flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                                            <CardHeader className="text-center">
+                                                <Icon className="w-16 h-16 mx-auto mb-4 opacity-80" />
+                                                <CardTitle className="text-xl text-current">{category}</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
+                                                <p className="text-lg font-semibold">{data.total} Adet Sınav</p>
+                                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
+                                            </CardContent>
+                                            <CardFooter className="p-0">
+                                                <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
+                                            </CardFooter>
                                         </Card>
                                     </Link>
                                 )
@@ -482,7 +489,7 @@ export default function EducationPage() {
                             tests.filter(test => test.status === 'Atandı').map(test => {
                                 const categoryName = getCategoryName(test);
                                 const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
-                                const iconColor = categoryColors[categoryName] || 'gray-500';
+                                const iconColor = `text-${categoryColors[categoryName] || 'gray-500'}`;
                                 const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                                 const now = new Date();
                                 const daysDiff = differenceInDays(dueDate, now);
@@ -493,7 +500,7 @@ export default function EducationPage() {
                                         <div className="flex items-center p-4 gap-4">
                                             <div className="flex-grow">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <div className={cn('w-4 h-4', `text-${iconColor.replace('-400', '-500')}`)}>{React.createElement(categoryIcons[categoryName] || FileText)}</div>
+                                                    <div className={cn('w-4 h-4', iconColor)}>{React.createElement(categoryIcons[categoryName] || FileText)}</div>
                                                     <h3 className="font-semibold text-lg">{test.title}</h3>
                                                 </div>
                                                 <div className="flex items-center gap-4 ml-6">
