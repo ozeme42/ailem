@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -161,9 +162,11 @@ export default function CategoryDetailPage() {
                            <div key={topic.id} className="p-3 border rounded-lg">
                               <div className="flex justify-between items-center mb-2">
                                 <p className="font-semibold">{topic.name}</p>
-                                <Button size="sm" variant="secondary" onClick={() => { setSelectedTopic(topic); setIsAssignDialogOpen(true); }}>
-                                    <Send className="mr-2 h-4 w-4"/> Ödev Ata
-                                </Button>
+                                 <Link href="/education/management/questions">
+                                    <Button size="sm" variant="secondary">
+                                        <Send className="mr-2 h-4 w-4"/> Ödev Ata
+                                    </Button>
+                                </Link>
                               </div>
                               <div className="flex items-center gap-4">
                                 <Progress value={topic.successRate} className="h-2 flex-grow" indicatorClassName={progressColor} />
