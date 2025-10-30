@@ -2050,7 +2050,7 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
                     });
                     
                     const formattedStats: { [month: string]: { income: number, expense: number } } = {};
-                    Object.keys(stats).forEach(monthKey => {
+                    Object.keys(stats).sort().forEach(monthKey => {
                         const [year, month] = monthKey.split('-');
                         const monthName = format(new Date(Number(year), Number(month) - 1), 'MMM', {locale: tr});
                         formattedStats[monthName] = stats[monthKey];
@@ -2071,14 +2071,3 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
         if (unsubscribe) unsubscribe();
     };
 };
-    
-
-    
-
-    
-
-    
-
-    
-
-```

@@ -51,4 +51,10 @@ export function MobileNavbar() {
                     {item.label}
                 </span>
               </div>
-            </Link
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
