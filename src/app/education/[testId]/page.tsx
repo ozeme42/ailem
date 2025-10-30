@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Test as TestType, QuickTestQuestion } from "@/lib/data";
+import { Test as TestType, QuickTestQuestion, Mistake } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { doc, getDoc, getDocs, collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
+import { updateTest, checkAndAwardBadges, addMistake } from "@/lib/dataService";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -89,7 +89,7 @@ export default function OpticalFormPage() {
     const [fullscreenImage, setFullscreenImage] = React.useState<string | null>(null);
     
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
-        if (!test) return;
+        if (!test || !user) return;
         
         const isMcqTest = !test.openEnded;
         
@@ -120,6 +120,22 @@ export default function OpticalFormPage() {
                             correct++;
                         } else {
                             incorrect++;
+                             const question = test.questions?.find(q => q.questionNumber === i);
+                            if (question?.imageUrl) {
+                                const newMistake: Omit<Mistake, 'id'|'familyId'|'status'> = {
+                                    creatorId: user.uid,
+                                    testId: test.id,
+                                    originalQuestionId: question.questionId,
+                                    imageUrl: question.imageUrl,
+                                    studentAnswer: allStudentMcqAnswers[qNumStr] || '',
+                                    correctAnswer: (answerKey as any)[qNumStr] || '',
+                                    subject: test.subject,
+                                    topic: test.topicId || 'Genel',
+                                    createdAt: new Date().toISOString(),
+                                    type: 'mcq'
+                                };
+                                await addMistake(newMistake);
+                            }
                         }
                     }
                     
@@ -165,7 +181,7 @@ export default function OpticalFormPage() {
                 description: "Test sonuçları kaydedilirken bir sorun oluştu.",
             });
         }
-    }, [test, mcqAnswers, textAnswers, toast, router]);
+    }, [test, mcqAnswers, textAnswers, toast, router, user]);
     
      React.useEffect(() => {
         if (!testId) {
@@ -238,17 +254,36 @@ export default function OpticalFormPage() {
     };
 
     const handleFinalizeEvaluation = async () => {
-        if (!test) return;
+        if (!test || !user) return;
 
         let correct = 0;
         let incorrect = 0;
         let empty = 0;
 
-        Object.values(manualEvaluations).forEach(status => {
+        for(const [qNumStr, status] of Object.entries(manualEvaluations)) {
             if (status === 'correct') correct++;
-            else if (status === 'incorrect') incorrect++;
+            else if (status === 'incorrect') {
+                incorrect++;
+                const question = test.questions?.find(q => q.questionNumber.toString() === qNumStr);
+                if (question?.imageUrl) {
+                    const newMistake: Omit<Mistake, 'id'|'familyId'|'status'> = {
+                        creatorId: test.studentId,
+                        testId: test.id,
+                        originalQuestionId: question.questionId,
+                        imageUrl: question.imageUrl,
+                        studentAnswer: test.openEnded ? test.studentTextAnswers?.[qNumStr] : test.studentAnswers?.[qNumStr],
+                        correctAnswer: test.answerKey?.[qNumStr],
+                        subject: test.subject,
+                        topic: test.topicId || 'Genel',
+                        createdAt: new Date().toISOString(),
+                        type: test.openEnded ? 'open_ended' : 'mcq'
+                    };
+                    await addMistake(newMistake);
+                }
+
+            }
             else if (status === 'empty' || status === 'unevaluated') empty++;
-        });
+        }
 
         const unevaluatedCount = Object.values(manualEvaluations).filter(s => s === 'unevaluated').length;
         
