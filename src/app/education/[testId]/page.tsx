@@ -114,21 +114,38 @@ export default function OpticalFormPage() {
 
                     for (let i = 1; i <= test.questionCount; i++) {
                         const qNumStr = i.toString();
-                        if (!allStudentMcqAnswers[qNumStr] || allStudentMcqAnswers[qNumStr] === null) {
+                        const studentAns = allStudentMcqAnswers[qNumStr];
+                        const question = test.questions?.find(q => q.questionNumber === i);
+                        
+                        if (!studentAns || studentAns === null) {
                             empty++;
-                        } else if (allStudentMcqAnswers[qNumStr] === (answerKey as any)[qNumStr]) {
-                            correct++;
-                        } else {
-                            incorrect++;
-                             const question = test.questions?.find(q => q.questionNumber === i);
                             if (question?.imageUrl) {
                                 const newMistake: Omit<Mistake, 'id'|'familyId'|'status'> = {
                                     creatorId: user.uid,
                                     testId: test.id,
                                     originalQuestionId: question.questionId,
                                     imageUrl: question.imageUrl,
-                                    studentAnswer: allStudentMcqAnswers[qNumStr] || '',
-                                    correctAnswer: (answerKey as any)[qNumStr] || '',
+                                    studentAnswer: 'BOŞ',
+                                    correctAnswer: (answerKey as any)[qNumStr] ?? null,
+                                    subject: test.subject,
+                                    topic: test.topicId || 'Genel',
+                                    createdAt: new Date().toISOString(),
+                                    type: 'mcq',
+                                };
+                                await addMistake(newMistake);
+                            }
+                        } else if (studentAns === (answerKey as any)[qNumStr]) {
+                            correct++;
+                        } else {
+                            incorrect++;
+                            if (question?.imageUrl) {
+                                const newMistake: Omit<Mistake, 'id'|'familyId'|'status'> = {
+                                    creatorId: user.uid,
+                                    testId: test.id,
+                                    originalQuestionId: question.questionId,
+                                    imageUrl: question.imageUrl,
+                                    studentAnswer: studentAns,
+                                    correctAnswer: (answerKey as any)[qNumStr] ?? null,
                                     subject: test.subject,
                                     topic: test.topicId || 'Genel',
                                     createdAt: new Date().toISOString(),
@@ -261,10 +278,11 @@ export default function OpticalFormPage() {
         let empty = 0;
 
         for(const [qNumStr, status] of Object.entries(manualEvaluations)) {
-            if (status === 'correct') correct++;
-            else if (status === 'incorrect') {
+            const question = test.questions?.find(q => q.questionNumber.toString() === qNumStr);
+            if (status === 'correct') {
+                correct++;
+            } else if (status === 'incorrect') {
                 incorrect++;
-                const question = test.questions?.find(q => q.questionNumber.toString() === qNumStr);
                 if (question?.imageUrl) {
                     const newMistake: Omit<Mistake, 'id'|'familyId'|'status'> = {
                         creatorId: test.studentId,
@@ -280,9 +298,24 @@ export default function OpticalFormPage() {
                     };
                     await addMistake(newMistake);
                 }
-
+            } else if (status === 'empty' || status === 'unevaluated') {
+                empty++;
+                 if (question?.imageUrl) {
+                    const newMistake: Omit<Mistake, 'id'|'familyId'|'status'> = {
+                        creatorId: test.studentId,
+                        testId: test.id,
+                        originalQuestionId: question.questionId,
+                        imageUrl: question.imageUrl,
+                        studentAnswer: 'BOŞ',
+                        correctAnswer: test.answerKey?.[qNumStr] ?? null,
+                        subject: test.subject,
+                        topic: test.topicId || 'Genel',
+                        createdAt: new Date().toISOString(),
+                        type: test.openEnded ? 'open_ended' : 'mcq'
+                    };
+                    await addMistake(newMistake);
+                }
             }
-            else if (status === 'empty' || status === 'unevaluated') empty++;
         }
 
         const unevaluatedCount = Object.values(manualEvaluations).filter(s => s === 'unevaluated').length;
@@ -791,17 +824,3 @@ export default function OpticalFormPage() {
         </div>
     );
 }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
