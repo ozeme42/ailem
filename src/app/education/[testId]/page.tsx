@@ -272,7 +272,7 @@ export default function OpticalFormPage() {
                         originalQuestionId: question.questionId,
                         imageUrl: question.imageUrl,
                         studentAnswer: test.openEnded ? test.studentTextAnswers?.[qNumStr] : test.studentAnswers?.[qNumStr],
-                        correctAnswer: test.answerKey?.[qNumStr],
+                        correctAnswer: test.answerKey?.[qNumStr] ?? null,
                         subject: test.subject,
                         topic: test.topicId || 'Genel',
                         createdAt: new Date().toISOString(),
