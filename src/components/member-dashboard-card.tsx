@@ -15,6 +15,7 @@ import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabi
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video } from '@/lib/data';
 import { Progress } from './ui/progress';
 import { format, isToday, parseISO, subDays } from 'date-fns';
+import { tr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface MemberDashboardCardProps {
@@ -283,6 +284,7 @@ export function MemberDashboardCard({
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500"/> Bugünkü Alışkanlıklar</h4>
                         <div className="space-y-3">
                              {habits.map(habit => {
+                                const todayKey = format(new Date(), 'yyyy-MM-dd');
                                 return (
                                     <div key={habit.id} className="p-2.5 rounded-lg bg-orange-500/10 text-orange-900">
                                       <p className="font-semibold text-sm mb-2">{habit.title}</p>
