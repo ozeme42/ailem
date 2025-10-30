@@ -4,7 +4,7 @@ import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic } from './data';
-import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture } from 'date-fns';
+import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { getCategoryName } from '@/app/education/page';
 
@@ -2005,7 +2005,72 @@ export const updateNotebookFolder = async (notebookId: string, sectionId: string
     }
 };
     
+export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { income: number, expense: number } }) => void) => {
+    const auth = getAuth();
+    let unsubscribe: ReturnType<typeof onSnapshot> | null = null;
+    
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (unsubscribe) unsubscribe();
 
+        if (user) {
+            const familyId = await getCurrentFamilyId();
+            if (familyId) {
+                // Get data for the last 6 months
+                const today = new Date();
+                const sixMonthsAgo = subMonths(today, 5);
+                const startDate = format(startOfMonth(sixMonthsAgo), 'yyyy-MM-dd');
+
+                const q = query(
+                    collection(db, "transactions"),
+                    where("familyId", "==", familyId),
+                    where("date", ">=", startDate)
+                );
+
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    const stats: { [month: string]: { income: number, expense: number } } = {};
+                    
+                    // Initialize stats for the last 6 months
+                    for (let i = 5; i >= 0; i--) {
+                        const monthDate = subMonths(today, i);
+                        const monthKey = format(monthDate, 'yyyy-MM');
+                        stats[monthKey] = { income: 0, expense: 0 };
+                    }
+
+                    snapshot.docs.forEach(doc => {
+                        const transaction = doc.data() as Transaction;
+                        const monthKey = transaction.date.substring(0, 7); // 'YYYY-MM'
+                        
+                        if (stats[monthKey]) {
+                             if (transaction.type === 'income') {
+                                stats[monthKey].income += transaction.amount;
+                            } else {
+                                stats[monthKey].expense += transaction.amount;
+                            }
+                        }
+                    });
+                    
+                    const formattedStats: { [month: string]: { income: number, expense: number } } = {};
+                    Object.keys(stats).forEach(monthKey => {
+                        const [year, month] = monthKey.split('-');
+                        const monthName = format(new Date(Number(year), Number(month) - 1), 'MMM', {locale: tr});
+                        formattedStats[monthName] = stats[monthKey];
+                    });
+
+                    callback(formattedStats);
+                });
+            } else {
+                callback({});
+            }
+        } else {
+            callback({});
+        }
+    });
+
+    return () => {
+        authUnsubscribe();
+        if (unsubscribe) unsubscribe();
+    };
+};
     
 
     
@@ -2013,3 +2078,7 @@ export const updateNotebookFolder = async (notebookId: string, sectionId: string
     
 
     
+
+    
+
+```

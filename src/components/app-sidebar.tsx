@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3, PiggyBank } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3, PiggyBank, BarChart2 } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
@@ -53,7 +53,15 @@ export function AppSidebar() {
     { href: "/tracking", label: "Takip Tablosu", icon: Columns3 },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },
-    { href: "/budget", label: "Bütçe", icon: PiggyBank },
+    { 
+      href: "/budget", 
+      label: "Bütçe", 
+      icon: PiggyBank,
+      subItems: [
+          { href: "/budget", label: "İşlemler" },
+          { href: "/budget/stats", label: "Analiz" },
+      ]
+    },
     { href: "/goals", label: "Yol Haritaları", icon: Target },
     { href: "/memorization", label: "Ezber Takibi", icon: CheckCircle },
     { href: "/notes", label: "Notlar", icon: Notebook },
@@ -93,7 +101,7 @@ export function AppSidebar() {
                 <Link href={item.href} legacyBehavior={false} passHref>
                     <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/')}
+                    isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href) && !item.subItems)}
                     tooltip={item.label}
                     >
                     <span>
@@ -144,5 +152,4 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  );
-}
+  
