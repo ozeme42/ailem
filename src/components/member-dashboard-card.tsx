@@ -269,9 +269,7 @@ export function MemberDashboardCard({
                             <div className="p-2.5 rounded-lg bg-green-500/10 text-green-900 flex justify-around items-center gap-1">
                                 {todaysPrayers.map(prayer => (
                                     <div key={prayer.name} className="flex flex-col items-center gap-1">
-                                        <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", prayer.completed ? 'bg-green-500 border-green-600' : 'bg-background border-muted-foreground/50')}>
-                                            {prayer.completed && <Check className="h-3 w-3 text-white" />}
-                                        </div>
+                                         <Heart className={cn("size-6 cursor-pointer transition-all hover:scale-110", prayer.completed ? "text-red-500 fill-current" : "text-gray-400/50")} />
                                         <p className="text-xs text-muted-foreground">{prayer.name}</p>
                                     </div>
                                 ))}
