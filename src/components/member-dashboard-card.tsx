@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks, Gamepad2, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily } from '@/lib/dataService';
+import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabitCompletion } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video } from '@/lib/data';
 import { Progress } from './ui/progress';
 import { format, isToday, parseISO } from 'date-fns';
@@ -173,6 +173,21 @@ export function MemberDashboardCard({
         }
     };
     
+    const handleHabitCompletion = async (habit: Task) => {
+        const today = new Date();
+        const todayKey = format(today, 'yyyy-MM-dd');
+        const isCompleted = habit.completedDates?.includes(todayKey) || false;
+        
+        try {
+            await updateHabitCompletion(habit.id, today, !isCompleted);
+             if (!isCompleted) {
+                 toast({ title: '🎉 Alışkanlık tamamlandı!', description: `"${habit.title}" alışkanlığını bugün de tamamladın.` });
+             }
+        } catch(e) {
+            toast({ title: 'Hata', description: 'İşaretleme sırasında bir sorun oluştu.', variant: 'destructive'});
+        }
+    };
+    
     if (member.id === 'house') {
         const houseTasks = tasks.filter(t => (t.category === 'Ev İşleri' || t.category === 'Görev') && !t.completed);
         if (houseTasks.length === 0) return null;
@@ -259,17 +274,21 @@ export function MemberDashboardCard({
                     </div>
                 )}
                 {habits.length > 0 && (
-                    <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500"/> Alışkanlıklar</h4>
-                        <div className="space-y-2">
-                            {habits.map(task => (
-                                <Link href="/tasks" key={task.id} className="block">
-                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-orange-500/10 text-orange-900 hover:bg-orange-500/20">
-                                        <div className="truncate flex-grow"><p className="font-semibold truncate text-sm">{task.title}</p></div>
-                                        <Badge variant="outline" className="border-orange-500/50 bg-transparent">{task.streak || 0} seri</Badge>
+                     <div>
+                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500"/> Bugünkü Alışkanlıklar</h4>
+                        <div className="p-2.5 rounded-lg bg-orange-500/10 text-orange-900 flex flex-col gap-2">
+                             {habits.map(habit => {
+                                const todayKey = format(new Date(), 'yyyy-MM-dd');
+                                const isCompletedToday = habit.completedDates?.includes(todayKey) || false;
+                                return (
+                                    <div key={habit.id} className="flex items-center gap-2 text-sm" onClick={() => handleHabitCompletion(habit)}>
+                                        <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer", isCompletedToday ? 'bg-orange-500 border-orange-600' : 'bg-background border-muted-foreground/50')}>
+                                            {isCompletedToday && <Check className="h-3 w-3 text-white" />}
+                                        </div>
+                                        <p className={cn("font-semibold", isCompletedToday && "line-through text-muted-foreground")}>{habit.title}</p>
                                     </div>
-                                </Link>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 )}
@@ -398,5 +417,3 @@ export function MemberDashboardCard({
         </Card>
     );
 }
-
-    

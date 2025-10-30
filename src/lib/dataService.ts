@@ -4,7 +4,7 @@ import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic } from './data';
-import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
+import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { getCategoryName } from '@/app/education/page';
 
@@ -880,7 +880,7 @@ export const onStudyAssignmentsUpdate = (callback: (assignments: StudyAssignment
 export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    const assignmentData = { ...data, familyId, status: 'assigned' as const };
+    const assignmentData = { ...data, status: 'assigned' as const };
     return addDoc(collection(db, 'studyAssignments'), assignmentData);
 };
 export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id' | 'familyId'>>) => {
