@@ -182,7 +182,7 @@ export function QuestionsClient() {
                       onAdd={() => handleOpenForm(null, 'mcq')}
                       onBulkAdd={() => { setBulkDialogType('mcq'); setIsBulkDialogOpen(true); }}
                       onEdit={(q) => handleOpenForm(q, 'mcq')} 
-                      onDelete={handleDeleteQuestion} 
+                      onDelete={handleDeleteQuestion}
                       onDeleteSelected={handleDeleteSelectedBankQuestions}
                       selectedQuestions={selectedQuestionIds}
                       setSelectedQuestions={setSelectedQuestionIds}
@@ -459,7 +459,7 @@ function MistakePoolList({ mistakes, onDelete, onDeleteSelected, selectedMistake
             </CardHeader>
             <CardContent>
                 {mistakes.length > 0 ? (
-                    <Accordion type="multiple" className="w-full">
+                    <Accordion type="multiple" className="w-full" defaultValue={Object.keys(groupedMistakes)}>
                         {Object.entries(groupedMistakes).map(([studentName, studentMistakes]) => {
                              const allStudentMistakesSelected = studentMistakes.every(m => selectedMistakes.includes(m.id));
                              const someStudentMistakesSelected = studentMistakes.some(m => selectedMistakes.includes(m.id));
