@@ -49,7 +49,7 @@ export function BudgetCategoryForm() {
                             <FormItem>
                                 <FormLabel>{category}</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="0.00" {...field} />
+                                    <Input type="number" placeholder="0.00" {...field} value={field.value ?? ''} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
