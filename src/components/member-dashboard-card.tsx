@@ -9,12 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks, Gamepad2, Youtube } from 'lucide-react';
+import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks, Gamepad2, Youtube, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabitCompletion } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video } from '@/lib/data';
 import { Progress } from './ui/progress';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, isToday, parseISO, subDays } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface MemberDashboardCardProps {
@@ -173,13 +173,15 @@ export function MemberDashboardCard({
         }
     };
     
-    const handleHabitCompletion = async (habit: Task) => {
-        const today = new Date();
-        const todayKey = format(today, 'yyyy-MM-dd');
-        const isCompleted = habit.completedDates?.includes(todayKey) || false;
+    const handleHabitCompletion = async (habitId: string, day: Date) => {
+        const habit = habits.find(h => h.id === habitId);
+        if (!habit) return;
+
+        const dateKey = format(day, 'yyyy-MM-dd');
+        const isCompleted = habit.completedDates?.includes(dateKey) || false;
         
         try {
-            await updateHabitCompletion(habit.id, today, !isCompleted);
+            await updateHabitCompletion(habit.id, day, !isCompleted);
              if (!isCompleted) {
                  toast({ title: '🎉 Alışkanlık tamamlandı!', description: `"${habit.title}" alışkanlığını bugün de tamamladın.` });
              }
@@ -233,6 +235,9 @@ export function MemberDashboardCard({
     if (allPendingItems.length === 0 && completedStudies.length === 0) return null;
     
     const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
+    
+    const lastFiveDays = Array.from({ length: 5 }).map((_, i) => subDays(new Date(), i)).reverse();
+
 
     return (
         <Card className="shadow-lg overflow-hidden flex flex-col">
@@ -276,16 +281,23 @@ export function MemberDashboardCard({
                 {habits.length > 0 && (
                      <div>
                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500"/> Bugünkü Alışkanlıklar</h4>
-                        <div className="p-2.5 rounded-lg bg-orange-500/10 text-orange-900 flex flex-col gap-2">
+                        <div className="space-y-3">
                              {habits.map(habit => {
-                                const todayKey = format(new Date(), 'yyyy-MM-dd');
-                                const isCompletedToday = habit.completedDates?.includes(todayKey) || false;
                                 return (
-                                    <div key={habit.id} className="flex items-center gap-2 text-sm" onClick={() => handleHabitCompletion(habit)}>
-                                        <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer", isCompletedToday ? 'bg-orange-500 border-orange-600' : 'bg-background border-muted-foreground/50')}>
-                                            {isCompletedToday && <Check className="h-3 w-3 text-white" />}
-                                        </div>
-                                        <p className={cn("font-semibold", isCompletedToday && "line-through text-muted-foreground")}>{habit.title}</p>
+                                    <div key={habit.id} className="p-2.5 rounded-lg bg-orange-500/10 text-orange-900">
+                                      <p className="font-semibold text-sm mb-2">{habit.title}</p>
+                                      <div className="flex justify-around items-center">
+                                        {lastFiveDays.map(day => {
+                                          const dayKey = format(day, 'yyyy-MM-dd');
+                                          const isCompleted = habit.completedDates?.includes(dayKey) || false;
+                                          return (
+                                            <div key={dayKey} className="flex flex-col items-center gap-1" onClick={() => handleHabitCompletion(habit.id, day)}>
+                                                <Heart className={cn("size-6 cursor-pointer transition-all hover:scale-110", isCompleted ? "text-red-500 fill-current" : "text-gray-400/50")} />
+                                                <p className="text-xs text-muted-foreground">{format(day, 'EEE', { locale: tr })}</p>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
                                     </div>
                                 )
                             })}
