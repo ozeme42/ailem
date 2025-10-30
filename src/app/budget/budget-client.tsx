@@ -3,6 +3,8 @@
 
 import * as React from "react";
 import { PlusCircle, MoreHorizontal, TrendingUp, TrendingDown, Wallet, CreditCard, Landmark, Banknote, PiggyBank, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,18 +15,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewAccountForm } from "@/components/new-account-form";
 import { NewTransactionForm } from "@/components/new-transaction-form";
 import { useAuth } from "@/components/auth-provider";
-import { onAccountsUpdate, deleteAccount, onTransactionsUpdate, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction } from "@/lib/dataService";
+import { onAccountsUpdate, deleteAccount, onTransactionsUpdate, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionStatsUpdate } from "@/lib/dataService";
 import type { Account, Transaction, FamilyMember } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, isSameDay } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 const accountIcons: { [key: string]: React.ElementType } = {
     'cash': Banknote,
     'bank': Landmark,
     'credit-card': CreditCard,
 };
+
+const chartConfig = {
+  gelir: { label: "Gelir", color: "hsl(var(--chart-2))" },
+  gider: { label: "Gider", color: "hsl(var(--chart-5))" },
+  bakiye: { label: "Bakiye", color: "hsl(var(--chart-1))" },
+} satisfies ChartConfig;
 
 // Helper to group transactions by date
 const groupTransactionsByDate = (transactions: Transaction[]) => {
@@ -45,7 +54,8 @@ export function BudgetClient() {
     const [currentMonth, setCurrentMonth] = React.useState(new Date());
     const [accounts, setAccounts] = React.useState<Account[]>([]);
     const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-    
+    const [monthlyStats, setMonthlyStats] = React.useState<any[]>([]);
+
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
 
@@ -56,10 +66,18 @@ export function BudgetClient() {
         if (!familyId) return;
         const unsubAccounts = onAccountsUpdate(setAccounts);
         const unsubTransactions = onTransactionsUpdate(setTransactions, currentMonth);
+        const unsubStats = onTransactionStatsUpdate((stats) => {
+            const sortedStats = Object.entries(stats).map(([month, data]) => ({
+                month,
+                ...data
+            })).sort((a,b) => a.month.localeCompare(b.month));
+            setMonthlyStats(sortedStats);
+        });
         
         return () => {
             unsubAccounts();
             unsubTransactions();
+            unsubStats();
         };
     }, [familyId, currentMonth]);
     
@@ -72,6 +90,20 @@ export function BudgetClient() {
         });
         return { totalIncome: income, totalExpense: expense, balance: income - expense };
     }, [transactions]);
+
+    const totalBalance = React.useMemo(() => 
+        accounts.reduce((sum, acc) => sum + acc.balance, 0),
+    [accounts]);
+
+    const overallStats = React.useMemo(() => {
+        const totalIncome = monthlyStats.reduce((sum, s) => sum + s.income, 0);
+        const totalExpense = monthlyStats.reduce((sum, s) => sum + s.expense, 0);
+        return {
+            totalIncome,
+            totalExpense,
+            netBalance: totalIncome - totalExpense,
+        };
+    }, [monthlyStats]);
     
     const groupedTransactions = React.useMemo(() => groupTransactionsByDate(transactions), [transactions]);
 
@@ -188,9 +220,10 @@ export function BudgetClient() {
             </div>
 
             <Tabs defaultValue="transactions">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="transactions">İşlemler</TabsTrigger>
                     <TabsTrigger value="accounts">Hesaplar</TabsTrigger>
+                    <TabsTrigger value="stats">Analiz</TabsTrigger>
                 </TabsList>
                 <TabsContent value="transactions" className="mt-4 space-y-4">
                      {Object.keys(groupedTransactions).sort((a,b) => b.localeCompare(a)).map(date => {
@@ -299,6 +332,97 @@ export function BudgetClient() {
                         })}
                     </div>
                 </TabsContent>
+                 <TabsContent value="stats" className="mt-4 space-y-6">
+                    {monthlyStats.length > 0 ? (
+                        <>
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-primary flex items-center justify-between">Toplam Bakiye <Wallet /></CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-3xl font-bold">{totalBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                                        <p className="text-xs text-muted-foreground">Tüm hesaplarınızdaki toplam miktar</p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-green-600 flex items-center justify-between">Toplam Gelir <TrendingUp /></CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-3xl font-bold">{overallStats.totalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                                        <p className="text-xs text-muted-foreground">Son 6 aydaki toplam gelir</p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-red-600 flex items-center justify-between">Toplam Gider <TrendingDown /></CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-3xl font-bold">{overallStats.totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                                        <p className="text-xs text-muted-foreground">Son 6 aydaki toplam gider</p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center justify-between">Net Bakiye <Banknote /></CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-3xl font-bold">{overallStats.netBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                                        <p className="text-xs text-muted-foreground">Son 6 aydaki net kazanç</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                            
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Aylık Gelir & Gider Karşılaştırması</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ChartContainer config={chartConfig} className="h-80 w-full">
+                                        <BarChart data={monthlyStats}>
+                                            <CartesianGrid vertical={false} />
+                                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                                            <YAxis tickFormatter={(value) => `${(value / 1000)}k`} />
+                                            <Tooltip content={<ChartTooltipContent currency="TRY" />} />
+                                            <Legend />
+                                            <Bar dataKey="income" fill="var(--color-gelir)" name="Gelir" radius={4} />
+                                            <Bar dataKey="expense" fill="var(--color-gider)" name="Gider" radius={4} />
+                                        </BarChart>
+                                    </ChartContainer>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Aylık Birikim Trendi</CardTitle>
+                                    <CardDescription>Her ay sonunda gelir ve giderler arasındaki net fark.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ChartContainer config={chartConfig} className="h-80 w-full">
+                                        <AreaChart data={monthlyStats.map(s => ({...s, net: s.income - s.expense}))}>
+                                            <CartesianGrid vertical={false} />
+                                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                                            <YAxis tickFormatter={(value) => `${(value / 1000)}k`} />
+                                            <Tooltip content={<ChartTooltipContent currency="TRY" />} />
+                                            <defs>
+                                                <linearGradient id="fillBakiye" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="var(--color-bakiye)" stopOpacity={0.8}/>
+                                                    <stop offset="95%" stopColor="var(--color-bakiye)" stopOpacity={0.1}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <Area type="monotone" dataKey="net" stroke="var(--color-bakiye)" fill="url(#fillBakiye)" name="Aylık Net Bakiye" />
+                                        </AreaChart>
+                                    </ChartContainer>
+                                </CardContent>
+                            </Card>
+                        </>
+                    ) : (
+                        <Card className="text-center p-8 text-muted-foreground">
+                            Grafikleri oluşturacak yeterli veri bulunmuyor.
+                        </Card>
+                    )}
+                </TabsContent>
             </Tabs>
 
              <Dialog open={isAccountFormOpen} onOpenChange={setIsAccountFormOpen}>
@@ -325,3 +449,5 @@ export function BudgetClient() {
         </div>
     );
 }
+
+    

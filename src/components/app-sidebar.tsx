@@ -53,15 +53,7 @@ export function AppSidebar() {
     { href: "/tracking", label: "Takip Tablosu", icon: Columns3 },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/yemek", label: "Yemek Planı", icon: UtensilsCrossed },
-    { 
-      href: "/budget", 
-      label: "Bütçe", 
-      icon: Wallet,
-      subItems: [
-          { href: "/budget", label: "İşlemler" },
-          { href: "/budget/stats", label: "Analiz" },
-      ]
-    },
+    { href: "/budget", label: "Bütçe", icon: Wallet },
     { href: "/goals", label: "Yol Haritaları", icon: Target },
     { href: "/memorization", label: "Ezber Takibi", icon: CheckCircle },
     { href: "/notes", label: "Notlar", icon: Notebook },
@@ -154,3 +146,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    
