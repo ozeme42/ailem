@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3, PiggyBank, BarChart2 } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, ShoppingCart, UtensilsCrossed, BookHeart, Target, User, LogOut, Moon, CheckCircle, Zap, Notebook, Youtube, BrainCircuit, Columns3, Wallet, BarChart2 } from "lucide-react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarFooter } from "@/components/ui/sidebar";
 import { useAuth } from "./auth-provider";
 import { Button } from "./ui/button";
@@ -56,7 +56,7 @@ export function AppSidebar() {
     { 
       href: "/budget", 
       label: "Bütçe", 
-      icon: PiggyBank,
+      icon: Wallet,
       subItems: [
           { href: "/budget", label: "İşlemler" },
           { href: "/budget/stats", label: "Analiz" },

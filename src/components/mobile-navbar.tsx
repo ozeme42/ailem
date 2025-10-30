@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, ShoppingCart, Calendar, BookOpen, Target, Zap, Notebook, GraduationCap, BrainCircuit, Columns3, PiggyBank } from "lucide-react";
+import { Users, ShoppingCart, Calendar, BookOpen, Target, Zap, Notebook, GraduationCap, BrainCircuit, Columns3, Wallet } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ const menuItems = [
   { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
   { href: "/tracking", label: "Takip", icon: Columns3 },
   { href: "/education", label: "Eğitim", icon: GraduationCap },
-  { href: "/budget", label: "Bütçe", icon: PiggyBank },
+  { href: "/budget", label: "Bütçe", icon: Wallet },
 ];
 
 export function MobileNavbar() {
