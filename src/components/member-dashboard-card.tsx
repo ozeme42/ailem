@@ -237,7 +237,7 @@ export function MemberDashboardCard({
     
     const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
     
-    const lastFiveDays = Array.from({ length: 5 }).map((_, i) => subDays(new Date(), i)).reverse();
+    const lastSevenDays = Array.from({ length: 7 }).map((_, i) => subDays(new Date(), i)).reverse();
 
 
     return (
@@ -287,7 +287,7 @@ export function MemberDashboardCard({
                                     <div key={habit.id} className="p-2.5 rounded-lg bg-orange-500/10 text-orange-900">
                                       <p className="font-semibold text-sm mb-2">{habit.title}</p>
                                       <div className="flex justify-around items-center">
-                                        {lastFiveDays.map(day => {
+                                        {lastSevenDays.map(day => {
                                           const dayKey = format(day, 'yyyy-MM-dd');
                                           const isCompleted = habit.completedDates?.includes(dayKey) || false;
                                           return (
@@ -429,3 +429,5 @@ export function MemberDashboardCard({
         </Card>
     );
 }
+
+    
