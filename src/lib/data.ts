@@ -439,10 +439,10 @@ export interface Test {
   emptyAnswers?: number;
   studentAnswers?: AnswerKey;
   answerKey?: AnswerKey;
-  timeSpentSeconds?: number;
+  timeSpentSeconds?: timeSpentSeconds;
   timerStatus?: 'running' | 'paused' | 'finished';
   questions?: QuickTestQuestion[]; 
-  openEnded?: boolean; // New flag for open-ended tests
+  openEnded?: openEnded; // New flag for open-ended tests
   studentTextAnswers?: { [key: string]: string }; // For open-ended questions
   studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
   topicId?: string;
@@ -677,3 +677,5 @@ export interface StudyAssignment {
   dueDate: string;
   completedAt?: string;
 }
+
+    
