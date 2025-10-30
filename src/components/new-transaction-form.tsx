@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Account, FamilyMember, Transaction } from "@/lib/data";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { Switch } from "./ui/switch";
+import { ScrollArea } from "./ui/scroll-area";
 
 const formSchema = z.object({
   description: z.string().min(2, "Açıklama en az 2 karakter olmalıdır."),
@@ -72,99 +73,103 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
           Bir gelir veya gider işlemi ekleyin.
         </DialogDescription>
       </DialogHeader>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
-         <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Açıklama</FormLabel>
-              <FormControl><Input placeholder="Örn: Market Alışverişi" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="amount" render={({ field }) => (
+      <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+         <ScrollArea className="h-[60vh] pr-6">
+            <div className="space-y-4 pt-4">
+              <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Tutar</FormLabel>
-                    <FormControl><Input type="number" placeholder="150.75" {...field} /></FormControl>
+                  <FormLabel>Açıklama</FormLabel>
+                  <FormControl><Input placeholder="Örn: Market Alışverişi" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="amount" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Tutar</FormLabel>
+                        <FormControl><Input type="number" placeholder="150.75" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
+                <FormField control={form.control} name="type" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Türü</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                            <SelectContent>
+                            <SelectItem value="expense">Gider</SelectItem>
+                            <SelectItem value="income">Gelir</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </FormItem>
+                )}/>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="accountId" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Hesap</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
+                            <SelectContent>{accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </FormItem>
+                )}/>
+                <FormField control={form.control} name="ownerId" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Kişi</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Kişi seçin"/></SelectTrigger></FormControl>
+                            <SelectContent>{familyMembers.map(mem => <SelectItem key={mem.id} value={mem.id}>{mem.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </FormItem>
+                )}/>
+            </div>
+            <FormField control={form.control} name="category" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Kategori</FormLabel>
+                    <FormControl><Input placeholder="Gıda, Fatura vb." {...field} /></FormControl>
                     <FormMessage />
                 </FormItem>
             )}/>
-            <FormField control={form.control} name="type" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Türü</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                        <SelectContent>
-                        <SelectItem value="expense">Gider</SelectItem>
-                        <SelectItem value="income">Gelir</SelectItem>
-                        </SelectContent>
-                    </Select>
+            <FormField control={form.control} name="date" render={({ field }) => (
+                <FormItem className="flex flex-col"><FormLabel>İşlem Tarihi</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                {field.value ? (format(field.value, "PPP", { locale: tr })) : (<span>Tarih seçin</span>)}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                        </PopoverContent>
+                    </Popover>
                 </FormItem>
             )}/>
+            <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <FormLabel>Taksitli İşlem</FormLabel>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                </FormItem>
+            )}/>
+            {isInstallment && (
+                <FormField control={form.control} name="installmentTotal" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Toplam Taksit Sayısı</FormLabel>
+                        <FormControl><Input type="number" placeholder="12" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
+            )}
         </div>
-        <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="accountId" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Hesap</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
-                        <SelectContent>{accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                </FormItem>
-            )}/>
-             <FormField control={form.control} name="ownerId" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Kişi</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Kişi seçin"/></SelectTrigger></FormControl>
-                        <SelectContent>{familyMembers.map(mem => <SelectItem key={mem.id} value={mem.id}>{mem.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                </FormItem>
-            )}/>
-        </div>
-         <FormField control={form.control} name="category" render={({ field }) => (
-            <FormItem>
-                <FormLabel>Kategori</FormLabel>
-                <FormControl><Input placeholder="Gıda, Fatura vb." {...field} /></FormControl>
-                <FormMessage />
-            </FormItem>
-        )}/>
-        <FormField control={form.control} name="date" render={({ field }) => (
-            <FormItem className="flex flex-col"><FormLabel>İşlem Tarihi</FormLabel>
-                <Popover>
-                    <PopoverTrigger asChild>
-                    <FormControl>
-                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                            {field.value ? (format(field.value, "PPP", { locale: tr })) : (<span>Tarih seçin</span>)}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                    </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
-                    </PopoverContent>
-                </Popover>
-            </FormItem>
-        )}/>
-        <FormField control={form.control} name="isInstallment" render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                <FormLabel>Taksitli İşlem</FormLabel>
-                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-            </FormItem>
-        )}/>
-        {isInstallment && (
-             <FormField control={form.control} name="installmentTotal" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Toplam Taksit Sayısı</FormLabel>
-                    <FormControl><Input type="number" placeholder="12" {...field} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-        )}
-        <DialogFooter>
+        </ScrollArea>
+        <DialogFooter className="pt-6">
           <Button type="submit" className="w-full">{initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}</Button>
         </DialogFooter>
       </form>
