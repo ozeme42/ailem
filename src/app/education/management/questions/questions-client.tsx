@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -15,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
 import NextImage from 'next/image';
-import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions, addTest, onMistakesUpdate, deleteMistake } from "@/lib/dataService";
+import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions, addTest, onMistakesUpdate, deleteMistake, onTestsUpdate } from "@/lib/dataService";
 import { BankQuestion, FamilyMember, Test, Mistake } from "@/lib/data";
 import { Combobox } from "@/components/ui/combobox";
 import { Loader2 } from "lucide-react";
@@ -41,6 +40,7 @@ export function QuestionsClient() {
   const { user, familyMembers } = useAuth();
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
+  const [tests, setTests] = useState<Test[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -70,12 +70,14 @@ export function QuestionsClient() {
     const unsubSubjects = onSubjectsUpdate(setAllSubjects);
     const unsubTopics = onTopicsUpdate(setAllTopics);
     const unsubMistakes = onMistakesUpdate(setMistakes);
+    const unsubTests = onTestsUpdate(setTests);
     
     return () => {
         unsubQuestions();
         unsubSubjects();
         unsubTopics();
         unsubMistakes();
+        unsubTests();
     };
   }, []);
 
@@ -207,6 +209,7 @@ export function QuestionsClient() {
         <TabsContent value="mistakes">
             <MistakePoolList 
                 mistakes={mistakes}
+                tests={tests}
                 onDelete={handleDeleteMistake}
                 onDeleteSelected={handleDeleteSelectedMistakes}
                 selectedMistakes={selectedMistakeIds}
@@ -402,6 +405,7 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, onDeleteS
 
 interface MistakeListProps {
   mistakes: Mistake[];
+  tests: Test[];
   onDelete: (id: string) => void;
   onDeleteSelected: () => void;
   selectedMistakes: string[];
@@ -409,32 +413,49 @@ interface MistakeListProps {
   onAssign: () => void;
 }
 
-function MistakePoolList({ mistakes, onDelete, onDeleteSelected, selectedMistakes, setSelectedMistakes, onAssign }: MistakeListProps) {
+function MistakePoolList({ mistakes, tests, onDelete, onDeleteSelected, selectedMistakes, setSelectedMistakes, onAssign }: MistakeListProps) {
     const { familyMembers } = useAuth();
 
     const groupedMistakes = useMemo(() => {
-        const grouped: Record<string, Mistake[]> = {};
+        const groupedByStudent: Record<string, Mistake[]> = {};
         mistakes.forEach(m => {
-            const studentName = familyMembers.find(fm => fm.id === m.creatorId)?.name || 'Bilinmeyen Öğrenci';
-            if (!grouped[studentName]) {
-                grouped[studentName] = [];
+            if (!groupedByStudent[m.creatorId]) {
+                groupedByStudent[m.creatorId] = [];
             }
-            grouped[studentName].push(m);
+            groupedByStudent[m.creatorId].push(m);
         });
-        return grouped;
-    }, [mistakes, familyMembers]);
-    
-    const handleToggleStudentSelection = (studentMistakes: Mistake[]) => {
-        const mistakeIds = studentMistakes.map(m => m.id);
-        const areAllSelected = mistakeIds.every(id => selectedMistakes.includes(id));
 
-        if (areAllSelected) {
-            setSelectedMistakes(prev => prev.filter(id => !mistakeIds.includes(id)));
-        } else {
+        const finalGrouped: Record<string, Record<string, Record<string, Record<string, Mistake[]>>>> = {};
+
+        Object.entries(groupedByStudent).forEach(([studentId, studentMistakes]) => {
+            const studentName = familyMembers.find(fm => fm.id === studentId)?.name || 'Bilinmeyen Öğrenci';
+            if (!finalGrouped[studentName]) finalGrouped[studentName] = {};
+
+            studentMistakes.forEach(mistake => {
+                const subject = mistake.subject;
+                if (!finalGrouped[studentName][subject]) finalGrouped[studentName][subject] = {};
+                
+                const topic = mistake.topic;
+                if (!finalGrouped[studentName][subject][topic]) finalGrouped[studentName][subject][topic] = {};
+
+                const testName = tests.find(t => t.id === mistake.testId)?.title || 'Bilinmeyen Test';
+                 if (!finalGrouped[studentName][subject][topic][testName]) finalGrouped[studentName][subject][topic][testName] = [];
+                
+                finalGrouped[studentName][subject][topic][testName].push(mistake);
+            });
+        });
+
+        return finalGrouped;
+    }, [mistakes, familyMembers, tests]);
+
+    const handleToggleSelection = (mistakeIds: string[], select: boolean) => {
+        if (select) {
             setSelectedMistakes(prev => [...new Set([...prev, ...mistakeIds])]);
+        } else {
+            setSelectedMistakes(prev => prev.filter(id => !mistakeIds.includes(id)));
         }
     };
-
+    
     return (
         <Card>
             <CardHeader>
@@ -460,47 +481,94 @@ function MistakePoolList({ mistakes, onDelete, onDeleteSelected, selectedMistake
             <CardContent>
                 {mistakes.length > 0 ? (
                     <Accordion type="multiple" className="w-full" defaultValue={Object.keys(groupedMistakes)}>
-                        {Object.entries(groupedMistakes).map(([studentName, studentMistakes]) => {
-                             const allStudentMistakesSelected = studentMistakes.every(m => selectedMistakes.includes(m.id));
-                             const someStudentMistakesSelected = studentMistakes.some(m => selectedMistakes.includes(m.id));
+                        {Object.entries(groupedMistakes).map(([studentName, subjects]) => {
+                            const allStudentMistakeIds = Object.values(subjects).flatMap(topics => Object.values(topics).flatMap(tests => Object.values(tests).flat().map(m => m.id)));
+                            const allSelected = allStudentMistakeIds.every(id => selectedMistakes.includes(id));
+                            const someSelected = allStudentMistakeIds.some(id => selectedMistakes.includes(id));
+
                             return (
-                                <AccordionItem value={studentName} key={studentName}>
-                                    <div className="flex items-center">
-                                        <Checkbox
-                                            checked={allStudentMistakesSelected ? true : (someStudentMistakesSelected ? "indeterminate" : false)}
-                                            onCheckedChange={() => handleToggleStudentSelection(studentMistakes)}
-                                            className="mr-2"
-                                        />
-                                        <AccordionTrigger className="text-lg font-medium">{studentName} ({studentMistakes.length})</AccordionTrigger>
+                                <AccordionItem value={studentName} key={studentName} className="border-b-0">
+                                <Card className="mb-2">
+                                <CardHeader className="p-0">
+                                    <AccordionTrigger className="p-3">
+                                    <div className="flex items-center gap-3 w-full">
+                                        <Checkbox checked={allSelected ? true : someSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allStudentMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
+                                        <span className="font-semibold text-lg">{studentName} ({allStudentMistakeIds.length})</span>
                                     </div>
-                                    <AccordionContent className="pl-4 space-y-3">
-                                        {studentMistakes.map(m => (
-                                            <div key={m.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-md">
-                                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                    <Checkbox
-                                                        checked={selectedMistakes.includes(m.id)}
-                                                        onCheckedChange={(checked) => {
-                                                            setSelectedMistakes(prev => checked ? [...prev, m.id] : prev.filter(id => id !== m.id))
-                                                        }}
-                                                    />
-                                                    {m.imageUrl && <NextImage src={m.imageUrl} alt={m.topic} width={80} height={60} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />}
-                                                    <div className="flex-grow min-w-0">
-                                                        <p className="font-semibold truncate text-sm">{m.topic}</p>
-                                                        <p className="text-xs text-muted-foreground truncate">{m.subject}</p>
+                                    </AccordionTrigger>
+                                </CardHeader>
+                                <AccordionContent className="p-3 pt-0">
+                                    <Accordion type="multiple" className="w-full space-y-2">
+                                        {Object.entries(subjects).map(([subjectName, topics]) => {
+                                             const allSubjectMistakeIds = Object.values(topics).flatMap(tests => Object.values(tests).flat().map(m => m.id));
+                                             const allSubSelected = allSubjectMistakeIds.every(id => selectedMistakes.includes(id));
+                                             const someSubSelected = allSubjectMistakeIds.some(id => selectedMistakes.includes(id));
+
+                                            return(
+                                            <AccordionItem value={subjectName} key={subjectName}>
+                                                <AccordionTrigger>
+                                                    <div className="flex items-center gap-3 w-full">
+                                                        <Checkbox checked={allSubSelected ? true : someSubSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allSubjectMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
+                                                        {subjectName}
                                                     </div>
-                                                </div>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7"><Trash2 className="h-4 w-4"/></Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitle>Yanlışı Sil</AlertDialogTitle><AlertDialogDescription>Bu yanlış soruyu havuzdan kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(m.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </div>
-                                        ))}
-                                    </AccordionContent>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pl-4">
+                                                     {Object.entries(topics).map(([topicName, tests]) => {
+                                                         const allTopicMistakeIds = Object.values(tests).flat().map(m => m.id);
+                                                         const allTopicSelected = allTopicMistakeIds.every(id => selectedMistakes.includes(id));
+                                                         const someTopicSelected = allTopicMistakeIds.some(id => selectedMistakes.includes(id));
+                                                        return(
+                                                          <AccordionItem value={topicName} key={topicName}>
+                                                              <AccordionTrigger>
+                                                                  <div className="flex items-center gap-3 w-full">
+                                                                    <Checkbox checked={allTopicSelected ? true : someTopicSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allTopicMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
+                                                                    {topicName}
+                                                                  </div>
+                                                              </AccordionTrigger>
+                                                              <AccordionContent className="pl-4">
+                                                                  {Object.entries(tests).map(([testName, testMistakes]) => {
+                                                                      const allTestMistakeIds = testMistakes.map(m => m.id);
+                                                                      const allTestSelected = allTestMistakeIds.every(id => selectedMistakes.includes(id));
+                                                                      const someTestSelected = allTestMistakeIds.some(id => selectedMistakes.includes(id));
+
+                                                                      return(
+                                                                          <AccordionItem value={testName} key={testName}>
+                                                                              <AccordionTrigger>
+                                                                                   <div className="flex items-center gap-3 w-full">
+                                                                                        <Checkbox checked={allTestSelected ? true : someTestSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allTestMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
+                                                                                        {testName}
+                                                                                    </div>
+                                                                              </AccordionTrigger>
+                                                                              <AccordionContent className="pl-4 space-y-2">
+                                                                                  {testMistakes.map(m => (
+                                                                                      <div key={m.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                                                                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                                                <Checkbox checked={selectedMistakes.includes(m.id)} onCheckedChange={(checked) => handleToggleSelection([m.id], !!checked)} />
+                                                                                                {m.imageUrl && <NextImage src={m.imageUrl} alt={m.topic} width={60} height={45} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />}
+                                                                                            </div>
+                                                                                            <AlertDialog>
+                                                                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                                                                                <AlertDialogContent>
+                                                                                                    <AlertDialogHeader><AlertDialogTitle>Yanlışı Sil</AlertDialogTitle><AlertDialogDescription>Bu yanlış soruyu havuzdan kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(m.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                                                                                                </AlertDialogContent>
+                                                                                            </AlertDialog>
+                                                                                      </div>
+                                                                                  ))}
+                                                                              </AccordionContent>
+                                                                          </AccordionItem>
+                                                                      )
+                                                                  })}
+                                                              </AccordionContent>
+                                                          </AccordionItem>  
+                                                        )
+                                                     })}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        )})}
+                                    </Accordion>
+                                </AccordionContent>
+                                </Card>
                                 </AccordionItem>
                             )
                         })}
@@ -905,3 +973,5 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
     </Dialog>
   );
 }
+
+    
