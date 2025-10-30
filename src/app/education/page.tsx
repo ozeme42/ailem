@@ -461,9 +461,9 @@ export default function EducationPage() {
              )}
 
             {viewMode === 'cards' ? (
-                 <>
+                 <div className="space-y-8">
                     {selectedStudent && (
-                        <Card className="transition-all duration-300 mb-8 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                        <Card className="transition-all duration-300 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-3"><BarChart3/> Genel Durum</CardTitle>
                                 <CardDescription className="text-white/80">{selectedStudent.name} için genel başarı durumu özeti.</CardDescription>
@@ -491,8 +491,7 @@ export default function EducationPage() {
                         </Card>
                     )}
                     
-                    <div className="space-y-8">
-                      <div>
+                    <div>
                         <h2 className="text-xl font-bold mb-4">Test Kategorileri</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {testsByCategory.map(([category, data]) => {
@@ -521,87 +520,138 @@ export default function EducationPage() {
                                 )
                             })}
                         </div>
-                      </div>
+                    </div>
 
-                       <Card>
-                            <CardHeader>
-                                <CardTitle>Çözülecek Testler</CardTitle>
-                                <CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                            {tests.length > 0 ? (
-                                tests.filter(test => test.status === 'Atandı').map(test => {
-                                    const categoryName = getCategoryName(test);
-                                    const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
-                                    const iconColor = `text-${categoryColors[categoryName] || 'gray-500'}`;
-                                    const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                                    const now = new Date();
-                                    const daysDiff = differenceInDays(dueDate, now);
-                                    const isTestDue = isPast(dueDate) && !isToday(dueDate);
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Çözülecek Testler</CardTitle>
+                            <CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                        {tests.length > 0 ? (
+                            tests.filter(test => test.status === 'Atandı').map(test => {
+                                const categoryName = getCategoryName(test);
+                                const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
+                                const iconColor = `text-${categoryColors[categoryName] || 'gray-500'}`;
+                                const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                                const now = new Date();
+                                const daysDiff = differenceInDays(dueDate, now);
+                                const isTestDue = isPast(dueDate) && !isToday(dueDate);
 
-                                    return (
-                                        <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
-                                            <div className="flex items-center p-4 gap-4">
-                                                <div className="flex-grow">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <div className={cn('w-4 h-4 text-current')}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4" })}</div>
-                                                        <h3 className="font-semibold text-lg">{test.title}</h3>
-                                                    </div>
-                                                    <div className="flex items-center gap-4 ml-6">
-                                                        <p className="text-sm text-current/80">Son Teslim: {test.dueDate}</p>
-                                                        {isTestDue
-                                                            ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
-                                                            : isToday(dueDate)
-                                                                ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
-                                                                : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
-                                                        }
-                                                    </div>
+                                return (
+                                    <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
+                                        <div className="flex items-center p-4 gap-4">
+                                            <div className="flex-grow">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className={cn('w-4 h-4 text-current')}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4" })}</div>
+                                                    <h3 className="font-semibold text-lg">{test.title}</h3>
                                                 </div>
-                                                <Link href={`/education/${test.id}`} className="ml-auto">
-                                                    <Button size="sm" variant="default">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
-                                                </Link>
+                                                <div className="flex items-center gap-4 ml-6">
+                                                    <p className="text-sm text-current/80">Son Teslim: {test.dueDate}</p>
+                                                    {isTestDue
+                                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                                        : isToday(dueDate)
+                                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                                    }
+                                                </div>
                                             </div>
-                                        </Card>
-                                    );
-                                })
-                            ) : (<p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>)}
-                            {tests.filter(test => test.status === 'Atandı').length === 0 && tests.length > 0 && (<p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>)}
-                            </CardContent>
-                        </Card>
-                        
-                      {studyPlanStats.length > 0 && (
-                        <div>
-                          <h2 className="text-xl font-bold mb-4">Konu Anlatım Planları</h2>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                             {studyPlanStats.map(({ plan, progress }) => (
-                                <Link key={plan.id} href={`/education/study`} className="block group">
-                                    <Card className="flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full bg-pink-500/10 text-pink-900 dark:bg-pink-500/10 dark:text-pink-200">
-                                        <CardHeader className="text-center">
-                                            <BookHeart className="w-16 h-16 mx-auto mb-4 opacity-80 text-current" />
-                                            <CardTitle className="text-xl text-current">{plan.title}</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
-                                            <p className="text-lg font-semibold">{progress.total} Konu</p>
-                                            <p className="text-sm text-green-600 font-medium">{progress.completed} Tamamlandı</p>
-                                        </CardContent>
-                                        <CardFooter className="p-0">
-                                            <Progress value={(progress.completed / progress.total) * 100} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName="bg-pink-500" />
-                                        </CardFooter>
+                                            <Link href={`/education/${test.id}`} className="ml-auto">
+                                                <Button size="sm" variant="default">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
+                                            </Link>
+                                        </div>
                                     </Card>
-                                </Link>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                                );
+                            })
+                        ) : (<p className="text-center text-muted-foreground p-4">Bu öğrenci için test bulunmuyor.</p>)}
+                        {tests.filter(test => test.status === 'Atandı').length === 0 && tests.length > 0 && (<p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>)}
+                        </CardContent>
+                    </Card>
+
+                    <div>
+                        <h2 className="text-xl font-bold mb-4">Konu Anlatım Planları</h2>
+                        {studyPlanStats.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {studyPlanStats.map(({ plan, progress }) => (
+                                    <Link key={plan.id} href={`/education/study`} className="block group">
+                                        <Card className="flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full bg-pink-500/10 text-pink-900 dark:bg-pink-500/10 dark:text-pink-200">
+                                            <CardHeader className="text-center">
+                                                <BookHeart className="w-16 h-16 mx-auto mb-4 opacity-80 text-current" />
+                                                <CardTitle className="text-xl text-current">{plan.title}</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
+                                                <p className="text-lg font-semibold">{progress.total} Konu</p>
+                                                <p className="text-sm text-green-600 font-medium">{progress.completed} Tamamlandı</p>
+                                            </CardContent>
+                                            <CardFooter className="p-0">
+                                                <Progress value={(progress.completed / progress.total) * 100} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName="bg-pink-500" />
+                                            </CardFooter>
+                                        </Card>
+                                    </Link>
+                                ))}
+                            </div>
+                        ) : (
+                             <Card>
+                                <CardContent className="p-10 text-center">
+                                    <BookHeart className="mx-auto h-12 w-12 text-muted-foreground" />
+                                    <h3 className="mt-4 text-lg font-medium">Atanmış konu anlatım planı yok</h3>
+                                    <p className="mt-2 text-sm text-muted-foreground">Yönetim panelinden yeni planlar oluşturabilir ve atayabilirsiniz.</p>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                     
-                 </>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Çalışılacak Konular</CardTitle>
+                            <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmamış konu anlatımları.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                        {pendingStudies.length > 0 ? (
+                            pendingStudies.map(study => {
+                                const dueDate = parseISO(study.dueDate);
+                                const now = new Date();
+                                const daysDiff = differenceInDays(dueDate, now);
+                                const isTaskDue = isPast(dueDate) && !isToday(dueDate);
+
+                                return (
+                                     <Card key={study.id} className="overflow-hidden bg-blue-500/10">
+                                        <div className="flex items-center p-4 gap-4">
+                                            <div className="flex-grow">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <BookHeart className="w-4 h-4 text-blue-600" />
+                                                    <h3 className="font-semibold text-lg">{study.topic}</h3>
+                                                </div>
+                                                <div className="flex items-center gap-4 ml-6">
+                                                    <p className="text-sm text-blue-900/80">{study.studyPlanTitle} - {study.subject}</p>
+                                                    {isTaskDue
+                                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                                        : isToday(dueDate)
+                                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <Link href={`/education/study`} className="ml-auto">
+                                                <Button size="sm" variant="default">Çalışmaya Başla <ArrowRight className="h-4 w-4 ml-2"/></Button>
+                                            </Link>
+                                        </div>
+                                    </Card>
+                                )
+                            })
+                        ) : (<p className="text-center text-muted-foreground p-4">Bekleyen konu anlatımı görevi yok.</p>)}
+                        </CardContent>
+                    </Card>
+
+                 </div>
             ) : renderCalendarView() }
 
         </Tabs>
     </>
   );
 }
+
+    
 
     
 
