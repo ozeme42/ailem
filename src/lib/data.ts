@@ -497,6 +497,7 @@ export interface Mistake {
     topic: string;
     createdAt: string; // ISO date string
     status: 'active' | 'corrected';
+    type: 'mcq' | 'open_ended'; // Type of the original question
 }
 export interface AmbientSound {
     id: string;
@@ -677,5 +678,3 @@ export interface StudyAssignment {
   dueDate: string;
   completedAt?: string;
 }
-
-    

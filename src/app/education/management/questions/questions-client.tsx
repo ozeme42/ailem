@@ -161,6 +161,10 @@ export function QuestionsClient() {
   const mcqQuestions = useMemo(() => bankQuestions.filter(q => q.type !== 'open_ended'), [bankQuestions]);
   const openEndedQuestions = useMemo(() => bankQuestions.filter(q => q.type === 'open_ended'), [bankQuestions]);
 
+  const mcqMistakes = useMemo(() => mistakes.filter(m => m.type !== 'open_ended'), [mistakes]);
+  const openEndedMistakes = useMemo(() => mistakes.filter(m => m.type === 'open_ended'), [mistakes]);
+
+
   if (isLoading) {
     return <p>Yükleniyor...</p>;
   }
@@ -207,15 +211,34 @@ export function QuestionsClient() {
             </Tabs>
         </TabsContent>
         <TabsContent value="mistakes">
-            <MistakePoolList 
-                mistakes={mistakes}
-                tests={tests}
-                onDelete={handleDeleteMistake}
-                onDeleteSelected={handleDeleteSelectedMistakes}
-                selectedMistakes={selectedMistakeIds}
-                setSelectedMistakes={setSelectedMistakeIds}
-                onAssign={() => { setAssignmentType('mistake'); setIsAssignDialogOpen(true); }}
-            />
+             <Tabs defaultValue="mcq">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="mcq">Çoktan Seçmeli Yanlışlar ({mcqMistakes.length})</TabsTrigger>
+                    <TabsTrigger value="open_ended">Açık Uçlu Yanlışlar ({openEndedMistakes.length})</TabsTrigger>
+                </TabsList>
+                <TabsContent value="mcq">
+                    <MistakePoolList 
+                        mistakes={mcqMistakes}
+                        tests={tests}
+                        onDelete={handleDeleteMistake}
+                        onDeleteSelected={handleDeleteSelectedMistakes}
+                        selectedMistakes={selectedMistakeIds}
+                        setSelectedMistakes={setSelectedMistakeIds}
+                        onAssign={() => { setAssignmentType('mistake'); setIsAssignDialogOpen(true); }}
+                    />
+                </TabsContent>
+                <TabsContent value="open_ended">
+                    <MistakePoolList 
+                        mistakes={openEndedMistakes}
+                        tests={tests}
+                        onDelete={handleDeleteMistake}
+                        onDeleteSelected={handleDeleteSelectedMistakes}
+                        selectedMistakes={selectedMistakeIds}
+                        setSelectedMistakes={setSelectedMistakeIds}
+                        onAssign={() => { setAssignmentType('mistake'); setIsAssignDialogOpen(true); }}
+                    />
+                </TabsContent>
+            </Tabs>
         </TabsContent>
       </Tabs>
       
@@ -973,5 +996,3 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
     </Dialog>
   );
 }
-
-    
