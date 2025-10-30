@@ -142,4 +142,11 @@ export function BudgetStatsClient() {
                                     <stop offset="95%" stopColor="var(--color-bakiye)" stopOpacity={0.1}/>
                                 </linearGradient>
                             </defs>
-                            <Area type="monotone" dataKey="net" stroke="var(--color-bakiye)" fill="url(#fillBakiye)" name
+                            <Area type="monotone" dataKey="net" stroke="var(--color-bakiye)" fill="url(#fillBakiye)" name="Aylık Net Bakiye" />
+                        </AreaChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
