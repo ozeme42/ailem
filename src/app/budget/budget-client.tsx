@@ -18,7 +18,7 @@ import { useAuth } from "@/components/auth-provider";
 import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionStatsUpdate, onTransactionsUpdate } from "@/lib/dataService";
 import type { Account, Transaction, FamilyMember } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, getYear, setYear, eachMonthOfInterval, startOfYear, endOfYear, subYears } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, getYear, setYear, eachMonthOfInterval, startOfYear, endOfYear, subYears, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
@@ -43,6 +43,14 @@ type MonthlySummary = {
     total: number;
 };
 
+type DailyGroup = {
+    date: string;
+    dateISO: string;
+    dayTotalIncome: number;
+    dayTotalExpense: number;
+    transactions: Transaction[];
+};
+
 export function BudgetClient() {
     const { familyId, familyMembers } = useAuth();
     const { toast } = useToast();
@@ -57,19 +65,19 @@ export function BudgetClient() {
     const [editingAccount, setEditingAccount] = React.useState<Account | null>(null);
     const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
     const [activeTab, setActiveTab] = React.useState('transactions');
-    const [mainTab, setMainTab] = React.useState('month');
+    const [mainTab, setMainTab] = React.useState('day');
 
 
     React.useEffect(() => {
         if (!familyId) return;
         
         let startDate, endDate;
-        if (mainTab === 'total') {
-             startDate = startOfMonth(currentDate);
-             endDate = endOfMonth(currentDate);
-        } else {
+        if (mainTab === 'month') {
              startDate = startOfYear(currentDate);
              endDate = endOfYear(currentDate);
+        } else { // For 'day' and 'total' views, fetch for the current month
+             startDate = startOfMonth(currentDate);
+             endDate = endOfMonth(currentDate);
         }
         
         const unsubTransactions = onTransactionsUpdate(setAllTransactions, startDate, endDate);
@@ -82,21 +90,20 @@ export function BudgetClient() {
     }, [familyId, currentDate, mainTab]);
     
     const handleNavDate = (direction: 'prev' | 'next') => {
-        if (mainTab === 'total') {
-            setCurrentDate(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
-        } else {
+        if (mainTab === 'month') {
             setCurrentDate(prev => direction === 'prev' ? subYears(prev, 1) : addYears(prev, 1));
+        } else {
+            setCurrentDate(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
         }
     };
     
-    const dateDisplayFormat = mainTab === 'total' ? 'MMMM yyyy' : 'yyyy';
+    const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
 
-    const { yearlyIncome, yearlyExpense, monthlySummaries, totalViewStats } = React.useMemo(() => {
+    const { yearlyIncome, yearlyExpense, monthlySummaries, totalViewStats, dailyGroups } = React.useMemo(() => {
         let income = 0;
         let expense = 0;
         const monthSummaries: {[key: string]: {income: number, expense: number, total: number}} = {};
 
-        // Initialize all months of the year
         const yearInterval = eachMonthOfInterval({
           start: startOfYear(currentDate),
           end: endOfYear(currentDate),
@@ -109,6 +116,8 @@ export function BudgetClient() {
 
         let cashBankExpense = 0;
         let creditCardExpense = 0;
+        
+        const daily: { [key: string]: DailyGroup } = {};
 
         allTransactions.forEach(t => {
             const monthKey = t.date.substring(0, 7); // "YYYY-MM"
@@ -128,6 +137,23 @@ export function BudgetClient() {
                     }
                 }
             }
+            
+            // For daily view
+            if (!daily[t.date]) {
+                daily[t.date] = {
+                    date: format(parseISO(t.date), 'd EEE dd.MM.yyyy', {locale: tr}),
+                    dateISO: t.date,
+                    dayTotalIncome: 0,
+                    dayTotalExpense: 0,
+                    transactions: [],
+                };
+            }
+            if (t.type === 'income') {
+                daily[t.date].dayTotalIncome += t.amount;
+            } else {
+                daily[t.date].dayTotalExpense += t.amount;
+            }
+            daily[t.date].transactions.push(t);
         });
         
         const finalSummaries: MonthlySummary[] = Object.entries(monthSummaries)
@@ -137,13 +163,20 @@ export function BudgetClient() {
                 ...values,
                 total: values.income - values.expense
             }))
-            .sort((a,b) => b.monthKey.localeCompare(a.monthKey)); // Sort descending
+            .sort((a,b) => a.monthKey.localeCompare(b.monthKey));
+
+        const finalDailyGroups = Object.values(daily).sort((a,b) => b.dateISO.localeCompare(a.dateISO));
+        
+        const monthStats = finalSummaries.find(s => s.monthKey === format(currentDate, 'yyyy-MM')) || { income: 0, expense: 0, total: 0 };
 
         return { 
             yearlyIncome: income, 
             yearlyExpense: expense, 
+            monthlyIncome: monthStats.income,
+            monthlyExpense: monthStats.expense,
             monthlySummaries: finalSummaries,
-            totalViewStats: { cashBankExpense, creditCardExpense }
+            totalViewStats: { cashBankExpense, creditCardExpense },
+            dailyGroups: finalDailyGroups,
         };
     }, [allTransactions, currentDate, accounts]);
 
@@ -199,7 +232,7 @@ export function BudgetClient() {
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')}>
                         <ChevronLeft className="h-6 w-6" />
                     </Button>
-                    <h2 className="text-2xl font-semibold w-36 text-center capitalize">
+                    <h2 className="text-2xl font-semibold w-48 text-center capitalize">
                         {format(currentDate, dateDisplayFormat, { locale: tr })}
                     </h2>
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')}>
@@ -208,51 +241,60 @@ export function BudgetClient() {
                 </div>
                  <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-5 bg-gray-700/50">
-                        <TabsTrigger value="day">Gün</TabsTrigger>
+                        <TabsTrigger value="day" className={cn(mainTab === 'day' && "data-[state=active]:bg-red-600")}>Gün</TabsTrigger>
                         <TabsTrigger value="calendar">Takvim</TabsTrigger>
                         <TabsTrigger value="month" className={cn(mainTab === 'month' && "data-[state=active]:bg-red-600")}>Ay</TabsTrigger>
                         <TabsTrigger value="total" className={cn(mainTab === 'total' && "data-[state=active]:bg-red-600")}>Toplam</TabsTrigger>
                         <TabsTrigger value="note">Not</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="day" />
-                    <TabsContent value="calendar" />
-                    <TabsContent value="month">
-                         <div className="grid grid-cols-3 text-center mt-4">
-                            <div>
-                                <p className="text-sm text-gray-400">Gelir</p>
-                                <p className="font-semibold text-lg text-blue-400">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                             <div>
-                                <p className="text-sm text-gray-400">Gider</p>
-                                <p className="font-semibold text-lg text-red-400">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                             <div>
-                                <p className="text-sm text-gray-400">Toplam</p>
-                                <p className="font-semibold text-lg">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="total">
-                        <div className="grid grid-cols-3 text-center mt-4">
-                            <div>
-                                <p className="text-sm text-gray-400">Gelir</p>
-                                <p className="font-semibold text-lg text-blue-400">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                             <div>
-                                <p className="text-sm text-gray-400">Gider</p>
-                                <p className="font-semibold text-lg text-red-400">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                             <div>
-                                <p className="text-sm text-gray-400">Toplam</p>
-                                <p className="font-semibold text-lg">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="note" />
-                </Tabs>
+                 </Tabs>
+                <div className="grid grid-cols-3 text-center">
+                    <div>
+                        <p className="text-sm text-gray-400">Gelir</p>
+                        <p className="font-semibold text-lg text-blue-400">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                    </div>
+                     <div>
+                        <p className="text-sm text-gray-400">Gider</p>
+                        <p className="font-semibold text-lg text-red-400">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                    </div>
+                     <div>
+                        <p className="text-sm text-gray-400">Toplam</p>
+                        <p className="font-semibold text-lg">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                    </div>
+                </div>
             </header>
             
              <main className="flex-grow overflow-y-auto px-2 space-y-2 pb-24">
+                {mainTab === 'day' && dailyGroups.map(group => (
+                    <div key={group.dateISO}>
+                        <div className="flex justify-between items-center p-2 bg-gray-700/80 rounded-t-lg">
+                           <div className="font-semibold capitalize">{group.date}</div>
+                           <div className="flex gap-4 items-center">
+                                <span className="text-blue-400">{group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                                <span className="text-red-400">{group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                           </div>
+                        </div>
+                        <div className="space-y-px">
+                            {group.transactions.map(tx => {
+                                const account = accounts.find(a => a.id === tx.accountId);
+                                return (
+                                <div key={tx.id} className="flex justify-between items-center p-3 bg-gray-700/40 first:rounded-t-none last:rounded-b-lg">
+                                    <div className="flex items-center gap-3">
+                                        {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-gray-400" })}
+                                        <div>
+                                            <p>{tx.category}</p>
+                                            <p className="text-xs text-gray-400">{account?.name || ''}</p>
+                                        </div>
+                                    </div>
+                                    <p className={cn("font-semibold", tx.type === 'expense' ? 'text-red-400' : 'text-blue-400')}>
+                                        {tx.type === 'expense' ? '-' : '+'}
+                                        {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                    </p>
+                                </div>
+                            )})}
+                        </div>
+                    </div>
+                ))}
                 {mainTab === 'month' && monthlySummaries.map(summary => (
                      <div key={summary.monthKey} className="flex items-center justify-between p-4 bg-gray-700/60 rounded-lg">
                         <div className="font-bold text-lg capitalize">{summary.month}</div>
