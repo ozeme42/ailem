@@ -368,5 +368,4 @@ export function BudgetClient() {
             </Dialog>
         </div>
     );
-
-    
+}
