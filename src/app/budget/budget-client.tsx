@@ -2,8 +2,8 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, MoreHorizontal, TrendingUp, TrendingDown, Wallet, CreditCard, Landmark, Banknote, PiggyBank, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User } from "lucide-react";
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { useAuth } from "@/components/auth-provider";
 import { onAccountsUpdate, deleteAccount, onTransactionsUpdate, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionStatsUpdate } from "@/lib/dataService";
 import type { Account, Transaction, FamilyMember } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, getYear, setYear, eachMonthOfInterval, startOfYear, endOfYear } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
@@ -35,77 +35,81 @@ const chartConfig = {
   bakiye: { label: "Bakiye", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
-// Helper to group transactions by date
-const groupTransactionsByDate = (transactions: Transaction[]) => {
-  return transactions.reduce((acc, transaction) => {
-    const date = format(new Date(transaction.date), 'yyyy-MM-dd');
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(transaction);
-    return acc;
-  }, {} as { [key: string]: Transaction[] });
+type MonthlySummary = {
+    month: string;
+    monthKey: string; // YYYY-MM
+    income: number;
+    expense: number;
+    total: number;
 };
 
 export function BudgetClient() {
     const { familyId, familyMembers } = useAuth();
     const { toast } = useToast();
     
-    const [currentMonth, setCurrentMonth] = React.useState(new Date());
+    const [currentYear, setCurrentYear] = React.useState(new Date());
     const [accounts, setAccounts] = React.useState<Account[]>([]);
-    const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-    const [monthlyStats, setMonthlyStats] = React.useState<any[]>([]);
-
+    const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
+    
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
 
     const [editingAccount, setEditingAccount] = React.useState<Account | null>(null);
     const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
+    const [activeTab, setActiveTab] = React.useState('transactions');
 
     React.useEffect(() => {
         if (!familyId) return;
-        const unsubAccounts = onAccountsUpdate(setAccounts);
-        const unsubTransactions = onTransactionsUpdate(setTransactions, currentMonth);
-        const unsubStats = onTransactionStatsUpdate((stats) => {
-            const sortedStats = Object.entries(stats).map(([month, data]) => ({
-                month,
-                ...data
-            })).sort((a,b) => a.month.localeCompare(b.month));
-            setMonthlyStats(sortedStats);
-        });
         
+        // Fetch all transactions for the selected year
+        const unsubTransactions = onTransactionsUpdate(setAllTransactions, startOfYear(currentYear), endOfYear(currentYear));
+        const unsubAccounts = onAccountsUpdate(setAccounts);
+
         return () => {
-            unsubAccounts();
             unsubTransactions();
-            unsubStats();
+            unsubAccounts();
         };
-    }, [familyId, currentMonth]);
-    
-    const { totalIncome, totalExpense, balance } = React.useMemo(() => {
+    }, [familyId, currentYear]);
+
+    const { yearlyIncome, yearlyExpense, monthlySummaries } = React.useMemo(() => {
         let income = 0;
         let expense = 0;
-        transactions.forEach(t => {
-            if (t.type === 'income') income += t.amount;
-            else expense += t.amount;
+        const monthSummaries: {[key: string]: {income: number, expense: number, total: number}} = {};
+
+        // Initialize all months of the year
+        const yearInterval = eachMonthOfInterval({
+          start: startOfYear(currentYear),
+          end: endOfYear(currentYear),
         });
-        return { totalIncome: income, totalExpense: expense, balance: income - expense };
-    }, [transactions]);
+        
+        yearInterval.forEach(monthStart => {
+          const monthKey = format(monthStart, 'yyyy-MM');
+          monthSummaries[monthKey] = { income: 0, expense: 0, total: 0 };
+        })
 
-    const totalBalance = React.useMemo(() => 
-        accounts.reduce((sum, acc) => sum + acc.balance, 0),
-    [accounts]);
+        allTransactions.forEach(t => {
+            const monthKey = t.date.substring(0, 7); // "YYYY-MM"
+            if (t.type === 'income') {
+                income += t.amount;
+                if(monthSummaries[monthKey]) monthSummaries[monthKey].income += t.amount;
+            } else {
+                expense += t.amount;
+                if(monthSummaries[monthKey]) monthSummaries[monthKey].expense += t.amount;
+            }
+        });
+        
+        const finalSummaries: MonthlySummary[] = Object.entries(monthSummaries)
+            .map(([monthKey, values]) => ({
+                monthKey,
+                month: format(new Date(monthKey + '-02'), 'MMMM', { locale: tr }),
+                ...values,
+                total: values.income - values.expense
+            }))
+            .sort((a,b) => b.monthKey.localeCompare(a.monthKey)); // Sort descending
 
-    const overallStats = React.useMemo(() => {
-        const totalIncome = monthlyStats.reduce((sum, s) => sum + s.income, 0);
-        const totalExpense = monthlyStats.reduce((sum, s) => sum + s.expense, 0);
-        return {
-            totalIncome,
-            totalExpense,
-            netBalance: totalIncome - totalExpense,
-        };
-    }, [monthlyStats]);
-    
-    const groupedTransactions = React.useMemo(() => groupTransactionsByDate(transactions), [transactions]);
+        return { yearlyIncome: income, yearlyExpense: expense, monthlySummaries: finalSummaries };
+    }, [allTransactions, currentYear]);
+
 
     const handleAccountSubmit = async (data: Omit<Account, 'id' | 'familyId' | 'balance'>) => {
         try {
@@ -151,281 +155,94 @@ export function BudgetClient() {
         }
     }
 
-     const handleDeleteTransaction = async (id: string) => {
-        try {
-            await deleteTransaction(id);
-            toast({ title: "İşlem Silindi", variant: 'destructive'});
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "İşlem silinirken bir hata oluştu" });
-        }
-    }
-
     return (
-        <div className="space-y-6">
-            <PageHeader title="Bütçe Yönetimi">
-                 <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }} className="w-full sm:w-auto">
-                        <PlusCircle className="mr-2 h-4 w-4"/> Yeni İşlem Ekle
+        <div className="bg-gray-800 text-white min-h-screen flex flex-col">
+            <header className="p-4 space-y-4">
+                 <div className="flex items-center justify-center gap-4 text-xl">
+                    <Button variant="ghost" size="icon" onClick={() => setCurrentYear(prev => setYear(prev, getYear(prev) - 1))}>
+                        <ChevronLeft className="h-6 w-6" />
                     </Button>
-                     <Button variant="outline" className="w-full sm:w-auto bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => { setEditingAccount(null); setIsAccountFormOpen(true); }}>
-                        Yeni Hesap Ekle
+                    <h2 className="text-2xl font-semibold w-24 text-center">
+                        {format(currentYear, 'yyyy')}
+                    </h2>
+                    <Button variant="ghost" size="icon" onClick={() => setCurrentYear(prev => setYear(prev, getYear(prev) + 1))}>
+                        <ChevronRight className="h-6 w-6" />
                     </Button>
                 </div>
-            </PageHeader>
-            
-            <div className="flex items-center justify-center gap-4">
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h2 className="text-xl font-semibold capitalize text-center w-48">
-                    {format(currentMonth, 'MMMM yyyy', { locale: tr })}
-                </h2>
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            </div>
-            
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-green-500/10 border-green-500/20">
-                    <CardHeader>
-                        <CardTitle className="text-green-700 dark:text-green-400 flex items-center justify-between">
-                            Gelir <TrendingUp />
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{totalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-red-500/10 border-red-500/20">
-                    <CardHeader>
-                        <CardTitle className="text-red-700 dark:text-red-400 flex items-center justify-between">
-                            Gider <TrendingDown />
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="text-primary flex items-center justify-between">
-                            Bakiye <Wallet />
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Tabs defaultValue="transactions">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="transactions">İşlemler</TabsTrigger>
-                    <TabsTrigger value="accounts">Hesaplar</TabsTrigger>
-                    <TabsTrigger value="stats">Analiz</TabsTrigger>
-                </TabsList>
-                <TabsContent value="transactions" className="mt-4 space-y-4">
-                     {Object.keys(groupedTransactions).sort((a,b) => b.localeCompare(a)).map(date => {
-                         const dayTransactions = groupedTransactions[date];
-                         const dayTotal = dayTransactions.reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
-                         return (
-                            <div key={date}>
-                                <div className="flex justify-between items-center bg-muted/50 p-2 rounded-t-lg">
-                                    <h3 className="font-semibold text-lg">{format(new Date(date), 'd MMMM yyyy, EEEE', {locale: tr})}</h3>
-                                    <p className={cn("font-semibold", dayTotal > 0 ? "text-green-600" : dayTotal < 0 ? "text-red-600" : "text-foreground")}>
-                                        {dayTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                    </p>
-                                </div>
-                                <div className="divide-y border rounded-b-lg">
-                                    {dayTransactions.map(t => (
-                                        <div key={t.id} className="flex items-center p-3 group">
-                                            <div className="flex-grow">
-                                                <p className="font-semibold">{t.description}</p>
-                                                <p className="text-sm text-muted-foreground">{t.category} &middot; {accounts.find(a => a.id === t.accountId)?.name}</p>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <p className={cn("font-bold text-lg", t.type === 'income' ? 'text-green-600' : 'text-foreground')}>
-                                                    {t.type === 'income' ? '+' : '-'}
-                                                    {t.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                                </p>
-                                                 <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingTransaction(t); setIsTransactionFormOpen(true);}}><Edit className="h-4 w-4"/></Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                             <AlertDialogHeader>
-                                                                <AlertDialogTitle>İşlemi Sil</AlertDialogTitle>
-                                                                <AlertDialogDescription>"{t.description}" işlemini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteTransaction(t.id)}>Evet, Sil</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                         );
-                     })}
-                     {Object.keys(groupedTransactions).length === 0 && (
-                         <Card className="text-center p-8 text-muted-foreground">
-                            Bu ay için işlem bulunmuyor.
-                         </Card>
-                     )}
-                </TabsContent>
-                <TabsContent value="accounts" className="mt-4">
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {accounts.map(account => {
-                            const Icon = accountIcons[account.type] || Wallet;
-                            return (
-                                <Card key={account.id} className="relative group">
-                                    <CardHeader>
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-6 w-6 text-muted-foreground"/>
-                                                <CardTitle>{account.name}</CardTitle>
-                                            </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-50 group-hover:opacity-100 transition-opacity">
-                                                        <MoreHorizontal className="h-4 w-4"/>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => {setEditingAccount(account); setIsAccountFormOpen(true);}}>
-                                                        <Edit className="mr-2 h-4 w-4"/> Düzenle
-                                                    </DropdownMenuItem>
-                                                     <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                                <Trash2 className="mr-2 h-4 w-4"/> Sil
-                                                            </DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Hesabı Sil</AlertDialogTitle>
-                                                                <AlertDialogDescription>"{account.name}" hesabını kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteAccount(account.id)}>Evet, Sil</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                        <CardDescription>{familyMembers.find(m => m.id === account.ownerId)?.name || ''}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-3xl font-bold">{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                 <Tabs defaultValue="month" className="w-full">
+                    <TabsList className="grid w-full grid-cols-5 bg-gray-700/50">
+                        <TabsTrigger value="day">Gün</TabsTrigger>
+                        <TabsTrigger value="calendar">Takvim</TabsTrigger>
+                        <TabsTrigger value="month" className="data-[state=active]:bg-red-600">Ay</TabsTrigger>
+                        <TabsTrigger value="total">Toplam</TabsTrigger>
+                        <TabsTrigger value="note">Not</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <div className="grid grid-cols-3 text-center">
+                    <div>
+                        <p className="text-sm text-gray-400">Gelir</p>
+                        <p className="font-semibold text-lg text-blue-400">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
-                </TabsContent>
-                 <TabsContent value="stats" className="mt-4 space-y-6">
-                    {monthlyStats.length > 0 ? (
-                        <>
-                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-primary flex items-center justify-between">Toplam Bakiye <Wallet /></CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-3xl font-bold">{totalBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                                        <p className="text-xs text-muted-foreground">Tüm hesaplarınızdaki toplam miktar</p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-green-600 flex items-center justify-between">Toplam Gelir <TrendingUp /></CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-3xl font-bold">{overallStats.totalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                                        <p className="text-xs text-muted-foreground">Son 6 aydaki toplam gelir</p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-red-600 flex items-center justify-between">Toplam Gider <TrendingDown /></CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-3xl font-bold">{overallStats.totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                                        <p className="text-xs text-muted-foreground">Son 6 aydaki toplam gider</p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center justify-between">Net Bakiye <Banknote /></CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-3xl font-bold">{overallStats.netBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                                        <p className="text-xs text-muted-foreground">Son 6 aydaki net kazanç</p>
-                                    </CardContent>
-                                </Card>
+                     <div>
+                        <p className="text-sm text-gray-400">Gider</p>
+                        <p className="font-semibold text-lg text-red-400">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                    </div>
+                     <div>
+                        <p className="text-sm text-gray-400">Toplam</p>
+                        <p className="font-semibold text-lg">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                    </div>
+                </div>
+            </header>
+
+            <main className="flex-grow overflow-y-auto px-2 space-y-2 pb-24">
+                {monthlySummaries.map(summary => (
+                     <div key={summary.monthKey} className="flex items-center justify-between p-4 bg-gray-700/60 rounded-lg">
+                        <div className="font-bold text-lg capitalize">{summary.month}</div>
+                        <div className="flex items-center gap-6">
+                            <span className="text-blue-400">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                            <div className="text-right">
+                                <p className="text-red-400 font-semibold text-lg">
+                                  {summary.expense > 0 ? '-' : ''}
+                                  {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                </p>
+                                <p className={cn("text-xs", summary.total >= 0 ? "text-gray-400" : "text-red-400")}>
+                                    Toplam: {summary.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                </p>
                             </div>
-                            
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Aylık Gelir & Gider Karşılaştırması</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <ChartContainer config={chartConfig} className="h-80 w-full">
-                                        <BarChart data={monthlyStats}>
-                                            <CartesianGrid vertical={false} />
-                                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                                            <YAxis tickFormatter={(value) => `${(value / 1000)}k`} />
-                                            <Tooltip content={<ChartTooltipContent currency="TRY" />} />
-                                            <Legend />
-                                            <Bar dataKey="income" fill="var(--color-gelir)" name="Gelir" radius={4} />
-                                            <Bar dataKey="expense" fill="var(--color-gider)" name="Gider" radius={4} />
-                                        </BarChart>
-                                    </ChartContainer>
-                                </CardContent>
-                            </Card>
+                        </div>
+                    </div>
+                ))}
+            </main>
+            
+            <div className="fixed bottom-20 right-6 z-20">
+                <Button 
+                    className="rounded-full w-16 h-16 bg-red-600 hover:bg-red-700 shadow-lg"
+                    onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
+                >
+                    <Plus className="h-8 w-8" />
+                </Button>
+            </div>
+            
+            <footer className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 grid grid-cols-4 h-16 z-10">
+                <Button variant="ghost" onClick={() => setActiveTab('transactions')} className={cn("flex-col h-full rounded-none", activeTab === 'transactions' && 'text-red-500')}>
+                    <Wallet className="h-6 w-6"/>
+                    <span className="text-xs">İşlemler</span>
+                </Button>
+                 <Button variant="ghost" onClick={() => setActiveTab('stats')} className={cn("flex-col h-full rounded-none", activeTab === 'stats' && 'text-red-500')}>
+                    <BarChart2 className="h-6 w-6"/>
+                    <span className="text-xs">İstatistik</span>
+                </Button>
+                <Button variant="ghost" onClick={() => { setIsAccountFormOpen(true) }} className={cn("flex-col h-full rounded-none", activeTab === 'accounts' && 'text-red-500')}>
+                    <CreditCard className="h-6 w-6"/>
+                    <span className="text-xs">Hesaplar</span>
+                </Button>
+                <Button variant="ghost" onClick={() => {}} className={cn("flex-col h-full rounded-none", activeTab === 'more' && 'text-red-500')}>
+                    <MoreHorizontal className="h-6 w-6"/>
+                    <span className="text-xs">Daha</span>
+                </Button>
+            </footer>
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Aylık Birikim Trendi</CardTitle>
-                                    <CardDescription>Her ay sonunda gelir ve giderler arasındaki net fark.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <ChartContainer config={chartConfig} className="h-80 w-full">
-                                        <AreaChart data={monthlyStats.map(s => ({...s, net: s.income - s.expense}))}>
-                                            <CartesianGrid vertical={false} />
-                                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                                            <YAxis tickFormatter={(value) => `${(value / 1000)}k`} />
-                                            <Tooltip content={<ChartTooltipContent currency="TRY" />} />
-                                            <defs>
-                                                <linearGradient id="fillBakiye" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="var(--color-bakiye)" stopOpacity={0.8}/>
-                                                    <stop offset="95%" stopColor="var(--color-bakiye)" stopOpacity={0.1}/>
-                                                </linearGradient>
-                                            </defs>
-                                            <Area type="monotone" dataKey="net" stroke="var(--color-bakiye)" fill="url(#fillBakiye)" name="Aylık Net Bakiye" />
-                                        </AreaChart>
-                                    </ChartContainer>
-                                </CardContent>
-                            </Card>
-                        </>
-                    ) : (
-                        <Card className="text-center p-8 text-muted-foreground">
-                            Grafikleri oluşturacak yeterli veri bulunmuyor.
-                        </Card>
-                    )}
-                </TabsContent>
-            </Tabs>
-
-             <Dialog open={isAccountFormOpen} onOpenChange={setIsAccountFormOpen}>
+            <Dialog open={isAccountFormOpen} onOpenChange={setIsAccountFormOpen}>
                 <DialogContent>
                     <NewAccountForm
                         familyMembers={familyMembers}
@@ -445,9 +262,21 @@ export function BudgetClient() {
                     />
                 </DialogContent>
             </Dialog>
-
         </div>
     );
 }
 
-    
+// Dummy onTransactionsUpdate for year
+function onTransactionsUpdate(
+  callback: (transactions: Transaction[]) => void,
+  startDate: Date,
+  endDate: Date
+): () => void {
+  // This would be a real Firestore listener in a real app
+  console.log("Fetching transactions between", startDate, "and", endDate);
+  const dummyTransactions: Transaction[] = []; // Populate with dummy data if needed
+  callback(dummyTransactions);
+  return () => {}; // Return unsubscribe function
+}
+
+```
