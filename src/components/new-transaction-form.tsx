@@ -82,21 +82,22 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   }
   
   const selectedCategory = categories.find(c => c.name === form.watch('category'));
+  const transactionType = form.watch('type');
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white">
         <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-grow flex flex-col">
            <DialogHeader className="p-4 bg-gray-800 flex-shrink-0">
-                <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Gider"}</DialogTitle>
+                <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
                 <Tabs 
-                    value={form.watch('type')} 
-                    onValueChange={(value) => form.setValue('type', value as 'income' | 'expense')} 
+                    value={transactionType}
+                    onValueChange={(value) => form.setValue('type', value as 'income' | 'expense')}
                     className="w-full pt-4"
                 >
                     <TabsList className="grid w-full grid-cols-3 bg-gray-700/50">
-                        <TabsTrigger value="income">Gelir</TabsTrigger>
-                        <TabsTrigger value="expense" className="data-[state=active]:bg-red-600">Gider</TabsTrigger>
+                        <TabsTrigger value="income" className={cn(transactionType === 'income' && "data-[state=active]:bg-blue-600")}>Gelir</TabsTrigger>
+                        <TabsTrigger value="expense" className={cn(transactionType === 'expense' && "data-[state=active]:bg-red-600")}>Gider</TabsTrigger>
                         <TabsTrigger value="transfer" disabled>Havale</TabsTrigger>
                     </TabsList>
                 </Tabs>
@@ -121,7 +122,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                       <Separator className="bg-gray-700"/>
                       <FormField control={form.control} name="amount" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
-                              <FormControl><Input type="number" placeholder="0,00" {...field} className="bg-transparent border-0 text-red-400 text-lg font-bold placeholder:text-red-400/50" /></FormControl>
+                              <FormControl><Input type="number" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-lg font-bold placeholder:text-red-400/50", transactionType === 'income' ? 'text-blue-400 placeholder:text-blue-400/50' : 'text-red-400 placeholder:text-red-400/50')} /></FormControl>
                           </FormItem>
                       )}/>
                       <Separator className="bg-gray-700"/>
@@ -158,7 +159,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
            </div>
            
             <DialogFooter className="p-4 bg-gray-800 border-t border-gray-700 flex-shrink-0">
-                <Button type="submit" className="w-full bg-red-600 hover:bg-red-700">
+                <Button type="submit" className={cn("w-full", transactionType === 'income' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700')}>
                     {initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}
                 </Button>
             </DialogFooter>
