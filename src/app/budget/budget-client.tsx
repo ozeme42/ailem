@@ -240,9 +240,8 @@ export function BudgetClient() {
                     </Button>
                 </div>
                  <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-5 bg-gray-700/50">
+                    <TabsList className="grid w-full grid-cols-4 bg-gray-700/50">
                         <TabsTrigger value="day" className={cn(mainTab === 'day' && "data-[state=active]:bg-red-600")}>Gün</TabsTrigger>
-                        <TabsTrigger value="calendar">Takvim</TabsTrigger>
                         <TabsTrigger value="month" className={cn(mainTab === 'month' && "data-[state=active]:bg-red-600")}>Ay</TabsTrigger>
                         <TabsTrigger value="total" className={cn(mainTab === 'total' && "data-[state=active]:bg-red-600")}>Toplam</TabsTrigger>
                         <TabsTrigger value="note">Not</TabsTrigger>
