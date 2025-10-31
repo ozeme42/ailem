@@ -12,6 +12,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { MobileNavbar } from '@/components/mobile-navbar';
 import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface AuthContextType {
   user: User | null;
@@ -223,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // App Layout Logic
   const authRoutes = ['/login', '/signup'];
   const isAuthRoute = authRoutes.includes(pathname);
-  const isJoinFamilyRoute = pathname === '/join-family';
+  const isJoinFamilyRoute = pathname.startsWith('/join-family');
   
   useEffect(() => {
     if (loading) return;
@@ -254,13 +255,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
   }
 
+  const isBudgetPage = pathname.startsWith('/budget');
 
   return (
     <AuthContext.Provider value={authContextValue}>
         <SidebarProvider defaultOpen={true}>
             <AppSidebar />
             <SidebarInset>
-                <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 h-full">
+                <main className={cn("pb-24 md:pb-8 h-full", isBudgetPage ? "" : "p-4 sm:p-6 lg:p-8")}>
                 {children}
                 </main>
             </SidebarInset>
