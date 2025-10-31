@@ -62,7 +62,7 @@ export function BudgetClient() {
         if (!familyId) return;
         
         // Fetch all transactions for the selected year
-        const unsubTransactions = onTransactionsUpdate(setAllTransactions, startOfYear(currentYear), endOfYear(currentYear));
+        const unsubTransactions = onTransactionsUpdate(setAllTransactions, currentYear);
         const unsubAccounts = onAccountsUpdate(setAccounts);
 
         return () => {
@@ -265,18 +265,3 @@ export function BudgetClient() {
         </div>
     );
 }
-
-// Dummy onTransactionsUpdate for year
-function onTransactionsUpdate(
-  callback: (transactions: Transaction[]) => void,
-  startDate: Date,
-  endDate: Date
-): () => void {
-  // This would be a real Firestore listener in a real app
-  console.log("Fetching transactions between", startDate, "and", endDate);
-  const dummyTransactions: Transaction[] = []; // Populate with dummy data if needed
-  callback(dummyTransactions);
-  return () => {}; // Return unsubscribe function
-}
-
-```
