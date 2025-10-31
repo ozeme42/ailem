@@ -18,7 +18,7 @@ import { useAuth } from "@/components/auth-provider";
 import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionStatsUpdate, onTransactionsUpdate } from "@/lib/dataService";
 import type { Account, Transaction, FamilyMember } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, getYear, setYear, eachMonthOfInterval, startOfYear, endOfYear, subYears, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, getYear, setYear, eachMonthOfInterval, startOfYear, endOfYear, subYears, parseISO, addYears } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
@@ -70,14 +70,8 @@ export function BudgetClient() {
     React.useEffect(() => {
         if (!familyId) return;
         
-        let startDate, endDate;
-        if (mainTab === 'month') {
-             startDate = startOfYear(currentDate);
-             endDate = endOfYear(currentDate);
-        } else { // For 'day' and 'total' views, fetch for the current month
-             startDate = startOfMonth(currentDate);
-             endDate = endOfMonth(currentDate);
-        }
+        const startDate = startOfYear(currentDate);
+        const endDate = endOfYear(currentDate);
         
         const unsubTransactions = onTransactionsUpdate(setAllTransactions, startDate, endDate);
         const unsubAccounts = onAccountsUpdate(setAccounts);
@@ -86,7 +80,7 @@ export function BudgetClient() {
             unsubTransactions();
             unsubAccounts();
         };
-    }, [familyId, currentDate, mainTab]);
+    }, [familyId, currentDate]);
     
     const handleNavDate = (direction: 'prev' | 'next') => {
         if (mainTab === 'month') {
@@ -118,8 +112,14 @@ export function BudgetClient() {
         
         const daily: { [key: string]: DailyGroup } = {};
 
+        const filteredTransactionsForMonth = allTransactions.filter(t => {
+            const transactionMonth = t.date.substring(0, 7);
+            const currentMonth = format(currentDate, 'yyyy-MM');
+            return transactionMonth === currentMonth;
+        });
+
         allTransactions.forEach(t => {
-            const monthKey = t.date.substring(0, 7); // "YYYY-MM"
+            const monthKey = t.date.substring(0, 7);
             if (t.type === 'income') {
                 income += t.amount;
                 if(monthSummaries[monthKey]) monthSummaries[monthKey].income += t.amount;
@@ -127,7 +127,7 @@ export function BudgetClient() {
                 expense += t.amount;
                 if(monthSummaries[monthKey]) monthSummaries[monthKey].expense += t.amount;
                 
-                const account = accounts.find(acc => acc.id === t.accountId);
+                 const account = accounts.find(acc => acc.id === t.accountId);
                 if (account) {
                     if (account.type === 'credit-card') {
                         creditCardExpense += t.amount;
@@ -136,8 +136,9 @@ export function BudgetClient() {
                     }
                 }
             }
-            
-            // For daily view
+        });
+
+        filteredTransactionsForMonth.forEach(t => {
             if (!daily[t.date]) {
                 daily[t.date] = {
                     date: format(parseISO(t.date), 'd EEE dd.MM.yyyy', {locale: tr}),
@@ -269,8 +270,8 @@ export function BudgetClient() {
                         <div className="flex justify-between items-center p-2 bg-gray-700/80 rounded-t-lg">
                            <div className="font-semibold capitalize">{group.date}</div>
                            <div className="flex gap-4 items-center">
-                                <span className="text-blue-400">{group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
-                                <span className="text-red-400">{group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                                <span className="text-blue-400">{group.dayTotalIncome > 0 ? group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
+                                <span className="text-red-400">{group.dayTotalExpense > 0 ? group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
                            </div>
                         </div>
                         <div className="space-y-px">
