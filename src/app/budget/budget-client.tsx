@@ -64,7 +64,6 @@ export function BudgetClient() {
 
     const [editingAccount, setEditingAccount] = React.useState<Account | null>(null);
     const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
-    const [activeTab, setActiveTab] = React.useState('transactions');
     const [mainTab, setMainTab] = React.useState('day');
 
 
@@ -346,25 +345,6 @@ export function BudgetClient() {
                     <Plus className="h-8 w-8" />
                 </Button>
             </div>
-            
-            <footer className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 grid grid-cols-4 h-16 z-10">
-                <Button variant="ghost" onClick={() => setActiveTab('transactions')} className={cn("flex-col h-full rounded-none", activeTab === 'transactions' && 'text-red-500')}>
-                    <Wallet className="h-6 w-6"/>
-                    <span className="text-xs">İşlemler</span>
-                </Button>
-                 <Button variant="ghost" onClick={() => setActiveTab('stats')} className={cn("flex-col h-full rounded-none", activeTab === 'stats' && 'text-red-500')}>
-                    <BarChart2 className="h-6 w-6"/>
-                    <span className="text-xs">İstatistik</span>
-                </Button>
-                <Button variant="ghost" onClick={() => { setIsAccountFormOpen(true) }} className={cn("flex-col h-full rounded-none", activeTab === 'accounts' && 'text-red-500')}>
-                    <CreditCard className="h-6 w-6"/>
-                    <span className="text-xs">Hesaplar</span>
-                </Button>
-                <Button variant="ghost" onClick={() => {}} className={cn("flex-col h-full rounded-none", activeTab === 'more' && 'text-red-500')}>
-                    <MoreHorizontal className="h-6 w-6"/>
-                    <span className="text-xs">Daha</span>
-                </Button>
-            </footer>
 
             <Dialog open={isAccountFormOpen} onOpenChange={setIsAccountFormOpen}>
                 <DialogContent>
@@ -388,5 +368,5 @@ export function BudgetClient() {
             </Dialog>
         </div>
     );
-}
 
+    
