@@ -357,7 +357,7 @@ export function BudgetClient() {
             </Dialog>
             
             <Dialog open={isTransactionFormOpen} onOpenChange={(open) => { if (!open) setEditingTransaction(null); setIsTransactionFormOpen(open); }}>
-                <DialogContent>
+                <DialogContent className="p-0 border-0 h-full max-h-screen sm:h-auto sm:max-h-[90vh] sm:max-w-md">
                     <NewTransactionForm
                         accounts={accounts}
                         familyMembers={familyMembers}
