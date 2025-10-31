@@ -1663,7 +1663,7 @@ export const deleteAccount = async (id: string) => {
 };
 
 // Transactions
-export const onTransactionsUpdate = (callback: (transactions: Transaction[]) => void, month: Date) => {
+export const onTransactionsUpdate = (callback: (transactions: Transaction[]) => void, startDate: Date, endDate: Date) => {
     const auth = getAuth();
     let unsubscribe: ReturnType<typeof onSnapshot> | null = null;
 
@@ -1673,14 +1673,14 @@ export const onTransactionsUpdate = (callback: (transactions: Transaction[]) => 
         if (user) {
             const familyId = await getCurrentFamilyId();
             if (familyId) {
-                const start = format(startOfWeek(startOfMonth(month)), 'yyyy-MM-dd');
-                const end = format(endOfWeek(endOfMonth(month)), 'yyyy-MM-dd');
-
+                const startStr = format(startDate, 'yyyy-MM-dd');
+                const endStr = format(endDate, 'yyyy-MM-dd');
+                
                 const q = query(
                     collection(db, "transactions"),
                     where("familyId", "==", familyId),
-                    where("date", ">=", start),
-                    where("date", "<=", end),
+                    where("date", ">=", startStr),
+                    where("date", "<=", endStr),
                     orderBy("date", "desc")
                 );
 
@@ -1719,15 +1719,24 @@ export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>)
     const batch = writeBatch(db);
     const cleanedData = removeUndefined(data);
 
+    // 1. Add the transaction document
     const newTransactionRef = doc(collection(db, 'transactions'));
     batch.set(newTransactionRef, { ...cleanedData, familyId });
 
+    // 2. Update the account balance
     const accountRef = doc(db, 'accounts', data.accountId);
-    const accountSnap = await getDoc(accountRef);
-    if (accountSnap.exists()) {
-        const currentBalance = accountSnap.data().balance || 0;
-        const newBalance = data.type === 'income' ? currentBalance + data.amount : currentBalance - data.amount;
-        batch.update(accountRef, { balance: newBalance });
+    try {
+        const accountSnap = await getDoc(accountRef);
+        if (accountSnap.exists()) {
+            const currentBalance = accountSnap.data().balance || 0;
+            const newBalance = data.type === 'income' ? currentBalance + data.amount : currentBalance - data.amount;
+            batch.update(accountRef, { balance: newBalance });
+        } else {
+            console.warn(`Account with ID ${data.accountId} not found. Balance not updated.`);
+        }
+    } catch (e) {
+        console.error("Error fetching account for balance update", e);
+        // We might choose to not throw here to allow the transaction to be added anyway
     }
 
     return batch.commit();
