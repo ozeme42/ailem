@@ -98,58 +98,60 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 </Tabs>
            </DialogHeader>
            
-           <div className="flex-grow p-4 space-y-4">
-                <FormField control={form.control} name="date" render={({ field }) => (
-                    <FormItem className="flex items-center">
-                        <FormLabel className="w-20 text-muted-foreground">Tarih</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant={"ghost"} className="flex-grow justify-start font-normal">
-                                    {field.value ? format(field.value, "dd.MM.yyyy (EEE) HH:mm", { locale: tr }) : <span>Tarih seçin</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
-                        </Popover>
-                    </FormItem>
-                )}/>
-                <Separator className="bg-gray-700"/>
-                <FormField control={form.control} name="amount" render={({ field }) => (
-                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
-                        <FormControl><Input type="number" placeholder="0,00" {...field} className="bg-transparent border-0 text-red-400 text-lg font-bold placeholder:text-red-400/50" /></FormControl>
-                    </FormItem>
-                )}/>
-                <Separator className="bg-gray-700"/>
-                <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Kategori</FormLabel>
-                        <FormControl>
-                            <Input 
-                                placeholder="Kategori seçin" 
-                                {...field} 
-                                onFocus={() => setShowCategorySelector(true)}
-                                className="bg-transparent border-0"
-                            />
-                        </FormControl>
-                    </FormItem>
-                )}/>
-                 <Separator className="bg-gray-700"/>
-                 <FormField control={form.control} name="accountId" render={({ field }) => (
-                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger className="bg-transparent border-0"><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
-                            <SelectContent>{accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </FormItem>
-                )}/>
-                 <Separator className="bg-gray-700"/>
-                 <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Not</FormLabel>
-                        <FormControl><Input placeholder="Not ekle..." {...field} className="bg-transparent border-0" /></FormControl>
-                    </FormItem>
-                )}/>
-           </div>
+           <ScrollArea className="flex-grow">
+               <div className="p-4 space-y-4">
+                    <FormField control={form.control} name="date" render={({ field }) => (
+                        <FormItem className="flex items-center">
+                            <FormLabel className="w-20 text-muted-foreground">Tarih</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant={"ghost"} className="flex-grow justify-start font-normal">
+                                        {field.value ? format(field.value, "dd.MM.yyyy (EEE) HH:mm", { locale: tr }) : <span>Tarih seçin</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
+                            </Popover>
+                        </FormItem>
+                    )}/>
+                    <Separator className="bg-gray-700"/>
+                    <FormField control={form.control} name="amount" render={({ field }) => (
+                        <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
+                            <FormControl><Input type="number" placeholder="0,00" {...field} className="bg-transparent border-0 text-red-400 text-lg font-bold placeholder:text-red-400/50" /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <Separator className="bg-gray-700"/>
+                    <FormField control={form.control} name="category" render={({ field }) => (
+                        <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Kategori</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    placeholder="Kategori seçin" 
+                                    {...field} 
+                                    onFocus={() => setShowCategorySelector(true)}
+                                    className="bg-transparent border-0"
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}/>
+                     <Separator className="bg-gray-700"/>
+                     <FormField control={form.control} name="accountId" render={({ field }) => (
+                        <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger className="bg-transparent border-0"><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
+                                <SelectContent>{accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}/>
+                     <Separator className="bg-gray-700"/>
+                     <FormField control={form.control} name="description" render={({ field }) => (
+                        <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Not</FormLabel>
+                            <FormControl><Input placeholder="Not ekle..." {...field} className="bg-transparent border-0" /></FormControl>
+                        </FormItem>
+                    )}/>
+               </div>
+            </ScrollArea>
            
             {showCategorySelector && (
-              <div className="absolute inset-x-0 bottom-0 bg-gray-800 border-t border-gray-700 p-4 rounded-t-lg">
+              <div className="absolute inset-x-0 bottom-0 bg-gray-800 border-t border-gray-700 p-4 rounded-t-lg z-10">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-semibold">Kategori</h3>
                      <Button variant="ghost" size="icon" onClick={() => setShowCategorySelector(false)}><X className="h-4 w-4"/></Button>
