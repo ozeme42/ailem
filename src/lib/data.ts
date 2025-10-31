@@ -652,6 +652,14 @@ export interface Transaction {
     };
 }
 
+export interface BudgetCategory {
+    id: string;
+    familyId: string;
+    name: string;
+    icon: string;
+    type: 'income' | 'expense';
+}
+
 export interface Budget {
     id: string; // YYYY-MM
     familyId: string;
@@ -678,3 +686,5 @@ export interface StudyAssignment {
   dueDate: string;
   completedAt?: string;
 }
+
+    

@@ -9,57 +9,41 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
-
-const formSchema = z.object({
-    // This will be dynamic, but for schema validation we can define a few common ones
-    "Gıda": z.coerce.number().min(0).optional(),
-    "Fatura": z.coerce.number().min(0).optional(),
-    "Kira": z.coerce.number().min(0).optional(),
-    "Ulaşım": z.coerce.number().min(0).optional(),
-    "Eğlence": z.coerce.number().min(0).optional(),
-});
+import { onBudgetCategoriesUpdate } from "@/lib/dataService";
+import type { BudgetCategory } from "@/lib/data";
 
 export function BudgetCategoryForm() {
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-    });
-
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        // Implement save logic
-        console.log(values);
-    }
+    const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
     
-    const categories = ["Gıda", "Fatura", "Kira", "Ulaşım", "Eğlence"];
+     React.useEffect(() => {
+        const unsub = onBudgetCategoriesUpdate(setCategories);
+        return () => unsub();
+     }, []);
 
     return (
-        <Form {...form}>
+        <div>
             <DialogHeader>
-                <DialogTitle>Aylık Bütçeyi Ayarla</DialogTitle>
+                <DialogTitle>Kategorileri Yönet</DialogTitle>
                 <DialogDescription>
-                    Bu ay için her kategoriye harcama limiti belirleyin.
+                   Harcama kategorilerinizi düzenleyin veya yenilerini ekleyin.
                 </DialogDescription>
             </DialogHeader>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                 {categories.map(category => (
-                    <FormField
-                        key={category}
-                        control={form.control}
-                        name={category as any}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>{category}</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="0.00" {...field} value={field.value ?? ''} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+            <div className="py-4 space-y-2">
+                {categories.map(category => (
+                    <div key={category.id} className="flex items-center justify-between p-2 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">{category.icon}</span>
+                            <span>{category.name}</span>
+                        </div>
+                        {/* Add edit/delete buttons here */}
+                    </div>
                 ))}
-                <DialogFooter>
-                    <Button type="submit" className="w-full">Bütçeyi Kaydet</Button>
-                </DialogFooter>
-            </form>
-        </Form>
+            </div>
+             <DialogFooter>
+                    <Button type="submit" className="w-full">Yeni Kategori Ekle</Button>
+            </DialogFooter>
+        </div>
     );
 }
+
+    

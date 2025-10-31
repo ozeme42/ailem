@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Repeat } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -15,18 +15,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Account, FamilyMember, Transaction } from "@/lib/data";
+import { Account, FamilyMember, Transaction, BudgetCategory } from "@/lib/data";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { Switch } from "./ui/switch";
 import { ScrollArea } from "./ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { onBudgetCategoriesUpdate } from "@/lib/dataService";
+import { Separator } from "./ui/separator";
 
 const formSchema = z.object({
-  description: z.string().min(2, "Açıklama en az 2 karakter olmalıdır."),
+  description: z.string().optional(),
   amount: z.coerce.number().positive("Tutar pozitif bir sayı olmalıdır."),
-  type: z.enum(['income', 'expense']),
+  type: z.enum(['income', 'expense']).default('expense'),
   accountId: z.string({ required_error: "Bir hesap seçmelisiniz." }),
   ownerId: z.string({ required_error: "Bir kişi seçmelisiniz." }),
-  category: z.string().min(2, "Kategori zorunludur."),
+  category: z.string().min(1, "Kategori zorunludur."),
   date: z.date({ required_error: "Tarih seçmelisiniz." }),
   isInstallment: z.boolean().default(false),
   installmentTotal: z.coerce.number().optional(),
@@ -35,11 +38,14 @@ const formSchema = z.object({
 type NewTransactionFormProps = {
   accounts: Account[];
   familyMembers: FamilyMember[];
-  onSubmit: (data: any) => void; // More specific type based on transaction logic
+  onSubmit: (data: any) => void; 
   initialData?: Transaction | null;
 };
 
 export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData }: NewTransactionFormProps) {
+  const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
+  const [showCategorySelector, setShowCategorySelector] = React.useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,8 +60,16 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       installmentTotal: initialData?.installmentDetails?.total || undefined,
     },
   });
+  
+  React.useEffect(() => {
+      const unsub = onBudgetCategoriesUpdate(setCategories);
+      return () => unsub();
+  }, []);
 
-  const isInstallment = form.watch("isInstallment");
+  const handleCategorySelect = (categoryName: string) => {
+      form.setValue('category', categoryName);
+      setShowCategorySelector(false);
+  }
 
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
     onSubmit({
@@ -66,113 +80,100 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   }
 
   return (
-    <Form {...form}>
-       <DialogHeader>
-        <DialogTitle>{initialData ? "İşlemi Düzenle" : "Yeni İşlem Ekle"}</DialogTitle>
-        <DialogDescription>
-          Bir gelir veya gider işlemi ekleyin.
-        </DialogDescription>
-      </DialogHeader>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-         <ScrollArea className="h-[60vh] pr-6">
-            <div className="space-y-4 pt-4">
-              <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Açıklama</FormLabel>
-                  <FormControl><Input placeholder="Örn: Market Alışverişi" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
+    <div className="flex flex-col h-full bg-gray-900 text-white">
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-grow flex flex-col">
+           <DialogHeader className="p-4 bg-gray-800">
+                <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Gider"}</DialogTitle>
+                <Tabs 
+                    value={form.watch('type')} 
+                    onValueChange={(value) => form.setValue('type', value as 'income' | 'expense')} 
+                    className="w-full pt-4"
+                >
+                    <TabsList className="grid w-full grid-cols-3 bg-gray-700/50">
+                        <TabsTrigger value="income">Gelir</TabsTrigger>
+                        <TabsTrigger value="expense" className="data-[state=active]:bg-red-600">Gider</TabsTrigger>
+                        <TabsTrigger value="transfer" disabled>Havale</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+           </DialogHeader>
+           
+           <div className="flex-grow p-4 space-y-4">
+                <FormField control={form.control} name="date" render={({ field }) => (
+                    <FormItem className="flex items-center">
+                        <FormLabel className="w-20 text-muted-foreground">Tarih</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant={"ghost"} className="flex-grow justify-start font-normal">
+                                    {field.value ? format(field.value, "dd.MM.yyyy (EEE) HH:mm", { locale: tr }) : <span>Tarih seçin</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
+                        </Popover>
+                    </FormItem>
+                )}/>
+                <Separator className="bg-gray-700"/>
                 <FormField control={form.control} name="amount" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Tutar</FormLabel>
-                        <FormControl><Input type="number" placeholder="150.75" {...field} /></FormControl>
-                        <FormMessage />
+                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
+                        <FormControl><Input type="number" placeholder="0,00" {...field} className="bg-transparent border-0 text-red-400 text-lg font-bold placeholder:text-red-400/50" /></FormControl>
                     </FormItem>
                 )}/>
-                <FormField control={form.control} name="type" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Türü</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                            <SelectContent>
-                            <SelectItem value="expense">Gider</SelectItem>
-                            <SelectItem value="income">Gelir</SelectItem>
-                            </SelectContent>
-                        </Select>
+                <Separator className="bg-gray-700"/>
+                <FormField control={form.control} name="category" render={({ field }) => (
+                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Kategori</FormLabel>
+                        <FormControl>
+                            <Input 
+                                placeholder="Kategori seçin" 
+                                {...field} 
+                                onFocus={() => setShowCategorySelector(true)}
+                                className="bg-transparent border-0"
+                            />
+                        </FormControl>
                     </FormItem>
                 )}/>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="accountId" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Hesap</FormLabel>
+                 <Separator className="bg-gray-700"/>
+                 <FormField control={form.control} name="accountId" render={({ field }) => (
+                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className="bg-transparent border-0"><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
                             <SelectContent>{accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
                         </Select>
                     </FormItem>
                 )}/>
-                <FormField control={form.control} name="ownerId" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Kişi</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Kişi seçin"/></SelectTrigger></FormControl>
-                            <SelectContent>{familyMembers.map(mem => <SelectItem key={mem.id} value={mem.id}>{mem.name}</SelectItem>)}</SelectContent>
-                        </Select>
+                 <Separator className="bg-gray-700"/>
+                 <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Not</FormLabel>
+                        <FormControl><Input placeholder="Not ekle..." {...field} className="bg-transparent border-0" /></FormControl>
                     </FormItem>
                 )}/>
-            </div>
-            <FormField control={form.control} name="category" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Kategori</FormLabel>
-                    <FormControl><Input placeholder="Gıda, Fatura vb." {...field} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-            <FormField control={form.control} name="date" render={({ field }) => (
-                <FormItem className="flex flex-col"><FormLabel>İşlem Tarihi</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? (format(field.value, "PPP", { locale: tr })) : (<span>Tarih seçin</span>)}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
-                        </PopoverContent>
-                    </Popover>
-                </FormItem>
-            )}/>
-            <FormField control={form.control} name="isInstallment" render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <FormLabel>Taksitli İşlem</FormLabel>
-                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                </FormItem>
-            )}/>
-            {isInstallment && (
-                <FormField control={form.control} name="installmentTotal" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Toplam Taksit Sayısı</FormLabel>
-                        <FormControl><Input type="number" placeholder="12" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}/>
+           </div>
+           
+            {showCategorySelector && (
+              <div className="absolute inset-x-0 bottom-0 bg-gray-800 border-t border-gray-700 p-4 rounded-t-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold">Kategori</h3>
+                     <Button variant="ghost" size="icon" onClick={() => setShowCategorySelector(false)}><X className="h-4 w-4"/></Button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                      {categories.map(cat => (
+                          <Button key={cat.id} variant="secondary" className="flex-col h-16 bg-gray-700 hover:bg-gray-600" onClick={() => handleCategorySelect(cat.name)}>
+                              <span>{cat.icon}</span>
+                              <span className="text-xs">{cat.name}</span>
+                          </Button>
+                      ))}
+                  </div>
+              </div>
             )}
-        </div>
-        </ScrollArea>
-        <DialogFooter className="pt-6">
-          <Button type="submit" className="w-full">{initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}</Button>
-        </DialogFooter>
-      </form>
-    </Form>
+           
+            <DialogFooter className="p-4 bg-gray-800 border-t border-gray-700">
+                <Button type="submit" className="w-full bg-red-600 hover:bg-red-700">
+                    {initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}
+                </Button>
+            </DialogFooter>
+        </form>
+        </Form>
+    </div>
   );
 }
+
+    

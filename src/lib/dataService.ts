@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic, BudgetCategory } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths } from 'date-fns';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { getCategoryName } from '@/app/education/page';
@@ -1246,7 +1246,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'fa
     // If questions are provided, process and include them in the update
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
         const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? question.questionId : '');
             return {
                 questionId: questionId,
                 questionNumber: index + 1,
@@ -1643,6 +1643,15 @@ export const setDailyTrackingStatus = async (
 };
 
 // BUDGETING
+// Budget Categories
+export const onBudgetCategoriesUpdate = (callback: (categories: BudgetCategory[]) => void) => onFamilyDataUpdate<BudgetCategory>('budgetCategories', callback);
+export const addBudgetCategory = async (data: Omit<BudgetCategory, 'id'|'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'budgetCategories'), { ...removeUndefined(data), familyId });
+};
+
+
 // Accounts
 export const onAccountsUpdate = (callback: (accounts: Account[]) => void) => onFamilyDataUpdate<Account>('accounts', callback);
 
@@ -2080,3 +2089,5 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
         if (unsubscribe) unsubscribe();
     };
 };
+
+    
