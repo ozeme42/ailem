@@ -232,7 +232,7 @@ export function BudgetClient() {
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')}>
                         <ChevronLeft className="h-6 w-6" />
                     </Button>
-                    <h2 className="text-2xl font-semibold w-48 text-center capitalize">
+                    <h2 className="text-xl font-semibold w-48 text-center capitalize">
                         {format(currentDate, dateDisplayFormat, { locale: tr })}
                     </h2>
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')}>
@@ -249,16 +249,16 @@ export function BudgetClient() {
                  </Tabs>
                 <div className="grid grid-cols-3 text-center">
                     <div>
-                        <p className="text-sm text-gray-400">Gelir</p>
-                        <p className="font-semibold text-lg text-blue-400">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-xs text-gray-400">Gelir</p>
+                        <p className="font-semibold text-base text-blue-400">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
-                        <p className="text-sm text-gray-400">Gider</p>
-                        <p className="font-semibold text-lg text-red-400">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-xs text-gray-400">Gider</p>
+                        <p className="font-semibold text-base text-red-400">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
-                        <p className="text-sm text-gray-400">Toplam</p>
-                        <p className="font-semibold text-lg">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-xs text-gray-400">Toplam</p>
+                        <p className="font-semibold text-base">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                 </div>
             </header>
@@ -267,8 +267,8 @@ export function BudgetClient() {
                 {mainTab === 'day' && dailyGroups.map(group => (
                     <div key={group.dateISO}>
                         <div className="flex justify-between items-center p-2 bg-gray-700/80 rounded-t-lg">
-                           <div className="font-semibold capitalize">{group.date}</div>
-                           <div className="flex gap-4 items-center">
+                           <div className="font-medium text-sm capitalize">{group.date}</div>
+                           <div className="flex gap-4 items-center text-sm">
                                 <span className="text-blue-400">{group.dayTotalIncome > 0 ? group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
                                 <span className="text-red-400">{group.dayTotalExpense > 0 ? group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
                            </div>
@@ -281,11 +281,11 @@ export function BudgetClient() {
                                     <div className="flex items-center gap-3">
                                         {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-gray-400" })}
                                         <div>
-                                            <p>{tx.category}</p>
+                                            <p className="text-sm">{tx.category}</p>
                                             <p className="text-xs text-gray-400">{account?.name || ''}</p>
                                         </div>
                                     </div>
-                                    <p className={cn("font-semibold", tx.type === 'expense' ? 'text-red-400' : 'text-blue-400')}>
+                                    <p className={cn("font-semibold text-sm", tx.type === 'expense' ? 'text-red-400' : 'text-blue-400')}>
                                         {tx.type === 'expense' ? '-' : '+'}
                                         {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                     </p>
@@ -296,11 +296,11 @@ export function BudgetClient() {
                 ))}
                 {mainTab === 'month' && monthlySummaries.map(summary => (
                      <div key={summary.monthKey} className="flex items-center justify-between p-4 bg-gray-700/60 rounded-lg">
-                        <div className="font-bold text-lg capitalize">{summary.month}</div>
-                        <div className="flex items-center gap-6">
+                        <div className="font-bold text-base capitalize">{summary.month}</div>
+                        <div className="flex items-center gap-6 text-sm">
                             <span className="text-blue-400">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
                             <div className="text-right">
-                                <p className="text-red-400 font-semibold text-lg">
+                                <p className="text-red-400 font-semibold text-base">
                                   {summary.expense > 0 ? '-' : ''}
                                   {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                 </p>
@@ -314,22 +314,22 @@ export function BudgetClient() {
                  {mainTab === 'total' && (
                      <div className="space-y-4 p-2 text-gray-300">
                          <div className="flex items-center justify-between p-3 bg-gray-700/60 rounded-lg">
-                            <p className="font-semibold text-lg">Bütçe</p>
-                             <Button variant="ghost" className="text-gray-300 hover:bg-gray-600/50">Bütçe Ayarları <ChevronRight className="h-4 w-4 ml-2"/></Button>
+                            <p className="font-semibold text-base">Bütçe</p>
+                             <Button variant="ghost" className="text-gray-300 hover:bg-gray-600/50 text-sm">Bütçe Ayarları <ChevronRight className="h-4 w-4 ml-2"/></Button>
                         </div>
                          <div className="p-3 bg-gray-700/60 rounded-lg">
                             <div className="flex justify-between items-center mb-3">
-                                <p className="font-semibold text-lg">Hesaplar</p>
-                                <p className="text-sm text-gray-400">{format(startOfMonth(currentDate), 'd.MM.yyyy')} ~ {format(endOfMonth(currentDate), 'd.MM')}</p>
+                                <p className="font-semibold text-base">Hesaplar</p>
+                                <p className="text-xs text-gray-400">{format(startOfMonth(currentDate), 'd.MM.yyyy')} ~ {format(endOfMonth(currentDate), 'd.MM')}</p>
                             </div>
-                            <div className="space-y-3 p-4 bg-gray-800/50 rounded-md">
-                                <div className="flex justify-between items-center"><p>Giderleri Karşılaştır (Son ay)</p><p className="font-semibold text-lg">242%</p></div>
-                                <div className="flex justify-between items-center"><p>Gider (Nakit, Banka Hesapları)</p><p className="font-semibold text-lg">{totalViewStats.cashBankExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div className="flex justify-between items-center"><p>Gider (Kredi Kartı)</p><p className="font-semibold text-lg">{totalViewStats.creditCardExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div className="flex justify-between items-center"><p>Havale (Nakit, Banka Hesabı →)</p><p className="font-semibold text-lg">₺ 0,00</p></div>
+                            <div className="space-y-3 p-4 bg-gray-800/50 rounded-md text-sm">
+                                <div className="flex justify-between items-center"><p>Giderleri Karşılaştır (Son ay)</p><p className="font-semibold text-base">242%</p></div>
+                                <div className="flex justify-between items-center"><p>Gider (Nakit, Banka Hesapları)</p><p className="font-semibold text-base">{totalViewStats.cashBankExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div className="flex justify-between items-center"><p>Gider (Kredi Kartı)</p><p className="font-semibold text-base">{totalViewStats.creditCardExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div className="flex justify-between items-center"><p>Havale (Nakit, Banka Hesabı →)</p><p className="font-semibold text-base">₺ 0,00</p></div>
                             </div>
                          </div>
-                         <Button variant="outline" className="w-full bg-gray-700/60 border-gray-600 hover:bg-gray-600/60">
+                         <Button variant="outline" className="w-full bg-gray-700/60 border-gray-600 hover:bg-gray-600/60 text-sm">
                             <FileOutput className="h-5 w-5 mr-2" /> Excel (.xls) e-posta olarak gönder
                          </Button>
                      </div>
