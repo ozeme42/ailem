@@ -1246,7 +1246,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'fa
     // If questions are provided, process and include them in the update
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
         const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? question.questionId : '');
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
             return {
                 questionId: questionId,
                 questionNumber: index + 1,
@@ -1650,6 +1650,9 @@ export const addBudgetCategory = async (data: Omit<BudgetCategory, 'id'|'familyI
     if (!familyId) throw new Error("User not in a family");
     return addDoc(collection(db, 'budgetCategories'), { ...removeUndefined(data), familyId });
 };
+export const updateBudgetCategory = (id: string, data: Partial<Omit<BudgetCategory, 'id' | 'familyId'>>) => updateDoc(doc(db, 'budgetCategories', id), removeUndefined(data));
+export const deleteBudgetCategory = (id: string) => deleteDoc(doc(db, 'budgetCategories', id));
+
 
 
 // Accounts

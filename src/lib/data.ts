@@ -656,9 +656,10 @@ export interface BudgetCategory {
     id: string;
     familyId: string;
     name: string;
-    icon: string;
+    icon: string; // Emoji or icon name
     type: 'income' | 'expense';
 }
+
 
 export interface Budget {
     id: string; // YYYY-MM

@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Repeat, X } from "lucide-react";
+import { CalendarIcon, Edit, Repeat, Trash2, X } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { onBudgetCategoriesUpdate } from "@/lib/dataService";
 import { Separator } from "./ui/separator";
+import { BudgetCategoryForm } from "./budget-category-form";
 
 const formSchema = z.object({
   description: z.string().optional(),
@@ -45,6 +46,7 @@ type NewTransactionFormProps = {
 export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData }: NewTransactionFormProps) {
   const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
   const [showCategorySelector, setShowCategorySelector] = React.useState(false);
+  const [showCategoryManager, setShowCategoryManager] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -78,6 +80,8 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     });
     form.reset();
   }
+  
+  const selectedCategory = categories.find(c => c.name === form.watch('category'));
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white">
@@ -121,18 +125,19 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                           </FormItem>
                       )}/>
                       <Separator className="bg-gray-700"/>
-                      <FormField control={form.control} name="category" render={({ field }) => (
-                          <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Kategori</FormLabel>
-                              <FormControl>
-                                  <Input 
-                                      placeholder="Kategori seçin" 
-                                      {...field} 
-                                      onFocus={() => setShowCategorySelector(true)}
-                                      className="bg-transparent border-0"
-                                  />
-                              </FormControl>
-                          </FormItem>
-                      )}/>
+                      <div className="flex items-center">
+                          <label className="w-20 text-muted-foreground">Kategori</label>
+                          <Button type="button" variant="ghost" className="flex-grow justify-start" onClick={() => setShowCategorySelector(true)}>
+                              {selectedCategory ? (
+                                  <div className="flex items-center gap-2">
+                                      <span className="text-xl">{selectedCategory.icon}</span>
+                                      <span>{selectedCategory.name}</span>
+                                  </div>
+                              ) : (
+                                  <span className="text-muted-foreground">Kategori seçin</span>
+                              )}
+                          </Button>
+                      </div>
                        <Separator className="bg-gray-700"/>
                        <FormField control={form.control} name="accountId" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
@@ -152,30 +157,42 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
               </ScrollArea>
            </div>
            
-            {showCategorySelector ? (
-              <div className="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4 rounded-t-lg z-10">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-semibold">Kategori</h3>
-                     <Button variant="ghost" size="icon" onClick={() => setShowCategorySelector(false)}><X className="h-4 w-4"/></Button>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2">
-                      {categories.map(cat => (
-                          <Button key={cat.id} variant="secondary" className="flex-col h-16 bg-gray-700 hover:bg-gray-600" onClick={() => handleCategorySelect(cat.name)}>
-                              <span>{cat.icon}</span>
-                              <span className="text-xs">{cat.name}</span>
-                          </Button>
-                      ))}
-                  </div>
-              </div>
-            ) : (
-                <DialogFooter className="p-4 bg-gray-800 border-t border-gray-700 flex-shrink-0">
-                    <Button type="submit" className="w-full bg-red-600 hover:bg-red-700">
-                        {initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}
-                    </Button>
-                </DialogFooter>
-            )}
+            <DialogFooter className="p-4 bg-gray-800 border-t border-gray-700 flex-shrink-0">
+                <Button type="submit" className="w-full bg-red-600 hover:bg-red-700">
+                    {initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}
+                </Button>
+            </DialogFooter>
         </form>
         </Form>
+        
+        <Dialog open={showCategorySelector} onOpenChange={setShowCategorySelector}>
+            <DialogContent className="sm:max-w-md h-full flex flex-col bg-gray-900 text-white border-0">
+                <DialogHeader>
+                    <div className="flex justify-between items-center">
+                        <DialogTitle>Kategori</DialogTitle>
+                        <Button variant="outline" size="sm" onClick={() => {setShowCategorySelector(false); setShowCategoryManager(true);}}>
+                            <Edit className="h-4 w-4 mr-2" /> Kategorileri Yönet
+                        </Button>
+                    </div>
+                </DialogHeader>
+                <ScrollArea className="flex-grow">
+                    <div className="grid grid-cols-4 gap-2 py-4">
+                      {categories.filter(c => c.type === form.watch('type')).map(cat => (
+                          <Button key={cat.id} variant="secondary" className="flex-col h-20 bg-gray-800 hover:bg-gray-700" onClick={() => handleCategorySelect(cat.name)}>
+                              <span className="text-2xl">{cat.icon}</span>
+                              <span className="text-xs text-center">{cat.name}</span>
+                          </Button>
+                      ))}
+                    </div>
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
+             <DialogContent className="sm:max-w-md h-full flex flex-col bg-gray-900 text-white border-0">
+                 <BudgetCategoryForm onBack={() => { setShowCategoryManager(false); setShowCategorySelector(true); }}/>
+             </DialogContent>
+        </Dialog>
     </div>
   );
 }
