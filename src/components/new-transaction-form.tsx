@@ -23,14 +23,15 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { onBudgetCategoriesUpdate } from "@/lib/dataService";
 import { Separator } from "./ui/separator";
 import { BudgetCategoryForm } from "./budget-category-form";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const formSchema = z.object({
   description: z.string().optional(),
   amount: z.coerce.number().positive("Tutar pozitif bir sayı olmalıdır."),
   type: z.enum(['income', 'expense']).default('expense'),
   accountId: z.string({ required_error: "Bir hesap seçmelisiniz." }),
-  ownerId: z.string({ required_error: "Bir kişi seçmelisiniz." }),
-  category: z.string().min(1, "Kategori zorunludur."),
+  category: z.string().min(1, "Kategori seçimi zorunludur."),
   date: z.date({ required_error: "Tarih seçmelisiniz." }),
   isInstallment: z.boolean().default(false),
   installmentTotal: z.coerce.number().optional(),
@@ -51,25 +52,39 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: initialData?.description || "",
-      amount: initialData?.amount || undefined,
-      type: initialData?.type || 'expense',
-      accountId: initialData?.accountId || undefined,
-      ownerId: initialData?.ownerId || undefined,
-      category: initialData?.category || "",
-      date: initialData?.date ? new Date(initialData.date) : new Date(),
-      isInstallment: initialData?.isInstallment || false,
-      installmentTotal: initialData?.installmentDetails?.total || undefined,
+      description: "",
+      amount: undefined,
+      type: 'expense',
+      accountId: undefined,
+      category: "",
+      date: new Date(),
+      isInstallment: false,
+      installmentTotal: undefined,
     },
   });
   
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset({
+        description: initialData.description || "",
+        amount: initialData.amount || undefined,
+        type: initialData.type || 'expense',
+        accountId: initialData.accountId || undefined,
+        category: initialData.category || "",
+        date: initialData.date ? new Date(initialData.date) : new Date(),
+        isInstallment: initialData.isInstallment || false,
+        installmentTotal: initialData.installmentDetails?.total || undefined,
+      });
+    }
+  }, [initialData, form]);
+
   React.useEffect(() => {
       const unsub = onBudgetCategoriesUpdate(setCategories);
       return () => unsub();
   }, []);
 
   const handleCategorySelect = (categoryName: string) => {
-      form.setValue('category', categoryName);
+      form.setValue('category', categoryName, { shouldValidate: true });
       setShowCategorySelector(false);
   }
 
@@ -83,6 +98,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   
   const selectedCategory = categories.find(c => c.name === form.watch('category'));
   const transactionType = form.watch('type');
+  const { errors } = form.formState;
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white">
@@ -92,13 +108,15 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
                 <Tabs 
                     value={transactionType}
-                    onValueChange={(value) => form.setValue('type', value as 'income' | 'expense')}
+                    onValueChange={(value) => {
+                        form.setValue('type', value as 'income' | 'expense');
+                        form.setValue('category', ''); // Reset category on type change
+                    }}
                     className="w-full pt-4"
                 >
-                    <TabsList className="grid w-full grid-cols-3 bg-gray-700/50">
+                    <TabsList className="grid w-full grid-cols-2 bg-gray-700/50">
                         <TabsTrigger value="income" className={cn(transactionType === 'income' && "data-[state=active]:bg-blue-600")}>Gelir</TabsTrigger>
                         <TabsTrigger value="expense" className={cn(transactionType === 'expense' && "data-[state=active]:bg-red-600")}>Gider</TabsTrigger>
-                        <TabsTrigger value="transfer" disabled>Havale</TabsTrigger>
                     </TabsList>
                 </Tabs>
            </DialogHeader>
@@ -106,6 +124,13 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
            <div className="flex-grow min-h-0">
                <ScrollArea className="h-full">
                  <div className="p-4 space-y-4">
+                     {Object.keys(errors).length > 0 && (
+                         <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Eksik Bilgi</AlertTitle>
+                            <AlertDescription>Lütfen tüm zorunlu alanları doldurun.</AlertDescription>
+                        </Alert>
+                     )}
                       <FormField control={form.control} name="date" render={({ field }) => (
                           <FormItem className="flex items-center">
                               <FormLabel className="w-20 text-muted-foreground">Tarih</FormLabel>
@@ -122,23 +147,26 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                       <Separator className="bg-gray-700"/>
                       <FormField control={form.control} name="amount" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
-                              <FormControl><Input type="number" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-lg font-bold placeholder:text-red-400/50", transactionType === 'income' ? 'text-blue-400 placeholder:text-blue-400/50' : 'text-red-400 placeholder:text-red-400/50')} /></FormControl>
+                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-lg font-bold placeholder:text-red-400/50", transactionType === 'income' ? 'text-blue-400 placeholder:text-blue-400/50' : 'text-red-400 placeholder:text-red-400/50')} /></FormControl>
                           </FormItem>
                       )}/>
                       <Separator className="bg-gray-700"/>
-                      <div className="flex items-center">
-                          <label className="w-20 text-muted-foreground">Kategori</label>
-                          <Button type="button" variant="ghost" className="flex-grow justify-start" onClick={() => setShowCategorySelector(true)}>
-                              {selectedCategory ? (
-                                  <div className="flex items-center gap-2">
-                                      <span className="text-xl">{selectedCategory.icon}</span>
-                                      <span>{selectedCategory.name}</span>
-                                  </div>
-                              ) : (
-                                  <span className="text-muted-foreground">Kategori seçin</span>
-                              )}
-                          </Button>
-                      </div>
+                      <FormItem className="flex items-center">
+                          <FormLabel className="w-20 text-muted-foreground">Kategori</FormLabel>
+                          <div className="flex-grow">
+                            <Button type="button" variant="ghost" className="w-full justify-start text-left" onClick={() => setShowCategorySelector(true)}>
+                                {selectedCategory ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl">{selectedCategory.icon}</span>
+                                        <span>{selectedCategory.name}</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-muted-foreground">Kategori seçin</span>
+                                )}
+                            </Button>
+                            {errors.category && <FormMessage className="pl-2" />}
+                           </div>
+                      </FormItem>
                        <Separator className="bg-gray-700"/>
                        <FormField control={form.control} name="accountId" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
@@ -189,7 +217,12 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
             </DialogContent>
         </Dialog>
 
-        <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
+        <Dialog open={showCategoryManager} onOpenChange={(open) => {
+            setShowCategoryManager(open);
+            if (!open) {
+                setShowCategorySelector(true);
+            }
+        }}>
              <DialogContent className="sm:max-w-md h-full flex flex-col bg-gray-900 text-white border-0">
                  <BudgetCategoryForm onBack={() => { setShowCategoryManager(false); setShowCategorySelector(true); }}/>
              </DialogContent>
@@ -197,3 +230,4 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
+    
