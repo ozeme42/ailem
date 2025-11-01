@@ -5,19 +5,17 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Edit, Repeat, Trash2, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Edit, Repeat, Trash2, AlertTriangle, Banknote, Landmark, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Account, FamilyMember, Transaction, BudgetCategory } from "@/lib/data";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
-import { Switch } from "./ui/switch";
+import { DialogHeader, DialogTitle } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { onBudgetCategoriesUpdate } from "@/lib/dataService";
@@ -31,8 +29,6 @@ const formSchema = z.object({
   accountId: z.string({ required_error: "Bir hesap seçmelisiniz." }),
   category: z.string().min(1, "Kategori seçimi zorunludur."),
   date: z.date({ required_error: "Tarih seçmelisiniz." }),
-  isInstallment: z.boolean().default(false),
-  installmentTotal: z.coerce.number().optional(),
 });
 
 type NewTransactionFormProps = {
@@ -40,6 +36,12 @@ type NewTransactionFormProps = {
   familyMembers: FamilyMember[];
   onSubmit: (data: any) => void; 
   initialData?: Transaction | null;
+};
+
+const accountIcons: { [key: string]: React.ElementType } = {
+    'cash': Banknote,
+    'bank': Landmark,
+    'credit-card': CreditCard,
 };
 
 export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData }: NewTransactionFormProps) {
@@ -55,8 +57,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       accountId: undefined,
       category: "",
       date: new Date(),
-      isInstallment: false,
-      installmentTotal: undefined,
     },
   });
   
@@ -67,9 +67,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         type: initialData.type || 'expense',
         accountId: initialData.accountId || undefined,
         category: initialData.category || "",
-        date: initialData.date ? new Date(initialData.date) : new Date(),
-        isInstallment: initialData.isInstallment || false,
-        installmentTotal: initialData.installmentDetails?.total || undefined,
+        date: initialData.date ? parseISO(initialData.date) : new Date(),
       });
     } else {
         form.reset({
@@ -78,8 +76,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
             accountId: undefined,
             category: "",
             date: new Date(),
-            isInstallment: false,
-            installmentTotal: undefined,
         });
     }
   }, [initialData, form]);
@@ -104,14 +100,21 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   
   const selectedCategory = categories.find(c => c.name === form.watch('category'));
   const transactionType = form.watch('type');
+  const selectedAccountId = form.watch('accountId');
   const { errors } = form.formState;
 
   const filteredAccounts = React.useMemo(() => {
     if (transactionType === 'income') {
         return accounts.filter(acc => acc.type === 'bank' || acc.type === 'cash');
     }
-    return accounts; // For expenses, show all accounts
+    return accounts;
   }, [accounts, transactionType]);
+  
+  React.useEffect(() => {
+      if (filteredAccounts.length === 1) {
+          form.setValue('accountId', filteredAccounts[0].id);
+      }
+  }, [filteredAccounts, form]);
 
 
   return (
@@ -124,8 +127,12 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     value={transactionType}
                     onValueChange={(value) => {
                         form.setValue('type', value as 'income' | 'expense');
-                        form.setValue('category', ''); // Reset category on type change
-                        form.setValue('accountId', undefined); // Reset account on type change
+                        form.setValue('category', ''); 
+                        if (filteredAccounts.length === 1 && value === form.getValues('type')) {
+                          // Do nothing if type hasn't changed and only one account
+                        } else {
+                           form.setValue('accountId', undefined);
+                        }
                     }}
                     className="w-full pt-4"
                 >
@@ -162,7 +169,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                       <Separator/>
                       <FormField control={form.control} name="amount" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
-                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-lg font-bold placeholder:text-red-400/50", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
+                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-3xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
                           </FormItem>
                       )}/>
                       <Separator/>
@@ -183,25 +190,37 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                            </div>
                       </FormItem>
                        <Separator/>
-                       <FormField control={form.control} name="accountId" render={({ field }) => (
-                          <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl><SelectTrigger className="bg-transparent border-0"><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
-                                  <SelectContent>
-                                    {filteredAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
-                                  </SelectContent>
-                              </Select>
-                          </FormItem>
-                      )}/>
+                       <FormItem>
+                           <FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
+                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+                               {filteredAccounts.map(acc => {
+                                   const Icon = accountIcons[acc.type] || Banknote;
+                                   const isSelected = selectedAccountId === acc.id;
+                                   return (
+                                     <Button 
+                                       type="button"
+                                       key={acc.id} 
+                                       variant={isSelected ? "default" : "outline"}
+                                       className="h-auto flex flex-col items-center justify-center p-3 gap-1"
+                                       onClick={() => form.setValue('accountId', acc.id)}
+                                     >
+                                        <Icon className="h-5 w-5"/>
+                                        <span className="text-xs font-semibold truncate">{acc.name}</span>
+                                     </Button>
+                                   )
+                               })}
+                           </div>
+                           {errors.accountId && <p className="pt-2 text-sm font-medium text-destructive">{errors.accountId.message}</p>}
+                       </FormItem>
                  </div>
               </ScrollArea>
            </div>
            
-            <DialogFooter className="p-4 bg-muted/50 border-t flex-shrink-0">
+            <div className="p-4 bg-muted/50 border-t flex-shrink-0">
                 <Button type="submit" className={cn("w-full", transactionType === 'income' ? 'bg-primary hover:bg-primary/90' : 'bg-destructive hover:bg-destructive/90')}>
                     {initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}
                 </Button>
-            </DialogFooter>
+            </div>
         </form>
         </Form>
         
@@ -241,4 +260,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
+    
+
     
