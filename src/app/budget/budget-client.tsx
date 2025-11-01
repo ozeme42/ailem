@@ -52,7 +52,9 @@ export function BudgetClient() {
         if (!familyId) return;
 
         const unsubAccounts = onAccountsUpdate(setAccounts);
-        const unsubTransactions = onTransactionsUpdate(setAllTransactions, startOfYear(currentDate), endOfYear(addYears(currentDate,1)));
+        // We now fetch a wider range of transactions to make month/year navigation faster
+        // without re-fetching from Firebase.
+        const unsubTransactions = onTransactionsUpdate(setAllTransactions, subYears(new Date(), 1), addYears(new Date(), 1));
 
         return () => {
             unsubAccounts();
@@ -70,25 +72,19 @@ export function BudgetClient() {
     
     const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
 
-    const { yearlyIncome, yearlyExpense, monthlySummaries, accountStats, dailyGroups } = React.useMemo(() => {
-        const currentYear = getYear(currentDate);
-
-        const yearTransactions = allTransactions.filter(t => getYear(parseISO(t.date)) === currentYear);
-
-        let income = 0;
-        let expense = 0;
-
-        const monthSummaries: {[key: string]: {income: number, expense: number, total: number, transactions: Transaction[]}} = {};
-
+    const { monthlyIncome, monthlyExpense, monthlyTotal, yearlyIncome, yearlyExpense, monthlySummaries, accountStats, dailyGroups } = React.useMemo(() => {
+        
         const yearInterval = eachMonthOfInterval({
           start: startOfYear(currentDate),
           end: endOfYear(currentDate),
         });
+
+        const monthSummaries: {[key: string]: {income: number, expense: number, total: number, transactions: Transaction[]}} = {};
         
         yearInterval.forEach(monthStart => {
           const monthKey = format(monthStart, 'yyyy-MM');
           monthSummaries[monthKey] = { income: 0, expense: 0, total: 0, transactions: [] };
-        })
+        });
         
         const daily: { [key: string]: { date: string; dateISO: string; dayTotalIncome: number; dayTotalExpense: number; transactions: Transaction[] } } = {};
 
@@ -98,39 +94,19 @@ export function BudgetClient() {
             return transactionMonth === currentMonth;
         });
 
-        yearTransactions.forEach(t => {
-            const monthKey = t.date.substring(0, 7);
-            if (t.type === 'income') {
-                income += t.amount;
-                if(monthSummaries[monthKey]) {
-                    monthSummaries[monthKey].income += t.amount;
-                    monthSummaries[monthKey].transactions.push(t);
-                }
-            } else {
-                expense += t.amount;
-                if(monthSummaries[monthKey]) {
-                    monthSummaries[monthKey].expense += t.amount;
-                    monthSummaries[monthKey].transactions.push(t);
-                }
-            }
-        });
-        
-        const assets = accounts.filter(a => a.type === 'cash' || a.type === 'bank');
-        const debts = accounts.filter(a => a.type === 'credit-card');
-        const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
-        const totalDebts = debts.reduce((sum, acc) => sum + acc.balance, 0);
-        
-        const accStats = {
-          assets,
-          debts,
-          totalAssets,
-          totalDebts,
-          netWorth: totalAssets - totalDebts
-        };
-
-
         filteredTransactionsForMonth.forEach(t => {
-            if (!daily[t.date]) {
+            const monthKey = t.date.substring(0, 7);
+            if(monthSummaries[monthKey]) {
+                if (t.type === 'income') {
+                    monthSummaries[monthKey].income += t.amount;
+                } else {
+                    monthSummaries[monthKey].expense += t.amount;
+                }
+                monthSummaries[monthKey].transactions.push(t);
+            }
+            
+            // For daily view
+             if (!daily[t.date]) {
                 daily[t.date] = {
                     date: format(parseISO(t.date), 'd EEE dd.MM.yyyy', {locale: tr}),
                     dateISO: t.date,
@@ -147,6 +123,19 @@ export function BudgetClient() {
             daily[t.date].transactions.push(t);
         });
         
+        const assets = accounts.filter(a => a.type === 'cash' || a.type === 'bank');
+        const debts = accounts.filter(a => a.type === 'credit-card');
+        const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
+        const totalDebts = debts.reduce((sum, acc) => sum + acc.balance, 0);
+        
+        const accStats = {
+          assets,
+          debts,
+          totalAssets,
+          totalDebts,
+          netWorth: totalAssets - totalDebts
+        };
+
         const finalSummaries = Object.entries(monthSummaries)
             .map(([monthKey, values]) => ({
                 monthKey,
@@ -162,13 +151,22 @@ export function BudgetClient() {
 
         const finalDailyGroups = Object.values(daily).sort((a,b) => b.dateISO.localeCompare(a.dateISO));
         
-        const monthStats = finalSummaries.find(s => s.monthKey === format(currentDate, 'yyyy-MM')) || { income: 0, expense: 0, total: 0 };
+        // Stats for the selected month to display in the header
+        const currentMonthKey = format(currentDate, 'yyyy-MM');
+        const monthStats = monthSummaries[currentMonthKey] || { income: 0, expense: 0, total: 0 };
+        
+        // Yearly stats
+        const currentYearTransactions = allTransactions.filter(t => getYear(parseISO(t.date)) === getYear(currentDate));
+        const yearlyIncome = currentYearTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const yearlyExpense = currentYearTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
 
         return { 
-            yearlyIncome: income, 
-            yearlyExpense: expense, 
             monthlyIncome: monthStats.income,
             monthlyExpense: monthStats.expense,
+            monthlyTotal: monthStats.income - monthStats.expense,
+            yearlyIncome, 
+            yearlyExpense, 
             monthlySummaries: finalSummaries,
             accountStats: accStats,
             dailyGroups: finalDailyGroups,
@@ -281,15 +279,15 @@ export function BudgetClient() {
                 <div className="grid grid-cols-3 text-center">
                     <div>
                         <p className="text-xs text-muted-foreground">Gelir</p>
-                        <p className="font-semibold text-sm text-primary">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm text-primary">{monthlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Gider</p>
-                        <p className="font-semibold text-sm text-destructive">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm text-destructive">{monthlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Toplam</p>
-                        <p className="font-semibold text-sm">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm">{monthlyTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                 </div>
             </header>
@@ -548,5 +546,3 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
-
-    
