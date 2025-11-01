@@ -24,6 +24,7 @@ import { defaultShoppingItems } from "@/lib/shopping-suggestions";
 import { PageHeader } from '@/components/page-header';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { buttonVariants } from '@/components/ui/button';
 
 
 const solidColors = [
@@ -380,15 +381,24 @@ export default function ShoppingPage() {
                          <div className="space-y-0">
                             {pendingItems.map((item, index) => (
                                 <div key={item.id} className="flex items-center gap-4 py-4 border-b border-black/10 group">
-                                    <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md border-black/30 data-[state=checked]:bg-green-500 data-[state=checked]:text-white" />
-                                    <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                    <Checkbox id={item.id} onCheckedChange={() => moveItemToBought(selectedList!.id, item.id)} className="size-6 rounded-md border-black/30 data-[state=checked]:bg-green-500 data-[state=checked]:text-white" />
+                                    <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer")}>{item.name}</label>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitleComponent>Alınacaklardan Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ürünü kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitleComponent>İşlem Seç</AlertDialogTitleComponent>
+                                                <AlertDialogDescription>Bu ürünü kalıcı olarak silmek mi yoksa alınanlar listesine mi taşımak istiyorsunuz?</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <div className="flex gap-2 justify-end">
+                                                  <Button variant="outline" onClick={() => moveItemToBought(selectedList!.id, item.id)}>Arşivle</Button>
+                                                  <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                  <AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)} className={cn(buttonVariants({variant: 'destructive'}))}>Sil</AlertDialogAction>
+                                                </div>
+                                            </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </div>
