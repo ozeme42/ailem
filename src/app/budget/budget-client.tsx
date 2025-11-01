@@ -226,13 +226,13 @@ export function BudgetClient() {
     }
 
     return (
-        <div className="bg-gray-800 text-white min-h-screen flex flex-col">
+        <div className="bg-background text-foreground min-h-screen flex flex-col">
             <header className="p-4 space-y-4">
                  <div className="flex items-center justify-center gap-4 text-xl">
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')}>
                         <ChevronLeft className="h-6 w-6" />
                     </Button>
-                    <h2 className="text-xl font-semibold w-48 text-center capitalize">
+                    <h2 className="text-lg font-semibold w-48 text-center capitalize">
                         {format(currentDate, dateDisplayFormat, { locale: tr })}
                     </h2>
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')}>
@@ -240,25 +240,24 @@ export function BudgetClient() {
                     </Button>
                 </div>
                  <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 bg-gray-700/50">
-                        <TabsTrigger value="day" className={cn(mainTab === 'day' && "data-[state=active]:bg-red-600")}>Gün</TabsTrigger>
-                        <TabsTrigger value="month" className={cn(mainTab === 'month' && "data-[state=active]:bg-red-600")}>Ay</TabsTrigger>
-                        <TabsTrigger value="total" className={cn(mainTab === 'total' && "data-[state=active]:bg-red-600")}>Toplam</TabsTrigger>
-                        <TabsTrigger value="note">Not</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3 bg-muted">
+                        <TabsTrigger value="day">Gün</TabsTrigger>
+                        <TabsTrigger value="month">Ay</TabsTrigger>
+                        <TabsTrigger value="total">Toplam</TabsTrigger>
                     </TabsList>
                  </Tabs>
                 <div className="grid grid-cols-3 text-center">
                     <div>
-                        <p className="text-xs text-gray-400">Gelir</p>
-                        <p className="font-semibold text-base text-blue-400">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-xs text-muted-foreground">Gelir</p>
+                        <p className="font-semibold text-sm text-primary">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
-                        <p className="text-xs text-gray-400">Gider</p>
-                        <p className="font-semibold text-base text-red-400">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-xs text-muted-foreground">Gider</p>
+                        <p className="font-semibold text-sm text-destructive">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
-                        <p className="text-xs text-gray-400">Toplam</p>
-                        <p className="font-semibold text-base">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-xs text-muted-foreground">Toplam</p>
+                        <p className="font-semibold text-sm">{ (yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                 </div>
             </header>
@@ -266,26 +265,26 @@ export function BudgetClient() {
              <main className="flex-grow overflow-y-auto px-2 space-y-2 pb-24">
                 {mainTab === 'day' && dailyGroups.map(group => (
                     <div key={group.dateISO}>
-                        <div className="flex justify-between items-center p-2 bg-gray-700/80 rounded-t-lg">
-                           <div className="font-medium text-sm capitalize">{group.date}</div>
-                           <div className="flex gap-4 items-center text-sm">
-                                <span className="text-blue-400">{group.dayTotalIncome > 0 ? group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
-                                <span className="text-red-400">{group.dayTotalExpense > 0 ? group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
+                        <div className="flex justify-between items-center p-2 bg-muted/50 rounded-t-lg">
+                           <div className="font-medium text-xs capitalize">{group.date}</div>
+                           <div className="flex gap-4 items-center text-xs">
+                                <span className="text-primary">{group.dayTotalIncome > 0 ? group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
+                                <span className="text-destructive">{group.dayTotalExpense > 0 ? group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
                            </div>
                         </div>
                         <div className="space-y-px">
                             {group.transactions.map(tx => {
                                 const account = accounts.find(a => a.id === tx.accountId);
                                 return (
-                                <div key={tx.id} className="flex justify-between items-center p-3 bg-gray-700/40 first:rounded-t-none last:rounded-b-lg">
+                                <div key={tx.id} className="flex justify-between items-center p-3 bg-card first:rounded-t-none last:rounded-b-lg">
                                     <div className="flex items-center gap-3">
-                                        {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-gray-400" })}
+                                        {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-muted-foreground" })}
                                         <div>
-                                            <p className="text-sm">{tx.category}</p>
-                                            <p className="text-xs text-gray-400">{account?.name || ''}</p>
+                                            <p className="text-xs">{tx.category}</p>
+                                            <p className="text-xs text-muted-foreground">{account?.name || ''}</p>
                                         </div>
                                     </div>
-                                    <p className={cn("font-semibold text-sm", tx.type === 'expense' ? 'text-red-400' : 'text-blue-400')}>
+                                    <p className={cn("font-semibold text-xs", tx.type === 'expense' ? 'text-destructive' : 'text-primary')}>
                                         {tx.type === 'expense' ? '-' : '+'}
                                         {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                     </p>
@@ -295,16 +294,16 @@ export function BudgetClient() {
                     </div>
                 ))}
                 {mainTab === 'month' && monthlySummaries.map(summary => (
-                     <div key={summary.monthKey} className="flex items-center justify-between p-4 bg-gray-700/60 rounded-lg">
-                        <div className="font-bold text-base capitalize">{summary.month}</div>
-                        <div className="flex items-center gap-6 text-sm">
-                            <span className="text-blue-400">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                     <div key={summary.monthKey} className="flex items-center justify-between p-4 bg-card rounded-lg">
+                        <div className="font-bold text-sm capitalize">{summary.month}</div>
+                        <div className="flex items-center gap-6 text-xs">
+                            <span className="text-primary">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
                             <div className="text-right">
-                                <p className="text-red-400 font-semibold text-base">
+                                <p className="text-destructive font-semibold text-sm">
                                   {summary.expense > 0 ? '-' : ''}
                                   {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                 </p>
-                                <p className={cn("text-xs", summary.total >= 0 ? "text-gray-400" : "text-red-400")}>
+                                <p className={cn("text-xs", summary.total >= 0 ? "text-muted-foreground" : "text-destructive")}>
                                     Toplam: {summary.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                 </p>
                             </div>
@@ -312,24 +311,24 @@ export function BudgetClient() {
                     </div>
                 ))}
                  {mainTab === 'total' && (
-                     <div className="space-y-4 p-2 text-gray-300">
-                         <div className="flex items-center justify-between p-3 bg-gray-700/60 rounded-lg">
-                            <p className="font-semibold text-base">Bütçe</p>
-                             <Button variant="ghost" className="text-gray-300 hover:bg-gray-600/50 text-sm">Bütçe Ayarları <ChevronRight className="h-4 w-4 ml-2"/></Button>
+                     <div className="space-y-4 p-2 text-foreground">
+                         <div className="flex items-center justify-between p-3 bg-card rounded-lg">
+                            <p className="font-semibold text-sm">Bütçe</p>
+                             <Button variant="ghost" className="text-sm">Bütçe Ayarları <ChevronRight className="h-4 w-4 ml-2"/></Button>
                         </div>
-                         <div className="p-3 bg-gray-700/60 rounded-lg">
+                         <div className="p-3 bg-card rounded-lg">
                             <div className="flex justify-between items-center mb-3">
-                                <p className="font-semibold text-base">Hesaplar</p>
-                                <p className="text-xs text-gray-400">{format(startOfMonth(currentDate), 'd.MM.yyyy')} ~ {format(endOfMonth(currentDate), 'd.MM')}</p>
+                                <p className="font-semibold text-sm">Hesaplar</p>
+                                <p className="text-xs text-muted-foreground">{format(startOfMonth(currentDate), 'd.MM.yyyy')} ~ {format(endOfMonth(currentDate), 'd.MM')}</p>
                             </div>
-                            <div className="space-y-3 p-4 bg-gray-800/50 rounded-md text-sm">
-                                <div className="flex justify-between items-center"><p>Giderleri Karşılaştır (Son ay)</p><p className="font-semibold text-base">242%</p></div>
-                                <div className="flex justify-between items-center"><p>Gider (Nakit, Banka Hesapları)</p><p className="font-semibold text-base">{totalViewStats.cashBankExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div className="flex justify-between items-center"><p>Gider (Kredi Kartı)</p><p className="font-semibold text-base">{totalViewStats.creditCardExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div className="flex justify-between items-center"><p>Havale (Nakit, Banka Hesabı →)</p><p className="font-semibold text-base">₺ 0,00</p></div>
+                            <div className="space-y-3 p-4 bg-muted/50 rounded-md text-xs">
+                                <div className="flex justify-between items-center"><p>Giderleri Karşılaştır (Son ay)</p><p className="font-semibold text-sm">242%</p></div>
+                                <div className="flex justify-between items-center"><p>Gider (Nakit, Banka Hesapları)</p><p className="font-semibold text-sm">{totalViewStats.cashBankExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div className="flex justify-between items-center"><p>Gider (Kredi Kartı)</p><p className="font-semibold text-sm">{totalViewStats.creditCardExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div className="flex justify-between items-center"><p>Havale (Nakit, Banka Hesabı →)</p><p className="font-semibold text-sm">₺ 0,00</p></div>
                             </div>
                          </div>
-                         <Button variant="outline" className="w-full bg-gray-700/60 border-gray-600 hover:bg-gray-600/60 text-sm">
+                         <Button variant="outline" className="w-full text-sm">
                             <FileOutput className="h-5 w-5 mr-2" /> Excel (.xls) e-posta olarak gönder
                          </Button>
                      </div>
@@ -339,7 +338,7 @@ export function BudgetClient() {
             
             <div className="fixed bottom-20 right-6 z-20">
                 <Button 
-                    className="rounded-full w-16 h-16 bg-red-600 hover:bg-red-700 shadow-lg"
+                    className="rounded-full w-16 h-16 bg-primary hover:bg-primary/90 shadow-lg"
                     onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
                 >
                     <Plus className="h-8 w-8" />
@@ -369,3 +368,5 @@ export function BudgetClient() {
         </div>
     );
 }
+
+    
