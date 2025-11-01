@@ -191,6 +191,8 @@ export function MemberDashboardCard({
         }
     };
     
+    const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
+
     if (member.id === 'house') {
         const houseTasks = tasks.filter(t => (t.category === 'Ev İşleri' || t.category === 'Görev') && !t.completed);
         if (houseTasks.length === 0) return null;
@@ -234,8 +236,6 @@ export function MemberDashboardCard({
     ];
 
     if (allPendingItems.length === 0 && completedStudies.length === 0) return null;
-    
-    const gradient = roleGradients[member.role] || 'from-gray-500 to-gray-600';
     
     const lastSevenDays = Array.from({ length: 7 }).map((_, i) => subDays(new Date(), i)).reverse();
 
@@ -429,3 +429,5 @@ export function MemberDashboardCard({
         </Card>
     );
 }
+
+    
