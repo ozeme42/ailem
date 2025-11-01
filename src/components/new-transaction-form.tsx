@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Edit, Repeat, Trash2, X } from "lucide-react";
+import { CalendarIcon, Edit, Repeat, Trash2, X, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,8 @@ import { onBudgetCategoriesUpdate } from "@/lib/dataService";
 import { Separator } from "./ui/separator";
 import { BudgetCategoryForm } from "./budget-category-form";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { AlertTriangle } from "lucide-react";
 
 const formSchema = z.object({
-  description: z.string().optional(),
   amount: z.coerce.number().positive("Tutar pozitif bir sayı olmalıdır."),
   type: z.enum(['income', 'expense']).default('expense'),
   accountId: z.string({ required_error: "Bir hesap seçmelisiniz." }),
@@ -52,7 +50,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: "",
       amount: undefined,
       type: 'expense',
       accountId: undefined,
@@ -66,7 +63,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   React.useEffect(() => {
     if (initialData) {
       form.reset({
-        description: initialData.description || "",
         amount: initialData.amount || undefined,
         type: initialData.type || 'expense',
         accountId: initialData.accountId || undefined,
@@ -77,7 +73,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       });
     } else {
         form.reset({
-            description: "",
             amount: undefined,
             type: 'expense',
             accountId: undefined,
@@ -135,7 +130,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
            <div className="flex-grow min-h-0">
                <ScrollArea className="h-full">
                  <div className="p-4 space-y-4">
-                     {Object.keys(errors).length > 0 && (
+                     {Object.keys(errors).length > 0 && !errors.category && (
                          <Alert variant="destructive">
                             <AlertTriangle className="h-4 w-4" />
                             <AlertTitle>Eksik Bilgi</AlertTitle>
@@ -175,7 +170,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                     <span className="text-muted-foreground">Kategori seçin</span>
                                 )}
                             </Button>
-                            {errors.category && <FormMessage className="pl-2" />}
+                            {errors.category && <p className="pl-4 text-sm font-medium text-destructive">{errors.category.message}</p>}
                            </div>
                       </FormItem>
                        <Separator/>
@@ -185,12 +180,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                   <FormControl><SelectTrigger className="bg-transparent border-0"><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
                                   <SelectContent>{accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
                               </Select>
-                          </FormItem>
-                      )}/>
-                       <Separator/>
-                       <FormField control={form.control} name="description" render={({ field }) => (
-                          <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Not</FormLabel>
-                              <FormControl><Input placeholder="Not ekle..." {...field} className="bg-transparent border-0" /></FormControl>
                           </FormItem>
                       )}/>
                  </div>
