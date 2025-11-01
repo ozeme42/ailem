@@ -192,7 +192,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                        <Separator/>
                        <FormItem>
                            <FormLabel className="w-20 text-xs text-muted-foreground">Hesap</FormLabel>
-                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+                           <div className="grid grid-cols-3 gap-2 pt-2">
                                {filteredAccounts.map(acc => {
                                    const Icon = accountIcons[acc.type] || Banknote;
                                    const isSelected = selectedAccountId === acc.id;
@@ -260,5 +260,3 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
-
-    
