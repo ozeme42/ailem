@@ -52,7 +52,6 @@ export function BudgetClient() {
         if (!familyId) return;
 
         const unsubAccounts = onAccountsUpdate(setAccounts);
-        // Listen for a wider range of transactions to support yearly views without re-fetching
         const unsubTransactions = onTransactionsUpdate(setAllTransactions, subYears(new Date(), 5), addYears(new Date(), 5));
 
         return () => {
@@ -74,17 +73,18 @@ export function BudgetClient() {
     const accountStats = React.useMemo(() => {
         const assets = accounts.filter(a => a.type === 'cash' || a.type === 'bank');
         const debts = accounts.filter(a => a.type === 'credit-card');
-        const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
-        const totalDebts = debts.reduce((sum, acc) => sum + acc.balance, 0);
         
+        const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpense = allTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
         return {
           assets,
           debts,
-          totalAssets,
-          totalDebts,
-          netWorth: totalAssets - totalDebts
+          totalAssets: totalIncome,
+          totalDebts: totalExpense,
+          netWorth: totalIncome - totalExpense
         };
-    }, [accounts]);
+    }, [accounts, allTransactions]);
 
     const { monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense, monthlySummaries, dailyGroups } = React.useMemo(() => {
         
@@ -440,8 +440,7 @@ export function BudgetClient() {
                         
                          <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-base">Varlıklar ({accountStats.assets.length})</CardTitle>
-                                <p className="font-bold">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                                <CardTitle className="text-base">Varlık Hesapları ({accountStats.assets.length})</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-px">
                                 {accountStats.assets.map(account => (
@@ -452,8 +451,7 @@ export function BudgetClient() {
                         
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-base">Borçlar ({accountStats.debts.length})</CardTitle>
-                                <p className="font-bold text-destructive">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                                <CardTitle className="text-base">Borç Hesapları ({accountStats.debts.length})</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-px">
                                 {accountStats.debts.map(account => (
@@ -554,3 +552,4 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
