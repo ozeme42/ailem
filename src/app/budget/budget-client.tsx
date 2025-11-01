@@ -316,10 +316,33 @@ export function BudgetClient() {
                                             <p className="text-xs text-muted-foreground">{account?.name || ''}</p>
                                         </div>
                                     </div>
-                                    <p className={cn("font-semibold text-xs", tx.type === 'expense' ? 'text-destructive' : 'text-primary')}>
-                                        {tx.type === 'expense' ? '-' : '+'}
-                                        {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                    </p>
+                                    <div className="flex items-center gap-1">
+                                      <p className={cn("font-semibold text-xs", tx.type === 'expense' ? 'text-destructive' : 'text-primary')}>
+                                          {tx.type === 'expense' ? '-' : '+'}
+                                          {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                      </p>
+                                      <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4"/></Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent>
+                                              <DropdownMenuItem onSelect={() => openTransactionForm(tx)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
+                                              <AlertDialog>
+                                                  <AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                      <AlertDialogHeader>
+                                                          <AlertDialogTitle>İşlemi Sil</AlertDialogTitle>
+                                                          <AlertDialogDescription>Bu işlemi kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
+                                                      </AlertDialogHeader>
+                                                      <AlertDialogFooter>
+                                                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                          <AlertDialogAction onClick={() => handleDeleteTransaction(tx.id)}>Evet, Sil</AlertDialogAction>
+                                                      </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                              </AlertDialog>
+                                          </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
                                 </div>
                             )})}
                         </div>
@@ -525,3 +548,5 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
+    
