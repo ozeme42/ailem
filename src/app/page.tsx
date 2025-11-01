@@ -331,9 +331,9 @@ export default function Home() {
 
       
         <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2">
                 <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
-                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
+                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
                             {shoppingSummary.totalPending > 0 ? (
@@ -357,7 +357,7 @@ export default function Home() {
                     </div>
                 </Link>
                 <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
-                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-orange-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
+                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
                         <div className="space-y-1 md:space-y-2">
@@ -374,18 +374,6 @@ export default function Home() {
                             </div>
                         </div>
                         <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
-                    </div>
-                </Link>
-            </div>
-            <div className="grid grid-cols-2">
-                 <Link href="/needs" className="group block">
-                    <div className="flex flex-col p-4 rounded-l-xl shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
-                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ListChecks /> İhtiyaçlar</h3>
-                    </div>
-                </Link>
-                <Link href="/notes" className="group block">
-                    <div className="flex flex-col p-4 rounded-r-xl shadow-lg text-white bg-gradient-to-br from-purple-500 to-fuchsia-600 h-full transition-transform group-hover:-translate-y-1">
-                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Notebook /> Notlar</h3>
                     </div>
                 </Link>
             </div>
