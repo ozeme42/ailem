@@ -314,15 +314,15 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      <header className={cn(
+       <header className={cn(
         "flex items-center justify-between gap-4 p-4",
-        "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg",
+        "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg",
         "-mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6", // Full-bleed on mobile
-        "rounded-b-xl"
+        "rounded-b-2xl"
       )}>
           <div className="flex items-center gap-4">
               <SidebarTrigger />
-              <h1 className="text-2xl font-bold tracking-tight">Özgürdere Ailesi</h1>
+              <h1 className="text-3xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>Özgürdere Ailesi</h1>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
