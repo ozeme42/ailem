@@ -253,11 +253,11 @@ export default function ShoppingPage() {
 
     const lowercasedQuery = newItemName.toLowerCase();
     const filteredHistory = historicalItems
-      .filter(item => item.toLowerCase().includes(lowercasedQuery))
+      .filter(item => item.toLowerCase().startsWith(lowercasedQuery))
       .slice(0, 5);
 
     const filteredDefaults = defaultShoppingItems
-      .filter(item => item.toLowerCase().includes(lowercasedQuery) && !filteredHistory.includes(item))
+      .filter(item => item.toLowerCase().startsWith(lowercasedQuery) && !filteredHistory.includes(item))
       .slice(0, 5);
 
     setSuggestions([...filteredHistory, ...filteredDefaults]);
@@ -439,15 +439,13 @@ export default function ShoppingPage() {
                             disabled={isAiProcessing}
                             autoFocus
                         />
-                        {suggestions.length > 0 && (
-                            <div className="pt-2">
-                                <div className="flex flex-wrap gap-2">
-                                {suggestions.map((s, i) => (
-                                    <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
-                                ))}
-                                </div>
+                         <div className="pt-2">
+                            <div className="flex flex-wrap gap-2">
+                            {suggestions.map((s, i) => (
+                                <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
+                            ))}
                             </div>
-                        )}
+                        </div>
                          <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => setIsAddItemDialogOpen(false)}>İptal</Button>
                             <Button type="submit" variant="default" disabled={isAiProcessing}>
