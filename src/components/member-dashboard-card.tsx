@@ -241,8 +241,8 @@ export function MemberDashboardCard({
 
 
     return (
-        <Card className="shadow-lg overflow-hidden flex flex-col">
-            <CardHeader className={cn("text-white", `bg-gradient-to-br ${gradient}`)}>
+        <Card className={cn("shadow-lg overflow-hidden flex flex-col", `bg-gradient-to-br text-white ${gradient}`)}>
+            <CardHeader>
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 bg-white/20">
                         {member.name.charAt(0).toUpperCase()}
@@ -252,7 +252,7 @@ export function MemberDashboardCard({
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4 flex-grow">
+            <CardContent className="space-y-4 pt-4 flex-grow bg-card text-card-foreground rounded-t-xl mt-2">
                  {member.role.includes('Çocuk') && (
                     <div>
                          <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Gamepad2 className="h-4 w-4 text-green-600"/> Bugünkü Serbest Zaman</h4>
@@ -429,5 +429,3 @@ export function MemberDashboardCard({
         </Card>
     );
 }
-
-    
