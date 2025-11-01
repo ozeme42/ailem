@@ -21,6 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, getYear, setYear, eachMonthOfInterval, startOfYear, endOfYear, subYears, parseISO, addYears } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 
 const accountIcons: { [key: string]: React.ElementType } = {
     'cash': Banknote,
@@ -48,15 +50,15 @@ export function BudgetClient() {
 
     React.useEffect(() => {
         if (!familyId) return;
-        
-        const unsubTransactions = onTransactionsUpdate(setAllTransactions, startOfYear(currentDate), endOfYear(currentDate));
+
         const unsubAccounts = onAccountsUpdate(setAccounts);
+        const unsubTransactions = onTransactionsUpdate(setAllTransactions, startOfYear(currentDate), endOfYear(addYears(currentDate,1)));
 
         return () => {
-            unsubTransactions();
             unsubAccounts();
+            unsubTransactions();
         };
-    }, [familyId, currentDate]);
+    }, [familyId]);
     
     const handleNavDate = (direction: 'prev' | 'next') => {
         if (mainTab === 'month') {
@@ -69,9 +71,14 @@ export function BudgetClient() {
     const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
 
     const { yearlyIncome, yearlyExpense, monthlySummaries, accountStats, dailyGroups } = React.useMemo(() => {
+        const currentYear = getYear(currentDate);
+
+        const yearTransactions = allTransactions.filter(t => getYear(parseISO(t.date)) === currentYear);
+
         let income = 0;
         let expense = 0;
-        const monthSummaries: {[key: string]: {income: number, expense: number, total: number}} = {};
+
+        const monthSummaries: {[key: string]: {income: number, expense: number, total: number, transactions: Transaction[]}} = {};
 
         const yearInterval = eachMonthOfInterval({
           start: startOfYear(currentDate),
@@ -80,7 +87,7 @@ export function BudgetClient() {
         
         yearInterval.forEach(monthStart => {
           const monthKey = format(monthStart, 'yyyy-MM');
-          monthSummaries[monthKey] = { income: 0, expense: 0, total: 0 };
+          monthSummaries[monthKey] = { income: 0, expense: 0, total: 0, transactions: [] };
         })
         
         const daily: { [key: string]: { date: string; dateISO: string; dayTotalIncome: number; dayTotalExpense: number; transactions: Transaction[] } } = {};
@@ -91,14 +98,20 @@ export function BudgetClient() {
             return transactionMonth === currentMonth;
         });
 
-        allTransactions.forEach(t => {
+        yearTransactions.forEach(t => {
             const monthKey = t.date.substring(0, 7);
             if (t.type === 'income') {
                 income += t.amount;
-                if(monthSummaries[monthKey]) monthSummaries[monthKey].income += t.amount;
+                if(monthSummaries[monthKey]) {
+                    monthSummaries[monthKey].income += t.amount;
+                    monthSummaries[monthKey].transactions.push(t);
+                }
             } else {
                 expense += t.amount;
-                if(monthSummaries[monthKey]) monthSummaries[monthKey].expense += t.amount;
+                if(monthSummaries[monthKey]) {
+                    monthSummaries[monthKey].expense += t.amount;
+                    monthSummaries[monthKey].transactions.push(t);
+                }
             }
         });
         
@@ -142,6 +155,10 @@ export function BudgetClient() {
                 total: values.income - values.expense
             }))
             .sort((a,b) => a.monthKey.localeCompare(b.monthKey));
+
+        finalSummaries.forEach(summary => {
+            summary.transactions.sort((a, b) => b.date.localeCompare(a.date));
+        });
 
         const finalDailyGroups = Object.values(daily).sort((a,b) => b.dateISO.localeCompare(a.dateISO));
         
@@ -215,9 +232,24 @@ export function BudgetClient() {
         }
     }
     
+    const handleDeleteTransaction = async (id: string) => {
+        try {
+            await deleteTransaction(id);
+            toast({ title: "İşlem silindi", variant: 'destructive' });
+        } catch (error) {
+             console.error(error);
+            toast({ variant: "destructive", title: "İşlem silinirken hata" });
+        }
+    }
+
     const openAccountForm = (account: Account | null) => {
         setEditingAccount(account);
         setIsAccountFormOpen(true);
+    }
+    
+    const openTransactionForm = (transaction: Transaction | null) => {
+        setEditingTransaction(transaction);
+        setIsTransactionFormOpen(true);
     }
     
     const openPaymentForm = (account: Account) => {
@@ -293,23 +325,77 @@ export function BudgetClient() {
                         </div>
                     </div>
                 ))}
-                {mainTab === 'month' && monthlySummaries.map(summary => (
-                     <div key={summary.monthKey} className="flex items-center justify-between p-4 bg-card rounded-lg">
-                        <div className="font-bold text-sm capitalize">{summary.month}</div>
-                        <div className="flex items-center gap-6 text-xs">
-                            <span className="text-primary">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
-                            <div className="text-right">
-                                <p className="text-destructive font-semibold text-sm">
-                                  {summary.expense > 0 ? '-' : ''}
-                                  {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                </p>
-                                <p className={cn("text-xs", summary.total >= 0 ? "text-muted-foreground" : "text-destructive")}>
-                                    Toplam: {summary.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+                {mainTab === 'month' && (
+                    <Accordion type="single" collapsible className="w-full space-y-2">
+                        {monthlySummaries.map(summary => (
+                             <AccordionItem value={summary.monthKey} key={summary.monthKey} className="border-b-0">
+                                <Card className="overflow-hidden">
+                                     <AccordionTrigger className="p-4 hover:no-underline">
+                                         <div className="flex items-center justify-between w-full">
+                                            <div className="font-bold text-sm capitalize">{summary.month}</div>
+                                            <div className="flex items-center gap-4 text-xs">
+                                                <span className="text-primary">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                                                <div className="text-right">
+                                                    <p className="text-destructive font-semibold text-sm">
+                                                      {summary.expense > 0 ? '-' : ''}
+                                                      {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                    </p>
+                                                    <p className={cn("text-xs", summary.total >= 0 ? "text-muted-foreground" : "text-destructive")}>
+                                                        Toplam: {summary.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                         </div>
+                                     </AccordionTrigger>
+                                     <AccordionContent className="bg-muted/30">
+                                         <div className="p-2 space-y-px">
+                                             {summary.transactions.map(tx => {
+                                                 const account = accounts.find(a => a.id === tx.accountId);
+                                                 return (
+                                                 <div key={tx.id} className="flex justify-between items-center p-3 bg-card first:rounded-t-lg last:rounded-b-lg">
+                                                     <div className="flex items-center gap-3">
+                                                         {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-muted-foreground" })}
+                                                         <div>
+                                                             <p className="text-xs">{tx.category}</p>
+                                                             <p className="text-xs text-muted-foreground">{account?.name || ''}</p>
+                                                         </div>
+                                                     </div>
+                                                      <div className="flex items-center gap-1">
+                                                          <p className={cn("font-semibold text-xs", tx.type === 'expense' ? 'text-destructive' : 'text-primary')}>
+                                                              {tx.type === 'expense' ? '-' : '+'}
+                                                              {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                          </p>
+                                                           <DropdownMenu>
+                                                              <DropdownMenuTrigger asChild>
+                                                                  <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4"/></Button>
+                                                              </DropdownMenuTrigger>
+                                                              <DropdownMenuContent>
+                                                                  <DropdownMenuItem onSelect={() => openTransactionForm(tx)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
+                                                                  <AlertDialog>
+                                                                      <AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
+                                                                      <AlertDialogContent>
+                                                                          <AlertDialogHeader>
+                                                                              <AlertDialogTitle>İşlemi Sil</AlertDialogTitle>
+                                                                              <AlertDialogDescription>Bu işlemi kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
+                                                                          </AlertDialogHeader>
+                                                                          <AlertDialogFooter>
+                                                                              <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                                              <AlertDialogAction onClick={() => handleDeleteTransaction(tx.id)}>Evet, Sil</AlertDialogAction>
+                                                                          </AlertDialogFooter>
+                                                                      </AlertDialogContent>
+                                                                  </AlertDialog>
+                                                              </DropdownMenuContent>
+                                                          </DropdownMenu>
+                                                      </div>
+                                                 </div>
+                                             )})}
+                                         </div>
+                                     </AccordionContent>
+                                </Card>
+                             </AccordionItem>
+                        ))}
+                    </Accordion>
+                )}
                  {mainTab === 'accounts' && (
                      <div className="space-y-4 p-2 text-foreground">
                         <Card>
