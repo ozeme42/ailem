@@ -71,7 +71,22 @@ export function BudgetClient() {
     
     const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
 
-    const { monthlyIncome, monthlyExpense, monthlyTotal, yearlyIncome, yearlyExpense, monthlySummaries, accountStats, dailyGroups } = React.useMemo(() => {
+    const accountStats = React.useMemo(() => {
+        const assets = accounts.filter(a => a.type === 'cash' || a.type === 'bank');
+        const debts = accounts.filter(a => a.type === 'credit-card');
+        const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
+        const totalDebts = debts.reduce((sum, acc) => sum + acc.balance, 0);
+        
+        return {
+          assets,
+          debts,
+          totalAssets,
+          totalDebts,
+          netWorth: totalAssets - totalDebts
+        };
+    }, [accounts]);
+
+    const { monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense, monthlySummaries, dailyGroups } = React.useMemo(() => {
         
         const yearInterval = eachMonthOfInterval({
           start: startOfYear(currentDate),
@@ -127,18 +142,6 @@ export function BudgetClient() {
             daily[t.date].transactions.push(t);
         });
         
-        const assets = accounts.filter(a => a.type === 'cash' || a.type === 'bank');
-        const debts = accounts.filter(a => a.type === 'credit-card');
-        const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
-        const totalDebts = debts.reduce((sum, acc) => sum + acc.balance, 0);
-        
-        const accStats = {
-          assets,
-          debts,
-          totalAssets,
-          totalDebts,
-          netWorth: totalAssets - totalDebts
-        };
 
         const finalSummaries = Object.entries(monthSummaries)
             .map(([monthKey, values]) => ({
@@ -157,24 +160,22 @@ export function BudgetClient() {
         
         // Stats for the selected month to display in the header
         const currentMonthKey = format(currentDate, 'yyyy-MM');
-        const monthStats = monthSummaries[currentMonthKey] || { income: 0, expense: 0, total: 0 };
+        const monthStats = monthSummaries[currentMonthKey] || { income: 0, expense: 0 };
         
         // Yearly stats
-        const yearlyIncome = Object.values(monthSummaries).reduce((s, m) => s + m.income, 0);
-        const yearlyExpense = Object.values(monthSummaries).reduce((s, m) => s + m.expense, 0);
+        const yearlyIncomeTotal = Object.values(monthSummaries).reduce((s, m) => s + m.income, 0);
+        const yearlyExpenseTotal = Object.values(monthSummaries).reduce((s, m) => s + m.expense, 0);
 
 
         return { 
             monthlyIncome: monthStats.income,
             monthlyExpense: monthStats.expense,
-            monthlyTotal: monthStats.income - monthStats.expense,
-            yearlyIncome, 
-            yearlyExpense, 
+            yearlyIncome: yearlyIncomeTotal,
+            yearlyExpense: yearlyExpenseTotal,
             monthlySummaries: finalSummaries,
-            accountStats: accStats,
             dailyGroups: finalDailyGroups,
         };
-    }, [allTransactions, currentDate, accounts]);
+    }, [allTransactions, currentDate]);
 
     const headerIncome = mainTab === 'day' ? monthlyIncome : yearlyIncome;
     const headerExpense = mainTab === 'day' ? monthlyExpense : yearlyExpense;
