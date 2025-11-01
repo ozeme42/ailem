@@ -384,7 +384,7 @@ export default function ShoppingPage() {
                                     <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40 hover:text-destructive opacity-0 group-hover:opacity-100"><Trash2 className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitleComponent>Alınacaklardan Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ürünü kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
@@ -440,10 +440,10 @@ export default function ShoppingPage() {
                             autoFocus
                         />
                          <div className="pt-2">
-                            <div className="flex flex-wrap gap-2">
-                            {suggestions.map((s, i) => (
-                                <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
-                            ))}
+                             <div className="flex flex-wrap gap-2">
+                                {suggestions.map((s, i) => (
+                                    <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
+                                ))}
                             </div>
                         </div>
                          <DialogFooter>
