@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User, FileOutput, GripVertical, Settings } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User, FileOutput, GripVertical, Settings, HandCoins } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,41 +13,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewAccountForm } from "@/components/new-account-form";
 import { NewTransactionForm } from "@/components/new-transaction-form";
+import { PaymentForm } from "@/components/payment-form";
 import { useAuth } from "@/components/auth-provider";
-import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionStatsUpdate, onTransactionsUpdate } from "@/lib/dataService";
+import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionsUpdate, makePayment } from "@/lib/dataService";
 import type { Account, Transaction, FamilyMember } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, getYear, setYear, eachMonthOfInterval, startOfYear, endOfYear, subYears, parseISO, addYears } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 const accountIcons: { [key: string]: React.ElementType } = {
     'cash': Banknote,
     'bank': Landmark,
     'credit-card': CreditCard,
-};
-
-const chartConfig = {
-  gelir: { label: "Gelir", color: "hsl(var(--chart-2))" },
-  gider: { label: "Gider", color: "hsl(var(--chart-5))" },
-  bakiye: { label: "Bakiye", color: "hsl(var(--chart-1))" },
-} satisfies ChartConfig;
-
-type MonthlySummary = {
-    month: string;
-    monthKey: string; // YYYY-MM
-    income: number;
-    expense: number;
-    total: number;
-};
-
-type DailyGroup = {
-    date: string;
-    dateISO: string;
-    dayTotalIncome: number;
-    dayTotalExpense: number;
-    transactions: Transaction[];
 };
 
 export function BudgetClient() {
@@ -60,9 +38,11 @@ export function BudgetClient() {
     
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
+    const [isPaymentFormOpen, setIsPaymentFormOpen] = React.useState(false);
 
     const [editingAccount, setEditingAccount] = React.useState<Account | null>(null);
     const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
+    const [payingAccount, setPayingAccount] = React.useState<Account | null>(null);
     const [mainTab, setMainTab] = React.useState('day');
 
 
@@ -102,11 +82,8 @@ export function BudgetClient() {
           const monthKey = format(monthStart, 'yyyy-MM');
           monthSummaries[monthKey] = { income: 0, expense: 0, total: 0 };
         })
-
-        let cashBankExpense = 0;
-        let creditCardExpense = 0;
         
-        const daily: { [key: string]: DailyGroup } = {};
+        const daily: { [key: string]: { date: string; dateISO: string; dayTotalIncome: number; dayTotalExpense: number; transactions: Transaction[] } } = {};
 
         const filteredTransactionsForMonth = allTransactions.filter(t => {
             const transactionMonth = t.date.substring(0, 7);
@@ -157,7 +134,7 @@ export function BudgetClient() {
             daily[t.date].transactions.push(t);
         });
         
-        const finalSummaries: MonthlySummary[] = Object.entries(monthSummaries)
+        const finalSummaries = Object.entries(monthSummaries)
             .map(([monthKey, values]) => ({
                 monthKey,
                 month: format(new Date(monthKey + '-02'), 'MMMM', { locale: tr }),
@@ -216,6 +193,18 @@ export function BudgetClient() {
         }
     }
     
+    const handlePaymentSubmit = async (data: { fromAccountId: string; toAccountId: string; amount: number; date: Date; }) => {
+        try {
+            await makePayment(data.fromAccountId, data.toAccountId, data.amount, format(data.date, 'yyyy-MM-dd'));
+            toast({ title: "Ödeme Başarılı", description: "Hesap bakiyeleriniz güncellendi." });
+            setIsPaymentFormOpen(false);
+            setPayingAccount(null);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Ödeme sırasında bir hata oluştu" });
+        }
+    };
+    
     const handleDeleteAccount = async (id: string) => {
         try {
             await deleteAccount(id);
@@ -230,6 +219,11 @@ export function BudgetClient() {
         setEditingAccount(account);
         setIsAccountFormOpen(true);
     }
+    
+    const openPaymentForm = (account: Account) => {
+        setPayingAccount(account);
+        setIsPaymentFormOpen(true);
+    };
 
     return (
         <div className="bg-background text-foreground min-h-screen flex flex-col">
@@ -336,7 +330,7 @@ export function BudgetClient() {
                             </CardHeader>
                             <CardContent className="space-y-px">
                                 {accountStats.assets.map(account => (
-                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} />
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => {}}/>
                                 ))}
                             </CardContent>
                         </Card>
@@ -348,7 +342,7 @@ export function BudgetClient() {
                             </CardHeader>
                             <CardContent className="space-y-px">
                                 {accountStats.debts.map(account => (
-                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} />
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => openPaymentForm(account)}/>
                                 ))}
                             </CardContent>
                         </Card>
@@ -393,11 +387,21 @@ export function BudgetClient() {
                     />
                 </DialogContent>
             </Dialog>
+            
+             <Dialog open={isPaymentFormOpen} onOpenChange={(open) => { if (!open) setPayingAccount(null); setIsPaymentFormOpen(open); }}>
+                <DialogContent>
+                    <PaymentForm
+                        assetAccounts={accountStats.assets}
+                        debtAccount={payingAccount}
+                        onSubmit={handlePaymentSubmit}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
 
-function AccountRow({ account, onEdit, onDelete }: { account: Account, onEdit: () => void, onDelete: () => void }) {
+function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account, onEdit: () => void, onDelete: () => void, onPayDebt: () => void }) {
     const Icon = accountIcons[account.type] || Wallet;
     return (
         <div className="flex justify-between items-center p-3 bg-muted/30 first:rounded-t-lg last:rounded-b-lg">
@@ -407,6 +411,9 @@ function AccountRow({ account, onEdit, onDelete }: { account: Account, onEdit: (
             </div>
             <div className="flex items-center gap-2">
                 <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-destructive')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                {account.type === 'credit-card' && (
+                    <Button variant="outline" size="sm" onClick={onPayDebt}><HandCoins className="h-4 w-4 mr-2"/>Borç Öde</Button>
+                )}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4"/></Button>
@@ -432,4 +439,3 @@ function AccountRow({ account, onEdit, onDelete }: { account: Account, onEdit: (
         </div>
     );
 }
-    
