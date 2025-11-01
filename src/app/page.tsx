@@ -3,12 +3,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -108,6 +108,8 @@ export default function Home() {
   const [memorizationItems, setMemorizationItems] = React.useState<MemorizationItem[]>([]);
   const [memorizationProgress, setMemorizationProgress] = React.useState<MemorizationProgress[]>([]);
   const [prayerProgress, setPrayerProgress] = React.useState<PrayerProgress[]>([]);
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
 
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
@@ -121,6 +123,7 @@ export default function Home() {
 
 
   React.useEffect(() => {
+    const today = new Date();
     const unsubShopping = onShoppingListsUpdate(setShoppingLists);
     const unsubMeal = onMealPlanUpdate(setMealPlan);
     const unsubCalendar = onCalendarEventsUpdate(setCalendarEvents);
@@ -134,6 +137,8 @@ export default function Home() {
     const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
     const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
     const unsubPrayerProgress = onPrayerProgressUpdate(setPrayerProgress);
+    const unsubTransactions = onTransactionsUpdate(setTransactions, startOfMonth(today), endOfMonth(today));
+    const unsubAccounts = onAccountsUpdate(setAccounts);
 
     let unsubLibraries = () => {};
     if (familyId) {
@@ -155,6 +160,8 @@ export default function Home() {
       unsubMemorizationItems();
       unsubMemorizationProgress();
       unsubPrayerProgress();
+      unsubTransactions();
+      unsubAccounts();
     };
   }, [familyId]);
   
@@ -258,6 +265,12 @@ export default function Home() {
         };
       });
   }, [goals, familyMembers]);
+  
+    const monthlyBudgetSummary = React.useMemo(() => {
+        const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        return { income, expense };
+    }, [transactions]);
 
   if (loading) {
     return (
@@ -318,6 +331,22 @@ export default function Home() {
 
       
         <div className="flex flex-col gap-2">
+            <Link href="/budget" className="group block">
+                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 h-full transition-transform group-hover:-translate-y-1">
+                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
+                    <div className="flex-grow my-4 grid grid-cols-2 gap-4">
+                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                            <p className="text-xs font-semibold text-white/90">Gelir</p>
+                            <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                         <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                            <p className="text-xs font-semibold text-white/90">Gider</p>
+                            <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                    </div>
+                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
+                </div>
+            </Link>
             <div className="grid grid-cols-2">
                 <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
@@ -364,7 +393,7 @@ export default function Home() {
                     </div>
                 </Link>
             </div>
-             <div className="grid grid-cols-2">
+            <div className="grid grid-cols-2">
                  <Link href="/needs" className="group block">
                     <div className="flex flex-col p-4 rounded-l-xl shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ListChecks /> İhtiyaçlar</h3>
