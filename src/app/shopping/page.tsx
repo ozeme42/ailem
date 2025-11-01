@@ -377,7 +377,7 @@ export default function ShoppingPage() {
                 </form>
             </PageHeader>
             
-             <div className={cn("flex-grow flex flex-col min-h-0", "-mx-4 sm:mx-0")}>
+             <div className={cn("flex-grow flex flex-col min-h-0", "")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                     <TabsList className="flex w-full h-auto flex-shrink-0 bg-background p-0 rounded-none">
                         <TabsTrigger value="pending" className="flex-1 text-base rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
@@ -458,9 +458,9 @@ export default function ShoppingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
         <PageHeader title="Listelerim" />
-        <div className="space-y-0 -mx-4 sm:mx-0">
+        <div className="space-y-0">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
                     const color = solidColors[index % solidColors.length];
