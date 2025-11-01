@@ -431,7 +431,7 @@ export default function ShoppingPage() {
                         <DialogTitle>Yeni Öğe Ekle</DialogTitle>
                         <DialogDescription>Listeye eklenecek ürün veya ürünleri yazın.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleAddItem} className="relative w-full pt-4">
+                    <form onSubmit={handleAddItem} className="space-y-4 pt-4">
                         <Input 
                             value={newItemName} 
                             onChange={(e) => setNewItemName(e.target.value)} 
@@ -440,17 +440,15 @@ export default function ShoppingPage() {
                             autoFocus
                         />
                         {suggestions.length > 0 && (
-                        <div className="relative w-full">
-                            <div className="absolute bottom-full left-0 right-0 mb-1 p-2 bg-background border rounded-lg shadow-lg z-10">
+                            <div className="pt-2">
                                 <div className="flex flex-wrap gap-2">
                                 {suggestions.map((s, i) => (
                                     <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
                                 ))}
                                 </div>
                             </div>
-                        </div>
                         )}
-                         <DialogFooter className="mt-4">
+                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => setIsAddItemDialogOpen(false)}>İptal</Button>
                             <Button type="submit" variant="default" disabled={isAiProcessing}>
                                 {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
