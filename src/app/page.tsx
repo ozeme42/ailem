@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2 } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2, BookCheck } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -454,22 +454,26 @@ export default function Home() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <BookOpen className="text-amber-600" /> Kitap Okuma İstatistikleri
+                        <BarChart2 className="text-amber-600" /> Kitap Okuma İstatistikleri
                     </CardTitle>
                     <CardDescription>Ailenin okuma alışkanlıklarına genel bakış.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {readingStats.map((stat) => (
-                        <div key={stat.memberId} className="flex items-center gap-3">
+                <CardContent className="space-y-2">
+                    {readingStats.map((stat, index) => (
+                        <div key={stat.memberId} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: `${stat.color}1A` }}>
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: stat.color }}>
                                 {stat.name.charAt(0)}
                             </div>
-                            <div className="flex-grow">
-                                <p className="font-semibold">{stat.name}</p>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                    <span>{stat.finishedBooks} kitap</span>
-                                    <span>{stat.pagesRead.toLocaleString('tr-TR')} sayfa</span>
-                                </div>
+                            <p className="font-semibold flex-grow" style={{ color: stat.color }}>{stat.name}</p>
+                            <div className="flex items-center gap-4 text-xs font-medium" style={{ color: `${stat.color}E6`}}>
+                               <div className="flex items-center gap-1.5">
+                                   <BookCheck className="h-4 w-4"/>
+                                   <span>{stat.finishedBooks} kitap</span>
+                               </div>
+                               <div className="flex items-center gap-1.5">
+                                   <BookOpen className="h-4 w-4"/>
+                                   <span>{stat.pagesRead.toLocaleString('tr-TR')} sayfa</span>
+                               </div>
                             </div>
                         </div>
                     ))}
@@ -688,3 +692,4 @@ export default function Home() {
     </div>
   );
 }
+
