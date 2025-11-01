@@ -554,7 +554,7 @@ export const moveItemToBought = async (listId: string, itemId: string) => {
     if (listSnap.exists()) {
         const list = listSnap.data() as ShoppingList;
         const itemToMove = list.items.find(item => item.id === itemId);
-        if (itemToMove && itemToMove.isBought) {
+        if (itemToMove) {
             const newItems = list.items.filter(item => item.id !== itemId);
             const newBoughtItems = [itemToMove, ...(list.boughtItems || [])];
             await updateDoc(listRef, { items: newItems, boughtItems: newBoughtItems });

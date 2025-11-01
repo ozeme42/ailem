@@ -381,26 +381,37 @@ export default function ShoppingPage() {
                          <div className="space-y-0">
                             {pendingItems.map((item, index) => (
                                 <div key={item.id} className="flex items-center gap-4 py-4 border-b border-black/10 group">
-                                    <Checkbox id={item.id} onCheckedChange={() => moveItemToBought(selectedList!.id, item.id)} className="size-6 rounded-md border-black/30 data-[state=checked]:bg-green-500 data-[state=checked]:text-white" />
-                                    <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer")}>{item.name}</label>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitleComponent>İşlem Seç</AlertDialogTitleComponent>
-                                                <AlertDialogDescription>Bu ürünü kalıcı olarak silmek mi yoksa alınanlar listesine mi taşımak istiyorsunuz?</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <div className="flex gap-2 justify-end">
-                                                  <Button variant="outline" onClick={() => moveItemToBought(selectedList!.id, item.id)}>Arşivle</Button>
-                                                  <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                  <AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)} className={cn(buttonVariants({variant: 'destructive'}))}>Sil</AlertDialogAction>
-                                                </div>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md border-black/30 data-[state=checked]:bg-green-500 data-[state=checked]:text-white" />
+                                    <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-black/40")}>{item.name}</label>
+                                    <div className={cn("flex-shrink-0 flex items-center gap-1 transition-opacity", item.isBought ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
+                                        {item.isBought ? (
+                                            <Button variant="secondary" size="sm" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
+                                                Arşivle
+                                            </Button>
+                                        ) : (
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitleComponent>İşlem Seç</AlertDialogTitleComponent>
+                                                        <AlertDialogDescription>Bu ürünü kalıcı olarak silmek mi yoksa alınanlar listesine mi taşımak istiyorsunuz?</AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <div className="flex gap-2 justify-end w-full">
+                                                          <Button variant="secondary" onClick={() => {
+                                                              toggleShoppingListItemStatusInList(selectedList!.id, item.id);
+                                                              moveItemToBought(selectedList!.id, item.id);
+                                                          }}>Arşivle</Button>
+                                                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                          <AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)} className={cn(buttonVariants({variant: 'destructive'}))}>Sil</AlertDialogAction>
+                                                        </div>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
