@@ -242,7 +242,7 @@ export function MemberDashboardCard({
 
     return (
         <Card className={cn("shadow-lg overflow-hidden flex flex-col", `bg-gradient-to-br text-white ${gradient}`)}>
-            <CardHeader>
+            <CardHeader className="border-b border-white/20">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 bg-white/20">
                         {member.name.charAt(0).toUpperCase()}
