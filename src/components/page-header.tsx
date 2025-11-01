@@ -8,13 +8,15 @@ import { cn } from "@/lib/utils";
 interface PageHeaderProps {
   title: string;
   children?: React.ReactNode;
+  className?: string;
 }
 
-export function PageHeader({ title, children }: PageHeaderProps) {
+export function PageHeader({ title, children, className }: PageHeaderProps) {
   return (
     <header className={cn(
         "flex flex-col items-start gap-4 p-4",
-        "bg-gradient-to-r from-primary to-accent text-primary-foreground"
+        "bg-gradient-to-r from-primary to-accent text-primary-foreground",
+        className
     )}>
       <div className="w-full flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">

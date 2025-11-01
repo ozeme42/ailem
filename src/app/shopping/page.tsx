@@ -25,10 +25,11 @@ import { PageHeader } from '@/components/page-header';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
+
 const solidColors = [
-    { id: 'yellow', name: 'Sarı', class: 'bg-[#f4d07a]' },
-    { id: 'salmon', name: 'Somon', class: 'bg-[#e5a996]' },
-    { id: 'green', name: 'Yeşil', class: 'bg-[#98b883]' },
+    { id: 'yellow-amber', name: 'Sarı', class: 'bg-[#f4d07a]' },
+    { id: 'rose-pink', name: 'Somon', class: 'bg-[#e5a996]' },
+    { id: 'emerald-teal', name: 'Yeşil', class: 'bg-[#98b883]' },
     { id: 'light-yellow', name: 'Açık Sarı', class: 'bg-[#f4eeb4]' },
 ];
 
@@ -442,7 +443,7 @@ export default function ShoppingPage() {
 
   return (
     <div className="space-y-0">
-        <PageHeader title="Listelerim" />
+        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none" />
         <div className="space-y-0">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
@@ -457,7 +458,7 @@ export default function ShoppingPage() {
                     )
                 })
             ) : (
-                <div className="md:col-span-3 text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
+                <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background h-[calc(100vh-150px)]">
                     <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
                     <p className="text-sm">Başlamak için aşağıdaki butona tıklayarak yeni bir liste oluşturun.</p>
@@ -465,7 +466,7 @@ export default function ShoppingPage() {
             )}
         </div>
         <div className="fixed bottom-6 right-6 z-10">
-            <Button className="rounded-full w-16 h-16 shadow-lg bg-orange-500 hover:bg-orange-600" size="icon" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
+            <Button className="rounded-full w-16 h-16 shadow-lg bg-[#eb5757] hover:bg-[#eb5757]/90" size="icon" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
                 <Plus className="h-8 w-8"/>
             </Button>
         </div>
