@@ -451,44 +451,40 @@ export default function Home() {
                 </div>
             </Link>
             
-            <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <BarChart2 className="text-amber-600" /> Kitap Okuma İstatistikleri
-                    </CardTitle>
-                    <CardDescription>Ailenin okuma alışkanlıklarına genel bakış.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                    {readingStats.map((stat, index) => (
-                        <div key={stat.memberId} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: `${stat.color}1A` }}>
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: stat.color }}>
-                                {stat.name.charAt(0)}
-                            </div>
-                            <p className="font-semibold flex-grow" style={{ color: stat.color }}>{stat.name}</p>
-                            <div className="flex items-center gap-4 text-xs font-medium" style={{ color: `${stat.color}E6`}}>
-                               <div className="flex items-center gap-1.5">
-                                   <BookCheck className="h-4 w-4"/>
-                                   <span>{stat.finishedBooks} kitap</span>
-                               </div>
-                               <div className="flex items-center gap-1.5">
-                                   <BookOpen className="h-4 w-4"/>
-                                   <span>{stat.pagesRead.toLocaleString('tr-TR')} sayfa</span>
-                               </div>
-                            </div>
-                        </div>
-                    ))}
-                </CardContent>
-                 <CardFooter>
-                    <Link href="/library/stats" className="w-full">
-                        <Button variant="outline" className="w-full">
-                            Tüm İstatistikler <ArrowRight className="h-4 w-4 ml-2"/>
-                        </Button>
-                    </Link>
-                </CardFooter>
-            </Card>
+            <Link href="/library/stats" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1 group">
+                <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white h-full border-0">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                            <BarChart2 /> Kitap Okuma İstatistikleri
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {readingStats.map((stat, index) => (
+                            <Link key={stat.memberId} href="/library" className="block" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: stat.color }}>
+                                        {stat.name.charAt(0)}
+                                    </div>
+                                    <p className="font-semibold flex-grow text-sm sm:text-base">{stat.name}</p>
+                                    <div className="flex items-center gap-3 text-xs sm:text-sm font-medium">
+                                        <div className="flex items-center gap-1.5">
+                                            <BookCheck className="h-4 w-4"/>
+                                            <span>{stat.finishedBooks}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <BookOpen className="h-4 w-4"/>
+                                            <span>{stat.pagesRead.toLocaleString('tr-TR')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </CardContent>
+                </Card>
+            </Link>
 
             <Link href="/library/archive" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
-                <Card className="bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg h-full">
+                <Card className="bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-900 shadow-lg h-full">
                     <CardHeader>
                         <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
                     </CardHeader>
