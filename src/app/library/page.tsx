@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, FC, useRef } from 'react';
+import * as React from "react";
 import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
@@ -40,20 +40,20 @@ function formatDuration(seconds: number) {
 
 export default function LibraryPage() {
   const { familyId, familyMembers, updateFamilyMember } = useAuth();
-  const [allBooks, setAllBooks] = useState<BookType[]>([]);
-  const [userLibraries, setUserLibraries] = useState<UserLibrary[]>([]);
-  const [readingSessions, setReadingSessions] = useState<ReadingSession[]>([]);
-  const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
-  const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
+  const [allBooks, setAllBooks] = React.useState<BookType[]>([]);
+  const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
+  const [readingSessions, setReadingSessions] = React.useState<ReadingSession[]>([]);
+  const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
+  const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (familyMembers.length > 0 && !selectedMember) {
       setSelectedMember(familyMembers[0]);
     }
   }, [familyMembers, selectedMember]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const unsubscribeBooks = onBooksUpdate(setAllBooks);
     const unsubscribeSessions = onReadingSessionsUpdate(setReadingSessions);
     let unsubscribeLibraries = () => {};
@@ -121,7 +121,7 @@ export default function LibraryPage() {
     }
   };
 
-  const { readingBooks, toReadBooks, finishedBooks, stats } = useMemo(() => {
+  const { readingBooks, toReadBooks, finishedBooks, stats } = React.useMemo(() => {
     if (!selectedMember) {
         return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, percentage: 0 }};
     }
@@ -151,12 +151,12 @@ export default function LibraryPage() {
 
   }, [selectedMember, userLibraries, allBooks]);
   
-  const memberSessions = useMemo(() => {
+  const memberSessions = React.useMemo(() => {
     if (!selectedMember) return [];
     return readingSessions.filter(s => s.memberId === selectedMember.id);
   }, [readingSessions, selectedMember]);
   
-  const readingStats = useMemo(() => {
+  const readingStats = React.useMemo(() => {
     const today = new Date();
     const startOfWeek = subDays(today, today.getDay() - 1); // Assuming Monday is the start of the week
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -198,7 +198,7 @@ export default function LibraryPage() {
   }, [memberSessions]);
 
   const readingGoals = selectedMember?.readingGoals;
-  const monthlyGoalProgress = useMemo(() => {
+  const monthlyGoalProgress = React.useMemo(() => {
     if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0, pagesRead: 0, booksRead: 0 };
     
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -330,7 +330,7 @@ export default function LibraryPage() {
         {finishedBooks.length > 0 && (
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Bitirdiklerim</h2>
-                 <div className="grid grid-cols-1 gap-6">
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                 </div>
             </div>
@@ -372,8 +372,8 @@ export default function LibraryPage() {
 }
 
 function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
-    const [pagesReadInput, setPagesReadInput] = useState("");
-    const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
+    const [pagesReadInput, setPagesReadInput] = React.useState("");
+    const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
     
     const handleProgressSave = () => {
         const pages = parseInt(pagesReadInput, 10);
@@ -457,24 +457,17 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpda
 
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
-        <Card className="overflow-hidden shadow-lg border-border/50 bg-muted/30">
-            <div className="p-4 flex flex-row gap-4">
-                <Image src={book.image} alt={book.title} width={100} height={150} className="w-20 h-auto rounded-md aspect-[2/3] object-cover shadow-md" data-ai-hint="book cover"/>
-                <div className="flex-grow flex flex-col">
-                    <h3 className="font-bold text-lg leading-tight">{book.title}</h3>
-                    <p className="text-sm text-muted-foreground">{book.author}</p>
-                    <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
-                        {book.startedAt && <p>Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
-                        {book.finishedAt && <p>Bitiş: {format(parseISO(book.finishedAt), 'dd MMM yyyy', {locale: tr})}</p>}
-                    </div>
-                     <div className="mt-auto pt-4 flex gap-2">
-                        <Button variant="outline" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                             <RotateCcw className="mr-2 h-4 w-4"/> Tekrar Oku
-                        </Button>
-                        <Button variant="ghost" size="sm" className="w-full text-destructive hover:text-destructive" onClick={() => onRemove(book.id)}>
-                            <Trash2 className="mr-2 h-4 w-4"/> Kaldır
-                        </Button>
-                    </div>
+        <Card className="overflow-hidden group relative flex flex-col justify-between text-center bg-muted/30">
+             <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3]" data-ai-hint="book cover"/>
+            <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="font-semibold text-xs text-white leading-tight">{book.title}</p>
+                <div className="flex gap-1 mt-2">
+                     <Button variant="secondary" size="sm" className="h-7 text-xs w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                         <RotateCcw className="mr-1 h-3 w-3"/> Tekrar Oku
+                    </Button>
+                     <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
+                        <Trash2 className="h-3 w-3"/>
+                    </Button>
                 </div>
             </div>
         </Card>
