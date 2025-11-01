@@ -279,15 +279,15 @@ export function BudgetClient() {
                 <div className="grid grid-cols-3 text-center">
                     <div>
                         <p className="text-xs text-muted-foreground">Gelir</p>
-                        <p className="font-semibold text-sm text-primary">{monthlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm text-primary">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Gider</p>
-                        <p className="font-semibold text-sm text-destructive">{monthlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm text-destructive">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Toplam</p>
-                        <p className="font-semibold text-sm">{monthlyTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm">{(yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                 </div>
             </header>
@@ -546,5 +546,3 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
-
-    
