@@ -25,14 +25,11 @@ import { PageHeader } from '@/components/page-header';
 import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flow';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
-
 const solidColors = [
-    { id: 'yellow', name: 'Sarı', class: 'bg-yellow-300' },
-    { id: 'rose', name: 'Somon', class: 'bg-rose-400' },
-    { id: 'emerald', name: 'Yeşil', class: 'bg-emerald-400' },
-    { id: 'sky', name: 'Mavi', class: 'bg-sky-400' },
-    { id: 'violet', name: 'Menekşe', class: 'bg-violet-400' },
-    { id: 'orange', name: 'Turuncu', class: 'bg-orange-400' },
+    { id: 'yellow', name: 'Sarı', class: 'bg-[#f4d07a]' },
+    { id: 'salmon', name: 'Somon', class: 'bg-[#e5a996]' },
+    { id: 'green', name: 'Yeşil', class: 'bg-[#98b883]' },
+    { id: 'light-yellow', name: 'Açık Sarı', class: 'bg-[#f4eeb4]' },
 ];
 
 
@@ -134,7 +131,7 @@ const ListCard = ({ list, colorClass, onClick }: {
     onClick: () => void;
 }) => {
     const pendingItemsCount = (list.items || []).filter(item => !item.isBought).length;
-    const description = pendingItemsCount > 0 ? `${pendingItemsCount} alınacak` : 'Liste tamamlandı';
+    const description = pendingItemsCount > 0 ? `${pendingItemsCount} ihtiyaç` : 'Liste tamamlandı';
 
     return (
         <div onClick={onClick} className={cn("flex items-center text-black p-4 cursor-pointer min-h-[80px]", colorClass)}>
@@ -272,20 +269,6 @@ export default function ShoppingPage() {
       setSelectedList(list);
   };
   
-  const handleEditList = (list: ShoppingList) => {
-      setEditingList(list);
-      setListDialogOpen(true);
-  }
-  
-  const handleDeleteList = async (id: string) => {
-      try {
-          await deleteShoppingList(id);
-          toast({ title: "Liste Silindi", variant: "destructive" });
-      } catch (error) {
-          toast({ title: "Hata", description: "Liste silinirken bir sorun oluştu.", variant: "destructive" });
-      }
-  };
-
   if (!isLoaded) {
     return (
       <div className="space-y-6">
@@ -377,7 +360,7 @@ export default function ShoppingPage() {
                 </form>
             </PageHeader>
             
-             <div className={cn("flex-grow flex flex-col min-h-0", "")}>
+             <div className={cn("flex-grow flex flex-col min-h-0")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
                     <TabsList className="flex w-full h-auto flex-shrink-0 bg-background p-0 rounded-none">
                         <TabsTrigger value="pending" className="flex-1 text-base rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>

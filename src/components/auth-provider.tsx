@@ -255,14 +255,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
   }
 
-  const isBudgetPage = pathname.startsWith('/budget');
+  const noPaddingRoutes = ['/shopping', '/budget'];
+  const hasPadding = !noPaddingRoutes.some(route => pathname.startsWith(route));
 
   return (
     <AuthContext.Provider value={authContextValue}>
         <SidebarProvider defaultOpen={true}>
             <AppSidebar />
             <SidebarInset>
-                <main className={cn("pb-24 md:pb-8 h-full", isBudgetPage ? "" : "p-4 sm:p-6 lg:p-8")}>
+                <main className={cn("pb-24 md:pb-8 h-full", hasPadding && "p-4 sm:p-6 lg:p-8")}>
                 {children}
                 </main>
             </SidebarInset>
