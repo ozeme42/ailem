@@ -331,23 +331,7 @@ export default function Home() {
 
       
         <div className="flex flex-col gap-2">
-            <Link href="/budget" className="group block">
-                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 h-full transition-transform group-hover:-translate-y-1">
-                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
-                    <div className="flex-grow my-4 grid grid-cols-2 gap-4">
-                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gelir</p>
-                            <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                        </div>
-                         <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gider</p>
-                            <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                        </div>
-                    </div>
-                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
-                </div>
-            </Link>
-            <div className="grid grid-cols-2">
+            <div className="grid grid-cols-2 gap-2">
                 <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-green-500 to-emerald-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
@@ -433,6 +417,22 @@ export default function Home() {
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
                 </div>
             </Link>
+             <Link href="/budget" className="group block">
+                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 h-full transition-transform group-hover:-translate-y-1">
+                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
+                    <div className="flex-grow my-4 grid grid-cols-2 gap-4">
+                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                            <p className="text-xs font-semibold text-white/90">Gelir</p>
+                            <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                         <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                            <p className="text-xs font-semibold text-white/90">Gider</p>
+                            <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                    </div>
+                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
+                </div>
+            </Link>
              <Link href="/library/archive" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
                 <Card className="bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg h-full">
                     <CardHeader>
@@ -454,7 +454,7 @@ export default function Home() {
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
                                             <div className="absolute bottom-0 left-0 p-2 text-white">
-                                                <p className="font-bold text-[11px] leading-tight whitespace-normal break-words line-clamp-2" title={book.title}>{book.title}</p>
+                                                <p className="font-bold text-[11px] leading-tight whitespace-normal line-clamp-2" title={book.title}>{book.title}</p>
                                             </div>
                                         </div>
                                     ))}
