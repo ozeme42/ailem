@@ -18,7 +18,6 @@ const formSchema = z.object({
   name: z.string().min(2, "Hesap adı en az 2 karakter olmalıdır."),
   type: z.enum(['cash', 'bank', 'credit-card']),
   ownerId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
-  creditLimit: z.coerce.number().optional(),
   statementDate: z.coerce.number().min(1).max(31).optional(),
   dueDate: z.coerce.number().min(1).max(31).optional(),
 });
@@ -36,7 +35,6 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
       name: initialData?.name || "",
       type: initialData?.type || "bank",
       ownerId: initialData?.ownerId || undefined,
-      creditLimit: initialData?.creditLimit || undefined,
       statementDate: initialData?.statementDate || undefined,
       dueDate: initialData?.dueDate || undefined,
     },
@@ -104,12 +102,6 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
 
         {accountType === 'credit-card' && (
             <div className="p-4 border rounded-lg space-y-4">
-                <FormField control={form.control} name="creditLimit" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Kredi Limiti</FormLabel>
-                        <FormControl><Input type="number" placeholder="50000" {...field} value={field.value ?? ''} /></FormControl>
-                    </FormItem>
-                )}/>
                  <div className="grid grid-cols-2 gap-4">
                      <FormField control={form.control} name="statementDate" render={({ field }) => (
                         <FormItem>

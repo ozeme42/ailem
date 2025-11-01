@@ -1246,7 +1246,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'fa
     // If questions are provided, process and include them in the update
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
         const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? question.questionId : '');
             return {
                 questionId: questionId,
                 questionNumber: index + 1,

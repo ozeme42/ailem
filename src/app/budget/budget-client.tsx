@@ -2,8 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User, FileOutput } from "lucide-react";
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie } from "recharts";
+import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User, FileOutput, GripVertical, Settings } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -70,10 +69,7 @@ export function BudgetClient() {
     React.useEffect(() => {
         if (!familyId) return;
         
-        const startDate = startOfYear(currentDate);
-        const endDate = endOfYear(currentDate);
-        
-        const unsubTransactions = onTransactionsUpdate(setAllTransactions, startDate, endDate);
+        const unsubTransactions = onTransactionsUpdate(setAllTransactions, startOfYear(currentDate), endOfYear(currentDate));
         const unsubAccounts = onAccountsUpdate(setAccounts);
 
         return () => {
@@ -92,7 +88,7 @@ export function BudgetClient() {
     
     const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
 
-    const { yearlyIncome, yearlyExpense, monthlySummaries, totalViewStats, dailyGroups } = React.useMemo(() => {
+    const { yearlyIncome, yearlyExpense, monthlySummaries, accountStats, dailyGroups } = React.useMemo(() => {
         let income = 0;
         let expense = 0;
         const monthSummaries: {[key: string]: {income: number, expense: number, total: number}} = {};
@@ -126,17 +122,22 @@ export function BudgetClient() {
             } else {
                 expense += t.amount;
                 if(monthSummaries[monthKey]) monthSummaries[monthKey].expense += t.amount;
-                
-                 const account = accounts.find(acc => acc.id === t.accountId);
-                if (account) {
-                    if (account.type === 'credit-card') {
-                        creditCardExpense += t.amount;
-                    } else {
-                        cashBankExpense += t.amount;
-                    }
-                }
             }
         });
+        
+        const assets = accounts.filter(a => a.type === 'cash' || a.type === 'bank');
+        const debts = accounts.filter(a => a.type === 'credit-card');
+        const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
+        const totalDebts = debts.reduce((sum, acc) => sum + acc.balance, 0);
+        
+        const accStats = {
+          assets,
+          debts,
+          totalAssets,
+          totalDebts,
+          netWorth: totalAssets - totalDebts
+        };
+
 
         filteredTransactionsForMonth.forEach(t => {
             if (!daily[t.date]) {
@@ -175,7 +176,7 @@ export function BudgetClient() {
             monthlyIncome: monthStats.income,
             monthlyExpense: monthStats.expense,
             monthlySummaries: finalSummaries,
-            totalViewStats: { cashBankExpense, creditCardExpense },
+            accountStats: accStats,
             dailyGroups: finalDailyGroups,
         };
     }, [allTransactions, currentDate, accounts]);
@@ -224,6 +225,11 @@ export function BudgetClient() {
             toast({ variant: "destructive", title: "Bir hata oluştu" });
         }
     }
+    
+    const openAccountForm = (account: Account | null) => {
+        setEditingAccount(account);
+        setIsAccountFormOpen(true);
+    }
 
     return (
         <div className="bg-background text-foreground min-h-screen flex flex-col">
@@ -243,7 +249,7 @@ export function BudgetClient() {
                     <TabsList className="grid w-full grid-cols-3 bg-muted">
                         <TabsTrigger value="day">Gün</TabsTrigger>
                         <TabsTrigger value="month">Ay</TabsTrigger>
-                        <TabsTrigger value="total">Toplam</TabsTrigger>
+                        <TabsTrigger value="accounts">Hesaplar</TabsTrigger>
                     </TabsList>
                  </Tabs>
                 <div className="grid grid-cols-3 text-center">
@@ -310,26 +316,48 @@ export function BudgetClient() {
                         </div>
                     </div>
                 ))}
-                 {mainTab === 'total' && (
+                 {mainTab === 'accounts' && (
                      <div className="space-y-4 p-2 text-foreground">
-                         <div className="flex items-center justify-between p-3 bg-card rounded-lg">
-                            <p className="font-semibold text-sm">Bütçe</p>
-                             <Button variant="ghost" className="text-sm">Bütçe Ayarları <ChevronRight className="h-4 w-4 ml-2"/></Button>
-                        </div>
-                         <div className="p-3 bg-card rounded-lg">
-                            <div className="flex justify-between items-center mb-3">
-                                <p className="font-semibold text-sm">Hesaplar</p>
-                                <p className="text-xs text-muted-foreground">{format(startOfMonth(currentDate), 'd.MM.yyyy')} ~ {format(endOfMonth(currentDate), 'd.MM')}</p>
-                            </div>
-                            <div className="space-y-3 p-4 bg-muted/50 rounded-md text-xs">
-                                <div className="flex justify-between items-center"><p>Giderleri Karşılaştır (Son ay)</p><p className="font-semibold text-sm">242%</p></div>
-                                <div className="flex justify-between items-center"><p>Gider (Nakit, Banka Hesapları)</p><p className="font-semibold text-sm">{totalViewStats.cashBankExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div className="flex justify-between items-center"><p>Gider (Kredi Kartı)</p><p className="font-semibold text-sm">{totalViewStats.creditCardExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div className="flex justify-between items-center"><p>Havale (Nakit, Banka Hesabı →)</p><p className="font-semibold text-sm">₺ 0,00</p></div>
-                            </div>
-                         </div>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Hesap Özeti</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-3 gap-2 text-center text-xs">
+                                <div><p className="text-muted-foreground">Varlıklar</p><p className="font-semibold">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div><p className="text-muted-foreground">Borçlar</p><p className="font-semibold text-destructive">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div><p className="text-muted-foreground">Net Değer</p><p className="font-semibold">{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                            </CardContent>
+                        </Card>
+                        
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-base">Varlıklar ({accountStats.assets.length})</CardTitle>
+                                <p className="font-bold">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            </CardHeader>
+                            <CardContent className="space-y-px">
+                                {accountStats.assets.map(account => (
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} />
+                                ))}
+                            </CardContent>
+                        </Card>
+                        
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-base">Borçlar ({accountStats.debts.length})</CardTitle>
+                                <p className="font-bold text-destructive">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            </CardHeader>
+                            <CardContent className="space-y-px">
+                                {accountStats.debts.map(account => (
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} />
+                                ))}
+                            </CardContent>
+                        </Card>
+
+                         <Button variant="outline" className="w-full text-sm" onClick={() => openAccountForm(null)}>
+                            <Plus className="h-4 w-4 mr-2" /> Yeni Hesap Ekle
+                         </Button>
                          <Button variant="outline" className="w-full text-sm">
-                            <FileOutput className="h-5 w-5 mr-2" /> Excel (.xls) e-posta olarak gönder
+                            <Settings className="h-4 w-4 mr-2" /> Bütçe Ayarları
                          </Button>
                      </div>
                  )}
@@ -369,4 +397,39 @@ export function BudgetClient() {
     );
 }
 
+function AccountRow({ account, onEdit, onDelete }: { account: Account, onEdit: () => void, onDelete: () => void }) {
+    const Icon = accountIcons[account.type] || Wallet;
+    return (
+        <div className="flex justify-between items-center p-3 bg-muted/30 first:rounded-t-lg last:rounded-b-lg">
+            <div className="flex items-center gap-3">
+                <Icon className="h-5 w-5 text-muted-foreground" />
+                <p className="text-sm font-medium">{account.name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+                <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-destructive')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4"/></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onSelect={onEdit}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Hesabı Sil</AlertDialogTitle>
+                                    <AlertDialogDescription>"{account.name}" hesabını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </div>
+    );
+}
     

@@ -17,7 +17,7 @@ export default function BudgetPage() {
 function BudgetSkeleton() {
   return (
     <div className="space-y-6">
-       <PageHeader title="Bütçe Yönetimi">
+       <PageHeader title="Bütçe">
           <Skeleton className="h-10 w-48" />
        </PageHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
