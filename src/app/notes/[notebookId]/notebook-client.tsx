@@ -363,7 +363,7 @@ export default function NotebookClient() {
                                     <TabsTrigger
                                         value={section.id}
                                         className={cn(
-                                            "pr-8 text-white bg-gradient-to-br transition-all text-sm px-4 py-2 sm:text-base sm:px-6 sm:py-2.5",
+                                            "pr-8 text-white bg-gradient-to-br transition-all sm:text-base py-2.5 px-6",
                                             section.color,
                                             isActive 
                                                 ? "ring-2 ring-offset-2 ring-ring opacity-100" 
@@ -406,8 +406,8 @@ export default function NotebookClient() {
             const folderOrder = ['Genel Notlar', ...(section.folders || [])];
 
             return (
-              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative sm:px-4">
-                    <div className="space-y-4 -mx-4 sm:mx-0" key={activeTab}>
+              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
+                    <div className="space-y-4" key={activeTab}>
                         <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
                             {folderOrder.map((folderName, folderIndex) => {
                                 const folderNotes = notesByFolder[folderName];
@@ -416,7 +416,7 @@ export default function NotebookClient() {
                                 }
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-xl">
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-xl">
                                          <div className={cn("flex items-center text-white w-full", `bg-gradient-to-br ${colorClass}`)}>
                                             <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                                 <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
@@ -611,7 +611,7 @@ interface NoteEditFormProps {
 
 function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFormProps) {
   const form = useForm<NoteFormData>();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   useEffect(() => {
     if (note) {
