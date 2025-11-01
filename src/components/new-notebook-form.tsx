@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -34,6 +33,7 @@ const formSchema = z.object({
   title: z.string().min(2, 'Defter adı en az 2 karakter olmalıdır.'),
   description: z.string().optional(),
   color: z.string().optional(),
+  icon: z.string().optional(),
 });
 
 type NewNotebookFormProps = {
@@ -51,8 +51,20 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
       title: initialData?.title || '',
       description: initialData?.description || '',
       color: initialData?.color || notebookColors[0].class,
+      icon: initialData?.icon || '🗒️'
     },
   });
+  
+   useEffect(() => {
+    if (initialData) {
+      form.reset({
+        title: initialData.title,
+        description: initialData.description || '',
+        color: initialData.color || notebookColors[0].class,
+        icon: initialData.icon || '🗒️'
+      });
+    }
+  }, [initialData, form]);
 
   const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
@@ -93,6 +105,17 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
             <FormItem>
               <FormLabel>Açıklama (Opsiyonel)</FormLabel>
               <FormControl><Textarea placeholder="Bu defterin içeriği hakkında kısa bir bilgi..." {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="icon"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>İkon (Emoji)</FormLabel>
+              <FormControl><Input placeholder="🗒️" maxLength={2} {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )}

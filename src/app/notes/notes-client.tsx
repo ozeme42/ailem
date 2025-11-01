@@ -131,17 +131,14 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {notebooks.map(notebook => (
-                <Card key={notebook.id} className={cn(
-                    "group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform border-0 text-white",
-                    notebook.color ? `bg-gradient-to-br ${notebook.color}` : "bg-gradient-to-br from-gray-700 to-gray-800"
-                )}>
-                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:text-white hover:bg-white/20" onClick={(e) => { e.stopPropagation(); onEdit(notebook); }}>
+                 <Card key={notebook.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform border-l-4" style={{ borderLeftColor: `hsl(var(--${notebook.color?.split('-')[1]}))`, '--notebook-color': `hsl(var(--${notebook.color?.split('-')[1]}))` } as React.CSSProperties}>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(notebook); }}>
                             <Edit className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:text-white hover:bg-white/20" onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/80 hover:text-destructive" onClick={(e) => e.stopPropagation()}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </AlertDialogTrigger>
@@ -160,13 +157,13 @@ function NotebookGrid({ notebooks, onEdit, onDelete }: { notebooks: NotebookType
                     <Link href={`/notes/${notebook.id}`} className="block flex flex-col h-full">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-xl">
-                                <span className="text-3xl">{notebook.icon || '🗒️'}</span>
+                                <span className={cn("p-2 rounded-md bg-gradient-to-br text-white", notebook.color)}>{notebook.icon || '🗒️'}</span>
                                 {notebook.title}
                             </CardTitle>
-                            <CardDescription className="text-white/80">{notebook.description}</CardDescription>
+                            <CardDescription>{notebook.description}</CardDescription>
                         </CardHeader>
-                        <CardFooter className="mt-auto">
-                            <div className="w-full text-sm font-semibold flex items-center justify-between">
+                         <CardFooter className="mt-auto">
+                            <div className="w-full text-sm font-semibold flex items-center justify-between text-muted-foreground group-hover:text-[var(--notebook-color)] transition-colors">
                                 <span>Defteri Aç</span>
                                 <ChevronRight className="h-4 w-4"/> 
                             </div>
