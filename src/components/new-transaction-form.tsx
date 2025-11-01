@@ -75,6 +75,17 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         isInstallment: initialData.isInstallment || false,
         installmentTotal: initialData.installmentDetails?.total || undefined,
       });
+    } else {
+        form.reset({
+            description: "",
+            amount: undefined,
+            type: 'expense',
+            accountId: undefined,
+            category: "",
+            date: new Date(),
+            isInstallment: false,
+            installmentTotal: undefined,
+        });
     }
   }, [initialData, form]);
 
@@ -101,10 +112,10 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const { errors } = form.formState;
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 text-white">
+    <div className="flex flex-col h-full bg-background text-foreground">
         <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-grow flex flex-col">
-           <DialogHeader className="p-4 bg-gray-800 flex-shrink-0">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-grow flex flex-col min-h-0">
+           <DialogHeader className="p-4 bg-muted/50 flex-shrink-0">
                 <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
                 <Tabs 
                     value={transactionType}
@@ -114,9 +125,9 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     }}
                     className="w-full pt-4"
                 >
-                    <TabsList className="grid w-full grid-cols-2 bg-gray-700/50">
-                        <TabsTrigger value="income" className={cn(transactionType === 'income' && "data-[state=active]:bg-blue-600")}>Gelir</TabsTrigger>
-                        <TabsTrigger value="expense" className={cn(transactionType === 'expense' && "data-[state=active]:bg-red-600")}>Gider</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2 bg-background">
+                        <TabsTrigger value="income" className={cn(transactionType === 'income' && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground")}>Gelir</TabsTrigger>
+                        <TabsTrigger value="expense" className={cn(transactionType === 'expense' && "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground")}>Gider</TabsTrigger>
                     </TabsList>
                 </Tabs>
            </DialogHeader>
@@ -144,13 +155,13 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                               </Popover>
                           </FormItem>
                       )}/>
-                      <Separator className="bg-gray-700"/>
+                      <Separator/>
                       <FormField control={form.control} name="amount" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
-                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-lg font-bold placeholder:text-red-400/50", transactionType === 'income' ? 'text-blue-400 placeholder:text-blue-400/50' : 'text-red-400 placeholder:text-red-400/50')} /></FormControl>
+                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-lg font-bold placeholder:text-red-400/50", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
                           </FormItem>
                       )}/>
-                      <Separator className="bg-gray-700"/>
+                      <Separator/>
                       <FormItem className="flex items-center">
                           <FormLabel className="w-20 text-muted-foreground">Kategori</FormLabel>
                           <div className="flex-grow">
@@ -167,7 +178,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             {errors.category && <FormMessage className="pl-2" />}
                            </div>
                       </FormItem>
-                       <Separator className="bg-gray-700"/>
+                       <Separator/>
                        <FormField control={form.control} name="accountId" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
@@ -176,7 +187,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                               </Select>
                           </FormItem>
                       )}/>
-                       <Separator className="bg-gray-700"/>
+                       <Separator/>
                        <FormField control={form.control} name="description" render={({ field }) => (
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Not</FormLabel>
                               <FormControl><Input placeholder="Not ekle..." {...field} className="bg-transparent border-0" /></FormControl>
@@ -186,8 +197,8 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
               </ScrollArea>
            </div>
            
-            <DialogFooter className="p-4 bg-gray-800 border-t border-gray-700 flex-shrink-0">
-                <Button type="submit" className={cn("w-full", transactionType === 'income' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700')}>
+            <DialogFooter className="p-4 bg-muted/50 border-t flex-shrink-0">
+                <Button type="submit" className={cn("w-full", transactionType === 'income' ? 'bg-primary hover:bg-primary/90' : 'bg-destructive hover:bg-destructive/90')}>
                     {initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}
                 </Button>
             </DialogFooter>
@@ -195,7 +206,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         </Form>
         
         <Dialog open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-            <DialogContent className="sm:max-w-md h-full flex flex-col bg-gray-900 text-white border-0">
+            <DialogContent className="sm:max-w-md h-full flex flex-col bg-background text-foreground border-0">
                 <DialogHeader>
                     <div className="flex justify-between items-center">
                         <DialogTitle>Kategori</DialogTitle>
@@ -207,7 +218,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 <ScrollArea className="flex-grow">
                     <div className="grid grid-cols-4 gap-2 py-4">
                       {categories.filter(c => c.type === form.watch('type')).map(cat => (
-                          <Button key={cat.id} variant="secondary" className="flex-col h-20 bg-gray-800 hover:bg-gray-700" onClick={() => handleCategorySelect(cat.name)}>
+                          <Button key={cat.id} variant="secondary" className="flex-col h-20 bg-muted hover:bg-muted/80" onClick={() => handleCategorySelect(cat.name)}>
                               <span className="text-2xl">{cat.icon}</span>
                               <span className="text-xs text-center">{cat.name}</span>
                           </Button>
@@ -223,7 +234,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 setShowCategorySelector(true);
             }
         }}>
-             <DialogContent className="sm:max-w-md h-full flex flex-col bg-gray-900 text-white border-0">
+             <DialogContent className="sm:max-w-md h-full flex flex-col bg-background text-foreground border-0">
                  <BudgetCategoryForm onBack={() => { setShowCategoryManager(false); setShowCategorySelector(true); }}/>
              </DialogContent>
         </Dialog>
