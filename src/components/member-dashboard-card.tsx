@@ -252,25 +252,25 @@ export function MemberDashboardCard({
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4 flex-grow bg-card text-card-foreground rounded-t-xl mt-2">
+            <CardContent className="space-y-4 pt-4 flex-grow">
                  {member.role.includes('Çocuk') && (
                     <div>
-                         <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Gamepad2 className="h-4 w-4 text-green-600"/> Bugünkü Serbest Zaman</h4>
-                         <div className="p-3 rounded-lg bg-green-500/10 text-green-900 text-center">
-                            <p className="font-bold text-2xl text-green-600">{earnedFreeTimeMinutes} <span className="text-base font-medium">dakika</span></p>
-                            <p className="text-xs text-green-700/80">Tamamlanan {Math.floor(earnedFreeTimeMinutes / 15)} aktivite için</p>
+                         <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><Gamepad2 className="h-4 w-4"/> Bugünkü Serbest Zaman</h4>
+                         <div className="p-3 rounded-lg bg-white/20 backdrop-blur-sm text-center">
+                            <p className="font-bold text-2xl">{earnedFreeTimeMinutes} <span className="text-base font-medium">dakika</span></p>
+                            <p className="text-xs text-white/80">Tamamlanan {Math.floor(earnedFreeTimeMinutes / 15)} aktivite için</p>
                          </div>
                     </div>
                 )}
                 {member.role.includes('Çocuk') && (todaysPrayers.filter(p=>!p.completed).length > 0) && (
                     <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Check className="h-4 w-4 text-green-600"/> Bugünkü Namazlar</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><Check className="h-4 w-4"/> Bugünkü Namazlar</h4>
                         <Link href="/prayers">
-                            <div className="p-2.5 rounded-lg bg-green-500/10 text-green-900 flex justify-around items-center gap-1">
+                            <div className="p-2.5 rounded-lg bg-white/20 backdrop-blur-sm flex justify-around items-center gap-1">
                                 {todaysPrayers.map(prayer => (
                                     <div key={prayer.name} className="flex flex-col items-center gap-1">
-                                         <Heart className={cn("size-6 cursor-pointer transition-all hover:scale-110", prayer.completed ? "text-red-500 fill-current" : "text-gray-400/50")} />
-                                        <p className="text-xs text-muted-foreground">{prayer.name}</p>
+                                         <Heart className={cn("size-6 cursor-pointer transition-all hover:scale-110", prayer.completed ? "text-red-400 fill-current" : "text-white/30")} />
+                                        <p className="text-xs text-white/80">{prayer.name}</p>
                                     </div>
                                 ))}
                             </div>
@@ -279,12 +279,12 @@ export function MemberDashboardCard({
                 )}
                 {habits.length > 0 && (
                      <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500"/> Bugünkü Alışkanlıklar</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><Flame className="h-4 w-4"/> Bugünkü Alışkanlıklar</h4>
                         <div className="space-y-3">
                              {habits.map(habit => {
                                 const todayKey = format(new Date(), 'yyyy-MM-dd');
                                 return (
-                                    <div key={habit.id} className="p-2.5 rounded-lg bg-orange-500/10 text-orange-900">
+                                    <div key={habit.id} className="p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
                                       <p className="font-semibold text-sm mb-2">{habit.title}</p>
                                       <div className="flex justify-around items-center">
                                         {lastSevenDays.map(day => {
@@ -292,8 +292,8 @@ export function MemberDashboardCard({
                                           const isCompleted = habit.completedDates?.includes(dayKey) || false;
                                           return (
                                             <div key={dayKey} className="flex flex-col items-center gap-1" onClick={() => handleHabitCompletion(habit.id, day)}>
-                                                <Heart className={cn("size-6 cursor-pointer transition-all hover:scale-110", isCompleted ? "text-red-500 fill-current" : "text-gray-400/50")} />
-                                                <p className="text-xs text-muted-foreground">{format(day, 'EEE', { locale: tr })}</p>
+                                                <Heart className={cn("size-6 cursor-pointer transition-all hover:scale-110", isCompleted ? "text-red-400 fill-current" : "text-white/30")} />
+                                                <p className="text-xs text-white/80">{format(day, 'EEE', { locale: tr })}</p>
                                             </div>
                                           )
                                         })}
@@ -306,15 +306,15 @@ export function MemberDashboardCard({
                 )}
                 {pendingVideos.length > 0 && (
                      <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Youtube className="h-4 w-4 text-red-600"/> Video Dersler</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><Youtube className="h-4 w-4"/> Video Dersler</h4>
                         <div className="space-y-3">
                         {pendingVideos.slice(0, 2).map(video => (
                              <Link href="/videos" key={video.id} className="block">
-                                <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-red-500/10 text-red-900 hover:bg-red-500/20">
+                                <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
                                     <div className="truncate"><p className="font-semibold truncate text-sm">{video.title}</p></div>
                                     <div>
-                                        <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-1.5" indicatorClassName="bg-red-500"/>
-                                        <p className="text-xs text-red-800/80 mt-1 text-right">{video.completedVideos || 0} / {video.totalVideos} video</p>
+                                        <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-1.5 bg-white/20" indicatorClassName="bg-white"/>
+                                        <p className="text-xs text-white/80 mt-1 text-right">{video.completedVideos || 0} / {video.totalVideos} video</p>
                                     </div>
                                 </div>
                             </Link>
@@ -324,21 +324,21 @@ export function MemberDashboardCard({
                 )}
                  {readingBooks.length > 0 && (
                    <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><BookOpen className="h-4 w-4 text-amber-600"/> Okunacak Kitaplar</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><BookOpen className="h-4 w-4"/> Okunacak Kitaplar</h4>
                         <div className="space-y-3">
                             {readingBooks.slice(0, 2).map(book => {
                                 const pagesRead = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
                                 return (
                                  <Link href="/library" key={book.id} className="block">
-                                    <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-amber-500/10 text-amber-900 hover:bg-amber-500/20">
-                                        <div className="truncate"><p className="font-semibold truncate text-sm">{book.title}</p><p className="text-xs text-amber-800/80 truncate">{book.author}</p></div>
+                                    <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
+                                        <div className="truncate"><p className="font-semibold truncate text-sm">{book.title}</p><p className="text-xs text-white/80 truncate">{book.author}</p></div>
                                         {book.libraryStatus === 'reading' && book.progress !== undefined && (
                                             <div>
-                                                <Progress value={book.progress} className="h-1.5" indicatorClassName="bg-amber-500"/>
+                                                <Progress value={book.progress} className="h-1.5 bg-white/20" indicatorClassName="bg-white"/>
                                                 {book.pageCount ? (
-                                                     <p className="text-xs text-amber-800/80 mt-1 text-right">{pagesRead} / {book.pageCount} sayfa</p>
+                                                     <p className="text-xs text-white/80 mt-1 text-right">{pagesRead} / {book.pageCount} sayfa</p>
                                                 ) : (
-                                                    <p className="text-xs text-amber-800/80 mt-1 text-right">%{book.progress.toFixed(0)}</p>
+                                                    <p className="text-xs text-white/80 mt-1 text-right">%{book.progress.toFixed(0)}</p>
                                                 )}
                                             </div>
                                         )}
@@ -350,11 +350,11 @@ export function MemberDashboardCard({
                 )}
                 {pendingMemorization.length > 0 && (
                    <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><BrainCircuit className="h-4 w-4 text-purple-600"/> Ezberlenecekler</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><BrainCircuit className="h-4 w-4"/> Ezberlenecekler</h4>
                         <div className="space-y-2">
                             {pendingMemorization.slice(0,2).map(item => (
                                 <Link href="/memorization" key={item.id} className="block">
-                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 text-purple-900 hover:bg-purple-500/20">
+                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
                                         <div className="truncate"><p className="font-semibold truncate text-sm">{item.title}</p></div>
                                     </div>
                                 </Link>
@@ -364,21 +364,21 @@ export function MemberDashboardCard({
                 )}
                 {(pendingTests.length > 0 || pendingStudies.length > 0 || completedStudies.length > 0) && (
                    <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary"/> Eğitim</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><GraduationCap className="h-4 w-4"/> Eğitim</h4>
                         <div className="space-y-2">
                             {pendingTests.map(test => (
                                 <Link href={`/education/${test.id}`} key={test.id} className="block">
-                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-red-500/10 text-red-900 hover:bg-red-500/20">
-                                        <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-red-800/80 truncate">{test.subject}</p></div>
+                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
+                                        <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-white/80 truncate">{test.subject}</p></div>
                                     </div>
                                 </Link>
                             ))}
                             {pendingStudies.map(study => (
                                 <Link href="/education/study" key={study.id} className="block">
-                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 text-blue-900 hover:bg-blue-500/20">
+                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
                                          <div className="truncate">
                                             <p className="font-semibold truncate text-sm">{study.topic}</p>
-                                            <p className="text-xs text-blue-800/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
+                                            <p className="text-xs text-white/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
                                         </div>
                                     </div>
                                 </Link>
@@ -386,16 +386,16 @@ export function MemberDashboardCard({
                              {completedStudies.length > 0 && (
                                 <Accordion type="single" collapsible className="w-full">
                                 <AccordionItem value="item-1" className="border-b-0">
-                                    <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline justify-start gap-1 p-1">
+                                    <AccordionTrigger className="text-xs text-white/80 hover:no-underline justify-start gap-1 p-1">
                                         Tamamlanan {completedStudies.length} Konuyu Göster
                                     </AccordionTrigger>
                                     <AccordionContent className="space-y-2 pt-2">
                                     {completedStudies.map(study => (
-                                        <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-500/10">
-                                            <Check className="h-4 w-4 text-gray-500" />
+                                        <div key={study.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-black/10">
+                                            <Check className="h-4 w-4 text-white/70" />
                                             <div className="truncate">
-                                                <p className="font-semibold truncate text-sm text-muted-foreground line-through">{study.topic}</p>
-                                                <p className="text-xs text-muted-foreground/80 truncate">{study.studyPlanTitle} - {study.subject}</p>
+                                                <p className="font-semibold truncate text-sm text-white/70 line-through">{study.topic}</p>
+                                                <p className="text-xs text-white/60 truncate">{study.studyPlanTitle} - {study.subject}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -408,14 +408,14 @@ export function MemberDashboardCard({
                 )}
                 {pendingTasks.length > 0 && (
                     <div>
-                        <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><ListChecks className="h-4 w-4 text-blue-600"/> Bekleyen Görevler</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><ListChecks className="h-4 w-4"/> Bekleyen Görevler</h4>
                         <div className="space-y-3">
                         {pendingTasks.slice(0, 2).map(task => (
-                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10">
+                            <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm">
                                 <Checkbox
                                     id={`personal-task-${task.id}-${member.id}`}
                                     onCheckedChange={() => handleTaskCompletion(task)}
-                                    className="border-primary"
+                                    className="border-white text-white ring-offset-background data-[state=checked]:bg-white data-[state=checked]:text-primary"
                                 />
                                 <div className="flex-grow">
                                     <label htmlFor={`personal-task-${task.id}-${member.id}`} className="font-semibold cursor-pointer">{task.title}</label>
@@ -429,5 +429,3 @@ export function MemberDashboardCard({
         </Card>
     );
 }
-
-    
