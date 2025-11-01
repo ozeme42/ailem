@@ -316,13 +316,13 @@ export default function Home() {
     <div className="space-y-6">
        <header className={cn(
         "flex items-center justify-between gap-4 p-4",
-        "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg",
+        "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg",
         "-mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6", // Full-bleed on mobile
         "rounded-b-2xl"
       )}>
           <div className="flex items-center gap-4">
               <SidebarTrigger />
-              <h1 className="text-3xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>Özgürdere Ailesi</h1>
+              <h1 className="text-2xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>Özgürdere Ailesi</h1>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
@@ -377,6 +377,22 @@ export default function Home() {
                     </div>
                 </Link>
             </div>
+             <Link href="/budget" className="group block">
+                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 h-full transition-transform group-hover:-translate-y-1">
+                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
+                    <div className="flex-grow my-4 grid grid-cols-2 gap-4">
+                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                            <p className="text-xs font-semibold text-white/90">Gelir</p>
+                            <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                         <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                            <p className="text-xs font-semibold text-white/90">Gider</p>
+                            <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                    </div>
+                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
+                </div>
+            </Link>
             <Link href="/calendar" className="group block">
                 <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
                     <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
@@ -403,22 +419,6 @@ export default function Home() {
                         )}
                     </div>
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
-                </div>
-            </Link>
-             <Link href="/budget" className="group block">
-                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 h-full transition-transform group-hover:-translate-y-1">
-                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
-                    <div className="flex-grow my-4 grid grid-cols-2 gap-4">
-                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gelir</p>
-                            <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                        </div>
-                         <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gider</p>
-                            <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                        </div>
-                    </div>
-                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
                 </div>
             </Link>
              <Link href="/library/archive" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
