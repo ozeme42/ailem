@@ -202,7 +202,8 @@ export default function ShoppingPage() {
   const [newItemName, setNewItemName] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate((lists) => {
         const sortedLists = lists.sort((a, b) => {
@@ -210,7 +211,7 @@ export default function ShoppingPage() {
             const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
             if (!dateA) return 1;
             if (!dateB) return -1;
-            return dateB - dateA; // Sort descending, newest first
+            return dateB - dateA;
         });
         setShoppingLists(sortedLists);
         setIsLoaded(true);
@@ -253,11 +254,11 @@ export default function ShoppingPage() {
     const lowercasedQuery = newItemName.toLowerCase();
     const filteredHistory = historicalItems
       .filter(item => item.toLowerCase().includes(lowercasedQuery))
-      .slice(0, 5); // Limit history suggestions
+      .slice(0, 5);
 
     const filteredDefaults = defaultShoppingItems
       .filter(item => item.toLowerCase().includes(lowercasedQuery) && !filteredHistory.includes(item))
-      .slice(0, 5); // Limit default suggestions
+      .slice(0, 5);
 
     setSuggestions([...filteredHistory, ...filteredDefaults]);
   }, [newItemName, historicalItems]);
@@ -300,6 +301,7 @@ export default function ShoppingPage() {
     } finally {
         setNewItemName('');
         setIsAiProcessing(false);
+        setIsAddItemDialogOpen(false);
     }
 };
 
@@ -365,29 +367,6 @@ export default function ShoppingPage() {
                         <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                      </Button>
                 </div>
-                 <form onSubmit={handleAddItem} className="relative w-full">
-                    <Input 
-                        value={newItemName} 
-                        onChange={(e) => setNewItemName(e.target.value)} 
-                        placeholder="Yeni öğe ekle (örn: 2 kilo domates)"
-                        className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus-visible:ring-offset-0 focus-visible:ring-white"
-                        disabled={isAiProcessing}
-                    />
-                    <Button type="submit" variant="secondary" disabled={isAiProcessing} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3">
-                        {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
-                    </Button>
-                    {suggestions.length > 0 && (
-                    <div className="relative w-full">
-                        <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-background border rounded-lg shadow-lg z-10">
-                            <div className="flex flex-wrap gap-2">
-                            {suggestions.map((s, i) => (
-                                <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
-                            ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-                </form>
             </PageHeader>
             
              <div className={cn("flex-grow flex flex-col min-h-0")}>
@@ -441,6 +420,45 @@ export default function ShoppingPage() {
                     </TabsContent>
                 </Tabs>
             </div>
+             <div className="fixed bottom-24 right-6 z-10 md:bottom-6">
+                <Button className="rounded-full w-16 h-16 shadow-lg bg-[#eb5757] hover:bg-[#eb5757]/90" size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
+                    <Plus className="h-8 w-8"/>
+                </Button>
+            </div>
+            <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Yeni Öğe Ekle</DialogTitle>
+                        <DialogDescription>Listeye eklenecek ürün veya ürünleri yazın.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddItem} className="relative w-full pt-4">
+                        <Input 
+                            value={newItemName} 
+                            onChange={(e) => setNewItemName(e.target.value)} 
+                            placeholder="örn: 2 kilo domates, 1 paket süt"
+                            disabled={isAiProcessing}
+                            autoFocus
+                        />
+                        {suggestions.length > 0 && (
+                        <div className="relative w-full">
+                            <div className="absolute bottom-full left-0 right-0 mb-1 p-2 bg-background border rounded-lg shadow-lg z-10">
+                                <div className="flex flex-wrap gap-2">
+                                {suggestions.map((s, i) => (
+                                    <Button key={i} type="button" variant="secondary" size="sm" onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}>{s}</Button>
+                                ))}
+                                </div>
+                            </div>
+                        </div>
+                        )}
+                         <DialogFooter className="mt-4">
+                            <Button type="button" variant="ghost" onClick={() => setIsAddItemDialogOpen(false)}>İptal</Button>
+                            <Button type="submit" variant="default" disabled={isAiProcessing}>
+                                {isAiProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Ekle"}
+                            </Button>
+                         </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
      );
   }
@@ -458,6 +476,8 @@ export default function ShoppingPage() {
                             list={list} 
                             colorClass={color.class} 
                             onClick={() => handleSelectList(list)}
+                            onEdit={() => handleEditList(list)}
+                            onDelete={handleDeleteList}
                         />
                     )
                 })
@@ -469,7 +489,7 @@ export default function ShoppingPage() {
                 </div>
             )}
         </div>
-        <div className="fixed bottom-6 right-6 z-10">
+        <div className="fixed bottom-24 right-6 z-10 md:bottom-6">
             <Button className="rounded-full w-16 h-16 shadow-lg bg-[#eb5757] hover:bg-[#eb5757]/90" size="icon" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
                 <Plus className="h-8 w-8"/>
             </Button>
@@ -478,5 +498,3 @@ export default function ShoppingPage() {
     </div>
   );
 }
-
-    
