@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, MoreVertical, Archive } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, MoreVertical, Archive, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -26,15 +26,13 @@ import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flo
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 
-const brightColors = [
-    { id: 'blue-indigo', name: 'Mavi', gradient: 'from-blue-500 to-indigo-600' },
-    { id: 'teal-green', name: 'Açık Yeşil', gradient: 'from-teal-400 to-green-500' },
-    { id: 'amber-orange', name: 'Turuncu', gradient: 'from-amber-400 to-orange-500' },
-    { id: 'rose-red', name: 'Gül Kurusu', gradient: 'from-rose-400 to-red-500' },
-    { id: 'cyan-sky', name: 'Camgöbeği', gradient: 'from-cyan-400 to-sky-500' },
-    { id: 'violet-purple', name: 'Menekşe', gradient: 'from-violet-500 to-purple-600' },
-    { id: 'pink-fuchsia', name: 'Pembe', gradient: 'from-pink-500 to-fuchsia-500' },
-    { id: 'lime-emerald', name: 'Fıstık Yeşili', gradient: 'from-lime-400 to-emerald-500'},
+const solidColors = [
+    { id: 'yellow', name: 'Sarı', class: 'bg-yellow-300' },
+    { id: 'rose', name: 'Somon', class: 'bg-rose-400' },
+    { id: 'emerald', name: 'Yeşil', class: 'bg-emerald-400' },
+    { id: 'sky', name: 'Mavi', class: 'bg-sky-400' },
+    { id: 'violet', name: 'Menekşe', class: 'bg-violet-400' },
+    { id: 'orange', name: 'Turuncu', class: 'bg-orange-400' },
 ];
 
 
@@ -130,77 +128,23 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, initialData }: {
     );
 };
 
-const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: { 
+const ListCard = ({ list, colorClass, onClick }: { 
     list: ShoppingList; 
     colorClass: string; 
     onClick: () => void;
-    onEdit: () => void;
-    onDelete: (id: string) => void;
 }) => {
-    const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
-    const pendingItems = (list.items || []).filter(item => !item.isBought);
-    const hasBoughtItems = (list.boughtItems || []).length > 0;
-    
-    const description = pendingItems.length > 0 
-        ? `${pendingItems.length} ihtiyaç kaldı` 
-        : (list.items.length > 0 || hasBoughtItems) 
-            ? 'Tüm ihtiyaçlar tamam' 
-            : 'Liste boş';
+    const pendingItemsCount = (list.items || []).filter(item => !item.isBought).length;
+    const description = pendingItemsCount > 0 ? `${pendingItemsCount} alınacak` : 'Liste tamamlandı';
 
     return (
-        <div className="relative group">
-            <div onClick={onClick} className={cn("flex flex-col text-white p-4 cursor-pointer rounded-xl shadow-lg border-0 h-full min-h-[160px]", colorClass)}>
-                <div className="flex items-start gap-4">
-                    <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                        <Icon className="h-6 w-6" />
-                    </div>
-                    <div className="flex flex-col justify-center min-w-0">
-                        <p className="text-lg font-bold leading-tight truncate">{list.name}</p>
-                    </div>
-                </div>
-                <div className="flex-grow mt-3 space-y-1">
-                    {pendingItems.length > 0 ? (
-                        <>
-                            {pendingItems.slice(0, 3).map(item => (
-                                <div key={item.id} className="flex items-center gap-2 text-sm">
-                                    <div className="w-4 h-4 rounded-sm border-2 border-white/50 bg-white/20 shrink-0"/>
-                                    <span className="truncate">{item.name}</span>
-                                </div>
-                            ))}
-                            {pendingItems.length > 3 && (
-                                <p className="text-xs text-white/80 pt-1">+ {pendingItems.length - 3} ürün daha...</p>
-                            )}
-                        </>
-                    ) : (list.items.length > 0 || hasBoughtItems) ? (
-                        <div className="flex items-center gap-2 text-sm p-2 rounded-md bg-white/20">
-                            <ListChecks className="h-4 w-4"/>
-                            <span>Tüm ihtiyaçlar tamam!</span>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-white/80">Liste boş</p>
-                    )}
-                </div>
+        <div onClick={onClick} className={cn("flex items-center text-black p-4 cursor-pointer min-h-[80px]", colorClass)}>
+             <div className="flex-grow">
+                <p className="text-base font-semibold leading-tight truncate">{list.name}</p>
+                <p className="text-black/70 text-sm font-normal truncate">
+                    {description}
+                </p>
             </div>
-             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="h-4 w-4" /></Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                         <Button variant="destructive" size="icon" className="h-7 w-7 bg-black/30 hover:bg-black/50 border-0" onClick={(e) => e.stopPropagation()}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                        <AlertDialogHeader>
-                            <AlertDialogTitleComponent>"{list.name}" listesini sil?</AlertDialogTitleComponent>
-                            <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(list.id)}>Sil</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
+            <ChevronRight className="h-6 w-6 text-black/50 ml-auto shrink-0"/>
         </div>
     );
 };
@@ -225,7 +169,7 @@ export default function ShoppingPage() {
             const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
             if (!dateA) return 1;
             if (!dateB) return -1;
-            return dateA - dateB;
+            return dateB - dateA; // Sort descending, newest first
         });
         setShoppingLists(sortedLists);
         setIsLoaded(true);
@@ -345,18 +289,17 @@ export default function ShoppingPage() {
   if (!isLoaded) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Alışveriş Listeleri" />
-        <Skeleton className="h-12 w-full" />
-        <div className="space-y-4 mt-4">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+        <PageHeader title="Listelerim" />
+        <div className="space-y-2">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
         </div>
       </div>
     );
   }
 
   if (selectedList) {
-    // Directly filter and sort items for rendering
     const pendingItems = (selectedList.items || []).sort((a,b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -516,23 +459,17 @@ export default function ShoppingPage() {
 
   return (
     <div className="space-y-6">
-        <PageHeader title="Alışveriş Listeleri">
-            <Button variant="secondary" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
-                <PlusCircle className="size-4 mr-2" /> Yeni Liste Oluştur
-            </Button>
-        </PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <PageHeader title="Listelerim" />
+        <div className="space-y-0 -mx-4 sm:mx-0">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
-                    const color = brightColors[index % brightColors.length];
+                    const color = solidColors[index % solidColors.length];
                     return (
                         <ListCard 
                             key={list.id} 
                             list={list} 
-                            colorClass={cn("bg-gradient-to-br", color.gradient)} 
+                            colorClass={color.class} 
                             onClick={() => handleSelectList(list)}
-                            onEdit={() => handleEditList(list)}
-                            onDelete={handleDeleteList}
                         />
                     )
                 })
@@ -540,9 +477,14 @@ export default function ShoppingPage() {
                 <div className="md:col-span-3 text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background">
                     <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
-                    <p className="text-sm">Başlamak için "Yeni Liste Oluştur"a tıklayın.</p>
+                    <p className="text-sm">Başlamak için aşağıdaki butona tıklayarak yeni bir liste oluşturun.</p>
                 </div>
             )}
+        </div>
+        <div className="fixed bottom-6 right-6 z-10">
+            <Button className="rounded-full w-16 h-16 shadow-lg bg-orange-500 hover:bg-orange-600" size="icon" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
+                <Plus className="h-8 w-8"/>
+            </Button>
         </div>
       <CreateListDialog isOpen={isListDialogOpen} onOpenChange={setListDialogOpen} onCreate={handleCreateOrUpdateList} initialData={editingList} />
     </div>
