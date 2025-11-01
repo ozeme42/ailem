@@ -71,20 +71,22 @@ export function BudgetClient() {
     const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
 
     const accountStats = React.useMemo(() => {
-        const assets = accounts.filter(a => a.type === 'cash' || a.type === 'bank');
-        const debts = accounts.filter(a => a.type === 'credit-card');
-        
-        const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const totalExpense = allTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const totalIncome = allTransactions
+          .filter(t => t.type === 'income')
+          .reduce((sum, t) => sum + t.amount, 0);
+        const totalExpense = allTransactions
+          .filter(t => t.type === 'expense')
+          .reduce((sum, t) => sum + t.amount, 0);
 
         return {
-          assets,
-          debts,
+          assets: accounts.filter(a => a.type === 'cash' || a.type === 'bank'),
+          debts: accounts.filter(a => a.type === 'credit-card'),
           totalAssets: totalIncome,
           totalDebts: totalExpense,
           netWorth: totalIncome - totalExpense
         };
     }, [accounts, allTransactions]);
+
 
     const { monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense, monthlySummaries, dailyGroups } = React.useMemo(() => {
         
@@ -284,20 +286,22 @@ export function BudgetClient() {
                         <TabsTrigger value="accounts">Hesaplar</TabsTrigger>
                     </TabsList>
                  </Tabs>
-                <div className="grid grid-cols-3 text-center">
-                    <div>
-                        <p className="text-xs text-muted-foreground">Gelir</p>
-                        <p className="font-semibold text-sm text-primary">{headerIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                {mainTab !== 'accounts' && (
+                    <div className="grid grid-cols-3 text-center">
+                        <div>
+                            <p className="text-xs text-muted-foreground">Gelir</p>
+                            <p className="font-semibold text-sm text-primary">{headerIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-muted-foreground">Gider</p>
+                            <p className="font-semibold text-sm text-destructive">{headerExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-muted-foreground">Toplam</p>
+                            <p className="font-semibold text-sm">{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        </div>
                     </div>
-                     <div>
-                        <p className="text-xs text-muted-foreground">Gider</p>
-                        <p className="font-semibold text-sm text-destructive">{headerExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                    </div>
-                     <div>
-                        <p className="text-xs text-muted-foreground">Toplam</p>
-                        <p className="font-semibold text-sm">{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                    </div>
-                </div>
+                )}
             </header>
             
              <main className="flex-grow overflow-y-auto px-2 space-y-2 pb-24">
@@ -552,4 +556,3 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
-
