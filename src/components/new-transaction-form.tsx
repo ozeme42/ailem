@@ -106,6 +106,14 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const transactionType = form.watch('type');
   const { errors } = form.formState;
 
+  const filteredAccounts = React.useMemo(() => {
+    if (transactionType === 'income') {
+        return accounts.filter(acc => acc.type === 'bank' || acc.type === 'cash');
+    }
+    return accounts; // For expenses, show all accounts
+  }, [accounts, transactionType]);
+
+
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
         <Form {...form}>
@@ -117,6 +125,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     onValueChange={(value) => {
                         form.setValue('type', value as 'income' | 'expense');
                         form.setValue('category', ''); // Reset category on type change
+                        form.setValue('accountId', undefined); // Reset account on type change
                     }}
                     className="w-full pt-4"
                 >
@@ -178,7 +187,9 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                           <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl><SelectTrigger className="bg-transparent border-0"><SelectValue placeholder="Hesap seçin"/></SelectTrigger></FormControl>
-                                  <SelectContent>{accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
+                                  <SelectContent>
+                                    {filteredAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                                  </SelectContent>
                               </Select>
                           </FormItem>
                       )}/>
