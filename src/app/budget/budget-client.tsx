@@ -52,8 +52,6 @@ export function BudgetClient() {
         if (!familyId) return;
 
         const unsubAccounts = onAccountsUpdate(setAccounts);
-        // We now fetch a wider range of transactions to make month/year navigation faster
-        // without re-fetching from Firebase.
         const unsubTransactions = onTransactionsUpdate(setAllTransactions, subYears(new Date(), 1), addYears(new Date(), 1));
 
         return () => {
@@ -93,8 +91,8 @@ export function BudgetClient() {
             const currentMonth = format(currentDate, 'yyyy-MM');
             return transactionMonth === currentMonth;
         });
-
-        filteredTransactionsForMonth.forEach(t => {
+        
+        allTransactions.forEach(t => {
             const monthKey = t.date.substring(0, 7);
             if(monthSummaries[monthKey]) {
                 if (t.type === 'income') {
@@ -104,8 +102,10 @@ export function BudgetClient() {
                 }
                 monthSummaries[monthKey].transactions.push(t);
             }
-            
-            // For daily view
+        });
+
+
+        filteredTransactionsForMonth.forEach(t => {
              if (!daily[t.date]) {
                 daily[t.date] = {
                     date: format(parseISO(t.date), 'd EEE dd.MM.yyyy', {locale: tr}),
@@ -546,3 +546,5 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
+    
