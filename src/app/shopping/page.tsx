@@ -27,7 +27,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 
 
 const solidColors = [
-    { id: 'yellow-amber', name: 'Sarı', class: 'bg-[#f4d07a]' },
+    { id: 'yellow-amber', name: 'Sarı', class: 'bg-[#f4eeb4]' },
     { id: 'rose-pink', name: 'Somon', class: 'bg-[#e5a996]' },
     { id: 'emerald-teal', name: 'Yeşil', class: 'bg-[#98b883]' },
     { id: 'light-yellow', name: 'Açık Sarı', class: 'bg-[#f4eeb4]' },
@@ -126,23 +126,66 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, initialData }: {
     );
 };
 
-const ListCard = ({ list, colorClass, onClick }: { 
+const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: { 
     list: ShoppingList; 
     colorClass: string; 
     onClick: () => void;
+    onEdit: () => void;
+    onDelete: (id: string) => void;
 }) => {
-    const pendingItemsCount = (list.items || []).filter(item => !item.isBought).length;
-    const description = pendingItemsCount > 0 ? `${pendingItemsCount} ihtiyaç` : 'Liste tamamlandı';
+    const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
+    const items = list.items || [];
+    const pendingItems = items.filter(item => !item.isBought).length;
+    const hasBoughtItems = (list.boughtItems || []).length > 0;
+    
+    const description = pendingItems > 0 
+        ? `${pendingItems} ihtiyaç`
+        : (items.length > 0 || hasBoughtItems) 
+            ? 'Tüm ihtiyaçlar tamam' 
+            : 'Liste boş';
 
     return (
-        <div onClick={onClick} className={cn("flex items-center text-black p-4 cursor-pointer min-h-[80px]", colorClass)}>
-             <div className="flex-grow">
-                <p className="text-base font-semibold leading-tight truncate">{list.name}</p>
-                <p className="text-black/70 text-sm font-normal truncate">
-                    {description}
-                </p>
+        <div className="relative group" onClick={onClick}>
+            <div className={cn("flex items-center text-black p-4 cursor-pointer min-h-[80px]", colorClass)}>
+                 <div className="flex-grow">
+                    <p className="text-base font-semibold leading-tight truncate">{list.name}</p>
+                    <p className="text-black/70 text-sm font-normal truncate">
+                        {description}
+                    </p>
+                </div>
+                <ChevronRight className="h-6 w-6 text-black/50 ml-auto shrink-0"/>
             </div>
-            <ChevronRight className="h-6 w-6 text-black/50 ml-auto shrink-0"/>
+             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-black hover:text-black hover:bg-black/10" onClick={(e) => e.stopPropagation()}>
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                         <DropdownMenuItem onClick={onEdit}>
+                            <Edit className="mr-2 h-4 w-4"/> Düzenle
+                        </DropdownMenuItem>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/> Sil
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitleComponent>"{list.name}" listesini sil?</AlertDialogTitleComponent>
+                                    <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDelete(list.id)}>Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         </div>
     );
 };
@@ -270,6 +313,20 @@ export default function ShoppingPage() {
       setSelectedList(list);
   };
   
+  const handleEditList = (list: ShoppingList) => {
+      setEditingList(list);
+      setListDialogOpen(true);
+  }
+  
+  const handleDeleteList = async (id: string) => {
+      try {
+          await deleteShoppingList(id);
+          toast({ title: "Liste Silindi", variant: "destructive" });
+      } catch (error) {
+          toast({ title: "Hata", description: "Liste silinirken bir sorun oluştu.", variant: "destructive" });
+      }
+  };
+
   if (!isLoaded) {
     return (
       <div className="space-y-6">
@@ -300,39 +357,11 @@ export default function ShoppingPage() {
         return dateA - dateB;
     });
 
-    const groupedPendingItems = pendingItems.reduce((acc, item) => {
-            const category = item.category || 'Diğer';
-            if (!acc[category]) acc[category] = [];
-            acc[category].push(item);
-            return acc;
-        }, {} as Record<string, ShoppingListItemType[]>);
-        
-    const groupedBoughtItems = boughtItems.reduce((acc, item) => {
-            const category = item.category || 'Diğer';
-            if (!acc[category]) acc[category] = [];
-            acc[category].push(item);
-            return acc;
-        }, {} as Record<string, ShoppingListItemType[]>);
-        
-    const categoryOrder: { [key: string]: number } = {
-        'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
-        'Temel Gıda': 5, 'Atıştırmalık': 6, 'İçecekler': 7, 'Dondurulmuş Gıdalar': 8,
-        'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11, 'Diğer': 99
-    };
-    
-    const sortedPendingCategories = Object.entries(groupedPendingItems).sort(([catA], [catB]) => {
-        return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
-    });
-    
-    const sortedBoughtCategories = Object.entries(groupedBoughtItems).sort(([catA], [catB]) => {
-        return (categoryOrder[catB] || 99) - (categoryOrder[catA] || 99);
-    });
-
      return (
-        <div className="relative h-full flex flex-col">
-            <PageHeader title={selectedList.name}>
+        <div className="relative h-full flex flex-col bg-[#f4eeb4]">
+            <PageHeader title={selectedList.name} className="bg-[#f2994a] rounded-none shadow-none">
                 <div className="w-full flex items-center justify-between gap-4">
-                     <Button variant="ghost" className="text-white hover:text-white hover:bg-white/20" onClick={() => setSelectedList(null)}>
+                     <Button variant="ghost" className="text-white hover:text-white hover:bg-black/20" onClick={() => setSelectedList(null)}>
                         <ArrowLeft className="h-5 w-5 mr-2" /> Geri
                      </Button>
                 </div>
@@ -340,7 +369,7 @@ export default function ShoppingPage() {
                     <Input 
                         value={newItemName} 
                         onChange={(e) => setNewItemName(e.target.value)} 
-                        placeholder="Yeni öğe ekle (örn: 2 kilo domates, 1 paket süt)"
+                        placeholder="Yeni öğe ekle (örn: 2 kilo domates)"
                         className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus-visible:ring-offset-0 focus-visible:ring-white"
                         disabled={isAiProcessing}
                     />
@@ -363,72 +392,47 @@ export default function ShoppingPage() {
             
              <div className={cn("flex-grow flex flex-col min-h-0")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
-                    <TabsList className="flex w-full h-auto flex-shrink-0 bg-background p-0 rounded-none">
-                        <TabsTrigger value="pending" className="flex-1 text-base rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
-                        <Separator orientation="vertical" className="h-6 self-center" />
-                        <TabsTrigger value="bought" className="flex-1 text-base rounded-none data-[state=active]:border-b-primary data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınanlar ({boughtItems.length})</TabsTrigger>
+                    <TabsList className="flex w-full h-auto flex-shrink-0 bg-[#f4eeb4] p-0 rounded-none">
+                        <TabsTrigger value="pending" className="flex-1 text-base rounded-none data-[state=active]:border-b-black data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({pendingItems.length})</TabsTrigger>
+                        <Separator orientation="vertical" className="h-6 self-center bg-black/20" />
+                        <TabsTrigger value="bought" className="flex-1 text-base rounded-none data-[state=active]:border-b-black data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="pending" className="flex-grow bg-sky-50 dark:bg-sky-900/20">
-                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
-                            {sortedPendingCategories.map(([category, items]) => (
-                                <div key={category} className="px-4">
-                                    {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                    <div className="divide-y divide-sky-200 dark:divide-sky-800">
-                                      {items.map((item, index) => (
-                                          <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                              <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md" />
-                                              <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
-                                              <div className={cn("flex-shrink-0 flex items-center gap-1 transition-opacity", (item.isBought || 'group-hover:opacity-100') ? 'opacity-100' : 'opacity-0')}>
-                                                  {item.isBought && (
-                                                      <>
-                                                      <Separator orientation="vertical" className="h-6 mx-1" />
-                                                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
-                                                        <Archive className="h-4 w-4" />
-                                                      </Button>
-                                                      <Separator orientation="vertical" className="h-6 mx-1" />
-                                                      </>
-                                                  )}
-                                                  <AlertDialog>
-                                                      <AlertDialogTrigger asChild>
-                                                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                      </AlertDialogTrigger>
-                                                      <AlertDialogContent>
-                                                          <AlertDialogHeader><AlertDialogTitleComponent>Alınacaklardan Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ürünü kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                          <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                                      </AlertDialogContent>
-                                                  </AlertDialog>
-                                              </div>
-                                          </div>
-                                      ))}
-                                    </div>
+                    <TabsContent value="pending" className="flex-grow bg-[#f4eeb4] p-4">
+                         <div className="space-y-0">
+                            {pendingItems.map((item, index) => (
+                                <div key={item.id} className="flex items-center gap-4 py-4 border-b border-black/10 group">
+                                    <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => toggleShoppingListItemStatusInList(selectedList!.id, item.id)} className="size-6 rounded-md border-black/30 data-[state=checked]:bg-green-500 data-[state=checked]:text-white" />
+                                    <label htmlFor={item.id} className={cn("font-medium flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40 hover:text-destructive opacity-0 group-hover:opacity-100"><Trash2 className="h-4 w-4" /></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitleComponent>Alınacaklardan Sil</AlertDialogTitleComponent><AlertDialogDescription>Bu ürünü kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             ))}
                         </div>
                     </TabsContent>
-                    <TabsContent value="bought" className="flex-grow bg-sky-50 dark:bg-sky-900/20">
+                    <TabsContent value="bought" className="flex-grow bg-[#f4eeb4] p-4">
                         {boughtItems.length === 0 ? (
-                        <div className="text-center py-16 text-muted-foreground">
+                        <div className="text-center py-16 text-black/50">
                                 <p>Henüz alınan bir ürün yok.</p>
                             </div>
                         ) : (
                         <div>
-                             <div className="divide-y divide-sky-200 dark:divide-sky-800">
-                                {sortedBoughtCategories.map(([category, items]) => (
-                                    <div key={category} className="px-4">
-                                        {category !== 'Diğer' && <h3 className="font-semibold text-base py-3">{category}</h3>}
-                                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
-                                            {items.map((item) => (
-                                                <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
-                                                        <Repeat className="h-4 w-4"/>
-                                                    </Button>
-                                                    <p className="font-semibold flex-grow line-through text-muted-foreground">{item.name}</p>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, true)} title="Kalıcı olarak sil">
-                                                        <Trash2 className="h-4 w-4"/>
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                        </div>
+                           <div className="space-y-0">
+                                {boughtItems.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-4 py-4 border-b border-black/10 group">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
+                                            <Repeat className="h-4 w-4"/>
+                                        </Button>
+                                        <p className="font-medium flex-grow line-through text-black/50">{item.name}</p>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-black/40 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, true)} title="Kalıcı olarak sil">
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
                                     </div>
                                 ))}
                             </div>
@@ -474,3 +478,5 @@ export default function ShoppingPage() {
     </div>
   );
 }
+
+    
