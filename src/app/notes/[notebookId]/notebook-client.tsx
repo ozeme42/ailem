@@ -416,8 +416,8 @@ export default function NotebookClient() {
                                 }
                                 const colorClass = folderColors[folderIndex % folderColors.length];
                                 return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-none sm:rounded-xl">
-                                         <div className={cn("flex items-center text-white p-0 w-full rounded-none sm:rounded-t-xl", `bg-gradient-to-br ${colorClass}`)}>
+                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden sm:rounded-xl">
+                                         <div className={cn("flex items-center text-white w-full", `bg-gradient-to-br ${colorClass}`)}>
                                             <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                                 <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
                                                     <Folder className="h-6 w-6"/>
@@ -454,7 +454,7 @@ export default function NotebookClient() {
                                                 )}
                                              </div>
                                         </div>
-                                        <AccordionContent className="p-4 bg-background rounded-b-none sm:rounded-b-xl border-x border-b">
+                                        <AccordionContent className="p-4 bg-background rounded-b-xl border-x border-b">
                                             {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                             {folderNotes?.map(note => (
@@ -678,3 +678,5 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
   );
 }
 
+
+    
