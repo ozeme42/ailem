@@ -146,7 +146,7 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
 
     return (
         <div className="relative group" onClick={onClick}>
-            <div className={cn("flex items-center text-black p-4 cursor-pointer min-h-[80px]", colorClass)}>
+            <div className={cn("flex items-center text-black p-4 cursor-pointer min-h-[96px]", colorClass)}>
                  <div className="flex-grow">
                     <p className="text-base font-semibold leading-tight truncate">{list.name}</p>
                     <p className="text-black/70 text-sm font-normal truncate">
