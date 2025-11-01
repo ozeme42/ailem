@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Edit, Repeat, Trash2, X, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Edit, Repeat, Trash2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -130,7 +130,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
            <div className="flex-grow min-h-0">
                <ScrollArea className="h-full">
                  <div className="p-4 space-y-4">
-                     {Object.keys(errors).length > 0 && !errors.category && (
+                     {Object.keys(errors).length > 0 && (
                          <Alert variant="destructive">
                             <AlertTriangle className="h-4 w-4" />
                             <AlertTitle>Eksik Bilgi</AlertTitle>
@@ -195,7 +195,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         </Form>
         
         <Dialog open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-            <DialogContent className="sm:max-w-md h-full flex flex-col bg-background text-foreground border-0">
+            <DialogContent className="sm:max-w-md flex flex-col bg-background text-foreground border-0 max-h-[90vh]">
                 <DialogHeader>
                     <div className="flex justify-between items-center">
                         <DialogTitle>Kategori</DialogTitle>
@@ -204,7 +204,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                         </Button>
                     </div>
                 </DialogHeader>
-                <ScrollArea className="flex-grow">
+                <ScrollArea>
                     <div className="grid grid-cols-4 gap-2 py-4">
                       {categories.filter(c => c.type === form.watch('type')).map(cat => (
                           <Button key={cat.id} variant="secondary" className="flex-col h-20 bg-muted hover:bg-muted/80" onClick={() => handleCategorySelect(cat.name)}>
