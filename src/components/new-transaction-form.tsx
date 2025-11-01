@@ -145,7 +145,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
            
            <div className="flex-grow min-h-0">
                <ScrollArea className="h-full">
-                 <div className="p-4 space-y-4">
+                 <div className="p-4 space-y-2">
                      {Object.keys(errors).length > 0 && (
                          <Alert variant="destructive">
                             <AlertTriangle className="h-4 w-4" />
@@ -155,10 +155,10 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                      )}
                       <FormField control={form.control} name="date" render={({ field }) => (
                           <FormItem className="flex items-center">
-                              <FormLabel className="w-20 text-muted-foreground">Tarih</FormLabel>
+                              <FormLabel className="w-20 text-xs text-muted-foreground">Tarih</FormLabel>
                               <Popover>
                                   <PopoverTrigger asChild>
-                                      <Button variant={"ghost"} className="flex-grow justify-start font-normal">
+                                      <Button variant={"ghost"} className="flex-grow justify-start font-normal text-sm">
                                           {field.value ? format(field.value, "dd.MM.yyyy (EEE) HH:mm", { locale: tr }) : <span>Tarih seçin</span>}
                                       </Button>
                                   </PopoverTrigger>
@@ -168,30 +168,30 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                       )}/>
                       <Separator/>
                       <FormField control={form.control} name="amount" render={({ field }) => (
-                          <FormItem className="flex items-center"><FormLabel className="w-20 text-muted-foreground">Tutar</FormLabel>
-                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-3xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
+                          <FormItem className="flex items-center"><FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
+                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-2xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
                           </FormItem>
                       )}/>
                       <Separator/>
                       <FormItem className="flex items-center">
-                          <FormLabel className="w-20 text-muted-foreground">Kategori</FormLabel>
+                          <FormLabel className="w-20 text-xs text-muted-foreground">Kategori</FormLabel>
                           <div className="flex-grow">
-                            <Button type="button" variant="ghost" className="w-full justify-start text-left" onClick={() => setShowCategorySelector(true)}>
+                            <Button type="button" variant="ghost" className="w-full justify-start text-left text-sm" onClick={() => setShowCategorySelector(true)}>
                                 {selectedCategory ? (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xl">{selectedCategory.icon}</span>
+                                        <span className="text-base">{selectedCategory.icon}</span>
                                         <span>{selectedCategory.name}</span>
                                     </div>
                                 ) : (
                                     <span className="text-muted-foreground">Kategori seçin</span>
                                 )}
                             </Button>
-                            {errors.category && <p className="pl-4 text-sm font-medium text-destructive">{errors.category.message}</p>}
+                            {errors.category && <p className="pl-4 text-xs font-medium text-destructive">{errors.category.message}</p>}
                            </div>
                       </FormItem>
                        <Separator/>
                        <FormItem>
-                           <FormLabel className="w-20 text-muted-foreground">Hesap</FormLabel>
+                           <FormLabel className="w-20 text-xs text-muted-foreground">Hesap</FormLabel>
                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2">
                                {filteredAccounts.map(acc => {
                                    const Icon = accountIcons[acc.type] || Banknote;
@@ -201,16 +201,16 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                        type="button"
                                        key={acc.id} 
                                        variant={isSelected ? "default" : "outline"}
-                                       className="h-auto flex flex-col items-center justify-center p-3 gap-1"
+                                       className="h-auto flex flex-col items-center justify-center p-2 gap-1"
                                        onClick={() => form.setValue('accountId', acc.id)}
                                      >
-                                        <Icon className="h-5 w-5"/>
+                                        <Icon className="h-4 w-4"/>
                                         <span className="text-xs font-semibold truncate">{acc.name}</span>
                                      </Button>
                                    )
                                })}
                            </div>
-                           {errors.accountId && <p className="pt-2 text-sm font-medium text-destructive">{errors.accountId.message}</p>}
+                           {errors.accountId && <p className="pt-2 text-xs font-medium text-destructive">{errors.accountId.message}</p>}
                        </FormItem>
                  </div>
               </ScrollArea>
@@ -260,6 +260,5 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
-    
 
     
