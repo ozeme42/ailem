@@ -359,11 +359,11 @@ export default function NotebookClient() {
                         {sections.map(section => {
                             const isActive = activeTab === section.id;
                             return (
-                                <Reorder.Item key={section.id} value={section} as="div" className="group relative pr-2" style={{cursor: 'grab'}}>
+                                <Reorder.Item key={section.id} value={section} as="div" className="group relative" style={{cursor: 'grab'}}>
                                     <TabsTrigger
                                         value={section.id}
                                         className={cn(
-                                            "pr-8 text-white bg-gradient-to-br transition-all text-xs px-2 py-1.5 sm:text-sm sm:px-3 sm:py-1.5",
+                                            "pr-8 text-white bg-gradient-to-br transition-all text-sm px-4 py-2 sm:text-base sm:px-6 sm:py-2.5",
                                             section.color,
                                             isActive 
                                                 ? "ring-2 ring-offset-2 ring-ring opacity-100" 
@@ -374,7 +374,7 @@ export default function NotebookClient() {
                                     </TabsTrigger>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 text-white hover:text-white hover:bg-white/20">
+                                            <Button variant="ghost" size="icon" className="absolute top-1/2 right-0 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 text-white hover:text-white hover:bg-white/20">
                                             <MoreVertical className="h-4 w-4"/>
                                             </Button>
                                         </DropdownMenuTrigger>
@@ -677,3 +677,4 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
     </Dialog>
   );
 }
+
