@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2 } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -271,6 +271,35 @@ export default function Home() {
         const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
         return { income, expense };
     }, [transactions]);
+    
+    const readingStats = React.useMemo(() => {
+        return familyMembers.map(member => {
+            const memberLib = userLibraries.find(lib => lib.memberId === member.id);
+            if (!memberLib) {
+                return { memberId: member.id, name: member.name, color: member.color, finishedBooks: 0, pagesRead: 0 };
+            }
+            
+            let pagesRead = 0;
+            const finishedBooks = memberLib.books.filter(b => {
+                if (b.status === 'finished') {
+                    const bookDetail = books.find(bd => bd.id === b.bookId);
+                    if (bookDetail?.pageCount) {
+                        pagesRead += bookDetail.pageCount;
+                    }
+                    return true;
+                }
+                return false;
+            });
+            
+            return {
+                memberId: member.id,
+                name: member.name,
+                color: member.color,
+                finishedBooks: finishedBooks.length,
+                pagesRead: pagesRead
+            };
+        }).sort((a,b) => b.finishedBooks - a.finishedBooks);
+    }, [familyMembers, userLibraries, books]);
 
   if (loading) {
     return (
@@ -421,6 +450,39 @@ export default function Home() {
                      <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
                 </div>
             </Link>
+            
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <BookOpen className="text-amber-600" /> Kitap Okuma İstatistikleri
+                    </CardTitle>
+                    <CardDescription>Ailenin okuma alışkanlıklarına genel bakış.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {readingStats.map((stat) => (
+                        <div key={stat.memberId} className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: stat.color }}>
+                                {stat.name.charAt(0)}
+                            </div>
+                            <div className="flex-grow">
+                                <p className="font-semibold">{stat.name}</p>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                    <span>{stat.finishedBooks} kitap</span>
+                                    <span>{stat.pagesRead.toLocaleString('tr-TR')} sayfa</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </CardContent>
+                 <CardFooter>
+                    <Link href="/library/stats" className="w-full">
+                        <Button variant="outline" className="w-full">
+                            Tüm İstatistikler <ArrowRight className="h-4 w-4 ml-2"/>
+                        </Button>
+                    </Link>
+                </CardFooter>
+            </Card>
+
             <Link href="/library/archive" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
                 <Card className="bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg h-full">
                     <CardHeader>
