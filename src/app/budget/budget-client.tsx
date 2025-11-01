@@ -52,7 +52,8 @@ export function BudgetClient() {
         if (!familyId) return;
 
         const unsubAccounts = onAccountsUpdate(setAccounts);
-        const unsubTransactions = onTransactionsUpdate(setAllTransactions, subYears(new Date(), 1), addYears(new Date(), 1));
+        // Listen for a wider range of transactions to support yearly views without re-fetching
+        const unsubTransactions = onTransactionsUpdate(setAllTransactions, subYears(new Date(), 5), addYears(new Date(), 5));
 
         return () => {
             unsubAccounts();
@@ -93,15 +94,18 @@ export function BudgetClient() {
         });
         
         allTransactions.forEach(t => {
-            const monthKey = t.date.substring(0, 7);
-            if(monthSummaries[monthKey]) {
-                if (t.type === 'income') {
-                    monthSummaries[monthKey].income += t.amount;
-                } else {
-                    monthSummaries[monthKey].expense += t.amount;
+            const transactionYear = getYear(parseISO(t.date));
+             if (transactionYear === getYear(currentDate)) {
+                const monthKey = t.date.substring(0, 7);
+                if(monthSummaries[monthKey]) {
+                    if (t.type === 'income') {
+                        monthSummaries[monthKey].income += t.amount;
+                    } else {
+                        monthSummaries[monthKey].expense += t.amount;
+                    }
+                    monthSummaries[monthKey].transactions.push(t);
                 }
-                monthSummaries[monthKey].transactions.push(t);
-            }
+             }
         });
 
 
@@ -156,9 +160,8 @@ export function BudgetClient() {
         const monthStats = monthSummaries[currentMonthKey] || { income: 0, expense: 0, total: 0 };
         
         // Yearly stats
-        const currentYearTransactions = allTransactions.filter(t => getYear(parseISO(t.date)) === getYear(currentDate));
-        const yearlyIncome = currentYearTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-        const yearlyExpense = currentYearTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+        const yearlyIncome = Object.values(monthSummaries).reduce((s, m) => s + m.income, 0);
+        const yearlyExpense = Object.values(monthSummaries).reduce((s, m) => s + m.expense, 0);
 
 
         return { 
@@ -172,6 +175,10 @@ export function BudgetClient() {
             dailyGroups: finalDailyGroups,
         };
     }, [allTransactions, currentDate, accounts]);
+
+    const headerIncome = mainTab === 'day' ? monthlyIncome : yearlyIncome;
+    const headerExpense = mainTab === 'day' ? monthlyExpense : yearlyExpense;
+    const headerTotal = headerIncome - headerExpense;
 
 
     const handleAccountSubmit = async (data: Omit<Account, 'id' | 'familyId' | 'balance'>) => {
@@ -279,15 +286,15 @@ export function BudgetClient() {
                 <div className="grid grid-cols-3 text-center">
                     <div>
                         <p className="text-xs text-muted-foreground">Gelir</p>
-                        <p className="font-semibold text-sm text-primary">{yearlyIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm text-primary">{headerIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Gider</p>
-                        <p className="font-semibold text-sm text-destructive">{yearlyExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm text-destructive">{headerExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Toplam</p>
-                        <p className="font-semibold text-sm">{(yearlyIncome - yearlyExpense).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="font-semibold text-sm">{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                     </div>
                 </div>
             </header>
