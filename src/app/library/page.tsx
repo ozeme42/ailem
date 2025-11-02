@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -122,7 +121,6 @@ export default function LibraryPage() {
      }
      await addReadingSession(newSession);
 
-     // Update book progress
     if (book.pageCount) {
         const currentProgressPages = ((book as any).progress || 0) / 100 * book.pageCount;
         const newTotalPagesRead = currentProgressPages + session.pagesRead;
@@ -287,7 +285,9 @@ export default function LibraryPage() {
 
         <Card className="mb-8 shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
           <CardHeader>
-              <CardTitle>Okuma İstatistikleri</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <BarChart /> Okuma İstatistikleri
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
@@ -350,9 +350,13 @@ export default function LibraryPage() {
 
         {finishedBooks.length > 0 && (
             <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Bitirdiklerim</h2>
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2"><BookCheck/> Bitirdiklerim</h2>
+                <div className="relative">
+                    <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-4 -mb-4">
+                        <div className="flex flex-nowrap gap-4">
+                            {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                        </div>
+                    </div>
                 </div>
             </div>
         )}
@@ -390,17 +394,21 @@ export default function LibraryPage() {
 }
 
 function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void }) {
-    const [currentPageInput, setCurrentPageInput] = React.useState<string>("");
     const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
 
-    React.useEffect(() => {
-        if (!isProgressDialogOpen) {
-            setCurrentPageInput("");
+    const progressForm = useForm<{ currentPage: number }>({
+        defaultValues: {
+            currentPage: book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0,
         }
-    }, [isProgressDialogOpen]);
+    });
     
-    const handleProgressSave = () => {
-        const targetPage = parseInt(currentPageInput, 10);
+    React.useEffect(() => {
+        progressForm.setValue('currentPage', book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0);
+    }, [book.progress, book.pageCount, progressForm]);
+
+
+    const handleProgressSave = (data: { currentPage: number }) => {
+        const targetPage = data.currentPage;
         if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
         
         const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
@@ -446,14 +454,24 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
                                         <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
                                         <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
                                     </DialogHeader>
-                                    <div className="py-4">
-                                        <Label htmlFor="pagesRead">Geldiğin Sayfa Numarası</Label>
-                                        <Input id="pagesRead" type="number" placeholder={pagesRead.toString()} value={currentPageInput} onChange={(e) => setCurrentPageInput(e.target.value)} />
-                                    </div>
-                                    <DialogFooter>
-                                        <Button variant="ghost" onClick={() => setIsProgressDialogOpen(false)}>İptal</Button>
-                                        <Button onClick={handleProgressSave}>Kaydet</Button>
-                                    </DialogFooter>
+                                     <Form {...progressForm}>
+                                        <form onSubmit={progressForm.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
+                                            <FormField
+                                                control={progressForm.control}
+                                                name="currentPage"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Geldiğin Sayfa Numarası</FormLabel>
+                                                        <FormControl><Input type="number" {...field} /></FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <DialogFooter>
+                                                <Button variant="ghost" type="button" onClick={() => setIsProgressDialogOpen(false)}>İptal</Button>
+                                                <Button type="submit">Kaydet</Button>
+                                            </DialogFooter>
+                                        </form>
+                                     </Form>
                                 </DialogContent>
                             </Dialog>
                              <Link href={`/library/session/${book.id}`}>
@@ -486,20 +504,20 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
 
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
-        <Card className="overflow-hidden group relative flex flex-col justify-between text-center bg-gradient-to-br from-amber-400 to-yellow-400 text-amber-900 shadow-md">
-             <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3]" data-ai-hint="book cover"/>
-            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="font-semibold text-xs text-white leading-tight text-center">{book.title}</p>
+        <div className="group relative w-32 shrink-0">
+             <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover:scale-105" data-ai-hint="book cover"/>
+            <div className="absolute inset-0 bg-black/60 rounded-lg flex flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3">{book.title}</p>
                 <div className="flex gap-2 mt-3">
-                     <Button variant="secondary" size="sm" className="h-8 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                         <RotateCcw className="mr-1 h-3 w-3"/> Tekrar Oku
+                     <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                         <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
                     </Button>
-                     <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => onRemove(book.id)}>
-                        <Trash2 className="h-4 w-4"/>
+                     <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
+                        <Trash2 className="h-3 w-3"/>
                     </Button>
                 </div>
             </div>
-        </Card>
+        </div>
     )
 }
 
@@ -533,5 +551,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
 
     
