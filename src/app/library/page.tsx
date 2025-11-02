@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -393,12 +392,18 @@ export default function LibraryPage() {
   );
 }
 
+const progressFormSchema = z.object({
+  currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
+});
+
+
 function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void }) {
     const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
 
-    const progressForm = useForm<{ currentPage: number }>({
+    const progressForm = useForm<z.infer<typeof progressFormSchema>>({
+        resolver: zodResolver(progressFormSchema),
         defaultValues: {
-            currentPage: book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0,
+            currentPage: 0,
         }
     });
     
@@ -407,7 +412,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
     }, [book.progress, book.pageCount, progressForm]);
 
 
-    const handleProgressSave = (data: { currentPage: number }) => {
+    const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
         const targetPage = data.currentPage;
         if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
 
@@ -421,9 +426,10 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                 pagesRead: newPagesReadThisSession,
             };
             onSaveSession(book, sessionData);
-        } else {
+        } else if (newPagesReadThisSession < 0) {
+             // If user enters a lower page count, just update the progress
              const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
-             onUpdateStatus(book.id, newProgressPercent >= 100 ? 'finished' : 'reading', newProgressPercent);
+             onUpdateStatus(book.id, 'reading', newProgressPercent);
         }
         
         setIsProgressDialogOpen(false);
@@ -477,6 +483,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                                                     <FormItem>
                                                         <FormLabel>Geldiğin Sayfa Numarası</FormLabel>
                                                         <FormControl><Input type="number" {...field} /></FormControl>
+                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
@@ -565,4 +572,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
