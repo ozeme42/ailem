@@ -292,35 +292,15 @@ export default function LibraryPage() {
                     <BarChart2 /> Haftalık Okunan Sayfa Sayısı
                 </CardTitle>
             </CardHeader>
-             <CardContent className="overflow-x-auto -mx-6 px-2 sm:px-6">
-                <div className="min-w-[300px] h-52">
-                    <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
-                        <defs>
-                            <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.1} />
-                            </linearGradient>
-                        </defs>
-                        <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} stroke="hsl(var(--primary-foreground))" className="text-xs" />
-                        <Tooltip
-                          cursor={{ fill: 'hsla(0, 0%, 100%, 0.1)' }}
-                          content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                  return (
-                                      <div className="p-3 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
-                                          <p className="font-bold text-center text-base mb-1">{label}</p>
-                                          <p className="text-center">{`${payload[0].value} sayfa`}</p>
-                                      </div>
-                                  );
-                              }
-                              return null;
-                          }}
-                        />
-                        <Area type="monotone" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" strokeWidth={2} fill="url(#fillColor)" activeDot={{ r: 6, className: 'stroke-white fill-orange-400' }} />
-                    </AreaChart>
-                    </ResponsiveContainer>
-                </div>
+             <CardContent className="flex justify-around items-center text-center p-4">
+                {readingStats.weeklyChartData.map(data => (
+                    <div key={data.day} className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-white/20">
+                            <p className="font-bold text-lg">{data["Okunan Sayfa Sayısı"]}</p>
+                        </div>
+                        <p className="text-xs font-semibold text-white/90">{data.day}</p>
+                    </div>
+                ))}
             </CardContent>
         </Card>
         
@@ -562,6 +542,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
 
 
 
