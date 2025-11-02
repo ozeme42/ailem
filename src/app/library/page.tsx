@@ -13,13 +13,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import { FormLabel } from '@/components/ui/form';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, subSeconds } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -30,7 +30,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
@@ -410,7 +410,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
         
         if (newPagesReadThisSession > 0) {
              const sessionData = {
-                startTime: subSeconds(new Date(), 1),
+                startTime: subDays(new Date(),1),
                 endTime: new Date(),
                 pagesRead: newPagesReadThisSession,
             };
@@ -562,6 +562,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
-    
+
 
 
