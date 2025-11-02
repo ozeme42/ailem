@@ -22,7 +22,7 @@ import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Bar } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
@@ -169,33 +169,20 @@ export default function LibraryPage() {
 
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-
-    // 1. Initialize daily pages for the week
-    const dailyPages: { [dayKey: string]: number } = {};
-    for (let i = 0; i < 7; i++) {
+    
+    const weeklyChartData = Array.from({ length: 7 }).map((_, i) => {
         const day = addDays(weekStart, i);
         const dayKey = format(day, 'EEE', { locale: tr });
-        dailyPages[dayKey] = 0;
-    }
-    
-    // 2. Add pages from reading sessions
-    memberSessions.forEach(session => {
-        const sessionDate = parseISO(session.startTime);
-        if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
-            const dayKey = format(sessionDate, 'EEE', { locale: tr });
-            dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
-        }
+        
+        const pagesReadOnDay = memberSessions
+            .filter(session => isSameDay(parseISO(session.startTime), day))
+            .reduce((sum, session) => sum + session.pagesRead, 0);
+            
+        return {
+            day: dayKey,
+            "Okunan Sayfa Sayısı": pagesReadOnDay,
+        };
     });
-    
-    // 3. This part is complex because we don't have a history of progress updates.
-    // The previous logic was flawed. A more robust solution would require storing progress updates with timestamps.
-    // For now, we will rely on the ReadingSession data, which is the most accurate source for daily pages read.
-    
-    const weeklyChartData = Object.entries(dailyPages).map(([day, pages]) => ({
-        day,
-        "Okunan Sayfa Sayısı": pages,
-    }));
     
     return {
         weeklyChartData
@@ -299,7 +286,7 @@ export default function LibraryPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto -mx-6 px-2 sm:px-6">
                     <div className="min-w-[300px] h-52">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
@@ -553,3 +540,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+
+    
