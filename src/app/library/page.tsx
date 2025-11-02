@@ -166,7 +166,6 @@ export default function LibraryPage() {
   
   const readingStats = React.useMemo(() => {
     const today = new Date();
-    const startOfWeek = subDays(today, today.getDay() - 1); // Assuming Monday is the start of the week
     const dailyData: { [day: string]: { duration: number, pages: number }} = {};
     for (let i = 6; i >= 0; i--) {
         const day = subDays(today, i);
@@ -193,7 +192,7 @@ export default function LibraryPage() {
     
     const weeklyChartData = Object.entries(dailyData).map(([day, data]) => ({
         day,
-        "Okuma Süresi (dk)": Math.round(data.duration / 60)
+        "Okunan Sayfa Sayısı": data.pages
     }));
     
     return {
@@ -211,7 +210,6 @@ export default function LibraryPage() {
 
     const monthlySessions = memberSessions.filter(s => parseISO(s.startTime) >= startOfMonth);
     const pagesRead = monthlySessions.reduce((sum, s) => sum + s.pagesRead, 0);
-
     const finishedBookIds = new Set(
         userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
             .filter(b => b.status === 'finished' && b.finishedAt && isToday(parseISO(b.finishedAt)))
@@ -309,7 +307,7 @@ export default function LibraryPage() {
                   </div>
               </div>
               <div>
-                  <h3 className="font-semibold mb-2">Haftalık Okuma Süresi</h3>
+                  <h3 className="font-semibold mb-2">Haftalık Okunan Sayfa Sayısı</h3>
                     <ResponsiveContainer width="100%" height={200}>
                         <RechartsBarChart data={readingStats.weeklyChartData}>
                             <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
@@ -319,7 +317,7 @@ export default function LibraryPage() {
                                 labelStyle={{ color: 'hsl(var(--foreground))' }}
                                 itemStyle={{ color: 'hsl(var(--foreground))' }}
                             />
-                            <RechartsBar dataKey="Okuma Süresi (dk)" radius={[4, 4, 0, 0]}>
+                            <RechartsBar dataKey="Okunan Sayfa Sayısı" radius={[4, 4, 0, 0]}>
                                 {readingStats.weeklyChartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill="hsla(var(--primary-foreground), 0.6)" />
                                 ))}
