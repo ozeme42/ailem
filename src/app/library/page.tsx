@@ -12,25 +12,25 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2 as BarChartIcon, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
@@ -168,37 +168,31 @@ export default function LibraryPage() {
   
   const readingStats = React.useMemo(() => {
     const today = new Date();
-    const dailyData: { [day: string]: { duration: number, pages: number }} = {};
-    for (let i = 6; i >= 0; i--) {
-        const day = subDays(today, i);
-        dailyData[format(day, 'EEE', { locale: tr })] = { duration: 0, pages: 0 };
+    const weeklyData: { [day: string]: { date: Date, pages: number }} = {};
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+
+    for (let i = 0; i < 7; i++) {
+        const day = addDays(weekStart, i);
+        weeklyData[format(day, 'EEE', { locale: tr })] = { date: day, pages: 0 };
     }
 
-    let totalDuration = 0;
-    let totalPages = 0;
     memberSessions.forEach(session => {
-        totalDuration += session.durationSeconds;
-        totalPages += session.pagesRead;
-
         const sessionDate = parseISO(session.startTime);
-        if (sessionDate >= subDays(today, 7)) {
+        if (sessionDate >= weekStart && sessionDate < addDays(weekStart, 7)) {
              const dayKey = format(sessionDate, 'EEE', { locale: tr });
-             if (dailyData[dayKey]) {
-                dailyData[dayKey].duration += session.durationSeconds;
-                dailyData[dayKey].pages += session.pagesRead;
+             if (weeklyData[dayKey]) {
+                weeklyData[dayKey].pages += session.pagesRead;
              }
         }
     });
-    
-    const avgReadingSpeed = totalPages > 0 ? totalDuration / totalPages / 60 : 0; // minutes per page
-    
-    const weeklyChartData = Object.entries(dailyData).map(([day, data]) => ({
-        day,
+        
+    const weeklyChartData = Object.values(weeklyData).map(data => ({
+        day: format(data.date, 'EEE', { locale: tr }),
+        date: data.date,
         "Okunan Sayfa Sayısı": data.pages
     }));
     
     return {
-        avgReadingSpeed: avgReadingSpeed.toFixed(1),
         weeklyChartData
     }
 
@@ -297,7 +291,7 @@ export default function LibraryPage() {
         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                    <BarChartIcon /> Haftalık Okunan Sayfa Sayısı
+                    <BarChart2 /> Haftalık Okunan Sayfa Sayısı
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -608,3 +602,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+```
