@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -18,12 +19,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
@@ -32,7 +33,6 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
-import { isToday } from "date-fns";
 
 
 function formatDuration(seconds: number) {
@@ -214,7 +214,11 @@ export default function LibraryPage() {
     
     const finishedBookIds = new Set(
         userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
-            .filter(b => b.status === 'finished' && b.finishedAt && isToday(parseISO(b.finishedAt)))
+            .filter(b => {
+                if (b.status !== 'finished' || !b.finishedAt) return false;
+                const finishedDate = parseISO(b.finishedAt);
+                return finishedDate >= startOfMonth;
+            })
             .map(b => b.bookId)
     );
     const booksRead = finishedBookIds.size;
@@ -286,50 +290,30 @@ export default function LibraryPage() {
         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                <BarChart /> Okuma İstatistikleri
+                <BarChart /> Haftalık Okunan Sayfa Sayısı
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><CheckSquare className="text-green-300"/> Okunan</CardTitle>
-                      <p className="text-2xl font-bold mt-2">{stats.finished}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><BookOpen className="text-blue-300"/> Okunacak</CardTitle>
-                      <p className="text-2xl font-bold mt-2">{stats.reading + toReadBooks.length}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><Clock className="text-purple-300"/> Hız</CardTitle>
-                      <p className="text-2xl font-bold mt-2">{readingStats.avgReadingSpeed} <span className="text-base text-white/80">dk/sf</span></p>
-                  </div>
-                   <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><BookIcon className="text-amber-300"/> Toplam</CardTitle>
-                      <p className="text-2xl font-bold mt-2">{stats.total}</p>
-                  </div>
-              </div>
-              <div>
-                  <h3 className="font-semibold mb-2">Haftalık Okunan Sayfa Sayısı</h3>
-                    <div className="overflow-x-auto">
-                        <ResponsiveContainer width="100%" height={200} minWidth={300}>
-                            <RechartsBarChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip 
-                                    contentStyle={{ backgroundColor: 'hsla(var(--background), 0.8)', border: '1px solid hsl(var(--border))' }}
-                                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                                    itemStyle={{ color: 'hsl(var(--foreground))' }}
-                                />
-                                <RechartsBar dataKey="Okunan Sayfa Sayısı" radius={[4, 4, 0, 0]}>
-                                    {readingStats.weeklyChartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill="hsla(var(--primary-foreground), 0.6)" />
-                                    ))}
-                                </RechartsBar>
-                            </RechartsBarChart>
-                        </ResponsiveContainer>
-                    </div>
-              </div>
+          <CardContent>
+            <div className="overflow-x-auto">
+                <ResponsiveContainer width="100%" height={200} minWidth={300}>
+                    <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20, top: 10 }}>
+                        <defs>
+                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="hsla(var(--primary-foreground), 0.8)" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="hsla(var(--primary-foreground), 0.1)" stopOpacity={0.1}/>
+                            </linearGradient>
+                        </defs>
+                        <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                            cursor={{ fill: 'hsla(var(--primary-foreground), 0.1)' }}
+                            contentStyle={{ backgroundColor: 'hsla(var(--background), 0.8)', border: '1px solid hsl(var(--border))' }}
+                            labelStyle={{ color: 'hsl(var(--foreground))' }}
+                            itemStyle={{ color: 'hsl(var(--foreground))' }}
+                        />
+                        <Area type="monotone" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" fillOpacity={1} fill="url(#chartGradient)" />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
         
@@ -533,7 +517,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                 <p className="text-xs text-white/70 truncate">{book.author}</p>
             </div>
             <CardFooter className="p-2">
-                <Button variant="secondary" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                <Button variant="secondary" size="sm" className="w-full">
                     <BookUp className="mr-2 h-4 w-4"/> Başla
                 </Button>
             </CardFooter>
