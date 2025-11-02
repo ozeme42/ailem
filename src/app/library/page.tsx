@@ -11,14 +11,14 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock, isToday } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isToday as isTodayDateFns } from 'date-fns';
+import { format, parseISO, subDays, isToday, isFuture } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -168,8 +168,6 @@ export default function LibraryPage() {
   const readingStats = React.useMemo(() => {
     const today = new Date();
     const startOfWeek = subDays(today, today.getDay() - 1); // Assuming Monday is the start of the week
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
     const dailyData: { [day: string]: { duration: number, pages: number }} = {};
     for (let i = 6; i >= 0; i--) {
         const day = subDays(today, i);
@@ -217,7 +215,7 @@ export default function LibraryPage() {
 
     const finishedBookIds = new Set(
         userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
-            .filter(b => b.status === 'finished' && b.finishedAt && isTodayDateFns(parseISO(b.finishedAt)))
+            .filter(b => b.status === 'finished' && b.finishedAt && isToday(parseISO(b.finishedAt)))
             .map(b => b.bookId)
     );
     const booksRead = finishedBookIds.size;
@@ -409,7 +407,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
 
     return (
-        <Card className="overflow-hidden shadow-lg border-border/50">
+        <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
             <div className="p-4 flex flex-col sm:flex-row gap-4">
                 <Image 
                     src={book.image} 
@@ -423,20 +421,20 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
                 <div className="flex-grow flex flex-col min-w-0">
                     <div className="flex-grow min-w-0 cursor-pointer" onClick={onViewDetails}>
                         <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
-                        <p className="text-sm text-muted-foreground truncate">{book.author}</p>
-                        {book.startedAt && <p className="text-xs text-muted-foreground mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                        <p className="text-sm text-white/80 truncate">{book.author}</p>
+                        {book.startedAt && <p className="text-xs text-white/80 mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
                     </div>
                     
                     <div className="mt-4 space-y-2">
-                        <Progress value={book.progress || 0} className="h-2"/>
-                        <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
+                        <Progress value={book.progress || 0} className="h-2 bg-white/30" indicatorClassName="bg-white" />
+                        <div className="flex justify-between text-xs sm:text-sm text-white/80">
                             <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
-                            <span className="font-semibold text-primary">{book.progress || 0}%</span>
+                            <span className="font-semibold text-white">{book.progress || 0}%</span>
                         </div>
                         <div className="flex gap-2 pt-2 items-center justify-center">
                             <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button variant="outline" className="flex-1">İlerleme Gir</Button>
+                                    <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30">İlerleme Gir</Button>
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
@@ -454,13 +452,13 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
                                 </DialogContent>
                             </Dialog>
                              <Link href={`/library/session/${book.id}`}>
-                                <Button size="icon" className="rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                                <Button size="icon" className="rounded-full bg-amber-400 text-amber-900 hover:bg-amber-500">
                                     <Clock className="h-5 w-5"/>
                                 </Button>
                             </Link>
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-10 w-10">
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:text-white hover:bg-white/20">
                                         <MoreVertical className="h-5 w-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -530,7 +528,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-    
-
-    
