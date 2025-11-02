@@ -168,7 +168,7 @@ export default function LibraryPage() {
   }, [readingSessions, selectedMember]);
   
     const readingStats = React.useMemo(() => {
-    if (!selectedMember) return { weeklyChartData: [] };
+    if (!selectedMember) return { weeklyChartData: [], totalWeeklyPages: 0 };
 
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -190,8 +190,11 @@ export default function LibraryPage() {
         "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
     }));
     
+    const totalWeeklyPages = weeklyChartData.reduce((sum, day) => sum + day["Okunan Sayfa Sayısı"], 0);
+    
     return {
-        weeklyChartData
+        weeklyChartData,
+        totalWeeklyPages,
     };
 }, [memberSessions, selectedMember]);
 
@@ -289,7 +292,7 @@ export default function LibraryPage() {
         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                    <BarChart2 /> Haftalık Okunan Sayfa Sayısı
+                    <BarChart2 /> Haftalık Okunan Sayfa Sayısı (Toplam: {readingStats.totalWeeklyPages} sayfa)
                 </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center p-4">
