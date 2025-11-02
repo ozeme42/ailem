@@ -11,14 +11,14 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock, isToday } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isToday } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -225,7 +225,7 @@ export default function LibraryPage() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24 md:pb-8">
         <PageHeader title="Kişisel Kütüphanem">
             <Link href="/library/archive">
                 <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
@@ -398,7 +398,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
         setIsProgressDialogOpen(false);
     }
 
-    const pagesRead = Math.round((book.progress || 0) / 100 * (book.pageCount || 0));
+    const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
 
     return (
         <Card className="overflow-hidden shadow-lg border-border/50">
@@ -501,7 +501,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                 <p className="text-xs text-muted-foreground truncate">{book.author}</p>
             </div>
             <CardFooter className="p-2">
-                <Button variant="outline" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                <Button variant="secondary" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                     <BookUp className="mr-2 h-4 w-4"/> Başla
                 </Button>
             </CardFooter>
@@ -522,5 +522,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
 
     
