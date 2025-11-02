@@ -5,15 +5,15 @@ import * as React from "react";
 import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
-import { Book as BookType, UserLibrary, FamilyMember, ReadingGoals, ReadingSession } from '@/lib/data';
+import { Book, UserLibrary, FamilyMember, ReadingGoals, ReadingSession } from '@/lib/data';
 import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookFromMemberLibrary, addReadingSession, onReadingSessionsUpdate } from '@/lib/dataService';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book, Clock } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
@@ -296,7 +296,7 @@ export default function LibraryPage() {
                       <p className="text-2xl font-bold mt-2">{readingStats.avgReadingSpeed} <span className="text-base text-muted-foreground">dk/sf</span></p>
                   </Card>
                    <Card className="p-4">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base"><Book className="text-orange-500"/> Toplam</CardTitle>
+                      <CardTitle className="flex items-center justify-center gap-2 text-base"><BookIcon className="text-orange-500"/> Toplam</CardTitle>
                       <p className="text-2xl font-bold mt-2">{stats.total}</p>
                   </Card>
               </div>
@@ -494,7 +494,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
             <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <p className="font-semibold text-xs text-white leading-tight">{book.title}</p>
                 <div className="flex gap-1 mt-2">
-                     <Button variant="secondary" size="sm" className="h-7 text-xs w-full" onClick={()={() => onUpdateStatus(book.id, 'reading', 0)}>
+                     <Button variant="secondary" size="sm" className="h-7 text-xs w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                          <RotateCcw className="mr-1 h-3 w-3"/> Tekrar Oku
                     </Button>
                      <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
@@ -535,3 +535,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     )
 }
 
+    
+
+    
