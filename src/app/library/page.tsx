@@ -400,34 +400,30 @@ const progressFormSchema = z.object({
 function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void }) {
     const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
 
-    const progressForm = useForm<z.infer<typeof progressFormSchema>>({
+    const form = useForm<z.infer<typeof progressFormSchema>>({
         resolver: zodResolver(progressFormSchema),
-        defaultValues: {
-            currentPage: 0,
-        }
     });
     
     React.useEffect(() => {
-        progressForm.setValue('currentPage', book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0);
-    }, [book.progress, book.pageCount, progressForm]);
-
+        form.setValue('currentPage', book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0);
+    }, [book.progress, book.pageCount, form]);
 
     const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
         const targetPage = data.currentPage;
         if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
 
-        const pagesReadCurrently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
-        const newPagesReadThisSession = targetPage - pagesReadCurrently;
+        const pagesRead Currently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
         
-        if (newPagesReadThisSession > 0) {
+        if (targetPage > pagesReadCurrently) {
+            const newPagesReadThisSession = targetPage - pagesReadCurrently;
              const sessionData = {
                 startTime: subDays(new Date(),1), // This is a placeholder for manual entry
                 endTime: new Date(),
                 pagesRead: newPagesReadThisSession,
             };
             onSaveSession(book, sessionData);
-        } else if (newPagesReadThisSession < 0) {
-             // If user enters a lower page count, just update the progress
+        } else {
+             // If user enters a lower page count, just update the progress without creating a session
              const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
              onUpdateStatus(book.id, 'reading', newProgressPercent);
         }
@@ -474,10 +470,10 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                                         <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
                                         <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
                                     </DialogHeader>
-                                     <Form {...progressForm}>
-                                        <form onSubmit={progressForm.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
+                                     <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
                                             <FormField
-                                                control={progressForm.control}
+                                                control={form.control}
                                                 name="currentPage"
                                                 render={({ field }) => (
                                                     <FormItem>
@@ -572,3 +568,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
