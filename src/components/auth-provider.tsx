@@ -225,6 +225,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authRoutes = ['/login', '/signup'];
   const isAuthRoute = authRoutes.includes(pathname);
   const isJoinFamilyRoute = pathname.startsWith('/join-family');
+  const isFullScreenRoute = pathname.startsWith('/library/session/');
+
   
   useEffect(() => {
     if (loading) return;
@@ -251,7 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      )
   }
 
-  if (isAuthRoute || isJoinFamilyRoute) {
+  if (isAuthRoute || isJoinFamilyRoute || isFullScreenRoute) {
     return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
   }
 
