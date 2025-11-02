@@ -18,10 +18,10 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO, subDays, isToday } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
-import { Slider } from '@/components/ui/slider';
+import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
 import { BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
@@ -522,3 +522,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
