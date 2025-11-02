@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -12,7 +11,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock, Heart } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -116,7 +115,7 @@ export default function LibraryPage() {
          memberId: selectedMember.id,
          bookId: book.id,
          startTime: session.startTime.toISOString(),
-         endTime: session.endTime.toISOString(),
+         endTime: new Date().toISOString(),
          durationSeconds: durationSeconds,
          pagesRead: session.pagesRead,
      }
@@ -283,7 +282,7 @@ export default function LibraryPage() {
             </Card>
         )}
 
-        <Card className="mb-8 shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
+        <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                 <BarChart /> Okuma İstatistikleri
@@ -552,5 +551,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-```
