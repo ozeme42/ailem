@@ -12,18 +12,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
-import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay, isWithinInterval } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay, isWithinInterval, endOfWeek } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
@@ -165,36 +164,34 @@ export default function LibraryPage() {
     return readingSessions.filter(s => s.memberId === selectedMember.id);
   }, [readingSessions, selectedMember]);
   
-  const readingStats = React.useMemo(() => {
+    const readingStats = React.useMemo(() => {
+    if (!selectedMember) return { weeklyChartData: [] };
+
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-    const memberLib = userLibraries.find(lib => lib.memberId === selectedMember?.id);
+    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
 
-    const dailyPages: { [day: string]: number } = {};
+    // 1. Initialize daily pages for the week
+    const dailyPages: { [dayKey: string]: number } = {};
     for (let i = 0; i < 7; i++) {
         const day = addDays(weekStart, i);
         const dayKey = format(day, 'EEE', { locale: tr });
         dailyPages[dayKey] = 0;
     }
-
-    // Calculate from sessions
+    
+    // 2. Add pages from reading sessions
     memberSessions.forEach(session => {
         const sessionDate = parseISO(session.startTime);
-        if (isWithinInterval(sessionDate, { start: weekStart, end: addDays(weekStart, 7) })) {
+        if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
             const dayKey = format(sessionDate, 'EEE', { locale: tr });
             dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
         }
     });
     
-    // Calculate from manual progress updates for this week
-    if (memberLib?.books) {
-      for (const book of memberLib.books) {
-        // This part needs a history of progress, which we don't have.
-        // A simplified approach: check if progress was made *today*
-        // This is still not perfect. For a real app, storing progress history would be better.
-      }
-    }
-
+    // 3. This part is complex because we don't have a history of progress updates.
+    // The previous logic was flawed. A more robust solution would require storing progress updates with timestamps.
+    // For now, we will rely on the ReadingSession data, which is the most accurate source for daily pages read.
+    
     const weeklyChartData = Object.entries(dailyPages).map(([day, pages]) => ({
         day,
         "Okunan Sayfa Sayısı": pages,
@@ -203,8 +200,7 @@ export default function LibraryPage() {
     return {
         weeklyChartData
     };
-
-  }, [memberSessions, userLibraries, selectedMember, allBooks]);
+  }, [memberSessions, selectedMember]);
 
   const readingGoals = selectedMember?.readingGoals;
   const monthlyGoalProgress = React.useMemo(() => {
@@ -304,7 +300,8 @@ export default function LibraryPage() {
             </CardHeader>
             <CardContent>
                 <div className="overflow-x-auto">
-                    <ChartContainer config={chartConfig} className="h-52 min-w-[300px]">
+                    <div className="min-w-[300px] h-52">
+                      <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
                             <defs>
                                 <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
@@ -329,7 +326,8 @@ export default function LibraryPage() {
                             />
                             <Area type="natural" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" strokeWidth={2} fill="url(#fillColor)" activeDot={{ r: 6, className: 'stroke-white fill-orange-400' }} />
                         </AreaChart>
-                    </ChartContainer>
+                      </ResponsiveContainer>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -353,7 +351,7 @@ export default function LibraryPage() {
         )}
 
         {finishedBooks.length > 0 && (
-            <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
+             <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
                 <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-amber-900"><BookCheck/> Bitirdiklerim</h2>
                 <div className="relative">
                     <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-4 -mb-4">
@@ -555,4 +553,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
