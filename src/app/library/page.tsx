@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
-import { FormLabel } from '@/components/ui/form';
+import { FormLabel } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -124,7 +124,8 @@ export default function LibraryPage() {
      await addReadingSession(newSession);
 
     if (book.pageCount) {
-        const currentProgressPages = ((book as any).progress || 0) / 100 * book.pageCount;
+        const libraryBook = userLibraries.find(lib => lib.memberId === selectedMember.id)?.books.find(b => b.bookId === book.id);
+        const currentProgressPages = libraryBook?.progress ? (libraryBook.progress / 100 * book.pageCount) : 0;
         const newTotalPagesRead = currentProgressPages + session.pagesRead;
         const newProgressPercent = Math.min(Math.round((newTotalPagesRead / book.pageCount) * 100), 100);
         await updateUserBookStatus(familyId, selectedMember.id, book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
@@ -171,15 +172,14 @@ export default function LibraryPage() {
 
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
     
-    const dailyPages: { [key: string]: number } = {};
     const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
+    const dailyPages: { [key: string]: number } = {};
     weekDaysKeys.forEach(key => dailyPages[key] = 0);
 
     memberSessions.forEach(session => {
         const sessionDate = parseISO(session.startTime);
-        if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
+        if (isWithinInterval(sessionDate, { start: weekStart, end: endOfWeek(today, { weekStartsOn: 1}) })) {
             const dayKey = format(sessionDate, 'EEE', { locale: tr });
             dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
         }
@@ -292,10 +292,10 @@ export default function LibraryPage() {
                     <BarChart2 /> Haftalık Okunan Sayfa Sayısı
                 </CardTitle>
             </CardHeader>
-             <CardContent className="flex justify-around items-center text-center p-4">
+            <CardContent className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center p-4">
                 {readingStats.weeklyChartData.map(data => (
                     <div key={data.day} className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-white/20">
+                        <div className="w-full h-12 flex items-center justify-center rounded-lg bg-white/20">
                             <p className="font-bold text-lg">{data["Okunan Sayfa Sayısı"]}</p>
                         </div>
                         <p className="text-xs font-semibold text-white/90">{data.day}</p>
@@ -418,7 +418,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                     data-ai-hint="book cover"
                 />
                 <div className="flex-grow flex flex-col min-w-0">
-                    <div className="flex-grow min-w-0 cursor-pointer" onClick={onViewDetails}>
+                    <div className="flex-grow flex flex-col min-w-0 cursor-pointer" onClick={onViewDetails}>
                         <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
                         <p className="text-sm text-white/80 truncate">{book.author}</p>
                         {book.startedAt && <p className="text-xs text-white/80 mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
@@ -546,3 +546,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
 
+
+
+    
