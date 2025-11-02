@@ -311,7 +311,7 @@ export default function LibraryPage() {
                   <h3 className="font-semibold mb-2">Haftalık Okunan Sayfa Sayısı</h3>
                     <ResponsiveContainer width="100%" height={200}>
                         <RechartsBarChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
-                            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                            <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
                             <Tooltip 
