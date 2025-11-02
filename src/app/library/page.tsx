@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -17,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay, isWithinInterval, subSeconds } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -165,39 +166,37 @@ export default function LibraryPage() {
   }, [readingSessions, selectedMember]);
   
     const readingStats = React.useMemo(() => {
-    if (!selectedMember) return { weeklyChartData: [] };
+        if (!selectedMember) return { weeklyChartData: [] };
 
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-    
-    const dailyPages: { [key: string]: number } = {};
+        const today = new Date();
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        
+        const dailyPages: { [key: string]: number } = {};
 
-    // Initialize days of the week
-    const weekDays = Array.from({ length: 7 }).map((_, i) => {
-        const day = addDays(weekStart, i);
-        const dayKey = format(day, 'EEE', { locale: tr });
-        dailyPages[dayKey] = 0;
-        return { day, dayKey };
-    });
+        const weekDays = Array.from({ length: 7 }).map((_, i) => {
+            const day = addDays(weekStart, i);
+            const dayKey = format(day, 'EEE', { locale: tr });
+            dailyPages[dayKey] = 0;
+            return { day, dayKey };
+        });
 
-    // Process sessions
-    memberSessions.forEach(session => {
-        const sessionDate = parseISO(session.startTime);
-        if (isSameDay(sessionDate, today) || (sessionDate >= weekStart && sessionDate <= today)) {
-             const dayKey = format(sessionDate, 'EEE', { locale: tr });
-             dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
-        }
-    });
-    
-    const weeklyChartData = weekDays.map(({ day, dayKey }) => ({
-        day: dayKey,
-        "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
-    }));
-    
-    return {
-        weeklyChartData
-    };
-  }, [memberSessions, selectedMember]);
+        memberSessions.forEach(session => {
+            const sessionDate = parseISO(session.startTime);
+            if (isWithinInterval(sessionDate, { start: weekStart, end: addDays(weekStart, 7) })) {
+                const dayKey = format(sessionDate, 'EEE', { locale: tr });
+                dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
+            }
+        });
+        
+        const weeklyChartData = weekDays.map(({ day, dayKey }) => ({
+            day: dayKey,
+            "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
+        }));
+        
+        return {
+            weeklyChartData
+        };
+    }, [memberSessions, selectedMember]);
 
   const readingGoals = selectedMember?.readingGoals;
   const monthlyGoalProgress = React.useMemo(() => {
@@ -410,18 +409,18 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
         const targetPage = data.currentPage;
         if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
 
-        const pagesRead Currently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
+        const pagesReadCurrently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
         const newPagesReadThisSession = targetPage - pagesReadCurrently;
         
         if (newPagesReadThisSession > 0) {
-            const sessionData = {
-                startTime: new Date(),
+             const sessionData = {
+                startTime: subSeconds(new Date(), newPagesReadThisSession * 60), // Assume 1 minute per page for estimation
                 endTime: new Date(),
                 pagesRead: newPagesReadThisSession,
             };
             onSaveSession(book, sessionData);
         } else {
-            // If no new pages, just update status without creating a session
+            // If no new pages were read, just update the progress percentage
              const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
              onUpdateStatus(book.id, newProgressPercent >= 100 ? 'finished' : 'reading', newProgressPercent);
         }
