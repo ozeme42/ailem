@@ -289,6 +289,29 @@ export default function LibraryPage() {
             </Card>
         )}
 
+        <Card className="shadow-lg bg-gradient-to-br from-green-500 to-teal-600 text-white">
+            <CardHeader>
+                <CardTitle>Kütüphane Özeti</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <BookOpen className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-2xl font-bold">{stats.reading}</p>
+                    <p className="text-xs text-white/80">Okunuyor</p>
+                </div>
+                <div>
+                    <Library className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-2xl font-bold">{stats.total - stats.finished}</p>
+                    <p className="text-xs text-white/80">Okunacak</p>
+                </div>
+                 <div>
+                    <BookIcon className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-2xl font-bold">{stats.total}</p>
+                    <p className="text-xs text-white/80">Toplam Kitap</p>
+                </div>
+            </CardContent>
+        </Card>
+
         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
@@ -393,7 +416,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
         
         if (newPagesReadThisSession > 0) {
              const sessionData = {
-                startTime: subDays(new Date(),1),
+                startTime: subDays(new Date(),1), // This is a placeholder for manual entry
                 endTime: new Date(),
                 pagesRead: newPagesReadThisSession,
             };
@@ -543,12 +566,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     )
 }
 
-
-    
-
-
-
-
-
-
-    
