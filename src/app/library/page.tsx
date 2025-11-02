@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from '@/components/ui/slider';
 import { PageHeader } from '@/components/page-header';
 import { BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BookDetailDialog } from '@/components/book-detail-dialog';
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600);
@@ -208,7 +209,7 @@ export default function LibraryPage() {
 
     const finishedBookIds = new Set(
         userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
-            .filter(b => b.status === 'finished' && b.finishedAt && parseISO(b.finishedAt) >= startOfMonth)
+            .filter(b => b.status === 'finished' && b.finishedAt && isToday(parseISO(b.finishedAt)))
             .map(b => b.bookId)
     );
     const booksRead = finishedBookIds.size;
@@ -327,20 +328,20 @@ export default function LibraryPage() {
             </div>
         )}
         
-        {finishedBooks.length > 0 && (
-            <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Bitirdiklerim</h2>
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
-                </div>
-            </div>
-        )}
-
         {toReadBooks.length > 0 && (
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Sıradakiler</h2>
                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                </div>
+            </div>
+        )}
+
+        {finishedBooks.length > 0 && (
+            <div className="mb-8">
+                <h2 className="text-2xl font-semibold mb-4">Bitirdiklerim</h2>
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                 </div>
             </div>
         )}
@@ -368,26 +369,11 @@ export default function LibraryPage() {
           </div>
       )}
       
-      <Dialog open={!!viewingBook} onOpenChange={() => setViewingBook(null)}>
-        <DialogContent className="sm:max-w-md">
-            {viewingBook && (
-                <>
-                <DialogHeader>
-                    <DialogTitle>{viewingBook.title}</DialogTitle>
-                    <DialogDescription>{viewingBook.author}</DialogDescription>
-                </DialogHeader>
-                 <Image src={viewingBook.image} alt={viewingBook.title} width={200} height={300} className="w-full h-auto rounded-md aspect-[2/3] object-cover mx-auto" data-ai-hint="book cover"/>
-                <div className="space-y-2 mt-4">
-                    <Progress value={viewingBook.progress || 0} className="h-2"/>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>{Math.round(((viewingBook.progress || 0) / 100) * (viewingBook.pageCount || 0))} / {viewingBook.pageCount || '?'} sayfa</span>
-                        <span className="font-semibold text-primary">{viewingBook.progress || 0}%</span>
-                    </div>
-                </div>
-                </>
-            )}
-        </DialogContent>
-      </Dialog>
+      <BookDetailDialog 
+        book={viewingBook} 
+        isOpen={!!viewingBook}
+        onOpenChange={() => setViewingBook(null)}
+      />
     </>
   );
 }
@@ -514,6 +500,11 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                 <p className="font-semibold text-sm leading-tight flex-grow line-clamp-2" title={book.title}>{book.title}</p>
                 <p className="text-xs text-muted-foreground truncate">{book.author}</p>
             </div>
+            <CardFooter className="p-2">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                    <BookUp className="mr-2 h-4 w-4"/> Başla
+                </Button>
+            </CardFooter>
              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -522,9 +513,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                            <BookUp className="mr-2 h-4 w-4"/> Okumaya Başla
-                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
                             <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                         </DropdownMenuItem>
@@ -534,7 +522,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-    
-
-    
