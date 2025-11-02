@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -67,7 +68,7 @@ function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateSta
             form.reset({ currentPage: initialPage });
         }
     }, [isOpen, book, form]);
-
+    
     if (!book) return null;
 
     const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
@@ -524,7 +525,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                                     <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
                                         <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={()={() => onRemove(book.id)}>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
                                         <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
