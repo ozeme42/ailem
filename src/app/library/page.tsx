@@ -11,7 +11,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock, Heart } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -220,8 +220,8 @@ export default function LibraryPage() {
     const booksRead = finishedBookIds.size;
 
     return {
-        pages: (pagesRead / (readingGoals.monthly.pages || 1)) * 100,
-        books: (booksRead / (readingGoals.monthly.books || 1)) * 100,
+        pages: (pagesRead / (readingGoals.monthly?.pages || 1)) * 100,
+        books: (booksRead / (readingGoals.monthly?.books || 1)) * 100,
         pagesRead,
         booksRead
     };
@@ -349,8 +349,8 @@ export default function LibraryPage() {
         )}
 
         {finishedBooks.length > 0 && (
-            <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2"><BookCheck/> Bitirdiklerim</h2>
+            <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
+                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-amber-900"><BookCheck/> Bitirdiklerim</h2>
                 <div className="relative">
                     <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-4 -mb-4">
                         <div className="flex flex-nowrap gap-4">
@@ -551,6 +551,8 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
 
     
 
