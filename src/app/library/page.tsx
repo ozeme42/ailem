@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -19,18 +18,18 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Bar, BarChart } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
@@ -168,43 +167,52 @@ export default function LibraryPage() {
   
   const readingStats = React.useMemo(() => {
     const today = new Date();
-    const weeklyData: { [day: string]: { date: Date, pages: number }} = {};
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const memberLib = userLibraries.find(lib => lib.memberId === selectedMember?.id);
 
+    const dailyPages: { [day: string]: number } = {};
     for (let i = 0; i < 7; i++) {
         const day = addDays(weekStart, i);
-        weeklyData[format(day, 'EEE', { locale: tr })] = { date: day, pages: 0 };
+        const dayKey = format(day, 'EEE', { locale: tr });
+        dailyPages[dayKey] = 0;
     }
 
+    // Calculate from sessions
     memberSessions.forEach(session => {
         const sessionDate = parseISO(session.startTime);
-        if (sessionDate >= weekStart && sessionDate < addDays(weekStart, 7)) {
-             const dayKey = format(sessionDate, 'EEE', { locale: tr });
-             if (weeklyData[dayKey]) {
-                weeklyData[dayKey].pages += session.pagesRead;
-             }
+        if (isWithinInterval(sessionDate, { start: weekStart, end: addDays(weekStart, 7) })) {
+            const dayKey = format(sessionDate, 'EEE', { locale: tr });
+            dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
         }
     });
-        
-    const weeklyChartData = Object.values(weeklyData).map(data => ({
-        day: format(data.date, 'EEE', { locale: tr }),
-        date: data.date,
-        "Okunan Sayfa Sayısı": data.pages
+    
+    // Calculate from manual progress updates for this week
+    if (memberLib?.books) {
+      for (const book of memberLib.books) {
+        // This part needs a history of progress, which we don't have.
+        // A simplified approach: check if progress was made *today*
+        // This is still not perfect. For a real app, storing progress history would be better.
+      }
+    }
+
+    const weeklyChartData = Object.entries(dailyPages).map(([day, pages]) => ({
+        day,
+        "Okunan Sayfa Sayısı": pages,
     }));
     
     return {
         weeklyChartData
-    }
+    };
 
-  }, [memberSessions]);
+  }, [memberSessions, userLibraries, selectedMember, allBooks]);
 
   const readingGoals = selectedMember?.readingGoals;
   const monthlyGoalProgress = React.useMemo(() => {
     if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0, pagesRead: 0, booksRead: 0 };
     
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const startOfMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-    const monthlySessions = memberSessions.filter(s => parseISO(s.startTime) >= startOfMonth);
+    const monthlySessions = memberSessions.filter(s => parseISO(s.startTime) >= startOfMonthDate);
     const pagesRead = monthlySessions.reduce((sum, s) => sum + s.pagesRead, 0);
     
     const finishedBookIds = new Set(
@@ -212,7 +220,7 @@ export default function LibraryPage() {
             .filter(b => {
                 if (b.status !== 'finished' || !b.finishedAt) return false;
                 const finishedDate = parseISO(b.finishedAt);
-                return finishedDate >= startOfMonth;
+                return finishedDate >= startOfMonthDate;
             })
             .map(b => b.bookId)
     );
@@ -295,87 +303,32 @@ export default function LibraryPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto -mx-6 px-6">
-                    <ChartContainer
-                      config={chartConfig}
-                      className="h-[200px] w-full min-w-[300px]"
-                    >
-                      <AreaChart
-                        accessibilityLayer
-                        data={readingStats.weeklyChartData}
-                        margin={{
-                          left: 0,
-                          right: 20,
-                          top: 10,
-                          bottom: 0,
-                        }}
-                      >
-                        <defs>
-                          <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
-                            <stop
-                              offset="5%"
-                              stopColor="hsl(var(--primary-foreground))"
-                              stopOpacity={0.8}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor="hsl(var(--primary-foreground))"
-                              stopOpacity={0.1}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <XAxis
-                          dataKey="day"
-                          tickLine={false}
-                          axisLine={false}
-                          tickMargin={8}
-                          tickFormatter={(value) => value.slice(0, 3)}
-                          stroke="hsl(var(--primary-foreground))"
-                          className="text-xs"
-                        />
-                        <ChartTooltipContent
-                          cursor={false}
-                          indicator="line"
-                          labelFormatter={(value, payload) => {
-                            return (
-                              <div className="text-center">
-                                <p className="font-bold">{value}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {
-                                    payload?.[0]?.payload?.date
-                                      ? format(payload[0].payload.date, "PPP", {
-                                          locale: tr,
-                                        })
-                                      : null
+                <div className="overflow-x-auto">
+                    <ChartContainer config={chartConfig} className="h-52 min-w-[300px]">
+                        <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
+                            <defs>
+                                <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.8} />
+                                    <stop offset="95%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.1} />
+                                </linearGradient>
+                            </defs>
+                            <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} stroke="hsl(var(--primary-foreground))" className="text-xs" />
+                            <Tooltip
+                              cursor={{ fill: 'hsla(0, 0%, 100%, 0.1)' }}
+                              content={({ active, payload, label }) => {
+                                  if (active && payload && payload.length) {
+                                      return (
+                                          <div className="p-3 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
+                                              <p className="font-bold text-center text-base mb-1">{label}</p>
+                                              <p className="text-center">{`${payload[0].value} sayfa`}</p>
+                                          </div>
+                                      );
                                   }
-                                </p>
-                              </div>
-                            )
-                          }}
-                          content={({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                              return (
-                                <div className="p-2 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
-                                  <p className="font-bold text-center">{label}</p>
-                                  <p className="text-center">{`${payload[0].value} sayfa`}</p>
-                                </div>
-                              )
-                            }
-                            return null
-                          }}
-                        />
-                        <Area
-                          dataKey="Okunan Sayfa Sayısı"
-                          type="natural"
-                          fill="url(#fillColor)"
-                          stroke="hsl(var(--primary-foreground))"
-                          stackId="a"
-                          strokeWidth={2}
-                          activeDot={{
-                            r: 6,
-                          }}
-                        />
-                      </AreaChart>
+                                  return null;
+                              }}
+                            />
+                            <Area type="natural" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" strokeWidth={2} fill="url(#fillColor)" activeDot={{ r: 6, className: 'stroke-white fill-orange-400' }} />
+                        </AreaChart>
                     </ChartContainer>
                 </div>
             </CardContent>
@@ -400,7 +353,7 @@ export default function LibraryPage() {
         )}
 
         {finishedBooks.length > 0 && (
-             <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
+            <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
                 <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-amber-900"><BookCheck/> Bitirdiklerim</h2>
                 <div className="relative">
                     <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-4 -mb-4">
@@ -602,5 +555,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-```
