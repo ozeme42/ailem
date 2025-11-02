@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -405,8 +406,10 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
     });
     
     React.useEffect(() => {
-        form.setValue('currentPage', book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0);
-    }, [book.progress, book.pageCount, form]);
+        if (isProgressDialogOpen) {
+            form.setValue('currentPage', book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0);
+        }
+    }, [isProgressDialogOpen, book.progress, book.pageCount, form]);
 
     const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
         const targetPage = data.currentPage;
@@ -423,7 +426,6 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
             };
             onSaveSession(book, sessionData);
         } else {
-             // If user enters a lower page count, just update the progress without creating a session
              const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
              onUpdateStatus(book.id, 'reading', newProgressPercent);
         }
@@ -470,7 +472,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                                         <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
                                         <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
                                     </DialogHeader>
-                                     <Form {...form}>
+                                    <Form {...form}>
                                         <form onSubmit={form.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
                                             <FormField
                                                 control={form.control}
@@ -484,7 +486,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                                                 )}
                                             />
                                             <DialogFooter>
-                                                <Button variant="ghost" type="button" onClick={() => setIsProgressDialogOpen(false)}>İptal</Button>
+                                                <Button type="button" variant="ghost" onClick={() => setIsProgressDialogOpen(false)}>İptal</Button>
                                                 <Button type="submit">Kaydet</Button>
                                             </DialogFooter>
                                         </form>
