@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
-import { Book, UserLibrary, FamilyMember, ReadingGoals, ReadingSession } from '@/lib/data';
+import { Book, UserLibrary, FamilyMember, ReadingGoals, ReadingSession, Book as BookType } from '@/lib/data';
 import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookFromMemberLibrary, addReadingSession, onReadingSessionsUpdate } from '@/lib/dataService';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -47,6 +46,82 @@ function formatDuration(seconds: number) {
     ].filter(Boolean).join(' ');
 }
 
+const progressFormSchema = z.object({
+  currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
+});
+
+function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateStatus }: { 
+    book: any | null, 
+    isOpen: boolean, 
+    onOpenChange: (open: boolean) => void,
+    onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void,
+    onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void,
+}) {
+    const form = useForm<z.infer<typeof progressFormSchema>>({
+        resolver: zodResolver(progressFormSchema),
+    });
+
+    React.useEffect(() => {
+        if (book && isOpen) {
+            const initialPage = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
+            form.reset({ currentPage: initialPage });
+        }
+    }, [isOpen, book, form]);
+
+    if (!book) return null;
+
+    const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
+        const targetPage = data.currentPage;
+        if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
+
+        const pagesReadCurrently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
+        
+        if (targetPage > pagesReadCurrently) {
+            const newPagesReadThisSession = targetPage - pagesReadCurrently;
+             const sessionData = {
+                startTime: subDays(new Date(),1), // This is a placeholder for manual entry
+                endTime: new Date(),
+                pagesRead: newPagesReadThisSession,
+            };
+            onSaveSession(book, sessionData);
+        } else {
+             const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
+             onUpdateStatus(book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
+        }
+        
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
+                    <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="currentPage"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Geldiğin Sayfa Numarası</FormLabel>
+                                    <FormControl><Input type="number" {...field} autoFocus /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+                            <Button type="submit">Kaydet</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function LibraryPage() {
   const { familyId, familyMembers, updateFamilyMember } = useAuth();
@@ -401,84 +476,6 @@ export default function LibraryPage() {
   );
 }
 
-const progressFormSchema = z.object({
-  currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
-});
-
-
-function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateStatus }: { 
-    book: any | null, 
-    isOpen: boolean, 
-    onOpenChange: (open: boolean) => void,
-    onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void,
-    onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void,
-}) {
-    const form = useForm<z.infer<typeof progressFormSchema>>({
-        resolver: zodResolver(progressFormSchema),
-    });
-
-    React.useEffect(() => {
-        if (book && isOpen) {
-            const initialPage = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
-            form.reset({ currentPage: initialPage });
-        }
-    }, [isOpen, book, form]);
-
-    if (!book) return null;
-
-    const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
-        const targetPage = data.currentPage;
-        if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
-
-        const pagesReadCurrently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
-        
-        if (targetPage > pagesReadCurrently) {
-            const newPagesReadThisSession = targetPage - pagesReadCurrently;
-             const sessionData = {
-                startTime: subDays(new Date(),1), // This is a placeholder for manual entry
-                endTime: new Date(),
-                pagesRead: newPagesReadThisSession,
-            };
-            onSaveSession(book, sessionData);
-        } else {
-             const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
-             onUpdateStatus(book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
-        }
-        
-        onOpenChange(false);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
-                    <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="currentPage"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Geldiğin Sayfa Numarası</FormLabel>
-                                    <FormControl><Input type="number" {...field} autoFocus /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-                            <Button type="submit">Kaydet</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession, onOpenProgressDialog }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void, onOpenProgressDialog: () => void }) {
     
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
@@ -527,7 +524,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                                     <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
                                         <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={()={() => onRemove(book.id)}>
                                         <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -537,8 +534,9 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                 </div>
             </div>
         </Card>
-    )
+    );
 }
+
 
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
@@ -589,5 +587,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-```
