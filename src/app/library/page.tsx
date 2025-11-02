@@ -12,7 +12,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2 as BarChart, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,7 @@ import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart as RechartsBarChart, Bar, Cell, ReferenceLine } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
@@ -301,57 +301,89 @@ export default function LibraryPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                 <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                    <AreaChart
+                 <div className="-mx-6 overflow-x-auto px-6">
+                    <ChartContainer
+                      config={chartConfig}
+                      className="h-[200px] w-full min-w-[300px]"
+                    >
+                      <AreaChart
                         accessibilityLayer
                         data={readingStats.weeklyChartData}
-                        margin={{ left: 12, right: 12, }}
-                    >
+                        margin={{
+                          left: 0,
+                          right: 0,
+                          top: 10,
+                          bottom: 0,
+                        }}
+                      >
                         <defs>
-                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="hsla(var(--primary-foreground), 0.8)" stopOpacity={0.8}/>
-                                <stop offset="95%" stopColor="hsla(var(--primary-foreground), 0.1)" stopOpacity={0.1}/>
-                            </linearGradient>
+                          <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                              offset="5%"
+                              stopColor="hsl(var(--primary-foreground))"
+                              stopOpacity={0.8}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="hsl(var(--primary-foreground))"
+                              stopOpacity={0.1}
+                            />
+                          </linearGradient>
                         </defs>
                         <XAxis
-                            dataKey="day"
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={8}
-                            tickFormatter={(value) => value.slice(0, 3)}
-                            stroke="hsl(var(--primary-foreground), 0.7)"
+                          dataKey="day"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                          tickFormatter={(value) => value.slice(0, 3)}
+                          stroke="hsl(var(--primary-foreground))"
+                          className="text-xs"
                         />
                         <ChartTooltipContent
-                            cursor={false}
-                            content={({ active, payload, label }) => {
-                                if (active && payload && payload.length) {
-                                  return (
-                                    <div className="p-2 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
-                                      <p className="font-bold text-center">{label}</p>
-                                      <p className="text-center">{`${payload[0].value} sayfa`}</p>
-                                    </div>
-                                  )
-                                }
-                                return null
-                            }}
+                          cursor={false}
+                          indicator="line"
+                          labelFormatter={(value, payload) => {
+                            return (
+                              <div className="text-center">
+                                <p className="font-bold">{value}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {
+                                    payload?.[0]?.payload?.date
+                                      ? format(payload[0].payload.date, "PPP", {
+                                          locale: tr,
+                                        })
+                                      : null
+                                  }
+                                </p>
+                              </div>
+                            )
+                          }}
+                          content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="p-2 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
+                                  <p className="font-bold text-center">{label}</p>
+                                  <p className="text-center">{`${payload[0].value} sayfa`}</p>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
                         />
                         <Area
-                            dataKey="Okunan Sayfa Sayısı"
-                            type="natural"
-                            fill="url(#chartGradient)"
-                            stroke="hsl(var(--primary-foreground))"
-                            stackId="a"
-                            strokeWidth={2}
-                            dot={{
-                                fill: "hsl(var(--background))",
-                            }}
-                            activeDot={{
-                                r: 6,
-                                className: "fill-primary-foreground stroke-primary"
-                            }}
+                          dataKey="Okunan Sayfa Sayısı"
+                          type="natural"
+                          fill="url(#fillColor)"
+                          stroke="hsl(var(--primary-foreground))"
+                          stackId="a"
+                          strokeWidth={2}
+                          activeDot={{
+                            r: 6,
+                          }}
                         />
-                    </AreaChart>
-                </ChartContainer>
+                      </AreaChart>
+                    </ChartContainer>
+                </div>
             </CardContent>
         </Card>
         
@@ -576,3 +608,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
