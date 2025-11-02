@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay, isWithinInterval, endOfWeek } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -170,19 +170,29 @@ export default function LibraryPage() {
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
     
-    const weeklyChartData = Array.from({ length: 7 }).map((_, i) => {
+    const dailyPages: { [key: string]: number } = {};
+
+    // Initialize days of the week
+    const weekDays = Array.from({ length: 7 }).map((_, i) => {
         const day = addDays(weekStart, i);
         const dayKey = format(day, 'EEE', { locale: tr });
-        
-        const pagesReadOnDay = memberSessions
-            .filter(session => isSameDay(parseISO(session.startTime), day))
-            .reduce((sum, session) => sum + session.pagesRead, 0);
-            
-        return {
-            day: dayKey,
-            "Okunan Sayfa Sayısı": pagesReadOnDay,
-        };
+        dailyPages[dayKey] = 0;
+        return { day, dayKey };
     });
+
+    // Process sessions
+    memberSessions.forEach(session => {
+        const sessionDate = parseISO(session.startTime);
+        if (isSameDay(sessionDate, today) || (sessionDate >= weekStart && sessionDate <= today)) {
+             const dayKey = format(sessionDate, 'EEE', { locale: tr });
+             dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
+        }
+    });
+    
+    const weeklyChartData = weekDays.map(({ day, dayKey }) => ({
+        day: dayKey,
+        "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
+    }));
     
     return {
         weeklyChartData
@@ -288,7 +298,7 @@ export default function LibraryPage() {
             <CardContent>
                 <div className="overflow-x-auto -mx-6 px-2 sm:px-6">
                     <div className="min-w-[300px] h-52">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={200}>
                         <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
                             <defs>
                                 <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
@@ -311,7 +321,7 @@ export default function LibraryPage() {
                                   return null;
                               }}
                             />
-                            <Area type="natural" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" strokeWidth={2} fill="url(#fillColor)" activeDot={{ r: 6, className: 'stroke-white fill-orange-400' }} />
+                            <Area type="monotone" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" strokeWidth={2} fill="url(#fillColor)" activeDot={{ r: 6, className: 'stroke-white fill-orange-400' }} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
@@ -323,7 +333,7 @@ export default function LibraryPage() {
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
                 <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} />)}
+                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onSaveSession={handleSaveSession} />)}
                 </div>
             </div>
         )}
@@ -382,7 +392,7 @@ export default function LibraryPage() {
   );
 }
 
-function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void }) {
+function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void }) {
     const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
 
     const progressForm = useForm<{ currentPage: number }>({
@@ -399,10 +409,23 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
     const handleProgressSave = (data: { currentPage: number }) => {
         const targetPage = data.currentPage;
         if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
-        
-        const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
 
-        onUpdateStatus(book.id, newProgressPercent >= 100 ? 'finished' : 'reading', newProgressPercent);
+        const pagesRead Currently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
+        const newPagesReadThisSession = targetPage - pagesReadCurrently;
+        
+        if (newPagesReadThisSession > 0) {
+            const sessionData = {
+                startTime: new Date(),
+                endTime: new Date(),
+                pagesRead: newPagesReadThisSession,
+            };
+            onSaveSession(book, sessionData);
+        } else {
+            // If no new pages, just update status without creating a session
+             const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
+             onUpdateStatus(book.id, newProgressPercent >= 100 ? 'finished' : 'reading', newProgressPercent);
+        }
+        
         setIsProgressDialogOpen(false);
     }
 
@@ -542,4 +565,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 }
 
 
+    
     
