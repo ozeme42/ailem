@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -13,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
-import { FormLabel } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -22,42 +20,24 @@ import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Bar } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { NewBookForm } from "@/components/new-book-form";
-import { MemberDashboardCard } from "@/components/member-dashboard-card";
-import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-
-
-function formatDuration(seconds: number) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return [
-        h > 0 ? `${h}s` : '',
-        m > 0 ? `${m}dk` : '',
-        s > 0 ? `${s}sn` : '',
-    ].filter(Boolean).join(' ');
-}
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const progressFormSchema = z.object({
   currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
 });
 
-function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateStatus }: { 
+function ProgressDialog({ book, onSaveSession, onUpdateStatus, children }: { 
     book: any | null, 
-    isOpen: boolean, 
-    onOpenChange: (open: boolean) => void,
     onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void,
     onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void,
+    children: React.ReactNode
 }) {
+    const [isOpen, setIsOpen] = React.useState(false);
     const form = useForm<z.infer<typeof progressFormSchema>>({
         resolver: zodResolver(progressFormSchema),
     });
@@ -69,7 +49,7 @@ function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateSta
         }
     }, [isOpen, book, form]);
     
-    if (!book) return null;
+    if (!book) return <>{children}</>;
 
     const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
         const targetPage = data.currentPage;
@@ -90,11 +70,14 @@ function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateSta
              onUpdateStatus(book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
         }
         
-        onOpenChange(false);
+        setIsOpen(false);
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                {children}
+            </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
@@ -114,7 +97,7 @@ function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateSta
                             )}
                         />
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>İptal</Button>
                             <Button type="submit">Kaydet</Button>
                         </DialogFooter>
                     </form>
@@ -125,14 +108,14 @@ function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateSta
 }
 
 export default function LibraryPage() {
-  const { familyId, familyMembers, updateFamilyMember } = useAuth();
+  const { familyId, familyMembers } = useAuth();
   const [allBooks, setAllBooks] = React.useState<BookType[]>([]);
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
   const [readingSessions, setReadingSessions] = React.useState<ReadingSession[]>([]);
   const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
-  const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
+  
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -304,13 +287,6 @@ export default function LibraryPage() {
     };
   }, [readingGoals, memberSessions, userLibraries, selectedMember]);
 
-  const chartConfig = {
-    pages: {
-      label: "Sayfa",
-      color: "hsl(var(--primary-foreground))",
-    },
-  } satisfies ChartConfig;
-
   return (
     <>
       <div className="space-y-6 pb-24 md:pb-8">
@@ -411,7 +387,7 @@ export default function LibraryPage() {
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
                 <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onSaveSession={handleSaveSession} onOpenProgressDialog={() => setEditingProgressForBook(book)} />)}
+                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onSaveSession={handleSaveSession} />)}
                 </div>
             </div>
         )}
@@ -466,19 +442,11 @@ export default function LibraryPage() {
         isOpen={!!viewingBook}
         onOpenChange={() => setViewingBook(null)}
       />
-       <ProgressDialog 
-        book={editingProgressForBook} 
-        isOpen={!!editingProgressForBook}
-        onOpenChange={(open) => {if(!open) setEditingProgressForBook(null)}}
-        onSaveSession={handleSaveSession}
-        onUpdateStatus={handleUpdateStatus}
-      />
     </>
   );
 }
 
-function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession, onOpenProgressDialog }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void, onOpenProgressDialog: () => void }) {
-    
+function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void }) {
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
@@ -509,7 +477,9 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                             </div>
                         </div>
                         <div className="flex gap-2 pt-2 items-center justify-center">
-                            <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30" onClick={onOpenProgressDialog}>İlerleme Gir</Button>
+                            <ProgressDialog book={book} onSaveSession={onSaveSession} onUpdateStatus={onUpdateStatus}>
+                                <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30">İlerleme Gir</Button>
+                            </ProgressDialog>
                             <Link href={`/library/session/${book.id}`}>
                                 <Button size="icon" className="rounded-full bg-amber-400 text-amber-900 hover:bg-amber-500">
                                     <Clock className="h-5 w-5"/>
@@ -588,3 +558,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
