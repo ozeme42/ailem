@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -261,62 +262,66 @@ export default function LibraryPage() {
         </div>
         
         {readingGoals && (
-            <Card className="mb-8">
+            <Card className="mb-8 bg-gradient-to-br from-pink-500 to-purple-600 text-white">
                 <CardHeader>
                     <CardTitle>Aylık Okuma Hedefleri</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-6">
                     <div>
                         <div className="flex justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">Sayfa Hedefi</span>
+                            <span className="text-white/80">Sayfa Hedefi</span>
                             <span className="font-semibold">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly?.pages || 0}</span>
                         </div>
-                        <Progress value={monthlyGoalProgress.pages} />
+                        <Progress value={monthlyGoalProgress.pages} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
                     </div>
                      <div>
                         <div className="flex justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">Kitap Hedefi</span>
+                            <span className="text-white/80">Kitap Hedefi</span>
                              <span className="font-semibold">{monthlyGoalProgress.booksRead} / {readingGoals.monthly?.books || 0}</span>
                         </div>
-                        <Progress value={monthlyGoalProgress.books} indicatorClassName="bg-green-500" />
+                        <Progress value={monthlyGoalProgress.books} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
                     </div>
                 </CardContent>
             </Card>
         )}
 
-        <Card className="mb-8">
+        <Card className="mb-8 shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
           <CardHeader>
               <CardTitle>Okuma İstatistikleri</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <Card className="p-4">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base"><CheckSquare className="text-green-500"/> Okunan</CardTitle>
+                  <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
+                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><CheckSquare className="text-green-300"/> Okunan</CardTitle>
                       <p className="text-2xl font-bold mt-2">{stats.finished}</p>
-                  </Card>
-                  <Card className="p-4">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base"><BookOpen className="text-blue-500"/> Okunacak</CardTitle>
+                  </div>
+                  <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
+                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><BookOpen className="text-blue-300"/> Okunacak</CardTitle>
                       <p className="text-2xl font-bold mt-2">{stats.reading + toReadBooks.length}</p>
-                  </Card>
-                  <Card className="p-4">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base"><Clock className="text-purple-500"/> Hız</CardTitle>
-                      <p className="text-2xl font-bold mt-2">{readingStats.avgReadingSpeed} <span className="text-base text-muted-foreground">dk/sf</span></p>
-                  </Card>
-                   <Card className="p-4">
-                      <CardTitle className="flex items-center justify-center gap-2 text-base"><BookIcon className="text-orange-500"/> Toplam</CardTitle>
+                  </div>
+                  <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
+                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><Clock className="text-purple-300"/> Hız</CardTitle>
+                      <p className="text-2xl font-bold mt-2">{readingStats.avgReadingSpeed} <span className="text-base text-white/80">dk/sf</span></p>
+                  </div>
+                   <div className="p-4 rounded-lg bg-white/20 backdrop-blur-sm">
+                      <CardTitle className="flex items-center justify-center gap-2 text-base text-white/90"><BookIcon className="text-amber-300"/> Toplam</CardTitle>
                       <p className="text-2xl font-bold mt-2">{stats.total}</p>
-                  </Card>
+                  </div>
               </div>
               <div>
                   <h3 className="font-semibold mb-2">Haftalık Okuma Süresi</h3>
                     <ResponsiveContainer width="100%" height={200}>
                         <RechartsBarChart data={readingStats.weeklyChartData}>
-                            <XAxis dataKey="day" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}/>
+                            <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: 'hsla(var(--background), 0.8)', border: '1px solid hsl(var(--border))' }}
+                                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                                itemStyle={{ color: 'hsl(var(--foreground))' }}
+                            />
                             <RechartsBar dataKey="Okuma Süresi (dk)" radius={[4, 4, 0, 0]}>
                                 {readingStats.weeklyChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill="hsl(var(--primary))" />
+                                    <Cell key={`cell-${index}`} fill="hsla(var(--primary-foreground), 0.6)" />
                                 ))}
                             </RechartsBar>
                         </RechartsBarChart>
@@ -507,7 +512,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                 <p className="text-xs text-white/70 truncate">{book.author}</p>
             </div>
             <CardFooter className="p-2">
-                <Button variant="default" size="sm" className="w-full bg-white/90 text-green-900 hover:bg-white" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                <Button variant="default" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                     <BookUp className="mr-2 h-4 w-4"/> Başla
                 </Button>
             </CardFooter>
