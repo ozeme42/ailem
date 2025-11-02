@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -23,7 +24,7 @@ import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
@@ -311,6 +312,7 @@ export default function LibraryPage() {
                   <h3 className="font-semibold mb-2">Haftalık Okunan Sayfa Sayısı</h3>
                     <ResponsiveContainer width="100%" height={200}>
                         <RechartsBarChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
+                            <CartesianGrid vertical={false} strokeDasharray="3 3" />
                             <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
                             <Tooltip 
@@ -550,3 +552,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+```
