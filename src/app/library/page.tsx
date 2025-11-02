@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -166,37 +167,33 @@ export default function LibraryPage() {
   }, [readingSessions, selectedMember]);
   
     const readingStats = React.useMemo(() => {
-        if (!selectedMember) return { weeklyChartData: [] };
+    if (!selectedMember) return { weeklyChartData: [] };
 
-        const today = new Date();
-        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-        
-        const dailyPages: { [key: string]: number } = {};
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    
+    const dailyPages: { [key: string]: number } = {};
+    const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
+    weekDaysKeys.forEach(key => dailyPages[key] = 0);
 
-        const weekDays = Array.from({ length: 7 }).map((_, i) => {
-            const day = addDays(weekStart, i);
-            const dayKey = format(day, 'EEE', { locale: tr });
-            dailyPages[dayKey] = 0;
-            return { day, dayKey };
-        });
+    memberSessions.forEach(session => {
+        const sessionDate = parseISO(session.startTime);
+        if (isWithinInterval(sessionDate, { start: weekStart, end: addDays(weekStart, 6) })) {
+            const dayKey = format(sessionDate, 'EEE', { locale: tr });
+            dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
+        }
+    });
+    
+    const weeklyChartData = weekDaysKeys.map(dayKey => ({
+        day: dayKey,
+        "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
+    }));
+    
+    return {
+        weeklyChartData
+    };
+}, [memberSessions, selectedMember]);
 
-        memberSessions.forEach(session => {
-            const sessionDate = parseISO(session.startTime);
-            if (isWithinInterval(sessionDate, { start: weekStart, end: addDays(weekStart, 7) })) {
-                const dayKey = format(sessionDate, 'EEE', { locale: tr });
-                dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
-            }
-        });
-        
-        const weeklyChartData = weekDays.map(({ day, dayKey }) => ({
-            day: dayKey,
-            "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
-        }));
-        
-        return {
-            weeklyChartData
-        };
-    }, [memberSessions, selectedMember]);
 
   const readingGoals = selectedMember?.readingGoals;
   const monthlyGoalProgress = React.useMemo(() => {
@@ -294,36 +291,34 @@ export default function LibraryPage() {
                     <BarChart2 /> Haftalık Okunan Sayfa Sayısı
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="overflow-x-auto -mx-6 px-2 sm:px-6">
-                    <div className="min-w-[300px] h-52">
-                      <ResponsiveContainer width="100%" height={200}>
-                        <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
-                            <defs>
-                                <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.1} />
-                                </linearGradient>
-                            </defs>
-                            <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} stroke="hsl(var(--primary-foreground))" className="text-xs" />
-                            <Tooltip
-                              cursor={{ fill: 'hsla(0, 0%, 100%, 0.1)' }}
-                              content={({ active, payload, label }) => {
-                                  if (active && payload && payload.length) {
-                                      return (
-                                          <div className="p-3 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
-                                              <p className="font-bold text-center text-base mb-1">{label}</p>
-                                              <p className="text-center">{`${payload[0].value} sayfa`}</p>
-                                          </div>
-                                      );
-                                  }
-                                  return null;
-                              }}
-                            />
-                            <Area type="monotone" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" strokeWidth={2} fill="url(#fillColor)" activeDot={{ r: 6, className: 'stroke-white fill-orange-400' }} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
+             <CardContent className="overflow-x-auto -mx-6 px-2 sm:px-6">
+                <div className="min-w-[300px] h-52">
+                    <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
+                        <defs>
+                            <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="hsl(var(--primary-foreground))" stopOpacity={0.1} />
+                            </linearGradient>
+                        </defs>
+                        <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} stroke="hsl(var(--primary-foreground))" className="text-xs" />
+                        <Tooltip
+                          cursor={{ fill: 'hsla(0, 0%, 100%, 0.1)' }}
+                          content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                  return (
+                                      <div className="p-3 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
+                                          <p className="font-bold text-center text-base mb-1">{label}</p>
+                                          <p className="text-center">{`${payload[0].value} sayfa`}</p>
+                                      </div>
+                                  );
+                              }
+                              return null;
+                          }}
+                        />
+                        <Area type="monotone" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" strokeWidth={2} fill="url(#fillColor)" activeDot={{ r: 6, className: 'stroke-white fill-orange-400' }} />
+                    </AreaChart>
+                    </ResponsiveContainer>
                 </div>
             </CardContent>
         </Card>
@@ -349,7 +344,7 @@ export default function LibraryPage() {
         {finishedBooks.length > 0 && (
              <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
                 <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-amber-900"><BookCheck/> Bitirdiklerim</h2>
-                <div className="relative">
+                 <div className="relative">
                     <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-4 -mb-4">
                         <div className="flex flex-nowrap gap-4">
                             {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
@@ -414,13 +409,12 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
         
         if (newPagesReadThisSession > 0) {
              const sessionData = {
-                startTime: subSeconds(new Date(), newPagesReadThisSession * 60), // Assume 1 minute per page for estimation
+                startTime: subSeconds(new Date(), 1),
                 endTime: new Date(),
                 pagesRead: newPagesReadThisSession,
             };
             onSaveSession(book, sessionData);
         } else {
-            // If no new pages were read, just update the progress percentage
              const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
              onUpdateStatus(book.id, newProgressPercent >= 100 ? 'finished' : 'reading', newProgressPercent);
         }
@@ -450,10 +444,12 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                     </div>
                     
                     <div className="mt-4 space-y-2">
-                        <Progress value={book.progress || 0} className="h-2 bg-white/30" indicatorClassName="bg-white" />
-                        <div className="flex justify-between text-xs sm:text-sm text-white/80">
-                            <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
-                            <span className="font-semibold text-white">{book.progress || 0}%</span>
+                        <div className="relative">
+                            <Progress value={book.progress || 0} className="h-4 bg-white/30" indicatorClassName="bg-white" />
+                            <div className="absolute inset-0 flex justify-between items-center px-2 text-xs font-medium text-purple-900">
+                                <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
+                                <span className="font-semibold">{book.progress || 0}%</span>
+                            </div>
                         </div>
                         <div className="flex gap-2 pt-2 items-center justify-center">
                             <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
@@ -566,3 +562,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
     
     
+
