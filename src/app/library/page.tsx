@@ -210,6 +210,7 @@ export default function LibraryPage() {
 
     const monthlySessions = memberSessions.filter(s => parseISO(s.startTime) >= startOfMonth);
     const pagesRead = monthlySessions.reduce((sum, s) => sum + s.pagesRead, 0);
+    
     const finishedBookIds = new Set(
         userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
             .filter(b => b.status === 'finished' && b.finishedAt && isToday(parseISO(b.finishedAt)))
@@ -309,7 +310,7 @@ export default function LibraryPage() {
               <div>
                   <h3 className="font-semibold mb-2">Haftalık Okunan Sayfa Sayısı</h3>
                     <ResponsiveContainer width="100%" height={200}>
-                        <RechartsBarChart data={readingStats.weeklyChartData}>
+                        <RechartsBarChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
                             <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
                             <Tooltip 
@@ -549,9 +550,3 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-    
-
-    
-
-    
