@@ -11,20 +11,28 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart, Book as BookIcon, Clock, isToday } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isToday } from 'date-fns';
+import { format, parseISO, subDays, isToday as isTodayDateFns } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
 import { BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
+import { Checkbox } from "@/components/ui/checkbox";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { NewBookForm } from "@/components/new-book-form";
+import { MemberDashboardCard } from "@/components/member-dashboard-card";
+
 
 function formatDuration(seconds: number) {
     const h = Math.floor(seconds / 3600);
@@ -209,7 +217,7 @@ export default function LibraryPage() {
 
     const finishedBookIds = new Set(
         userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
-            .filter(b => b.status === 'finished' && b.finishedAt && isToday(parseISO(b.finishedAt)))
+            .filter(b => b.status === 'finished' && b.finishedAt && isTodayDateFns(parseISO(b.finishedAt)))
             .map(b => b.bookId)
     );
     const booksRead = finishedBookIds.size;
@@ -394,7 +402,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
         
         const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
 
-        onUpdateStatus(book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
+        onUpdateStatus(book.id, newProgressPercent >= 100 ? 'finished' : 'reading', newProgressPercent);
         setIsProgressDialogOpen(false);
     }
 
@@ -501,7 +509,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                 <p className="text-xs text-muted-foreground truncate">{book.author}</p>
             </div>
             <CardFooter className="p-2">
-                <Button variant="secondary" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                <Button variant="default" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                     <BookUp className="mr-2 h-4 w-4"/> Başla
                 </Button>
             </CardFooter>
@@ -522,5 +530,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
 
     
