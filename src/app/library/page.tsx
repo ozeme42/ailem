@@ -24,7 +24,7 @@ import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar } from 'recharts';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
@@ -33,6 +33,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
+import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 
 function formatDuration(seconds: number) {
@@ -231,6 +232,12 @@ export default function LibraryPage() {
     };
   }, [readingGoals, memberSessions, userLibraries, selectedMember]);
 
+  const chartConfig = {
+    pages: {
+      label: "Sayfa",
+      color: "hsl(var(--primary-foreground))",
+    },
+  } satisfies ChartConfig;
 
   return (
     <>
@@ -264,7 +271,7 @@ export default function LibraryPage() {
         </div>
         
         {readingGoals && (
-            <Card className="mb-8 bg-gradient-to-br from-pink-500 to-purple-600 text-white">
+             <Card className="shadow-lg bg-gradient-to-br from-pink-500 to-purple-600 text-white">
                 <CardHeader>
                     <CardTitle>Aylık Okuma Hedefleri</CardTitle>
                 </CardHeader>
@@ -288,33 +295,64 @@ export default function LibraryPage() {
         )}
 
         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                <BarChart /> Haftalık Okunan Sayfa Sayısı
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-                <ResponsiveContainer width="100%" height={200} minWidth={300}>
-                    <AreaChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20, top: 10 }}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                    <BarChart /> Haftalık Okunan Sayfa Sayısı
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                    <AreaChart
+                        accessibilityLayer
+                        data={readingStats.weeklyChartData}
+                        margin={{ left: 12, right: 12, }}
+                    >
                         <defs>
                             <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="hsla(var(--primary-foreground), 0.8)" stopOpacity={0.8}/>
                                 <stop offset="95%" stopColor="hsla(var(--primary-foreground), 0.1)" stopOpacity={0.1}/>
                             </linearGradient>
                         </defs>
-                        <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip 
-                            cursor={{ fill: 'hsla(var(--primary-foreground), 0.1)' }}
-                            contentStyle={{ backgroundColor: 'hsla(var(--background), 0.8)', border: '1px solid hsl(var(--border))' }}
-                            labelStyle={{ color: 'hsl(var(--foreground))' }}
-                            itemStyle={{ color: 'hsl(var(--foreground))' }}
+                        <XAxis
+                            dataKey="day"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                            stroke="hsl(var(--primary-foreground), 0.7)"
                         />
-                        <Area type="monotone" dataKey="Okunan Sayfa Sayısı" stroke="hsl(var(--primary-foreground))" fillOpacity={1} fill="url(#chartGradient)" />
+                        <ChartTooltipContent
+                            cursor={false}
+                            content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div className="p-2 rounded-lg bg-background/80 text-foreground backdrop-blur-sm shadow-lg">
+                                      <p className="font-bold text-center">{label}</p>
+                                      <p className="text-center">{`${payload[0].value} sayfa`}</p>
+                                    </div>
+                                  )
+                                }
+                                return null
+                            }}
+                        />
+                        <Area
+                            dataKey="Okunan Sayfa Sayısı"
+                            type="natural"
+                            fill="url(#chartGradient)"
+                            stroke="hsl(var(--primary-foreground))"
+                            stackId="a"
+                            strokeWidth={2}
+                            dot={{
+                                fill: "hsl(var(--background))",
+                            }}
+                            activeDot={{
+                                r: 6,
+                                className: "fill-primary-foreground stroke-primary"
+                            }}
+                        />
                     </AreaChart>
-                </ResponsiveContainer>
-            </div>
-          </CardContent>
+                </ChartContainer>
+            </CardContent>
         </Card>
         
         {readingBooks.length > 0 && (
@@ -336,7 +374,7 @@ export default function LibraryPage() {
         )}
 
         {finishedBooks.length > 0 && (
-            <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
+             <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
                 <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-amber-900"><BookCheck/> Bitirdiklerim</h2>
                 <div className="relative">
                     <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-4 -mb-4">
@@ -517,7 +555,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                 <p className="text-xs text-white/70 truncate">{book.author}</p>
             </div>
             <CardFooter className="p-2">
-                <Button variant="secondary" size="sm" className="w-full">
+                 <Button variant="secondary" size="sm" className="w-full bg-white/20 text-white hover:bg-white/30" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                     <BookUp className="mr-2 h-4 w-4"/> Başla
                 </Button>
             </CardFooter>
