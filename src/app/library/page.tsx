@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, addDays, isSameDay, isWithinInterval, subSeconds } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, subSeconds } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -171,6 +171,7 @@ export default function LibraryPage() {
 
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
     
     const dailyPages: { [key: string]: number } = {};
     const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
@@ -178,7 +179,7 @@ export default function LibraryPage() {
 
     memberSessions.forEach(session => {
         const sessionDate = parseISO(session.startTime);
-        if (isWithinInterval(sessionDate, { start: weekStart, end: addDays(weekStart, 6) })) {
+        if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
             const dayKey = format(sessionDate, 'EEE', { locale: tr });
             dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
         }
@@ -444,8 +445,8 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                     </div>
                     
                     <div className="mt-4 space-y-2">
-                        <div className="relative">
-                            <Progress value={book.progress || 0} className="h-4 bg-white/30" indicatorClassName="bg-white" />
+                        <div className="relative h-4">
+                            <Progress value={book.progress || 0} className="h-full bg-white/30" indicatorClassName="bg-white" />
                             <div className="absolute inset-0 flex justify-between items-center px-2 text-xs font-medium text-purple-900">
                                 <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
                                 <span className="font-semibold">{book.progress || 0}%</span>
@@ -562,4 +563,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
     
     
+
 
