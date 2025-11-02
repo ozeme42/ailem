@@ -18,13 +18,13 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isToday, isFuture, isPast } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PageHeader } from '@/components/page-header';
 import { BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
-import { BookDetailDialog } from '@/components/book-detail-dialog';
+import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,6 +32,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
+import { isToday } from "date-fns";
 
 
 function formatDuration(seconds: number) {
@@ -309,23 +310,25 @@ export default function LibraryPage() {
               </div>
               <div>
                   <h3 className="font-semibold mb-2">Haftalık Okunan Sayfa Sayısı</h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <RechartsBarChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip 
-                                contentStyle={{ backgroundColor: 'hsla(var(--background), 0.8)', border: '1px solid hsl(var(--border))' }}
-                                labelStyle={{ color: 'hsl(var(--foreground))' }}
-                                itemStyle={{ color: 'hsl(var(--foreground))' }}
-                            />
-                            <RechartsBar dataKey="Okunan Sayfa Sayısı" radius={[4, 4, 0, 0]}>
-                                {readingStats.weeklyChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill="hsla(var(--primary-foreground), 0.6)" />
-                                ))}
-                            </RechartsBar>
-                        </RechartsBarChart>
-                    </ResponsiveContainer>
+                    <div className="overflow-x-auto">
+                        <ResponsiveContainer width="100%" height={200} minWidth={300}>
+                            <RechartsBarChart data={readingStats.weeklyChartData} margin={{ right: 20, left: -20 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="day" stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="hsl(var(--primary-foreground), 0.7)" fontSize={12} tickLine={false} axisLine={false} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: 'hsla(var(--background), 0.8)', border: '1px solid hsl(var(--border))' }}
+                                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                                />
+                                <RechartsBar dataKey="Okunan Sayfa Sayısı" radius={[4, 4, 0, 0]}>
+                                    {readingStats.weeklyChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill="hsla(var(--primary-foreground), 0.6)" />
+                                    ))}
+                                </RechartsBar>
+                            </RechartsBarChart>
+                        </ResponsiveContainer>
+                    </div>
               </div>
           </CardContent>
         </Card>
@@ -530,7 +533,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                 <p className="text-xs text-white/70 truncate">{book.author}</p>
             </div>
             <CardFooter className="p-2">
-                <Button variant="default" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                <Button variant="secondary" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                     <BookUp className="mr-2 h-4 w-4"/> Başla
                 </Button>
             </CardFooter>
