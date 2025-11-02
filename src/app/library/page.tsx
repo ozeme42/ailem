@@ -56,6 +56,7 @@ export default function LibraryPage() {
   const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
+  const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -334,7 +335,7 @@ export default function LibraryPage() {
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
                 <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onSaveSession={handleSaveSession} />)}
+                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onSaveSession={handleSaveSession} onOpenProgressDialog={() => setEditingProgressForBook(book)} />)}
                 </div>
             </div>
         )}
@@ -389,6 +390,13 @@ export default function LibraryPage() {
         isOpen={!!viewingBook}
         onOpenChange={() => setViewingBook(null)}
       />
+       <ProgressDialog 
+        book={editingProgressForBook} 
+        isOpen={!!editingProgressForBook}
+        onOpenChange={(open) => {if(!open) setEditingProgressForBook(null)}}
+        onSaveSession={handleSaveSession}
+        onUpdateStatus={handleUpdateStatus}
+      />
     </>
   );
 }
@@ -398,19 +406,25 @@ const progressFormSchema = z.object({
 });
 
 
-function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void }) {
-    const [isProgressDialogOpen, setIsProgressDialogOpen] = React.useState(false);
-
+function ProgressDialog({ book, isOpen, onOpenChange, onSaveSession, onUpdateStatus }: { 
+    book: any | null, 
+    isOpen: boolean, 
+    onOpenChange: (open: boolean) => void,
+    onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void,
+    onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void,
+}) {
     const form = useForm<z.infer<typeof progressFormSchema>>({
         resolver: zodResolver(progressFormSchema),
     });
-    
+
     React.useEffect(() => {
-        if (isProgressDialogOpen) {
+        if (book && isOpen) {
             const initialPage = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
             form.reset({ currentPage: initialPage });
         }
-    }, [isProgressDialogOpen, book.progress, book.pageCount, form]);
+    }, [isOpen, book, form]);
+
+    if (!book) return null;
 
     const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
         const targetPage = data.currentPage;
@@ -431,93 +445,97 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
              onUpdateStatus(book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
         }
         
-        setIsProgressDialogOpen(false);
+        onOpenChange(false);
     };
 
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
+                    <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="currentPage"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Geldiğin Sayfa Numarası</FormLabel>
+                                    <FormControl><Input type="number" {...field} autoFocus /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
+                            <Button type="submit">Kaydet</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession, onOpenProgressDialog }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void, onOpenProgressDialog: () => void }) {
+    
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
         <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-           <div className="p-4 flex flex-col sm:flex-row gap-4">
-               <Image 
-                   src={book.image} 
-                   alt={book.title} 
-                   width={100} 
-                   height={150} 
-                   className="w-24 sm:w-28 h-auto rounded-md aspect-[2/3] object-cover shadow-md mx-auto sm:mx-0 cursor-pointer" 
-                   onClick={onViewDetails}
-                   data-ai-hint="book cover"
-               />
-               <div className="flex-grow flex flex-col min-w-0">
-                   <div className="flex-grow flex flex-col min-w-0 cursor-pointer" onClick={onViewDetails}>
-                       <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
-                       <p className="text-sm text-white/80 truncate">{book.author}</p>
-                       {book.startedAt && <p className="text-xs text-white/80 mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
-                   </div>
-                   
-                   <div className="mt-4 space-y-2">
-                       <div className="relative h-4">
-                           <Progress value={book.progress || 0} className="h-full bg-white/30" indicatorClassName="bg-white" />
-                           <div className="absolute inset-0 flex justify-between items-center px-2 text-xs font-medium text-purple-900">
-                               <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
-                               <span className="font-semibold">{book.progress || 0}%</span>
-                           </div>
-                       </div>
-                       <div className="flex gap-2 pt-2 items-center justify-center">
-                            <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30">İlerleme Gir</Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
-                                        <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
-                                    </DialogHeader>
-                                    <Form {...form}>
-                                        <form onSubmit={form.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="currentPage"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Geldiğin Sayfa Numarası</FormLabel>
-                                                        <FormControl><Input type="number" {...field} autoFocus /></FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <DialogFooter>
-                                                <Button type="button" variant="ghost" onClick={() => setIsProgressDialogOpen(false)}>İptal</Button>
-                                                <Button type="submit">Kaydet</Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
-                                </DialogContent>
-                            </Dialog>
-                           <Link href={`/library/session/${book.id}`}>
-                               <Button size="icon" className="rounded-full bg-amber-400 text-amber-900 hover:bg-amber-500">
-                                   <Clock className="h-5 w-5"/>
-                               </Button>
-                           </Link>
-                           <DropdownMenu>
-                               <DropdownMenuTrigger asChild>
-                                   <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:text-white hover:bg-white/20">
-                                       <MoreVertical className="h-5 w-5" />
-                                   </Button>
-                               </DropdownMenuTrigger>
-                               <DropdownMenuContent>
-                                   <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
-                                       <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
-                                   </DropdownMenuItem>
-                                   <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
-                                       <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                                   </DropdownMenuItem>
-                               </DropdownMenuContent>
-                           </DropdownMenu>
-                       </div>
-                   </div>
-               </div>
-           </div>
+            <div className="p-4 flex flex-col sm:flex-row gap-4">
+                <Image 
+                    src={book.image} 
+                    alt={book.title} 
+                    width={100} 
+                    height={150} 
+                    className="w-24 sm:w-28 h-auto rounded-md aspect-[2/3] object-cover shadow-md mx-auto sm:mx-0 cursor-pointer" 
+                    onClick={onViewDetails}
+                    data-ai-hint="book cover"
+                />
+                <div className="flex-grow flex flex-col min-w-0">
+                    <div className="flex-grow flex flex-col min-w-0 cursor-pointer" onClick={onViewDetails}>
+                        <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
+                        <p className="text-sm text-white/80 truncate">{book.author}</p>
+                        {book.startedAt && <p className="text-xs text-white/80 mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+                    </div>
+                    
+                    <div className="mt-4 space-y-2">
+                        <div className="relative h-4">
+                            <Progress value={book.progress || 0} className="h-full bg-white/30" indicatorClassName="bg-white" />
+                            <div className="absolute inset-0 flex justify-between items-center px-2 text-xs font-medium text-purple-900">
+                                <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
+                                <span className="font-semibold">{book.progress || 0}%</span>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 pt-2 items-center justify-center">
+                            <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30" onClick={onOpenProgressDialog}>İlerleme Gir</Button>
+                            <Link href={`/library/session/${book.id}`}>
+                                <Button size="icon" className="rounded-full bg-amber-400 text-amber-900 hover:bg-amber-500">
+                                    <Clock className="h-5 w-5"/>
+                                </Button>
+                            </Link>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:text-white hover:bg-white/20">
+                                        <MoreVertical className="h-5 w-5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
+                                        <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
+                                        <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </Card>
     )
 }
@@ -572,16 +590,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     )
 }
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-
+```
