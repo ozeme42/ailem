@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -407,7 +406,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
     
     React.useEffect(() => {
         if (isProgressDialogOpen) {
-            form.setValue('currentPage', book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0);
+            form.reset({ currentPage: book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0 });
         }
     }, [isProgressDialogOpen, book.progress, book.pageCount, form]);
 
@@ -415,7 +414,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
         const targetPage = data.currentPage;
         if (isNaN(targetPage) || targetPage < 0 || !book.pageCount) return;
 
-        const pagesReadCurrently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
+        const pagesRead Currently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
         
         if (targetPage > pagesReadCurrently) {
             const newPagesReadThisSession = targetPage - pagesReadCurrently;
@@ -570,6 +569,8 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
 
     
 
