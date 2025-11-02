@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isToday, isFuture } from 'date-fns';
+import { format, parseISO, subDays, isToday, isFuture, isPast } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -481,16 +481,16 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails }: { bo
 
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
-        <Card className="overflow-hidden group relative flex flex-col justify-between text-center bg-muted/30">
+        <Card className="overflow-hidden group relative flex flex-col justify-between text-center bg-gradient-to-br from-amber-400 to-yellow-400 text-amber-900 shadow-md">
              <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3]" data-ai-hint="book cover"/>
-            <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="font-semibold text-xs text-white leading-tight">{book.title}</p>
-                <div className="flex gap-1 mt-2">
-                     <Button variant="secondary" size="sm" className="h-7 text-xs w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="font-semibold text-xs text-white leading-tight text-center">{book.title}</p>
+                <div className="flex gap-2 mt-3">
+                     <Button variant="secondary" size="sm" className="h-8 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                          <RotateCcw className="mr-1 h-3 w-3"/> Tekrar Oku
                     </Button>
-                     <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
-                        <Trash2 className="h-3 w-3"/>
+                     <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => onRemove(book.id)}>
+                        <Trash2 className="h-4 w-4"/>
                     </Button>
                 </div>
             </div>
@@ -500,21 +500,21 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
 
 function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
-        <Card className="overflow-hidden flex flex-col group text-center transition-all hover:shadow-md hover:-translate-y-1 relative">
+        <Card className="overflow-hidden flex flex-col group text-center transition-all hover:shadow-md hover:-translate-y-1 relative bg-gradient-to-br from-green-400 to-teal-500 text-white">
             <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3]" data-ai-hint="book cover"/>
             <div className="p-2 flex flex-col flex-grow">
-                <p className="font-semibold text-sm leading-tight flex-grow line-clamp-2" title={book.title}>{book.title}</p>
-                <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                <p className="font-semibold text-sm leading-tight flex-grow line-clamp-2 text-white/90" title={book.title}>{book.title}</p>
+                <p className="text-xs text-white/70 truncate">{book.author}</p>
             </div>
             <CardFooter className="p-2">
-                <Button variant="default" size="sm" className="w-full" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                <Button variant="default" size="sm" className="w-full bg-white/90 text-green-900 hover:bg-white" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
                     <BookUp className="mr-2 h-4 w-4"/> Başla
                 </Button>
             </CardFooter>
              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-7 w-7">
+                        <Button variant="secondary" size="icon" className="h-7 w-7 bg-black/20 hover:bg-black/30 border-none text-white">
                             <MoreVertical className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -528,3 +528,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
