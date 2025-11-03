@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -14,7 +15,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, children, className }: PageHeaderProps) {
   return (
     <header className={cn(
-        "flex flex-col items-center justify-center gap-4 p-6 py-8 relative", // Increased vertical padding and centered content
+        "flex items-center justify-center p-6 py-8 relative", // Changed to items-center for vertical centering
         "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg",
         "-mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6", // Full-bleed on mobile
         "rounded-b-2xl",
@@ -31,11 +32,13 @@ export function PageHeader({ title, children, className }: PageHeaderProps) {
             </Button>
         </Link>
       </div>
-
-      <h1 className="text-3xl font-extrabold tracking-tighter text-center" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>{title}</h1>
       
-      <div className="w-full max-w-2xl text-center">
-        {children}
+      <div className="flex flex-col items-center justify-center gap-4 text-center">
+          <h1 className="text-3xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>{title}</h1>
+          
+          <div className="w-full max-w-2xl">
+            {children}
+          </div>
       </div>
     </header>
   );
