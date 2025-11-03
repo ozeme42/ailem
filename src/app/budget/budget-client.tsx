@@ -290,15 +290,15 @@ export function BudgetClient() {
                     <div className="grid grid-cols-3 text-center gap-2 p-3 bg-black/20 rounded-lg">
                         <div>
                             <p className="text-xs text-white/80">Gelir</p>
-                            <p className="font-semibold text-sm">{headerIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            <p className="font-semibold text-sm">{headerIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                         </div>
                         <div>
                             <p className="text-xs text-white/80">Gider</p>
-                            <p className="font-semibold text-sm text-red-300">{headerExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            <p className="font-semibold text-sm text-red-300">{headerExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                         </div>
                         <div>
                             <p className="text-xs text-white/80">Toplam</p>
-                            <p className={cn("font-semibold text-sm", headerTotal < 0 && 'text-red-300')}>{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            <p className={cn("font-semibold text-sm", headerTotal < 0 && 'text-red-300')}>{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                         </div>
                     </div>
                 )}
@@ -310,8 +310,8 @@ export function BudgetClient() {
                         <div className="flex justify-between items-center p-2 bg-muted/50 rounded-t-lg">
                            <div className="font-medium text-xs capitalize">{group.date}</div>
                            <div className="flex gap-4 items-center text-xs">
-                                <span className="text-primary">{group.dayTotalIncome > 0 ? group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
-                                <span className="text-destructive">{group.dayTotalExpense > 0 ? group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }) : ''}</span>
+                                <span className="text-primary">{group.dayTotalIncome > 0 ? group.dayTotalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ''}</span>
+                                <span className="text-destructive">{group.dayTotalExpense > 0 ? group.dayTotalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ''}</span>
                            </div>
                         </div>
                         <div className="space-y-px">
@@ -329,7 +329,7 @@ export function BudgetClient() {
                                     <div className="flex items-center gap-1">
                                       <p className={cn("font-semibold text-xs", tx.type === 'expense' ? 'text-destructive' : 'text-primary')}>
                                           {tx.type === 'expense' ? '-' : '+'}
-                                          {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                          {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                       </p>
                                       <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
@@ -367,14 +367,14 @@ export function BudgetClient() {
                                          <div className="flex items-center justify-between w-full">
                                             <div className="font-bold text-sm capitalize">{summary.month}</div>
                                             <div className="flex items-center gap-4 text-xs">
-                                                <span className="text-primary">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span>
+                                                <span className="text-primary">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                                                 <div className="text-right">
                                                     <p className="text-destructive font-semibold text-sm">
                                                       {summary.expense > 0 ? '-' : ''}
-                                                      {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                      {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                     </p>
                                                     <p className={cn("text-xs font-bold", summary.total >= 0 ? "text-primary" : "text-destructive")}>
-                                                        Toplam: {summary.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                        Toplam: {summary.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                     </p>
                                                 </div>
                                             </div>
@@ -396,7 +396,7 @@ export function BudgetClient() {
                                                       <div className="flex items-center gap-1">
                                                           <p className={cn("font-semibold text-xs", tx.type === 'expense' ? 'text-destructive' : 'text-primary')}>
                                                               {tx.type === 'expense' ? '-' : '+'}
-                                                              {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                                              {tx.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                           </p>
                                                            <DropdownMenu>
                                                               <DropdownMenuTrigger asChild>
@@ -436,9 +436,9 @@ export function BudgetClient() {
                                 <CardTitle>Hesap Özeti</CardTitle>
                             </CardHeader>
                              <CardContent className="grid grid-cols-3 gap-4 text-left text-xs">
-                                <div><p className="text-white/80">Varlıklar</p><p className="font-semibold text-sm">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div><p className="text-white/80">Borçlar</p><p className="font-semibold text-sm text-red-300">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div><p className="text-white/80">Net Değer</p><p className={cn("font-semibold text-sm", accountStats.netWorth < 0 && 'text-red-300')}>{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div><p className="text-white/80">Varlıklar</p><p className="font-semibold text-sm">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p></div>
+                                <div><p className="text-white/80">Borçlar</p><p className="font-semibold text-sm text-red-300">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p></div>
+                                <div><p className="text-white/80">Net Değer</p><p className={cn("font-semibold text-sm", accountStats.netWorth < 0 && 'text-red-300')}>{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p></div>
                             </CardContent>
                         </Card>
                         
@@ -530,7 +530,7 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
                 <p className="text-sm font-medium">{account.name}</p>
             </div>
             <div className="flex items-center gap-1">
-                <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-red-200')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-red-200')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 {account.type === 'credit-card' && (
                     <Button variant="outline" size="sm" onClick={onPayDebt} className="bg-transparent border-white/50 hover:bg-white/20 text-white text-xs">
                         <HandCoins className="h-4 w-4 mr-2"/>Borç Öde
@@ -573,3 +573,4 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
     
 
     
+

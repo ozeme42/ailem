@@ -72,7 +72,7 @@ export function BudgetStatsClient() {
                         <CardTitle className="text-sm font-medium flex items-center justify-between text-primary">Toplam Bakiye <Wallet /></CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{totalBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-2xl font-bold">{totalBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                         <p className="text-xs text-muted-foreground">Tüm hesaplarınızdaki toplam miktar</p>
                     </CardContent>
                 </Card>
@@ -81,7 +81,7 @@ export function BudgetStatsClient() {
                         <CardTitle className="text-sm font-medium flex items-center justify-between text-green-600">Toplam Gelir <TrendingUp /></CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{overallStats.totalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-2xl font-bold">{overallStats.totalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                         <p className="text-xs text-muted-foreground">Son 6 aydaki toplam gelir</p>
                     </CardContent>
                 </Card>
@@ -90,7 +90,7 @@ export function BudgetStatsClient() {
                         <CardTitle className="text-sm font-medium flex items-center justify-between text-red-600">Toplam Gider <TrendingDown /></CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{overallStats.totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-2xl font-bold">{overallStats.totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                          <p className="text-xs text-muted-foreground">Son 6 aydaki toplam gider</p>
                     </CardContent>
                 </Card>
@@ -99,7 +99,7 @@ export function BudgetStatsClient() {
                         <CardTitle className="text-sm font-medium flex items-center justify-between">Net Bakiye <Banknote /></CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{overallStats.netBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                        <p className="text-2xl font-bold">{overallStats.netBalance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                          <p className="text-xs text-muted-foreground">Son 6 aydaki net kazanç</p>
                     </CardContent>
                 </Card>

@@ -78,7 +78,7 @@ export function PaymentForm({ assetAccounts, debtAccount, onSubmit }: PaymentFor
                 <SelectContent>
                   {assetAccounts.map((account) => (
                     <SelectItem key={account.id} value={account.id}>
-                      {account.name} ({account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })})
+                      {account.name} ({account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -137,4 +137,3 @@ export function PaymentForm({ assetAccounts, debtAccount, onSubmit }: PaymentFor
     </Form>
   );
 }
-
