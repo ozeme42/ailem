@@ -81,7 +81,7 @@ export function BudgetClient() {
 
         return {
           assets: accounts.filter(a => a.type === 'cash' || a.type === 'bank'),
-          debts: accounts.filter(a => a.type === 'credit-card'),
+          debts: accounts.filter(a => a.type === 'credit-card' || a.type === 'other'),
           totalAssets: totalIncome,
           totalDebts: totalExpense,
           netWorth: totalIncome - totalExpense
@@ -532,8 +532,8 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
                 <p className="text-sm font-medium">{account.name}</p>
             </div>
             <div className="flex items-center gap-1">
-                <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-red-200')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-                {account.type === 'credit-card' && (
+                <p className={cn("font-semibold text-sm", (account.type === 'credit-card' || account.type === 'other') && 'text-red-200')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                {(account.type === 'credit-card' || account.type === 'other') && (
                     <Button variant="ghost" size="icon" onClick={onPayDebt} className="h-8 w-8 text-white bg-white/10 hover:bg-white/20 hover:text-white">
                         <HandCoins className="h-4 w-4"/>
                     </Button>
