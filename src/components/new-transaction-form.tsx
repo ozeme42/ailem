@@ -26,7 +26,6 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Switch } from "./ui/switch";
 
 const formSchema = z.object({
-  description: z.string().min(2, "Açıklama en az 2 karakter olmalıdır."),
   amount: z.coerce.number().positive("Tutar pozitif bir sayı olmalıdır."),
   type: z.enum(['income', 'expense']).default('expense'),
   accountId: z.string({ required_error: "Bir hesap seçmelisiniz." }),
@@ -57,7 +56,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: "",
       amount: undefined,
       type: 'expense',
       accountId: undefined,
@@ -71,7 +69,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   React.useEffect(() => {
     if (initialData) {
       form.reset({
-        description: initialData.description || "",
         amount: initialData.amount || undefined,
         type: initialData.type || 'expense',
         accountId: initialData.accountId || undefined,
@@ -82,7 +79,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       });
     } else {
         form.reset({
-            description: "",
             amount: undefined,
             type: 'expense',
             accountId: undefined,
@@ -179,13 +175,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
                               </Popover>
-                          </FormItem>
-                      )}/>
-                      <Separator/>
-                       <FormField control={form.control} name="description" render={({ field }) => (
-                          <FormItem className="flex items-center">
-                              <FormLabel className="w-20 text-xs text-muted-foreground">Açıklama</FormLabel>
-                              <FormControl><Input placeholder="İşlem açıklaması" {...field} className="bg-transparent border-0 text-base font-semibold h-auto" /></FormControl>
                           </FormItem>
                       )}/>
                       <Separator/>
@@ -304,3 +293,5 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
 }
 
   
+
+    

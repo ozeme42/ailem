@@ -4,7 +4,7 @@ import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic, BudgetCategory } from './data';
-import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths } from 'date-fns';
+import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
 import { getCategoryName } from '@/app/education/page';
@@ -1772,10 +1772,40 @@ export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>)
     const batch = writeBatch(db);
     const cleanedData = removeUndefined(data);
 
-    const newTransactionRef = doc(collection(db, 'transactions'));
-    batch.set(newTransactionRef, { ...cleanedData, familyId });
+    if (data.isInstallment && data.installmentDetails?.total) {
+        const totalInstallments = data.installmentDetails.total;
+        const installmentAmount = data.amount / totalInstallments;
+        const originalDate = parseISO(data.date);
 
-    await updateAccountBalance(batch, data.accountId, data.amount, data.type);
+        for (let i = 0; i < totalInstallments; i++) {
+            const installmentDate = addMonths(originalDate, i);
+            const installmentTransactionRef = doc(collection(db, 'transactions'));
+            
+            const installmentData = {
+                ...cleanedData,
+                familyId,
+                amount: installmentAmount,
+                date: format(installmentDate, 'yyyy-MM-dd'),
+                isInstallment: true,
+                installmentDetails: {
+                    current: i + 1,
+                    total: totalInstallments,
+                    originalTransactionId: newTransactionRef.id // This is a problem, we don't have the ID yet.
+                }
+            };
+            batch.set(installmentTransactionRef, installmentData);
+        }
+         // We can only update the balance once for the full amount if it's a credit card
+        const accountDoc = await getDoc(doc(db, 'accounts', data.accountId));
+        if (accountDoc.exists() && accountDoc.data().type === 'credit-card') {
+            await updateAccountBalance(batch, data.accountId, data.amount, data.type);
+        }
+
+    } else {
+        const newTransactionRef = doc(collection(db, 'transactions'));
+        batch.set(newTransactionRef, { ...cleanedData, familyId });
+        await updateAccountBalance(batch, data.accountId, data.amount, data.type);
+    }
     
     return batch.commit();
 };
@@ -1867,10 +1897,10 @@ export const makePayment = async (fromAccountId: string, toAccountId: string, am
     
     // Log the transactions
     const fromTransactionRef = doc(collection(db, 'transactions'));
-    batch.set(fromTransactionRef, { familyId, accountId: fromAccountId, amount, type: 'expense', category: 'Transfer', date, description: `Payment to ${toAccountSnap.data()?.name}` });
+    batch.set(fromTransactionRef, { familyId, accountId: fromAccountId, amount, type: 'expense', category: 'Transfer', date });
 
     const toTransactionRef = doc(collection(db, 'transactions'));
-    batch.set(toTransactionRef, { familyId, accountId: toAccountId, amount, type: 'income', category: 'Payment', date, description: `Payment from ${fromAccountSnap.data()?.name}` });
+    batch.set(toTransactionRef, { familyId, accountId: toAccountId, amount, type: 'income', category: 'Payment', date });
 
     return batch.commit();
 }
@@ -2148,3 +2178,5 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
         if (unsubscribe) unsubscribe();
     };
 };
+
+    

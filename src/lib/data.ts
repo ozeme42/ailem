@@ -638,7 +638,6 @@ export interface Account {
 export interface Transaction {
     id: string;
     familyId: string;
-    description: string;
     amount: number;
     type: 'income' | 'expense';
     accountId: string;
@@ -690,3 +689,5 @@ export interface StudyAssignment {
 }
 
   
+
+    
