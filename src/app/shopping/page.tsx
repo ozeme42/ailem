@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -28,10 +27,10 @@ import { buttonVariants } from '@/components/ui/button';
 
 
 const solidColors = [
-    { id: 'yellow-amber', name: 'Sarı', class: 'bg-[#f4eeb4]' },
+    { id: 'light-blue', name: 'Açık Mavi', class: 'bg-[#a3d9e4]' },
     { id: 'rose-pink', name: 'Somon', class: 'bg-[#e5a996]' },
     { id: 'emerald-teal', name: 'Yeşil', class: 'bg-[#98b883]' },
-    { id: 'light-yellow', name: 'Açık Sarı', class: 'bg-[#f4eeb4]' },
+    { id: 'light-pink', name: 'Açık Pembe', class: 'bg-[#f4b4c4]' },
 ];
 
 
