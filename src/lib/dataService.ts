@@ -1910,29 +1910,6 @@ export const deleteTransaction = async (id: string) => {
     return batch.commit();
 };
 
-export const makePayment = async (fromAccountId: string, toAccountId: string, amount: number, date: string) => {
-    const familyId = await getCurrentFamilyId();
-    if (!familyId) throw new Error("User not in a family");
-
-    const batch = writeBatch(db);
-    
-    // 1. Debit from the source (asset) account
-    const fromAccountRef = doc(db, 'accounts', fromAccountId);
-    const fromAccountSnap = await getDoc(fromAccountRef);
-    if (fromAccountSnap.exists()) {
-        batch.update(fromAccountRef, { balance: fromAccountSnap.data().balance - amount });
-    }
-
-    // 2. Reduce the balance of the destination (debt) account
-    const toAccountRef = doc(db, 'accounts', toAccountId);
-    const toAccountSnap = await getDoc(toAccountRef);
-    if (toAccountSnap.exists()) {
-        batch.update(toAccountRef, { balance: toAccountSnap.data().balance - amount });
-    }
-
-    return batch.commit();
-};
-
 
 // Budgets
 export const onBudgetsUpdate = (callback: (budgets: Budget[]) => void) => onFamilyDataUpdate<Budget>('budgets', callback);
