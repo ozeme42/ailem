@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { Book, UserLibrary, FamilyMember, ReadingGoals, ReadingSession, Book as BookType } from '@/lib/data';
-import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookFromMemberLibrary, addReadingSession, onReadingSessionsUpdate } from '@/lib/dataService';
+import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookFromMemberLibrary, addReadingSession, onReadingSessionsUpdate, updateFamilyMemberInFamily } from '@/lib/dataService';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
     open: boolean,
     onOpenChange: (open: boolean) => void,
     book: (BookType & { progress?: number }) | null, 
-    onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void,
+    onSaveSession: (book: BookType, session: { pagesRead: number }) => void,
 }) {
     const form = useForm<z.infer<typeof progressFormSchema>>({
         resolver: zodResolver(progressFormSchema),
@@ -62,12 +62,7 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
             newPagesReadThisSession = targetPage - pagesReadCurrently;
         }
 
-        const sessionData = {
-            startTime: newPagesReadThisSession > 0 ? subDays(new Date(), 1) : new Date(), // Placeholder for manual entry if pages were read
-            endTime: new Date(),
-            pagesRead: newPagesReadThisSession,
-        };
-        onSaveSession(book, sessionData);
+        onSaveSession(book, { pagesRead: newPagesReadThisSession });
         
         onOpenChange(false);
     };
@@ -158,7 +153,7 @@ export default function LibraryPage() {
   const handleSaveGoals = async (goals: ReadingGoals) => {
     if (!selectedMember) return;
     try {
-      await updateFamilyMember(selectedMember.id, { readingGoals: goals });
+      await updateFamilyMemberInFamily(familyId!, selectedMember.id, { readingGoals: goals });
       toast({ title: "Hedefler Güncellendi", description: `${selectedMember.name} için yeni okuma hedefleri kaydedildi.` });
       setIsGoalDialogOpen(false);
     } catch (e) {
@@ -166,16 +161,16 @@ export default function LibraryPage() {
     }
   };
   
-  const handleSaveSession = async (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => {
+  const handleSaveSession = async (book: BookType, session: { pagesRead: number }) => {
      if (!familyId || !selectedMember) return;
      
      try {
         await addReadingSession({
             memberId: selectedMember.id,
             bookId: book.id,
-            startTime: session.startTime.toISOString(),
+            startTime: new Date().toISOString(),
             endTime: new Date().toISOString(),
-            durationSeconds: Math.round((session.endTime.getTime() - session.startTime.getTime()) / 1000),
+            durationSeconds: 0, // Manual entry, so duration is 0
             pagesRead: session.pagesRead,
         });
         toast({ title: "Okuma Oturumu Kaydedildi!", description: `${session.pagesRead} sayfa okudun.` });
@@ -370,12 +365,10 @@ export default function LibraryPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center p-4">
                 {weeklyReadingStats.weeklyChartData.map(data => (
-                    <div key={data.day} className="flex flex-col items-center gap-2">
-                        <div className="w-full h-12 flex items-center justify-center rounded-lg bg-white/20">
-                            <p className="font-bold text-lg">{data.pagesRead}</p>
-                        </div>
+                    <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0">
+                         <p className="font-bold text-lg">{data.pagesRead}</p>
                         <p className="text-xs font-semibold text-white/90">{data.day}</p>
-                    </div>
+                    </Card>
                 ))}
             </CardContent>
         </Card>
@@ -561,4 +554,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 }
 
     
-
+    
