@@ -155,7 +155,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
            
            <div className="flex-grow min-h-0">
                <ScrollArea className="h-full">
-                 <div className="p-4 space-y-2">
+                 <div className="p-4 space-y-4">
                      {Object.keys(errors).length > 0 && (
                          <Alert variant="destructive">
                             <AlertTriangle className="h-4 w-4" />
