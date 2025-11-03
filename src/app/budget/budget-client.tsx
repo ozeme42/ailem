@@ -267,37 +267,37 @@ export function BudgetClient() {
 
     return (
         <div className="bg-background text-foreground min-h-screen flex flex-col">
-            <header className="p-4 space-y-4">
+            <header className="p-4 space-y-4 bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-b-xl shadow-lg -mx-4 -mt-8 mb-6 sm:-mx-6">
                  <div className="flex items-center justify-center gap-4 text-xl">
-                    <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')}>
+                    <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')} className="text-white hover:bg-white/20 hover:text-white">
                         <ChevronLeft className="h-6 w-6" />
                     </Button>
                     <h2 className="text-lg font-semibold w-48 text-center capitalize">
                         {format(currentDate, dateDisplayFormat, { locale: tr })}
                     </h2>
-                    <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')}>
+                    <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')} className="text-white hover:bg-white/20 hover:text-white">
                         <ChevronRight className="h-6 w-6" />
                     </Button>
                 </div>
                  <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-muted">
-                        <TabsTrigger value="day">Gün</TabsTrigger>
-                        <TabsTrigger value="month">Ay</TabsTrigger>
-                        <TabsTrigger value="accounts">Hesaplar</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3 bg-black/20 p-1">
+                        <TabsTrigger value="day" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Gün</TabsTrigger>
+                        <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Ay</TabsTrigger>
+                        <TabsTrigger value="accounts" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Hesaplar</TabsTrigger>
                     </TabsList>
                  </Tabs>
                 {mainTab !== 'accounts' && (
-                    <div className="grid grid-cols-3 text-center">
+                    <div className="grid grid-cols-3 text-center gap-2 p-3 bg-black/20 rounded-lg">
                         <div>
-                            <p className="text-xs text-muted-foreground">Gelir</p>
-                            <p className="font-semibold text-sm text-primary">{headerIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            <p className="text-xs text-white/80">Gelir</p>
+                            <p className="font-semibold text-sm">{headerIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Gider</p>
-                            <p className="font-semibold text-sm text-destructive">{headerExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            <p className="text-xs text-white/80">Gider</p>
+                            <p className="font-semibold text-sm text-red-300">{headerExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Toplam</p>
+                            <p className="text-xs text-white/80">Toplam</p>
                             <p className="font-semibold text-sm">{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                         </div>
                     </div>
@@ -362,8 +362,8 @@ export function BudgetClient() {
                     <Accordion type="single" collapsible className="w-full space-y-2">
                         {monthlySummaries.map(summary => (
                              <AccordionItem value={summary.monthKey} key={summary.monthKey} className="border-b-0">
-                                <Card className="overflow-hidden">
-                                     <AccordionTrigger className="p-4 hover:no-underline">
+                                <Card className="overflow-hidden shadow-sm">
+                                     <AccordionTrigger className="p-4 hover:no-underline bg-card">
                                          <div className="flex items-center justify-between w-full">
                                             <div className="font-bold text-sm capitalize">{summary.month}</div>
                                             <div className="flex items-center gap-4 text-xs">
@@ -431,18 +431,18 @@ export function BudgetClient() {
                 )}
                  {mainTab === 'accounts' && (
                      <div className="space-y-4 p-2 text-foreground">
-                        <Card>
+                        <Card className="shadow-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                             <CardHeader>
                                 <CardTitle>Hesap Özeti</CardTitle>
                             </CardHeader>
                              <CardContent className="grid grid-cols-3 gap-2 text-center text-xs">
-                                <div><p className="text-muted-foreground">Varlıklar</p><p className="font-semibold">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div><p className="text-muted-foreground">Borçlar</p><p className="font-semibold text-destructive">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div><p className="text-muted-foreground">Net Değer</p><p className="font-semibold">{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div><p className="text-white/80">Varlıklar</p><p className="font-semibold text-lg">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div><p className="text-white/80">Borçlar</p><p className="font-semibold text-lg text-red-300">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div><p className="text-white/80">Net Değer</p><p className="font-semibold text-lg">{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
                             </CardContent>
                         </Card>
                         
-                         <Card>
+                         <Card className="shadow-md">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base">Varlık Hesapları ({accountStats.assets.length})</CardTitle>
                             </CardHeader>
@@ -453,7 +453,7 @@ export function BudgetClient() {
                             </CardContent>
                         </Card>
                         
-                        <Card>
+                        <Card className="shadow-md">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base">Borç Hesapları ({accountStats.debts.length})</CardTitle>
                             </CardHeader>
@@ -467,9 +467,11 @@ export function BudgetClient() {
                          <Button variant="outline" className="w-full text-sm" onClick={() => openAccountForm(null)}>
                             <Plus className="h-4 w-4 mr-2" /> Yeni Hesap Ekle
                          </Button>
-                         <Button variant="outline" className="w-full text-sm">
-                            <Settings className="h-4 w-4 mr-2" /> Bütçe Ayarları
-                         </Button>
+                         <Link href="/budget/stats">
+                            <Button variant="outline" className="w-full text-sm">
+                                <BarChart2 className="h-4 w-4 mr-2" /> Detaylı Analiz
+                            </Button>
+                         </Link>
                      </div>
                  )}
             </main>
