@@ -524,12 +524,12 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
     const Icon = accountIcons[account.type] || Wallet;
     
     return (
-        <div className="flex justify-between items-center p-3">
-            <div className="flex items-center gap-3">
+        <div className="flex justify-between items-center py-3 px-2">
+            <div className="flex items-center gap-2">
                 <Icon className="h-5 w-5 text-white/80" />
                 <p className="text-sm font-medium">{account.name}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
                 <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-red-200')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                 {account.type === 'credit-card' && (
                     <Button variant="outline" size="sm" onClick={onPayDebt} className="bg-transparent border-white/50 hover:bg-white/20 text-white text-xs">
@@ -567,6 +567,8 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
     
 
 
+
+    
 
     
 
