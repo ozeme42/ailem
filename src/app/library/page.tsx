@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -16,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths, eachMonthOfInterval, startOfYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -110,7 +111,7 @@ export default function LibraryPage() {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
-  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
   
   const { toast } = useToast();
 
@@ -215,80 +216,58 @@ export default function LibraryPage() {
   
     const readingStatsByPeriod = React.useMemo(() => {
         if (!selectedMember) return { chartData: [], totalPages: 0, totalBooks: 0 };
-        const dailyPageGoal = selectedMember.readingGoals?.daily?.pages || 0;
+        
         const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
+        const today = new Date();
 
         if (readingStatsPeriod === 'weekly') {
-            const today = new Date();
             const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-            
-            const weeklySessions = memberSessions.filter(s => 
-                isWithinInterval(parseISO(s.startTime), { start: weekStart, end: addDays(weekStart, 6) })
-            );
-
-            const dailyPages = new Map<string, number>();
             const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
+            
+            const dailyPages = new Map<string, number>();
+            weekDays.forEach(day => dailyPages.set(format(day, 'yyyy-MM-dd'), 0));
 
-            weekDays.forEach(day => {
-                const dayKey = format(day, 'yyyy-MM-dd');
-                dailyPages.set(dayKey, 0);
-            });
-
-            weeklySessions.forEach(session => {
-                const dayKey = format(parseISO(session.startTime), 'yyyy-MM-dd');
-                if (dailyPages.has(dayKey)) {
+            memberSessions.forEach(session => {
+                const sessionDate = parseISO(session.startTime);
+                if (isWithinInterval(sessionDate, { start: weekStart, end: addDays(weekStart, 6) })) {
+                    const dayKey = format(sessionDate, 'yyyy-MM-dd');
                     dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
                 }
             });
             
-            const chartData = weekDays.map(day => {
-                const dayKey = format(day, 'yyyy-MM-dd');
-                const pagesRead = dailyPages.get(dayKey) || 0;
-                return {
-                    name: format(day, 'EEE', { locale: tr }),
-                    pagesRead: pagesRead,
-                    goalMet: dailyPageGoal > 0 && pagesRead >= dailyPageGoal,
-                    progress: dailyPageGoal > 0 ? Math.min((pagesRead / dailyPageGoal) * 100, 100) : 0,
-                }
-            });
+            const chartData = weekDays.map(day => ({
+                name: format(day, 'EEE', { locale: tr }),
+                pagesRead: dailyPages.get(format(day, 'yyyy-MM-dd')) || 0,
+            }));
 
             const totalPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
             return { chartData, totalPages, totalBooks: 0 };
         }
         
         if (readingStatsPeriod === 'monthly') {
-            const today = new Date();
             const yearStart = startOfYear(today);
             const months = eachMonthOfInterval({ start: yearStart, end: today });
     
             const monthlyPages = new Map<string, number>();
-    
-            months.forEach(monthStart => {
-                const monthKey = format(monthStart, 'yyyy-MM');
-                monthlyPages.set(monthKey, 0);
-            });
+            months.forEach(monthStart => monthlyPages.set(format(monthStart, 'yyyy-MM'), 0));
     
             memberSessions.forEach(session => {
                 const sessionDate = parseISO(session.startTime);
                 if (isWithinInterval(sessionDate, { start: yearStart, end: today })) {
                     const monthKey = format(sessionDate, 'yyyy-MM');
-                    if (monthlyPages.has(monthKey)) {
-                        monthlyPages.set(monthKey, (monthlyPages.get(monthKey) || 0) + session.pagesRead);
-                    }
+                    monthlyPages.set(monthKey, (monthlyPages.get(monthKey) || 0) + session.pagesRead);
                 }
             });
     
-            const chartData = Array.from(monthlyPages.entries()).map(([monthKey, pagesRead]) => {
-                return {
-                    name: format(parseISO(monthKey + '-01'), 'MMM', { locale: tr }),
-                    pagesRead: pagesRead,
-                }
-            });
+            const chartData = Array.from(monthlyPages.entries()).map(([monthKey, pagesRead]) => ({
+                name: format(parseISO(monthKey + '-01'), 'MMM', { locale: tr }),
+                pagesRead: pagesRead,
+            }));
     
             const totalPages = Array.from(monthlyPages.values()).reduce((sum, pages) => sum + pages, 0);
             return { chartData, totalPages, totalBooks: 0 };
         }
-
+        
         return { chartData: [], totalPages: 0, totalBooks: 0 };
     }, [readingSessions, selectedMember, readingStatsPeriod]);
 
@@ -427,11 +406,7 @@ export default function LibraryPage() {
                      <div className="grid grid-cols-7 gap-2 text-center">
                         {readingStatsByPeriod.chartData.map((data, index) => (
                             <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden">
-                                <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all origin-bottom" style={{ height: `${data.progress}%` }}></div>
-                                <div className="relative z-10 flex flex-col items-center justify-center">
-                                    {data.goalMet && <div className='flex flex-col items-center justify-center'><Check className="h-4 w-4 text-green-300 mb-1" /></div>}
-                                    <p className="font-bold text-lg">{data.pagesRead}</p>
-                                </div>
+                                <p className="font-bold text-lg">{data.pagesRead}</p>
                                 <p className="text-xs font-semibold text-white/90 relative z-10">{data.name}</p>
                             </div>
                         ))}
@@ -675,3 +650,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     
 
     
+
