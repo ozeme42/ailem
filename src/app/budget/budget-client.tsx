@@ -267,7 +267,8 @@ export function BudgetClient() {
 
     return (
         <div className="bg-background text-foreground min-h-screen flex flex-col">
-            <header className="p-4 space-y-6 bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-b-xl shadow-lg -mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6">
+            <header className="p-4 space-y-4 bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-b-xl shadow-lg -mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6">
+                 <h1 className="text-2xl font-bold text-center">Harcamalarım</h1>
                  <div className="flex w-full items-center justify-between gap-4 text-xl">
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')} className="text-white hover:bg-white/20 hover:text-white">
                         <ChevronLeft className="h-6 w-6" />
@@ -561,6 +562,8 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
+    
 
     
 
