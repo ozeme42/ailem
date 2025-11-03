@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Edit, Repeat, Trash2, AlertTriangle, Banknote, Landmark, CreditCard, Archive } from "lucide-react";
+import { CalendarIcon, Edit, Repeat, Trash2, AlertTriangle, Banknote, Landmark, CreditCard, Archive, Wallet } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,7 @@ const accountIcons: { [key: string]: React.ElementType } = {
     'cash': Banknote,
     'bank': Landmark,
     'credit-card': CreditCard,
+    'other': Wallet,
 };
 
 export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData }: NewTransactionFormProps) {
@@ -168,7 +169,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             <AlertDescription>Lütfen tüm zorunlu alanları doldurun.</AlertDescription>
                         </Alert>
                     )}
-                     <FormItem className="flex items-center">
+                    <FormItem className="flex items-center">
                         <FormLabel className="w-20 text-xs text-muted-foreground">Tarih</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>

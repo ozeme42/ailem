@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -16,7 +15,7 @@ import { Switch } from "./ui/switch";
 
 const formSchema = z.object({
   name: z.string().min(2, "Hesap adı en az 2 karakter olmalıdır."),
-  type: z.enum(['cash', 'bank', 'credit-card']),
+  type: z.enum(['cash', 'bank', 'credit-card', 'other']),
   ownerId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   statementDate: z.coerce.number().min(1).max(31).optional(),
   dueDate: z.coerce.number().min(1).max(31).optional(),
@@ -76,6 +75,7 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
                   <SelectItem value="bank">Banka Hesabı</SelectItem>
                   <SelectItem value="credit-card">Kredi Kartı</SelectItem>
                   <SelectItem value="cash">Nakit</SelectItem>
+                  <SelectItem value="other">Diğer</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

@@ -28,6 +28,7 @@ const accountIcons: { [key: string]: React.ElementType } = {
     'cash': Banknote,
     'bank': Landmark,
     'credit-card': CreditCard,
+    'other': Wallet
 };
 
 export function BudgetClient() {
