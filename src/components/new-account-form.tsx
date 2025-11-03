@@ -17,13 +17,14 @@ const formSchema = z.object({
   name: z.string().min(2, "Hesap adı en az 2 karakter olmalıdır."),
   type: z.enum(['cash', 'bank', 'credit-card', 'other']),
   ownerId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
+  balance: z.coerce.number().default(0),
   statementDate: z.coerce.number().min(1).max(31).optional(),
   dueDate: z.coerce.number().min(1).max(31).optional(),
 });
 
 type NewAccountFormProps = {
   familyMembers: FamilyMember[];
-  onSubmit: (data: Omit<Account, 'id' | 'familyId' | 'balance'>) => void;
+  onSubmit: (data: Omit<Account, 'id' | 'familyId'>) => void;
   initialData?: Account | null;
 };
 
@@ -34,15 +35,35 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
       name: initialData?.name || "",
       type: initialData?.type || "bank",
       ownerId: initialData?.ownerId || undefined,
+      balance: initialData?.balance || 0,
       statementDate: initialData?.statementDate || undefined,
       dueDate: initialData?.dueDate || undefined,
     },
   });
 
   const accountType = form.watch("type");
+  
+  React.useEffect(() => {
+    if(initialData) {
+      form.reset({
+        name: initialData.name,
+        type: initialData.type,
+        ownerId: initialData.ownerId,
+        balance: initialData.balance,
+        statementDate: initialData.statementDate,
+        dueDate: initialData.dueDate,
+      });
+    } else {
+        form.reset({
+            name: "",
+            type: "bank",
+            balance: 0,
+        });
+    }
+  }, [initialData, form]);
 
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit(values);
+    onSubmit(values as Omit<Account, 'id' | 'familyId'>);
     form.reset();
   }
 
@@ -99,6 +120,17 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
               </FormItem>
             )}
           />
+        <FormField
+          control={form.control}
+          name="balance"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Bakiye</FormLabel>
+              <FormControl><Input type="number" step="any" placeholder="0.00" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {accountType === 'credit-card' && (
             <div className="p-4 border rounded-lg space-y-4">

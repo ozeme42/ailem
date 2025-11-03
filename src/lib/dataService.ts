@@ -1699,14 +1699,14 @@ export const deleteBudgetCategory = (id: string) => deleteDoc(doc(db, 'budgetCat
 // Accounts
 export const onAccountsUpdate = (callback: (accounts: Account[]) => void) => onFamilyDataUpdate<Account>('accounts', callback);
 
-export const addAccount = async (data: Omit<Account, 'id' | 'familyId' | 'balance'>) => {
+export const addAccount = async (data: Omit<Account, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     const cleanedData = removeUndefined(data);
-    return addDoc(collection(db, 'accounts'), { ...cleanedData, familyId, balance: 0 });
+    return addDoc(collection(db, 'accounts'), { ...cleanedData, familyId, balance: data.balance || 0 });
 };
 
-export const updateAccount = async (id: string, data: Partial<Omit<Account, 'id' | 'familyId' | 'balance'>>) => {
+export const updateAccount = async (id: string, data: Partial<Omit<Account, 'id' | 'familyId'>>) => {
     const cleanedData = removeUndefined(data);
     return updateDoc(doc(db, 'accounts', id), cleanedData);
 };

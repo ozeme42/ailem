@@ -182,7 +182,7 @@ export function BudgetClient() {
     const headerTotal = headerIncome - headerExpense;
 
 
-    const handleAccountSubmit = async (data: Omit<Account, 'id' | 'familyId' | 'balance'>) => {
+    const handleAccountSubmit = async (data: Omit<Account, 'id' | 'familyId'>) => {
         try {
             if (editingAccount) {
                 await updateAccount(editingAccount.id, data);
