@@ -35,7 +35,7 @@ const progressFormSchema = z.object({
 function ProgressDialog({ open, onOpenChange, book, onSaveSession }: { 
     open: boolean,
     onOpenChange: (open: boolean) => void,
-    book: any | null, 
+    book: (BookType & { progress?: number }) | null, 
     onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void,
 }) {
     const form = useForm<z.infer<typeof progressFormSchema>>({
@@ -60,21 +60,18 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
         let newPagesReadThisSession = 0;
         if (targetPage > pagesReadCurrently) {
             newPagesReadThisSession = targetPage - pagesReadCurrently;
-        } else {
-             // Handle case where user is correcting the page number
-             // We can just update the progress without creating a session for now
-             const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
-             // Directly calling this is complex, better to handle in one function
-             // For now, let's focus on adding progress
         }
 
         if (newPagesReadThisSession > 0) {
             const sessionData = {
-                startTime: subDays(new Date(),1), // Placeholder for manual entry
+                startTime: subDays(new Date(), 1), // Placeholder for manual entry
                 endTime: new Date(),
                 pagesRead: newPagesReadThisSession,
             };
             onSaveSession(book, sessionData);
+        } else {
+            // Handle only progress update without creating a session if pages are corrected backwards
+             onSaveSession(book, {startTime: new Date(), endTime: new Date(), pagesRead: 0});
         }
         
         onOpenChange(false);

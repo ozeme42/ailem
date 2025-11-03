@@ -1,3 +1,4 @@
+
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -145,11 +146,11 @@ export const addReadingSession = async (data: Omit<ReadingSession, 'id' | 'famil
     
     const batch = writeBatch(db);
 
-    // 1. Add the new reading session
+    // 1. Add the new reading session with the correct pagesRead value.
     const sessionRef = doc(collection(db, 'readingSessions'));
     batch.set(sessionRef, { ...data, familyId });
 
-    // 2. Update the book's progress in the user's library
+    // 2. Update the book's progress in the user's library.
     const libraryId = `${familyId}_${data.memberId}`;
     const libraryRef = doc(db, 'userLibraries', libraryId);
     const librarySnap = await getDoc(libraryRef);
@@ -163,8 +164,8 @@ export const addReadingSession = async (data: Omit<ReadingSession, 'id' | 'famil
             const bookDetails = (await getDoc(doc(db, 'mediaItems', data.bookId))).data() as Book;
 
             if (bookDetails && bookDetails.pageCount) {
-                const currentPagesRead = bookToUpdate.progress ? (bookToUpdate.progress / 100) * bookDetails.pageCount : 0;
-                const newTotalPagesRead = currentPagesRead + data.pagesRead;
+                const currentProgressPages = bookToUpdate.progress ? (bookToUpdate.progress / 100) * bookDetails.pageCount : 0;
+                const newTotalPagesRead = currentProgressPages + data.pagesRead;
                 const newProgressPercent = Math.min(Math.round((newTotalPagesRead / bookDetails.pageCount) * 100), 100);
 
                 const updatedBook: UserLibraryBook = {
