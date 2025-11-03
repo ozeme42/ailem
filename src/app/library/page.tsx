@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -378,16 +379,14 @@ export default function LibraryPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-7 gap-2 text-center p-4">
                 {weeklyReadingStats.weeklyChartData.map(data => (
-                    <div key={data.day} className="relative overflow-hidden rounded-lg bg-white/20 h-32 flex flex-col items-center justify-end p-1">
+                     <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0 relative overflow-hidden">
                         <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all duration-500" style={{ height: `${data.progress}%` }}></div>
-                        <div className="relative z-10 flex flex-col items-center justify-center">
-                           <div className="flex flex-col items-center gap-1">
-                                {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
-                                <p className="font-bold text-lg">{data.pagesRead}</p>
-                           </div>
+                         <div className="relative z-10 flex flex-col items-center justify-center">
+                            {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
+                            <p className="font-bold text-lg">{data.pagesRead}</p>
                            <p className="text-xs font-semibold text-white/90">{data.day}</p>
                         </div>
-                    </div>
+                    </Card>
                 ))}
             </CardContent>
         </Card>
@@ -531,15 +530,11 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                     <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover/book:scale-105" data-ai-hint="book cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg flex flex-col justify-end">
                        <p className="font-semibold text-[11px] text-white leading-tight line-clamp-2" title={book.title}>{book.title}</p>
-                        {book.finishedAt && (
-                           <p className="text-white/80 text-[10px] font-semibold">
-                               Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}
-                           </p>
-                       )}
+                       <p className="text-white/80 text-[10px] font-semibold sm:hidden">Bitiş: {book.finishedAt ? format(parseISO(book.finishedAt), 'dd.MM.yy') : ''}</p>
                    </div>
                    <div className="absolute inset-0 bg-black/60 rounded-lg flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
-                       <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 mb-2">{book.title}</p>
-                       <div className="flex gap-2">
+                       <p className="text-white/80 text-[10px] font-semibold">Bitiş: {book.finishedAt ? format(parseISO(book.finishedAt), 'dd.MM.yy') : ''}</p>
+                       <div className="flex gap-2 mt-auto">
                            <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={(e) => {e.stopPropagation(); onUpdateStatus(book.id, 'reading', 0); }}>
                                <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
                            </Button>
@@ -627,5 +622,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
 
 
