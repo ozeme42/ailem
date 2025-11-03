@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -17,11 +16,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths, eachMonthOfInterval, startOfYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Input } from "@/components/ui/input";
+import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
 import { BookDetailDialog } from "@/components/book-detail-dialog";
 import { useForm } from 'react-hook-form';
@@ -111,7 +110,7 @@ export default function LibraryPage() {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
-  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
+  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
   
   const { toast } = useToast();
 
@@ -281,7 +280,7 @@ export default function LibraryPage() {
     
             const chartData = Array.from(monthlyPages.entries()).map(([monthKey, pagesRead]) => {
                 return {
-                    name: format(parseISO(monthKey + '-01'), 'MMMM', { locale: tr }),
+                    name: format(parseISO(monthKey + '-01'), 'MMM', { locale: tr }),
                     pagesRead: pagesRead,
                 }
             });
@@ -390,7 +389,7 @@ export default function LibraryPage() {
                 </div>
                  <div>
                     <BookUp className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{stats.toRead}</p>
+                    <p className="text-2xl font-bold">{toReadBooks.length}</p>
                     <p className="text-xs text-white/80">Okunacak</p>
                 </div>
                 <div>
@@ -420,18 +419,17 @@ export default function LibraryPage() {
                     </div>
                 </Tabs>
                 <CardDescription className="text-white/80 pt-2">
-                    {readingStatsPeriod === 'weekly' && `Bu hafta okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
-                    {readingStatsPeriod === 'monthly' && `Bu ay okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
+                    {readingStatsPeriod === 'weekly' ? `Bu hafta okunan toplam ${readingStatsByPeriod.totalPages} sayfa.` : `Bu ay okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                 {readingStatsPeriod === 'weekly' ? (
+                {readingStatsPeriod === 'weekly' ? (
                      <div className="grid grid-cols-7 gap-2 text-center">
                         {readingStatsByPeriod.chartData.map((data, index) => (
                             <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden">
                                 <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all origin-bottom" style={{ height: `${data.progress}%` }}></div>
                                 <div className="relative z-10 flex flex-col items-center justify-center">
-                                    {data.goalMet && <Check className="h-4 w-4 text-green-300 mb-1" />}
+                                    {data.goalMet && <div className='flex flex-col items-center justify-center'><Check className="h-4 w-4 text-green-300 mb-1" /></div>}
                                     <p className="font-bold text-lg">{data.pagesRead}</p>
                                 </div>
                                 <p className="text-xs font-semibold text-white/90 relative z-10">{data.name}</p>
@@ -439,7 +437,7 @@ export default function LibraryPage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
                         {readingStatsByPeriod.chartData.map((data, index) => (
                             <div key={index} className="p-2 rounded-lg bg-white/20 backdrop-blur-sm text-center">
                                 <p className="font-bold text-lg">{data.pagesRead}</p>
@@ -567,7 +565,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
                                     <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
                                         <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={()={() => onRemove(book.id)}>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
                                         <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -606,7 +604,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                                 </AlertDialogTrigger>
                                 <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                      <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                     <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
+                                     <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                        </div>
@@ -633,7 +631,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
+                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </DialogFooter>
@@ -673,5 +671,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     )
 }
 
+
+    
 
     
