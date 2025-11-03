@@ -303,34 +303,42 @@ export default function Home() {
     }, [familyMembers, userLibraries, books]);
     
     const weeklyReadingStats = React.useMemo(() => {
-      const memberSessions = readingSessions.filter(s => familyMembers.some(m => m.id === s.memberId));
       const today = new Date();
       const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-      
-      const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
-      const dailyPages: { [key: string]: number } = {};
-      weekDaysKeys.forEach(key => dailyPages[key] = 0);
-
-      memberSessions.forEach(session => {
-        const sessionDate = parseISO(session.startTime);
-        if (isWithinInterval(sessionDate, { start: weekStart, end: endOfWeek(today, { weekStartsOn: 1}) })) {
-          const dayKey = format(sessionDate, 'EEE', { locale: tr });
-          dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
-        }
+      const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  
+      const memberSessions = readingSessions.filter(s => 
+          familyMembers.some(m => m.id === s.memberId) &&
+          isWithinInterval(parseISO(s.startTime), { start: weekStart, end: weekEnd })
+      );
+  
+      const dailyPages = new Map<string, number>();
+      const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
+          const day = addDays(weekStart, i);
+          const dayKey = format(day, 'yyyy-MM-dd');
+          dailyPages.set(dayKey, 0);
+          return dayKey;
       });
-      
+  
+      memberSessions.forEach(session => {
+          const dayKey = format(parseISO(session.startTime), 'yyyy-MM-dd');
+          if (dailyPages.has(dayKey)) {
+              dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
+          }
+      });
+  
       const weeklyChartData = weekDaysKeys.map(dayKey => ({
-        day: dayKey,
-        "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
+          day: format(parseISO(dayKey), 'EEE', { locale: tr }),
+          "Okunan Sayfa Sayısı": dailyPages.get(dayKey) || 0,
       }));
-      
-      const totalWeeklyPages = weeklyChartData.reduce((sum, day) => sum + day["Okunan Sayfa Sayısı"], 0);
-      
+  
+      const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
+  
       return {
-        weeklyChartData,
-        totalWeeklyPages,
+          weeklyChartData,
+          totalWeeklyPages,
       };
-    }, [readingSessions, familyMembers, familyId]);
+    }, [readingSessions, familyMembers]);
 
 
   if (loading) {
@@ -720,5 +728,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
