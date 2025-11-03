@@ -17,9 +17,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths, getMonth, getYear, eachMonthOfInterval, startOfYear } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfYear, subMonths, getYear, eachMonthOfInterval } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
@@ -216,8 +216,8 @@ export default function LibraryPage() {
   
   const readingGoals = selectedMember?.readingGoals;
   
-  const readingStatsByPeriod = React.useMemo(() => {
-    if (!selectedMember) return { weeklyChartData: [], monthlyChartData: [], totalWeeklyPages: 0, totalMonthlyPages: 0 };
+    const readingStatsByPeriod = React.useMemo(() => {
+    if (!selectedMember) return { weeklyChartData: [], monthlyPageData: [], totalWeeklyPages: 0, totalMonthlyPages: 0 };
   
     const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
     const today = new Date();
@@ -247,34 +247,35 @@ export default function LibraryPage() {
     }));
     const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
   
-    // Monthly Stats
+    // Monthly Stats for Boxes
     const currentYear = getYear(today);
     const monthsOfYear = eachMonthOfInterval({
         start: startOfYear(today),
-        end: today,
+        end: new Date(currentYear, 11, 31),
     });
 
-    const monthlyTotals = new Map<string, number>();
-    monthsOfYear.forEach(month => {
-      monthlyTotals.set(format(month, 'MMM', { locale: tr }), 0);
+    let totalMonthlyPages = 0;
+    const monthlyPageData = monthsOfYear.map(month => {
+        const monthKey = format(month, 'MMM', { locale: tr });
+        const monthStart = startOfMonth(month);
+        const monthEnd = endOfMonth(month);
+
+        const pagesRead = memberSessions
+            .filter(s => {
+                const sessionDate = parseISO(s.startTime);
+                return isWithinInterval(sessionDate, { start: monthStart, end: monthEnd });
+            })
+            .reduce((sum, s) => sum + s.pagesRead, 0);
+        
+        totalMonthlyPages += pagesRead;
+        
+        return {
+            month: monthKey,
+            pagesRead,
+        };
     });
 
-    memberSessions.forEach(session => {
-        const sessionDate = parseISO(session.startTime);
-        if (getYear(sessionDate) === currentYear) {
-            const monthKey = format(sessionDate, 'MMM', { locale: tr });
-            monthlyTotals.set(monthKey, (monthlyTotals.get(monthKey) || 0) + session.pagesRead);
-        }
-    });
-
-    const monthlyChartData = Array.from(monthlyTotals.entries()).map(([month, pagesRead]) => ({
-      month,
-      pagesRead,
-    }));
-    
-    const totalMonthlyPages = Array.from(monthlyTotals.values()).reduce((sum, pages) => sum + pages, 0);
-
-    return { weeklyChartData, monthlyChartData, totalWeeklyPages, totalMonthlyPages };
+    return { weeklyChartData, monthlyPageData, totalWeeklyPages, totalMonthlyPages };
   }, [readingSessions, selectedMember]);
 
 
@@ -427,9 +428,10 @@ export default function LibraryPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-4 md:grid-cols-6 gap-2 text-center">
-                        {readingStatsByPeriod.monthlyChartData.map((data: any, index) => {
+                        {readingStatsByPeriod.monthlyPageData.map((data, index) => {
                              const monthlyGoal = readingGoals?.monthly?.pages || 0;
-                             const isCompleted = monthlyGoal > 0 && data.pagesRead >= monthlyGoal;
+                             const monthTotalPages = data.pagesRead;
+                             const isCompleted = monthlyGoal > 0 && monthTotalPages >= monthlyGoal;
                              return (
                                 <div key={index} className="relative flex flex-col items-center justify-center p-2 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden min-h-[80px]">
                                      {isCompleted && (
@@ -437,7 +439,7 @@ export default function LibraryPage() {
                                             <Check className="h-6 w-6 text-white" />
                                         </div>
                                      )}
-                                     <p className="font-bold text-lg">{data.pagesRead}</p>
+                                     <p className="font-bold text-lg">{monthTotalPages}</p>
                                      <p className="text-xs font-semibold text-white/90 relative z-10">{data.month}</p>
                                 </div>
                             )
@@ -520,7 +522,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
-         <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+        <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
             <div className="p-4 flex flex-col sm:flex-row gap-4">
                 <Image 
                     src={book.image} 
@@ -672,3 +674,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     
 
     
+
