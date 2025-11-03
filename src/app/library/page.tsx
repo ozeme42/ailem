@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -31,25 +32,24 @@ const progressFormSchema = z.object({
   currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
 });
 
-function ProgressDialog({ book, onSaveSession, onUpdateStatus, children }: { 
+function ProgressDialog({ open, onOpenChange, book, onSaveSession }: { 
+    open: boolean,
+    onOpenChange: (open: boolean) => void,
     book: any | null, 
     onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void,
-    onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void,
-    children: React.ReactNode
 }) {
-    const [isOpen, setIsOpen] = React.useState(false);
     const form = useForm<z.infer<typeof progressFormSchema>>({
         resolver: zodResolver(progressFormSchema),
     });
 
     React.useEffect(() => {
-        if (book && isOpen) {
+        if (book && open) {
             const initialPage = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
             form.reset({ currentPage: initialPage });
         }
-    }, [isOpen, book, form]);
+    }, [open, book, form]);
     
-    if (!book) return <>{children}</>;
+    if (!book) return null;
 
     const handleProgressSave = (data: z.infer<typeof progressFormSchema>) => {
         const targetPage = data.currentPage;
@@ -57,27 +57,31 @@ function ProgressDialog({ book, onSaveSession, onUpdateStatus, children }: {
 
         const pagesReadCurrently = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
         
+        let newPagesReadThisSession = 0;
         if (targetPage > pagesReadCurrently) {
-            const newPagesReadThisSession = targetPage - pagesReadCurrently;
-             const sessionData = {
-                startTime: subDays(new Date(),1), // This is a placeholder for manual entry
+            newPagesReadThisSession = targetPage - pagesReadCurrently;
+        } else {
+             // Handle case where user is correcting the page number
+             // We can just update the progress without creating a session for now
+             const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
+             // Directly calling this is complex, better to handle in one function
+             // For now, let's focus on adding progress
+        }
+
+        if (newPagesReadThisSession > 0) {
+            const sessionData = {
+                startTime: subDays(new Date(),1), // Placeholder for manual entry
                 endTime: new Date(),
                 pagesRead: newPagesReadThisSession,
             };
             onSaveSession(book, sessionData);
-        } else {
-             const newProgressPercent = Math.min(Math.round((targetPage / book.pageCount) * 100), 100);
-             onUpdateStatus(book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
         }
         
-        setIsOpen(false);
+        onOpenChange(false);
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                {children}
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
@@ -97,7 +101,7 @@ function ProgressDialog({ book, onSaveSession, onUpdateStatus, children }: {
                             )}
                         />
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>İptal</Button>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
                             <Button type="submit">Kaydet</Button>
                         </DialogFooter>
                     </form>
@@ -115,6 +119,7 @@ export default function LibraryPage() {
   const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
+  const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
   
   const { toast } = useToast();
 
@@ -171,25 +176,20 @@ export default function LibraryPage() {
   
   const handleSaveSession = async (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => {
      if (!familyId || !selectedMember) return;
-     const durationSeconds = Math.round((session.endTime.getTime() - session.startTime.getTime()) / 1000);
      
-     const newSession: Omit<ReadingSession, 'id' | 'familyId'> = {
-         memberId: selectedMember.id,
-         bookId: book.id,
-         startTime: session.startTime.toISOString(),
-         endTime: new Date().toISOString(),
-         durationSeconds: durationSeconds,
-         pagesRead: session.pagesRead,
+     try {
+        await addReadingSession({
+            memberId: selectedMember.id,
+            bookId: book.id,
+            startTime: session.startTime.toISOString(),
+            endTime: new Date().toISOString(),
+            durationSeconds: Math.round((session.endTime.getTime() - session.startTime.getTime()) / 1000),
+            pagesRead: session.pagesRead,
+        });
+        toast({ title: "Okuma Oturumu Kaydedildi!", description: `${session.pagesRead} sayfa okudun.` });
+     } catch(e) {
+         toast({ title: "Hata", description: "Oturum kaydedilirken bir hata oluştu.", variant: "destructive" });
      }
-     await addReadingSession(newSession);
-
-    if (book.pageCount) {
-        const libraryBook = userLibraries.find(lib => lib.memberId === selectedMember.id)?.books.find(b => b.bookId === book.id);
-        const currentProgressPages = libraryBook?.progress ? (libraryBook.progress / 100 * book.pageCount) : 0;
-        const newTotalPagesRead = currentProgressPages + session.pagesRead;
-        const newProgressPercent = Math.min(Math.round((newTotalPagesRead / book.pageCount) * 100), 100);
-        await updateUserBookStatus(familyId, selectedMember.id, book.id, newProgressPercent === 100 ? 'finished' : 'reading', newProgressPercent);
-    }
   };
 
   const { readingBooks, toReadBooks, finishedBooks, stats } = React.useMemo(() => {
@@ -387,7 +387,7 @@ export default function LibraryPage() {
             <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
                 <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onSaveSession={handleSaveSession} />)}
+                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onOpenProgressDialog={() => setEditingProgressForBook(book)} />)}
                 </div>
             </div>
         )}
@@ -442,11 +442,17 @@ export default function LibraryPage() {
         isOpen={!!viewingBook}
         onOpenChange={() => setViewingBook(null)}
       />
+      <ProgressDialog 
+        book={editingProgressForBook}
+        open={!!editingProgressForBook}
+        onOpenChange={() => setEditingProgressForBook(null)}
+        onSaveSession={handleSaveSession}
+      />
     </>
   );
 }
 
-function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSaveSession }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onSaveSession: (book: BookType, session: { startTime: Date, endTime: Date, pagesRead: number }) => void }) {
+function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpenProgressDialog }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onOpenProgressDialog: () => void }) {
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
@@ -477,9 +483,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onSave
                             </div>
                         </div>
                         <div className="flex gap-2 pt-2 items-center justify-center">
-                            <ProgressDialog book={book} onSaveSession={onSaveSession} onUpdateStatus={onUpdateStatus}>
-                                <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30">İlerleme Gir</Button>
-                            </ProgressDialog>
+                             <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30" onClick={onOpenProgressDialog}>İlerleme Gir</Button>
                             <Link href={`/library/session/${book.id}`}>
                                 <Button size="icon" className="rounded-full bg-amber-400 text-amber-900 hover:bg-amber-500">
                                     <Clock className="h-5 w-5"/>

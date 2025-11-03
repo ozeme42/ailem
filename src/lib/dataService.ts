@@ -142,7 +142,47 @@ export const onReadingSessionsUpdate = (callback: (sessions: ReadingSession[]) =
 export const addReadingSession = async (data: Omit<ReadingSession, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'readingSessions'), { ...data, familyId });
+    
+    const batch = writeBatch(db);
+
+    // 1. Add the new reading session
+    const sessionRef = doc(collection(db, 'readingSessions'));
+    batch.set(sessionRef, { ...data, familyId });
+
+    // 2. Update the book's progress in the user's library
+    const libraryId = `${familyId}_${data.memberId}`;
+    const libraryRef = doc(db, 'userLibraries', libraryId);
+    const librarySnap = await getDoc(libraryRef);
+
+    if (librarySnap.exists()) {
+        const library = librarySnap.data() as UserLibrary;
+        const bookIndex = library.books.findIndex(b => b.bookId === data.bookId);
+
+        if (bookIndex !== -1) {
+            const bookToUpdate = library.books[bookIndex];
+            const bookDetails = (await getDoc(doc(db, 'mediaItems', data.bookId))).data() as Book;
+
+            if (bookDetails && bookDetails.pageCount) {
+                const currentPagesRead = bookToUpdate.progress ? (bookToUpdate.progress / 100) * bookDetails.pageCount : 0;
+                const newTotalPagesRead = currentPagesRead + data.pagesRead;
+                const newProgressPercent = Math.min(Math.round((newTotalPagesRead / bookDetails.pageCount) * 100), 100);
+
+                const updatedBook: UserLibraryBook = {
+                    ...bookToUpdate,
+                    progress: newProgressPercent,
+                    status: newProgressPercent >= 100 ? 'finished' : 'reading',
+                };
+                if(newProgressPercent >= 100 && !updatedBook.finishedAt) {
+                    updatedBook.finishedAt = new Date().toISOString();
+                }
+
+                library.books[bookIndex] = updatedBook;
+                batch.update(libraryRef, { books: library.books });
+            }
+        }
+    }
+
+    await batch.commit();
 };
 
 
