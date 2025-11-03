@@ -34,7 +34,7 @@ export function PageHeader({ title, children, className }: PageHeaderProps) {
       </div>
       
       <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>{title}</h1>
+          <h1 className="text-5xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>{title}</h1>
           
           <div className="w-full max-w-2xl">
             {children}
