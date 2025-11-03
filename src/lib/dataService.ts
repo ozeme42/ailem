@@ -1901,18 +1901,19 @@ export const makePayment = async (fromAccountId: string, toAccountId: string, am
     const toAccountRef = doc(db, 'accounts', toAccountId);
     const toAccountSnap = await getDoc(toAccountRef);
     if (toAccountSnap.exists()) {
+        // Debt balance is positive, so paying it off means subtracting from the balance
         batch.update(toAccountRef, { balance: toAccountSnap.data().balance - amount });
     }
     
-    // Log the transactions
+    // Log the transactions to keep a record
     const fromTransactionRef = doc(collection(db, 'transactions'));
-    batch.set(fromTransactionRef, { familyId, accountId: fromAccountId, amount, type: 'expense', category: 'Transfer', date });
+    batch.set(fromTransactionRef, { familyId, accountId: fromAccountId, amount, type: 'expense', category: 'Transfer', date, isInstallment: false });
 
     const toTransactionRef = doc(collection(db, 'transactions'));
-    batch.set(toTransactionRef, { familyId, accountId: toAccountId, amount, type: 'income', category: 'Payment', date });
+    batch.set(toTransactionRef, { familyId, accountId: toAccountId, amount, type: 'expense', category: 'Borç Ödeme', date, isInstallment: false });
 
     return batch.commit();
-}
+};
 
 
 // Budgets
