@@ -130,7 +130,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-grow min-h-0">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
                 <div className="p-4 bg-muted/50 flex-shrink-0">
                     <DialogHeader className="p-0">
                         <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
@@ -178,11 +178,39 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             </FormItem>
                         )}/>
                         <Separator/>
-                        <FormField control={form.control} name="amount" render={({ field }) => (
-                            <FormItem className="flex items-center"><FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
-                                <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-2xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
-                            </FormItem>
-                        )}/>
+                        
+                         <div className="space-y-2">
+                             <div className="flex items-center">
+                                <FormField control={form.control} name="amount" render={({ field }) => (
+                                    <FormItem className="flex-grow flex items-center">
+                                        <FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" step="any" placeholder="0,00" {...field} value={field.value ?? ''} className={cn("bg-transparent border-0 text-2xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}/>
+                                {transactionType === 'expense' && (
+                                    <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                                        <FormItem className="flex items-center gap-2 space-y-0">
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                            <FormLabel className="text-xs">Taksit</FormLabel>
+                                        </FormItem>
+                                    )}/>
+                                )}
+                            </div>
+                            {isInstallment && (
+                                <div className="pl-20">
+                                <FormField control={form.control} name="installmentCount" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Taksit Sayısı</FormLabel>
+                                        <FormControl><Input type="number" placeholder="2" {...field} value={field.value ?? ''} /></FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}/>
+                                </div>
+                            )}
+                         </div>
+
                         <Separator/>
                         <FormItem className="flex items-center">
                             <FormLabel className="w-20 text-xs text-muted-foreground">Kategori</FormLabel>
@@ -224,25 +252,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             {errors.accountId && <p className="pt-2 text-xs font-medium text-destructive">{errors.accountId.message}</p>}
                         </FormItem>
                         <Separator/>
-                        {transactionType === 'expense' && (
-                        <div className="space-y-4">
-                            <FormField control={form.control} name="isInstallment" render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                                    <FormLabel>Taksitli İşlem</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
-                            )}/>
-                            {isInstallment && (
-                                <FormField control={form.control} name="installmentCount" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Taksit Sayısı</FormLabel>
-                                        <FormControl><Input type="number" placeholder="2" {...field} /></FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}/>
-                            )}
-                        </div>
-                        )}
                     </div>
                 </ScrollArea>
                 
