@@ -378,16 +378,16 @@ export default function LibraryPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-7 gap-2 text-center p-4">
                 {weeklyReadingStats.weeklyChartData.map(data => (
-                    <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-end p-1 border-0 relative overflow-hidden h-32">
+                    <div key={data.day} className="relative overflow-hidden rounded-lg bg-white/20 h-32 flex flex-col items-center justify-end p-1">
                         <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all duration-500" style={{ height: `${data.progress}%` }}></div>
-                         <div className="relative z-10 flex flex-col items-center justify-center">
-                            <div className="flex items-center gap-1">
+                        <div className="relative z-10 flex flex-col items-center justify-center">
+                           <div className="flex items-center gap-1">
                                 <p className="font-bold text-lg">{data.pagesRead}</p>
                                 {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
-                            </div>
-                            <p className="text-xs font-semibold text-white/90">{data.day}</p>
+                           </div>
+                           <p className="text-xs font-semibold text-white/90">{data.day}</p>
                         </div>
-                    </Card>
+                    </div>
                 ))}
             </CardContent>
         </Card>
@@ -523,30 +523,51 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
 
 
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
+    const [isOpen, setIsOpen] = React.useState(false);
     return (
-        <div className="group relative w-32 shrink-0">
-             <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover:scale-105" data-ai-hint="book cover"/>
-             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg">
-                <p className="font-semibold text-[11px] text-white leading-tight line-clamp-2">{book.title}</p>
-                 {book.finishedAt && (
-                    <p className="text-white/80 text-[10px] font-semibold sm:hidden group-hover:block">
-                        Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}
-                    </p>
-                )}
-            </div>
-            <div className="absolute inset-0 bg-black/60 rounded-lg flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
-                <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 mb-2">{book.title}</p>
-                {book.finishedAt && <p className="text-white/80 text-[10px] font-semibold mb-2">Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}</p>}
-                <div className="flex gap-2">
-                    <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                        <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
-                    </Button>
-                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
-                        <Trash2 className="h-3 w-3"/>
-                    </Button>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                 <div className="group/book relative w-32 shrink-0 cursor-pointer">
+                    <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover/book:scale-105" data-ai-hint="book cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg flex flex-col justify-end">
+                       <p className="font-semibold text-[11px] text-white leading-tight line-clamp-2" title={book.title}>{book.title}</p>
+                        {book.finishedAt && (
+                           <p className="text-white/80 text-[10px] font-semibold">
+                               Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}
+                           </p>
+                       )}
+                   </div>
+                   <div className="absolute inset-0 bg-black/60 rounded-lg flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
+                       <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 mb-2">{book.title}</p>
+                       <div className="flex gap-2">
+                           <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={(e) => {e.stopPropagation(); onUpdateStatus(book.id, 'reading', 0); }}>
+                               <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
+                           </Button>
+                           <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                               <Trash2 className="h-3 w-3"/>
+                           </Button>
+                       </div>
+                   </div>
                 </div>
-            </div>
-        </div>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xs">
+                 <DialogHeader>
+                    <DialogTitle>{book.title}</DialogTitle>
+                    <DialogDescription>{book.author}</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 text-center text-sm text-muted-foreground">
+                    {book.finishedAt && `Bitirme Tarihi: ${format(parseISO(book.finishedAt), 'dd MMMM yyyy')}`}
+                </div>
+                <DialogFooter className="flex-col gap-2">
+                     <Button variant="secondary" className="w-full" onClick={() => { onUpdateStatus(book.id, 'reading', 0); setIsOpen(false); }}>
+                        <RotateCcw className="mr-2 h-4 w-4"/> Tekrar Oku
+                    </Button>
+                    <Button variant="destructive" className="w-full" onClick={() => { onRemove(book.id); setIsOpen(false); }}>
+                        <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -590,3 +611,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
