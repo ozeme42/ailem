@@ -175,7 +175,7 @@ export default function LibraryPage() {
         });
         toast({ title: "Okuma Oturumu Kaydedildi!", description: `${session.pagesRead} sayfa okudun.` });
      } catch(e) {
-         toast({ title: "Hata", description: "Oturum kaydedilirken bir hata oluştu.", variant: "destructive" });
+         toast({ title: "Hata", description: "Oturum kaydedilirken bir sorun oluştu.", variant: "destructive" });
      }
   };
 
@@ -211,16 +211,16 @@ export default function LibraryPage() {
   
     const weeklyReadingStats = React.useMemo(() => {
         if (!selectedMember) return { weeklyChartData: [], totalWeeklyPages: 0 };
-    
+
         const today = new Date();
         const weekStart = startOfWeek(today, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-    
-        const memberSessions = readingSessions.filter(s => 
+
+        const memberSessions = readingSessions.filter(s =>
             s.memberId === selectedMember.id &&
             isWithinInterval(parseISO(s.startTime), { start: weekStart, end: weekEnd })
         );
-    
+
         const dailyPages = new Map<string, number>();
         const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
             const day = addDays(weekStart, i);
@@ -228,26 +228,32 @@ export default function LibraryPage() {
             dailyPages.set(dayKey, 0);
             return dayKey;
         });
-    
+
         memberSessions.forEach(session => {
             const dayKey = format(parseISO(session.startTime), 'yyyy-MM-dd');
             if (dailyPages.has(dayKey)) {
                 dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
             }
         });
-    
-        const weeklyChartData = weekDaysKeys.map(dayKey => ({
-            day: format(parseISO(dayKey), 'EEE', { locale: tr }),
-            pagesRead: dailyPages.get(dayKey) || 0,
-        }));
-    
+
+        const dailyPageGoal = selectedMember?.readingGoals?.daily?.pages || 0;
+
+        const weeklyChartData = weekDaysKeys.map(dayKey => {
+            const pagesRead = dailyPages.get(dayKey) || 0;
+            return {
+                day: format(parseISO(dayKey), 'EEE', { locale: tr }),
+                pagesRead: pagesRead,
+                goalMet: dailyPageGoal > 0 && pagesRead >= dailyPageGoal,
+            }
+        });
+
         const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
-    
+
         return {
             weeklyChartData,
             totalWeeklyPages,
         };
-      }, [readingSessions, selectedMember]);
+    }, [readingSessions, selectedMember]);
 
 
   const readingGoals = selectedMember?.readingGoals;
@@ -366,7 +372,10 @@ export default function LibraryPage() {
             <CardContent className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center p-4">
                 {weeklyReadingStats.weeklyChartData.map(data => (
                     <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0">
-                         <p className="font-bold text-lg">{data.pagesRead}</p>
+                         <div className="flex items-center gap-1">
+                            <p className="font-bold text-lg">{data.pagesRead}</p>
+                            {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
+                        </div>
                         <p className="text-xs font-semibold text-white/90">{data.day}</p>
                     </Card>
                 ))}
@@ -554,4 +563,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 }
 
     
+    
+
     
