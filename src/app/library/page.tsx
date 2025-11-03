@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 const progressFormSchema = z.object({
@@ -440,30 +440,30 @@ export default function LibraryPage() {
                         <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                             <BarChart2 /> Okuma İstatistikleri
                         </CardTitle>
-                        <TabsList className="grid w-full grid-cols-3 bg-white/20 text-white">
+                        <TabsList className="grid w-full grid-cols-2 sm:w-auto">
                             <TabsTrigger value="weekly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Haftalık</TabsTrigger>
                             <TabsTrigger value="monthly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Aylık</TabsTrigger>
-                            <TabsTrigger value="yearly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Yıllık</TabsTrigger>
+                             <TabsTrigger value="yearly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Yıllık</TabsTrigger>
                         </TabsList>
                     </div>
                 </Tabs>
                 <CardDescription className="text-white/80 pt-2">
                     {readingStatsPeriod === 'weekly' && `Bu hafta okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                     {readingStatsPeriod === 'monthly' && `Bu ay okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
-                    {readingStatsPeriod === 'yearly' && `Son 12 ayda okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
+                     {readingStatsPeriod === 'yearly' && `Son 12 ayda okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                 </CardDescription>
             </CardHeader>
             <CardContent>
                  {readingStatsPeriod === 'weekly' ? (
                      <div className="grid grid-cols-7 gap-2 text-center">
                         {readingStatsByPeriod.chartData.map((data, index) => (
-                            <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/20 backdrop-blur-sm overflow-hidden">
-                                {data.goalMet && <Check className="h-4 w-4 text-green-300 absolute top-1 right-1 z-10" />}
+                            <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden">
                                 <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all origin-bottom" style={{ height: `${data.progress}%` }}></div>
                                 <div className="relative z-10 flex flex-col items-center justify-center">
+                                    {data.goalMet && <Check className="h-4 w-4 text-green-300 absolute -top-4" />}
                                     <p className="font-bold text-lg">{data.pagesRead}</p>
-                                    <p className="text-xs font-semibold text-white/90">{data.name}</p>
                                 </div>
+                                <p className="text-xs font-semibold text-white/90 relative z-10">{data.name}</p>
                             </div>
                         ))}
                     </div>
@@ -633,7 +633,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
             <DialogTrigger asChild>
                  <div className="group/book relative w-32 shrink-0 cursor-pointer">
                     <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover/book:scale-105" data-ai-hint="book cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg flex flex-col justify-end">
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg flex flex-col justify-end">
                        <p className="font-semibold text-[11px] text-white leading-tight line-clamp-2" title={book.title}>{book.title}</p>
                        <p className="text-white/80 text-[10px] font-semibold sm:hidden">Bitiş: {book.finishedAt ? format(parseISO(book.finishedAt), 'dd.MM.yy') : ''}</p>
                    </div>
@@ -733,6 +733,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
 
 
 
