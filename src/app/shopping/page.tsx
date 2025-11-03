@@ -146,7 +146,7 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
             : 'Liste boş';
 
     return (
-        <div className="relative group" onClick={onClick}>
+        <div className="relative group rounded-lg overflow-hidden shadow-sm" onClick={onClick}>
             <div className={cn("flex items-center text-black p-4 cursor-pointer min-h-[112px]", colorClass)}>
                  <div className="flex-grow">
                     <p className="text-base font-semibold leading-tight truncate">{list.name}</p>
@@ -332,8 +332,8 @@ export default function ShoppingPage() {
 
   if (!isLoaded) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Listelerim" />
+      <div className="space-y-6 h-full">
+        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none mb-0"/>
         <div className="space-y-2">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
@@ -362,7 +362,7 @@ export default function ShoppingPage() {
 
      return (
         <div className="relative h-full flex flex-col bg-[#f4eeb4]">
-            <PageHeader title={selectedList.name} className="bg-[#f2994a] rounded-none shadow-none">
+            <PageHeader title={selectedList.name} className="bg-[#f2994a] rounded-none shadow-none mb-0">
                 <div className="w-full flex items-center justify-between gap-4">
                      <Button variant="ghost" className="text-white hover:text-white hover:bg-black/20" onClick={() => setSelectedList(null)}>
                         <ArrowLeft className="h-5 w-5 mr-2" /> Geri
@@ -481,9 +481,9 @@ export default function ShoppingPage() {
   }
 
   return (
-    <div className="space-y-0">
-        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none mb-0" />
-        <div className="space-y-0">
+    <div className="h-full flex flex-col">
+        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none mb-0 flex-shrink-0" />
+        <div className="flex-grow space-y-0 overflow-y-auto">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
                     const color = solidColors[index % solidColors.length];
@@ -499,7 +499,7 @@ export default function ShoppingPage() {
                     )
                 })
             ) : (
-                <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background h-[calc(100vh-150px)]">
+                <div className="text-center text-muted-foreground py-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-background h-full">
                     <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <p className="mt-4 text-md">Henüz alışveriş listeniz yok.</p>
                     <p className="text-sm">Başlamak için aşağıdaki butona tıklayarak yeni bir liste oluşturun.</p>
