@@ -649,6 +649,7 @@ export interface Transaction {
     installmentDetails?: {
         current: number;
         total: number;
+        originalTransactionId: string;
     };
 }
 
@@ -688,4 +689,4 @@ export interface StudyAssignment {
   completedAt?: string;
 }
 
-    
+  

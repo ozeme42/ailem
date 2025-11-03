@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -22,13 +23,17 @@ import { onBudgetCategoriesUpdate } from "@/lib/dataService";
 import { Separator } from "./ui/separator";
 import { BudgetCategoryForm } from "./budget-category-form";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Switch } from "./ui/switch";
 
 const formSchema = z.object({
+  description: z.string().min(2, "Açıklama en az 2 karakter olmalıdır."),
   amount: z.coerce.number().positive("Tutar pozitif bir sayı olmalıdır."),
   type: z.enum(['income', 'expense']).default('expense'),
   accountId: z.string({ required_error: "Bir hesap seçmelisiniz." }),
   category: z.string().min(1, "Kategori seçimi zorunludur."),
   date: z.date({ required_error: "Tarih seçmelisiniz." }),
+  isInstallment: z.boolean().default(false),
+  installmentCount: z.coerce.number().optional(),
 });
 
 type NewTransactionFormProps = {
@@ -52,30 +57,39 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      description: "",
       amount: undefined,
       type: 'expense',
       accountId: undefined,
       category: "",
       date: new Date(),
+      isInstallment: false,
+      installmentCount: 2,
     },
   });
   
   React.useEffect(() => {
     if (initialData) {
       form.reset({
+        description: initialData.description || "",
         amount: initialData.amount || undefined,
         type: initialData.type || 'expense',
         accountId: initialData.accountId || undefined,
         category: initialData.category || "",
         date: initialData.date ? parseISO(initialData.date) : new Date(),
+        isInstallment: initialData.isInstallment || false,
+        installmentCount: initialData.installmentDetails?.total || 2,
       });
     } else {
         form.reset({
+            description: "",
             amount: undefined,
             type: 'expense',
             accountId: undefined,
             category: "",
             date: new Date(),
+            isInstallment: false,
+            installmentCount: 2,
         });
     }
   }, [initialData, form]);
@@ -101,6 +115,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const selectedCategory = categories.find(c => c.name === form.watch('category'));
   const transactionType = form.watch('type');
   const selectedAccountId = form.watch('accountId');
+  const isInstallment = form.watch('isInstallment');
   const { errors } = form.formState;
 
   const filteredAccounts = React.useMemo(() => {
@@ -159,11 +174,18 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                               <Popover>
                                   <PopoverTrigger asChild>
                                       <Button variant={"ghost"} className="flex-grow justify-start font-normal text-sm">
-                                          {field.value ? format(field.value, "dd.MM.yyyy (EEE) HH:mm", { locale: tr }) : <span>Tarih seçin</span>}
+                                          {field.value ? format(field.value, "dd.MM.yyyy (EEE)", { locale: tr }) : <span>Tarih seçin</span>}
                                       </Button>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
                               </Popover>
+                          </FormItem>
+                      )}/>
+                      <Separator/>
+                       <FormField control={form.control} name="description" render={({ field }) => (
+                          <FormItem className="flex items-center">
+                              <FormLabel className="w-20 text-xs text-muted-foreground">Açıklama</FormLabel>
+                              <FormControl><Input placeholder="İşlem açıklaması" {...field} className="bg-transparent border-0 text-base font-semibold h-auto" /></FormControl>
                           </FormItem>
                       )}/>
                       <Separator/>
@@ -212,6 +234,26 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                            </div>
                            {errors.accountId && <p className="pt-2 text-xs font-medium text-destructive">{errors.accountId.message}</p>}
                        </FormItem>
+                       <Separator/>
+                        {transactionType === 'expense' && (
+                           <div className="space-y-4">
+                               <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                    <FormLabel>Taksitli İşlem</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            {isInstallment && (
+                                 <FormField control={form.control} name="installmentCount" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Taksit Sayısı</FormLabel>
+                                        <FormControl><Input type="number" placeholder="2" {...field} /></FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}/>
+                            )}
+                           </div>
+                        )}
                  </div>
               </ScrollArea>
            </div>
@@ -260,3 +302,5 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
+
+  
