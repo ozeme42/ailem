@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -373,10 +374,10 @@ export default function ShoppingPage() {
             
              <div className={cn("flex-grow flex flex-col min-h-0")}>
                 <Tabs defaultValue="pending" className="flex-grow flex flex-col min-h-0">
-                    <TabsList className="flex w-full h-auto flex-shrink-0 bg-[#f4eeb4] p-0 rounded-none">
-                        <TabsTrigger value="pending" className="flex-1 text-base rounded-none data-[state=active]:border-b-black data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınacaklar ({pendingItems.length})</TabsTrigger>
+                    <TabsList className="flex w-full h-auto flex-shrink-0 bg-[#f4eeb4] p-0 rounded-none gap-4">
+                        <TabsTrigger value="pending" className="flex-1 text-lg font-semibold rounded-none data-[state=active]:border-b-red-500 data-[state=active]:text-red-600 data-[state=active]:shadow-none border-b-2 border-b-transparent py-3">Alınacaklar ({(pendingItems || []).filter(i => !i.isBought).length})</TabsTrigger>
                         <Separator orientation="vertical" className="h-6 self-center bg-black/20" />
-                        <TabsTrigger value="bought" className="flex-1 text-base rounded-none data-[state=active]:border-b-black data-[state=active]:shadow-none border-b-2 border-b-transparent">Alınanlar ({boughtItems.length})</TabsTrigger>
+                        <TabsTrigger value="bought" className="flex-1 text-lg font-semibold rounded-none data-[state=active]:border-b-red-500 data-[state=active]:text-red-600 data-[state=active]:shadow-none border-b-2 border-b-transparent py-3">Alınanlar ({boughtItems.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pending" className="flex-grow bg-[#f4eeb4] p-4">
                          <div className="space-y-0">
