@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User, FileOutput, GripVertical, Settings, HandCoins } from "lucide-react";
-
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -279,11 +279,11 @@ export function BudgetClient() {
                         <ChevronRight className="h-6 w-6" />
                     </Button>
                 </div>
-                 <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-black/20 p-1">
-                        <TabsTrigger value="day" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Gün</TabsTrigger>
-                        <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Ay</TabsTrigger>
-                        <TabsTrigger value="accounts" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Hesaplar</TabsTrigger>
+                <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 bg-black/30 p-1 h-auto rounded-lg">
+                        <TabsTrigger value="day" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md text-white/90">Gün</TabsTrigger>
+                        <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md text-white/90">Ay</TabsTrigger>
+                        <TabsTrigger value="accounts" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md text-white/90">Hesaplar</TabsTrigger>
                     </TabsList>
                  </Tabs>
                 {mainTab !== 'accounts' && (
@@ -558,3 +558,5 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
+    
