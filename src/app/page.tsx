@@ -303,12 +303,9 @@ export default function Home() {
             };
         }).sort((a,b) => b.finishedBooks - a.finishedBooks);
     }, [familyMembers, userLibraries, books]);
-
-    const memberSessions = React.useMemo(() => {
-        return readingSessions.filter(s => familyMembers.some(m => m.id === s.memberId));
-    }, [readingSessions, familyMembers]);
-
+    
     const weeklyReadingStats = React.useMemo(() => {
+        const memberSessions = readingSessions.filter(s => familyMembers.some(m => m.id === s.memberId));
         const today = new Date();
         const weekStart = startOfWeek(today, { weekStartsOn: 1 });
         
@@ -335,7 +332,8 @@ export default function Home() {
             weeklyChartData,
             totalWeeklyPages,
         };
-    }, [memberSessions]);
+    }, [readingSessions, familyMembers]);
+
 
   if (loading) {
     return (
