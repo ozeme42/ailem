@@ -133,7 +133,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-grow h-full">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-grow min-h-0">
             <DialogHeader className="p-4 bg-muted/50 flex-shrink-0">
                 <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
                 <Tabs 
@@ -177,34 +177,34 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     
                     <div className="flex items-center">
                         <FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
-                        <FormField control={form.control} name="amount" render={({ field }) => (
-                            <FormItem className="flex-grow">
-                                <FormControl>
-                                    <Input type="number" step="any" placeholder="0,00" {...field} value={field.value ?? ''} className={cn("bg-transparent border-0 text-xl font-bold h-auto p-0", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} />
-                                </FormControl>
-                            </FormItem>
-                        )}/>
-                        {transactionType === 'expense' && (
-                            <FormField control={form.control} name="isInstallment" render={({ field }) => (
-                                <FormItem className="flex items-center gap-1.5 space-y-0">
-                                    <FormControl><Switch id="isInstallment" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    <FormLabel htmlFor="isInstallment" className="text-xs">Taksit</FormLabel>
+                        <div className="flex-grow flex items-center gap-2">
+                             <FormField control={form.control} name="amount" render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                    <FormControl>
+                                        <Input type="number" step="any" placeholder="0,00" {...field} value={field.value ?? ''} className={cn("bg-transparent border-0 text-xl font-bold h-auto p-0", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} />
+                                    </FormControl>
                                 </FormItem>
                             )}/>
-                        )}
-                    </div>
-
-                    {isInstallment && (
-                        <div className="pl-20">
-                        <FormField control={form.control} name="installmentCount" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Taksit Sayısı</FormLabel>
-                                <FormControl><Input type="number" placeholder="2" {...field} value={field.value ?? ''} /></FormControl>
-                                <FormMessage/>
-                            </FormItem>
-                        )}/>
+                             {transactionType === 'expense' && (
+                                <div className="flex items-center gap-2">
+                                     <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                                        <FormItem className="flex items-center gap-1.5 space-y-0">
+                                            <FormControl><Switch id="isInstallment" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                            <FormLabel htmlFor="isInstallment" className="text-xs">Taksit</FormLabel>
+                                        </FormItem>
+                                    )}/>
+                                    {isInstallment && (
+                                         <FormField control={form.control} name="installmentCount" render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl><Input type="number" placeholder="2" {...field} value={field.value ?? ''} className="w-14 h-8 text-center" /></FormControl>
+                                            </FormItem>
+                                        )}/>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
+                    
                     <FormItem className="flex items-center">
                         <FormLabel className="w-20 text-xs text-muted-foreground">Kategori</FormLabel>
                         <div className="flex-grow">
@@ -246,7 +246,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 </div>
             </ScrollArea>
             
-            <DialogFooter className="p-4 bg-muted/50 border-t flex-shrink-0">
+             <DialogFooter className="p-4 bg-muted/50 border-t flex-shrink-0">
                 <Button type="submit" className={cn("w-full", transactionType === 'income' ? 'bg-primary hover:bg-primary/90' : 'bg-destructive hover:bg-destructive/90')}>
                     {initialData ? "İşlemi Güncelle" : "İşlemi Kaydet"}
                 </Button>
@@ -290,3 +290,5 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
+
+    
