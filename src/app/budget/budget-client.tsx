@@ -446,7 +446,7 @@ export function BudgetClient() {
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base">Varlık Hesapları ({accountStats.assets.length})</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-px">
+                            <CardContent className="divide-y divide-white/20">
                                 {accountStats.assets.map((account, index) => (
                                     <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => {}} index={index}/>
                                 ))}
@@ -457,7 +457,7 @@ export function BudgetClient() {
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base">Borç Hesapları ({accountStats.debts.length})</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-px">
+                            <CardContent className="divide-y divide-white/20">
                                 {accountStats.debts.map((account, index) => (
                                     <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => openPaymentForm(account)} index={index}/>
                                 ))}
@@ -520,12 +520,11 @@ export function BudgetClient() {
     );
 }
 
-function AccountRow({ account, onEdit, onDelete, onPayDebt, index }: { account: Account, onEdit: () => void, onDelete: () => void, onPayDebt: () => void, index: number }) {
+function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account, onEdit: () => void, onDelete: () => void, onPayDebt: () => void }) {
     const Icon = accountIcons[account.type] || Wallet;
-    const isFirst = index === 0;
     
     return (
-        <div className={cn("flex justify-between items-center p-3 bg-white/10", !isFirst && 'border-t border-white/20', isFirst ? 'rounded-t-lg' : '', "last:rounded-b-lg")}>
+        <div className="flex justify-between items-center p-3 bg-white/10">
             <div className="flex items-center gap-3">
                 <Icon className="h-5 w-5 text-white/80" />
                 <p className="text-sm font-medium">{account.name}</p>
@@ -565,3 +564,6 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt, index }: { account: 
 
     
 
+
+
+    
