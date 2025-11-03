@@ -318,7 +318,7 @@ export function BudgetClient() {
                             {group.transactions.map(tx => {
                                 const account = accounts.find(a => a.id === tx.accountId);
                                 return (
-                                <div key={tx.id} className="flex justify-between items-center p-3 bg-card first:rounded-t-none last:rounded-b-lg">
+                                <div key={tx.id} className={cn("flex justify-between items-center p-3 first:rounded-t-none last:rounded-b-lg", tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10')}>
                                     <div className="flex items-center gap-3">
                                         {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-muted-foreground" })}
                                         <div>
@@ -385,7 +385,7 @@ export function BudgetClient() {
                                              {summary.transactions.map(tx => {
                                                  const account = accounts.find(a => a.id === tx.accountId);
                                                  return (
-                                                 <div key={tx.id} className="flex justify-between items-center p-3 bg-card first:rounded-t-lg last:rounded-b-lg">
+                                                 <div key={tx.id} className={cn("flex justify-between items-center p-3 first:rounded-t-lg last:rounded-b-lg", tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10')}>
                                                      <div className="flex items-center gap-3">
                                                          {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-muted-foreground" })}
                                                          <div>
@@ -558,3 +558,5 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
+    
