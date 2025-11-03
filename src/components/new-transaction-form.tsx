@@ -130,28 +130,31 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
         <Form {...form}>
-        <DialogHeader className="p-4 bg-muted/50 flex-shrink-0">
-            <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
-            <Tabs 
-                value={transactionType}
-                onValueChange={(value) => {
-                    form.setValue('type', value as 'income' | 'expense');
-                    form.setValue('category', ''); 
-                    if (filteredAccounts.length === 1 && value === form.getValues('type')) {
-                      // Do nothing if type hasn't changed and only one account
-                    } else {
-                        form.setValue('accountId', undefined);
-                    }
-                }}
-                className="w-full pt-4"
-            >
-                <TabsList className="grid w-full grid-cols-2 bg-background">
-                    <TabsTrigger value="income" className={cn(transactionType === 'income' && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground")}>Gelir</TabsTrigger>
-                    <TabsTrigger value="expense" className={cn(transactionType === 'expense' && "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground")}>Gider</TabsTrigger>
-                </TabsList>
-            </Tabs>
-        </DialogHeader>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-grow min-h-0">
+           <div className="p-4 bg-muted/50 flex-shrink-0">
+                <DialogHeader className="p-0">
+                    <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
+                    <Tabs 
+                        value={transactionType}
+                        onValueChange={(value) => {
+                            form.setValue('type', value as 'income' | 'expense');
+                            form.setValue('category', ''); 
+                            if (filteredAccounts.length === 1 && value === form.getValues('type')) {
+                              // Do nothing if type hasn't changed and only one account
+                            } else {
+                                form.setValue('accountId', undefined);
+                            }
+                        }}
+                        className="w-full pt-4"
+                    >
+                        <TabsList className="grid w-full grid-cols-2 bg-background">
+                            <TabsTrigger value="income" className={cn(transactionType === 'income' && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground")}>Gelir</TabsTrigger>
+                            <TabsTrigger value="expense" className={cn(transactionType === 'expense' && "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground")}>Gider</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </DialogHeader>
+           </div>
+           
            <ScrollArea className="flex-grow">
              <div className="p-4 space-y-4">
                  {Object.keys(errors).length > 0 && (
