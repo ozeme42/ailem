@@ -130,7 +130,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
         <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-grow flex flex-col min-h-0">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-grow min-h-0">
            <DialogHeader className="p-4 bg-muted/50 flex-shrink-0">
                 <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
                 <Tabs 
@@ -153,98 +153,96 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 </Tabs>
            </DialogHeader>
            
-           <div className="flex-grow min-h-0">
-               <ScrollArea className="h-full">
-                 <div className="p-4 space-y-4">
-                     {Object.keys(errors).length > 0 && (
-                         <Alert variant="destructive">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Eksik Bilgi</AlertTitle>
-                            <AlertDescription>Lütfen tüm zorunlu alanları doldurun.</AlertDescription>
-                        </Alert>
-                     )}
-                      <FormField control={form.control} name="date" render={({ field }) => (
-                          <FormItem className="flex items-center">
-                              <FormLabel className="w-20 text-xs text-muted-foreground">Tarih</FormLabel>
-                              <Popover>
-                                  <PopoverTrigger asChild>
-                                      <Button variant={"ghost"} className="flex-grow justify-start font-normal text-sm">
-                                          {field.value ? format(field.value, "dd.MM.yyyy (EEE)", { locale: tr }) : <span>Tarih seçin</span>}
-                                      </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
-                              </Popover>
-                          </FormItem>
-                      )}/>
-                      <Separator/>
-                      <FormField control={form.control} name="amount" render={({ field }) => (
-                          <FormItem className="flex items-center"><FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
-                              <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-2xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
-                          </FormItem>
-                      )}/>
-                      <Separator/>
+           <ScrollArea className="flex-grow">
+             <div className="p-4 space-y-4">
+                 {Object.keys(errors).length > 0 && (
+                     <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Eksik Bilgi</AlertTitle>
+                        <AlertDescription>Lütfen tüm zorunlu alanları doldurun.</AlertDescription>
+                    </Alert>
+                 )}
+                  <FormField control={form.control} name="date" render={({ field }) => (
                       <FormItem className="flex items-center">
-                          <FormLabel className="w-20 text-xs text-muted-foreground">Kategori</FormLabel>
-                          <div className="flex-grow">
-                            <Button type="button" variant="ghost" className="w-full justify-start text-left text-sm" onClick={() => setShowCategorySelector(true)}>
-                                {selectedCategory ? (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-base">{selectedCategory.icon}</span>
-                                        <span>{selectedCategory.name}</span>
-                                    </div>
-                                ) : (
-                                    <span className="text-muted-foreground">Kategori seçin</span>
-                                )}
-                            </Button>
-                            {errors.category && <p className="pl-4 text-xs font-medium text-destructive">{errors.category.message}</p>}
-                           </div>
+                          <FormLabel className="w-20 text-xs text-muted-foreground">Tarih</FormLabel>
+                          <Popover>
+                              <PopoverTrigger asChild>
+                                  <Button variant={"ghost"} className="flex-grow justify-start font-normal text-sm">
+                                      {field.value ? format(field.value, "dd.MM.yyyy (EEE)", { locale: tr }) : <span>Tarih seçin</span>}
+                                  </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
+                          </Popover>
                       </FormItem>
-                       <Separator/>
-                       <FormItem>
-                           <FormLabel className="w-20 text-xs text-muted-foreground">Hesap</FormLabel>
-                           <div className="grid grid-cols-3 gap-2 pt-2">
-                               {filteredAccounts.map(acc => {
-                                   const Icon = accountIcons[acc.type] || Banknote;
-                                   const isSelected = selectedAccountId === acc.id;
-                                   return (
-                                     <Button 
-                                       type="button"
-                                       key={acc.id} 
-                                       variant={isSelected ? "default" : "outline"}
-                                       className="h-auto flex flex-col items-center justify-center p-2 gap-1"
-                                       onClick={() => form.setValue('accountId', acc.id)}
-                                     >
-                                        <Icon className="h-4 w-4"/>
-                                        <span className="text-xs font-semibold truncate">{acc.name}</span>
-                                     </Button>
-                                   )
-                               })}
-                           </div>
-                           {errors.accountId && <p className="pt-2 text-xs font-medium text-destructive">{errors.accountId.message}</p>}
-                       </FormItem>
-                       <Separator/>
-                        {transactionType === 'expense' && (
-                           <div className="space-y-4">
-                               <FormField control={form.control} name="isInstallment" render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                                    <FormLabel>Taksitli İşlem</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  )}/>
+                  <Separator/>
+                  <FormField control={form.control} name="amount" render={({ field }) => (
+                      <FormItem className="flex items-center"><FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
+                          <FormControl><Input type="number" step="any" placeholder="0,00" {...field} className={cn("bg-transparent border-0 text-2xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} /></FormControl>
+                      </FormItem>
+                  )}/>
+                  <Separator/>
+                  <FormItem className="flex items-center">
+                      <FormLabel className="w-20 text-xs text-muted-foreground">Kategori</FormLabel>
+                      <div className="flex-grow">
+                        <Button type="button" variant="ghost" className="w-full justify-start text-left text-sm" onClick={() => setShowCategorySelector(true)}>
+                            {selectedCategory ? (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base">{selectedCategory.icon}</span>
+                                    <span>{selectedCategory.name}</span>
+                                </div>
+                            ) : (
+                                <span className="text-muted-foreground">Kategori seçin</span>
+                            )}
+                        </Button>
+                        {errors.category && <p className="pl-4 text-xs font-medium text-destructive">{errors.category.message}</p>}
+                       </div>
+                  </FormItem>
+                   <Separator/>
+                   <FormItem>
+                       <FormLabel className="w-20 text-xs text-muted-foreground">Hesap</FormLabel>
+                       <div className="grid grid-cols-3 gap-2 pt-2">
+                           {filteredAccounts.map(acc => {
+                               const Icon = accountIcons[acc.type] || Banknote;
+                               const isSelected = selectedAccountId === acc.id;
+                               return (
+                                 <Button 
+                                   type="button"
+                                   key={acc.id} 
+                                   variant={isSelected ? "default" : "outline"}
+                                   className="h-auto flex flex-col items-center justify-center p-2 gap-1"
+                                   onClick={() => form.setValue('accountId', acc.id)}
+                                 >
+                                    <Icon className="h-4 w-4"/>
+                                    <span className="text-xs font-semibold truncate">{acc.name}</span>
+                                 </Button>
+                               )
+                           })}
+                       </div>
+                       {errors.accountId && <p className="pt-2 text-xs font-medium text-destructive">{errors.accountId.message}</p>}
+                   </FormItem>
+                   <Separator/>
+                    {transactionType === 'expense' && (
+                       <div className="space-y-4">
+                           <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                <FormLabel>Taksitli İşlem</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                        {isInstallment && (
+                             <FormField control={form.control} name="installmentCount" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Taksit Sayısı</FormLabel>
+                                    <FormControl><Input type="number" placeholder="2" {...field} /></FormControl>
+                                    <FormMessage/>
                                 </FormItem>
                             )}/>
-                            {isInstallment && (
-                                 <FormField control={form.control} name="installmentCount" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Taksit Sayısı</FormLabel>
-                                        <FormControl><Input type="number" placeholder="2" {...field} /></FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}/>
-                            )}
-                           </div>
                         )}
-                 </div>
-              </ScrollArea>
-           </div>
+                       </div>
+                    )}
+             </div>
+          </ScrollArea>
            
             <div className="p-4 bg-muted/50 border-t flex-shrink-0">
                 <Button type="submit" className={cn("w-full", transactionType === 'income' ? 'bg-primary hover:bg-primary/90' : 'bg-destructive hover:bg-destructive/90')}>
