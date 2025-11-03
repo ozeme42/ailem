@@ -11,12 +11,12 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths, eachMonthOfInterval, startOfYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -216,66 +216,62 @@ export default function LibraryPage() {
   const readingGoals = selectedMember?.readingGoals;
   
   const readingStatsByPeriod = React.useMemo(() => {
-        if (!selectedMember) return { chartData: [], totalPages: 0, totalBooks: 0 };
+    if (!selectedMember) return { weeklyChartData: [], monthlyChartData: [], totalWeeklyPages: 0, totalMonthlyPages: 0 };
+  
+    const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
+    const today = new Date();
+  
+    // Weekly Stats
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+    const dailyPages = new Map<string, number>();
+    const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
+      const day = addDays(weekStart, i);
+      const dayKey = format(day, 'yyyy-MM-dd');
+      dailyPages.set(dayKey, 0);
+      return dayKey;
+    });
+  
+    memberSessions.forEach(session => {
+      const sessionDate = parseISO(session.startTime);
+      if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
+        const dayKey = format(sessionDate, 'yyyy-MM-dd');
+        dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
+      }
+    });
+  
+    const weeklyChartData = weekDaysKeys.map(dayKey => ({
+      day: format(parseISO(dayKey), 'EEE', { locale: tr }),
+      pagesRead: dailyPages.get(dayKey) || 0,
+    }));
+    const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
+  
+    // Monthly Stats
+    const monthStart = startOfMonth(today);
+    const monthlyTotals = new Map<string, number>();
+    const allMonths = eachMonthOfInterval({ start: startOfYear(today), end: today });
+    allMonths.forEach(month => {
+        monthlyTotals.set(format(month, 'MMM', { locale: tr }), 0);
+    });
 
-        const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
-        const today = new Date();
-
-        if (readingStatsPeriod === 'weekly') {
-            const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-            const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-
-            const dailyPages = new Map<string, number>();
-            const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
-                const day = addDays(weekStart, i);
-                const dayKey = format(day, 'yyyy-MM-dd');
-                dailyPages.set(dayKey, 0);
-                return dayKey;
-            });
-
-            memberSessions.forEach(session => {
-                const sessionDate = parseISO(session.startTime);
-                if (isWithinInterval(sessionDate, { start: weekStart, end: weekEnd })) {
-                    const dayKey = format(sessionDate, 'yyyy-MM-dd');
-                    dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
-                }
-            });
-
-            const weeklyChartData = weekDaysKeys.map(dayKey => ({
-                day: format(parseISO(dayKey), 'EEE', { locale: tr }),
-                pagesRead: dailyPages.get(dayKey) || 0,
-            }));
-
-            const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
-
-            return { chartData: weeklyChartData, totalPages: totalWeeklyPages, totalBooks: 0 };
+    memberSessions.forEach(session => {
+        const sessionDate = parseISO(session.startTime);
+        if (sessionDate.getFullYear() === today.getFullYear()) {
+            const monthKey = format(sessionDate, 'MMM', { locale: tr });
+            monthlyTotals.set(monthKey, (monthlyTotals.get(monthKey) || 0) + session.pagesRead);
         }
+    });
 
-        if (readingStatsPeriod === 'monthly') {
-            const monthStart = startOfMonth(today);
-            const eachWeek = eachWeekOfInterval({ start: monthStart, end: endOfMonth(today) }, { weekStartsOn: 1 });
+    const monthlyChartData = Array.from(monthlyTotals.entries()).map(([month, pages]) => ({
+        month,
+        "Okunan Sayfa Sayısı": pages,
+    }));
+    
+    const totalMonthlyPages = Array.from(monthlyTotals.values()).reduce((sum, pages) => sum + pages, 0);
 
-            const weeklyTotals = eachWeek.map(weekStart => {
-                const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-                const weekSessions = memberSessions.filter(session => {
-                    const sessionDate = parseISO(session.startTime);
-                    return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
-                });
-                return weekSessions.reduce((sum, s) => sum + s.pagesRead, 0);
-            });
-            
-            const monthlyChartData = weeklyTotals.map((pages, index) => ({
-                week: `${index + 1}. Hafta`,
-                "Okunan Sayfa Sayısı": pages,
-            }));
-            
-            const totalMonthlyPages = weeklyTotals.reduce((sum, pages) => sum + pages, 0);
 
-            return { chartData: monthlyChartData, totalPages: totalMonthlyPages, totalBooks: 0 };
-        }
-
-        return { chartData: [], totalPages: 0, totalBooks: 0 };
-    }, [readingSessions, selectedMember, readingStatsPeriod]);
+    return { weeklyChartData, monthlyChartData, totalWeeklyPages, totalMonthlyPages };
+  }, [readingSessions, selectedMember]);
 
 
   const monthlyGoalProgress = React.useMemo(() => {
@@ -403,19 +399,19 @@ export default function LibraryPage() {
                     </div>
                 </Tabs>
                 <CardDescription className="text-white/80 pt-2">
-                    {readingStatsPeriod === 'weekly' ? `Bu hafta okunan toplam ${readingStatsByPeriod.totalPages} sayfa.` : `Bu ay okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
+                    {readingStatsPeriod === 'weekly' ? `Bu hafta okunan toplam ${readingStatsByPeriod.totalWeeklyPages} sayfa.` : `Bu ay okunan toplam ${readingStatsByPeriod.totalMonthlyPages} sayfa.`}
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                {readingStatsPeriod === 'weekly' ? (
-                     <div className="grid grid-cols-7 gap-2 text-center">
-                        {readingStatsByPeriod.chartData.map((data: any, index) => {
+                 {readingStatsPeriod === 'weekly' ? (
+                    <div className="grid grid-cols-7 gap-2 text-center">
+                        {readingStatsByPeriod.weeklyChartData.map((data: any, index) => {
                              const dailyGoal = readingGoals?.daily?.pages || 0;
                              const isCompleted = dailyGoal > 0 && data.pagesRead >= dailyGoal;
                              return (
                                 <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden">
                                      {isCompleted && (
-                                        <div className="absolute inset-0 bg-white/20 flex flex-col items-center justify-center">
+                                        <div className="absolute inset-0 bg-white/30 flex flex-col items-center justify-center">
                                             <Check className="h-8 w-8 text-white" />
                                         </div>
                                      )}
@@ -427,14 +423,14 @@ export default function LibraryPage() {
                     </div>
                 ) : (
                     <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={readingStatsByPeriod.chartData}>
-                                <XAxis dataKey="week" stroke="#fff" fontSize={12} tickLine={false} axisLine={false}/>
+                       <ChartContainer config={{ pages: { label: 'Sayfa', color: '#fff' } }} className="h-full w-full">
+                            <BarChart data={readingStatsByPeriod.monthlyChartData}>
+                                <XAxis dataKey="month" stroke="#fff" fontSize={12} tickLine={false} axisLine={false}/>
                                 <YAxis stroke="#fff" fontSize={12} tickLine={false} axisLine={false}/>
                                 <Tooltip content={<ChartTooltipContent cursorClassName="fill-white/20" />} />
-                                <Bar dataKey="Okunan Sayfa Sayısı" fill="#fff" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Okunan Sayfa Sayısı" fill="rgba(255, 255, 255, 0.7)" radius={[4, 4, 0, 0]} />
                             </BarChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
                 )}
             </CardContent>
@@ -513,7 +509,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
-        <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+         <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
             <div className="p-4 flex flex-col sm:flex-row gap-4">
                 <Image 
                     src={book.image} 
@@ -595,7 +591,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                                 </AlertDialogTrigger>
                                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                      <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                     <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
+                                     <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                        </div>
@@ -622,7 +618,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
+                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </DialogFooter>
@@ -661,5 +657,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
 
     
