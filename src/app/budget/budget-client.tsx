@@ -36,7 +36,7 @@ export function BudgetClient() {
     
     const [currentDate, setCurrentDate] = React.useState(new Date());
     const [accounts, setAccounts] = React.useState<Account[]>([]);
-    const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
+    const [allTransactions, setAllTransactions = React.useState<Transaction[]>([]);
     
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
@@ -272,7 +272,7 @@ export function BudgetClient() {
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')} className="text-white hover:bg-white/20 hover:text-white">
                         <ChevronLeft className="h-6 w-6" />
                     </Button>
-                    <h2 className="text-lg font-semibold w-48 text-center capitalize">
+                    <h2 className="text-lg font-semibold text-center capitalize">
                         {format(currentDate, dateDisplayFormat, { locale: tr })}
                     </h2>
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')} className="text-white hover:bg-white/20 hover:text-white">
@@ -574,3 +574,4 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
 
     
 
+    
