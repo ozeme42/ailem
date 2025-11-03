@@ -28,9 +28,11 @@ import { buttonVariants } from '@/components/ui/button';
 
 const solidColors = [
     { id: 'light-blue', name: 'Açık Mavi', class: 'bg-[#a3d9e4]' },
-    { id: 'rose-pink', name: 'Somon', class: 'bg-[#e5a996]' },
-    { id: 'emerald-teal', name: 'Yeşil', class: 'bg-[#98b883]' },
     { id: 'light-pink', name: 'Açık Pembe', class: 'bg-[#f4b4c4]' },
+    { id: 'emerald-teal', name: 'Yeşil', class: 'bg-[#98b883]' },
+    { id: 'rose-pink', name: 'Somon', class: 'bg-[#e5a996]' },
+    { id: 'violet-purple', name: 'Menekşe', class: 'from-violet-400 to-purple-500' },
+    { id: 'orange-red', name: 'Turuncu', class: 'from-orange-400 to-red-500' },
 ];
 
 
@@ -481,7 +483,7 @@ export default function ShoppingPage() {
 
   return (
     <div className="h-full flex flex-col">
-        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none mb-0 flex-shrink-0" />
+        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none mb-0 flex-shrink-0 py-12" />
         <div className="flex-grow space-y-0 overflow-y-auto">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
