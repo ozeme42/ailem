@@ -174,45 +174,41 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             </Popover>
                         </FormItem>
                     )}/>
-                    <Separator/>
                     
-                    <div className="space-y-2">
-                        <div className="flex items-center">
-                            <FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
-                            <FormField control={form.control} name="amount" render={({ field }) => (
-                                <FormItem className="flex-grow">
-                                    <FormControl>
-                                        <Input type="number" step="any" placeholder="0,00" {...field} value={field.value ?? ''} className={cn("bg-transparent border-0 text-xl font-bold h-auto p-0", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} />
-                                    </FormControl>
+                    <div className="flex items-center">
+                        <FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
+                        <FormField control={form.control} name="amount" render={({ field }) => (
+                            <FormItem className="flex-grow">
+                                <FormControl>
+                                    <Input type="number" step="any" placeholder="0,00" {...field} value={field.value ?? ''} className={cn("bg-transparent border-0 text-xl font-bold h-auto p-0", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} />
+                                </FormControl>
+                            </FormItem>
+                        )}/>
+                        {transactionType === 'expense' && (
+                            <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                                <FormItem className="flex items-center gap-1.5 space-y-0">
+                                    <FormControl><Switch id="isInstallment" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormLabel htmlFor="isInstallment" className="text-xs">Taksit</FormLabel>
                                 </FormItem>
                             )}/>
-                            {transactionType === 'expense' && (
-                                <FormField control={form.control} name="isInstallment" render={({ field }) => (
-                                    <FormItem className="flex items-center gap-1.5 space-y-0">
-                                        <FormControl><Switch id="isInstallment" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                        <FormLabel htmlFor="isInstallment" className="text-xs">Taksit</FormLabel>
-                                    </FormItem>
-                                )}/>
-                            )}
-                        </div>
-                        {isInstallment && (
-                            <div className="pl-20">
-                            <FormField control={form.control} name="installmentCount" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Taksit Sayısı</FormLabel>
-                                    <FormControl><Input type="number" placeholder="2" {...field} value={field.value ?? ''} /></FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
-                            </div>
                         )}
                     </div>
 
-                    <Separator/>
+                    {isInstallment && (
+                        <div className="pl-20">
+                        <FormField control={form.control} name="installmentCount" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Taksit Sayısı</FormLabel>
+                                <FormControl><Input type="number" placeholder="2" {...field} value={field.value ?? ''} /></FormControl>
+                                <FormMessage/>
+                            </FormItem>
+                        )}/>
+                        </div>
+                    )}
                     <FormItem className="flex items-center">
                         <FormLabel className="w-20 text-xs text-muted-foreground">Kategori</FormLabel>
                         <div className="flex-grow">
-                            <Button type="button" variant="ghost" className="w-full justify-start text-left text-sm" onClick={() => setShowCategorySelector(true)}>
+                            <Button type="button" variant="ghost" className="w-full justify-start text-left text-sm h-auto" onClick={() => setShowCategorySelector(true)}>
                                 {selectedCategory ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-base">{selectedCategory.icon}</span>
@@ -225,7 +221,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             {errors.category && <p className="pl-4 text-xs font-medium text-destructive">{errors.category.message}</p>}
                         </div>
                     </FormItem>
-                    <Separator/>
                     <FormItem>
                         <FormLabel className="w-20 text-xs text-muted-foreground">Hesap</FormLabel>
                         <div className="grid grid-cols-3 gap-2 pt-2">
@@ -248,7 +243,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                         </div>
                         {errors.accountId && <p className="pt-2 text-xs font-medium text-destructive">{errors.accountId.message}</p>}
                     </FormItem>
-                    <Separator/>
                 </div>
             </ScrollArea>
             
