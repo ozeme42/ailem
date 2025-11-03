@@ -435,7 +435,7 @@ export function BudgetClient() {
                             <CardHeader>
                                 <CardTitle>Hesap Özeti</CardTitle>
                             </CardHeader>
-                             <CardContent className="grid grid-cols-3 gap-2 text-center text-xs">
+                             <CardContent className="grid grid-cols-3 gap-4 text-left text-xs">
                                 <div><p className="text-white/80">Varlıklar</p><p className="font-semibold text-lg">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
                                 <div><p className="text-white/80">Borçlar</p><p className="font-semibold text-lg text-red-300">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
                                 <div><p className="text-white/80">Net Değer</p><p className={cn("font-semibold text-lg", accountStats.netWorth < 0 && 'text-red-300')}>{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
