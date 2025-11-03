@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -124,6 +124,8 @@ export default function Home() {
 
 
   React.useEffect(() => {
+    if (!familyId) return;
+
     const today = new Date();
     const unsubShopping = onShoppingListsUpdate(setShoppingLists);
     const unsubMeal = onMealPlanUpdate(setMealPlan);
@@ -141,11 +143,7 @@ export default function Home() {
     const unsubTransactions = onTransactionsUpdate(setTransactions, startOfMonth(today), endOfMonth(today));
     const unsubAccounts = onAccountsUpdate(setAccounts);
     const unsubSessions = onReadingSessionsUpdate(setReadingSessions);
-
-    let unsubLibraries = () => {};
-    if (familyId) {
-      unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
-    }
+    const unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
 
     return () => {
       unsubShopping();
@@ -305,34 +303,34 @@ export default function Home() {
     }, [familyMembers, userLibraries, books]);
     
     const weeklyReadingStats = React.useMemo(() => {
-        const memberSessions = readingSessions.filter(s => familyMembers.some(m => m.id === s.memberId));
-        const today = new Date();
-        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-        
-        const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
-        const dailyPages: { [key: string]: number } = {};
-        weekDaysKeys.forEach(key => dailyPages[key] = 0);
+      const memberSessions = readingSessions.filter(s => familyMembers.some(m => m.id === s.memberId));
+      const today = new Date();
+      const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+      
+      const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
+      const dailyPages: { [key: string]: number } = {};
+      weekDaysKeys.forEach(key => dailyPages[key] = 0);
 
-        memberSessions.forEach(session => {
-            const sessionDate = parseISO(session.startTime);
-            if (isWithinInterval(sessionDate, { start: weekStart, end: endOfWeek(today, { weekStartsOn: 1}) })) {
-                const dayKey = format(sessionDate, 'EEE', { locale: tr });
-                dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
-            }
-        });
-        
-        const weeklyChartData = weekDaysKeys.map(dayKey => ({
-            day: dayKey,
-            "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
-        }));
-        
-        const totalWeeklyPages = weeklyChartData.reduce((sum, day) => sum + day["Okunan Sayfa Sayısı"], 0);
-        
-        return {
-            weeklyChartData,
-            totalWeeklyPages,
-        };
-    }, [readingSessions, familyMembers]);
+      memberSessions.forEach(session => {
+        const sessionDate = parseISO(session.startTime);
+        if (isWithinInterval(sessionDate, { start: weekStart, end: endOfWeek(today, { weekStartsOn: 1}) })) {
+          const dayKey = format(sessionDate, 'EEE', { locale: tr });
+          dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
+        }
+      });
+      
+      const weeklyChartData = weekDaysKeys.map(dayKey => ({
+        day: dayKey,
+        "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
+      }));
+      
+      const totalWeeklyPages = weeklyChartData.reduce((sum, day) => sum + day["Okunan Sayfa Sayısı"], 0);
+      
+      return {
+        weeklyChartData,
+        totalWeeklyPages,
+      };
+    }, [readingSessions, familyMembers, familyId]);
 
 
   if (loading) {
@@ -722,3 +720,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
