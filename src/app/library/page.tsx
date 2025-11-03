@@ -16,9 +16,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, endOfMonth, getWeeksInMonth, getWeek, eachMonthOfInterval, endOfYear, subMonths, getYear, startOfYear } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, endOfYear, eachMonthOfInterval, getYear, subMonths, endOfMonth } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
@@ -248,7 +248,7 @@ export default function LibraryPage() {
     // Monthly Stats for Boxes
     const currentYear = getYear(today);
     const monthsOfYear = eachMonthOfInterval({
-        start: startOfYear(today),
+        start: new Date(currentYear, 0, 1),
         end: new Date(currentYear, 11, 31),
     });
 
@@ -419,7 +419,7 @@ export default function LibraryPage() {
                         })}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2 text-center">
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 text-center">
                         {readingStatsByPeriod.monthlyPageData.map((data, index) => {
                              const monthlyGoal = readingGoals?.monthly?.pages || 0;
                              const monthTotalPages = data.pagesRead;
@@ -431,7 +431,7 @@ export default function LibraryPage() {
                                             <Check className="h-6 w-6 text-white" />
                                         </div>
                                      )}
-                                     <p className="font-bold text-lg">{monthTotalPages}</p>
+                                     <p className="font-bold text-lg">{monthTotalPages.toLocaleString('tr-TR')}</p>
                                      <p className="text-xs font-semibold text-white/90 relative z-10">{data.month}</p>
                                 </div>
                             )
@@ -589,7 +589,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                                <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
                            </Button>
                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
+                                 <AlertDialogTrigger asChild>
                                      <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
                                         <Trash2 className="h-3 w-3"/>
                                     </Button>
