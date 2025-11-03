@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -19,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfYear, subMonths, getYear, eachMonthOfInterval, startOfYear } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, endOfMonth, getWeeksInMonth, getWeek, eachMonthOfInterval, endOfYear, subMonths, getYear, startOfYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
@@ -663,11 +662,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
-
-    
-
-    
-
-
 
     
