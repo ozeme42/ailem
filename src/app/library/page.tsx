@@ -215,19 +215,18 @@ export default function LibraryPage() {
 
         const today = new Date();
         const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
         
-        const memberSessions = readingSessions.filter(s =>
+        const memberSessions = readingSessions.filter(s => 
             s.memberId === selectedMember.id &&
-            isWithinInterval(parseISO(s.startTime), { start: weekStart, end: weekEnd })
+            isWithinInterval(parseISO(s.startTime), { start: weekStart, end: addDays(weekStart, 6) })
         );
 
         const dailyPages = new Map<string, number>();
-        const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
-            const day = addDays(weekStart, i);
+        const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
+
+        weekDays.forEach(day => {
             const dayKey = format(day, 'yyyy-MM-dd');
             dailyPages.set(dayKey, 0);
-            return dayKey;
         });
 
         memberSessions.forEach(session => {
@@ -237,12 +236,13 @@ export default function LibraryPage() {
             }
         });
 
-        const dailyPageGoal = selectedMember?.readingGoals?.daily?.pages || 0;
+        const dailyPageGoal = selectedMember.readingGoals?.daily?.pages || 0;
 
-        const weeklyChartData = weekDaysKeys.map(dayKey => {
+        const weeklyChartData = weekDays.map(day => {
+            const dayKey = format(day, 'yyyy-MM-dd');
             const pagesRead = dailyPages.get(dayKey) || 0;
             return {
-                day: format(parseISO(dayKey), 'EEE', { locale: tr }),
+                day: format(day, 'EEE', { locale: tr }),
                 pagesRead: pagesRead,
                 goalMet: dailyPageGoal > 0 && pagesRead >= dailyPageGoal,
                 progress: dailyPageGoal > 0 ? Math.min((pagesRead / dailyPageGoal) * 100, 100) : 0,
@@ -365,7 +365,7 @@ export default function LibraryPage() {
                  <div>
                     <BookIcon className="h-6 w-6 mx-auto mb-1" />
                     <p className="text-2xl font-bold">{stats.total}</p>
-                    <p className="text-xs text-white/80">Toplam Kitap</p>
+                    <p className="text-xs text-white/80">Toplam</p>
                 </div>
             </CardContent>
         </Card>
@@ -378,7 +378,7 @@ export default function LibraryPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-7 gap-2 text-center p-4">
                 {weeklyReadingStats.weeklyChartData.map(data => (
-                    <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0 relative overflow-hidden">
+                    <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-end p-1 border-0 relative overflow-hidden h-32">
                         <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all duration-500" style={{ height: `${data.progress}%` }}></div>
                          <div className="relative z-10 flex flex-col items-center justify-center">
                             <div className="flex items-center gap-1">
@@ -526,23 +526,24 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
     return (
         <div className="group relative w-32 shrink-0">
              <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover:scale-105" data-ai-hint="book cover"/>
-            <div className="absolute inset-0 bg-black/60 rounded-lg flex flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {book.finishedAt && (
-                    <p className="absolute bottom-2 text-white/80 text-[10px] font-semibold sm:hidden group-hover:block">
+             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg">
+                <p className="font-semibold text-[11px] text-white leading-tight line-clamp-2">{book.title}</p>
+                 {book.finishedAt && (
+                    <p className="text-white/80 text-[10px] font-semibold sm:hidden group-hover:block">
                         Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}
                     </p>
                 )}
-                <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 sm:line-clamp-none sm:group-hover:hidden">{book.title}</p>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:group-hover:flex flex-col items-center w-full px-2">
-                    <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 mb-2">{book.title}</p>
-                    <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                            <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
-                        </Button>
-                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
-                            <Trash2 className="h-3 w-3"/>
-                        </Button>
-                    </div>
+            </div>
+            <div className="absolute inset-0 bg-black/60 rounded-lg flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
+                <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 mb-2">{book.title}</p>
+                {book.finishedAt && <p className="text-white/80 text-[10px] font-semibold mb-2">Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}</p>}
+                <div className="flex gap-2">
+                    <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                        <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
+                    </Button>
+                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
+                        <Trash2 className="h-3 w-3"/>
+                    </Button>
                 </div>
             </div>
         </div>
