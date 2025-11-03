@@ -363,7 +363,7 @@ export function BudgetClient() {
                         {monthlySummaries.map(summary => (
                              <AccordionItem value={summary.monthKey} key={summary.monthKey} className="border-b-0">
                                 <Card className="overflow-hidden shadow-sm">
-                                     <AccordionTrigger className="p-4 hover:no-underline bg-card">
+                                     <AccordionTrigger className={cn("p-4 hover:no-underline", summary.total >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
                                          <div className="flex items-center justify-between w-full">
                                             <div className="font-bold text-sm capitalize">{summary.month}</div>
                                             <div className="flex items-center gap-4 text-xs">
@@ -373,7 +373,7 @@ export function BudgetClient() {
                                                       {summary.expense > 0 ? '-' : ''}
                                                       {summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                                     </p>
-                                                    <p className={cn("text-xs", summary.total >= 0 ? "text-muted-foreground" : "text-destructive")}>
+                                                    <p className={cn("text-xs font-bold", summary.total >= 0 ? "text-primary" : "text-destructive")}>
                                                         Toplam: {summary.total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
                                                     </p>
                                                 </div>
@@ -558,5 +558,7 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
+    
 
     
