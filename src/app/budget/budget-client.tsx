@@ -318,7 +318,7 @@ export function BudgetClient() {
                             {group.transactions.map(tx => {
                                 const account = accounts.find(a => a.id === tx.accountId);
                                 return (
-                                <div key={tx.id} className={cn("flex justify-between items-center p-3 first:rounded-t-none last:rounded-b-lg", tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10')}>
+                                <div key={tx.id} className={cn("flex justify-between items-center p-3 bg-card first:rounded-t-none last:rounded-b-lg", tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10')}>
                                     <div className="flex items-center gap-3">
                                         {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-muted-foreground" })}
                                         <div>
@@ -380,12 +380,12 @@ export function BudgetClient() {
                                             </div>
                                          </div>
                                      </AccordionTrigger>
-                                     <AccordionContent className="bg-muted/30">
+                                     <AccordionContent className="bg-card">
                                          <div className="p-2 space-y-px">
                                              {summary.transactions.map(tx => {
                                                  const account = accounts.find(a => a.id === tx.accountId);
                                                  return (
-                                                 <div key={tx.id} className={cn("flex justify-between items-center p-3 first:rounded-t-lg last:rounded-b-lg", tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10')}>
+                                                 <div key={tx.id} className={cn("flex justify-between items-center p-3 bg-card first:rounded-t-lg last:rounded-b-lg", tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10')}>
                                                      <div className="flex items-center gap-3">
                                                          {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5 text-muted-foreground" })}
                                                          <div>
@@ -447,8 +447,8 @@ export function BudgetClient() {
                                 <CardTitle className="text-base">Varlık Hesapları ({accountStats.assets.length})</CardTitle>
                             </CardHeader>
                             <CardContent className="divide-y divide-white/20">
-                                {accountStats.assets.map((account, index) => (
-                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => {}} index={index}/>
+                                {accountStats.assets.map((account) => (
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => {}} />
                                 ))}
                             </CardContent>
                         </Card>
@@ -458,8 +458,8 @@ export function BudgetClient() {
                                 <CardTitle className="text-base">Borç Hesapları ({accountStats.debts.length})</CardTitle>
                             </CardHeader>
                             <CardContent className="divide-y divide-white/20">
-                                {accountStats.debts.map((account, index) => (
-                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => openPaymentForm(account)} index={index}/>
+                                {accountStats.debts.map((account) => (
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => openPaymentForm(account)} />
                                 ))}
                             </CardContent>
                         </Card>
@@ -524,7 +524,7 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
     const Icon = accountIcons[account.type] || Wallet;
     
     return (
-        <div className="flex justify-between items-center p-3 bg-white/10">
+        <div className="flex justify-between items-center p-3">
             <div className="flex items-center gap-3">
                 <Icon className="h-5 w-5 text-white/80" />
                 <p className="text-sm font-medium">{account.name}</p>
@@ -532,7 +532,9 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
             <div className="flex items-center gap-2">
                 <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-red-200')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                 {account.type === 'credit-card' && (
-                    <Button variant="outline" size="sm" onClick={onPayDebt} className="bg-transparent border-white/50 hover:bg-white/20 text-white"><HandCoins className="h-4 w-4 mr-2"/>Borç Öde</Button>
+                    <Button variant="outline" size="sm" onClick={onPayDebt} className="bg-transparent border-white/50 hover:bg-white/20 text-white text-xs">
+                        <HandCoins className="h-4 w-4 mr-2"/>Borç Öde
+                    </Button>
                 )}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -565,5 +567,7 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
     
 
 
+
+    
 
     
