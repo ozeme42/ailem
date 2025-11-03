@@ -381,9 +381,9 @@ export default function LibraryPage() {
                     <div key={data.day} className="relative overflow-hidden rounded-lg bg-white/20 h-32 flex flex-col items-center justify-end p-1">
                         <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all duration-500" style={{ height: `${data.progress}%` }}></div>
                         <div className="relative z-10 flex flex-col items-center justify-center">
-                           <div className="flex items-center gap-1">
-                                <p className="font-bold text-lg">{data.pagesRead}</p>
+                           <div className="flex flex-col items-center gap-1">
                                 {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
+                                <p className="font-bold text-lg">{data.pagesRead}</p>
                            </div>
                            <p className="text-xs font-semibold text-white/90">{data.day}</p>
                         </div>
@@ -543,9 +543,17 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                            <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={(e) => {e.stopPropagation(); onUpdateStatus(book.id, 'reading', 0); }}>
                                <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
                            </Button>
-                           <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                               <Trash2 className="h-3 w-3"/>
-                           </Button>
+                           <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                                        <Trash2 className="h-3 w-3"/>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                     <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                     <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                        </div>
                    </div>
                 </div>
@@ -562,9 +570,17 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                      <Button variant="secondary" className="w-full" onClick={() => { onUpdateStatus(book.id, 'reading', 0); setIsOpen(false); }}>
                         <RotateCcw className="mr-2 h-4 w-4"/> Tekrar Oku
                     </Button>
-                    <Button variant="destructive" className="w-full" onClick={() => { onRemove(book.id); setIsOpen(false); }}>
-                        <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button variant="destructive" className="w-full">
+                                <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -611,4 +627,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
 
