@@ -62,17 +62,12 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
             newPagesReadThisSession = targetPage - pagesReadCurrently;
         }
 
-        if (newPagesReadThisSession > 0) {
-            const sessionData = {
-                startTime: subDays(new Date(), 1), // Placeholder for manual entry
-                endTime: new Date(),
-                pagesRead: newPagesReadThisSession,
-            };
-            onSaveSession(book, sessionData);
-        } else {
-            // Handle only progress update without creating a session if pages are corrected backwards
-             onSaveSession(book, {startTime: new Date(), endTime: new Date(), pagesRead: 0});
-        }
+        const sessionData = {
+            startTime: newPagesReadThisSession > 0 ? subDays(new Date(), 1) : new Date(), // Placeholder for manual entry if pages were read
+            endTime: new Date(),
+            pagesRead: newPagesReadThisSession,
+        };
+        onSaveSession(book, sessionData);
         
         onOpenChange(false);
     };
@@ -219,41 +214,45 @@ export default function LibraryPage() {
 
   }, [selectedMember, userLibraries, allBooks]);
   
-  const memberSessions = React.useMemo(() => {
-    if (!selectedMember) return [];
-    return readingSessions.filter(s => s.memberId === selectedMember.id);
-  }, [readingSessions, selectedMember]);
-  
-    const readingStats = React.useMemo(() => {
-    if (!selectedMember) return { weeklyChartData: [], totalWeeklyPages: 0 };
-
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const weeklyReadingStats = React.useMemo(() => {
+        if (!selectedMember) return { weeklyChartData: [], totalWeeklyPages: 0 };
     
-    const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
-    const dailyPages: { [key: string]: number } = {};
-    weekDaysKeys.forEach(key => dailyPages[key] = 0);
-
-    memberSessions.forEach(session => {
-        const sessionDate = parseISO(session.startTime);
-        if (isWithinInterval(sessionDate, { start: weekStart, end: endOfWeek(today, { weekStartsOn: 1}) })) {
-            const dayKey = format(sessionDate, 'EEE', { locale: tr });
-            dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
-        }
-    });
+        const today = new Date();
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
     
-    const weeklyChartData = weekDaysKeys.map(dayKey => ({
-        day: dayKey,
-        "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
-    }));
+        const memberSessions = readingSessions.filter(s => 
+            s.memberId === selectedMember.id &&
+            isWithinInterval(parseISO(s.startTime), { start: weekStart, end: weekEnd })
+        );
     
-    const totalWeeklyPages = weeklyChartData.reduce((sum, day) => sum + day["Okunan Sayfa Sayısı"], 0);
+        const dailyPages = new Map<string, number>();
+        const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
+            const day = addDays(weekStart, i);
+            const dayKey = format(day, 'yyyy-MM-dd');
+            dailyPages.set(dayKey, 0);
+            return dayKey;
+        });
     
-    return {
-        weeklyChartData,
-        totalWeeklyPages,
-    };
-}, [memberSessions, selectedMember]);
+        memberSessions.forEach(session => {
+            const dayKey = format(parseISO(session.startTime), 'yyyy-MM-dd');
+            if (dailyPages.has(dayKey)) {
+                dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
+            }
+        });
+    
+        const weeklyChartData = weekDaysKeys.map(dayKey => ({
+            day: format(parseISO(dayKey), 'EEE', { locale: tr }),
+            pagesRead: dailyPages.get(dayKey) || 0,
+        }));
+    
+        const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
+    
+        return {
+            weeklyChartData,
+            totalWeeklyPages,
+        };
+      }, [readingSessions, selectedMember]);
 
 
   const readingGoals = selectedMember?.readingGoals;
@@ -262,6 +261,7 @@ export default function LibraryPage() {
     
     const startOfMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
+    const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
     const monthlySessions = memberSessions.filter(s => parseISO(s.startTime) >= startOfMonthDate);
     const pagesRead = monthlySessions.reduce((sum, s) => sum + s.pagesRead, 0);
     
@@ -282,7 +282,7 @@ export default function LibraryPage() {
         pagesRead,
         booksRead
     };
-  }, [readingGoals, memberSessions, userLibraries, selectedMember]);
+  }, [readingGoals, readingSessions, userLibraries, selectedMember]);
 
   return (
     <>
@@ -365,14 +365,14 @@ export default function LibraryPage() {
         <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                    <BarChart2 /> Haftalık Okunan Sayfa Sayısı (Toplam: {readingStats.totalWeeklyPages} sayfa)
+                    <BarChart2 /> Haftalık Okunan Sayfa Sayısı (Toplam: {weeklyReadingStats.totalWeeklyPages} sayfa)
                 </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center p-4">
-                {readingStats.weeklyChartData.map(data => (
+                {weeklyReadingStats.weeklyChartData.map(data => (
                     <div key={data.day} className="flex flex-col items-center gap-2">
                         <div className="w-full h-12 flex items-center justify-center rounded-lg bg-white/20">
-                            <p className="font-bold text-lg">{data["Okunan Sayfa Sayısı"]}</p>
+                            <p className="font-bold text-lg">{data.pagesRead}</p>
                         </div>
                         <p className="text-xs font-semibold text-white/90">{data.day}</p>
                     </div>
@@ -561,3 +561,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 }
 
     
+
