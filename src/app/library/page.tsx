@@ -17,9 +17,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths, eachMonthOfInterval, startOfYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { PageHeader } from '@/components/page-header';
@@ -111,7 +111,7 @@ export default function LibraryPage() {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
-  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
   
   const { toast } = useToast();
 
@@ -205,9 +205,9 @@ export default function LibraryPage() {
     
     const statistics = {
       finished: finished.length,
-      total: myBookDetails.length,
       reading: reading.length,
-      toRead: reading.length + toRead.length,
+      toRead: toRead.length,
+      total: myBookDetails.length,
     };
 
     return { readingBooks: reading, toReadBooks: toRead, finishedBooks: finished, stats: statistics };
@@ -259,61 +259,34 @@ export default function LibraryPage() {
         
         if (readingStatsPeriod === 'monthly') {
             const today = new Date();
-            const monthStart = startOfMonth(today);
-            const monthEnd = endOfMonth(today);
-            const weeksOfMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 });
-
-            const weeklyPages = new Map<number, number>();
-            
-            weeksOfMonth.forEach(weekStartDay => {
-                 const weekNumber = getWeek(weekStartDay, { weekStartsOn: 1 });
-                 weeklyPages.set(weekNumber, 0);
-            });
-            
-            const monthlySessions = memberSessions.filter(s => isWithinInterval(parseISO(s.startTime), { start: monthStart, end: monthEnd }));
-            monthlySessions.forEach(session => {
-                const weekNumber = getWeek(parseISO(session.startTime), { weekStartsOn: 1 });
-                if (weeklyPages.has(weekNumber)) {
-                    weeklyPages.set(weekNumber, (weeklyPages.get(weekNumber) || 0) + session.pagesRead);
-                }
-            });
-
-            const chartData = Array.from(weeklyPages.entries()).map(([weekNum, pages]) => ({
-                name: `${weekNum}. Hafta`,
-                pagesRead: pages,
-            }));
-            const totalPages = monthlySessions.reduce((sum, s) => sum + s.pagesRead, 0);
-
-            return { chartData, totalPages, totalBooks: 0 };
-        }
-        
-        if (readingStatsPeriod === 'yearly') {
-            const today = new Date();
+            const yearStart = startOfYear(today);
+            const months = eachMonthOfInterval({ start: yearStart, end: today });
+    
             const monthlyPages = new Map<string, number>();
-
-            for (let i = 11; i >= 0; i--) {
-                const monthDate = subMonths(today, i);
-                const monthKey = format(monthDate, 'MMM yy', { locale: tr });
+    
+            months.forEach(monthStart => {
+                const monthKey = format(monthStart, 'yyyy-MM');
                 monthlyPages.set(monthKey, 0);
-            }
-
+            });
+    
             memberSessions.forEach(session => {
                 const sessionDate = parseISO(session.startTime);
-                if (sessionDate >= subMonths(startOfMonth(today), 11)) {
-                    const monthKey = format(sessionDate, 'MMM yy', { locale: tr });
+                if (isWithinInterval(sessionDate, { start: yearStart, end: today })) {
+                    const monthKey = format(sessionDate, 'yyyy-MM');
                     if (monthlyPages.has(monthKey)) {
                         monthlyPages.set(monthKey, (monthlyPages.get(monthKey) || 0) + session.pagesRead);
                     }
                 }
             });
-            
-            const chartData = Array.from(monthlyPages.entries()).map(([monthName, pages]) => ({
-                name: monthName,
-                pagesRead: pages,
-            }));
-            
+    
+            const chartData = Array.from(monthlyPages.entries()).map(([monthKey, pagesRead]) => {
+                return {
+                    name: format(parseISO(monthKey + '-01'), 'MMMM', { locale: tr }),
+                    pagesRead: pagesRead,
+                }
+            });
+    
             const totalPages = Array.from(monthlyPages.values()).reduce((sum, pages) => sum + pages, 0);
-            
             return { chartData, totalPages, totalBooks: 0 };
         }
 
@@ -443,14 +416,12 @@ export default function LibraryPage() {
                         <TabsList className="grid w-full grid-cols-2 sm:w-auto">
                             <TabsTrigger value="weekly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Haftalık</TabsTrigger>
                             <TabsTrigger value="monthly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Aylık</TabsTrigger>
-                             <TabsTrigger value="yearly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Yıllık</TabsTrigger>
                         </TabsList>
                     </div>
                 </Tabs>
                 <CardDescription className="text-white/80 pt-2">
                     {readingStatsPeriod === 'weekly' && `Bu hafta okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                     {readingStatsPeriod === 'monthly' && `Bu ay okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
-                     {readingStatsPeriod === 'yearly' && `Son 12 ayda okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -460,7 +431,7 @@ export default function LibraryPage() {
                             <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden">
                                 <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all origin-bottom" style={{ height: `${data.progress}%` }}></div>
                                 <div className="relative z-10 flex flex-col items-center justify-center">
-                                    {data.goalMet && <Check className="h-4 w-4 text-green-300 absolute -top-4" />}
+                                    {data.goalMet && <Check className="h-4 w-4 text-green-300 mb-1" />}
                                     <p className="font-bold text-lg">{data.pagesRead}</p>
                                 </div>
                                 <p className="text-xs font-semibold text-white/90 relative z-10">{data.name}</p>
@@ -468,30 +439,14 @@ export default function LibraryPage() {
                         ))}
                     </div>
                 ) : (
-                     <ChartContainer config={{ pagesRead: { label: 'Sayfa' } }} className="h-64 w-full">
-                         <BarChart data={readingStatsByPeriod.chartData} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
-                            <XAxis
-                              dataKey="name"
-                              tickLine={false}
-                              axisLine={false}
-                              tickMargin={8}
-                              fontSize={12}
-                              className="sm:hidden"
-                              tickFormatter={(value) => value.charAt(0)}
-                            />
-                             <XAxis
-                              dataKey="name"
-                              tickLine={false}
-                              axisLine={false}
-                              tickMargin={8}
-                              fontSize={12}
-                              className="hidden sm:block"
-                            />
-                            <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                            <ChartTooltipContent />
-                            <Bar dataKey="pagesRead" fill="hsla(0, 0%, 100%, 0.5)" radius={4} />
-                        </BarChart>
-                    </ChartContainer>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                        {readingStatsByPeriod.chartData.map((data, index) => (
+                            <div key={index} className="p-2 rounded-lg bg-white/20 backdrop-blur-sm text-center">
+                                <p className="font-bold text-lg">{data.pagesRead}</p>
+                                <p className="text-xs font-semibold text-white/90">{data.name}</p>
+                            </div>
+                        ))}
+                    </div>
                 )}
             </CardContent>
         </Card>
@@ -612,7 +567,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
                                     <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
                                         <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={()={() => onRemove(book.id)}>
                                         <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -651,7 +606,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                                 </AlertDialogTrigger>
                                 <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                      <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                     <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooter>
+                                     <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
                                 </AlertDialogContent>
                             </AlertDialog>
                        </div>
@@ -678,7 +633,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
                         </AlertDialogContent>
                     </AlertDialog>
                 </DialogFooter>
@@ -718,22 +673,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     )
 }
 
-    
 
     
-
-    
-
-
-
-    
-
-
-
-
-
-    
-
-
-
-
