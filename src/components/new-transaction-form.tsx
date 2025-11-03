@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Edit, Repeat, Trash2, AlertTriangle, Banknote, Landmark, CreditCard } from "lucide-react";
+import { CalendarIcon, Edit, Repeat, Trash2, AlertTriangle, Banknote, Landmark, CreditCard, Archive } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -291,7 +290,3 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
-
-  
-
-    
