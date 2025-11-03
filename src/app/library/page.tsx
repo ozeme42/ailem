@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -447,20 +447,24 @@ export default function LibraryPage() {
                          {readingStatsByPeriod.chartData[0] && (
                             <div className="text-center relative">
                                 {readingStatsByPeriod.chartData[0].goalMet && <Check className="h-6 w-6 text-green-300 absolute -top-2 -right-2" />}
-                                <p className="font-bold text-5xl">{readingStatsByPeriod.chartData[0].pagesRead}</p>
-                                <p className="text-sm text-white/90">Sayfa Okundu</p>
-                                 <div className="absolute bottom-0 left-0 right-0 h-full rounded-lg bg-white/20 transition-transform origin-bottom" style={{ transform: `scaleY(${readingStatsByPeriod.chartData[0].progress / 100})` }}/>
+                                <div className="relative w-36 h-36">
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                         <p className="font-bold text-4xl">{readingStatsByPeriod.chartData[0].pagesRead}</p>
+                                        <p className="text-sm text-white/90">Sayfa Okundu</p>
+                                    </div>
+                                    <div className="absolute inset-0 rounded-full bg-white/20 transition-transform origin-bottom" style={{ transform: `scaleY(${readingStatsByPeriod.chartData[0].progress / 100})` }}/>
+                                </div>
                             </div>
                         )}
                     </div>
                 )}
                 {readingStatsPeriod === 'weekly' && (
-                    <div className="grid grid-cols-7 gap-2 text-center p-4">
+                    <div className="grid grid-cols-7 gap-2 text-center">
                         {readingStatsByPeriod.chartData.map((data, index) => (
-                             <div key={index} className="flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/20 backdrop-blur-sm relative overflow-hidden">
+                            <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/20 backdrop-blur-sm overflow-hidden">
                                 {data.goalMet && <Check className="h-4 w-4 text-green-300 absolute top-1 right-1 z-10" />}
                                 <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all origin-bottom" style={{ height: `${data.progress}%` }}></div>
-                                <div className="relative z-10">
+                                <div className="relative z-10 flex flex-col items-center justify-center">
                                     <p className="font-bold text-lg">{data.pagesRead}</p>
                                     <p className="text-xs font-semibold text-white/90">{data.name}</p>
                                 </div>
