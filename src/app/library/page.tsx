@@ -527,14 +527,22 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
         <div className="group relative w-32 shrink-0">
              <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover:scale-105" data-ai-hint="book cover"/>
             <div className="absolute inset-0 bg-black/60 rounded-lg flex flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3">{book.title}</p>
-                <div className="flex gap-2 mt-3">
-                     <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                         <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
-                    </Button>
-                     <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
-                        <Trash2 className="h-3 w-3"/>
-                    </Button>
+                {book.finishedAt && (
+                    <p className="absolute bottom-2 text-white/80 text-[10px] font-semibold sm:hidden group-hover:block">
+                        Bitiş: {format(parseISO(book.finishedAt), 'dd.MM.yy')}
+                    </p>
+                )}
+                <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 sm:line-clamp-none sm:group-hover:hidden">{book.title}</p>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:group-hover:flex flex-col items-center w-full px-2">
+                    <p className="font-semibold text-xs text-white leading-tight text-center line-clamp-3 mb-2">{book.title}</p>
+                    <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                            <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
+                        </Button>
+                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemove(book.id)}>
+                            <Trash2 className="h-3 w-3"/>
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -578,3 +586,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
     
 
+
+
+    
