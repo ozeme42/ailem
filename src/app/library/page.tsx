@@ -181,12 +181,12 @@ export default function LibraryPage() {
 
   const { readingBooks, toReadBooks, finishedBooks, stats } = React.useMemo(() => {
     if (!selectedMember) {
-        return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, percentage: 0 }};
+        return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, toRead: 0, percentage: 0 }};
     }
     
     const memberLibrary = userLibraries.find(lib => lib.memberId === selectedMember.id);
     if (!memberLibrary) {
-        return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, percentage: 0 }};
+        return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, toRead: 0, percentage: 0 }};
     }
 
     const myBookDetails = memberLibrary.books.map(libBook => {
@@ -202,6 +202,7 @@ export default function LibraryPage() {
       finished: finished.length,
       total: myBookDetails.length,
       reading: reading.length,
+      toRead: toRead.length,
       percentage: myBookDetails.length > 0 ? (finished.length / myBookDetails.length) * 100 : 0
     };
 
@@ -215,7 +216,7 @@ export default function LibraryPage() {
         const today = new Date();
         const weekStart = startOfWeek(today, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-
+        
         const memberSessions = readingSessions.filter(s =>
             s.memberId === selectedMember.id &&
             isWithinInterval(parseISO(s.startTime), { start: weekStart, end: weekEnd })
@@ -345,16 +346,21 @@ export default function LibraryPage() {
             <CardHeader>
                 <CardTitle>Kütüphane Özeti</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-3 gap-4 text-center">
+            <CardContent className="grid grid-cols-4 gap-4 text-center">
                 <div>
                     <BookOpen className="h-6 w-6 mx-auto mb-1" />
                     <p className="text-2xl font-bold">{stats.reading}</p>
                     <p className="text-xs text-white/80">Okunuyor</p>
                 </div>
-                <div>
-                    <Library className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{stats.total - stats.finished}</p>
+                 <div>
+                    <BookUp className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-2xl font-bold">{stats.toRead + stats.reading}</p>
                     <p className="text-xs text-white/80">Okunacak</p>
+                </div>
+                <div>
+                    <BookCheck className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-2xl font-bold">{stats.finished}</p>
+                    <p className="text-xs text-white/80">Okunan</p>
                 </div>
                  <div>
                     <BookIcon className="h-6 w-6 mx-auto mb-1" />
@@ -370,11 +376,11 @@ export default function LibraryPage() {
                     <BarChart2 /> Haftalık Okunan Sayfa Sayısı (Toplam: {weeklyReadingStats.totalWeeklyPages} sayfa)
                 </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center p-4">
+            <CardContent className="grid grid-cols-7 gap-2 text-center p-4">
                 {weeklyReadingStats.weeklyChartData.map(data => (
-                     <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0 relative overflow-hidden">
+                    <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0 relative overflow-hidden">
                         <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all duration-500" style={{ height: `${data.progress}%` }}></div>
-                        <div className="relative z-10 flex flex-col items-center justify-center">
+                         <div className="relative z-10 flex flex-col items-center justify-center">
                             <div className="flex items-center gap-1">
                                 <p className="font-bold text-lg">{data.pagesRead}</p>
                                 {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
@@ -571,3 +577,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     
 
     
+
