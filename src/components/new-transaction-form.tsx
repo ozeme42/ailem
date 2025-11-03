@@ -130,7 +130,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-grow h-full">
                 <div className="p-4 bg-muted/50 flex-shrink-0">
                     <DialogHeader className="p-0">
                         <DialogTitle className="text-center text-xl">{initialData ? "İşlemi Düzenle" : "Yeni İşlem"}</DialogTitle>
@@ -139,11 +139,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             onValueChange={(value) => {
                                 form.setValue('type', value as 'income' | 'expense');
                                 form.setValue('category', ''); 
-                                if (filteredAccounts.length === 1 && value === form.getValues('type')) {
-                                // Do nothing if type hasn't changed and only one account
-                                } else {
-                                    form.setValue('accountId', undefined);
-                                }
+                                form.setValue('accountId', undefined);
                             }}
                             className="w-full pt-4"
                         >
@@ -299,5 +295,3 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
-
-    
