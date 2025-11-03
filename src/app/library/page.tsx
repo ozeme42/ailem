@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from "@/components/ui/input";
 import { PageHeader } from '@/components/page-header';
@@ -111,7 +111,7 @@ export default function LibraryPage() {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
-  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
+  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
   
   const { toast } = useToast();
 
@@ -207,8 +207,7 @@ export default function LibraryPage() {
       finished: finished.length,
       total: myBookDetails.length,
       reading: reading.length,
-      toRead: toRead.length,
-      percentage: myBookDetails.length > 0 ? (finished.length / myBookDetails.length) * 100 : 0
+      toRead: reading.length + toRead.length,
     };
 
     return { readingBooks: reading, toReadBooks: toRead, finishedBooks: finished, stats: statistics };
@@ -285,6 +284,40 @@ export default function LibraryPage() {
             }));
             const totalPages = monthlySessions.reduce((sum, s) => sum + s.pagesRead, 0);
 
+            return { chartData, totalPages, totalBooks: 0 };
+        }
+        
+        if (readingStatsPeriod === 'yearly') {
+            const today = new Date();
+            const monthlyPages = new Map<string, number>();
+
+            // Initialize last 12 months
+            for (let i = 11; i >= 0; i--) {
+                const monthDate = subMonths(today, i);
+                const monthKey = format(monthDate, 'MMM yy', { locale: tr });
+                monthlyPages.set(monthKey, 0);
+            }
+
+            const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
+
+            memberSessions.forEach(session => {
+                const sessionDate = parseISO(session.startTime);
+                // Check if the session is within the last 12 months
+                if (sessionDate >= subMonths(startOfMonth(today), 11)) {
+                    const monthKey = format(sessionDate, 'MMM yy', { locale: tr });
+                    if (monthlyPages.has(monthKey)) {
+                        monthlyPages.set(monthKey, (monthlyPages.get(monthKey) || 0) + session.pagesRead);
+                    }
+                }
+            });
+            
+            const chartData = Array.from(monthlyPages.entries()).map(([monthName, pages]) => ({
+                name: monthName,
+                pagesRead: pages,
+            }));
+            
+            const totalPages = Array.from(monthlyPages.values()).reduce((sum, pages) => sum + pages, 0);
+            
             return { chartData, totalPages, totalBooks: 0 };
         }
 
@@ -389,7 +422,7 @@ export default function LibraryPage() {
                 </div>
                  <div>
                     <BookUp className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{stats.toRead + stats.reading}</p>
+                    <p className="text-2xl font-bold">{stats.toRead}</p>
                     <p className="text-xs text-white/80">Okunacak</p>
                 </div>
                 <div>
@@ -412,22 +445,24 @@ export default function LibraryPage() {
                         <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                             <BarChart2 /> Okuma İstatistikleri
                         </CardTitle>
-                        <TabsList className="grid grid-cols-2 bg-white/20 text-white">
+                        <TabsList className="grid grid-cols-3 bg-white/20 text-white">
                             <TabsTrigger value="weekly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Haftalık</TabsTrigger>
                             <TabsTrigger value="monthly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Aylık</TabsTrigger>
+                            <TabsTrigger value="yearly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Yıllık</TabsTrigger>
                         </TabsList>
                     </div>
                 </Tabs>
                 <CardDescription className="text-white/80 pt-2">
                     {readingStatsPeriod === 'weekly' && `Bu hafta okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                     {readingStatsPeriod === 'monthly' && `Bu ay okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
+                    {readingStatsPeriod === 'yearly' && `Son 12 ayda okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                {readingStatsPeriod === 'weekly' && (
-                    <div className="grid grid-cols-7 gap-2 text-center">
+                 {readingStatsPeriod === 'weekly' ? (
+                     <div className="grid grid-cols-7 gap-2 text-center">
                         {readingStatsByPeriod.chartData.map((data, index) => (
-                           <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/20 backdrop-blur-sm overflow-hidden">
+                            <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/20 backdrop-blur-sm overflow-hidden">
                                 {data.goalMet && <Check className="h-4 w-4 text-green-300 absolute top-1 right-1 z-10" />}
                                 <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all origin-bottom" style={{ height: `${data.progress}%` }}></div>
                                 <div className="relative z-10 flex flex-col items-center justify-center">
@@ -437,8 +472,7 @@ export default function LibraryPage() {
                             </div>
                         ))}
                     </div>
-                )}
-                {readingStatsPeriod === 'monthly' && (
+                ) : (
                      <ChartContainer config={{ pagesRead: { label: 'Sayfa' } }} className="h-64 w-full">
                          <BarChart data={readingStatsByPeriod.chartData} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
                             <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
@@ -688,4 +722,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
 
