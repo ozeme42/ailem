@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfYear, subMonths, getYear, eachMonthOfInterval } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfYear, subMonths, getYear, eachMonthOfInterval, startOfYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
@@ -217,7 +217,7 @@ export default function LibraryPage() {
   const readingGoals = selectedMember?.readingGoals;
   
     const readingStatsByPeriod = React.useMemo(() => {
-    if (!selectedMember) return { weeklyChartData: [], monthlyPageData: [], totalWeeklyPages: 0, totalMonthlyPages: 0 };
+    if (!selectedMember) return { weeklyChartData: [], monthlyPageData: [] };
   
     const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
     const today = new Date();
@@ -245,7 +245,6 @@ export default function LibraryPage() {
       day: format(parseISO(dayKey), 'EEE', { locale: tr }),
       pagesRead: dailyPages.get(dayKey) || 0,
     }));
-    const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
   
     // Monthly Stats for Boxes
     const currentYear = getYear(today);
@@ -254,7 +253,6 @@ export default function LibraryPage() {
         end: new Date(currentYear, 11, 31),
     });
 
-    let totalMonthlyPages = 0;
     const monthlyPageData = monthsOfYear.map(month => {
         const monthKey = format(month, 'MMM', { locale: tr });
         const monthStart = startOfMonth(month);
@@ -267,15 +265,13 @@ export default function LibraryPage() {
             })
             .reduce((sum, s) => sum + s.pagesRead, 0);
         
-        totalMonthlyPages += pagesRead;
-        
         return {
             month: monthKey,
             pagesRead,
         };
     });
 
-    return { weeklyChartData, monthlyPageData, totalWeeklyPages, totalMonthlyPages };
+    return { weeklyChartData, monthlyPageData };
   }, [readingSessions, selectedMember]);
 
 
@@ -403,13 +399,10 @@ export default function LibraryPage() {
                         </TabsList>
                     </div>
                 </Tabs>
-                <CardDescription className="text-white/80 pt-2">
-                    {readingStatsPeriod === 'weekly' ? `Bu hafta okunan toplam ${readingStatsByPeriod.totalWeeklyPages} sayfa.` : `Bu ay okunan toplam ${readingStatsByPeriod.totalMonthlyPages} sayfa.`}
-                </CardDescription>
             </CardHeader>
             <CardContent>
                  {readingStatsPeriod === 'weekly' ? (
-                    <div className="grid grid-cols-7 gap-2 text-center">
+                     <div className="grid grid-cols-7 gap-2 text-center">
                         {readingStatsByPeriod.weeklyChartData.map((data: any, index) => {
                              const dailyGoal = readingGoals?.daily?.pages || 0;
                              const isCompleted = dailyGoal > 0 && data.pagesRead >= dailyGoal;
@@ -675,3 +668,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
     
 
+
+
+    
