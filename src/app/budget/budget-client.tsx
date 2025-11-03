@@ -36,7 +36,7 @@ export function BudgetClient() {
     
     const [currentDate, setCurrentDate] = React.useState(new Date());
     const [accounts, setAccounts] = React.useState<Account[]>([]);
-    const [allTransactions, setAllTransactions = React.useState<Transaction[]>([]);
+    const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
     
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
@@ -561,17 +561,3 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
-
-    
-
-    
-
-
-
-    
-
-    
-
-    
-
-    
