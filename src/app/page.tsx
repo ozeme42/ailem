@@ -8,7 +8,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Responsive
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay } from "date-fns";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate } from "@/lib/dataService";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
@@ -110,6 +110,7 @@ export default function Home() {
   const [prayerProgress, setPrayerProgress] = React.useState<PrayerProgress[]>([]);
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [readingSessions, setReadingSessions] = React.useState<ReadingSession[]>([]);
 
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
@@ -139,6 +140,7 @@ export default function Home() {
     const unsubPrayerProgress = onPrayerProgressUpdate(setPrayerProgress);
     const unsubTransactions = onTransactionsUpdate(setTransactions, startOfMonth(today), endOfMonth(today));
     const unsubAccounts = onAccountsUpdate(setAccounts);
+    const unsubSessions = onReadingSessionsUpdate(setReadingSessions);
 
     let unsubLibraries = () => {};
     if (familyId) {
@@ -162,6 +164,7 @@ export default function Home() {
       unsubPrayerProgress();
       unsubTransactions();
       unsubAccounts();
+      unsubSessions();
     };
   }, [familyId]);
   
@@ -300,6 +303,39 @@ export default function Home() {
             };
         }).sort((a,b) => b.finishedBooks - a.finishedBooks);
     }, [familyMembers, userLibraries, books]);
+
+    const memberSessions = React.useMemo(() => {
+        return readingSessions.filter(s => familyMembers.some(m => m.id === s.memberId));
+    }, [readingSessions, familyMembers]);
+
+    const weeklyReadingStats = React.useMemo(() => {
+        const today = new Date();
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        
+        const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => format(addDays(weekStart, i), 'EEE', { locale: tr }));
+        const dailyPages: { [key: string]: number } = {};
+        weekDaysKeys.forEach(key => dailyPages[key] = 0);
+
+        memberSessions.forEach(session => {
+            const sessionDate = parseISO(session.startTime);
+            if (isWithinInterval(sessionDate, { start: weekStart, end: endOfWeek(today, { weekStartsOn: 1}) })) {
+                const dayKey = format(sessionDate, 'EEE', { locale: tr });
+                dailyPages[dayKey] = (dailyPages[dayKey] || 0) + session.pagesRead;
+            }
+        });
+        
+        const weeklyChartData = weekDaysKeys.map(dayKey => ({
+            day: dayKey,
+            "Okunan Sayfa Sayısı": dailyPages[dayKey] || 0,
+        }));
+        
+        const totalWeeklyPages = weeklyChartData.reduce((sum, day) => sum + day["Okunan Sayfa Sayısı"], 0);
+        
+        return {
+            weeklyChartData,
+            totalWeeklyPages,
+        };
+    }, [memberSessions]);
 
   if (loading) {
     return (
@@ -688,4 +724,3 @@ export default function Home() {
     </div>
   );
 }
-
