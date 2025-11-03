@@ -111,7 +111,7 @@ export default function LibraryPage() {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
-  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
   
   const { toast } = useToast();
 
@@ -219,22 +219,6 @@ export default function LibraryPage() {
         if (!selectedMember) return { chartData: [], totalPages: 0, totalBooks: 0 };
         const dailyPageGoal = selectedMember.readingGoals?.daily?.pages || 0;
         const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
-
-        if (readingStatsPeriod === 'daily') {
-            const today = new Date();
-            const todaySessions = memberSessions.filter(s => isSameDay(parseISO(s.startTime), today));
-            const pagesRead = todaySessions.reduce((sum, s) => sum + s.pagesRead, 0);
-            return {
-                chartData: [{
-                    name: 'Bugün',
-                    pagesRead: pagesRead,
-                    goalMet: dailyPageGoal > 0 && pagesRead >= dailyPageGoal,
-                    progress: dailyPageGoal > 0 ? Math.min((pagesRead / dailyPageGoal) * 100, 100) : 0,
-                }],
-                totalPages: pagesRead,
-                totalBooks: 0, // Daily book tracking is complex, omitting for now
-            }
-        }
 
         if (readingStatsPeriod === 'weekly') {
             const today = new Date();
@@ -428,40 +412,22 @@ export default function LibraryPage() {
                         <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                             <BarChart2 /> Okuma İstatistikleri
                         </CardTitle>
-                        <TabsList className="grid grid-cols-3 bg-white/20 text-white">
-                            <TabsTrigger value="daily" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Günlük</TabsTrigger>
+                        <TabsList className="grid grid-cols-2 bg-white/20 text-white">
                             <TabsTrigger value="weekly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Haftalık</TabsTrigger>
                             <TabsTrigger value="monthly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Aylık</TabsTrigger>
                         </TabsList>
                     </div>
                 </Tabs>
                 <CardDescription className="text-white/80 pt-2">
-                    {readingStatsPeriod === 'daily' && 'Bugün okunan sayfa sayısı.'}
                     {readingStatsPeriod === 'weekly' && `Bu hafta okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                     {readingStatsPeriod === 'monthly' && `Bu ay okunan toplam ${readingStatsByPeriod.totalPages} sayfa.`}
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                {readingStatsPeriod === 'daily' && (
-                    <div className="flex items-center justify-center p-4 rounded-lg bg-white/20 backdrop-blur-sm">
-                         {readingStatsByPeriod.chartData[0] && (
-                            <div className="text-center relative">
-                                {readingStatsByPeriod.chartData[0].goalMet && <Check className="h-6 w-6 text-green-300 absolute -top-2 -right-2" />}
-                                <div className="relative w-36 h-36">
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                         <p className="font-bold text-4xl">{readingStatsByPeriod.chartData[0].pagesRead}</p>
-                                        <p className="text-sm text-white/90">Sayfa Okundu</p>
-                                    </div>
-                                    <div className="absolute inset-0 rounded-full bg-white/20 transition-transform origin-bottom" style={{ transform: `scaleY(${readingStatsByPeriod.chartData[0].progress / 100})` }}/>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
                 {readingStatsPeriod === 'weekly' && (
                     <div className="grid grid-cols-7 gap-2 text-center">
                         {readingStatsByPeriod.chartData.map((data, index) => (
-                            <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/20 backdrop-blur-sm overflow-hidden">
+                           <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/20 backdrop-blur-sm overflow-hidden">
                                 {data.goalMet && <Check className="h-4 w-4 text-green-300 absolute top-1 right-1 z-10" />}
                                 <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all origin-bottom" style={{ height: `${data.progress}%` }}></div>
                                 <div className="relative z-10 flex flex-col items-center justify-center">
@@ -722,3 +688,4 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
