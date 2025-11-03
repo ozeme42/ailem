@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths, eachMonthOfInterval, startOfYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 const progressFormSchema = z.object({
@@ -235,37 +235,40 @@ export default function LibraryPage() {
                 }
             });
             
-            const chartData = weekDays.map(day => ({
-                name: format(day, 'EEE', { locale: tr }),
+            const weeklyChartData = weekDays.map(day => ({
+                day: format(day, 'EEE', { locale: tr }),
                 pagesRead: dailyPages.get(format(day, 'yyyy-MM-dd')) || 0,
             }));
 
             const totalPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
-            return { chartData, totalPages, totalBooks: 0 };
+            return { chartData: weeklyChartData, totalPages, totalBooks: 0 };
         }
         
         if (readingStatsPeriod === 'monthly') {
-            const yearStart = startOfYear(today);
-            const months = eachMonthOfInterval({ start: yearStart, end: today });
-    
-            const monthlyPages = new Map<string, number>();
-            months.forEach(monthStart => monthlyPages.set(format(monthStart, 'yyyy-MM'), 0));
-    
+            const currentMonthStart = startOfMonth(today);
+            const weeksInMonth = eachWeekOfInterval({ start: currentMonthStart, end: endOfMonth(currentMonthStart) }, { weekStartsOn: 1 });
+
+            const weeklyPages = new Map<number, number>();
+            weeksInMonth.forEach(weekStart => {
+                const weekNumber = getWeek(weekStart);
+                weeklyPages.set(weekNumber, 0);
+            });
+
             memberSessions.forEach(session => {
                 const sessionDate = parseISO(session.startTime);
-                if (isWithinInterval(sessionDate, { start: yearStart, end: today })) {
-                    const monthKey = format(sessionDate, 'yyyy-MM');
-                    monthlyPages.set(monthKey, (monthlyPages.get(monthKey) || 0) + session.pagesRead);
+                if (isWithinInterval(sessionDate, { start: currentMonthStart, end: endOfMonth(currentMonthStart) })) {
+                    const weekNumber = getWeek(sessionDate);
+                    weeklyPages.set(weekNumber, (weeklyPages.get(weekNumber) || 0) + session.pagesRead);
                 }
             });
-    
-            const chartData = Array.from(monthlyPages.entries()).map(([monthKey, pagesRead]) => ({
-                name: format(parseISO(monthKey + '-01'), 'MMM', { locale: tr }),
+
+            const monthlyChartData = Array.from(weeklyPages.entries()).map(([weekNumber, pagesRead]) => ({
+                week: `${weekNumber}. Hafta`,
                 pagesRead: pagesRead,
             }));
-    
-            const totalPages = Array.from(monthlyPages.values()).reduce((sum, pages) => sum + pages, 0);
-            return { chartData, totalPages, totalBooks: 0 };
+            
+            const totalPages = Array.from(weeklyPages.values()).reduce((sum, pages) => sum + pages, 0);
+            return { chartData: monthlyChartData, totalPages, totalBooks: 0 };
         }
         
         return { chartData: [], totalPages: 0, totalBooks: 0 };
@@ -404,19 +407,24 @@ export default function LibraryPage() {
             <CardContent>
                 {readingStatsPeriod === 'weekly' ? (
                      <div className="grid grid-cols-7 gap-2 text-center">
-                        {readingStatsByPeriod.chartData.map((data, index) => (
-                            <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden">
-                                <p className="font-bold text-lg">{data.pagesRead}</p>
-                                <p className="text-xs font-semibold text-white/90 relative z-10">{data.name}</p>
-                            </div>
-                        ))}
+                        {readingStatsByPeriod.chartData.map((data: any, index) => {
+                             const dailyGoal = readingGoals?.daily?.pages || 0;
+                             const isCompleted = dailyGoal > 0 && data.pagesRead >= dailyGoal;
+                             return (
+                                <div key={index} className={cn("relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden", isCompleted && "bg-white/30")}>
+                                     {isCompleted && <Check className="h-6 w-6 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
+                                     <p className="font-bold text-lg">{data.pagesRead}</p>
+                                     <p className="text-xs font-semibold text-white/90 relative z-10">{data.day}</p>
+                                </div>
+                            )
+                        })}
                     </div>
                 ) : (
                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                        {readingStatsByPeriod.chartData.map((data, index) => (
+                        {(readingStatsByPeriod.chartData as any[]).map((data: any, index) => (
                             <div key={index} className="p-2 rounded-lg bg-white/20 backdrop-blur-sm text-center">
                                 <p className="font-bold text-lg">{data.pagesRead}</p>
-                                <p className="text-xs font-semibold text-white/90">{data.name}</p>
+                                <p className="text-xs font-semibold text-white/90">{data.week}</p>
                             </div>
                         ))}
                     </div>
@@ -571,15 +579,15 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                            <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={(e) => {e.stopPropagation(); onUpdateStatus(book.id, 'reading', 0); }}>
                                <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
                            </Button>
-                           <AlertDialog>
+                            <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                                     <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
                                         <Trash2 className="h-3 w-3"/>
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                 <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                      <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                     <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooter>
+                                     <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={()={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
                                 </AlertDialogContent>
                             </AlertDialog>
                        </div>
@@ -606,7 +614,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
                         </AlertDialogContent>
                     </AlertDialog>
                 </DialogFooter>
@@ -650,4 +658,5 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
     
 
     
+
 
