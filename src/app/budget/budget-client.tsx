@@ -267,7 +267,7 @@ export function BudgetClient() {
 
     return (
         <div className="bg-background text-foreground min-h-screen flex flex-col">
-            <header className="p-4 space-y-4 bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-b-xl shadow-lg -mx-4 -mt-8 mb-6 sm:-mx-6">
+            <header className="p-4 space-y-4 bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-b-xl shadow-lg -mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6">
                  <div className="flex items-center justify-center gap-4 text-xl">
                     <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')} className="text-white hover:bg-white/20 hover:text-white">
                         <ChevronLeft className="h-6 w-6" />
@@ -298,7 +298,7 @@ export function BudgetClient() {
                         </div>
                         <div>
                             <p className="text-xs text-white/80">Toplam</p>
-                            <p className="font-semibold text-sm">{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            <p className={cn("font-semibold text-sm", headerTotal < 0 && 'text-red-300')}>{headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                         </div>
                     </div>
                 )}
@@ -438,28 +438,28 @@ export function BudgetClient() {
                              <CardContent className="grid grid-cols-3 gap-2 text-center text-xs">
                                 <div><p className="text-white/80">Varlıklar</p><p className="font-semibold text-lg">{accountStats.totalAssets.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
                                 <div><p className="text-white/80">Borçlar</p><p className="font-semibold text-lg text-red-300">{accountStats.totalDebts.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
-                                <div><p className="text-white/80">Net Değer</p><p className="font-semibold text-lg">{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
+                                <div><p className="text-white/80">Net Değer</p><p className={cn("font-semibold text-lg", accountStats.netWorth < 0 && 'text-red-300')}>{accountStats.netWorth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p></div>
                             </CardContent>
                         </Card>
                         
-                         <Card className="shadow-md">
+                         <Card className="shadow-md bg-gradient-to-br from-green-500 to-teal-500 text-white">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base">Varlık Hesapları ({accountStats.assets.length})</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-px">
-                                {accountStats.assets.map(account => (
-                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => {}}/>
+                                {accountStats.assets.map((account, index) => (
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => {}} index={index}/>
                                 ))}
                             </CardContent>
                         </Card>
                         
-                        <Card className="shadow-md">
+                        <Card className="shadow-md bg-gradient-to-br from-red-500 to-rose-500 text-white">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base">Borç Hesapları ({accountStats.debts.length})</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-px">
-                                {accountStats.debts.map(account => (
-                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => openPaymentForm(account)}/>
+                                {accountStats.debts.map((account, index) => (
+                                    <AccountRow key={account.id} account={account} onEdit={() => openAccountForm(account)} onDelete={() => handleDeleteAccount(account.id)} onPayDebt={() => openPaymentForm(account)} index={index}/>
                                 ))}
                             </CardContent>
                         </Card>
@@ -520,22 +520,24 @@ export function BudgetClient() {
     );
 }
 
-function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account, onEdit: () => void, onDelete: () => void, onPayDebt: () => void }) {
+function AccountRow({ account, onEdit, onDelete, onPayDebt, index }: { account: Account, onEdit: () => void, onDelete: () => void, onPayDebt: () => void, index: number }) {
     const Icon = accountIcons[account.type] || Wallet;
+    const isFirst = index === 0;
+    
     return (
-        <div className="flex justify-between items-center p-3 bg-muted/30 first:rounded-t-lg last:rounded-b-lg">
+        <div className={cn("flex justify-between items-center p-3 bg-white/10", !isFirst && 'border-t border-white/20', isFirst ? 'rounded-t-lg' : '', "last:rounded-b-lg")}>
             <div className="flex items-center gap-3">
-                <Icon className="h-5 w-5 text-muted-foreground" />
+                <Icon className="h-5 w-5 text-white/80" />
                 <p className="text-sm font-medium">{account.name}</p>
             </div>
             <div className="flex items-center gap-2">
-                <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-destructive')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                <p className={cn("font-semibold text-sm", account.type === 'credit-card' && 'text-red-200')}>{account.balance.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                 {account.type === 'credit-card' && (
-                    <Button variant="outline" size="sm" onClick={onPayDebt}><HandCoins className="h-4 w-4 mr-2"/>Borç Öde</Button>
+                    <Button variant="outline" size="sm" onClick={onPayDebt} className="bg-transparent border-white/50 hover:bg-white/20 text-white"><HandCoins className="h-4 w-4 mr-2"/>Borç Öde</Button>
                 )}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4"/></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"><MoreHorizontal className="h-4 w-4"/></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuItem onSelect={onEdit}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
@@ -562,3 +564,4 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
     
 
     
+
