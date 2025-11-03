@@ -482,7 +482,7 @@ export default function ShoppingPage() {
 
   return (
     <div className="space-y-0">
-        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none" />
+        <PageHeader title="Listelerim" className="bg-[#f2994a] rounded-none shadow-none mb-0" />
         <div className="space-y-0">
             {shoppingLists.length > 0 ? (
                 shoppingLists.map((list, index) => {
