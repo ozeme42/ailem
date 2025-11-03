@@ -100,10 +100,17 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   }
 
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit({
+    const dataToSend = {
       ...values,
-      date: format(values.date, 'yyyy-MM-dd')
-    });
+      date: format(values.date, 'yyyy-MM-dd'),
+      ...(values.isInstallment && {
+          installmentDetails: {
+              total: values.installmentCount || 1,
+              current: 1 // Start with the first installment
+          }
+      })
+    };
+    onSubmit(dataToSend);
     form.reset();
   }
   
@@ -161,21 +168,19 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             <AlertDescription>Lütfen tüm zorunlu alanları doldurun.</AlertDescription>
                         </Alert>
                     )}
-                    <FormField control={form.control} name="date" render={({ field }) => (
-                        <FormItem className="flex items-center">
-                            <FormLabel className="w-20 text-xs text-muted-foreground">Tarih</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant={"ghost"} className="flex-grow justify-start font-normal text-sm">
-                                        {field.value ? format(field.value, "dd.MM.yyyy (EEE)", { locale: tr }) : <span>Tarih seçin</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent>
-                            </Popover>
-                        </FormItem>
-                    )}/>
+                     <FormItem className="flex items-center">
+                        <FormLabel className="w-20 text-xs text-muted-foreground">Tarih</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant={"ghost"} className="flex-grow justify-start font-normal text-sm h-auto py-1">
+                                    {form.watch('date') ? format(form.watch('date'), "dd.MM.yyyy (EEE)", { locale: tr }) : <span>Tarih seçin</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.watch('date')} onSelect={(d) => form.setValue('date', d || new Date())} initialFocus/></PopoverContent>
+                        </Popover>
+                    </FormItem>
                     
-                    <div className="flex items-center">
+                    <FormItem className="flex items-center">
                         <FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
                         <div className="flex-grow flex items-center gap-2">
                              <FormField control={form.control} name="amount" render={({ field }) => (
@@ -203,12 +208,12 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </FormItem>
                     
                     <FormItem className="flex items-center">
                         <FormLabel className="w-20 text-xs text-muted-foreground">Kategori</FormLabel>
                         <div className="flex-grow">
-                            <Button type="button" variant="ghost" className="w-full justify-start text-left text-sm h-auto" onClick={() => setShowCategorySelector(true)}>
+                            <Button type="button" variant="ghost" className="w-full justify-start text-left text-sm h-auto py-1" onClick={() => setShowCategorySelector(true)}>
                                 {selectedCategory ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-base">{selectedCategory.icon}</span>
@@ -290,5 +295,3 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
-
-    

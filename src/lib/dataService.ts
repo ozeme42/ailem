@@ -1776,6 +1776,7 @@ export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>)
         const totalInstallments = data.installmentDetails.total;
         const installmentAmount = data.amount / totalInstallments;
         const originalDate = parseISO(data.date);
+        const originalTransactionId = doc(collection(db, 'transactions')).id; // Unique ID for the whole purchase
 
         for (let i = 0; i < totalInstallments; i++) {
             const installmentDate = addMonths(originalDate, i);
@@ -1790,12 +1791,19 @@ export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>)
                 installmentDetails: {
                     current: i + 1,
                     total: totalInstallments,
-                    originalTransactionId: newTransactionRef.id // This is a problem, we don't have the ID yet.
+                    originalTransactionId: originalTransactionId
                 }
             };
             batch.set(installmentTransactionRef, installmentData);
+            
+            // For credit cards, balance is affected once. For others, per installment.
+            const accountDoc = await getDoc(doc(db, 'accounts', data.accountId));
+            if (accountDoc.exists() && accountDoc.data().type !== 'credit-card') {
+                await updateAccountBalance(batch, data.accountId, installmentAmount, data.type);
+            }
         }
-         // We can only update the balance once for the full amount if it's a credit card
+        
+        // For credit card, update balance with the full amount immediately
         const accountDoc = await getDoc(doc(db, 'accounts', data.accountId));
         if (accountDoc.exists() && accountDoc.data().type === 'credit-card') {
             await updateAccountBalance(batch, data.accountId, data.amount, data.type);
@@ -1809,6 +1817,7 @@ export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>)
     
     return batch.commit();
 };
+
 
 export const updateTransaction = async (id: string, data: Partial<Omit<Transaction, 'id'>>) => {
     const transactionRef = doc(db, 'transactions', id);
@@ -2178,5 +2187,3 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
         if (unsubscribe) unsubscribe();
     };
 };
-
-    
