@@ -244,6 +244,7 @@ export default function LibraryPage() {
                 day: format(parseISO(dayKey), 'EEE', { locale: tr }),
                 pagesRead: pagesRead,
                 goalMet: dailyPageGoal > 0 && pagesRead >= dailyPageGoal,
+                progress: dailyPageGoal > 0 ? Math.min((pagesRead / dailyPageGoal) * 100, 100) : 0,
             }
         });
 
@@ -371,12 +372,15 @@ export default function LibraryPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center p-4">
                 {weeklyReadingStats.weeklyChartData.map(data => (
-                    <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0">
-                         <div className="flex items-center gap-1">
-                            <p className="font-bold text-lg">{data.pagesRead}</p>
-                            {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
+                     <Card key={data.day} className="bg-white/20 text-white flex flex-col items-center justify-center p-1 border-0 relative overflow-hidden">
+                        <div className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all duration-500" style={{ height: `${data.progress}%` }}></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center">
+                            <div className="flex items-center gap-1">
+                                <p className="font-bold text-lg">{data.pagesRead}</p>
+                                {data.goalMet && <Check className="h-4 w-4 text-green-300" />}
+                            </div>
+                            <p className="text-xs font-semibold text-white/90">{data.day}</p>
                         </div>
-                        <p className="text-xs font-semibold text-white/90">{data.day}</p>
                     </Card>
                 ))}
             </CardContent>
@@ -563,6 +567,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 }
 
     
+
     
 
     
