@@ -1804,7 +1804,6 @@ export const addTransaction = async (data: Omit<Transaction, 'id' | 'familyId'>)
             batch.set(installmentTransactionRef, installmentData);
         }
         
-        // For credit card, update balance with the full amount immediately
         const accountDoc = await getDoc(doc(db, 'accounts', data.accountId));
         if (accountDoc.exists() && accountDoc.data().type === 'credit-card') {
             await updateAccountBalance(batch, data.accountId, data.amount, data.type);
@@ -1830,48 +1829,14 @@ export const updateTransaction = async (id: string, data: Partial<Omit<Transacti
     const cleanedData = removeUndefined(data);
 
     // Revert old balance change
-    const oldAccountRef = doc(db, 'accounts', oldData.accountId);
-    const oldAccountSnap = await getDoc(oldAccountRef);
-    if (oldAccountSnap.exists()) {
-        const oldAccountData = oldAccountSnap.data() as Account;
-        const oldBalance = oldAccountData.balance;
-        let revertedBalance;
-        if(oldAccountData.type === 'credit-card' || oldAccountData.type === 'other') {
-            revertedBalance = oldData.type === 'income' ? oldBalance + oldData.amount : oldBalance - oldData.amount;
-        } else {
-             revertedBalance = oldData.type === 'income' ? oldBalance - oldData.amount : oldBalance + oldData.amount;
-        }
-        batch.update(oldAccountRef, { balance: revertedBalance });
-    }
+    await updateAccountBalance(batch, oldData.accountId, oldData.amount, oldData.type === 'income' ? 'expense' : 'income');
 
     // Apply new balance change
     const newAccountId = data.accountId || oldData.accountId;
     const newAmount = data.amount || oldData.amount;
     const newType = data.type || oldData.type;
-    const newAccountRef = doc(db, 'accounts', newAccountId);
-    const newAccountSnap = await getDoc(newAccountRef);
-    if (newAccountSnap.exists()) {
-        const newAccountData = newAccountSnap.data() as Account;
-        let currentBalance = newAccountData.balance;
-       
-        if (oldData.accountId === newAccountId) {
-            const oldBalance = newAccountData.balance;
-             if(newAccountData.type === 'credit-card' || newAccountData.type === 'other') {
-                currentBalance = oldData.type === 'income' ? oldBalance + oldData.amount : oldBalance - oldData.amount;
-            } else {
-                currentBalance = oldData.type === 'income' ? oldBalance - oldData.amount : oldBalance + oldData.amount;
-            }
-        }
-        
-        let newBalance;
-         if(newAccountData.type === 'credit-card' || newAccountData.type === 'other') {
-            newBalance = newType === 'income' ? currentBalance - newAmount : currentBalance + newAmount;
-        } else {
-            newBalance = newType === 'income' ? currentBalance + newAmount : currentBalance - newAmount;
-        }
-
-        batch.update(newAccountRef, { balance: newBalance });
-    }
+    await updateAccountBalance(batch, newAccountId, newAmount, newType);
+   
 
     // Update the transaction itself
     batch.update(transactionRef, cleanedData);
@@ -1887,23 +1852,9 @@ export const deleteTransaction = async (id: string) => {
     const data = transactionSnap.data() as Transaction;
     const batch = writeBatch(db);
 
-    // Revert balance change
-    const accountRef = doc(db, 'accounts', data.accountId);
-    const accountSnap = await getDoc(accountRef);
-    if (accountSnap.exists()) {
-        const accountData = accountSnap.data() as Account;
-        const currentBalance = accountData.balance;
-        let newBalance;
-
-        if (accountData.type === 'credit-card' || accountData.type === 'other') {
-             newBalance = data.type === 'income' ? currentBalance + data.amount : currentBalance - data.amount;
-        } else {
-             newBalance = data.type === 'income' ? currentBalance - data.amount : currentBalance + data.amount;
-        }
-
-        batch.update(accountRef, { balance: newBalance });
-    }
-
+    // Revert balance change by applying the opposite transaction type
+    await updateAccountBalance(batch, data.accountId, data.amount, data.type === 'income' ? 'expense' : 'income');
+    
     // Delete transaction
     batch.delete(transactionRef);
 
@@ -2183,3 +2134,4 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
         if (unsubscribe) unsubscribe();
     };
 };
+
