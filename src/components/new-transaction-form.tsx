@@ -185,15 +185,15 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                     <FormItem className="flex-grow flex items-center">
                                         <FormLabel className="w-20 text-xs text-muted-foreground">Tutar</FormLabel>
                                         <FormControl>
-                                            <Input type="number" step="any" placeholder="0,00" {...field} value={field.value ?? ''} className={cn("bg-transparent border-0 text-2xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} />
+                                            <Input type="number" step="any" placeholder="0,00" {...field} value={field.value ?? ''} className={cn("bg-transparent border-0 text-xl font-bold h-auto", transactionType === 'income' ? 'text-primary placeholder:text-primary/50' : 'text-destructive placeholder:text-destructive/50')} />
                                         </FormControl>
                                     </FormItem>
                                 )}/>
                                 {transactionType === 'expense' && (
                                     <FormField control={form.control} name="isInstallment" render={({ field }) => (
-                                        <FormItem className="flex items-center gap-2 space-y-0">
-                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                            <FormLabel className="text-xs">Taksit</FormLabel>
+                                        <FormItem className="flex items-center gap-1.5 space-y-0">
+                                            <FormControl><Switch id="isInstallment" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                            <FormLabel htmlFor="isInstallment" className="text-xs">Taksit</FormLabel>
                                         </FormItem>
                                     )}/>
                                 )}
@@ -299,3 +299,5 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
+
+    
