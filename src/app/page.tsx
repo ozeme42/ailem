@@ -17,7 +17,7 @@ import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek } from "date-fns";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek, addDays } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
@@ -303,42 +303,42 @@ export default function Home() {
     }, [familyMembers, userLibraries, books]);
     
     const weeklyReadingStats = React.useMemo(() => {
-      const today = new Date();
-      const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  
-      const memberSessions = readingSessions.filter(s => 
-          familyMembers.some(m => m.id === s.memberId) &&
-          isWithinInterval(parseISO(s.startTime), { start: weekStart, end: weekEnd })
-      );
-  
-      const dailyPages = new Map<string, number>();
-      const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
-          const day = addDays(weekStart, i);
-          const dayKey = format(day, 'yyyy-MM-dd');
-          dailyPages.set(dayKey, 0);
-          return dayKey;
-      });
-  
-      memberSessions.forEach(session => {
-          const dayKey = format(parseISO(session.startTime), 'yyyy-MM-dd');
-          if (dailyPages.has(dayKey)) {
-              dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
-          }
-      });
-  
-      const weeklyChartData = weekDaysKeys.map(dayKey => ({
-          day: format(parseISO(dayKey), 'EEE', { locale: tr }),
-          "Okunan Sayfa Sayısı": dailyPages.get(dayKey) || 0,
-      }));
-  
-      const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
-  
-      return {
-          weeklyChartData,
-          totalWeeklyPages,
-      };
-    }, [readingSessions, familyMembers]);
+        const today = new Date();
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+    
+        const memberSessions = readingSessions.filter(s => 
+            familyMembers.some(m => m.id === s.memberId) &&
+            isWithinInterval(parseISO(s.startTime), { start: weekStart, end: weekEnd })
+        );
+    
+        const dailyPages = new Map<string, number>();
+        const weekDaysKeys = Array.from({ length: 7 }).map((_, i) => {
+            const day = addDays(weekStart, i);
+            const dayKey = format(day, 'yyyy-MM-dd');
+            dailyPages.set(dayKey, 0);
+            return dayKey;
+        });
+    
+        memberSessions.forEach(session => {
+            const dayKey = format(parseISO(session.startTime), 'yyyy-MM-dd');
+            if (dailyPages.has(dayKey)) {
+                dailyPages.set(dayKey, (dailyPages.get(dayKey) || 0) + session.pagesRead);
+            }
+        });
+    
+        const weeklyChartData = weekDaysKeys.map(dayKey => ({
+            day: format(parseISO(dayKey), 'EEE', { locale: tr }),
+            "Okunan Sayfa Sayısı": dailyPages.get(dayKey) || 0,
+        }));
+    
+        const totalWeeklyPages = Array.from(dailyPages.values()).reduce((sum, pages) => sum + pages, 0);
+    
+        return {
+            weeklyChartData,
+            totalWeeklyPages,
+        };
+      }, [readingSessions, familyMembers]);
 
 
   if (loading) {
@@ -732,3 +732,4 @@ export default function Home() {
     
 
     
+
