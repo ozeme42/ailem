@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
 import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, getWeeksInMonth, getWeek, eachWeekOfInterval, endOfMonth, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -291,18 +291,14 @@ export default function LibraryPage() {
             const today = new Date();
             const monthlyPages = new Map<string, number>();
 
-            // Initialize last 12 months
             for (let i = 11; i >= 0; i--) {
                 const monthDate = subMonths(today, i);
                 const monthKey = format(monthDate, 'MMM yy', { locale: tr });
                 monthlyPages.set(monthKey, 0);
             }
 
-            const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
-
             memberSessions.forEach(session => {
                 const sessionDate = parseISO(session.startTime);
-                // Check if the session is within the last 12 months
                 if (sessionDate >= subMonths(startOfMonth(today), 11)) {
                     const monthKey = format(sessionDate, 'MMM yy', { locale: tr });
                     if (monthlyPages.has(monthKey)) {
@@ -320,7 +316,6 @@ export default function LibraryPage() {
             
             return { chartData, totalPages, totalBooks: 0 };
         }
-
 
         return { chartData: [], totalPages: 0, totalBooks: 0 };
     }, [readingSessions, selectedMember, readingStatsPeriod]);
@@ -445,7 +440,7 @@ export default function LibraryPage() {
                         <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                             <BarChart2 /> Okuma İstatistikleri
                         </CardTitle>
-                        <TabsList className="grid grid-cols-3 bg-white/20 text-white">
+                        <TabsList className="grid w-full grid-cols-3 bg-white/20 text-white">
                             <TabsTrigger value="weekly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Haftalık</TabsTrigger>
                             <TabsTrigger value="monthly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Aylık</TabsTrigger>
                             <TabsTrigger value="yearly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Yıllık</TabsTrigger>
@@ -475,8 +470,24 @@ export default function LibraryPage() {
                 ) : (
                      <ChartContainer config={{ pagesRead: { label: 'Sayfa' } }} className="h-64 w-full">
                          <BarChart data={readingStatsByPeriod.chartData} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
-                            <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12}/>
-                            <YAxis/>
+                            <XAxis
+                              dataKey="name"
+                              tickLine={false}
+                              axisLine={false}
+                              tickMargin={8}
+                              fontSize={12}
+                              className="sm:hidden"
+                              tickFormatter={(value) => value.charAt(0)}
+                            />
+                             <XAxis
+                              dataKey="name"
+                              tickLine={false}
+                              axisLine={false}
+                              tickMargin={8}
+                              fontSize={12}
+                              className="hidden sm:block"
+                            />
+                            <YAxis fontSize={12} tickLine={false} axisLine={false} />
                             <ChartTooltipContent />
                             <Bar dataKey="pagesRead" fill="hsla(0, 0%, 100%, 0.5)" radius={4} />
                         </BarChart>
@@ -722,5 +733,6 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
 
 
     
+
 
 
