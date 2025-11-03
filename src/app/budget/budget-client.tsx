@@ -268,16 +268,18 @@ export function BudgetClient() {
     return (
         <div className="bg-background text-foreground min-h-screen flex flex-col">
             <header className="p-4 space-y-4 bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-b-xl shadow-lg -mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6">
-                 <div className="flex items-center justify-center gap-4 text-xl">
-                    <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')} className="text-white hover:bg-white/20 hover:text-white">
-                        <ChevronLeft className="h-6 w-6" />
-                    </Button>
-                    <h2 className="text-lg font-semibold text-center capitalize">
-                        {format(currentDate, dateDisplayFormat, { locale: tr })}
-                    </h2>
-                    <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')} className="text-white hover:bg-white/20 hover:text-white">
-                        <ChevronRight className="h-6 w-6" />
-                    </Button>
+                 <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="flex items-center justify-between w-full">
+                        <Button variant="ghost" size="icon" onClick={() => handleNavDate('prev')} className="text-white hover:bg-white/20 hover:text-white">
+                            <ChevronLeft className="h-6 w-6" />
+                        </Button>
+                        <h2 className="text-lg font-semibold text-center capitalize">
+                            {format(currentDate, dateDisplayFormat, { locale: tr })}
+                        </h2>
+                        <Button variant="ghost" size="icon" onClick={() => handleNavDate('next')} className="text-white hover:bg-white/20 hover:text-white">
+                            <ChevronRight className="h-6 w-6" />
+                        </Button>
+                    </div>
                 </div>
                 <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-3 bg-black/30 p-1 h-auto rounded-lg">
@@ -561,3 +563,5 @@ function AccountRow({ account, onEdit, onDelete, onPayDebt }: { account: Account
         </div>
     );
 }
+
+    
