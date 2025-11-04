@@ -22,13 +22,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const eventColors = [
-    { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" },
-    { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
-    { bg: "bg-purple-100", text: "text-purple-800", border: "border-purple-300" },
-    { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
-    { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
-    { bg: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-300" },
-    { bg: "bg-pink-100", text: "text-pink-800", border: "border-pink-300" },
+    { bg: "bg-blue-100 dark:bg-blue-900/50", text: "text-blue-800 dark:text-blue-200", border: "border-blue-300 dark:border-blue-700" },
+    { bg: "bg-green-100 dark:bg-green-900/50", text: "text-green-800 dark:text-green-200", border: "border-green-300 dark:border-green-700" },
+    { bg: "bg-purple-100 dark:bg-purple-900/50", text: "text-purple-800 dark:text-purple-200", border: "border-purple-300 dark:border-purple-700" },
+    { bg: "bg-red-100 dark:bg-red-900/50", text: "text-red-800 dark:text-red-200", border: "border-red-300 dark:border-red-700" },
+    { bg: "bg-yellow-100 dark:bg-yellow-900/50", text: "text-yellow-800 dark:text-yellow-200", border: "border-yellow-300 dark:border-yellow-700" },
+    { bg: "bg-indigo-100 dark:bg-indigo-900/50", text: "text-indigo-800 dark:text-indigo-200", border: "border-indigo-300 dark:border-indigo-700" },
+    { bg: "bg-pink-100 dark:bg-pink-900/50", text: "text-pink-800 dark:text-pink-200", border: "border-pink-300 dark:border-pink-700" },
 ];
 
 
@@ -99,7 +99,7 @@ export default function CalendarPage() {
      if (viewMode === 'month') {
         setCurrentDate(d => addMonths(d, 1));
     } else {
-        setCurrentDate(d => addDays(d, -7));
+        setCurrentDate(d => addDays(d, 7));
     }
   };
 
@@ -213,15 +213,15 @@ export default function CalendarPage() {
           </DialogContent>
         </Dialog>
 
-      <Card className="shadow-lg">
-        <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <Card className="shadow-sm">
+        <CardHeader className="bg-card rounded-t-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-grow">
                     <h2 className="text-xl font-semibold capitalize">
                         {format(currentDate, 'MMMM yyyy', { locale: tr })}
                     </h2>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
                         <TabsList>
                             <TabsTrigger value="month">Aylık</TabsTrigger>
@@ -232,7 +232,7 @@ export default function CalendarPage() {
                         <Button variant="outline" size="icon" onClick={handlePrev}>
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+                        <Button variant="default" className="bg-primary text-primary-foreground" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
                         <Button variant="outline" size="icon" onClick={handleNext}>
                             <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -240,32 +240,45 @@ export default function CalendarPage() {
                 </div>
             </div>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6 sm:pt-0">
+        <CardContent className="p-0 bg-background">
           <div className={cn("grid border-t border-l", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
-             {weekHeaderDays.map(day => (
-                <div key={day.toISOString()} className={cn("p-2 border-r border-b text-center font-semibold text-sm capitalize", viewMode === 'week' && 'hidden')}>
+             {viewMode === 'month' && weekHeaderDays.map(day => (
+                <div key={day.toISOString()} className="p-2 border-r border-b text-center font-semibold text-sm capitalize bg-muted/50">
                     {format(day, 'EEE', { locale: tr })}
                 </div>
             ))}
             {displayedDays.map(day => {
               const dayEvents = getEventsForDay(day);
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const isDayToday = isToday(day);
 
               return (
                 <Dialog key={day.toString()}>
                   <DialogTrigger asChild disabled={dayEvents.length === 0}>
-                     <div className={cn("border-b border-r p-2 flex", dayEvents.length > 0 && 'cursor-pointer hover:bg-muted/50', viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'h-24 flex-row gap-4')}>
-                        <div className={cn(viewMode === 'week' && 'w-24 text-center border-r pr-4')}>
-                            <span className={cn(`font-semibold`, isToday(day) ? 'text-primary' : 'text-foreground', !isSameMonth(day, currentDate) && 'text-muted-foreground/50')}>
+                     <div className={cn(
+                       "border-b border-r p-2 flex relative", 
+                       dayEvents.length > 0 && 'cursor-pointer hover:bg-muted/50', 
+                       viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'min-h-24 flex-row gap-4',
+                       !isCurrentMonth && 'bg-muted/30',
+                       isDayToday && "bg-primary/10",
+                       isPast(day) && !isDayToday && 'opacity-70'
+                     )}>
+                        <div className={cn("flex-shrink-0", viewMode === 'week' && 'w-24 text-center border-r pr-4 flex flex-col justify-center items-center')}>
+                            <span className={cn(
+                              `font-semibold`, 
+                              isDayToday ? 'text-primary' : 'text-foreground', 
+                              !isCurrentMonth && 'text-muted-foreground/50'
+                            )}>
                               {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM', { locale: tr })}
                             </span>
-                             {viewMode === 'week' && <span className="block text-xs capitalize">{format(day, 'EEE', {locale: tr})}</span>}
+                             {viewMode === 'week' && <span className="block text-xs capitalize text-muted-foreground">{format(day, 'EEE', {locale: tr})}</span>}
                         </div>
-                        <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start')}>
+                        <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start py-2')}>
                            {dayEvents.map((event, index) => {
                                const color = eventColors[index % eventColors.length];
                                return (
-                               <div key={event.id} className={cn('p-1.5 rounded-md', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
-                                <p className="text-xs font-semibold truncate">{event.title}</p>
+                               <div key={event.id} className={cn('p-1.5 rounded-md border text-xs font-semibold truncate', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
+                                {event.title}
                               </div>
                             )})}
                         </div>
@@ -313,7 +326,7 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
       
-       <Card className="shadow-lg">
+       <Card className="shadow-sm bg-card">
         <CardHeader>
           <CardTitle>Tüm Hatırlatıcılar</CardTitle>
           <CardDescription>Yaklaşan ve geçmiş tüm etkinlikleriniz.</CardDescription>

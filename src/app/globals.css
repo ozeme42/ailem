@@ -9,32 +9,32 @@ body {
 
 @layer base {
   :root {
-    --background: 240 10% 97.5%;
-    --foreground: 224 71.4% 4.1%;
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary: 217.2 91.2% 66%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 240 4.8% 95.9%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 217.2 91.2% 56.9%; /* Adjusted accent for better contrast */
-    --accent-foreground: 210 20% 98%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 217.2 91.2% 66%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
     --radius: 0.75rem;
 
-    --chart-1: 217 91% 60%; /* Blue */
-    --chart-2: 142 71% 45%; /* Green */
-    --chart-3: 38 92% 50%; /* Orange */
-    --chart-4: 262 83% 58%; /* Purple */
-    --chart-5: 340 82% 52%; /* Pink */
+    --chart-1: 221 83% 53%;
+    --chart-2: 166 77% 40%;
+    --chart-3: 343 77% 50%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 48 96% 58%;
     
     --sidebar-background: 240 5.2% 96.9%;
     --sidebar-foreground: 222.2 84% 4.9%;
