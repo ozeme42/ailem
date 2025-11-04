@@ -101,7 +101,7 @@ export function MemberDashboardCard({
         let readingBooksData: (BookType & { libraryStatus: 'reading' | 'to-read', progress?: number })[] = [];
         if (memberLib?.books) {
             readingBooksData = memberLib.books
-                .filter(libBook => libBook.status === 'reading' || libBook.status === 'to-read')
+                .filter(libBook => libBook.status === 'reading')
                 .map(libBook => {
                     const bookDetail = books.find(b => b.id === libBook.bookId);
                     return bookDetail ? { ...bookDetail, libraryStatus: libBook.status, progress: libBook.progress } : null;
@@ -324,7 +324,7 @@ export function MemberDashboardCard({
                 )}
                  {readingBooks.length > 0 && (
                    <div>
-                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><BookOpen className="h-4 w-4"/> Okunacak Kitaplar</h4>
+                        <h4 className="font-semibold text-sm mb-2 text-white/80 flex items-center gap-2"><BookOpen className="h-4 w-4"/> Okunan Kitaplar</h4>
                         <div className="space-y-3">
                             {readingBooks.slice(0, 2).map(book => {
                                 const pagesRead = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
