@@ -115,9 +115,9 @@ export default function TasksPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
             <Tabs defaultValue="tasks" className="w-full">
-                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="tasks">Görevler</TabsTrigger>
-                    <TabsTrigger value="habits">Alışkanlıklar</TabsTrigger>
+                 <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-1">
+                    <TabsTrigger value="tasks" className="data-[state=active]:bg-white/90 data-[state=active]:text-primary data-[state=active]:shadow-md text-white/90">Görevler</TabsTrigger>
+                    <TabsTrigger value="habits" className="data-[state=active]:bg-white/90 data-[state=active]:text-primary data-[state=active]:shadow-md text-white/90">Alışkanlıklar</TabsTrigger>
                 </TabsList>
                 <TabsContent value="tasks" className="mt-4">
                      <div className="flex flex-col sm:flex-row gap-2 mb-4">
