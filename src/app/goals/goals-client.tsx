@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -17,6 +16,16 @@ import { PlusCircle, Target, Trash2, Edit, Youtube, User } from 'lucide-react';
 import { NewGoalForm } from '@/components/new-goal-form';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+
+const goalColors = [
+    'bg-gradient-to-br from-blue-500 to-indigo-600 text-white',
+    'bg-gradient-to-br from-green-500 to-teal-600 text-white',
+    'bg-gradient-to-br from-pink-500 to-purple-600 text-white',
+    'bg-gradient-to-br from-orange-400 to-rose-400 text-white',
+    'bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900',
+    'bg-gradient-to-br from-lime-500 to-green-600 text-white',
+];
+
 
 export default function GoalsClient() {
     const { user, familyMembers } = useAuth();
@@ -152,20 +161,21 @@ export default function GoalsClient() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredGoals.length > 0 ? (
-                    filteredGoals.map(goal => {
+                    filteredGoals.map((goal, index) => {
                         const progress = calculateOverallProgress(goal);
                         const assignee = familyMembers.find(m => m.id === goal.assigneeId);
                         const isVideoGoal = goal.platform === 'YouTube';
                         const totalCompletedUnits = goal.sections.reduce((acc, section) => acc + (section.completedUnits || 0), 0);
                         const totalSections = goal.sections.length;
                         const completedSections = goal.sections.filter(s => s.status === 'completed').length;
+                        const colorClass = goalColors[index % goalColors.length];
 
                         return (
-                            <Card key={goal.id} className="group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform">
+                            <Card key={goal.id} className={cn("group relative flex flex-col h-full hover:shadow-lg hover:-translate-y-1 transition-transform border-0", colorClass)}>
                                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleOpenDialog(goal); }}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:text-white hover:bg-white/20" onClick={(e) => { e.stopPropagation(); handleOpenDialog(goal); }}><Edit className="h-4 w-4" /></Button>
                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:text-white hover:bg-white/20" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
@@ -180,24 +190,24 @@ export default function GoalsClient() {
                                         <div className="flex justify-between items-start gap-2">
                                             <div className="flex-grow flex items-center gap-3"><CardTitle>{goal.title}</CardTitle></div>
                                         </div>
-                                        <CardDescription>{goal.description}</CardDescription>
+                                        <CardDescription className="text-white/80">{goal.description}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex-grow space-y-3">
-                                        <div className="space-y-1 text-sm"><p className="text-muted-foreground">{getNextStepTitle(goal)}</p></div>
+                                        <div className="space-y-1 text-sm"><p className="text-white/80">{getNextStepTitle(goal)}</p></div>
                                         <div className="text-sm">
                                             {isVideoGoal ? (
-                                                <><p className="text-muted-foreground">İzlenen Video:</p><p className="font-medium">{totalCompletedUnits} / {goal.totalUnits} video</p></>
+                                                <><p className="text-white/80">İzlenen Video:</p><p className="font-medium">{totalCompletedUnits} / {goal.totalUnits} video</p></>
                                             ) : (
-                                                <><p className="text-muted-foreground">Bölüm İlerlemesi:</p><p className="font-medium">{completedSections} / {totalSections} Bölüm Tamamlandı</p></>
+                                                <><p className="text-white/80">Bölüm İlerlemesi:</p><p className="font-medium">{completedSections} / {totalSections} Bölüm Tamamlandı</p></>
                                             )}
                                         </div>
                                     </CardContent>
                                     <CardFooter className="flex flex-col items-start">
-                                        <div className="flex justify-between w-full text-xs text-muted-foreground mb-1">
+                                        <div className="flex justify-between w-full text-xs text-white/80 mb-1">
                                             <span>Genel İlerleme</span>
                                             <span>{Math.round(progress)}%</span>
                                         </div>
-                                        <Progress value={progress} className="w-full h-2" />
+                                        <Progress value={progress} className="w-full h-2 bg-white/20" indicatorClassName="bg-white" />
                                     </CardFooter>
                                 </Link>
                             </Card>
