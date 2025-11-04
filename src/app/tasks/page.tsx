@@ -167,7 +167,7 @@ export default function TasksPage() {
                 </TabsContent>
                 <TabsContent value="habits" className="mt-4 space-y-4">
                     {habits.length > 0 ? (
-                    habits.map((habit) => (
+                    habits.map((habit, index) => (
                         <HabitTrackerCard 
                             key={habit.id}
                             task={habit} 
@@ -175,6 +175,7 @@ export default function TasksPage() {
                             onToggleDay={(day, isCompleted) => handleToggleDay(habit.id, day, isCompleted)}
                             onEdit={() => handleOpenEditTask(habit)}
                             onDelete={() => handleDeleteTask(habit.id)}
+                            colorClass={taskColors[index % taskColors.length]}
                         />
                     ))
                     ) : (

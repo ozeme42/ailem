@@ -20,9 +20,10 @@ interface HabitTrackerCardProps {
   onToggleDay: (day: Date, isCompleted: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
+  colorClass?: string;
 }
 
-export function HabitTrackerCard({ task, assignee, onToggleDay, onEdit, onDelete }: HabitTrackerCardProps) {
+export function HabitTrackerCard({ task, assignee, onToggleDay, onEdit, onDelete, colorClass }: HabitTrackerCardProps) {
   const [currentWeekStart, setCurrentWeekStart] = React.useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   const completedDates = React.useMemo(() => {
@@ -37,7 +38,7 @@ export function HabitTrackerCard({ task, assignee, onToggleDay, onEdit, onDelete
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
 
   return (
-    <Card className="transition-all hover:shadow-lg hover:border-primary/30">
+    <Card className={cn('transition-all hover:shadow-lg hover:border-primary/30', colorClass)}>
     <CardHeader>
         <div className="flex justify-between items-start">
             <div>
