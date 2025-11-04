@@ -207,7 +207,7 @@ export default function GoalsClient() {
                                             <span>Genel İlerleme</span>
                                             <span>{Math.round(progress)}%</span>
                                         </div>
-                                        <Progress value={progress} className="w-full h-2 bg-white/20" indicatorClassName="bg-white" />
+                                        <Progress value={progress} className="w-full h-4 bg-white/20" indicatorClassName="bg-white" />
                                     </CardFooter>
                                 </Link>
                             </Card>
