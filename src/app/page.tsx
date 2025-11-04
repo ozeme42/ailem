@@ -384,12 +384,12 @@ export default function Home() {
   return (
     <>
       <div className="md:pt-0">
-        <header className={cn(
+         <header className={cn(
         "flex items-center justify-between gap-4 p-4",
         "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg",
         "sticky top-0 z-40",
         "-mx-4 -mt-4 sm:-mx-6", 
-        "md:rounded-b-2xl rounded-b-none"
+        "rounded-b-2xl"
       )}>
           <div className="flex items-center gap-4">
               <SidebarTrigger />
