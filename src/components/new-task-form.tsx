@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -175,246 +174,248 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="space-y-4 pb-4">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Görev Başlığı</FormLabel>
-                <FormControl>
-                  <Input placeholder="Örn: Odanı topla" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="assigneeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sorumlu Kişi</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Birini seçin" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {familyMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id.toString()}>
-                        {member.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="dueDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Başlangıç Tarihi</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: tr })
-                        ) : (
-                          <span>Bir tarih seçin</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="isRecurring"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <FormLabel>Tekrarlı Görev</FormLabel>
-                <FormControl>
-                  <Switch checked={field.value} onCheckedChange={field.onChange} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {isRecurring && (
-            <div className="p-4 border rounded-lg space-y-4">
-              <FormField
+        <ScrollArea className="h-[60vh] pr-4">
+            <div className="space-y-4 pb-4">
+            <FormField
                 control={form.control}
-                name="recurrenceType"
+                name="title"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tekrarlanma Sıklığı</FormLabel>
+                <FormItem>
+                    <FormLabel>Görev Başlığı</FormLabel>
                     <FormControl>
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4">
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="daily" />
-                          </FormControl>
-                          <FormLabel>Günlük</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="weekly" />
-                          </FormControl>
-                          <FormLabel>Haftalık</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="monthly" />
-                          </FormControl>
-                          <FormLabel>Aylık</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
+                    <Input placeholder="Örn: Odanı topla" {...field} />
                     </FormControl>
-                  </FormItem>
+                    <FormMessage />
+                </FormItem>
                 )}
-              />
-              
-              {recurrenceType === 'weekly' && (
-                <FormField
-                  control={form.control}
-                  name="recurrenceDays"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>Haftanın Günleri</FormLabel>
-                      <div className="flex flex-wrap gap-2">
-                        {weekDays.map((day) => (
-                          <FormField
-                            key={day.id}
-                            control={form.control}
-                            name="recurrenceDays"
-                            render={({ field }) => (
-                              <FormItem key={day.id} className="flex flex-row items-start space-x-2 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(day.id)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...(field.value || []), day.id])
-                                        : field.onChange(field.value?.filter((value) => value !== day.id));
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">{day.label}</FormLabel>
-                              </FormItem>
-                            )}
-                          />
+            />
+            <FormField
+                control={form.control}
+                name="assigneeId"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Sorumlu Kişi</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Birini seçin" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {familyMembers.map((member) => (
+                        <SelectItem key={member.id} value={member.id.toString()}>
+                            {member.name}
+                        </SelectItem>
                         ))}
-                      </div>
-                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="recurrenceEndDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Bitiş Tarihi (Opsiyonel)</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                            >
-                              {field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < (form.getValues('dueDate') || new Date())}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="totalOccurrences"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tekrar Sayısı (Opsiyonel)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="Örn: 10" {...field} value={field.value ?? ''} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          )}
-
-          <div>
-            <FormLabel>Alt Görevler</FormLabel>
-            <div className="space-y-2 mt-2">
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex items-center gap-2">
-                  <FormField
-                    control={form.control}
-                    name={`subtasks.${index}.title`}
-                    render={({ field }) => (
-                      <FormItem className="flex-grow">
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                <FormItem className="flex flex-col">
+                    <FormLabel>Başlangıç Tarihi</FormLabel>
+                    <Popover>
+                    <PopoverTrigger asChild>
                         <FormControl>
-                          <Input {...field} placeholder={`Alt görev ${index + 1}`} />
+                        <Button
+                            variant={"outline"}
+                            className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                            )}
+                        >
+                            {field.value ? (
+                            format(field.value, "PPP", { locale: tr })
+                            ) : (
+                            <span>Bir tarih seçin</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        />
+                    </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+
+            <FormField
+                control={form.control}
+                name="isRecurring"
+                render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <FormLabel>Tekrarlı Görev</FormLabel>
+                    <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                </FormItem>
+                )}
+            />
+
+            {isRecurring && (
+                <div className="p-4 border rounded-lg space-y-4">
+                <FormField
+                    control={form.control}
+                    name="recurrenceType"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Tekrarlanma Sıklığı</FormLabel>
+                        <FormControl>
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4">
+                            <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                                <RadioGroupItem value="daily" />
+                            </FormControl>
+                            <FormLabel>Günlük</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                                <RadioGroupItem value="weekly" />
+                            </FormControl>
+                            <FormLabel>Haftalık</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                                <RadioGroupItem value="monthly" />
+                            </FormControl>
+                            <FormLabel>Aylık</FormLabel>
+                            </FormItem>
+                        </RadioGroup>
+                        </FormControl>
+                    </FormItem>
                     )}
-                  />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                />
+                
+                {recurrenceType === 'weekly' && (
+                    <FormField
+                    control={form.control}
+                    name="recurrenceDays"
+                    render={() => (
+                        <FormItem>
+                        <FormLabel>Haftanın Günleri</FormLabel>
+                        <div className="flex flex-wrap gap-2">
+                            {weekDays.map((day) => (
+                            <FormField
+                                key={day.id}
+                                control={form.control}
+                                name="recurrenceDays"
+                                render={({ field }) => (
+                                <FormItem key={day.id} className="flex flex-row items-start space-x-2 space-y-0">
+                                    <FormControl>
+                                    <Checkbox
+                                        checked={field.value?.includes(day.id)}
+                                        onCheckedChange={(checked) => {
+                                        return checked
+                                            ? field.onChange([...(field.value || []), day.id])
+                                            : field.onChange(field.value?.filter((value) => value !== day.id));
+                                        }}
+                                    />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">{day.label}</FormLabel>
+                                </FormItem>
+                                )}
+                            />
+                            ))}
+                        </div>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="recurrenceEndDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                        <FormLabel>Bitiş Tarihi (Opsiyonel)</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                                >
+                                {field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < (form.getValues('dueDate') || new Date())}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="totalOccurrences"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Tekrar Sayısı (Opsiyonel)</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="Örn: 10" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                    />
                 </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ title: "" })}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Alt Görev Ekle
-              </Button>
+                </div>
+            )}
+
+            <div>
+                <FormLabel>Alt Görevler</FormLabel>
+                <div className="space-y-2 mt-2">
+                {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                    <FormField
+                        control={form.control}
+                        name={`subtasks.${index}.title`}
+                        render={({ field }) => (
+                        <FormItem className="flex-grow">
+                            <FormControl>
+                            <Input {...field} placeholder={`Alt görev ${index + 1}`} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                    </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ title: "" })}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Alt Görev Ekle
+                </Button>
+                </div>
             </div>
-          </div>
-        </div>
-        <DialogFooter>
+            </div>
+        </ScrollArea>
+        <DialogFooter className="pt-4 border-t">
           <Button type="submit" className="w-full">
             {taskToEdit ? 'Görevi Güncelle' : 'Görevi Ekle'}
           </Button>
