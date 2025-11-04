@@ -1422,23 +1422,21 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
         allCompletedDates.delete(dayKey);
     }
 
-    const completedDates = Array.from(allCompletedDates);
-    const updatePayload: Partial<Task> = {
-        completedDates: completedDates,
-    };
+    const completedDates = Array.from(allCompletedDates).sort();
     
+    // --- Streak Calculation ---
     let streak = 0;
-    let checkDate = isCompleted && isSameDay(day, new Date()) ? new Date() : subDays(new Date(), 1);
-    checkDate.setHours(0,0,0,0);
     
     if (taskData.recurrenceType === 'daily') {
-        while(allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+        let checkDate = isCompleted && isSameDay(day, new Date()) ? new Date() : subDays(new Date(), 1);
+        checkDate.setHours(0, 0, 0, 0);
+
+        while (allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
             streak++;
             checkDate = subDays(checkDate, 1);
         }
-
     } else if (taskData.recurrenceType === 'weekly' && taskData.recurrenceDays && taskData.recurrenceDays.length > 0) {
-        let checkWeekStart = startOfWeek(checkDate, { weekStartsOn: 1 });
+        let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
         const isWeekComplete = (weekStart: Date): boolean => {
             return taskData.recurrenceDays!.every(dayId => {
@@ -1450,16 +1448,23 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
                 return allCompletedDates.has(format(dateToCheck, 'yyyy-MM-dd'));
             });
         };
-        
-        while(isWeekComplete(checkWeekStart)) {
-            streak++;
-            checkWeekStart = subWeeks(checkWeekStart, 1);
+
+        if (isWeekComplete(checkWeekStart)) {
+            // Check previous weeks
+            streak = 1;
+            let prevWeekStart = subWeeks(checkWeekStart, 1);
+            while (isWeekComplete(prevWeekStart)) {
+                streak++;
+                prevWeekStart = subWeeks(prevWeekStart, 1);
+            }
         }
     }
-
-
-    updatePayload.streak = streak;
-    updatePayload.bestStreak = Math.max(taskData.bestStreak || 0, streak);
+    
+    const updatePayload: Partial<Task> = {
+        completedDates: completedDates,
+        streak: streak,
+        bestStreak: Math.max(taskData.bestStreak || 0, streak),
+    };
 
     if (isCompleted) {
         if (streak > (taskData.streak || 0)) {

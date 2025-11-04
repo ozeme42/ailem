@@ -30,51 +30,8 @@ export function HabitTrackerCard({ task, assignee, onToggleDay, onEdit, onDelete
   }, [task.completedDates]);
   
   const streak = React.useMemo(() => {
-    const allCompletedDates = new Set(task.completedDates || []);
-    if (allCompletedDates.size === 0) return 0;
-    
-    let currentStreak = 0;
-
-    if (task.recurrenceType === 'daily') {
-        let checkDate = new Date();
-        checkDate.setHours(0, 0, 0, 0);
-
-        if (!allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
-            checkDate = subDays(checkDate, 1);
-        }
-        
-        while (allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
-            currentStreak++;
-            checkDate = subDays(checkDate, 1);
-        }
-
-    } else if (task.recurrenceType === 'weekly' && task.recurrenceDays && task.recurrenceDays.length > 0) {
-        let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-
-        const isWeekComplete = (weekStart: Date): boolean => {
-            return task.recurrenceDays!.every(dayId => {
-                const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
-                const dateToCheck = addDays(weekStart, dayIndex);
-                 if (isFuture(dateToCheck) && !isSameDay(dateToCheck, new Date())) {
-                    return false;
-                }
-                return allCompletedDates.has(format(dateToCheck, 'yyyy-MM-dd'));
-            });
-        };
-
-        // Check if current week is complete. If not, start checking from last week.
-        if (!isWeekComplete(checkWeekStart)) {
-            checkWeekStart = subDays(checkWeekStart, 7);
-        }
-        
-        while(isWeekComplete(checkWeekStart)) {
-            currentStreak++;
-            checkWeekStart = subDays(checkWeekStart, 7);
-        }
-    }
-
-    return currentStreak;
-  }, [task.completedDates, task.recurrenceType, task.recurrenceDays]);
+    return task.streak || 0;
+  }, [task.streak]);
 
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
