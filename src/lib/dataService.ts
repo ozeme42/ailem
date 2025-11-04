@@ -1426,37 +1426,25 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
     
     // --- Streak Calculation ---
     let streak = 0;
-    
-    if (taskData.recurrenceType === 'daily') {
-        let checkDate = isCompleted && isSameDay(day, new Date()) ? new Date() : subDays(new Date(), 1);
-        checkDate.setHours(0, 0, 0, 0);
+    if (isCompleted) {
+        if (taskData.recurrenceType === 'daily') {
+            let currentStreak = 0;
+            let checkDate = new Date(day);
+            while (allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+                currentStreak++;
+                checkDate = subDays(checkDate, 1);
+            }
+            streak = currentStreak;
+        }
+    } // If not completed, streak is reset implicitly to 0 by the logic below unless re-calculated. Let's make it more explicit
 
+    if (!isCompleted) {
+        // Recalculate streak from today if a completion is removed
+        streak = 0;
+        let checkDate = subDays(new Date(), 1);
         while (allCompletedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
             streak++;
             checkDate = subDays(checkDate, 1);
-        }
-    } else if (taskData.recurrenceType === 'weekly' && taskData.recurrenceDays && taskData.recurrenceDays.length > 0) {
-        let checkWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-
-        const isWeekComplete = (weekStart: Date): boolean => {
-            return taskData.recurrenceDays!.every(dayId => {
-                const dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(dayId);
-                const dateToCheck = addDays(weekStart, dayIndex);
-                if (isFuture(dateToCheck) && !isSameDay(dateToCheck, new Date())) {
-                    return true; // Ignore future required days
-                }
-                return allCompletedDates.has(format(dateToCheck, 'yyyy-MM-dd'));
-            });
-        };
-
-        if (isWeekComplete(checkWeekStart)) {
-            // Check previous weeks
-            streak = 1;
-            let prevWeekStart = subWeeks(checkWeekStart, 1);
-            while (isWeekComplete(prevWeekStart)) {
-                streak++;
-                prevWeekStart = subWeeks(prevWeekStart, 1);
-            }
         }
     }
     
@@ -1467,9 +1455,7 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
     };
 
     if (isCompleted) {
-        if (streak > (taskData.streak || 0)) {
-            await checkAndAwardBadges(taskData.assigneeId, taskData.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
-        }
+        await checkAndAwardBadges(taskData.assigneeId, taskData.familyId, { type: 'habit_streak_update', streak: streak, points: streak * 5 });
     }
         
     await updateDoc(taskRef, updatePayload);
@@ -2140,3 +2126,5 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
     };
 };
 
+
+    
