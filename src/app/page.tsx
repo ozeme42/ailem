@@ -382,12 +382,14 @@ export default function Home() {
 
 
   return (
-    <div className="space-y-6">
-       <header className={cn(
+    <>
+      <div className="md:pt-0">
+        <header className={cn(
         "flex items-center justify-between gap-4 p-4",
         "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg",
-        "-mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6", // Full-bleed on mobile
-        "rounded-b-2xl"
+        "sticky top-0 z-40",
+        "-mx-4 -mt-4 sm:-mx-6", 
+        "md:rounded-b-2xl rounded-b-none"
       )}>
           <div className="flex items-center gap-4">
               <SidebarTrigger />
@@ -396,340 +398,336 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <ModeToggle />
           </div>
-      </header>
+        </header>
 
-      
-        <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2">
-                <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
-                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
-                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
+        <div className="space-y-6 pt-24 md:pt-6">
+            <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2">
+                    <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
+                        <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
+                            <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
+                            <div className="flex-grow my-4 space-y-2">
+                                {shoppingSummary.totalPending > 0 ? (
+                                    <>
+                                        {shoppingSummary.itemsToShow.map(item => (
+                                            <div key={item.id} className="flex items-center gap-2 text-xs md:text-sm p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                                <span>{item.name}</span>
+                                            </div>
+                                        ))}
+                                        {shoppingSummary.totalPending > 3 && (
+                                            <p className="text-[11px] md:text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
+                                        )}
+                                    </>
+                                ) : (
+                                <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                        <p className="text-xs md:text-sm text-white/90">Alınacak ürün yok. Harika!</p>
+                                </div>
+                                )}
+                            </div>
+                            <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
+                        </div>
+                    </Link>
+                    <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
+                        <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
+                            <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
+                            <div className="flex-grow my-4 space-y-2">
+                            <div className="space-y-1 md:space-y-2">
+                                    <p className="font-semibold text-xs md:text-sm text-white/90">Kahvaltı</p>
+                                    <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
+                                        <p className="text-xs md:text-sm truncate">{todaysPlan?.['Kahvaltı']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-1 md:space-y-2">
+                                    <p className="font-semibold text-xs md:text-sm text-white/90">Akşam Yemeği</p>
+                                    <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
+                                        <p className="text-xs md:text-sm truncate">{todaysPlan?.['Akşam Yemeği']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
+                        </div>
+                    </Link>
+                </div>
+                <Link href="/calendar" className="group block">
+                    <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
+                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
                         <div className="flex-grow my-4 space-y-2">
-                            {shoppingSummary.totalPending > 0 ? (
-                                <>
-                                    {shoppingSummary.itemsToShow.map(item => (
-                                        <div key={item.id} className="flex items-center gap-2 text-xs md:text-sm p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                            <span>{item.name}</span>
-                                        </div>
-                                    ))}
-                                    {shoppingSummary.totalPending > 3 && (
-                                        <p className="text-[11px] md:text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
-                                    )}
-                                </>
+                            {calendarSummary.upcomingEvents.length > 0 ? (
+                            calendarSummary.upcomingEvents.slice(0, 3).map(event => (
+                                <div key={event.id} className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm flex justify-between items-center">
+                                    <div>
+                                        <p className="font-semibold text-sm md:text-base">{event.title}</p>
+                                        <p className="text-xs md:text-sm text-white/90">{format(event.date, 'dd MMMM yyyy', { locale: tr })}</p>
+                                    </div>
+                                    <Badge variant="secondary" className="bg-white/30 text-white">
+                                        {event.daysLeft > 0 ? `${event.daysLeft} gün sonra` : "Bugün"}
+                                    </Badge>
+                            </div>
+                            ))
                             ) : (
                             <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                    <p className="text-xs md:text-sm text-white/90">Alınacak ürün yok. Harika!</p>
+                                <p className="text-xs md:text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
                             </div>
                             )}
+                            {calendarSummary.upcomingEvents.length > 3 && (
+                                <p className="text-xs text-white/80 pt-1">+ {calendarSummary.upcomingEvents.length - 3} etkinlik daha...</p>
+                            )}
                         </div>
-                        <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
+                        <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
-                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
-                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
-                        <div className="flex-grow my-4 space-y-2">
-                        <div className="space-y-1 md:space-y-2">
-                                <p className="font-semibold text-xs md:text-sm text-white/90">Kahvaltı</p>
-                                <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
-                                    <p className="text-xs md:text-sm truncate">{todaysPlan?.['Kahvaltı']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
-                                </div>
+                <Link href="/budget" className="group block">
+                    <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1">
+                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
+                        <div className="flex-grow my-4 grid grid-cols-2 gap-4">
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Gelir</p>
+                                <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                             </div>
-                            <div className="space-y-1 md:space-y-2">
-                                <p className="font-semibold text-xs md:text-sm text-white/90">Akşam Yemeği</p>
-                                <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
-                                    <p className="text-xs md:text-sm truncate">{todaysPlan?.['Akşam Yemeği']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
-                                </div>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Gider</p>
+                                <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
                             </div>
                         </div>
-                        <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
+                        <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
                     </div>
                 </Link>
-            </div>
-             <Link href="/calendar" className="group block">
-                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
-                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
-                    <div className="flex-grow my-4 space-y-2">
-                        {calendarSummary.upcomingEvents.length > 0 ? (
-                           calendarSummary.upcomingEvents.slice(0, 3).map(event => (
-                            <div key={event.id} className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold text-sm md:text-base">{event.title}</p>
-                                    <p className="text-xs md:text-sm text-white/90">{format(event.date, 'dd MMMM yyyy', { locale: tr })}</p>
-                                </div>
-                                <Badge variant="secondary" className="bg-white/30 text-white">
-                                    {event.daysLeft > 0 ? `${event.daysLeft} gün sonra` : "Bugün"}
-                                </Badge>
-                           </div>
-                           ))
-                        ) : (
-                           <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                             <p className="text-xs md:text-sm text-white/90">Yaklaşan bir etkinlik bulunmuyor.</p>
-                           </div>
-                        )}
-                        {calendarSummary.upcomingEvents.length > 3 && (
-                            <p className="text-xs text-white/80 pt-1">+ {calendarSummary.upcomingEvents.length - 3} etkinlik daha...</p>
-                        )}
-                    </div>
-                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
-                </div>
-            </Link>
-             <Link href="/budget" className="group block">
-                <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1">
-                    <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
-                    <div className="flex-grow my-4 grid grid-cols-2 gap-4">
-                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gelir</p>
-                            <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                        </div>
-                         <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gider</p>
-                            <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                        </div>
-                    </div>
-                     <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
-                </div>
-            </Link>
-            
-            <Link href="/library/stats" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1 group">
-                <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white h-full border-0">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                            <BarChart2 /> Kitap Okuma İstatistikleri
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        {readingStats.map((stat, index) => (
-                            <Link key={stat.memberId} href="/library" className="block" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors">
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: stat.color }}>
-                                        {stat.name.charAt(0)}
-                                    </div>
-                                    <p className="font-semibold flex-grow text-sm sm:text-base">{stat.name}</p>
-                                    <div className="flex items-center gap-3 text-xs sm:text-sm font-medium">
-                                        <div className="flex items-center gap-1.5">
-                                            <BookCheck className="h-4 w-4"/>
-                                            <span>{stat.finishedBooks}</span>
+                
+                <Link href="/library/stats" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1 group">
+                    <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white h-full border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                                <BarChart2 /> Kitap Okuma İstatistikleri
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            {readingStats.map((stat, index) => (
+                                <Link key={stat.memberId} href="/library" className="block" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors">
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: stat.color }}>
+                                            {stat.name.charAt(0)}
                                         </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <BookOpen className="h-4 w-4"/>
-                                            <span>{stat.pagesRead.toLocaleString('tr-TR')}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </CardContent>
-                </Card>
-            </Link>
-
-            <Link href="/library/archive" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
-                <Card className="bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-900 shadow-lg h-full">
-                    <CardHeader>
-                        <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="relative">
-                            <div className="-mx-6 px-6 overflow-x-auto pb-4 -mb-4">
-                                <div className="flex flex-nowrap gap-4">
-                                    {latestBooks.map(book => (
-                                        <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="group/book relative w-32 sm:w-40 shrink-0 cursor-pointer">
-                                            <Image 
-                                                src={book.image || `https://placehold.co/300x450.png`} 
-                                                alt={book.title} 
-                                                width={300} 
-                                                height={450} 
-                                                className="w-full h-auto object-cover aspect-[2/3] rounded-md shadow-lg transition-transform duration-300 group-hover/book:scale-105"
-                                                data-ai-hint="book cover" 
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
-                                            <div className="absolute bottom-0 left-0 p-2 text-white">
-                                                <p className="font-bold text-[11px] leading-tight whitespace-normal line-clamp-2" title={book.title}>{book.title}</p>
+                                        <p className="font-semibold flex-grow text-sm sm:text-base">{stat.name}</p>
+                                        <div className="flex items-center gap-3 text-xs sm:text-sm font-medium">
+                                            <div className="flex items-center gap-1.5">
+                                                <BookCheck className="h-4 w-4"/>
+                                                <span>{stat.finishedBooks}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <BookOpen className="h-4 w-4"/>
+                                                <span>{stat.pagesRead.toLocaleString('tr-TR')}</span>
                                             </div>
                                         </div>
-                                    ))}
+                                    </div>
+                                </Link>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/library/archive" className="block rounded-xl overflow-hidden transition-transform hover:-translate-y-1">
+                    <Card className="bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-900 shadow-lg h-full">
+                        <CardHeader>
+                            <CardTitle className="text-lg md:text-xl">Yeni Eklenen Kitaplar</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="relative">
+                                <div className="-mx-6 px-6 overflow-x-auto pb-4 -mb-4">
+                                    <div className="flex flex-nowrap gap-4">
+                                        {latestBooks.map(book => (
+                                            <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="group/book relative w-32 sm:w-40 shrink-0 cursor-pointer">
+                                                <Image 
+                                                    src={book.image || `https://placehold.co/300x450.png`} 
+                                                    alt={book.title} 
+                                                    width={300} 
+                                                    height={450} 
+                                                    className="w-full h-auto object-cover aspect-[2/3] rounded-md shadow-lg transition-transform duration-300 group-hover/book:scale-105"
+                                                    data-ai-hint="book cover" 
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-md"></div>
+                                                <div className="absolute bottom-0 left-0 p-2 text-white">
+                                                    <p className="font-bold text-[11px] leading-tight whitespace-normal line-clamp-2" title={book.title}>{book.title}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </Link>
-        </div>
-      
-      <Card className="shadow-lg bg-gradient-to-br from-indigo-500 to-blue-600 text-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Target /> Yol Haritaları</CardTitle>
-          <CardDescription className="text-white/80">Aktif hedefler ve sıradaki adımlar.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {activeGoals.length > 0 ? (
-            activeGoals.map(goal => (
-              <div key={goal.id} className="p-4 bg-white/20 rounded-lg">
-                <div className="flex justify-between items-start gap-4">
-                    <Link href={`/goals/${goal.id}`} className="block flex-grow group">
-                        <p className="font-bold group-hover:underline">{goal.title}</p>
-                        <p className="text-sm text-white/80">{goal.assignee?.name}</p>
-                    </Link>
-                    {goal.currentSection && goal.currentSection.status !== 'completed' && (
-                       <Button size="sm" variant="secondary" className="shrink-0 bg-amber-300 text-amber-900 hover:bg-amber-400" onClick={() => setEditingGoal({goal, section: goal.currentSection!})}>
-                            İlerleme Ekle
-                        </Button>
-                    )}
-                </div>
-                
-                <div className="mt-4 space-y-4">
-                    {goal.isVideoGoal ? (
-                        <div>
-                             <div className="flex justify-between text-xs text-white/80 mb-1">
-                                <span>Sıradaki: {goal.unitName} {goal.totalCompletedUnits + 1}</span>
-                                <span>{goal.totalCompletedUnits}/{goal.totalUnits}</span>
-                            </div>
-                            <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
-                        </div>
-                    ) : (
-                       goal.currentSection && (
-                        <>
+                        </CardContent>
+                    </Card>
+                </Link>
+            </div>
+          
+          <Card className="shadow-lg bg-gradient-to-br from-indigo-500 to-blue-600 text-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Target /> Yol Haritaları</CardTitle>
+              <CardDescription className="text-white/80">Aktif hedefler ve sıradaki adımlar.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {activeGoals.length > 0 ? (
+                activeGoals.map(goal => (
+                  <div key={goal.id} className="p-4 bg-white/20 rounded-lg">
+                    <div className="flex justify-between items-start gap-4">
+                        <Link href={`/goals/${goal.id}`} className="block flex-grow group">
+                            <p className="font-bold group-hover:underline">{goal.title}</p>
+                            <p className="text-sm text-white/80">{goal.assignee?.name}</p>
+                        </Link>
+                        {goal.currentSection && goal.currentSection.status !== 'completed' && (
+                        <Button size="sm" variant="secondary" className="shrink-0 bg-amber-300 text-amber-900 hover:bg-amber-400" onClick={() => setEditingGoal({goal, section: goal.currentSection!})}>
+                                İlerleme Ekle
+                            </Button>
+                        )}
+                    </div>
+                    
+                    <div className="mt-4 space-y-4">
+                        {goal.isVideoGoal ? (
                             <div>
                                 <div className="flex justify-between text-xs text-white/80 mb-1">
-                                    <span>{goal.currentSection.title}</span>
-                                    <span>{goal.currentSection.completedUnits || 0}/{goal.currentSection.sectionTotalUnits} {goal.unitName}</span>
-                                </div>
-                                <Progress value={goal.sectionProgress || 0} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
-                            </div>
-                            <div>
-                                <div className="flex justify-between text-xs text-white/80 mb-1">
-                                    <span>Genel İlerleme</span>
-                                    <span>{Math.round(goal.overallProgress)}%</span>
+                                    <span>Sıradaki: {goal.unitName} {goal.totalCompletedUnits + 1}</span>
+                                    <span>{goal.totalCompletedUnits}/{goal.totalUnits}</span>
                                 </div>
                                 <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
                             </div>
-                        </>
-                       )
+                        ) : (
+                        goal.currentSection && (
+                            <>
+                                <div>
+                                    <div className="flex justify-between text-xs text-white/80 mb-1">
+                                        <span>{goal.currentSection.title}</span>
+                                        <span>{goal.currentSection.completedUnits || 0}/{goal.currentSection.sectionTotalUnits} {goal.unitName}</span>
+                                    </div>
+                                    <Progress value={goal.sectionProgress || 0} className="h-1.5 bg-white/30" indicatorClassName="bg-amber-300" />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between text-xs text-white/80 mb-1">
+                                        <span>Genel İlerleme</span>
+                                        <span>{Math.round(goal.overallProgress)}%</span>
+                                    </div>
+                                    <Progress value={goal.overallProgress} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
+                                </div>
+                            </>
+                        )
+                        )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <Link href="/goals" className="block text-center py-8 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                  <Target className="mx-auto h-8 w-8 text-white/80" />
+                  <p className="mt-2 text-sm text-white/90 font-semibold">Aktif yol haritası yok.</p>
+                  <p className="text-xs text-white/80">Yeni bir hedef oluşturmak için tıkla.</p>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+
+
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {familyMembers.map(member => (
+                    <MemberDashboardCard 
+                    key={member.id}
+                    member={member}
+                    tasks={tasks}
+                    tests={tests}
+                    studyAssignments={studyAssignments}
+                    studyPlans={studyPlans}
+                    userLibraries={userLibraries}
+                    books={books}
+                    videos={videos}
+                    memorizationItems={memorizationItems}
+                    memorizationProgress={memorizationProgress}
+                    prayerProgress={prayerProgress}
+                    />
+                ))}
+          </section>
+          
+          <section>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
+                <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Üye Ekle
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Yeni Aile Üyesi Ekle</DialogTitle>
+                        <DialogDescription>
+                            Ailenize yeni bir üye (çocuk veya başka bir veli) ekleyin.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <NewFamilyMemberForm onMemberAdded={() => setIsMemberFormOpen(false)} />
+                </DialogContent>
+                </Dialog>
+            </div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {familyMembers.map((member) => {
+                return (
+                <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} />
+                )
+            })}
+            </div>
+          </section>
+        </div>
+
+        <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Profili Düzenle</DialogTitle>
+                        <DialogDescription>
+                            {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {editingMember && (
+                        <EditFamilyMemberForm 
+                            member={editingMember}
+                            onMemberUpdated={() => setEditingMember(null)}
+                        />
                     )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <Link href="/goals" className="block text-center py-8 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
-              <Target className="mx-auto h-8 w-8 text-white/80" />
-              <p className="mt-2 text-sm text-white/90 font-semibold">Aktif yol haritası yok.</p>
-              <p className="text-xs text-white/80">Yeni bir hedef oluşturmak için tıkla.</p>
-            </Link>
-          )}
-        </CardContent>
-      </Card>
-
-
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {familyMembers.map(member => (
-                <MemberDashboardCard 
-                  key={member.id}
-                  member={member}
-                  tasks={tasks}
-                  tests={tests}
-                  studyAssignments={studyAssignments}
-                  studyPlans={studyPlans}
-                  userLibraries={userLibraries}
-                  books={books}
-                  videos={videos}
-                  memorizationItems={memorizationItems}
-                  memorizationProgress={memorizationProgress}
-                  prayerProgress={prayerProgress}
-                />
-            ))}
-      </section>
-      
-      <section>
-        <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-foreground">👨‍👩‍👧‍👦 Aile Üyeleri</h2>
-            <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Üye Ekle
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Yeni Aile Üyesi Ekle</DialogTitle>
-                    <DialogDescription>
-                        Ailenize yeni bir üye (çocuk veya başka bir veli) ekleyin.
-                    </DialogDescription>
-                </DialogHeader>
-                <NewFamilyMemberForm onMemberAdded={() => setIsMemberFormOpen(false)} />
-              </DialogContent>
+                </DialogContent>
             </Dialog>
-        </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {familyMembers.map((member) => {
-            return (
-              <FamilyMemberCard key={member.id} member={member} onEdit={() => handleEditMember(member)} />
-            )
-          })}
-        </div>
-      </section>
+            
+            <BookDetailDialog 
+                book={viewingBook} 
+                isOpen={!!viewingBook} 
+                onOpenChange={(open) => {if(!open) setViewingBook(null)}}
+                onEdit={handleOpenEditDialog}
+                onAddToLibrary={handleAddToLibrary}
+                familyMembers={familyMembers}
+            />
 
-
-       <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+        <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Profili Düzenle</DialogTitle>
+                    <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
                     <DialogDescription>
-                        {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
+                        Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
                     </DialogDescription>
                 </DialogHeader>
-                {editingMember && (
-                    <EditFamilyMemberForm 
-                        member={editingMember}
-                        onMemberUpdated={() => setEditingMember(null)}
-                    />
-                )}
+                <Form {...progressForm}>
+                    <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
+                        <FormField
+                            control={progressForm.control}
+                            name="progress"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Tamamlanan Birim ({editingGoal?.goal.unitName})</FormLabel>
+                                    <FormControl><Input type="number" autoFocus {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>İptal</Button>
+                            <Button type="submit">Kaydet</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
-        
-        <BookDetailDialog 
-            book={viewingBook} 
-            isOpen={!!viewingBook} 
-            onOpenChange={(open) => {if(!open) setViewingBook(null)}}
-            onEdit={handleOpenEditDialog}
-            onAddToLibrary={handleAddToLibrary}
-            familyMembers={familyMembers}
-        />
-
-      <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
-                  <DialogDescription>
-                      Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
-                  </DialogDescription>
-              </DialogHeader>
-              <Form {...progressForm}>
-                  <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
-                      <FormField
-                          control={progressForm.control}
-                          name="progress"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel>Tamamlanan Birim ({editingGoal?.goal.unitName})</FormLabel>
-                                  <FormControl><Input type="number" autoFocus {...field} /></FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                      <DialogFooter>
-                          <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>İptal</Button>
-                          <Button type="submit">Kaydet</Button>
-                      </DialogFooter>
-                  </form>
-              </Form>
-          </DialogContent>
-      </Dialog>
-    </div>
+      </div>
+    </>
   );
 }
-
-    
-
-    
-
