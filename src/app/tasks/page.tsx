@@ -21,6 +21,14 @@ import { PageHeader } from "@/components/page-header";
 import { HabitTrackerCard } from "@/components/habit-tracker-card";
 import { useToast } from "@/hooks/use-toast";
 
+const taskColors = [
+    'bg-sky-100 dark:bg-sky-900/30',
+    'bg-emerald-100 dark:bg-emerald-900/30',
+    'bg-amber-100 dark:bg-amber-900/30',
+    'bg-rose-100 dark:bg-rose-900/30',
+    'bg-violet-100 dark:bg-violet-900/30',
+];
+
 export default function TasksPage() {
   const { user, familyMembers, loading: authLoading } = useAuth();
   const [tasks, setTasks] = React.useState<Task[]>([]);
@@ -138,11 +146,11 @@ export default function TasksPage() {
                         </TabsList>
                         <TabsContent value="pending" className="mt-4 space-y-3">
                             {pendingTasks.length > 0 ? (
-                                pendingTasks.map((task) => (
-                                <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
+                                pendingTasks.map((task, index) => (
+                                <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} colorClass={taskColors[index % taskColors.length]} />
                                 ))
                             ) : (
-                                <Card><CardContent className="p-8 text-center text-muted-foreground">Devam eden görev yok.</CardContent></Card>
+                                <Card className="bg-blue-500/10"><CardContent className="p-8 text-center text-blue-900 dark:text-blue-200">Devam eden görev yok.</CardContent></Card>
                             )}
                         </TabsContent>
                         <TabsContent value="completed" className="mt-4 space-y-3">
@@ -151,7 +159,7 @@ export default function TasksPage() {
                                 <TaskItem key={task.id} task={task} assignee={getAssignee(task.assigneeId)} onEdit={handleOpenEditTask} />
                                 ))
                             ) : (
-                                <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanan görev yok.</CardContent></Card>
+                                <Card className="bg-green-500/10"><CardContent className="p-8 text-center text-green-900 dark:text-green-200">Henüz tamamlanan görev yok.</CardContent></Card>
                             )}
                         </TabsContent>
                     </Tabs>
@@ -208,7 +216,7 @@ export default function TasksPage() {
         </aside>
       </div>
         <div className="fixed bottom-24 right-6 z-10 md:bottom-8">
-            <Button className="rounded-full w-16 h-16 shadow-lg" size="icon" onClick={handleOpenNewTask}>
+            <Button className="rounded-full w-16 h-16 shadow-lg bg-orange-500 hover:bg-orange-600" size="icon" onClick={handleOpenNewTask}>
                 <Plus className="h-8 w-8" />
             </Button>
         </div>

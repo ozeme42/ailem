@@ -16,15 +16,17 @@ import { Button } from "./ui/button";
 import { updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, deleteTask } from "@/lib/dataService";
 import { useAuth } from "./auth-provider";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 
 interface TaskItemProps {
   task: Task;
   assignee?: FamilyMember;
   onEdit: (task: Task) => void;
+  colorClass?: string;
 }
 
-export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
+export function TaskItem({ task, assignee, onEdit, colorClass }: TaskItemProps) {
   const { familyId } = useAuth();
   const [isCompleted, setIsCompleted] = React.useState(task.completed);
   const [subtasks, setSubtasks] = React.useState<Subtask[]>(task.subtasks || []);
@@ -97,7 +99,7 @@ export function TaskItem({ task, assignee, onEdit }: TaskItemProps) {
 
   return (
     <Collapsible>
-      <Card className={`transition-all duration-300 ${isCompleted && !task.isRecurring ? 'bg-muted/50 border-dashed' : 'bg-card hover:shadow-md'}`}>
+      <Card className={cn('transition-all duration-300', isCompleted && !task.isRecurring ? 'bg-muted/50 border-dashed' : 'bg-card hover:shadow-md', colorClass)}>
         <CardContent className="p-4 flex items-center gap-4">
           <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab shrink-0" />
           <Checkbox
