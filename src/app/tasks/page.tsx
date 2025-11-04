@@ -20,6 +20,7 @@ import { NewTaskForm } from "@/components/new-task-form";
 import { PageHeader } from "@/components/page-header";
 import { HabitTrackerCard } from "@/components/habit-tracker-card";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const taskColors = [
     'bg-sky-100 dark:bg-sky-900/30',
@@ -184,10 +185,10 @@ export default function TasksPage() {
         </div>
 
         <aside className="space-y-6">
-          <Card className="shadow-md">
+          <Card className="shadow-md bg-gradient-to-br from-amber-300 to-yellow-400 text-amber-900">
             <CardHeader>
               <CardTitle>Liderlik Tablosu 🏆</CardTitle>
-              <CardDescription>En çok XP kazanan üyeler.</CardDescription>
+              <CardDescription className="text-amber-800/90">En çok XP kazanan üyeler.</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-4">
@@ -202,12 +203,12 @@ export default function TasksPage() {
                         </div>
                       <div className="flex-grow">
                         <p className="font-semibold">{member.name}</p>
-                        <div className="flex items-center text-sm text-yellow-500">
+                        <div className="flex items-center text-sm font-medium text-amber-800">
                           <Star className="w-4 h-4 mr-1 fill-current" />
                           <span>{member.xp.toLocaleString()} XP</span>
                         </div>
                       </div>
-                      <Badge variant="secondary">Seviye {member.level}</Badge>
+                      <Badge variant="secondary" className="bg-white/50">Seviye {member.level}</Badge>
                     </li>
                   ))}
               </ul>
