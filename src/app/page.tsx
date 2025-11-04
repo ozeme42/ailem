@@ -400,7 +400,7 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="space-y-6 pt-24 md:pt-6">
+        <div className="space-y-6 pt-6">
             <div className="flex flex-col gap-2">
                 <div className="grid grid-cols-2">
                     <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
