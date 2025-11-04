@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, Search, Star, Mic, Filter, ChevronDown, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Star, Mic, Filter, ChevronDown, Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
 import { Button } from "@/components/ui/button";
@@ -93,13 +93,8 @@ export default function TasksPage() {
 
   
   return (
-    <>
-      <PageHeader title="Görevler & Alışkanlıklar">
-        <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={handleOpenNewTask}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Yeni Görev / Alışkanlık
-        </Button>
-      </PageHeader>
+    <div className="relative h-full">
+      <PageHeader title="Görevler & Alışkanlıklar" />
 
        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
           <DialogContent className="sm:max-w-md">
@@ -212,6 +207,11 @@ export default function TasksPage() {
           </Card>
         </aside>
       </div>
-    </>
+        <div className="fixed bottom-24 right-6 z-10 md:bottom-8">
+            <Button className="rounded-full w-16 h-16 shadow-lg" size="icon" onClick={handleOpenNewTask}>
+                <Plus className="h-8 w-8" />
+            </Button>
+        </div>
+    </div>
   );
 }
