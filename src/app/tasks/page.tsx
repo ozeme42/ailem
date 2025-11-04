@@ -132,9 +132,9 @@ export default function TasksPage() {
                         </div>
                     </div>
                      <Tabs defaultValue="pending" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 bg-muted">
-                            <TabsTrigger value="pending" className="data-[state=active]:bg-background data-[state=active]:text-foreground">Devam Eden ({pendingTasks.length})</TabsTrigger>
-                            <TabsTrigger value="completed" className="data-[state=active]:bg-background data-[state=active]:text-foreground">Tamamlananlar ({completedTasks.length})</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-2 bg-primary/10">
+                            <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Devam Eden ({pendingTasks.length})</TabsTrigger>
+                            <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Tamamlananlar ({completedTasks.length})</TabsTrigger>
                         </TabsList>
                         <TabsContent value="pending" className="mt-4 space-y-3">
                             {pendingTasks.length > 0 ? (
