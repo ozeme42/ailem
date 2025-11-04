@@ -48,6 +48,8 @@ export function AppSidebar() {
 
   const menuItems = [
     { href: "/", label: "Ana Sayfa", icon: Home },
+    { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
+    { href: "/education", label: "Eğitim", icon: GraduationCap },
     { href: "/tasks", label: "Görevler", icon: ListTodo },
     { href: "/prayers", label: "Namaz Takibi", icon: MosqueIcon },
     { href: "/tracking", label: "Takip Tablosu", icon: Columns3 },
@@ -68,8 +70,6 @@ export function AppSidebar() {
           { href: "/library/stats", label: "İstatistikler" },
       ]
     },
-    { href: "/education", label: "Eğitim", icon: GraduationCap },
-    { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
   ];
 
   const profileLink = user ? `/profile/${user.uid}` : `/login`;
