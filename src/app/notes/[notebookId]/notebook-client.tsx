@@ -398,42 +398,38 @@ export default function NotebookClient() {
                             </div>
                         </div>
                         <AccordionContent className="p-4 bg-background rounded-b-xl border-x border-b">
-                            <div className="space-y-4">
+                            <Accordion type="multiple" className="w-full space-y-4">
                                 {folderOrder.map((folderName, folderIndex) => {
                                     const folderNotes = notesByFolder[folderName];
                                     if (!folderNotes || folderNotes.length === 0) {
-                                        if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
+                                        if (folderName === 'Genel Notlar' && Object.values(notesByFolder).flat().length > 0) return null;
                                     }
+                                     const colorClass = folderColors[folderIndex % folderColors.length];
                                     return (
-                                        <div key={folderName}>
-                                            <div className="flex justify-between items-center mb-2">
-                                                <h4 className="font-semibold">{folderName}</h4>
-                                                {folderName !== 'Genel Notlar' && (
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
-                                                        <DropdownMenuContent>
-                                                            <DropdownMenuItem onClick={() => { setActiveSectionId(section.id); handleOpenFolderDialog({oldName: folderName, sectionId: section.id}); }}><Edit className="mr-2 h-4 w-4"/>Yeniden Adlandır</DropdownMenuItem>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Klasörü Sil</DropdownMenuItem></AlertDialogTrigger>
-                                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                )}
-                                            </div>
-                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                {folderNotes?.map(note => (
-                                                    <StickyNoteCard 
-                                                        key={note.id} note={note}
-                                                        onOpenDialog={() => { setActiveSectionId(section.id); handleOpenNoteDialog(note); }}
-                                                        onDelete={() => handleDeleteNote(note.id)}
-                                                    />
-                                                ))}
-                                             </div>
-                                        </div>
+                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-xl">
+                                            <Card className={cn('text-white border-0', `bg-gradient-to-br ${colorClass}`)}>
+                                                <CardHeader className="p-0">
+                                                    <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline w-full">
+                                                        <Folder className="h-5 w-5 text-white" />
+                                                        <span className="font-semibold text-base">{folderName} ({(folderNotes || []).length})</span>
+                                                    </AccordionTrigger>
+                                                </CardHeader>
+                                                <AccordionContent className="p-4 pt-0">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                        {(folderNotes || []).map(note => (
+                                                            <StickyNoteCard 
+                                                                key={note.id} note={note}
+                                                                onOpenDialog={() => { setActiveSectionId(section.id); handleOpenNoteDialog(note); }}
+                                                                onDelete={() => handleDeleteNote(note.id)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </AccordionContent>
+                                            </Card>
+                                        </AccordionItem>
                                     )
                                 })}
-                            </div>
+                            </Accordion>
                             <div className="mt-4 flex gap-2">
                                 <Button variant="outline" size="sm" onClick={() => { setActiveSectionId(section.id); handleAddNewNote() }}>
                                     <StickyNote className="mr-2 h-4 w-4"/> Yeni Not
