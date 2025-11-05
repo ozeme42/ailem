@@ -347,13 +347,13 @@ export default function NotebookClient() {
 
   return (
     <div className="h-full flex flex-col sm:px-4">
-      <PageHeader title={notebook.title}>
+      <PageHeader title={notebook.title} className="rounded-b-none -mb-8">
         <Button onClick={() => router.push('/notes')} className="bg-white/20 text-white hover:bg-white/30 border-none">
           <ArrowLeft className="mr-2 h-4 w-4" /> Defterler
         </Button>
       </PageHeader>
       
-      <div className="flex-grow flex flex-col min-h-0 pt-4">
+      <div className="flex-grow flex flex-col min-h-0 pt-8">
          <Accordion type="multiple" className="w-full">
              {sections.map(section => {
                  const sectionNotes = notes.filter(note => note.sectionId === section.id);
@@ -397,7 +397,7 @@ export default function NotebookClient() {
                                 </DropdownMenu>
                             </div>
                         </div>
-                        <AccordionContent className="p-4 bg-background rounded-b-xl border-x border-b">
+                        <AccordionContent className="p-4 bg-background border-x border-b">
                              <Accordion type="multiple" className="w-full space-y-2">
                                 {folderOrder.map((folderName, folderIndex) => {
                                     const folderNotes = notesByFolder[folderName];
@@ -632,3 +632,5 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
     </Dialog>
   );
 }
+
+    
