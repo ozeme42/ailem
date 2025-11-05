@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, BookCheck, StickyNote, ArrowLeft, Plus, X, Music, Edit } from "lucide-react";
+import { Play, Pause, BookCheck, StickyNote, ArrowLeft, Plus, X, Music, Edit, Expand, Shrink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -48,6 +48,7 @@ export default function ReadingSessionPage() {
     
     const [showExtras, setShowExtras] = React.useState(false);
     const [selectedSoundId, setSelectedSoundId] = React.useState<string | null>(null);
+    const [isFullScreen, setIsFullScreen] = React.useState(false);
 
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -173,10 +174,20 @@ export default function ReadingSessionPage() {
 
     return (
         <div className="relative overflow-y-auto pb-24">
+            <AnimatePresence>
+            {isFullScreen && (
+                <motion.div 
+                    className="fixed inset-0 bg-black/80 z-40 backdrop-blur-sm"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                />
+            )}
+            </AnimatePresence>
             <div
                 className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"
             />
-            <div className="relative w-full max-w-4xl mx-auto p-4 md:p-8">
+            <div className={cn("relative w-full max-w-4xl mx-auto p-4 md:p-8 transition-all duration-300", isFullScreen && 'max-w-none px-4 h-screen flex flex-col')}>
                 <header className="flex items-start gap-4 mb-8">
                     <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => router.back()}>
                         <ArrowLeft />
@@ -195,47 +206,102 @@ export default function ReadingSessionPage() {
                     </div>
                 </header>
                 
-                <main className="flex-grow flex flex-col justify-center items-center gap-8 my-8">
-                     <div className="relative w-full max-w-lg p-1 overflow-hidden">
-                        <svg className="absolute inset-0 w-full h-full" width="100%" height="100%">
-                             <defs>
-                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                     <stop offset="0%" stopColor="hsl(var(--chart-1))" />
-                                     <stop offset="25%" stopColor="hsl(var(--chart-5))" />
-                                     <stop offset="50%" stopColor="hsl(var(--chart-3))" />
-                                     <stop offset="100%" stopColor="hsl(var(--primary))" />
-                                </linearGradient>
-                            </defs>
-                             <motion.rect
-                                x="4" y="4"
-                                width="calc(100% - 8px)" height="calc(100% - 8px)"
-                                rx="14"
-                                ry="14"
-                                fill="transparent"
-                                stroke="url(#gradient)"
-                                strokeWidth="8"
-                                pathLength="1"
-                                strokeDasharray="1"
-                                strokeDashoffset={1}
-                                initial={{ strokeDashoffset: 1 }}
-                                animate={{ strokeDashoffset: 0 }}
-                                transition={{
-                                    duration: 60,
-                                    ease: 'linear',
-                                    repeat: Infinity,
-                                }}
-                            />
-                        </svg>
-
-                         <div className="relative rounded-xl p-4 md:p-8 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 h-full flex flex-col justify-center items-center text-center">
-                            <p className="text-lg text-muted-foreground">Okuma Süresi</p>
-                            <p className="text-7xl md:text-8xl font-bold font-mono tracking-tighter">
+                <main className={cn("flex-grow flex flex-col justify-center items-center gap-8 my-8", isFullScreen && 'h-full')}>
+                     <motion.div 
+                        layout 
+                        className={cn(
+                            "relative w-full max-w-lg p-1 overflow-hidden",
+                            isFullScreen && "fixed inset-0 w-screen h-screen max-w-none rounded-none p-0 flex flex-col items-center justify-center gap-8 z-50"
+                        )}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    >
+                        <AnimatePresence>
+                        {!isFullScreen && (
+                            <motion.svg 
+                                className="absolute inset-0 w-full h-full" 
+                                width="100%" 
+                                height="100%"
+                                initial={{ opacity: 0}}
+                                animate={{ opacity: 1}}
+                                exit={{ opacity: 0}}
+                            >
+                                <defs>
+                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                                        <stop offset="25%" stopColor="hsl(var(--chart-5))" />
+                                        <stop offset="50%" stopColor="hsl(var(--chart-3))" />
+                                        <stop offset="100%" stopColor="hsl(var(--primary))" />
+                                    </linearGradient>
+                                </defs>
+                                <motion.rect
+                                    x="4" y="4"
+                                    width="calc(100% - 8px)" height="calc(100% - 8px)"
+                                    rx="14" ry="14"
+                                    fill="transparent"
+                                    stroke="url(#gradient)"
+                                    strokeWidth="8"
+                                    pathLength="1"
+                                    strokeDasharray="1"
+                                    strokeDashoffset={1}
+                                    initial={{ strokeDashoffset: 1 }}
+                                    animate={{ strokeDashoffset: 0 }}
+                                    transition={{
+                                        duration: 60,
+                                        ease: 'linear',
+                                        repeat: Infinity,
+                                    }}
+                                />
+                            </motion.svg>
+                        )}
+                        </AnimatePresence>
+                        <div className={cn(
+                            "relative rounded-xl p-4 md:p-8 h-full flex flex-col justify-center items-center text-center",
+                            isFullScreen ? "bg-transparent" : "bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"
+                        )}>
+                            <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2", isFullScreen && "text-white hover:text-white hover:bg-white/20")} onClick={() => setIsFullScreen(f => !f)}>
+                                {isFullScreen ? <Shrink/> : <Expand/>}
+                            </Button>
+                            <p className={cn("text-lg text-muted-foreground", isFullScreen && "text-white/80")}>Okuma Süresi</p>
+                            <p className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-7xl md:text-8xl")}>
                                 {formatDuration(elapsedTime)}
                             </p>
                         </div>
-                    </div>
+                        <div className={cn("flex items-center gap-4 pt-8", !isFullScreen && "hidden")}>
+                            <Button
+                                size="lg"
+                                className="rounded-full w-48 h-16 text-xl"
+                                onClick={() => setTimerRunning(!timerRunning)}
+                            >
+                                {timerRunning ? <Pause className="mr-2 h-6 w-6" /> : <Play className="mr-2 h-6 w-6" />}
+                                {timerRunning ? 'Durdur' : 'Devam Et'}
+                            </Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                     <Button
+                                        size="icon"
+                                        variant={selectedSoundId ? "default" : "outline"}
+                                        className="rounded-full w-16 h-16"
+                                        aria-label="Toggle Sound"
+                                    >
+                                        <Music className="h-7 w-7"/>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuLabel>Ambiyans Sesi</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuRadioGroup value={selectedSoundId || ''} onValueChange={setSelectedSoundId}>
+                                        {ambientSounds.map(sound => (
+                                             <DropdownMenuRadioItem key={sound.id} value={sound.id}>{sound.name}</DropdownMenuRadioItem>
+                                        ))}
+                                    </DropdownMenuRadioGroup>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </motion.div>
                     
-                    <div className="flex items-center gap-4">
+                     <div className={cn("flex items-center gap-4", isFullScreen && 'hidden')}>
                         <Button
                             size="lg"
                             className="rounded-full w-48 h-16 text-xl"
