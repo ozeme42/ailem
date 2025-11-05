@@ -584,21 +584,21 @@ export default function YemekPlanlamaPage() {
                 <TabsTrigger value="calorie">Kalori Takibi</TabsTrigger>
             </TabsList>
             <TabsContent value="planner" className="mt-6">
-                <Card className="mb-8">
+                <Card className="mb-8 shadow-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                     <CardHeader>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                         <div className="flex-grow">
                         <CardTitle>Haftalık Yemek Planı</CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-white/80">
                             {format(weekStartDate, 'd MMMM', { locale: tr })} - {format(addDays(weekStartDate, 6), 'd MMMM yyyy', { locale: tr })}
                         </CardDescription>
                         </div>
                         <div className="flex items-center gap-2 self-end sm:self-center">
-                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, -7))}>
+                        <Button variant="outline" size="icon" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setCurrentDate(d => addDays(d, -7))}>
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
-                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(d => addDays(d, 7))}>
+                        <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
+                        <Button variant="outline" size="icon" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setCurrentDate(d => addDays(d, 7))}>
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                         </div>
@@ -611,7 +611,7 @@ export default function YemekPlanlamaPage() {
                         const plannedMeals = mealPlan[dayKey] || {};
 
                         return (
-                        <Card key={day.toString()} className="flex flex-col gap-2 p-2 bg-muted/40">
+                        <Card key={day.toString()} className="flex flex-col gap-2 p-2 bg-background/80 text-foreground">
                             <div className="font-semibold text-center text-sm capitalize">
                             {format(day, 'EEE', { locale: tr })}
                             <p className="text-xs text-muted-foreground">{format(day, 'd')}</p>
