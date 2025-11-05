@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -146,7 +145,7 @@ export function PomodoroClient() {
     const activeProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-        <div className="h-full flex flex-col items-center justify-center p-4 gap-8">
+        <div className="h-full flex flex-col items-center justify-center p-4 gap-8 pb-24">
             <PageHeader title="Pomodoro Zamanlayıcı" className="mb-0" />
             
             <motion.div
@@ -243,5 +242,3 @@ export function PomodoroClient() {
             </Dialog>
         </div>
     );
-}
-
