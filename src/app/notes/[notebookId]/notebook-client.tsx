@@ -30,6 +30,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 
 interface NotebookDetails {
@@ -397,8 +398,8 @@ export default function NotebookClient() {
                                 </DropdownMenu>
                             </div>
                         </div>
-                        <AccordionContent className="p-0 bg-background border-x border-b">
-                             <Accordion type="multiple" className="w-full">
+                        <AccordionContent className="p-4 pt-0 bg-background border-x border-b">
+                             <Accordion type="multiple" className="w-full space-y-2">
                                 {folderOrder.map((folderName, folderIndex) => {
                                     const folderNotes = notesByFolder[folderName];
                                     if (!folderNotes || folderNotes.length === 0) {
@@ -406,7 +407,7 @@ export default function NotebookClient() {
                                     }
                                      const colorClass = folderColors[folderIndex % folderColors.length];
                                     return (
-                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden">
+                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg">
                                             <Card className={cn('text-white border-0 rounded-none', `bg-gradient-to-br ${colorClass}`)}>
                                                 <CardHeader className="p-0">
                                                     <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline w-full">
@@ -430,7 +431,7 @@ export default function NotebookClient() {
                                     )
                                 })}
                             </Accordion>
-                            <div className="mt-4 flex gap-2 p-4 pt-0">
+                            <div className="mt-4 flex gap-2 pt-0">
                                 <Button variant="outline" size="sm" onClick={() => { setActiveSectionId(section.id); handleAddNewNote() }}>
                                     <StickyNote className="mr-2 h-4 w-4"/> Yeni Not
                                 </Button>
@@ -611,16 +612,27 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
               <FormField name="content" control={form.control} render={({ field }) => (
                 <FormItem><FormLabel>İçerik</FormLabel><FormControl><Textarea {...field} rows={8} /></FormControl><FormMessage /></FormItem>
               )}/>
-              <FormField name="folder" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>Klasör</FormLabel><FormControl><Combobox options={folderOptions} value={field.value || ''} onChange={field.onChange} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.'/></FormControl><FormMessage /></FormItem>
-              )}/>
-              <FormField name="color" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>Renk</FormLabel><FormControl>
-                    <div className="flex gap-2">
-                        {noteColors.map(color => (<button type="button" key={color.name} aria-label={color.name} className={cn("h-7 w-7 rounded-full", color.class, field.value === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => field.onChange(color.class)} />))}
-                    </div>
-                </FormControl><FormMessage /></FormItem>
-              )}/>
+              
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                    <Button type="button" variant="ghost" className="text-sm text-muted-foreground -ml-4">
+                        <ChevronDown className="h-4 w-4 mr-2" /> Diğer Seçenekleri Göster/Gizle
+                    </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-4 animate-accordion-down">
+                    <FormField name="folder" control={form.control} render={({ field }) => (
+                        <FormItem><FormLabel>Klasör</FormLabel><FormControl><Combobox options={folderOptions} value={field.value || ''} onChange={field.onChange} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.'/></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField name="color" control={form.control} render={({ field }) => (
+                        <FormItem><FormLabel>Renk</FormLabel><FormControl>
+                            <div className="flex gap-2">
+                                {noteColors.map(color => (<button type="button" key={color.name} aria-label={color.name} className={cn("h-7 w-7 rounded-full", color.class, field.value === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => field.onChange(color.class)} />))}
+                            </div>
+                        </FormControl><FormMessage /></FormItem>
+                    )}/>
+                </CollapsibleContent>
+              </Collapsible>
+
             </div>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="ghost">İptal</Button></DialogClose>
@@ -634,3 +646,4 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
 }
 
     
+
