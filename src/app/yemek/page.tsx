@@ -559,7 +559,7 @@ export default function YemekPlanlamaPage() {
   }
 
   return (
-    <>
+    <div className="pb-24">
       <PageHeader title="Yemek Planı & Tarifler 🍲">
         <Button 
             variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none"
@@ -879,7 +879,6 @@ export default function YemekPlanlamaPage() {
           <NewRecipeForm onSubmit={handleSaveRecipe} initialData={editingRecipe} />
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
-
