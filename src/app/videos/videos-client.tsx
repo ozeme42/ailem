@@ -323,7 +323,7 @@ export function VideosClient() {
   );
 }
 
-function VideoList({ video, onEdit, onDelete }: { video: Video, onEdit: (video: Video) => void, onDelete: (id: string) => void}) {
+function VideoList({ video, onEdit, onDelete, colorClass }: { video: Video, onEdit: (video: Video) => void, onDelete: (id: string) => void, colorClass: string }) {
     const [completed, setCompleted] = useState(video.completedVideos || 0);
     const progress = video.totalVideos > 0 ? (completed / video.totalVideos) * 100 : 0;
 
@@ -339,7 +339,7 @@ function VideoList({ video, onEdit, onDelete }: { video: Video, onEdit: (video: 
     };
 
     return (
-        <Card className="p-4 bg-card text-card-foreground">
+        <Card className="p-4 bg-white/50 dark:bg-black/20">
             <div className="flex justify-between items-start gap-2">
                 <div className="flex-grow">
                     <CardTitle className="text-base">{video.title}</CardTitle>
@@ -358,7 +358,7 @@ function VideoList({ video, onEdit, onDelete }: { video: Video, onEdit: (video: 
             </div>
             <div className="mt-4 space-y-2">
                 <Progress value={progress} />
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                <div className="flex justify-between items-center text-sm">
                     <span>{completed} / {video.totalVideos} video</span>
                      <div className="flex items-center gap-1">
                         <Button size="sm" variant="outline" onClick={() => handleProgressChange(-1)} onBlur={handleBlur}>-</Button>
@@ -402,8 +402,8 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
       {shelves.map(([shelfName, shelfVideos], index) => {
           const color = brightColors[index % brightColors.length];
           return (
-             <AccordionItem key={shelfName} value={shelfName} className="border-none rounded-xl overflow-hidden">
-                <Card className={cn("bg-gradient-to-br text-white border-0", color.gradient)}>
+             <AccordionItem key={shelfName} value={shelfName} className="border-b-0">
+                <Card className={cn("bg-gradient-to-br text-white border-0 overflow-hidden", color.gradient)}>
                     <CardHeader className="p-0">
                         <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline">
                             <Folder className="h-6 w-6 text-white" />
@@ -413,7 +413,7 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
                     <AccordionContent className="p-4 pt-0">
                         <div className="space-y-3">
                              {shelfVideos.map(video => (
-                                <VideoList key={video.id} video={video} onEdit={onEdit} onDelete={onDelete} />
+                                <VideoList key={video.id} video={video} onEdit={onEdit} onDelete={onDelete} colorClass={color.gradient} />
                              ))}
                         </div>
                     </AccordionContent>
