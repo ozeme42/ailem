@@ -22,6 +22,14 @@ type TrackableItem = {
     icon: React.ElementType;
 };
 
+const rowColors = [
+    "bg-sky-50 dark:bg-sky-900/20",
+    "bg-emerald-50 dark:bg-emerald-900/20",
+    "bg-amber-50 dark:bg-amber-900/20",
+    "bg-rose-50 dark:bg-rose-900/20",
+    "bg-violet-50 dark:bg-violet-900/20",
+];
+
 export function TrackingClient() {
     const { familyId, familyMembers } = useAuth();
     const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
@@ -161,7 +169,7 @@ export function TrackingClient() {
                     </TableHeader>
                     <TableBody>
                         {trackableItems.map((item, index) => (
-                            <TableRow key={item.id} className={cn(index % 2 === 0 && "bg-muted/20")}>
+                            <TableRow key={item.id} className={cn(rowColors[index % rowColors.length])}>
                                 <TableCell className="font-medium border-r">
                                     <div className="flex items-center gap-2">
                                         <item.icon className="h-5 w-5 text-muted-foreground"/>
@@ -190,4 +198,3 @@ export function TrackingClient() {
         </div>
     );
 }
-
