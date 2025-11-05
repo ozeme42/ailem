@@ -148,7 +148,7 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
             : 'Liste boş';
 
     return (
-        <div className="relative group rounded-lg overflow-hidden shadow-sm" onClick={onClick}>
+        <div className="relative group overflow-hidden shadow-sm" onClick={onClick}>
             <div className={cn("flex items-center text-black p-4 cursor-pointer min-h-[112px]", colorClass)}>
                  <div className="flex-grow">
                     <p className="text-base font-semibold leading-tight truncate">{list.name}</p>
