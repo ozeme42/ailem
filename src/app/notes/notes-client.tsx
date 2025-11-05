@@ -82,7 +82,7 @@ export function NotesClient() {
 
     return (
         <div className="space-y-6">
-            <PageHeader title="Not Defterleri" className="rounded-b-none -mb-8">
+            <PageHeader title="Not Defterleri" className="-mb-8">
                 <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setEditingNotebook(null); setIsFormOpen(open); }}>
                     <DialogTrigger asChild>
                         <Button variant="secondary">
