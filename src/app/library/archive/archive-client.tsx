@@ -657,12 +657,23 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
       </div>
      );
   }
+  
+  const shelfTitleColors = [
+    'text-red-600 dark:text-red-400',
+    'text-blue-600 dark:text-blue-400',
+    'text-green-600 dark:text-green-400',
+    'text-purple-600 dark:text-purple-400',
+    'text-orange-600 dark:text-orange-400',
+    'text-pink-600 dark:text-pink-400',
+    'text-teal-600 dark:text-teal-400',
+    'text-indigo-600 dark:text-indigo-400',
+  ];
 
   return (
     <div className="space-y-8">
-      {shelves.map(([shelfName, shelfBooks]) => (
+      {shelves.map(([shelfName, shelfBooks], index) => (
         <div key={shelfName}>
-          <h2 className="text-xl font-bold mb-4">{shelfName}</h2>
+          <h2 className={cn("text-xl font-bold mb-4", shelfTitleColors[index % shelfTitleColors.length])}>{shelfName}</h2>
           <div className="relative">
             <div className="overflow-x-auto pb-4 -mb-4">
                 <div className="flex flex-nowrap gap-4">
