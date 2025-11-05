@@ -32,6 +32,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Calendar } from "@/components/ui/calendar";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 const categoryIcons: { [key: string]: React.ReactElement } = {
@@ -395,6 +396,7 @@ export default function YemekPlanlamaPage() {
   const [editingRecipe, setEditingRecipe] = React.useState<Recipe | null>(null);
   const [currentMealSelection, setCurrentMealSelection] = React.useState<MealSelection>(null);
   const [recipeSearchTerm, setRecipeSearchTerm] = React.useState("");
+  const [recipePage, setRecipePage] = React.useState(1);
 
 
   React.useEffect(() => {
@@ -540,6 +542,10 @@ export default function YemekPlanlamaPage() {
     );
   }, [recipes, recipeSearchTerm]);
 
+  const itemsPerPage = 10;
+  const totalRecipePages = Math.ceil(filteredRecipes.length / itemsPerPage);
+  const paginatedRecipes = filteredRecipes.slice((recipePage - 1) * itemsPerPage, recipePage * itemsPerPage);
+
 
   const handleOpenNewRecipeDialog = () => {
     setEditingRecipe(null);
@@ -670,112 +676,134 @@ export default function YemekPlanlamaPage() {
                     </CardContent>
                 </Card>
                 
-                <Card className="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-xl">
-                    <CardHeader>
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <CardTitle>Tarif Kütüphanesi</CardTitle>
-                            <div className="w-full sm:w-auto md:w-1/3 relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
-                                <Input 
-                                placeholder="Tarif ara..." 
-                                className="pl-10 bg-white/20 border-0 placeholder:text-white/70"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <CardDescription className="text-white/80">
-                            Ailenizin favori tariflerini burada bulun, yönetin ve yenilerini ekleyin.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Tabs defaultValue="Hepsi" onValueChange={(value) => setActiveTab(value)}>
-                            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 mb-6 bg-white/20 text-white">
-                                <TabsTrigger value="Hepsi" className="data-[state=active]:bg-white data-[state=active]:text-blue-600">Hepsi</TabsTrigger>
-                                {Object.keys(categoryIcons).map(category => (
-                                    <TabsTrigger key={category} value={category} className="data-[state=active]:bg-white data-[state=active]:text-blue-600">
-                                        {React.cloneElement(categoryIcons[category], { className: "mr-2 h-4 w-4"})}
-                                        {category}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                            
-                            <div className="mt-6">
-                            {filteredRecipes.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                    {filteredRecipes.map(recipe => (
-                                    <Dialog key={recipe.id}>
-                                            <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground relative">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <MoreVertical className="h-4 w-4"/>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent>
-                                                        <DropdownMenuItem onClick={() => handleOpenEditRecipeDialog(recipe)}>
-                                                            <Edit className="mr-2 h-4 w-4"/> Düzenle
-                                                        </DropdownMenuItem>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                                    <Trash2 className="mr-2 h-4 w-4"/> Sil
-                                                                </DropdownMenuItem>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader><AlertDialogTitle>Tarifi Sil</AlertDialogTitle><AlertDialogDescription>"{recipe.title}" tarifini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteRecipe(recipe.id)}>Sil</AlertDialogAction></AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                                <DialogTrigger asChild>
-                                                    <div>
-                                                        <CardHeader className="p-4">
-                                                        <div className="flex justify-between items-start">
-                                                            <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
-                                                            {(allTimeCounts.get(recipe.id) || 0) > 0 && (
-                                                                <Badge variant="secondary">{allTimeCounts.get(recipe.id)}</Badge>
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="item-1">
+                        <Card className="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-xl">
+                            <AccordionTrigger className="w-full p-6 hover:no-underline">
+                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
+                                    <div>
+                                        <CardTitle>Tarif Kütüphanesi ({recipes.length})</CardTitle>
+                                        <CardDescription className="text-white/80">
+                                            Ailenizin favori tariflerini burada bulun, yönetin ve yenilerini ekleyin.
+                                        </CardDescription>
+                                    </div>
+                                    <div className="w-full sm:w-auto md:w-1/3 relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
+                                        <Input 
+                                        placeholder="Tarif ara..." 
+                                        className="pl-10 bg-white/20 border-0 placeholder:text-white/70"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-6 pt-0">
+                                <div className="bg-card text-card-foreground p-4 rounded-lg">
+                                    <Tabs defaultValue="Hepsi" onValueChange={(value) => setActiveTab(value)}>
+                                        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 mb-6">
+                                            <TabsTrigger value="Hepsi">Hepsi</TabsTrigger>
+                                            {Object.keys(categoryIcons).map(category => (
+                                                <TabsTrigger key={category} value={category}>
+                                                    {React.cloneElement(categoryIcons[category], { className: "mr-2 h-4 w-4"})}
+                                                    {category}
+                                                </TabsTrigger>
+                                            ))}
+                                        </TabsList>
+                                        
+                                        <div className="mt-6">
+                                        {paginatedRecipes.length > 0 ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                                {paginatedRecipes.map(recipe => (
+                                                <Dialog key={recipe.id}>
+                                                        <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground relative">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <MoreVertical className="h-4 w-4"/>
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent>
+                                                                    <DropdownMenuItem onClick={() => handleOpenEditRecipeDialog(recipe)}>
+                                                                        <Edit className="mr-2 h-4 w-4"/> Düzenle
+                                                                    </DropdownMenuItem>
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                                                <Trash2 className="mr-2 h-4 w-4"/> Sil
+                                                                            </DropdownMenuItem>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent>
+                                                                            <AlertDialogHeader><AlertDialogTitle>Tarifi Sil</AlertDialogTitle><AlertDialogDescription>"{recipe.title}" tarifini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                                            <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteRecipe(recipe.id)}>Sil</AlertDialogAction></AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                            <DialogTrigger asChild>
+                                                                <div>
+                                                                    <CardHeader className="p-4">
+                                                                    <div className="flex justify-between items-start">
+                                                                        <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
+                                                                        {(allTimeCounts.get(recipe.id) || 0) > 0 && (
+                                                                            <Badge variant="secondary">{allTimeCounts.get(recipe.id)}</Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <CardDescription className="text-xs">{recipe.category}</CardDescription>
+                                                                    </CardHeader>
+                                                                </div>
+                                                            </DialogTrigger>
+                                                        </Card>
+                                                        <DialogContent className="sm:max-w-md">
+                                                            <DialogHeader>
+                                                                <Badge variant="secondary" className="w-fit mb-2">{recipe.category}</Badge>
+                                                                <DialogTitle className="text-3xl font-bold">{recipe.title}</DialogTitle>
+                                                                <DialogDescription className="flex items-center gap-4 pt-2">
+                                                                    <span><Star className="inline-block mr-1 h-4 w-4 text-yellow-400 fill-yellow-400"/>{recipe.rating}/5</span>
+                                                                    {lastEatenDates.has(recipe.id) && (
+                                                                        <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                                            <Clock className="h-4 w-4" />
+                                                                            Son Yeme: {formatDistanceToNow(parseISO(lastEatenDates.get(recipe.id)!), { addSuffix: true, locale: tr })}
+                                                                        </span>
+                                                                    )}
+                                                                </DialogDescription>
+                                                            </DialogHeader>
+                                                            {recipe.instructions && (
+                                                                <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-4">
+                                                                    <h3 className="font-semibold text-xl border-b pb-2">Hazırlanışı</h3>
+                                                                    <p className="whitespace-pre-wrap">{recipe.instructions}</p>
+                                                                </div>
                                                             )}
-                                                        </div>
-                                                        <CardDescription className="text-xs">{recipe.category}</CardDescription>
-                                                        </CardHeader>
-                                                    </div>
-                                                </DialogTrigger>
-                                            </Card>
-                                            <DialogContent className="sm:max-w-md">
-                                                <DialogHeader>
-                                                    <Badge variant="secondary" className="w-fit mb-2">{recipe.category}</Badge>
-                                                    <DialogTitle className="text-3xl font-bold">{recipe.title}</DialogTitle>
-                                                    <DialogDescription className="flex items-center gap-4 pt-2">
-                                                        <span><Star className="inline-block mr-1 h-4 w-4 text-yellow-400 fill-yellow-400"/>{recipe.rating}/5</span>
-                                                        {lastEatenDates.has(recipe.id) && (
-                                                            <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                                                <Clock className="h-4 w-4" />
-                                                                Son Yeme: {formatDistanceToNow(parseISO(lastEatenDates.get(recipe.id)!), { addSuffix: true, locale: tr })}
-                                                            </span>
-                                                        )}
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                {recipe.instructions && (
-                                                    <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-4">
-                                                        <h3 className="font-semibold text-xl border-b pb-2">Hazırlanışı</h3>
-                                                        <p className="whitespace-pre-wrap">{recipe.instructions}</p>
-                                                    </div>
-                                                )}
-                                            </DialogContent>
-                                        </Dialog>
-                                    ))}
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-16 text-muted-foreground">
+                                                <p>Aradığınız kriterlere uygun tarif bulunamadı.</p>
+                                            </div>
+                                        )}
+                                        </div>
+                                         {totalRecipePages > 1 && (
+                                            <div className="flex justify-center items-center gap-4 mt-6">
+                                                <Button variant="outline" onClick={() => setRecipePage(p => Math.max(1, p - 1))} disabled={recipePage === 1}>
+                                                    <ChevronLeft className="h-4 w-4 mr-2"/> Önceki
+                                                </Button>
+                                                <span className="text-sm text-muted-foreground">
+                                                    Sayfa {recipePage} / {totalRecipePages}
+                                                </span>
+                                                <Button variant="outline" onClick={() => setRecipePage(p => Math.min(totalRecipePages, p + 1))} disabled={recipePage === totalRecipePages}>
+                                                    Sonraki <ChevronRight className="h-4 w-4 ml-2"/>
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </Tabs>
                                 </div>
-                            ) : (
-                                <div className="text-center py-16 text-white/80">
-                                    <p>Aradığınız kriterlere uygun tarif bulunamadı.</p>
-                                </div>
-                            )}
-                            </div>
-                        </Tabs>
-                    </CardContent>
-                </Card>
+                            </AccordionContent>
+                        </Card>
+                    </AccordionItem>
+                </Accordion>
             </TabsContent>
             <TabsContent value="calorie" className="mt-6">
                 <CalorieTracker />
@@ -854,3 +882,4 @@ export default function YemekPlanlamaPage() {
     </>
   );
 }
+
