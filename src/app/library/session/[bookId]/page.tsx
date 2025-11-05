@@ -215,45 +215,38 @@ export default function ReadingSessionPage() {
                         )}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                     >
-                        <AnimatePresence>
-                        {!isFullScreen && (
-                            <motion.svg 
-                                className="absolute inset-0 w-full h-full" 
-                                width="100%" 
-                                height="100%"
-                                initial={{ opacity: 0}}
-                                animate={{ opacity: 1}}
-                                exit={{ opacity: 0}}
-                            >
-                                <defs>
-                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="hsl(var(--chart-1))" />
-                                        <stop offset="25%" stopColor="hsl(var(--chart-5))" />
-                                        <stop offset="50%" stopColor="hsl(var(--chart-3))" />
-                                        <stop offset="100%" stopColor="hsl(var(--primary))" />
-                                    </linearGradient>
-                                </defs>
-                                <motion.rect
-                                    x="4" y="4"
-                                    width="calc(100% - 8px)" height="calc(100% - 8px)"
-                                    rx="14" ry="14"
-                                    fill="transparent"
-                                    stroke="url(#gradient)"
-                                    strokeWidth="8"
-                                    pathLength="1"
-                                    strokeDasharray="1"
-                                    strokeDashoffset={1}
-                                    initial={{ strokeDashoffset: 1 }}
-                                    animate={{ strokeDashoffset: 0 }}
-                                    transition={{
-                                        duration: 60,
-                                        ease: 'linear',
-                                        repeat: Infinity,
-                                    }}
-                                />
-                            </motion.svg>
-                        )}
-                        </AnimatePresence>
+                        <motion.svg 
+                            className="absolute inset-0 w-full h-full" 
+                            width="100%" 
+                            height="100%"
+                        >
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                                    <stop offset="25%" stopColor="hsl(var(--chart-5))" />
+                                    <stop offset="50%" stopColor="hsl(var(--chart-3))" />
+                                    <stop offset="100%" stopColor="hsl(var(--primary))" />
+                                </linearGradient>
+                            </defs>
+                            <motion.rect
+                                x="4" y="4"
+                                width="calc(100% - 8px)" height="calc(100% - 8px)"
+                                rx={isFullScreen ? 0 : 14} ry={isFullScreen ? 0 : 14}
+                                fill="transparent"
+                                stroke="url(#gradient)"
+                                strokeWidth="8"
+                                pathLength="1"
+                                strokeDasharray="1"
+                                strokeDashoffset={1}
+                                initial={{ strokeDashoffset: 1 }}
+                                animate={{ strokeDashoffset: 0 }}
+                                transition={{
+                                    duration: 60,
+                                    ease: 'linear',
+                                    repeat: Infinity,
+                                }}
+                            />
+                        </motion.svg>
                         <div className={cn(
                             "relative rounded-xl p-4 md:p-8 h-full flex flex-col justify-center items-center text-center",
                             isFullScreen ? "bg-transparent" : "bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"
