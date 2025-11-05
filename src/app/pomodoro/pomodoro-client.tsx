@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -13,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 function formatTime(seconds: number) {
@@ -54,35 +55,27 @@ export function PomodoroClient() {
             setSelectedProjectId(projects[0].id);
         }
     }, [projects, selectedProjectId]);
-
-    React.useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        if (isActive && timeLeft > 0) {
-            interval = setInterval(() => {
-                setTimeLeft(time => time - 1);
-            }, 1000);
-        } else if (isActive && timeLeft === 0) {
-            handleTimerEnd();
-        }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [isActive, timeLeft]);
     
-    const handleTimerEnd = () => {
+    const switchMode = React.useCallback((newMode: TimerMode) => {
+        setMode(newMode);
+        setTimeLeft(defaultDurations[newMode]);
+        setIsActive(false);
+    }, []);
+
+    const handleTimerEnd = React.useCallback(() => {
         setIsActive(false);
         toast({
             title: "🎉 Süre Doldu!",
             description: mode === 'pomodoro' ? "Harika iş, şimdi kısa bir mola zamanı!" : "Mola bitti, tekrar iş başına!",
         });
 
-        if (mode === 'pomodoro') {
+        if (mode === 'pomodoro' && user) {
             const newSessionCount = sessionsToday + 1;
             setSessionsToday(newSessionCount);
             if (selectedProjectId) {
                  addPomodoroSession({
                     projectId: selectedProjectId,
-                    memberId: user!.uid,
+                    memberId: user.uid,
                     startTime: new Date(Date.now() - defaultDurations.pomodoro * 1000).toISOString(),
                     endTime: new Date().toISOString(),
                     durationSeconds: defaultDurations.pomodoro
@@ -96,13 +89,22 @@ export function PomodoroClient() {
         } else {
             switchMode('pomodoro');
         }
-    };
-    
-    const switchMode = (newMode: TimerMode) => {
-        setMode(newMode);
-        setTimeLeft(defaultDurations[newMode]);
-        setIsActive(false);
-    };
+    }, [mode, selectedProjectId, sessionsToday, toast, user, switchMode]);
+
+
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout | null = null;
+        if (isActive && timeLeft > 0) {
+            interval = setInterval(() => {
+                setTimeLeft(time => time - 1);
+            }, 1000);
+        } else if (isActive && timeLeft === 0) {
+            handleTimerEnd();
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isActive, timeLeft, handleTimerEnd]);
     
     const resetTimer = () => {
         setIsActive(false);
@@ -242,3 +244,4 @@ export function PomodoroClient() {
             </Dialog>
         </div>
     );
+}
