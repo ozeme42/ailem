@@ -17,7 +17,6 @@ export function PageHeader({ title, children, className }: PageHeaderProps) {
     <header className={cn(
         "flex items-center justify-center p-6 py-8 relative", // Changed to items-center for vertical centering
         "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg",
-        "-mx-4 -mt-4 sm:-mx-6 sm:-mt-8 mb-6", // Full-bleed on mobile
         "rounded-b-2xl",
         className
     )}>
