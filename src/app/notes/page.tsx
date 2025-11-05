@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Suspense } from 'react';
 import { NotesClient } from './notes-client';
 import { PageHeader } from '@/components/page-header';
@@ -7,9 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function NotesPage() {
   return (
     <div className="h-full">
-      <Suspense fallback={<NotesSkeleton />}>
-        <NotesClient />
-      </Suspense>
+      <NotesClient />
     </div>
   );
 }
