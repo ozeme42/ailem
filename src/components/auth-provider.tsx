@@ -257,7 +257,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
   }
 
-  const noPaddingRoutes = ['/shopping', '/budget', '/pomodoro'];
+  const noPaddingRoutes = ['/shopping', '/budget', '/pomodoro', '/notes'];
   const hasPadding = !noPaddingRoutes.some(route => pathname.startsWith(route));
   const isShoppingPage = pathname.startsWith('/shopping');
 
