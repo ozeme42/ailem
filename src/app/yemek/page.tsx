@@ -381,6 +381,14 @@ function CalorieTracker() {
     );
 }
 
+const recipeCardColors = [
+  'bg-blue-100 dark:bg-blue-900/30',
+  'bg-green-100 dark:bg-green-900/30',
+  'bg-yellow-100 dark:bg-yellow-900/30',
+  'bg-red-100 dark:bg-red-900/30',
+  'bg-purple-100 dark:bg-purple-900/30',
+  'bg-pink-100 dark:bg-pink-900/30',
+];
 
 export default function YemekPlanlamaPage() {
   const [recipes, setRecipes] = React.useState<Recipe[]>([]);
@@ -715,12 +723,12 @@ export default function YemekPlanlamaPage() {
                                         <div className="mt-6">
                                         {paginatedRecipes.length > 0 ? (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                                {paginatedRecipes.map(recipe => (
+                                                {paginatedRecipes.map((recipe, index) => (
                                                 <Dialog key={recipe.id}>
-                                                        <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground relative">
+                                                        <Card className={cn("overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 relative", recipeCardColors[index % recipeCardColors.length])}>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                                         <MoreVertical className="h-4 w-4"/>
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
@@ -742,16 +750,14 @@ export default function YemekPlanlamaPage() {
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                             <DialogTrigger asChild>
-                                                                <div>
-                                                                    <CardHeader className="p-4">
+                                                                <div className="p-4 h-full flex flex-col">
                                                                     <div className="flex justify-between items-start">
                                                                         <CardTitle className="truncate group-hover:text-primary text-base flex-grow">{recipe.title}</CardTitle>
                                                                         {(allTimeCounts.get(recipe.id) || 0) > 0 && (
                                                                             <Badge variant="secondary">{allTimeCounts.get(recipe.id)}</Badge>
                                                                         )}
                                                                     </div>
-                                                                    <CardDescription className="text-xs">{recipe.category}</CardDescription>
-                                                                    </CardHeader>
+                                                                    <CardDescription className="text-xs flex-grow">{recipe.category}</CardDescription>
                                                                 </div>
                                                             </DialogTrigger>
                                                         </Card>
