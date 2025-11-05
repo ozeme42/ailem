@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink, Music, Circle, Minus } from "lucide-react";
+import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink, Music, Circle, Minus, Hourglass } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -35,7 +35,7 @@ const defaultDurations = {
 };
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak';
-type TimerStyle = 'circle' | 'bar';
+type TimerStyle = 'circle' | 'bar' | 'hourglass';
 
 export function PomodoroClient() {
     const { user } = useAuth();
@@ -200,7 +200,7 @@ export function PomodoroClient() {
     const activeProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-        <div className="h-full flex flex-col items-center justify-center p-4 gap-8 pb-24">
+        <div className="h-full flex flex-col items-center justify-center gap-8">
             <PageHeader title="Pomodoro Zamanlayıcı" className="mb-0" />
             
             <AnimatePresence>
@@ -220,6 +220,7 @@ export function PomodoroClient() {
                 "relative w-72 sm:w-80 rounded-full shadow-2xl bg-card",
                 timerStyle === 'circle' && 'h-72 sm:h-80',
                 timerStyle === 'bar' && 'w-full max-w-lg h-auto rounded-xl p-8',
+                timerStyle === 'hourglass' && 'h-72 sm:h-80 w-auto aspect-[3/4] rounded-2xl bg-transparent shadow-none',
                 isFullScreen && "fixed inset-0 w-screen h-screen max-w-none rounded-none p-0 flex flex-col items-center justify-center gap-8 z-50 bg-transparent"
               )}
                transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -235,14 +236,21 @@ export function PomodoroClient() {
                                 <stop offset="100%" stopColor="hsl(var(--primary))" />
                             </linearGradient>
                         </defs>
-                        <motion.circle cx="50" cy="50" r="45" stroke="hsl(var(--primary) / 0.2)" strokeWidth="4" fill="transparent" />
+                         <motion.circle
+                            cx="50" cy="50" r="45"
+                            fill="transparent"
+                            stroke="url(#gradient)"
+                            strokeWidth="4"
+                            opacity="0.2"
+                        />
                         <motion.circle
-                            cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="4" fill="transparent"
+                            cx="50" cy="50" r="45" stroke="hsl(var(--background))" strokeWidth="5" fill="transparent"
                             strokeLinecap="round" transform="rotate(-90 50 50)" pathLength="1"
-                            strokeDasharray="1" strokeDashoffset={1 - progress / 100}
+                            strokeDasharray="1"
+                            strokeDashoffset={progress / 100}
                             initial={{ strokeDashoffset: 1 }}
                             animate={{ strokeDashoffset: 1 - progress / 100 }}
-                            transition={{ duration: 0.5 }}
+                            transition={{ duration: 1, ease: 'linear' }}
                         />
                     </motion.svg>
                     <div className="relative text-center flex flex-col items-center justify-center h-full">
@@ -253,7 +261,7 @@ export function PomodoroClient() {
                         <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
                     </div>
                 </>
-             ) : (
+             ) : timerStyle === 'bar' ? (
                 <div className="relative text-center flex flex-col items-center justify-center h-full gap-4">
                     <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
                         {isFullScreen ? <Shrink/> : <Expand/>}
@@ -261,6 +269,44 @@ export function PomodoroClient() {
                      <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
                     <Progress value={progress} className={cn("w-full h-4", isFullScreen && "bg-white/20")} indicatorClassName={cn(isFullScreen && "bg-white")} />
                      <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
+                </div>
+             ) : (
+                <div className="relative w-full h-full flex items-center justify-center">
+                    <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
+                        {isFullScreen ? <Shrink/> : <Expand/>}
+                    </Button>
+                     <motion.svg viewBox="0 0 100 120" className="w-full h-full">
+                        <defs>
+                            <linearGradient id="sandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor="#fde68a" />
+                                <stop offset="100%" stopColor="#facc15" />
+                            </linearGradient>
+                        </defs>
+                        {/* Hourglass shape */}
+                        <path d="M20 10 H80 L50 50 L80 90 H20 L50 50 Z" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="3" fill="hsl(var(--background) / 0.5)"/>
+                        {/* Top sand */}
+                        <motion.rect
+                            x="25"
+                            y="15"
+                            width="50"
+                            fill="url(#sandGradient)"
+                            initial={{ height: 30 }}
+                            animate={{ height: 30 * (1 - progress / 100) }}
+                        />
+                        {/* Bottom sand */}
+                        <motion.rect
+                            x="25"
+                            y="90"
+                            width="50"
+                            fill="url(#sandGradient)"
+                            initial={{ height: 0, y: 90 }}
+                            animate={{ height: 30 * (progress / 100), y: 90 - 30 * (progress / 100) }}
+                        />
+                         <path d="M20 110 H80" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="3" strokeLinecap="round" />
+                    </motion.svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                         <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-7xl text-white" : "text-5xl")}>{formatTime(timeLeft)}</h2>
+                    </div>
                 </div>
              )}
             </motion.div>
@@ -292,6 +338,7 @@ export function PomodoroClient() {
                             <DropdownMenuRadioGroup value={timerStyle} onValueChange={(v) => setTimerStyle(v as TimerStyle)}>
                                 <DropdownMenuRadioItem value="circle">Dairesel</DropdownMenuRadioItem>
                                 <DropdownMenuRadioItem value="bar">Çubuk</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="hourglass">Kum Saati</DropdownMenuRadioItem>
                             </DropdownMenuRadioGroup>
                              <DropdownMenuSeparator />
                             <DropdownMenuLabel className="text-xs font-normal">Ambiyans Sesi</DropdownMenuLabel>
