@@ -11,13 +11,14 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink, Music } from "lucide-react";
+import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink, Music, Circle, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { onAmbientSoundsUpdate } from "@/lib/dataService";
 import { AmbientSound } from "@/lib/data";
+import { Progress } from "@/components/ui/progress";
 
 
 function formatTime(seconds: number) {
@@ -33,6 +34,7 @@ const defaultDurations = {
 };
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak';
+type TimerStyle = 'circle' | 'bar';
 
 export function PomodoroClient() {
     const { user } = useAuth();
@@ -49,6 +51,7 @@ export function PomodoroClient() {
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [ambientSounds, setAmbientSounds] = React.useState<AmbientSound[]>([]);
     const [selectedSoundId, setSelectedSoundId] = React.useState<string | null>(null);
+    const [timerStyle, setTimerStyle] = React.useState<TimerStyle>('circle');
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
     React.useEffect(() => {
@@ -198,52 +201,52 @@ export function PomodoroClient() {
             <motion.div
               layout
               className={cn(
-                "relative w-72 h-72 sm:w-80 sm:h-80 rounded-full flex items-center justify-center shadow-2xl bg-card",
+                "relative w-72 sm:w-80 rounded-full shadow-2xl bg-card",
+                timerStyle === 'circle' && 'h-72 sm:h-80',
+                timerStyle === 'bar' && 'w-full max-w-lg h-auto rounded-xl p-8',
                 isFullScreen && "fixed inset-0 w-screen h-screen max-w-none rounded-none p-0 flex flex-col items-center justify-center gap-8 z-50 bg-transparent"
               )}
                transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
-              <motion.svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-                 <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="hsl(var(--chart-1))" />
-                        <stop offset="25%" stopColor="hsl(var(--chart-5))" />
-                        <stop offset="50%" stopColor="hsl(var(--chart-3))" />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" />
-                    </linearGradient>
-                </defs>
-                 <motion.circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  stroke="hsl(var(--primary) / 0.1)"
-                  strokeWidth="4"
-                  fill="transparent"
-                />
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  stroke="url(#gradient)"
-                  strokeWidth="4"
-                  fill="transparent"
-                  strokeLinecap="round"
-                  transform="rotate(-90 50 50)"
-                  pathLength="1"
-                  strokeDasharray="1"
-                  strokeDashoffset={1 - progress / 100}
-                  initial={{ strokeDashoffset: 1 }}
-                  animate={{ strokeDashoffset: 1- progress / 100 }}
-                  transition={{ duration: 0.5 }}
-                />
-              </motion.svg>
-              <div className="relative text-center">
-                <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
-                    {isFullScreen ? <Shrink/> : <Expand/>}
-                </Button>
-                <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
-                <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
-              </div>
+             {timerStyle === 'circle' ? (
+                <>
+                    <motion.svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                                <stop offset="25%" stopColor="hsl(var(--chart-5))" />
+                                <stop offset="50%" stopColor="hsl(var(--chart-3))" />
+                                <stop offset="100%" stopColor="hsl(var(--primary))" />
+                            </linearGradient>
+                        </defs>
+                        <motion.circle cx="50" cy="50" r="45" stroke="hsl(var(--primary) / 0.1)" strokeWidth="4" fill="transparent" />
+                        <motion.circle
+                            cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="4" fill="transparent"
+                            strokeLinecap="round" transform="rotate(-90 50 50)" pathLength="1"
+                            strokeDasharray="1" strokeDashoffset={1 - progress / 100}
+                            initial={{ strokeDashoffset: 1 }}
+                            animate={{ strokeDashoffset: 1 - progress / 100 }}
+                            transition={{ duration: 0.5 }}
+                        />
+                    </motion.svg>
+                    <div className="relative text-center flex flex-col items-center justify-center h-full">
+                        <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
+                            {isFullScreen ? <Shrink/> : <Expand/>}
+                        </Button>
+                        <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
+                        <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
+                    </div>
+                </>
+             ) : (
+                <div className="relative text-center flex flex-col items-center justify-center h-full gap-4">
+                    <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
+                        {isFullScreen ? <Shrink/> : <Expand/>}
+                    </Button>
+                     <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
+                    <Progress value={progress} className={cn("w-full h-4", isFullScreen && "bg-white/20")} indicatorClassName={cn(isFullScreen && "bg-white")} />
+                     <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
+                </div>
+             )}
             </motion.div>
 
             <div className="flex flex-col items-center gap-6">
@@ -262,18 +265,20 @@ export function PomodoroClient() {
                     </Button>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                             <Button
-                                size="icon"
-                                variant={selectedSoundId ? "default" : "outline"}
-                                className="rounded-full w-16 h-16"
-                                aria-label="Toggle Sound"
-                            >
-                                <Music className="h-7 w-7"/>
+                             <Button size="icon" variant="outline" className="rounded-full w-16 h-16">
+                                <Settings className="h-7 w-7"/>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                            <DropdownMenuLabel>Ambiyans Sesi</DropdownMenuLabel>
+                            <DropdownMenuLabel>Ayarlar</DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs font-normal">Zamanlayıcı Stili</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup value={timerStyle} onValueChange={(v) => setTimerStyle(v as TimerStyle)}>
+                                <DropdownMenuRadioItem value="circle">Dairesel</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="bar">Çubuk</DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                             <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs font-normal">Ambiyans Sesi</DropdownMenuLabel>
                             <DropdownMenuRadioGroup value={selectedSoundId || ''} onValueChange={setSelectedSoundId}>
                                 {ambientSounds.map(sound => (
                                      <DropdownMenuRadioItem key={sound.id} value={sound.id}>{sound.name}</DropdownMenuRadioItem>
@@ -281,6 +286,8 @@ export function PomodoroClient() {
                             </DropdownMenuRadioGroup>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)}>Projeleri Yönet</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -335,5 +342,3 @@ export function PomodoroClient() {
         </div>
     );
 }
-
-    
