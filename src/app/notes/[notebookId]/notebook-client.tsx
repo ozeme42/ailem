@@ -354,7 +354,7 @@ export default function NotebookClient() {
       </PageHeader>
       
       <div className="flex-grow flex flex-col min-h-0 pt-4">
-         <Accordion type="multiple" className="w-full space-y-4" defaultValue={sections.map(s => s.id)}>
+         <Accordion type="multiple" className="w-full space-y-4">
              {sections.map(section => {
                  const sectionNotes = notes.filter(note => note.sectionId === section.id);
                  const notesByFolder = sectionNotes.reduce((acc, note) => {
