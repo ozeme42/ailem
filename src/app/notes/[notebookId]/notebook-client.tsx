@@ -74,7 +74,6 @@ export default function NotebookClient() {
   const { toast } = useToast();
 
   const [details, setDetails] = useState<NotebookDetails | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('');
   
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<NotebookSection | null>(null);
@@ -87,6 +86,7 @@ export default function NotebookClient() {
   const [editingFolder, setEditingFolder] = useState<{ oldName: string; sectionId: string } | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -98,10 +98,8 @@ export default function NotebookClient() {
         setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
         setSections(sortedSections);
 
-        if (sortedSections.length > 0 && (!activeTab || !sortedSections.some(s => s.id === activeTab))) {
-            setActiveTab(sortedSections[0].id);
-        } else if (sortedSections.length === 0) {
-            setActiveTab('');
+        if (sortedSections.length > 0 && !activeSectionId) {
+            setActiveSectionId(sortedSections[0].id);
         }
       } else {
         setDetails(null);
@@ -109,7 +107,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeTab]);
+  }, [notebookId, user, activeSectionId]);
 
   const handleReorderSections = async (newOrder: NotebookSection[]) => {
     setSections(newOrder);
@@ -156,7 +154,7 @@ export default function NotebookClient() {
             folders: [],
         }
         newSections = [...(details.notebook.sections || []), newSection];
-        setActiveTab(newSection.id);
+        setActiveSectionId(newSection.id);
     }
     
     try {
@@ -180,8 +178,8 @@ export default function NotebookClient() {
             await deleteNoteFromSection(note.id);
         }
         toast({ title: 'Bölüm Silindi', variant: 'destructive' });
-        if (activeTab === sectionId) {
-            setActiveTab(newSections.length > 0 ? newSections[0].id : '');
+        if (activeSectionId === sectionId) {
+            setActiveSectionId(newSections.length > 0 ? newSections[0].id : null);
         }
 
     } catch (e) {
@@ -195,10 +193,14 @@ export default function NotebookClient() {
   };
 
   const handleAddNewNote = async (folder?: string, imageUrl?: string | null) => {
+    if (!activeSectionId) {
+        toast({ title: 'Bölüm seçilmedi', description: 'Lütfen önce bir bölüm oluşturun veya seçin.', variant: 'destructive'});
+        return;
+    }
     handleOpenNoteDialog({ 
         id: '', // Temporary ID
         notebookId,
-        sectionId: activeTab,
+        sectionId: activeSectionId,
         familyId: details?.notebook.familyId || '',
         title: "Yeni Not", 
         content: imageUrl ? [] : [{ id: Date.now().toString(), type: 'text', data: '' }],
@@ -211,7 +213,7 @@ export default function NotebookClient() {
   
   const handleImageNoteAdd = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !activeSectionId) return;
 
     toast({ title: 'Görsel yükleniyor...' });
     setIsLoading(true);
@@ -240,9 +242,9 @@ export default function NotebookClient() {
   }
   
    const handleAddNewFolder = async () => {
-    if (!newFolderName.trim() || !details || !activeTab) return;
+    if (!newFolderName.trim() || !details || !activeSectionId) return;
     
-    const currentSection = details.notebook.sections.find(s => s.id === activeTab);
+    const currentSection = details.notebook.sections.find(s => s.id === activeSectionId);
     if (!currentSection) return;
     if((currentSection.folders || []).includes(newFolderName.trim())) {
       toast({ title: 'Bu klasör zaten mevcut', variant: 'destructive'});
@@ -251,7 +253,7 @@ export default function NotebookClient() {
 
     const updatedFolders = [...(currentSection.folders || []), newFolderName.trim()];
     const updatedSections = details.notebook.sections.map(s => 
-        s.id === activeTab ? { ...s, folders: updatedFolders } : s
+        s.id === activeSectionId ? { ...s, folders: updatedFolders } : s
     );
 
     try {
@@ -290,13 +292,13 @@ export default function NotebookClient() {
 
 
   const handleDeleteFolder = async (folderToDelete: string) => {
-      if (!details || !activeTab) return;
-      const currentSection = details.notebook.sections.find(s => s.id === activeTab);
+      if (!details || !activeSectionId) return;
+      const currentSection = details.notebook.sections.find(s => s.id === activeSectionId);
       if (!currentSection) return;
 
       const updatedFolders = (currentSection.folders || []).filter(f => f !== folderToDelete);
        const updatedSections = details.notebook.sections.map(s => 
-          s.id === activeTab ? { ...s, folders: updatedFolders } : s
+          s.id === activeSectionId ? { ...s, folders: updatedFolders } : s
       );
 
       try {
@@ -315,7 +317,8 @@ export default function NotebookClient() {
         await updateNoteInSection(notebookId, editingNote.id, noteData);
         toast({ title: "Not Güncellendi" });
       } else {
-        await addNoteToSection(notebookId, activeTab, noteData);
+        if (!activeSectionId) throw new Error("No active section to add note to.");
+        await addNoteToSection(notebookId, activeSectionId, noteData);
         toast({ title: "Not Eklendi" });
       }
     } catch (error) {
@@ -340,7 +343,7 @@ export default function NotebookClient() {
   }
 
   const { notebook, notes } = details;
-  const currentSection = sections.find(s => s.id === activeTab);
+  const currentSection = sections.find(s => s.id === activeSectionId);
 
   return (
     <div className="h-full flex flex-col sm:px-4">
@@ -350,173 +353,108 @@ export default function NotebookClient() {
         </Button>
       </PageHeader>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col min-h-0">
-        <div className="flex-shrink-0 border-b">
-           <ScrollArea className="w-full">
-            <div className="flex items-center p-2">
-                <Reorder.Group axis="x" values={sections} onReorder={handleReorderSections} className="flex items-center">
-                    <TabsList className="h-auto bg-transparent p-0 border-none">
-                        {sections.map(section => {
-                            const isActive = activeTab === section.id;
-                            return (
-                                <Reorder.Item key={section.id} value={section} as="div" className="group relative" style={{cursor: 'grab'}}>
-                                    <TabsTrigger
-                                        value={section.id}
-                                        className={cn(
-                                            "pr-8 text-white bg-gradient-to-br transition-all sm:text-base py-2.5 px-6",
-                                            section.color,
-                                            isActive 
-                                                ? "ring-2 ring-offset-2 ring-ring opacity-100" 
-                                                : "opacity-80 hover:opacity-100"
-                                        )}
-                                    >
-                                        {section.title}
-                                    </TabsTrigger>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="absolute top-1/2 right-0 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 text-white hover:text-white hover:bg-white/20">
-                                            <MoreVertical className="h-4 w-4"/>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}><Edit className="mr-2 h-4 w-4"/> Düzenle</DropdownMenuItem>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
-                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{section.title}" bölümünü silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                                            </AlertDialog>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </Reorder.Item>
-                            )
-                        })}
-                    </TabsList>
-                </Reorder.Group>
-            </div>
-           </ScrollArea>
-        </div>
-        
-        {sections.map(section => {
-            const sectionNotes = notes.filter(note => note.sectionId === section.id);
-            const notesByFolder = sectionNotes.reduce((acc, note) => {
-                const folderKey = note.folder || "Genel Notlar";
-                if (!acc[folderKey]) acc[folderKey] = [];
-                acc[folderKey].push(note);
-                return acc;
-            }, {} as Record<string, Note[]>);
-            const folderOrder = ['Genel Notlar', ...(section.folders || [])];
+      <div className="flex-grow flex flex-col min-h-0 pt-4">
+         <Accordion type="multiple" className="w-full space-y-4" defaultValue={sections.map(s => s.id)}>
+             {sections.map(section => {
+                 const sectionNotes = notes.filter(note => note.sectionId === section.id);
+                 const notesByFolder = sectionNotes.reduce((acc, note) => {
+                    const folderKey = note.folder || "Genel Notlar";
+                    if (!acc[folderKey]) acc[folderKey] = [];
+                    acc[folderKey].push(note);
+                    return acc;
+                 }, {} as Record<string, Note[]>);
+                 const folderOrder = ['Genel Notlar', ...(section.folders || [])];
 
-            return (
-              <TabsContent key={section.id} value={section.id} className="flex-grow overflow-y-auto pt-4 relative">
-                    <div className="space-y-4" key={activeTab}>
-                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={folderOrder}>
-                            {folderOrder.map((folderName, folderIndex) => {
-                                const folderNotes = notesByFolder[folderName];
-                                if (!folderNotes || folderNotes.length === 0) {
-                                    if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
-                                }
-                                const colorClass = folderColors[folderIndex % folderColors.length];
-                                return (
-                                    <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-xl">
-                                         <div className={cn("flex items-center text-white w-full", `bg-gradient-to-br ${colorClass}`)}>
-                                            <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
-                                                <div className="bg-white/20 text-white flex items-center justify-center rounded-lg shrink-0 size-12">
-                                                    <Folder className="h-6 w-6"/>
-                                                </div>
-                                                <div className="flex flex-col justify-center min-w-0">
-                                                    <p className="text-lg font-bold leading-tight truncate">{folderName}</p>
-                                                    <p className="text-white/80 text-sm font-normal truncate">
-                                                        {folderNotes?.length || 0} not
-                                                    </p>
-                                                </div>
-                                            </AccordionTrigger>
-                                             <div className="flex items-center pr-2">
-                                                <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => {e.stopPropagation(); handleAddNewNote(folderName === 'Genel Notlar' ? '' : folderName)}}>
-                                                    <Plus className="h-5 w-5"/>
-                                                </Button>
+                 return (
+                    <AccordionItem key={section.id} value={section.id} className="border-b-0 overflow-hidden rounded-xl">
+                        <div className={cn("flex items-center text-white w-full", `bg-gradient-to-br ${section.color}`)}>
+                            <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
+                                <span className="p-2 rounded-md bg-white/20 text-xl">{notebook.icon || '🗒️'}</span>
+                                <div className="flex flex-col justify-center min-w-0">
+                                    <p className="text-xl font-bold leading-tight truncate">{section.title}</p>
+                                    <p className="text-white/80 text-sm font-normal truncate">
+                                        {sectionNotes?.length || 0} not
+                                    </p>
+                                </div>
+                            </AccordionTrigger>
+                            <div className="flex items-center pr-2">
+                                <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => {e.stopPropagation(); setActiveSectionId(section.id); handleAddNewNote(); }}>
+                                    <Plus className="h-5 w-5"/>
+                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => e.stopPropagation()}>
+                                            <MoreVertical className="h-4 w-4"/>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={() => handleOpenSectionDialog(section)}><Edit className="mr-2 h-4 w-4"/> Bölümü Düzenle</DropdownMenuItem>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Bölümü Sil</DropdownMenuItem></AlertDialogTrigger>
+                                            <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{section.title}" bölümünü silmek istediğinizden emin misiniz? İçindeki tüm notlar da silinecektir.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSection(section.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                        </AlertDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                        <AccordionContent className="p-4 bg-background rounded-b-xl border-x border-b">
+                            <div className="space-y-4">
+                                {folderOrder.map((folderName, folderIndex) => {
+                                    const folderNotes = notesByFolder[folderName];
+                                    if (!folderNotes || folderNotes.length === 0) {
+                                        if (folderName === 'Genel Notlar' && Object.keys(notesByFolder).length > 1) return null;
+                                    }
+                                    return (
+                                        <div key={folderName}>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h4 className="font-semibold">{folderName}</h4>
                                                 {folderName !== 'Genel Notlar' && (
                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="shrink-0 text-white/70 hover:text-white hover:bg-white/20" onClick={(e) => e.stopPropagation()}>
-                                                                <MoreVertical className="h-4 w-4"/>
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
                                                         <DropdownMenuContent>
-                                                            <DropdownMenuItem onClick={() => handleOpenFolderDialog({oldName: folderName, sectionId: section.id})}><Edit className="mr-2 h-4 w-4"/>Düzenle</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => { setActiveSectionId(section.id); handleOpenFolderDialog({oldName: folderName, sectionId: section.id}); }}><Edit className="mr-2 h-4 w-4"/>Yeniden Adlandır</DropdownMenuItem>
                                                             <AlertDialog>
-                                                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Sil</DropdownMenuItem></AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription></AlertDialogHeader>
-                                                                    <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
-                                                                </AlertDialogContent>
+                                                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Klasörü Sil</DropdownMenuItem></AlertDialogTrigger>
+                                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>"{folderName}" klasörünü silmek istediğinizden emin misiniz? İçindeki notlar "Genel Notlar" klasörüne taşınacaktır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFolder(folderName)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
                                                             </AlertDialog>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 )}
+                                            </div>
+                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                {folderNotes?.map(note => (
+                                                    <StickyNoteCard 
+                                                        key={note.id} note={note}
+                                                        onOpenDialog={() => { setActiveSectionId(section.id); handleOpenNoteDialog(note); }}
+                                                        onDelete={() => handleDeleteNote(note.id)}
+                                                    />
+                                                ))}
                                              </div>
                                         </div>
-                                        <AccordionContent className="p-4 bg-background rounded-b-xl border-x border-b">
-                                            {(!folderNotes || folderNotes.length === 0) && <p className='text-sm text-muted-foreground text-center py-4'>Bu klasör boş.</p>}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                            {folderNotes?.map(note => (
-                                                <StickyNoteCard 
-                                                    key={note.id} note={note}
-                                                    onOpenDialog={() => handleOpenNoteDialog(note)}
-                                                    onDelete={() => handleDeleteNote(note.id)}
-                                                />
-                                            ))}
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                )
-                            })}
-                        </Accordion>
-                    </div>
-                    <div className="fixed bottom-24 right-8 z-10 md:bottom-8">
-                       <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button className="rounded-full w-16 h-16 shadow-lg" size="icon">
-                                    <Plus className="h-8 w-8" />
+                                    )
+                                })}
+                            </div>
+                            <div className="mt-4 flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => { setActiveSectionId(section.id); handleAddNewNote() }}>
+                                    <StickyNote className="mr-2 h-4 w-4"/> Yeni Not
                                 </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" sideOffset={12}>
-                                <DropdownMenuItem onClick={() => handleAddNewNote(currentSection?.folders?.[0] || '')}>
-                                    <StickyNote className="mr-2 h-4 w-4"/> Metin Notu Ekle
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
-                                    <FileImage className="mr-2 h-4 w-4"/> Görsel Notu Ekle
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleOpenFolderDialog(null)}>
+                                <Button variant="outline" size="sm" onClick={() => { setActiveSectionId(section.id); handleOpenFolderDialog(null); }}>
                                     <FolderPlus className="mr-2 h-4 w-4"/> Yeni Klasör
-                                </DropdownMenuItem>
-                                 <DropdownMenuItem onClick={() => handleOpenSectionDialog(null)}>
-                                    <Plus className="mr-2 h-4 w-4" /> Yeni Bölüm Ekle
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                       </DropdownMenu>
-                       <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageNoteAdd} />
-                       <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>{editingFolder ? "Klasörü Düzenle" : "Yeni Klasör Oluştur"}</DialogTitle>
-                            </DialogHeader>
-                            <Input 
-                                placeholder="Klasör adı" 
-                                value={newFolderName} 
-                                onChange={e => setNewFolderName(e.target.value)} 
-                                onKeyDown={e => e.key === 'Enter' && (editingFolder ? handleUpdateFolder() : handleAddNewFolder())}
-                            />
-                            <DialogFooter>
-                                <Button type="button" variant="ghost" onClick={() => setIsFolderDialogOpen(false)}>İptal</Button>
-                                <Button onClick={editingFolder ? handleUpdateFolder : handleAddNewFolder}>
-                                    {editingFolder ? 'Güncelle' : 'Oluştur'}
                                 </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                       </Dialog>
-                   </div>
-              </TabsContent>
-        )})}
-      </Tabs>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                 )
+             })}
+         </Accordion>
+
+        <div className="fixed bottom-24 right-8 z-10 md:bottom-8">
+            <Button className="rounded-full w-16 h-16 shadow-lg" size="icon" onClick={() => handleOpenSectionDialog(null)}>
+                <Plus className="h-8 w-8" />
+            </Button>
+            <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageNoteAdd} />
+        </div>
+      </div>
       
       <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
         <DialogContent>
@@ -537,6 +475,27 @@ export default function NotebookClient() {
             </DialogFooter>
         </DialogContent>
      </Dialog>
+     
+      <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingFolder ? "Klasörü Düzenle" : "Yeni Klasör Oluştur"}</DialogTitle>
+            </DialogHeader>
+            <Input 
+                placeholder="Klasör adı" 
+                value={newFolderName} 
+                onChange={e => setNewFolderName(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && (editingFolder ? handleUpdateFolder() : handleAddNewFolder())}
+            />
+            <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setIsFolderDialogOpen(false)}>İptal</Button>
+                <Button onClick={editingFolder ? handleUpdateFolder : handleAddNewFolder}>
+                    {editingFolder ? 'Güncelle' : 'Oluştur'}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+       </Dialog>
+     
      <NoteEditForm 
         note={editingNote} 
         sectionFolders={currentSection?.folders || []}
@@ -677,6 +636,3 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
     </Dialog>
   );
 }
-
-
-    
