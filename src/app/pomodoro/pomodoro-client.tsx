@@ -206,7 +206,7 @@ export function PomodoroClient() {
     const activeProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-        <div className="h-full flex flex-col items-center justify-center gap-8 pb-24">
+        <div className="h-full flex flex-col items-center justify-center gap-8">
             <PageHeader title="Pomodoro Zamanlayıcı" className="mb-0" />
             
             <AnimatePresence>
@@ -247,10 +247,9 @@ export function PomodoroClient() {
                             fill="transparent"
                             stroke="url(#gradient)"
                             strokeWidth="8"
-                            opacity="0.2"
                         />
                         <motion.circle
-                            cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="10" fill="transparent"
+                            cx="50" cy="50" r="45" stroke="hsl(var(--background))" strokeWidth="10" fill="transparent"
                             strokeLinecap="round" transform="rotate(-90 50 50)" pathLength="1"
                             strokeDasharray="1"
                             initial={{ strokeDashoffset: 1 }}
@@ -355,7 +354,7 @@ export function PomodoroClient() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
                              <DropdownMenuSeparator />
-                             <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)}>Projeleri Yönet</DropdownMenuMenuItem>
+                             <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)}>Projeleri Yönet</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -418,5 +417,7 @@ export function PomodoroClient() {
         </div>
     );
 }
+
+    
 
     
