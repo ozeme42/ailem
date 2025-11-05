@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import * as React from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PomodoroProject, PomodoroSession } from "@/lib/data";
-import { onPomodoroProjectsUpdate, addPomodoroProject, deletePomodoroProject, addPomodoroSession } from "@/lib/dataService";
+import { onPomodoroProjectsUpdate, addPomodoroProject, deletePomodoroProject, addPomodoroSession, onPomodoroSessionsForUserUpdate } from "@/lib/dataService";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
@@ -44,6 +45,7 @@ export function PomodoroClient() {
     const [timeLeft, setTimeLeft] = React.useState(defaultDurations.pomodoro);
     const [isActive, setIsActive] = React.useState(false);
     const [projects, setProjects] = React.useState<PomodoroProject[]>([]);
+    const [allSessions, setAllSessions] = React.useState<PomodoroSession[]>([]);
     const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
     const [sessionsToday, setSessionsToday] = React.useState(0);
     const [isProjectModalOpen, setIsProjectModalOpen] = React.useState(false);
@@ -58,9 +60,12 @@ export function PomodoroClient() {
         if (!user) return;
         const unsubscribeProjects = onPomodoroProjectsUpdate(user.uid, setProjects);
         const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
+        const unsubscribeSessions = onPomodoroSessionsForUserUpdate(user.uid, setAllSessions);
+
         return () => {
             unsubscribeProjects();
             unsubscribeSounds();
+            unsubscribeSessions();
         };
     }, [user]);
     
@@ -111,7 +116,7 @@ export function PomodoroClient() {
             interval = setInterval(() => {
                 setTimeLeft(time => time - 1);
             }, 1000);
-        } else if (isActive && timeLeft <= 0) { // Changed to <= to be safe
+        } else if (isActive && timeLeft <= 0) {
             handleTimerEnd();
         }
         return () => {
@@ -178,6 +183,17 @@ export function PomodoroClient() {
         }
     };
     
+    const projectStats = React.useMemo(() => {
+        const stats = new Map<string, { sessionCount: number, totalSeconds: number }>();
+        allSessions.forEach(session => {
+            const current = stats.get(session.projectId) || { sessionCount: 0, totalSeconds: 0 };
+            current.sessionCount++;
+            current.totalSeconds += session.durationSeconds;
+            stats.set(session.projectId, current);
+        });
+        return stats;
+    }, [allSessions]);
+    
     const totalDuration = defaultDurations[mode];
     const progress = (1 - timeLeft / totalDuration) * 100;
     
@@ -219,7 +235,7 @@ export function PomodoroClient() {
                                 <stop offset="100%" stopColor="hsl(var(--primary))" />
                             </linearGradient>
                         </defs>
-                        <motion.circle cx="50" cy="50" r="45" stroke="hsl(var(--primary) / 0.1)" strokeWidth="4" fill="transparent" />
+                        <motion.circle cx="50" cy="50" r="45" stroke="hsl(var(--primary) / 0.2)" strokeWidth="4" fill="transparent" />
                         <motion.circle
                             cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="4" fill="transparent"
                             strokeLinecap="round" transform="rotate(-90 50 50)" pathLength="1"
@@ -301,11 +317,19 @@ export function PomodoroClient() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                           {projects.map(project => (
+                           {projects.map(project => {
+                               const stats = projectStats.get(project.id);
+                               return (
                                <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg">
                                    <div className="flex items-center gap-3">
                                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: project.color}} />
-                                       <span className="font-medium">{project.title}</span>
+                                       <div>
+                                           <span className="font-medium">{project.title}</span>
+                                           <div className="text-xs text-muted-foreground flex gap-3">
+                                                <span>{stats?.sessionCount || 0} seans</span>
+                                                <span>{formatTime(stats?.totalSeconds || 0)}</span>
+                                           </div>
+                                       </div>
                                    </div>
                                     <div className="flex items-center gap-2">
                                         {selectedProjectId === project.id ? (
@@ -330,7 +354,7 @@ export function PomodoroClient() {
                                         </AlertDialog>
                                    </div>
                                </div>
-                           ))}
+                           )})}
                         </div>
                         <div className="flex gap-2">
                             <Input value={newProjectName} onChange={e => setNewProjectName(e.target.value)} placeholder="Yeni proje adı..."/>

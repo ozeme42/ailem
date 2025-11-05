@@ -2140,6 +2140,15 @@ export const addPomodoroProject = async (data: Omit<PomodoroProject, 'id' | 'fam
     return addDoc(collection(db, 'pomodoroProjects'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
 export const deletePomodoroProject = (id: string) => deleteDoc(doc(db, "pomodoroProjects", id));
+
+export const onPomodoroSessionsForUserUpdate = (memberId: string, callback: (sessions: PomodoroSession[]) => void) => {
+  const q = query(collection(db, 'pomodoroSessions'), where('memberId', '==', memberId));
+  return onSnapshot(q, (snapshot) => {
+    const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PomodoroSession));
+    callback(sessions);
+  });
+};
+
 export const addPomodoroSession = async (data: Omit<PomodoroSession, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
