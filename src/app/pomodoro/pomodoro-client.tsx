@@ -11,10 +11,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink } from "lucide-react";
+import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink, Music } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { onAmbientSoundsUpdate } from "@/lib/dataService";
+import { AmbientSound } from "@/lib/data";
 
 
 function formatTime(seconds: number) {
@@ -44,11 +47,18 @@ export function PomodoroClient() {
     const [isProjectModalOpen, setIsProjectModalOpen] = React.useState(false);
     const [newProjectName, setNewProjectName] = React.useState("");
     const [isFullScreen, setIsFullScreen] = React.useState(false);
+    const [ambientSounds, setAmbientSounds] = React.useState<AmbientSound[]>([]);
+    const [selectedSoundId, setSelectedSoundId] = React.useState<string | null>(null);
+    const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
     React.useEffect(() => {
         if (!user) return;
-        const unsubscribe = onPomodoroProjectsUpdate(user.uid, setProjects);
-        return () => unsubscribe();
+        const unsubscribeProjects = onPomodoroProjectsUpdate(user.uid, setProjects);
+        const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
+        return () => {
+            unsubscribeProjects();
+            unsubscribeSounds();
+        };
     }, [user]);
     
     React.useEffect(() => {
@@ -56,7 +66,7 @@ export function PomodoroClient() {
             setSelectedProjectId(projects[0].id);
         }
     }, [projects, selectedProjectId]);
-    
+
     const switchMode = React.useCallback((newMode: TimerMode) => {
         setMode(newMode);
         setTimeLeft(defaultDurations[newMode]);
@@ -92,20 +102,43 @@ export function PomodoroClient() {
         }
     }, [mode, selectedProjectId, sessionsToday, toast, user, switchMode]);
 
-
     React.useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
         if (isActive && timeLeft > 0) {
             interval = setInterval(() => {
                 setTimeLeft(time => time - 1);
             }, 1000);
-        } else if (isActive && timeLeft === 0) {
+        } else if (isActive && timeLeft <= 0) { // Changed to <= to be safe
             handleTimerEnd();
         }
         return () => {
             if (interval) clearInterval(interval);
         };
     }, [isActive, timeLeft, handleTimerEnd]);
+    
+      React.useEffect(() => {
+        if (audioRef.current) {
+            const sound = ambientSounds.find(s => s.id === selectedSoundId);
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+            if (sound) {
+                audioRef.current.src = sound.url;
+                audioRef.current.loop = sound.loop;
+                audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+            }
+        }
+    }, [selectedSoundId, ambientSounds]);
+
+     React.useEffect(() => {
+        audioRef.current = new Audio();
+        audioRef.current.preload = 'auto';
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
     
     const resetTimer = () => {
         setIsActive(false);
@@ -179,21 +212,28 @@ export function PomodoroClient() {
                         <stop offset="100%" stopColor="hsl(var(--primary))" />
                     </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="45" fill="url(#gradient)" />
+                 <motion.circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  stroke="hsl(var(--primary) / 0.1)"
+                  strokeWidth="4"
+                  fill="transparent"
+                />
                 <motion.circle
                   cx="50"
                   cy="50"
                   r="45"
-                  fill="hsl(var(--background))"
-                  stroke="none"
+                  stroke="url(#gradient)"
                   strokeWidth="4"
+                  fill="transparent"
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
                   pathLength="1"
                   strokeDasharray="1"
-                  strokeDashoffset={progress / 100}
-                  initial={{ strokeDashoffset: 0 }}
-                  animate={{ strokeDashoffset: progress / 100 }}
+                  strokeDashoffset={1 - progress / 100}
+                  initial={{ strokeDashoffset: 1 }}
+                  animate={{ strokeDashoffset: 1- progress / 100 }}
                   transition={{ duration: 0.5 }}
                 />
               </motion.svg>
@@ -220,9 +260,29 @@ export function PomodoroClient() {
                         {isActive ? <Pause className="mr-2 h-8 w-8"/> : <Play className="mr-2 h-8 w-8"/>}
                         {isActive ? 'Durdur' : 'Başlat'}
                     </Button>
-                     <Button size="icon" variant="outline" className="rounded-full w-16 h-16" onClick={() => setIsProjectModalOpen(true)}>
-                        <Settings />
-                    </Button>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                             <Button
+                                size="icon"
+                                variant={selectedSoundId ? "default" : "outline"}
+                                className="rounded-full w-16 h-16"
+                                aria-label="Toggle Sound"
+                            >
+                                <Music className="h-7 w-7"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuLabel>Ambiyans Sesi</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuRadioGroup value={selectedSoundId || ''} onValueChange={setSelectedSoundId}>
+                                {ambientSounds.map(sound => (
+                                     <DropdownMenuRadioItem key={sound.id} value={sound.id}>{sound.name}</DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
@@ -275,3 +335,5 @@ export function PomodoroClient() {
         </div>
     );
 }
+
+    
