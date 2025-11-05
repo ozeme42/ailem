@@ -369,7 +369,7 @@ export default function NotebookClient() {
                  return (
                     <AccordionItem key={section.id} value={section.id} className="border-b-0 overflow-hidden">
                         <div className={cn("flex items-center justify-between text-white w-full", `bg-gradient-to-br ${section.color}`)}>
-                             <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
+                            <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                 <span className="p-2 rounded-md bg-white/20 text-xl">{notebook.icon || '🗒️'}</span>
                                 <div className="flex flex-col justify-center min-w-0">
                                     <p className="text-xl font-bold leading-tight truncate">{section.title}</p>
@@ -407,7 +407,7 @@ export default function NotebookClient() {
                                     }
                                      const colorClass = folderColors[folderIndex % folderColors.length];
                                     return (
-                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-none">
+                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden">
                                             <Card className={cn('text-white border-0 rounded-none', `bg-gradient-to-br ${colorClass}`)}>
                                                 <CardHeader className="p-0">
                                                     <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline w-full">
@@ -594,6 +594,7 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
   };
   
   const folderOptions = [{label: 'Genel Notlar', value: ''}, ...sectionFolders.map(f => ({ label: f, value: f }))];
+  const watchedColor = form.watch('color');
 
   if (!note) return null;
 
@@ -607,10 +608,10 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
             </DialogHeader>
             <div className="py-4 space-y-4">
               <FormField name="title" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>Başlık</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Başlık</FormLabel><FormControl><Input {...field} className={cn(watchedColor)} /></FormControl><FormMessage /></FormItem>
               )}/>
               <FormField name="content" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>İçerik</FormLabel><FormControl><Textarea {...field} rows={8} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>İçerik</FormLabel><FormControl><Textarea {...field} rows={8} className={cn(watchedColor)} /></FormControl><FormMessage /></FormItem>
               )}/>
               
               <Collapsible>
@@ -644,5 +645,3 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
     </Dialog>
   );
 }
-
-    
