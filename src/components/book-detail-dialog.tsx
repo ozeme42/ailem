@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -44,38 +45,40 @@ export function BookDetailDialog({ book, isOpen, onOpenChange, onEdit, onAddToLi
               data-ai-hint="book cover"
             />
           </div>
-          <div className="flex flex-col p-6 sm:p-0">
-            <ScrollArea className="flex-grow pr-1">
-                <div className="sm:hidden mb-4">
-                     <Image
-                      src={book.image || 'https://placehold.co/300x450.png'}
-                      alt={book.title}
-                      width={300}
-                      height={450}
-                      className="w-full h-auto object-cover rounded-md aspect-[2/3]"
-                      data-ai-hint="book cover"
-                    />
-                </div>
-                <DialogHeader>
-                  <Badge variant="secondary" className="w-fit mb-2">Kitap</Badge>
-                  <DialogTitle className="text-3xl font-bold">{book.title}</DialogTitle>
-                  <DialogDescription className="text-lg">{book.author}</DialogDescription>
-                </DialogHeader>
-                <div className="flex items-center gap-2 my-4">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`h-5 w-5 ${i < Math.floor(book.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
-                    ))}
-                  </div>
-                  <span className="text-sm text-muted-foreground">({(book.rating || 0).toFixed(1)})</span>
-                </div>
-                <p className="text-sm text-muted-foreground flex-grow">{book.description}</p>
-                <div className="text-sm text-muted-foreground mt-4 space-y-1">
-                  {book.tags && book.tags.length > 0 && <p><strong>Tür:</strong> {book.tags.join(', ')}</p>}
-                  {book.pageCount && <p><strong>Sayfa Sayısı:</strong> {book.pageCount}</p>}
+          <div className="flex flex-col p-0 sm:p-0 flex-grow min-h-0">
+             <ScrollArea className="flex-grow">
+                <div className="p-6 sm:pr-0">
+                    <div className="sm:hidden mb-4">
+                        <Image
+                        src={book.image || 'https://placehold.co/300x450.png'}
+                        alt={book.title}
+                        width={300}
+                        height={450}
+                        className="w-full h-auto object-cover rounded-md aspect-[2/3]"
+                        data-ai-hint="book cover"
+                        />
+                    </div>
+                    <DialogHeader>
+                    <Badge variant="secondary" className="w-fit mb-2">Kitap</Badge>
+                    <DialogTitle className="text-3xl font-bold">{book.title}</DialogTitle>
+                    <DialogDescription className="text-lg">{book.author}</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center gap-2 my-4">
+                    <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-5 w-5 ${i < Math.floor(book.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
+                        ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground">({(book.rating || 0).toFixed(1)})</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground flex-grow">{book.description}</p>
+                    <div className="text-sm text-muted-foreground mt-4 space-y-1">
+                    {book.tags && book.tags.length > 0 && <p><strong>Tür:</strong> {book.tags.join(', ')}</p>}
+                    {book.pageCount && <p><strong>Sayfa Sayısı:</strong> {book.pageCount}</p>}
+                    </div>
                 </div>
             </ScrollArea>
-             <DialogFooter className="mt-6 sm:justify-start gap-2 flex-shrink-0 border-t pt-4 sm:border-0 sm:pt-0">
+             <DialogFooter className="mt-auto p-6 sm:p-0 sm:pt-4 sm:justify-start gap-2 flex-shrink-0 border-t sm:border-0">
               {onEdit && (
                  <Button variant="outline" onClick={handleEditClick}>
                     <Edit className="mr-2 h-4 w-4"/> Düzenle
