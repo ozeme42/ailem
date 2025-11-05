@@ -47,7 +47,6 @@ export function PomodoroClient() {
     const [projects, setProjects] = React.useState<PomodoroProject[]>([]);
     const [allSessions, setAllSessions] = React.useState<PomodoroSession[]>([]);
     const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
-    const [sessionsToday, setSessionsToday] = React.useState(0);
     const [isProjectModalOpen, setIsProjectModalOpen] = React.useState(false);
     const [newProjectName, setNewProjectName] = React.useState("");
     const [isFullScreen, setIsFullScreen] = React.useState(false);
@@ -87,10 +86,17 @@ export function PomodoroClient() {
             title: "🎉 Süre Doldu!",
             description: mode === 'pomodoro' ? "Harika iş, şimdi kısa bir mola zamanı!" : "Mola bitti, tekrar iş başına!",
         });
+        
+        const completedSessionsToday = allSessions.filter(s => {
+            const sessionDate = new Date(s.startTime);
+            const today = new Date();
+            return sessionDate.getDate() === today.getDate() &&
+                   sessionDate.getMonth() === today.getMonth() &&
+                   sessionDate.getFullYear() === today.getFullYear();
+        }).length;
 
         if (mode === 'pomodoro' && user) {
-            const newSessionCount = sessionsToday + 1;
-            setSessionsToday(newSessionCount);
+            const newSessionCount = completedSessionsToday + 1;
             if (selectedProjectId) {
                  addPomodoroSession({
                     projectId: selectedProjectId,
@@ -108,7 +114,7 @@ export function PomodoroClient() {
         } else {
             switchMode('pomodoro');
         }
-    }, [mode, selectedProjectId, sessionsToday, toast, user, switchMode]);
+    }, [mode, selectedProjectId, allSessions, toast, user, switchMode]);
 
     React.useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
@@ -129,13 +135,13 @@ export function PomodoroClient() {
             const sound = ambientSounds.find(s => s.id === selectedSoundId);
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
-            if (sound) {
+            if (sound && isActive) {
                 audioRef.current.src = sound.url;
                 audioRef.current.loop = sound.loop;
                 audioRef.current.play().catch(e => console.error("Error playing audio:", e));
             }
         }
-    }, [selectedSoundId, ambientSounds]);
+    }, [selectedSoundId, ambientSounds, isActive]);
 
      React.useEffect(() => {
         audioRef.current = new Audio();
@@ -200,7 +206,7 @@ export function PomodoroClient() {
     const activeProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-        <div className="h-full flex flex-col items-center justify-center gap-8">
+        <div className="h-full flex flex-col items-center justify-center gap-8 pb-24">
             <PageHeader title="Pomodoro Zamanlayıcı" className="mb-0" />
             
             <AnimatePresence>
@@ -240,14 +246,13 @@ export function PomodoroClient() {
                             cx="50" cy="50" r="45"
                             fill="transparent"
                             stroke="url(#gradient)"
-                            strokeWidth="4"
+                            strokeWidth="8"
                             opacity="0.2"
                         />
                         <motion.circle
-                            cx="50" cy="50" r="45" stroke="hsl(var(--background))" strokeWidth="5" fill="transparent"
+                            cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="10" fill="transparent"
                             strokeLinecap="round" transform="rotate(-90 50 50)" pathLength="1"
                             strokeDasharray="1"
-                            strokeDashoffset={progress / 100}
                             initial={{ strokeDashoffset: 1 }}
                             animate={{ strokeDashoffset: 1 - progress / 100 }}
                             transition={{ duration: 1, ease: 'linear' }}
@@ -350,7 +355,7 @@ export function PomodoroClient() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
                              <DropdownMenuSeparator />
-                             <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)}>Projeleri Yönet</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)}>Projeleri Yönet</DropdownMenuMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -413,3 +418,5 @@ export function PomodoroClient() {
         </div>
     );
 }
+
+    
