@@ -179,18 +179,21 @@ export function PomodoroClient() {
                         <stop offset="100%" stopColor="hsl(var(--primary))" />
                     </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradient)" strokeWidth="4" />
+                <circle cx="50" cy="50" r="45" fill="url(#gradient)" />
                 <motion.circle
                   cx="50"
                   cy="50"
                   r="45"
-                  fill="none"
-                  stroke="hsl(var(--background))"
+                  fill="hsl(var(--background))"
+                  stroke="none"
                   strokeWidth="4"
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
-                  strokeDasharray="282.74"
-                  strokeDashoffset={282.74 * (1 - progress / 100)}
+                  pathLength="1"
+                  strokeDasharray="1"
+                  strokeDashoffset={progress / 100}
+                  initial={{ strokeDashoffset: 0 }}
+                  animate={{ strokeDashoffset: progress / 100 }}
                   transition={{ duration: 0.5 }}
                 />
               </motion.svg>
