@@ -179,7 +179,7 @@ export function PomodoroClient() {
                         <stop offset="100%" stopColor="hsl(var(--primary))" />
                     </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--border))" strokeWidth="4" />
+                <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--primary) / 0.2)" strokeWidth="4" />
                 <motion.circle
                   cx="50"
                   cy="50"
