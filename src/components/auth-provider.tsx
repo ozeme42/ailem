@@ -225,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authRoutes = ['/login', '/signup'];
   const isAuthRoute = authRoutes.includes(pathname);
   const isJoinFamilyRoute = pathname.startsWith('/join-family');
-  const isFullScreenRoute = pathname.startsWith('/library/session/');
+  const isFullScreenRoute = pathname.startsWith('/library/session/') || pathname.startsWith('/pomodoro');
 
   
   useEffect(() => {
@@ -257,7 +257,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
   }
 
-  const noPaddingRoutes = ['/shopping', '/budget', '/pomodoro'];
+  const noPaddingRoutes = ['/shopping', '/budget'];
   const hasPadding = !noPaddingRoutes.some(route => pathname.startsWith(route));
   const isShoppingPage = pathname.startsWith('/shopping');
 
