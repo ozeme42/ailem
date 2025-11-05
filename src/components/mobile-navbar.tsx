@@ -13,7 +13,7 @@ const menuItems = [
   { href: "/", label: "Ailem", icon: Users },
   { href: "/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/library", label: "Kütüphane", icon: Library },
-  { href: "/education", label: "Eğitim", icon: GraduationCap },
+  { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
   { href: "/budget", label: "Bütçe", icon: Wallet },
 ];
 
