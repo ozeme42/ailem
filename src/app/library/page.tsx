@@ -340,14 +340,14 @@ export default function LibraryPage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-6">
                     <div>
-                        <div className="flex justify-between text-sm mb-1">
+                        <div className="flex justify-between text-xs sm:text-sm mb-1">
                             <span className="text-white/80">Sayfa Hedefi</span>
                             <span className="font-semibold">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly?.pages || 0}</span>
                         </div>
                         <Progress value={monthlyGoalProgress.pages} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
                     </div>
                      <div>
-                        <div className="flex justify-between text-sm mb-1">
+                        <div className="flex justify-between text-xs sm:text-sm mb-1">
                             <span className="text-white/80">Kitap Hedefi</span>
                              <span className="font-semibold">{monthlyGoalProgress.booksRead} / {readingGoals.monthly?.books || 0}</span>
                         </div>
@@ -662,5 +662,7 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
         </Card>
     )
 }
+
+    
 
     
