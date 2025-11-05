@@ -11,8 +11,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check } from "lucide-react";
-import { motion } from "framer-motion";
+import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -43,6 +43,7 @@ export function PomodoroClient() {
     const [sessionsToday, setSessionsToday] = React.useState(0);
     const [isProjectModalOpen, setIsProjectModalOpen] = React.useState(false);
     const [newProjectName, setNewProjectName] = React.useState("");
+    const [isFullScreen, setIsFullScreen] = React.useState(false);
 
     React.useEffect(() => {
         if (!user) return;
@@ -150,18 +151,41 @@ export function PomodoroClient() {
         <div className="h-full flex flex-col items-center justify-center p-4 gap-8 pb-24">
             <PageHeader title="Pomodoro Zamanlayıcı" className="mb-0" />
             
+            <AnimatePresence>
+            {isFullScreen && (
+                <motion.div 
+                    className="fixed inset-0 bg-black/80 z-40 backdrop-blur-sm"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                />
+            )}
+            </AnimatePresence>
+            
             <motion.div
               layout
-              className="relative w-72 h-72 sm:w-80 sm:h-80 rounded-full flex items-center justify-center shadow-2xl bg-card"
+              className={cn(
+                "relative w-72 h-72 sm:w-80 sm:h-80 rounded-full flex items-center justify-center shadow-2xl bg-card",
+                isFullScreen && "fixed inset-0 w-screen h-screen max-w-none rounded-none p-0 flex flex-col items-center justify-center gap-8 z-50 bg-transparent"
+              )}
+               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
               <motion.svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                 <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                        <stop offset="25%" stopColor="hsl(var(--chart-5))" />
+                        <stop offset="50%" stopColor="hsl(var(--chart-3))" />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" />
+                    </linearGradient>
+                </defs>
                 <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--border))" strokeWidth="4" />
                 <motion.circle
                   cx="50"
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke="hsl(var(--primary))"
+                  stroke="url(#gradient)"
                   strokeWidth="4"
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
@@ -171,8 +195,11 @@ export function PomodoroClient() {
                 />
               </motion.svg>
               <div className="relative text-center">
-                <h2 className="text-6xl sm:text-7xl font-bold font-mono tracking-tighter">{formatTime(timeLeft)}</h2>
-                <p className="text-muted-foreground">{activeProject?.title || "Proje Seçilmedi"}</p>
+                <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
+                    {isFullScreen ? <Shrink/> : <Expand/>}
+                </Button>
+                <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
+                <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
               </div>
             </motion.div>
 
