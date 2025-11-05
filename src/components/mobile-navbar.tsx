@@ -21,7 +21,7 @@ export function MobileNavbar() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
 
-  if (!isMobile) {
+  if (!isMobile || pathname.startsWith('/pomodoro')) {
     return null;
   }
 
