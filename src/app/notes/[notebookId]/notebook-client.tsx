@@ -354,7 +354,7 @@ export default function NotebookClient() {
       </PageHeader>
       
       <div className="flex-grow flex flex-col min-h-0 pt-4">
-         <Accordion type="multiple" className="w-full space-y-4">
+         <Accordion type="multiple" className="w-full">
              {sections.map(section => {
                  const sectionNotes = notes.filter(note => note.sectionId === section.id);
                  const notesByFolder = sectionNotes.reduce((acc, note) => {
@@ -366,7 +366,7 @@ export default function NotebookClient() {
                  const folderOrder = ['Genel Notlar', ...(section.folders || [])];
 
                  return (
-                    <AccordionItem key={section.id} value={section.id} className="border-b-0 overflow-hidden rounded-xl">
+                    <AccordionItem key={section.id} value={section.id} className="border-b-0 overflow-hidden">
                         <div className={cn("flex items-center text-white w-full", `bg-gradient-to-br ${section.color}`)}>
                             <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                 <span className="p-2 rounded-md bg-white/20 text-xl">{notebook.icon || '🗒️'}</span>
@@ -398,7 +398,7 @@ export default function NotebookClient() {
                             </div>
                         </div>
                         <AccordionContent className="p-4 bg-background rounded-b-xl border-x border-b">
-                            <Accordion type="multiple" className="w-full space-y-4">
+                             <Accordion type="multiple" className="w-full space-y-2">
                                 {folderOrder.map((folderName, folderIndex) => {
                                     const folderNotes = notesByFolder[folderName];
                                     if (!folderNotes || folderNotes.length === 0) {
@@ -406,7 +406,7 @@ export default function NotebookClient() {
                                     }
                                      const colorClass = folderColors[folderIndex % folderColors.length];
                                     return (
-                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-xl">
+                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg">
                                             <Card className={cn('text-white border-0', `bg-gradient-to-br ${colorClass}`)}>
                                                 <CardHeader className="p-0">
                                                     <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline w-full">
