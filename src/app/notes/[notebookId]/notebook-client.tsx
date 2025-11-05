@@ -369,7 +369,7 @@ export default function NotebookClient() {
                  return (
                     <AccordionItem key={section.id} value={section.id} className="border-b-0 overflow-hidden">
                         <div className={cn("flex items-center justify-between text-white w-full", `bg-gradient-to-br ${section.color}`)}>
-                            <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
+                             <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                 <span className="p-2 rounded-md bg-white/20 text-xl">{notebook.icon || '🗒️'}</span>
                                 <div className="flex flex-col justify-center min-w-0">
                                     <p className="text-xl font-bold leading-tight truncate">{section.title}</p>
@@ -407,26 +407,22 @@ export default function NotebookClient() {
                                     }
                                      const colorClass = folderColors[folderIndex % folderColors.length];
                                     return (
-                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden">
-                                            <Card className={cn('text-white border-0 rounded-none', `bg-gradient-to-br ${colorClass}`)}>
-                                                <CardHeader className="p-0">
-                                                    <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline w-full">
-                                                        <Folder className="h-5 w-5 text-white" />
-                                                        <span className="font-semibold text-base">{folderName} ({(folderNotes || []).length})</span>
-                                                    </AccordionTrigger>
-                                                </CardHeader>
-                                                <AccordionContent className="p-0">
-                                                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-background">
-                                                        {(folderNotes || []).map(note => (
-                                                            <StickyNoteCard 
-                                                                key={note.id} note={note}
-                                                                onOpenDialog={() => { setActiveSectionId(section.id); handleOpenNoteDialog(note); }}
-                                                                onDelete={() => handleDeleteNote(note.id)}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </AccordionContent>
-                                            </Card>
+                                        <AccordionItem key={folderName} value={folderName} className="border-b-0">
+                                             <div className={cn('text-white border-0', `bg-gradient-to-br ${colorClass}`)}>
+                                                <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline w-full">
+                                                    <Folder className="h-5 w-5 text-white" />
+                                                    <span className="font-semibold text-base">{folderName} ({(folderNotes || []).length})</span>
+                                                </AccordionTrigger>
+                                            </div>
+                                            <AccordionContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-background">
+                                                {(folderNotes || []).map(note => (
+                                                    <StickyNoteCard 
+                                                        key={note.id} note={note}
+                                                        onOpenDialog={() => { setActiveSectionId(section.id); handleOpenNoteDialog(note); }}
+                                                        onDelete={() => handleDeleteNote(note.id)}
+                                                    />
+                                                ))}
+                                            </AccordionContent>
                                         </AccordionItem>
                                     )
                                 })}
@@ -608,26 +604,26 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
             </DialogHeader>
             <div className="py-4 space-y-4">
               <FormField name="title" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>Başlık</FormLabel><FormControl><Input {...field} className={cn(watchedColor)} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel className="text-xs">Başlık</FormLabel><FormControl><Input {...field} className={cn(watchedColor, 'h-9 text-sm')} /></FormControl><FormMessage /></FormItem>
               )}/>
               <FormField name="content" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>İçerik</FormLabel><FormControl><Textarea {...field} rows={8} className={cn(watchedColor)} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel className="text-xs">İçerik</FormLabel><FormControl><Textarea {...field} rows={15} className={cn(watchedColor)} /></FormControl><FormMessage /></FormItem>
               )}/>
               
               <Collapsible>
                 <CollapsibleTrigger asChild>
-                    <Button type="button" variant="ghost" className="text-sm text-muted-foreground -ml-4">
-                        <ChevronDown className="h-4 w-4 mr-2" /> Diğer Seçenekleri Göster/Gizle
+                    <Button type="button" variant="ghost" className="text-xs text-muted-foreground -ml-4 h-auto py-1">
+                        <ChevronDown className="h-4 w-4 mr-1" /> Diğer Seçenekler
                     </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-4 pt-4 animate-accordion-down">
                     <FormField name="folder" control={form.control} render={({ field }) => (
-                        <FormItem><FormLabel>Klasör</FormLabel><FormControl><Combobox options={folderOptions} value={field.value || ''} onChange={field.onChange} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.'/></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-xs">Klasör</FormLabel><FormControl><Combobox options={folderOptions} value={field.value || ''} onChange={field.onChange} placeholder='Klasör seç...' notfoundText='Klasör bulunamadı.' className="h-9"/></FormControl><FormMessage /></FormItem>
                     )}/>
                     <FormField name="color" control={form.control} render={({ field }) => (
-                        <FormItem><FormLabel>Renk</FormLabel><FormControl>
+                        <FormItem><FormLabel className="text-xs">Renk</FormLabel><FormControl>
                             <div className="flex gap-2">
-                                {noteColors.map(color => (<button type="button" key={color.name} aria-label={color.name} className={cn("h-7 w-7 rounded-full", color.class, field.value === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => field.onChange(color.class)} />))}
+                                {noteColors.map(color => (<button type="button" key={color.name} aria-label={color.name} className={cn("h-6 w-6 rounded-full", color.class, field.value === color.class && "ring-2 ring-ring ring-offset-2 ring-offset-background")} onClick={() => field.onChange(color.class)} />))}
                             </div>
                         </FormControl><FormMessage /></FormItem>
                     )}/>
