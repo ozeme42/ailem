@@ -1,6 +1,6 @@
 
 
-import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare } from 'lucide-react';
+import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare, Timer } from 'lucide-react';
 import { z } from 'zod';
 
 export interface User {
@@ -522,6 +522,7 @@ export interface PomodoroSession {
     id: string;
     familyId: string;
     projectId: string;
+    memberId: string;
     startTime: string; // ISO string
     endTime: string; // ISO string
     durationSeconds: number;
@@ -626,7 +627,7 @@ export interface Account {
     id: string;
     familyId: string;
     name: string;
-    type: 'cash' | 'bank' | 'credit-card';
+    type: 'cash' | 'bank' | 'credit-card' | 'other';
     balance: number;
     ownerId: string;
     // For credit cards

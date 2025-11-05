@@ -3,7 +3,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic, BudgetCategory } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteList, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic, BudgetCategory, PomodoroProject, PomodoroSession } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
@@ -2125,6 +2125,42 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
         if (unsubscribe) unsubscribe();
     };
 };
+
+// Pomodoro
+export const onPomodoroProjectsUpdate = (memberId: string, callback: (projects: PomodoroProject[]) => void) => {
+    const q = query(collection(db, 'pomodoroProjects'), where('memberId', '==', memberId), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PomodoroProject));
+        callback(projects);
+    });
+};
+export const addPomodoroProject = async (data: Omit<PomodoroProject, 'id' | 'familyId' | 'createdAt'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'pomodoroProjects'), { ...data, familyId, createdAt: new Date().toISOString() });
+};
+export const deletePomodoroProject = (id: string) => deleteDoc(doc(db, "pomodoroProjects", id));
+export const addPomodoroSession = async (data: Omit<PomodoroSession, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+
+    const batch = writeBatch(db);
+    
+    // Add session
+    const sessionRef = doc(collection(db, 'pomodoroSessions'));
+    batch.set(sessionRef, { ...data, familyId });
+
+    // Update project's tracked time
+    const projectRef = doc(db, 'pomodoroProjects', data.projectId);
+    const projectSnap = await getDoc(projectRef);
+    if(projectSnap.exists()){
+        const project = projectSnap.data() as PomodoroProject;
+        const newTrackedTime = (project.trackedTimeSeconds || 0) + data.durationSeconds;
+        batch.update(projectRef, { trackedTimeSeconds: newTrackedTime });
+    }
+
+    await batch.commit();
+}
 
 
     

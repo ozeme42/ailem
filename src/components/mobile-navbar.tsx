@@ -4,14 +4,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, ShoppingCart, Calendar, BookOpen, Target, Zap, Notebook, GraduationCap, BrainCircuit, Columns3, Wallet, Library } from "lucide-react";
+import { Users, ShoppingCart, Calendar, BookOpen, Target, Zap, Notebook, GraduationCap, BrainCircuit, Columns3, Wallet, Library, Timer } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
   { href: "/", label: "Ailem", icon: Users },
-  { href: "/shopping", label: "Alışveriş", icon: ShoppingCart },
+  { href: "/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/library", label: "Kütüphane", icon: Library },
   { href: "/education", label: "Eğitim", icon: GraduationCap },
   { href: "/budget", label: "Bütçe", icon: Wallet },
