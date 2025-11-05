@@ -247,6 +247,15 @@ export function PomodoroClient() {
                             fill="transparent"
                             stroke="url(#gradient)"
                             strokeWidth="8"
+                            pathLength="1"
+                            strokeDasharray="1"
+                            initial={{ strokeDashoffset: 1 }}
+                            animate={{ strokeDashoffset: 0 }}
+                            transition={{
+                                duration: 60,
+                                ease: 'linear',
+                                repeat: Infinity,
+                            }}
                         />
                         <motion.circle
                             cx="50" cy="50" r="45" stroke="hsl(var(--background))" strokeWidth="10" fill="transparent"
@@ -258,7 +267,7 @@ export function PomodoroClient() {
                         />
                     </motion.svg>
                     <div className="relative text-center flex flex-col items-center justify-center h-full">
-                        <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
+                        <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2 z-50", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
                             {isFullScreen ? <Shrink/> : <Expand/>}
                         </Button>
                         <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
@@ -267,7 +276,7 @@ export function PomodoroClient() {
                 </>
              ) : timerStyle === 'bar' ? (
                 <div className="relative text-center flex flex-col items-center justify-center h-full gap-4">
-                    <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
+                    <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2 z-50", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
                         {isFullScreen ? <Shrink/> : <Expand/>}
                     </Button>
                      <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
@@ -276,7 +285,7 @@ export function PomodoroClient() {
                 </div>
              ) : (
                 <div className="relative w-full h-full flex items-center justify-center">
-                    <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
+                    <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0 z-50", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
                         {isFullScreen ? <Shrink/> : <Expand/>}
                     </Button>
                      <motion.svg viewBox="0 0 100 120" className="w-full h-full">
