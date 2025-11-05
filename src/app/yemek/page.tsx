@@ -647,19 +647,19 @@ export default function YemekPlanlamaPage() {
                     </CardContent>
                 </Card>
 
-                 <Card className="mb-8">
+                 <Card className="mb-8 bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg">
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                              <div className="flex-grow">
                                 <CardTitle>Aylık Popüler Tarifler</CardTitle>
-                                <CardDescription>{format(statsDate, 'MMMM yyyy', { locale: tr })}</CardDescription>
+                                <CardDescription className="text-white/80">{format(statsDate, 'MMMM yyyy', { locale: tr })}</CardDescription>
                             </div>
                              <div className="flex items-center gap-2 self-end sm:self-center">
-                                <Button variant="outline" size="icon" onClick={() => setStatsDate(d => subMonths(d, 1))}>
+                                <Button variant="outline" size="icon" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setStatsDate(d => subMonths(d, 1))}>
                                     <ChevronLeft className="h-4 w-4" />
                                 </Button>
-                                <Button variant="outline" onClick={() => setStatsDate(new Date())}>Bu Ay</Button>
-                                <Button variant="outline" size="icon" onClick={() => setStatsDate(d => addMonths(d, 1))}>
+                                <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setStatsDate(new Date())}>Bu Ay</Button>
+                                <Button variant="outline" size="icon" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setStatsDate(d => addMonths(d, 1))}>
                                     <ChevronRight className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -669,17 +669,17 @@ export default function YemekPlanlamaPage() {
                         {monthlyStats.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 {monthlyStats.map((recipe, index) => (
-                                    <div key={`${recipe.id}-${index}`} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50">
-                                        <span className="font-bold text-xl text-primary">{index + 1}</span>
+                                    <div key={`${recipe.id}-${index}`} className="flex items-center gap-3 p-3 rounded-lg bg-white/20 backdrop-blur-sm">
+                                        <span className="font-bold text-xl">{index + 1}</span>
                                         <div>
                                             <p className="font-semibold">{recipe.title}</p>
-                                            <p className="text-sm text-muted-foreground">{recipe.count} kez pişirildi</p>
+                                            <p className="text-sm text-white/80">{recipe.count} kez pişirildi</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                             <p className="text-sm text-muted-foreground text-center py-4">Bu ay için veri bulunamadı.</p>
+                             <p className="text-sm text-white/90 text-center py-4">Bu ay için veri bulunamadı.</p>
                         )}
                     </CardContent>
                 </Card>
@@ -699,7 +699,7 @@ export default function YemekPlanlamaPage() {
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
                                         <Input 
                                         placeholder="Tarif ara..." 
-                                        className="pl-10 bg-white/20 border-0 placeholder:text-white/70"
+                                        className="pl-10 bg-white/20 border-0 placeholder:text-white/70 text-white"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         onClick={(e) => e.stopPropagation()}
