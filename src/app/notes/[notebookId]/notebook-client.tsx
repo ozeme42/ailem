@@ -367,7 +367,7 @@ export default function NotebookClient() {
 
                  return (
                     <AccordionItem key={section.id} value={section.id} className="border-b-0 overflow-hidden">
-                        <div className={cn("flex items-center text-white w-full", `bg-gradient-to-br ${section.color}`)}>
+                        <div className={cn("flex items-center justify-between text-white w-full", `bg-gradient-to-br ${section.color}`)}>
                             <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                 <span className="p-2 rounded-md bg-white/20 text-xl">{notebook.icon || '🗒️'}</span>
                                 <div className="flex flex-col justify-center min-w-0">
