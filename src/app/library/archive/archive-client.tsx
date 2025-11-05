@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -645,6 +644,16 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
     });
     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, 'tr'));
   }, [books]);
+  
+  const shelfTitleColors = [
+    'text-red-600 dark:text-red-400',
+    'text-blue-600 dark:text-blue-400',
+    'text-green-600 dark:text-green-400',
+    'text-purple-600 dark:text-purple-400',
+    'text-orange-600 dark:text-orange-400',
+    'text-pink-600 dark:text-pink-400',
+    'text-teal-600 dark:text-teal-400',
+  ];
 
   if (books.length === 0) {
      return (
@@ -667,9 +676,9 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-24">
       {shelves.map(([shelfName, shelfBooks], index) => (
-        <div key={shelfName} className={cn("p-4 rounded-xl shadow-sm", shelfBackgroundColors[index % shelfBackgroundColors.length])}>
+        <Card key={shelfName} className={cn("p-4 rounded-xl shadow-sm", shelfBackgroundColors[index % shelfBackgroundColors.length])}>
           <h2 className={cn("text-xl font-bold mb-4 text-foreground/80")}>{shelfName}</h2>
           <div className="relative">
             <div className="overflow-x-auto pb-4 -mb-4">
@@ -727,7 +736,7 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
                 </div>
             </div>
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );
