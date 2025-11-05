@@ -368,7 +368,7 @@ export default function NotebookClient() {
                  return (
                     <AccordionItem key={section.id} value={section.id} className="border-b-0 overflow-hidden">
                         <div className={cn("flex items-center justify-between text-white w-full", `bg-gradient-to-br ${section.color}`)}>
-                            <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
+                             <AccordionTrigger className="flex-1 p-4 flex items-center gap-4 text-left hover:no-underline group">
                                 <span className="p-2 rounded-md bg-white/20 text-xl">{notebook.icon || '🗒️'}</span>
                                 <div className="flex flex-col justify-center min-w-0">
                                     <p className="text-xl font-bold leading-tight truncate">{section.title}</p>
@@ -397,8 +397,8 @@ export default function NotebookClient() {
                                 </DropdownMenu>
                             </div>
                         </div>
-                        <AccordionContent className="p-4 bg-background border-x border-b">
-                             <Accordion type="multiple" className="w-full space-y-2">
+                        <AccordionContent className="p-0 bg-background border-x border-b">
+                             <Accordion type="multiple" className="w-full">
                                 {folderOrder.map((folderName, folderIndex) => {
                                     const folderNotes = notesByFolder[folderName];
                                     if (!folderNotes || folderNotes.length === 0) {
@@ -406,8 +406,8 @@ export default function NotebookClient() {
                                     }
                                      const colorClass = folderColors[folderIndex % folderColors.length];
                                     return (
-                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden rounded-lg">
-                                            <Card className={cn('text-white border-0', `bg-gradient-to-br ${colorClass}`)}>
+                                        <AccordionItem key={folderName} value={folderName} className="border-b-0 overflow-hidden">
+                                            <Card className={cn('text-white border-0 rounded-none', `bg-gradient-to-br ${colorClass}`)}>
                                                 <CardHeader className="p-0">
                                                     <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline w-full">
                                                         <Folder className="h-5 w-5 text-white" />
@@ -430,7 +430,7 @@ export default function NotebookClient() {
                                     )
                                 })}
                             </Accordion>
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-4 flex gap-2 p-4 pt-0">
                                 <Button variant="outline" size="sm" onClick={() => { setActiveSectionId(section.id); handleAddNewNote() }}>
                                     <StickyNote className="mr-2 h-4 w-4"/> Yeni Not
                                 </Button>
