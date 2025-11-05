@@ -242,28 +242,14 @@ export function PomodoroClient() {
                                 <stop offset="100%" stopColor="hsl(var(--primary))" />
                             </linearGradient>
                         </defs>
-                         <motion.circle
-                            cx="50" cy="50" r="45"
-                            fill="transparent"
-                            stroke="url(#gradient)"
-                            strokeWidth="8"
-                            pathLength="1"
-                            strokeDasharray="1"
-                            initial={{ strokeDashoffset: 1 }}
-                            animate={{ strokeDashoffset: 0 }}
-                            transition={{
-                                duration: 60,
-                                ease: 'linear',
-                                repeat: Infinity,
-                            }}
-                        />
+                        <circle cx="50" cy="50" r="45" stroke="hsl(var(--primary) / 0.2)" strokeWidth="8" fill="transparent" />
                         <motion.circle
-                            cx="50" cy="50" r="45" stroke="hsl(var(--background))" strokeWidth="10" fill="transparent"
+                            cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="8" fill="transparent"
                             strokeLinecap="round" transform="rotate(-90 50 50)" pathLength="1"
                             strokeDasharray="1"
                             initial={{ strokeDashoffset: 1 }}
-                            animate={{ strokeDashoffset: 1 - progress / 100 }}
-                            transition={{ duration: 1, ease: 'linear' }}
+                            animate={isActive ? { strokeDashoffset: 1 - progress / 100 } : { strokeDashoffset: 1 - progress / 100, transition: {duration: 0} }}
+                            transition={isActive ? { duration: 1, ease: 'linear' } : {duration: 0}}
                         />
                     </motion.svg>
                     <div className="relative text-center flex flex-col items-center justify-center h-full">
@@ -304,7 +290,8 @@ export function PomodoroClient() {
                             width="50"
                             fill="url(#sandGradient)"
                             initial={{ height: 30 }}
-                            animate={{ height: 30 * (1 - progress / 100) }}
+                            animate={isActive ? { height: 30 * (1 - progress / 100) } : { height: 30 * (1 - progress / 100) }}
+                            transition={{ duration: 1, ease: 'linear'}}
                         />
                         {/* Bottom sand */}
                         <motion.rect
@@ -313,7 +300,8 @@ export function PomodoroClient() {
                             width="50"
                             fill="url(#sandGradient)"
                             initial={{ height: 0, y: 90 }}
-                            animate={{ height: 30 * (progress / 100), y: 90 - 30 * (progress / 100) }}
+                            animate={isActive ? { height: 30 * (progress / 100), y: 90 - 30 * (progress / 100) } : { height: 30 * (progress / 100), y: 90 - 30 * (progress / 100) }}
+                            transition={{ duration: 1, ease: 'linear' }}
                         />
                          <path d="M20 110 H80" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="3" strokeLinecap="round" />
                     </motion.svg>
