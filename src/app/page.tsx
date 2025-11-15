@@ -170,6 +170,14 @@ export default function Home() {
     };
   }, [familyId]);
   
+    const monthlyBudgetSummary = React.useMemo(() => {
+        const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const net = income - expense;
+        const monthName = format(new Date(), 'MMMM', { locale: tr });
+        return { income, expense, net, monthName };
+    }, [transactions]);
+
   const handleProgressSubmit = async (values: z.infer<typeof progressFormSchema>) => {
       if (!editingGoal) return;
       const { goal, section } = editingGoal;
@@ -271,14 +279,6 @@ export default function Home() {
       });
   }, [goals, familyMembers]);
   
-    const monthlyBudgetSummary = React.useMemo(() => {
-        const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-        const net = income - expense;
-        const monthName = format(new Date(), 'MMMM', { locale: tr });
-        return { income, expense, net, monthName };
-    }, [transactions]);
-    
     const readingStats = React.useMemo(() => {
         return familyMembers.map(member => {
             const memberLib = userLibraries.find(lib => lib.memberId === member.id);
@@ -407,6 +407,14 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
+            <div className="flex justify-center gap-2 mb-4 -mt-2">
+                 <Link href="/notes" className={cn(buttonVariants({variant: 'secondary', size:'sm'}), "rounded-full")}>
+                     <Notebook className="mr-2 h-4 w-4"/> Notlar
+                </Link>
+                 <Link href="/tasks" className={cn(buttonVariants({variant: 'secondary', size:'sm'}), "rounded-full")}>
+                    <ListChecks className="mr-2 h-4 w-4"/> Yapılacaklar
+                </Link>
+            </div>
             <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-2">
                     <Link href="/shopping" className="group block rounded-xl overflow-hidden">
@@ -455,20 +463,8 @@ export default function Home() {
                     </Link>
                 </div>
                 <div className="flex flex-col gap-2">
-                    <Link href="/notes" className="group block rounded-xl overflow-hidden">
-                        <div className="flex items-center justify-between p-4 h-20 text-white bg-gradient-to-br from-yellow-500 to-amber-600 transition-transform group-hover:-translate-y-1">
-                            <h3 className="flex items-center gap-2 text-base font-semibold"><Notebook/> Notlar</h3>
-                            <p className="mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Defterleri gör</p>
-                        </div>
-                    </Link>
-                     <Link href="/tasks" className="group block rounded-xl overflow-hidden">
-                        <div className="flex items-center justify-between p-4 h-20 text-white bg-gradient-to-br from-rose-500 to-red-600 transition-transform group-hover:-translate-y-1">
-                            <h3 className="flex items-center gap-2 text-base font-semibold"><ListChecks/> Yapılacaklar</h3>
-                             <p className="mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Görevleri yönet</p>
-                        </div>
-                    </Link>
                     <Link href="/budget" className="group block rounded-xl overflow-hidden">
-                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1">
+                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1 h-full">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {monthlyBudgetSummary.monthName} Bütçe Özeti</h3>
                         <div className="flex-grow my-4 grid grid-cols-3 gap-2">
                             <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
@@ -584,7 +580,7 @@ export default function Home() {
                         </CardContent>
                     </Card>
                 </Link>
-            </div>
+            
           
           <Card className="shadow-lg bg-gradient-to-br from-indigo-500 to-blue-600 text-white">
             <CardHeader>
@@ -700,32 +696,32 @@ export default function Home() {
             </div>
           </section>
         </div>
-
-        <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Profili Düzenle</DialogTitle>
-                        <DialogDescription>
-                            {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {editingMember && (
-                        <EditFamilyMemberForm 
-                            member={editingMember}
-                            onMemberUpdated={() => setEditingMember(null)}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
-            
-            <BookDetailDialog 
-                book={viewingBook} 
-                isOpen={!!viewingBook} 
-                onOpenChange={(open) => {if(!open) setViewingBook(null)}}
-                onEdit={handleOpenEditDialog}
-                onAddToLibrary={handleAddToLibrary}
-                familyMembers={familyMembers}
-            />
+        </div>
+         <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Profili Düzenle</DialogTitle>
+                    <DialogDescription>
+                        {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                {editingMember && (
+                    <EditFamilyMemberForm 
+                        member={editingMember}
+                        onMemberUpdated={() => setEditingMember(null)}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
+        
+        <BookDetailDialog 
+            book={viewingBook} 
+            isOpen={!!viewingBook} 
+            onOpenChange={(open) => {if(!open) setViewingBook(null)}}
+            onEdit={handleOpenEditDialog}
+            onAddToLibrary={handleAddToLibrary}
+            familyMembers={familyMembers}
+        />
 
         <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
             <DialogContent>
@@ -756,8 +752,6 @@ export default function Home() {
                 </Form>
             </DialogContent>
         </Dialog>
-      </div>
     </>
   );
 }
-
