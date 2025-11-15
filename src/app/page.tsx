@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2, BookCheck, Timer, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2, BookCheck, Timer, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -143,7 +143,7 @@ export default function Home() {
     const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
     const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
     const unsubPrayerProgress = onPrayerProgressUpdate(setPrayerProgress);
-    const unsubTransactions = onTransactionsUpdate(setTransactions, sixMonthsAgo, endOfMonth(today));
+    const unsubTransactions = onTransactionsUpdate(setTransactions, sixMonthsAgo, endOfMonth(addMonths(today, 1)));
     const unsubAccounts = onAccountsUpdate(setAccounts);
     const unsubSessions = onReadingSessionsUpdate(setReadingSessions);
     const unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
@@ -172,7 +172,7 @@ export default function Home() {
     };
   }, [familyId]);
   
-    const monthlyBudgetSummary = React.useMemo(() => {
+  const monthlyBudgetSummary = React.useMemo(() => {
     const today = new Date();
     const summaries = [];
 
@@ -470,7 +470,7 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div className="grid grid-cols-2 -mx-4 sm:mx-0">
+             <div className="grid grid-cols-2 -mx-4 sm:mx-0">
                  <Link href="/notes" className="group block rounded-r-none overflow-hidden">
                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 rounded-r-none border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
@@ -730,58 +730,59 @@ export default function Home() {
         </div>
       </div>
       <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Profili Düzenle</DialogTitle>
-            <DialogDescription>
-              {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
-            </DialogDescription>
-          </DialogHeader>
-          {editingMember && (
-          <EditFamilyMemberForm 
-            member={editingMember}
-            onMemberUpdated={() => setEditingMember(null)}
-          />
-          )}
-        </DialogContent>
-      </Dialog>
-      <BookDetailDialog 
-        book={viewingBook} 
-        isOpen={!!viewingBook} 
-        onOpenChange={(open) => {if(!open) setViewingBook(null)}}
-        onEdit={handleOpenEditDialog}
-        onAddToLibrary={handleAddToLibrary}
-        familyMembers={familyMembers}
-      />
-      <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
-            <DialogDescription>
-              Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...progressForm}>
-            <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
-              <FormField
-                control={progressForm.control}
-                name="progress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tamamlanan Birim ({editingGoal?.goal.unitName})</FormLabel>
-                    <FormControl><Input type="number" autoFocus {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Profili Düzenle</DialogTitle>
+                    <DialogDescription>
+                        {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                {editingMember && (
+                <EditFamilyMemberForm 
+                    member={editingMember}
+                    onMemberUpdated={() => setEditingMember(null)}
+                />
                 )}
-              />
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>İptal</Button>
-                <Button type="submit">Kaydet</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+            </DialogContent>
+        </Dialog>
+        <BookDetailDialog 
+            book={viewingBook} 
+            isOpen={!!viewingBook} 
+            onOpenChange={(open) => {if(!open) setViewingBook(null)}}
+            onEdit={handleOpenEditDialog}
+            onAddToLibrary={handleAddToLibrary}
+            familyMembers={familyMembers}
+        />
+        <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
+            <DialogContent>
+            <DialogHeader>
+                <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
+                <DialogDescription>
+                Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
+                </DialogDescription>
+            </DialogHeader>
+            <Form {...progressForm}>
+                <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
+                <FormField
+                    control={progressForm.control}
+                    name="progress"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Tamamlanan Birim ({editingGoal?.goal.unitName})</FormLabel>
+                        <FormControl><Input type="number" autoFocus {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <DialogFooter>
+                    <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>İptal</Button>
+                    <Button type="submit">Kaydet</Button>
+                </DialogFooter>
+                </form>
+            </Form>
+            </DialogContent>
+        </Dialog>
     </>
   );
 }
+
