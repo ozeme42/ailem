@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -423,8 +424,8 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
-            <div className="grid grid-cols-2 -mx-4 sm:mx-0">
-                <Link href="/shopping" className="group block rounded-l-xl sm:rounded-l-xl overflow-hidden">
+            <div className="grid grid-cols-2 gap-2">
+                <Link href="/shopping" className="group block rounded-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -448,7 +449,7 @@ export default function Home() {
                         <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-r-xl sm:rounded-r-xl overflow-hidden">
+                <Link href="/yemek" className="group block rounded-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -470,20 +471,20 @@ export default function Home() {
                 </Link>
             </div>
             
-             <div className="grid grid-cols-2 -mx-4 sm:mx-0">
-                 <Link href="/notes" className="group block rounded-r-none overflow-hidden">
-                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 rounded-r-none border-0">
+            <div className="grid grid-cols-2 gap-2">
+                <Link href="/notes" className="group block rounded-xl overflow-hidden">
+                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
                 </Link>
-                <Link href="/tasks" className="group block rounded-l-none overflow-hidden">
-                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 rounded-l-none border-0">
+                <Link href="/tasks" className="group block rounded-xl overflow-hidden">
+                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
                     </Card>
                 </Link>
             </div>
             
-             <div className="-mx-4 sm:mx-0">
+            <div>
                 <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden">
                     <Carousel opts={{ loop: true, startIndex: 4 }} className="w-full">
                         <CarouselContent>
@@ -785,3 +786,4 @@ export default function Home() {
     </>
   );
 }
+
