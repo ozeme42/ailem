@@ -11,7 +11,7 @@ import { FamilyMemberCard } from "@/components/family-member-card";
 import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession, TrackedBook } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
@@ -39,6 +39,7 @@ import { Input } from '@/components/ui/input';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { buttonVariants } from "@/components/ui/button";
 
 
 const familyXpChartConfig = {
@@ -424,8 +425,8 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
-            <div className="grid grid-cols-2 gap-2">
-                <Link href="/shopping" className="group block rounded-xl overflow-hidden">
+            <div className="grid grid-cols-2 -mx-4 sm:mx-0">
+                <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -449,7 +450,7 @@ export default function Home() {
                         <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-xl overflow-hidden">
+                <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -471,7 +472,7 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div className="grid grid-cols-2 gap-2">
+             <div className="grid grid-cols-2 -mx-4 sm:mx-0">
                 <Link href="/notes" className="group block rounded-xl overflow-hidden">
                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
@@ -484,7 +485,7 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div>
+            <div className="-mx-4 sm:mx-0">
                 <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden">
                     <Carousel opts={{ loop: true, startIndex: 4 }} className="w-full">
                         <CarouselContent>
