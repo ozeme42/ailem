@@ -111,6 +111,7 @@ export default function Home() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [readingSessions, setReadingSessions] = React.useState<ReadingSession[]>([]);
+  const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
 
   const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
@@ -448,6 +449,20 @@ export default function Home() {
                         </div>
                     </Link>
                 </div>
+                <div className="grid grid-cols-2 rounded-xl overflow-hidden shadow-lg">
+                    <Link href="/notes" className="group block">
+                        <div className="flex flex-col p-4 h-full text-white bg-gradient-to-br from-yellow-500 to-amber-600 transition-transform group-hover:-translate-y-1">
+                            <h3 className="flex items-center gap-2 text-base md:text-lg font-semibold"><Notebook/> Notlar</h3>
+                            <p className="mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Defterleri gör</p>
+                        </div>
+                    </Link>
+                    <Link href="/tasks" className="group block">
+                        <div className="flex flex-col p-4 h-full text-white bg-gradient-to-br from-rose-500 to-red-600 transition-transform group-hover:-translate-y-1">
+                            <h3 className="flex items-center gap-2 text-base md:text-lg font-semibold"><ListChecks/> Yapılacaklar</h3>
+                             <p className="mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Görevleri yönet</p>
+                        </div>
+                    </Link>
+                </div>
                 <Link href="/calendar" className="group block">
                     <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
@@ -637,6 +652,7 @@ export default function Home() {
                     memorizationItems={memorizationItems}
                     memorizationProgress={memorizationProgress}
                     prayerProgress={prayerProgress}
+                    trackedBooks={trackedBooks}
                     />
                 ))}
           </section>
