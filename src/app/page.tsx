@@ -456,11 +456,11 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div className="flex justify-center gap-2">
-                 <Link href="/notes" className={cn(buttonVariants({variant: 'secondary', size:'sm'}), "rounded-full")}>
+            <div className="flex justify-center">
+                 <Link href="/notes" className={cn(buttonVariants({variant: 'default', size:'sm'}), "rounded-r-none")}>
                      <Notebook className="mr-2 h-4 w-4"/> Notlar
                 </Link>
-                 <Link href="/tasks" className={cn(buttonVariants({variant: 'secondary', size:'sm'}), "rounded-full")}>
+                 <Link href="/tasks" className={cn(buttonVariants({variant: 'default', size:'sm'}), "rounded-l-none")}>
                     <ListChecks className="mr-2 h-4 w-4"/> Yapılacaklar
                 </Link>
             </div>
@@ -756,4 +756,3 @@ export default function Home() {
     </>
   );
 }
-
