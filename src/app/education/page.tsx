@@ -537,6 +537,9 @@ export default function EducationPage() {
                                 const now = new Date();
                                 const daysDiff = differenceInDays(dueDate, now);
                                 const isTestDue = isPast(dueDate) && !isToday(dueDate);
+                                const topicName = studyPlans
+                                    .flatMap(p => p.subjects.flatMap(s => s.topics))
+                                    .find(t => t.id === test.topicId)?.name;
 
                                 return (
                                     <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
@@ -545,6 +548,11 @@ export default function EducationPage() {
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <div className={cn('w-4 h-4 text-current')}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4" })}</div>
                                                     <h3 className="font-semibold text-lg">{test.title}</h3>
+                                                </div>
+                                                <div className="flex items-center gap-4 ml-6">
+                                                     <p className="text-sm text-current/80">
+                                                        {test.subject}{topicName && ` - ${topicName}`}
+                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-4 ml-6">
                                                     <p className="text-sm text-current/80">Son Teslim: {test.dueDate}</p>
@@ -650,11 +658,5 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
-
-    
-
-    
 
     
