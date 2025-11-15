@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { onTestsUpdate, onBankQuestionsUpdate, addTest, deleteTest, updateTest } from "@/lib/dataService";
+import { onTestsUpdate, onBankQuestionsUpdate, addTest, deleteTest, updateTest, onTopicsUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember, BankQuestion, Topic } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
@@ -48,6 +48,7 @@ export default function CategoryDetailPage() {
   const { familyMembers, user } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
+  const [allTopics, setAllTopics] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
   const [selectedTopic, setSelectedTopic] = React.useState<TopicStats | null>(null);
@@ -65,6 +66,7 @@ export default function CategoryDetailPage() {
         setBankQuestions(questions);
         if (loading) setLoading(false);
     });
+    const unsubscribeTopics = onTopicsUpdate(setAllTopics);
 
     // Initial loading state management
     Promise.all([
@@ -75,6 +77,7 @@ export default function CategoryDetailPage() {
     return () => {
         unsubscribeTests();
         unsubscribeBanks();
+        unsubscribeTopics();
     };
   }, [loading]);
 
@@ -101,9 +104,16 @@ export default function CategoryDetailPage() {
     const allTopicsForSubject = Array.from(new Set(bankQuestions.filter(q => q.subject === categoryName).map(q => q.topic)));
 
     testsForCategory
-      .filter(t => t.status === 'Sonuçlandı' && t.sourceType === 'bank')
+      .filter(t => t.status === 'Sonuçlandı' && (t.sourceType === 'bank' || t.sourceType === 'trackedBook'))
       .forEach(test => {
-          const testTopicName = bankQuestions.find(q => q.id === test.sourceId)?.topic;
+          let testTopicName: string | undefined;
+
+          if (test.sourceType === 'bank') {
+            testTopicName = bankQuestions.find(q => q.id === test.sourceId)?.topic;
+          } else if (test.sourceType === 'trackedBook') {
+            testTopicName = allTopics.find(topic => topic === test.topicId) || test.topicId;
+          }
+          
           if (testTopicName && test.subject === categoryName) {
               const stats = tempTopicStats.get(testTopicName) || { name: testTopicName, correct: 0, total: 0 };
               stats.correct += test.correctAnswers || 0;
@@ -120,7 +130,7 @@ export default function CategoryDetailPage() {
 
     return { filteredTests: sortedTests, topicStats: finalTopicStats };
 
-  }, [allTests, categoryName, bankQuestions, studentId]);
+  }, [allTests, categoryName, bankQuestions, studentId, allTopics]);
 
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
   
@@ -184,9 +194,10 @@ export default function CategoryDetailPage() {
           <h3 className="text-xl font-bold">Atanmış Sınavlar ({filteredTests.length})</h3>
           {studentId ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTests.map((test) => (
-                <SingleStudentTestCard key={test.id} test={test} />
-              ))}
+              {filteredTests.map((test) => {
+                 const topicName = test.topicId;
+                 return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+              })}
             </div>
           ) : (
             <Accordion type="multiple" className="w-full space-y-2" defaultValue={filteredTests.map(t => t.id)}>
@@ -220,7 +231,7 @@ export default function CategoryDetailPage() {
 }
 
 
-function SingleStudentTestCard({ test }: { test: Test }) {
+function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: string }) {
     let buttonText = 'Sınava Gir';
     let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
     let buttonDisabled = false;
@@ -248,6 +259,8 @@ function SingleStudentTestCard({ test }: { test: Test }) {
                     {statusBadge}
                 </div>
                  <CardDescription>
+                     {topicName && <span className="font-semibold text-foreground">{topicName}</span>}
+                     {topicName && ' - '}
                     {test.assignedDate} - {test.dueDate}
                 </CardDescription>
             </CardHeader>

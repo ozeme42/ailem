@@ -197,6 +197,7 @@ export function BookDetailClient() {
           const testData: any = {
               title: `${book.title} - ${testToAssign.name}`,
               subject: book.subjects?.find(s => s.id === testToAssign.subjectId)?.name || "Bilinmiyor",
+              topicId: testToAssign.topicId,
               studentId: studentId,
               questionCount: testToAssign.questionCount,
               assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
