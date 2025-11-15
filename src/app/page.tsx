@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2, BookCheck, Timer } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2, BookCheck, Timer, ChevronLeft, ChevronRight } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession, onTrackedBooksUpdate } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek, addDays } from "date-fns";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek, addDays, subMonths } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
@@ -38,6 +38,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { NewBookForm } from "@/components/new-book-form";
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 
 const familyXpChartConfig = {
@@ -129,6 +130,7 @@ export default function Home() {
     if (!familyId) return;
 
     const today = new Date();
+    const sixMonthsAgo = startOfMonth(subMonths(today, 5));
     const unsubShopping = onShoppingListsUpdate(setShoppingLists);
     const unsubMeal = onMealPlanUpdate(setMealPlan);
     const unsubCalendar = onCalendarEventsUpdate(setCalendarEvents);
@@ -142,7 +144,7 @@ export default function Home() {
     const unsubMemorizationItems = onMemorizationItemsUpdate(setMemorizationItems);
     const unsubMemorizationProgress = onMemorizationProgressUpdate(setMemorizationProgress);
     const unsubPrayerProgress = onPrayerProgressUpdate(setPrayerProgress);
-    const unsubTransactions = onTransactionsUpdate(setTransactions, startOfMonth(today), endOfMonth(today));
+    const unsubTransactions = onTransactionsUpdate(setTransactions, sixMonthsAgo, endOfMonth(today));
     const unsubAccounts = onAccountsUpdate(setAccounts);
     const unsubSessions = onReadingSessionsUpdate(setReadingSessions);
     const unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
@@ -171,12 +173,25 @@ export default function Home() {
     };
   }, [familyId]);
   
-  const monthlyBudgetSummary = React.useMemo(() => {
-    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    const net = income - expense;
-    const monthName = format(new Date(), 'MMMM', { locale: tr });
-    return { income, expense, net, monthName };
+    const monthlyBudgetSummary = React.useMemo(() => {
+    const today = new Date();
+    const summaries = [];
+
+    for (let i = 0; i < 6; i++) {
+        const targetMonthDate = subMonths(today, i);
+        const monthKey = format(targetMonthDate, 'yyyy-MM');
+        
+        const monthTransactions = transactions.filter(t => t.date.startsWith(monthKey));
+
+        const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const expense = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const net = income - expense;
+        const monthName = format(targetMonthDate, 'MMMM', { locale: tr });
+        
+        summaries.push({ monthName, income, expense, net });
+    }
+    
+    return summaries;
   }, [transactions]);
 
   const handleProgressSubmit = async (values: z.infer<typeof progressFormSchema>) => {
@@ -408,8 +423,8 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
-            <div className="grid grid-cols-2 -mx-4 sm:mx-0">
-                <Link href="/shopping" className="group block rounded-r-none overflow-hidden">
+            <div className="grid grid-cols-2 -mx-4 sm:mx-0 rounded-none">
+                <Link href="/shopping" className="group block rounded-none overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -433,7 +448,7 @@ export default function Home() {
                         <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-l-none overflow-hidden">
+                <Link href="/yemek" className="group block rounded-none overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -456,7 +471,7 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-2 -mx-4 sm:mx-0">
-                <Link href="/notes" className="group block rounded-r-none overflow-hidden">
+                 <Link href="/notes" className="group block rounded-r-none overflow-hidden">
                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
@@ -468,29 +483,40 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div className="-mx-4 sm:mx-0">
-                <Link href="/budget" className="group block rounded-xl overflow-hidden">
-                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1 h-full">
-                        <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {monthlyBudgetSummary.monthName} Bütçe Özeti</h3>
-                        <div className="flex-grow my-4 grid grid-cols-3 gap-2">
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                <p className="text-xs font-semibold text-white/90">Gelir</p>
-                                <p className="text-base font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-                            </div>
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                <p className="text-xs font-semibold text-white/90">Gider</p>
-                                <p className="text-base font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-                            </div>
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                <p className="text-xs font-semibold text-white/90">Kalan</p>
-                                <p className={cn("text-base font-bold truncate", monthlyBudgetSummary.net < 0 ? 'text-red-200' : '')}>
-                                    {monthlyBudgetSummary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                </p>
-                            </div>
-                        </div>
-                        <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
-                    </div>
-                </Link>
+             <div className="-mx-4 sm:mx-0">
+                <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden">
+                    <Carousel className="w-full">
+                        <CarouselContent>
+                            {monthlyBudgetSummary.map((summary, index) => (
+                                <CarouselItem key={index}>
+                                    <div className="p-1">
+                                        <CardContent className="flex flex-col p-4">
+                                            <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {summary.monthName} Bütçe Özeti</h3>
+                                            <div className="flex-grow my-4 grid grid-cols-3 gap-2">
+                                                <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                                    <p className="text-xs font-semibold text-white/90">Gelir</p>
+                                                    <p className="text-base font-bold truncate">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                                </div>
+                                                <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                                    <p className="text-xs font-semibold text-white/90">Gider</p>
+                                                    <p className="text-base font-bold truncate text-red-200">{summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                                </div>
+                                                <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                                    <p className="text-xs font-semibold text-white/90">Kalan</p>
+                                                    <p className={cn("text-base font-bold truncate", summary.net < 0 ? 'text-red-200' : '')}>
+                                                        {summary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </div>
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-white/20 hover:bg-white/30 border-none" />
+                        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-white/20 hover:bg-white/30 border-none" />
+                    </Carousel>
+                </Card>
             </div>
 
 
@@ -759,6 +785,7 @@ export default function Home() {
     </>
   );
 }
+
 
 
 
