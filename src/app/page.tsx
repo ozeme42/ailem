@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -11,7 +10,7 @@ import { FamilyMemberCard } from "@/components/family-member-card";
 import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession, TrackedBook } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
@@ -86,6 +85,7 @@ const roleGradients: { [key: string]: string } = {
     'Kız Çocuk': "from-purple-400 to-violet-500",
     'Erkek Çocuk': "from-teal-400 to-cyan-500",
     Bebek: "from-yellow-400 to-orange-500",
+    'Ev İşleri': "from-teal-500 to-cyan-500",
 };
 
 export default function Home() {
@@ -170,13 +170,13 @@ export default function Home() {
     };
   }, [familyId]);
   
-    const monthlyBudgetSummary = React.useMemo(() => {
-        const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-        const net = income - expense;
-        const monthName = format(new Date(), 'MMMM', { locale: tr });
-        return { income, expense, net, monthName };
-    }, [transactions]);
+  const monthlyBudgetSummary = React.useMemo(() => {
+    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const net = income - expense;
+    const monthName = format(new Date(), 'MMMM', { locale: tr });
+    return { income, expense, net, monthName };
+  }, [transactions]);
 
   const handleProgressSubmit = async (values: z.infer<typeof progressFormSchema>) => {
       if (!editingGoal) return;
@@ -697,7 +697,7 @@ export default function Home() {
           </section>
         </div>
         </div>
-         <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+        <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Profili Düzenle</DialogTitle>
