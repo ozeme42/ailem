@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { QuestionBank, Test, PracticeExam, FamilyMember, StudyAssignment, StudyPlan } from "@/lib/data";
+import { QuestionBank, Test, PracticeExam, FamilyMember, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment, onTrackedBooksUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfMonth, endOfDay, isWithinInterval, startOfMonth, addMonths, subMonths, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -87,6 +87,8 @@ export default function EducationPage() {
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
+  const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
+
   
   const [viewMode, setViewMode] = React.useState<'cards' | 'weekly' | 'list'>('cards');
   const [currentDate, setCurrentDate] = React.useState(new Date());
@@ -106,11 +108,14 @@ export default function EducationPage() {
     const unsubTests = onTestsUpdate(setAllTests);
     const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
     const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
+    const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
+
     
     return () => {
       unsubTests();
       unsubStudyAssignments();
       unsubStudyPlans();
+      unsubTrackedBooks();
     }
   }, []);
   
@@ -537,9 +542,9 @@ export default function EducationPage() {
                                 const now = new Date();
                                 const daysDiff = differenceInDays(dueDate, now);
                                 const isTestDue = isPast(dueDate) && !isToday(dueDate);
-                                const topicName = studyPlans
-                                    .flatMap(p => p.subjects.flatMap(s => s.topics))
-                                    .find(t => t.id === test.topicId)?.name;
+                                const allTopics = trackedBooks.flatMap(book => book.subjects.flatMap(subject => subject.topics));
+                                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                                
 
                                 return (
                                     <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
@@ -658,5 +663,7 @@ export default function EducationPage() {
     </>
   );
 }
+
+    
 
     
