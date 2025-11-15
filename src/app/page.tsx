@@ -471,20 +471,20 @@ export default function Home() {
                 </Link>
             </div>
             
-             <div className="grid grid-cols-2 gap-0 -mx-4 sm:mx-0">
-                <Link href="/notes" className="group block">
-                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 border-0 rounded-l-xl rounded-r-none">
+            <div className="grid grid-cols-2">
+                <Link href="/notes" className="group block rounded-l-xl overflow-hidden">
+                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
                 </Link>
-                <Link href="/tasks" className="group block">
-                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 border-0 rounded-r-xl rounded-l-none">
+                <Link href="/tasks" className="group block rounded-r-xl overflow-hidden">
+                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
                     </Card>
                 </Link>
             </div>
             
-            <div className="-mx-4 sm:mx-0">
+            <div>
                 <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden">
                     <Carousel opts={{ loop: true, startIndex: 4 }} className="w-full">
                         <CarouselContent>
