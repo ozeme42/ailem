@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -17,7 +16,7 @@ import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession, onTrackedBooksUpdate } from "@/lib/dataService";
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek, addDays, subMonths } from "date-fns";
+import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek, addDays, subMonths, addMonths } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PageHeader } from "@/components/page-header";
@@ -177,8 +176,9 @@ export default function Home() {
     const today = new Date();
     const summaries = [];
 
-    for (let i = 0; i < 6; i++) {
-        const targetMonthDate = subMonths(today, i);
+    // Go 4 months back, include current month, and go 1 month forward. Total 6 months.
+    for (let i = -4; i <= 1; i++) {
+        const targetMonthDate = addMonths(today, i);
         const monthKey = format(targetMonthDate, 'yyyy-MM');
         
         const monthTransactions = transactions.filter(t => t.date.startsWith(monthKey));
@@ -424,7 +424,7 @@ export default function Home() {
 
         <div className="space-y-6 pt-6">
             <div className="grid grid-cols-2 -mx-4 sm:mx-0 rounded-none">
-                <Link href="/shopping" className="group block rounded-none overflow-hidden">
+                <Link href="/shopping" className="group block rounded-none overflow-hidden rounded-l-xl sm:rounded-l-xl">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -448,7 +448,7 @@ export default function Home() {
                         <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-none overflow-hidden">
+                <Link href="/yemek" className="group block rounded-none overflow-hidden rounded-r-xl sm:rounded-r-xl">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -472,12 +472,12 @@ export default function Home() {
             
             <div className="grid grid-cols-2 -mx-4 sm:mx-0">
                  <Link href="/notes" className="group block rounded-r-none overflow-hidden">
-                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1">
+                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 rounded-r-none border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
                 </Link>
                 <Link href="/tasks" className="group block rounded-l-none overflow-hidden">
-                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
+                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 rounded-l-none border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
                     </Card>
                 </Link>
@@ -485,7 +485,7 @@ export default function Home() {
             
              <div className="-mx-4 sm:mx-0">
                 <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden">
-                    <Carousel className="w-full">
+                    <Carousel opts={{ loop: true }} className="w-full">
                         <CarouselContent>
                             {monthlyBudgetSummary.map((summary, index) => (
                                 <CarouselItem key={index}>
@@ -785,7 +785,3 @@ export default function Home() {
     </>
   );
 }
-
-
-
-
