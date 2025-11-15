@@ -81,11 +81,11 @@ export function MemberDashboardCard({
 
         const otherTasks = memberTasks.filter(t => !t.isRecurring && !t.completed);
         
-        const allTopics = trackedBooks.flatMap(book => 
-            book.subjects.flatMap(subject => 
-                subject.topics.map(topic => ({...topic, subjectName: subject.name}))
+        const allTopics = trackedBooks?.flatMap(book => 
+            (book.subjects || []).flatMap(subject => 
+                (subject.topics || []).map(topic => ({...topic, subjectName: subject.name}))
             )
-        );
+        ) || [];
 
         const memberTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı')
             .map(test => {
