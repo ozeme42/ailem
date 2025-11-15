@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -150,7 +151,7 @@ export default function EducationPage() {
       .filter(sa => sa.status === 'completed')
       .sort((a, b) => compareDesc(parseISO(a.completedAt || '1970-01-01'), parseISO(b.completedAt || '1970-01-01')));
 
-    return { upcomingStudies: pending, pastStudies: completed };
+    return { pendingStudies: pending, completedStudies: completed };
 }, [selectedStudent, studyAssignments, studyPlans]);
 
 
@@ -412,14 +413,14 @@ export default function EducationPage() {
 
   return (
     <>
-      <PageHeader title="Eğitim & Sınav 🎓">
+      <PageHeader title="Eğitim & Sınav 🎓" className="-mx-4 sm:mx-0 -mt-4 sm:mt-0">
          <Link href="/education/management">
             <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <Settings className="mr-2 h-4 w-4" />
                 İçerik Yönetimi
             </Button>
         </Link>
-        <Link href="/education/management/assign">
+        <Link href="/education/management/questions">
             <Button className="bg-white/20 text-white hover:bg-white/30 border-none">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Yeni Ödev Ata
@@ -624,7 +625,7 @@ export default function EducationPage() {
                             <CardDescription>{selectedStudent?.name} için atanmış ve tamamlanmamış konu anlatımları.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                        {pendingStudies.length > 0 ? (
+                        {pendingStudies && pendingStudies.length > 0 ? (
                             pendingStudies.map(study => {
                                 const dueDate = parseISO(study.dueDate);
                                 const now = new Date();
@@ -671,3 +672,4 @@ export default function EducationPage() {
     
 
     
+
