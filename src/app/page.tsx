@@ -11,7 +11,7 @@ import { FamilyMemberCard } from "@/components/family-member-card";
 import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession, TrackedBook } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
@@ -457,14 +457,14 @@ export default function Home() {
             
             <div className="grid grid-cols-2 -mx-4 sm:mx-0">
                 <Link href="/notes" className="group block rounded-r-none overflow-hidden">
-                    <div className="flex flex-col justify-center text-center p-4 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-24 transition-transform group-hover:-translate-y-1">
+                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
-                    </div>
+                    </Card>
                 </Link>
                 <Link href="/tasks" className="group block rounded-l-none overflow-hidden">
-                     <div className="flex flex-col justify-center text-center p-4 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-24 transition-transform group-hover:-translate-y-1">
+                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
-                    </div>
+                    </Card>
                 </Link>
             </div>
             
@@ -759,5 +759,6 @@ export default function Home() {
     </>
   );
 }
+
 
 
