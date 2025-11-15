@@ -395,7 +395,7 @@ export default function Home() {
         "flex items-center justify-between gap-4 p-4",
         "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg",
         "sticky top-0 z-40",
-        "-mx-4 -mt-4 sm:-mx-6", 
+        "-mx-4 -mt-4 sm:mx-0 sm:mt-0", 
         "rounded-b-2xl"
       )}>
           <div className="flex items-center gap-4">
@@ -408,9 +408,8 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
-
-             <div className="grid grid-cols-2">
-                <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
+            <div className="grid grid-cols-2 -mx-4 sm:mx-0 rounded-r-none rounded-l-none">
+                <Link href="/shopping" className="group block rounded-r-none overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -434,7 +433,7 @@ export default function Home() {
                         <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
+                <Link href="/yemek" className="group block rounded-l-none overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -456,7 +455,7 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div className="flex justify-center">
+            <div className="flex justify-center -mx-4 sm:mx-0">
                  <Link href="/notes" className={cn(buttonVariants({variant: 'default', size:'sm'}), "rounded-r-none")}>
                      <Notebook className="mr-2 h-4 w-4"/> Notlar
                 </Link>
@@ -465,6 +464,7 @@ export default function Home() {
                 </Link>
             </div>
             
+            <div className="-mx-4 sm:mx-0">
             <Link href="/budget" className="group block rounded-xl overflow-hidden">
                 <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1 h-full">
                     <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {monthlyBudgetSummary.monthName} Bütçe Özeti</h3>
@@ -487,6 +487,7 @@ export default function Home() {
                     <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
                 </div>
             </Link>
+            </div>
 
 
                 <Link href="/calendar" className="group block">
@@ -698,61 +699,60 @@ export default function Home() {
           </section>
         </div>
         </div>
-        <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Profili Düzenle</DialogTitle>
-                    <DialogDescription>
-                        {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
-                    </DialogDescription>
-                </DialogHeader>
-                {editingMember && (
-                    <EditFamilyMemberForm 
-                        member={editingMember}
-                        onMemberUpdated={() => setEditingMember(null)}
-                    />
+      <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Profili Düzenle</DialogTitle>
+            <DialogDescription>
+              {editingMember?.name} adlı üyenin bilgilerini güncelleyin.
+            </DialogDescription>
+          </DialogHeader>
+          {editingMember && (
+          <EditFamilyMemberForm 
+            member={editingMember}
+            onMemberUpdated={() => setEditingMember(null)}
+          />
+          )}
+        </DialogContent>
+      </Dialog>
+      <BookDetailDialog 
+        book={viewingBook} 
+        isOpen={!!viewingBook} 
+        onOpenChange={(open) => {if(!open) setViewingBook(null)}}
+        onEdit={handleOpenEditDialog}
+        onAddToLibrary={handleAddToLibrary}
+        familyMembers={familyMembers}
+      />
+      <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
+            <DialogDescription>
+              Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...progressForm}>
+            <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
+              <FormField
+                control={progressForm.control}
+                name="progress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tamamlanan Birim ({editingGoal?.goal.unitName})</FormLabel>
+                    <FormControl><Input type="number" autoFocus {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-            </DialogContent>
-        </Dialog>
-        
-        <BookDetailDialog 
-            book={viewingBook} 
-            isOpen={!!viewingBook} 
-            onOpenChange={(open) => {if(!open) setViewingBook(null)}}
-            onEdit={handleOpenEditDialog}
-            onAddToLibrary={handleAddToLibrary}
-            familyMembers={familyMembers}
-        />
-
-        <Dialog open={!!editingGoal} onOpenChange={(open) => {if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); }}}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>İlerleme Ekle: {editingGoal?.section.title}</DialogTitle>
-                    <DialogDescription>
-                        Bu bölüm için ne kadar ilerlediğini gir. (Örn: okunan sayfa sayısı)
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...progressForm}>
-                    <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 pt-4">
-                        <FormField
-                            control={progressForm.control}
-                            name="progress"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Tamamlanan Birim ({editingGoal?.goal.unitName})</FormLabel>
-                                    <FormControl><Input type="number" autoFocus {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>İptal</Button>
-                            <Button type="submit">Kaydet</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
+              />
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>İptal</Button>
+                <Button type="submit">Kaydet</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
