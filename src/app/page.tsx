@@ -11,7 +11,7 @@ import { FamilyMemberCard } from "@/components/family-member-card";
 import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession, TrackedBook } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
@@ -408,7 +408,7 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
-            <div className="grid grid-cols-2 -mx-4 sm:mx-0 rounded-r-none rounded-l-none">
+            <div className="grid grid-cols-2 -mx-4 sm:mx-0">
                 <Link href="/shopping" className="group block rounded-r-none overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
@@ -455,38 +455,42 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div className="flex justify-center -mx-4 sm:mx-0">
-                 <Link href="/notes" className={cn(buttonVariants({variant: 'default', size:'sm'}), "rounded-r-none")}>
-                     <Notebook className="mr-2 h-4 w-4"/> Notlar
+            <div className="grid grid-cols-2 -mx-4 sm:mx-0">
+                <Link href="/notes" className="group block rounded-r-none overflow-hidden">
+                    <div className="flex flex-col justify-center text-center p-4 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-24 transition-transform group-hover:-translate-y-1">
+                        <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
+                    </div>
                 </Link>
-                 <Link href="/tasks" className={cn(buttonVariants({variant: 'default', size:'sm'}), "rounded-l-none")}>
-                    <ListChecks className="mr-2 h-4 w-4"/> Yapılacaklar
+                <Link href="/tasks" className="group block rounded-l-none overflow-hidden">
+                     <div className="flex flex-col justify-center text-center p-4 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-24 transition-transform group-hover:-translate-y-1">
+                        <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
+                    </div>
                 </Link>
             </div>
             
             <div className="-mx-4 sm:mx-0">
-            <Link href="/budget" className="group block rounded-xl overflow-hidden">
-                <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1 h-full">
-                    <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {monthlyBudgetSummary.monthName} Bütçe Özeti</h3>
-                    <div className="flex-grow my-4 grid grid-cols-3 gap-2">
-                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gelir</p>
-                            <p className="text-base font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                <Link href="/budget" className="group block rounded-xl overflow-hidden">
+                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1 h-full">
+                        <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {monthlyBudgetSummary.monthName} Bütçe Özeti</h3>
+                        <div className="flex-grow my-4 grid grid-cols-3 gap-2">
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Gelir</p>
+                                <p className="text-base font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                            </div>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Gider</p>
+                                <p className="text-base font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                            </div>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Kalan</p>
+                                <p className={cn("text-base font-bold truncate", monthlyBudgetSummary.net < 0 ? 'text-red-200' : '')}>
+                                    {monthlyBudgetSummary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                </p>
+                            </div>
                         </div>
-                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Gider</p>
-                            <p className="text-base font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-                        </div>
-                        <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                            <p className="text-xs font-semibold text-white/90">Kalan</p>
-                            <p className={cn("text-base font-bold truncate", monthlyBudgetSummary.net < 0 ? 'text-red-200' : '')}>
-                                {monthlyBudgetSummary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            </p>
-                        </div>
+                        <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
                     </div>
-                    <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
-                </div>
-            </Link>
+                </Link>
             </div>
 
 
@@ -698,7 +702,7 @@ export default function Home() {
             </div>
           </section>
         </div>
-        </div>
+      </div>
       <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
         <DialogContent>
           <DialogHeader>
@@ -755,4 +759,5 @@ export default function Home() {
     </>
   );
 }
+
 
