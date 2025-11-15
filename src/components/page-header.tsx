@@ -15,7 +15,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, children, className }: PageHeaderProps) {
   return (
     <header className={cn(
-        "flex items-center justify-center p-6 py-8 relative", // Changed to items-center for vertical centering
+        "flex items-center justify-center p-6 py-8 relative -mx-4 sm:mx-0", // Changed to items-center for vertical centering
         "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg",
         "rounded-b-2xl",
         className
