@@ -423,8 +423,8 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
-            <div className="grid grid-cols-2 -mx-4 sm:mx-0 rounded-none">
-                <Link href="/shopping" className="group block rounded-none overflow-hidden rounded-l-xl sm:rounded-l-xl">
+            <div className="grid grid-cols-2 -mx-4 sm:mx-0">
+                <Link href="/shopping" className="group block rounded-l-xl sm:rounded-l-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -448,7 +448,7 @@ export default function Home() {
                         <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-none overflow-hidden rounded-r-xl sm:rounded-r-xl">
+                <Link href="/yemek" className="group block rounded-r-xl sm:rounded-r-xl overflow-hidden">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -485,7 +485,7 @@ export default function Home() {
             
              <div className="-mx-4 sm:mx-0">
                 <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden">
-                    <Carousel opts={{ loop: true }} className="w-full">
+                    <Carousel opts={{ loop: true, startIndex: 4 }} className="w-full">
                         <CarouselContent>
                             {monthlyBudgetSummary.map((summary, index) => (
                                 <CarouselItem key={index}>
@@ -785,4 +785,3 @@ export default function Home() {
     </>
   );
 }
-
