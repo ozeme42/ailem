@@ -3,12 +3,12 @@
 "use client";
 
 import * as React from "react";
-import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2, BookCheck } from "lucide-react";
+import { CheckSquare, Calendar, BookOpen, ShoppingCart, TrendingUp, Star, Settings, UserPlus, Edit, UtensilsCrossed, PlusCircle, GraduationCap, LogOut, Sun, Moon, Library, ArrowRight, Notebook, ListChecks, Check, Users, BookHeart, Target, User, Flame, BrainCircuit, Gamepad2, Youtube, Wallet, BarChart2, BookCheck, Timer } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMemberCard } from "@/components/family-member-card";
-import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession } from "@/lib/data";
+import { weeklyPoints, FamilyMember, ShoppingList, MealPlan, CalendarEvent, Recipe, Task, UserLibrary, Book, UserLibraryBook, Test, StudyAssignment, Goal, GoalSection, GoalTask, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession, TrackedBook } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, updateTask, updateFamilyMemberInFamily, checkAndAwardBadges, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, getGoal, onStudyPlansUpdate, addBookToMemberLibrary, deleteBook, updateBook, onMemorizationProgressUpdate, onMemorizationItemsUpdate, addBook, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession, onTrackedBooksUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, compareDesc, differenceInDays, isToday, subDays, isSameDay, startOfWeek, endOfWeek, addDays } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -145,6 +145,8 @@ export default function Home() {
     const unsubAccounts = onAccountsUpdate(setAccounts);
     const unsubSessions = onReadingSessionsUpdate(setReadingSessions);
     const unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
+    const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
+
 
     return () => {
       unsubShopping();
@@ -164,6 +166,7 @@ export default function Home() {
       unsubTransactions();
       unsubAccounts();
       unsubSessions();
+      unsubTrackedBooks();
     };
   }, [familyId]);
   
@@ -271,7 +274,9 @@ export default function Home() {
     const monthlyBudgetSummary = React.useMemo(() => {
         const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
         const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-        return { income, expense };
+        const net = income - expense;
+        const monthName = format(new Date(), 'MMMM', { locale: tr });
+        return { income, expense, net, monthName };
     }, [transactions]);
     
     const readingStats = React.useMemo(() => {
@@ -402,67 +407,91 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 pt-6">
-            <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-2">
-                    <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
+            <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-2">
+                    <Link href="/shopping" className="group block rounded-xl overflow-hidden">
                         <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
-                            <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
+                            <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                             <div className="flex-grow my-4 space-y-2">
                                 {shoppingSummary.totalPending > 0 ? (
                                     <>
                                         {shoppingSummary.itemsToShow.map(item => (
-                                            <div key={item.id} className="flex items-center gap-2 text-xs md:text-sm p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
+                                            <div key={item.id} className="flex items-center gap-2 text-xs p-1.5 rounded-md bg-white/20 backdrop-blur-sm">
                                                 <span>{item.name}</span>
                                             </div>
                                         ))}
                                         {shoppingSummary.totalPending > 3 && (
-                                            <p className="text-[11px] md:text-xs text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
+                                            <p className="text-[11px] text-white/80 pt-1">+ {shoppingSummary.totalPending - 3} ürün daha...</p>
                                         )}
                                     </>
                                 ) : (
-                                <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm">
-                                        <p className="text-xs md:text-sm text-white/90">Alınacak ürün yok. Harika!</p>
+                                <div className="p-1.5 rounded-md bg-white/20 backdrop-blur-sm">
+                                        <p className="text-xs text-white/90">Alınacak ürün yok. Harika!</p>
                                 </div>
                                 )}
                             </div>
-                            <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
+                            <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                         </div>
                     </Link>
-                    <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
+                     <Link href="/yemek" className="group block rounded-xl overflow-hidden">
                         <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
-                            <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
+                            <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                             <div className="flex-grow my-4 space-y-2">
-                            <div className="space-y-1 md:space-y-2">
-                                    <p className="font-semibold text-xs md:text-sm text-white/90">Kahvaltı</p>
-                                    <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
-                                        <p className="text-xs md:text-sm truncate">{todaysPlan?.['Kahvaltı']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
+                            <div className="space-y-1">
+                                    <p className="font-semibold text-xs text-white/90">Kahvaltı</p>
+                                    <div className="p-1.5 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px]">
+                                        <p className="text-xs truncate">{todaysPlan?.['Kahvaltı']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
                                     </div>
                                 </div>
-                                <div className="space-y-1 md:space-y-2">
-                                    <p className="font-semibold text-xs md:text-sm text-white/90">Akşam Yemeği</p>
-                                    <div className="p-1.5 md:p-2 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px] md:min-h-[40px]">
-                                        <p className="text-xs md:text-sm truncate">{todaysPlan?.['Akşam Yemeği']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-xs text-white/90">Akşam Yemeği</p>
+                                    <div className="p-1.5 rounded-md bg-white/20 backdrop-blur-sm min-h-[36px]">
+                                        <p className="text-xs truncate">{todaysPlan?.['Akşam Yemeği']?.title || <span className="text-white/70">Planlanmadı</span>}</p>
                                     </div>
                                 </div>
                             </div>
-                            <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
+                            <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Yemek planına git →</p>
                         </div>
                     </Link>
                 </div>
-                <div className="grid grid-cols-2 rounded-xl overflow-hidden shadow-lg">
-                    <Link href="/notes" className="group block">
-                        <div className="flex flex-col p-4 h-full text-white bg-gradient-to-br from-yellow-500 to-amber-600 transition-transform group-hover:-translate-y-1">
-                            <h3 className="flex items-center gap-2 text-base md:text-lg font-semibold"><Notebook/> Notlar</h3>
+                <div className="flex flex-col gap-2">
+                    <Link href="/notes" className="group block rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between p-4 h-20 text-white bg-gradient-to-br from-yellow-500 to-amber-600 transition-transform group-hover:-translate-y-1">
+                            <h3 className="flex items-center gap-2 text-base font-semibold"><Notebook/> Notlar</h3>
                             <p className="mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Defterleri gör</p>
                         </div>
                     </Link>
-                    <Link href="/tasks" className="group block">
-                        <div className="flex flex-col p-4 h-full text-white bg-gradient-to-br from-rose-500 to-red-600 transition-transform group-hover:-translate-y-1">
-                            <h3 className="flex items-center gap-2 text-base md:text-lg font-semibold"><ListChecks/> Yapılacaklar</h3>
+                     <Link href="/tasks" className="group block rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between p-4 h-20 text-white bg-gradient-to-br from-rose-500 to-red-600 transition-transform group-hover:-translate-y-1">
+                            <h3 className="flex items-center gap-2 text-base font-semibold"><ListChecks/> Yapılacaklar</h3>
                              <p className="mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Görevleri yönet</p>
                         </div>
                     </Link>
+                    <Link href="/budget" className="group block rounded-xl overflow-hidden">
+                    <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1">
+                        <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {monthlyBudgetSummary.monthName} Bütçe Özeti</h3>
+                        <div className="flex-grow my-4 grid grid-cols-3 gap-2">
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Gelir</p>
+                                <p className="text-base font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            </div>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Gider</p>
+                                <p className="text-base font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
+                            </div>
+                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                <p className="text-xs font-semibold text-white/90">Kalan</p>
+                                <p className={cn("text-base font-bold truncate", monthlyBudgetSummary.net < 0 ? 'text-red-200' : '')}>
+                                    {monthlyBudgetSummary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                                </p>
+                            </div>
+                        </div>
+                        <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
+                    </div>
+                </Link>
                 </div>
+            </div>
+
                 <Link href="/calendar" className="group block">
                     <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-blue-500 to-purple-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Calendar /> Yaklaşan Etkinlikler</h3>
@@ -489,22 +518,6 @@ export default function Home() {
                             )}
                         </div>
                         <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Takvime git →</p>
-                    </div>
-                </Link>
-                <Link href="/budget" className="group block">
-                    <div className="flex flex-col p-4 rounded-xl shadow-lg text-white bg-gradient-to-br from-lime-600 to-green-600 transition-transform group-hover:-translate-y-1">
-                        <h3 className="flex items-center gap-3 text-base md:text-lg font-semibold"><Wallet /> Bütçe Özeti</h3>
-                        <div className="flex-grow my-4 grid grid-cols-2 gap-4">
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                <p className="text-xs font-semibold text-white/90">Gelir</p>
-                                <p className="text-lg font-bold truncate">{monthlyBudgetSummary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                            <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                <p className="text-xs font-semibold text-white/90">Gider</p>
-                                <p className="text-lg font-bold truncate text-red-200">{monthlyBudgetSummary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</p>
-                            </div>
-                        </div>
-                        <p className="w-full mt-auto text-sm text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Bütçe detaylarına git →</p>
                     </div>
                 </Link>
                 
@@ -747,3 +760,4 @@ export default function Home() {
     </>
   );
 }
+
