@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Book, BookHeart, BookOpen, BrainCircuit, Check, Flame, GraduationCap, UtensilsCrossed, Users, ListChecks, Gamepad2, Youtube, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabitCompletion } from '@/lib/dataService';
-import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video } from '@/lib/data';
+import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video, TrackedBook } from '@/lib/data';
 import { Progress } from './ui/progress';
 import { format, isToday, parseISO, subDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -30,6 +30,7 @@ interface MemberDashboardCardProps {
     memorizationItems: MemorizationItem[];
     memorizationProgress: MemorizationProgress[];
     prayerProgress: PrayerProgress[];
+    trackedBooks: TrackedBook[];
 }
 
 const roleGradients: { [key: string]: string } = {
@@ -53,6 +54,7 @@ export function MemberDashboardCard({
     memorizationItems,
     memorizationProgress,
     prayerProgress,
+    trackedBooks,
 }: MemberDashboardCardProps) {
     const { toast } = useToast();
     const { familyId, familyMembers } = useAuth();
@@ -79,7 +81,20 @@ export function MemberDashboardCard({
 
         const otherTasks = memberTasks.filter(t => !t.isRecurring && !t.completed);
         
-        const pendingTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
+        const allTopics = trackedBooks.flatMap(book => 
+            book.subjects.flatMap(subject => 
+                subject.topics.map(topic => ({...topic, subjectName: subject.name}))
+            )
+        );
+
+        const memberTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı')
+            .map(test => {
+                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                return {
+                    ...test,
+                    displayName: topicName ? `${topicName} - ${test.title}` : test.title
+                }
+            });
         
         const memberStudyAssignments = studyAssignments.filter(sa => sa.studentId === memberId);
         const pendingStudies = memberStudyAssignments
@@ -142,7 +157,7 @@ export function MemberDashboardCard({
         return { 
             habits, 
             pendingTasks: otherTasks, 
-            pendingTests, 
+            pendingTests: memberTests, 
             pendingStudies, 
             completedStudies,
             readingBooks: readingBooksData,
@@ -151,7 +166,7 @@ export function MemberDashboardCard({
             todaysPrayers: todaysPrayersData,
             earnedFreeTimeMinutes: earnedTime,
         };
-    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, videos, memorizationItems, memorizationProgress, prayerProgress, isClient]);
+    }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, videos, memorizationItems, memorizationProgress, prayerProgress, isClient, trackedBooks]);
 
     const handleTaskCompletion = async (task: Task) => {
         if (!familyId || !member) return;
@@ -369,7 +384,10 @@ export function MemberDashboardCard({
                             {pendingTests.map(test => (
                                 <Link href={`/education/${test.id}`} key={test.id} className="block">
                                     <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
-                                        <div className="truncate"><p className="font-semibold truncate text-sm">{test.title}</p><p className="text-xs text-white/80 truncate">{test.subject}</p></div>
+                                        <div className="truncate">
+                                            <p className="font-semibold truncate text-sm">{test.displayName}</p>
+                                            <p className="text-xs text-white/80 truncate">{test.subject}</p>
+                                        </div>
                                     </div>
                                 </Link>
                             ))}
