@@ -150,7 +150,7 @@ export default function EducationPage() {
       .filter(sa => sa.status === 'completed')
       .sort((a, b) => compareDesc(parseISO(a.completedAt || '1970-01-01'), parseISO(b.completedAt || '1970-01-01')));
 
-    return { pendingStudies: pending, completedStudies: completed };
+    return { upcomingStudies: pending, pastStudies: completed };
 }, [selectedStudent, studyAssignments, studyPlans]);
 
 
@@ -542,7 +542,11 @@ export default function EducationPage() {
                                 const now = new Date();
                                 const daysDiff = differenceInDays(dueDate, now);
                                 const isTestDue = isPast(dueDate) && !isToday(dueDate);
-                                const allTopics = trackedBooks.flatMap(book => book.subjects.flatMap(subject => subject.topics));
+                                const allTopics = trackedBooks.flatMap(book => 
+                                    (book.subjects || []).flatMap(subject => 
+                                        (subject.topics || []).map(topic => ({...topic, subjectName: subject.name}))
+                                    )
+                                ) || [];
                                 const topicName = allTopics.find(t => t.id === test.topicId)?.name;
                                 
 
@@ -552,11 +556,11 @@ export default function EducationPage() {
                                             <div className="flex-grow">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <div className={cn('w-4 h-4 text-current')}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4" })}</div>
-                                                    <h3 className="font-semibold text-lg">{test.title}</h3>
+                                                    <h3 className="font-semibold text-lg">{topicName ? `${topicName} - ${test.title}` : test.title}</h3>
                                                 </div>
                                                 <div className="flex items-center gap-4 ml-6">
                                                      <p className="text-sm text-current/80">
-                                                        {test.subject}{topicName && ` - ${topicName}`}
+                                                        {test.subject}
                                                      </p>
                                                 </div>
                                                 <div className="flex items-center gap-4 ml-6">
