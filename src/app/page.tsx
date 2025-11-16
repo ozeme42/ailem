@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -472,7 +471,7 @@ export default function Home() {
             
              <div className="grid grid-cols-2">
                 <Link href="/notes" className="group block rounded-l-xl overflow-hidden rounded-r-none">
-                    <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
+                     <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
                 </Link>
