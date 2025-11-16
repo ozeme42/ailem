@@ -414,7 +414,7 @@ export default function Home() {
       )}>
           <div className="flex items-center gap-4">
               <SidebarTrigger />
-              <h1 className="text-2xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>Özgürdere Ailesi</h1>
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tighter" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.2)'}}>Özgürdere Ailesi</h1>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
@@ -425,7 +425,7 @@ export default function Home() {
             <div className="grid grid-cols-2">
                 <Link href="/shopping" className="group block rounded-l-xl overflow-hidden rounded-r-none">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
-                        <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
+                        <h3 className="flex items-center gap-3 text-sm sm:text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
                             {shoppingSummary.totalPending > 0 ? (
                                 <>
@@ -449,7 +449,7 @@ export default function Home() {
                 </Link>
                 <Link href="/yemek" className="group block rounded-r-xl overflow-hidden rounded-l-none">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
-                        <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
+                        <h3 className="flex items-center gap-3 text-sm sm:text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
                         <div className="space-y-1">
                                 <p className="font-semibold text-xs text-white/90">Kahvaltı</p>
@@ -469,15 +469,15 @@ export default function Home() {
                 </Link>
             </div>
             
-             <div className="grid grid-cols-2">
+             <div className="grid grid-cols-2 gap-0">
                 <Link href="/notes" className="group block rounded-l-xl overflow-hidden rounded-r-none">
-                     <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
-                        <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
+                     <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-r-none">
+                        <h3 className="flex items-center justify-center gap-2 text-sm sm:text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
                 </Link>
                 <Link href="/tasks" className="group block rounded-r-xl overflow-hidden rounded-l-none">
-                     <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-rose-500 to-red-600 text-white">
-                        <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
+                     <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-rose-500 to-red-600 text-white rounded-l-none">
+                        <h3 className="flex items-center justify-center gap-2 text-sm sm:text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
                     </Card>
                 </Link>
             </div>
@@ -490,19 +490,19 @@ export default function Home() {
                                 <CarouselItem key={index}>
                                     <div className="p-1">
                                         <CardContent className="flex flex-col p-4">
-                                            <h3 className="flex items-center gap-3 text-base font-semibold"><Wallet /> {summary.monthName} Bütçe Özeti</h3>
+                                            <h3 className="flex items-center gap-3 text-sm sm:text-base font-semibold"><Wallet /> {summary.monthName} Bütçe Özeti</h3>
                                             <div className="flex-grow my-4 grid grid-cols-3 gap-2">
                                                 <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
                                                     <p className="text-xs font-semibold text-white/90">Gelir</p>
-                                                    <p className="text-base font-bold truncate">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                                    <p className="text-sm sm:text-base font-bold truncate">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                                                 </div>
                                                 <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
                                                     <p className="text-xs font-semibold text-white/90">Gider</p>
-                                                    <p className="text-base font-bold truncate text-red-200">{summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                                    <p className="text-sm sm:text-base font-bold truncate text-red-200">{summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                                                 </div>
                                                 <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
                                                     <p className="text-xs font-semibold text-white/90">Kalan</p>
-                                                    <p className={cn("text-base font-bold truncate", summary.net < 0 ? 'text-red-200' : '')}>
+                                                    <p className={cn("text-sm sm:text-base font-bold truncate", summary.net < 0 ? 'text-red-200' : '')}>
                                                         {summary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                     </p>
                                                 </div>
