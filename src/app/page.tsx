@@ -471,13 +471,13 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-2">
-                <Link href="/notes" className="group block">
-                    <Card className="flex flex-col justify-center text-center rounded-xl py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 border-0">
+                <Link href="/notes" className="group block rounded-l-xl overflow-hidden rounded-r-none">
+                    <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
                 </Link>
-                <Link href="/tasks" className="group block">
-                     <Card className="flex flex-col justify-center text-center rounded-xl py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 border-0">
+                <Link href="/tasks" className="group block rounded-r-xl overflow-hidden rounded-l-none">
+                     <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-rose-500 to-red-600 text-white">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
                     </Card>
                 </Link>
