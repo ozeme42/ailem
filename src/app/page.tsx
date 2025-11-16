@@ -177,7 +177,6 @@ export default function Home() {
     const today = new Date();
     const summaries = [];
 
-    // Go 4 months back, include current month, and go 1 month forward. Total 6 months.
     for (let i = -4; i <= 1; i++) {
         const targetMonthDate = addMonths(today, i);
         const monthKey = format(targetMonthDate, 'yyyy-MM');
@@ -425,7 +424,7 @@ export default function Home() {
 
         <div className="space-y-6 pt-6">
             <div className="grid grid-cols-2">
-                <Link href="/shopping" className="group block rounded-l-xl overflow-hidden">
+                <Link href="/shopping" className="group block rounded-l-xl overflow-hidden rounded-r-none">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -449,7 +448,7 @@ export default function Home() {
                         <p className="w-full mt-auto text-xs text-center text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">Listeye git →</p>
                     </div>
                 </Link>
-                <Link href="/yemek" className="group block rounded-r-xl overflow-hidden">
+                <Link href="/yemek" className="group block rounded-r-xl overflow-hidden rounded-l-none">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-cyan-500 to-sky-600 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-base font-semibold"><UtensilsCrossed /> Günün Menüsü</h3>
                         <div className="flex-grow my-4 space-y-2">
@@ -472,13 +471,13 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-2">
-                <Link href="/notes" className="group block rounded-l-xl overflow-hidden">
-                    <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 border-0">
+                <Link href="/notes" className="group block">
+                    <Card className="flex flex-col justify-center text-center rounded-xl py-3 shadow-lg text-white bg-gradient-to-br from-amber-500 to-yellow-600 h-full transition-transform group-hover:-translate-y-1 border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
                     </Card>
                 </Link>
-                <Link href="/tasks" className="group block rounded-r-xl overflow-hidden">
-                     <Card className="flex flex-col justify-center text-center py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 border-0">
+                <Link href="/tasks" className="group block">
+                     <Card className="flex flex-col justify-center text-center rounded-xl py-3 shadow-lg text-white bg-gradient-to-br from-rose-500 to-red-600 h-full transition-transform group-hover:-translate-y-1 border-0">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><ListChecks /> Yapılacaklar</h3>
                     </Card>
                 </Link>
@@ -514,8 +513,8 @@ export default function Home() {
                                 </CarouselItem>
                             ))}
                         </CarouselContent>
-                        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-white/20 hover:bg-white/30 border-none" />
-                        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-white/20 hover:bg-white/30 border-none" />
+                        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 text-white bg-white/20 hover:bg-white/30 border-none" />
+                        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 text-white bg-white/20 hover:bg-white/30 border-none" />
                     </Carousel>
                 </Card>
             </div>
