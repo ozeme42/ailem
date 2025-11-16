@@ -470,7 +470,7 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div className="grid grid-cols-2">
+             <div className="grid grid-cols-2">
                 <Link href="/notes" className="group block rounded-l-xl overflow-hidden rounded-r-none">
                     <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
                         <h3 className="flex items-center justify-center gap-2 text-base font-semibold"><Notebook /> Notlar</h3>
@@ -483,8 +483,8 @@ export default function Home() {
                 </Link>
             </div>
             
-            <div>
-                <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden">
+            <div className="rounded-xl overflow-hidden">
+                <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden border-0">
                     <Carousel opts={{ loop: true, startIndex: 4 }} className="w-full">
                         <CarouselContent>
                             {monthlyBudgetSummary.map((summary, index) => (
