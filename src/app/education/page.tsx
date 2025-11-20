@@ -135,23 +135,22 @@ export default function EducationPage() {
       });
   }, [selectedStudent, allTests]);
 
-  const { pendingStudies, completedStudies } = React.useMemo(() => {
-    if (!selectedStudent) return { pendingStudies: [], completedStudies: [] };
+  const { upcomingEvents, pastEvents } = React.useMemo(() => {
+    const eventsWithParsedDates = calendarEvents.map(e => ({
+      ...e,
+      parsedDate: parseISO(e.startDate)
+    }));
 
-    const studentAssignments = studyAssignments
-      .filter(sa => sa.studentId === selectedStudent.id)
-      .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
+    const upcoming = eventsWithParsedDates
+      .filter(e => isFuture(e.parsedDate) || isToday(e.parsedDate))
+      .sort((a, b) => compareAsc(a.parsedDate, b.parsedDate));
+
+    const past = eventsWithParsedDates
+      .filter(e => isPast(e.parsedDate) && !isToday(e.parsedDate))
+      .sort((a, b) => compareDesc(a.parsedDate, b.parsedDate));
       
-    const pending = studentAssignments
-      .filter(sa => sa.status === 'assigned')
-      .sort((a, b) => compareAsc(parseISO(a.dueDate), parseISO(b.dueDate)));
-
-    const completed = studentAssignments
-      .filter(sa => sa.status === 'completed')
-      .sort((a, b) => compareDesc(parseISO(a.completedAt || '1970-01-01'), parseISO(b.completedAt || '1970-01-01')));
-
-    return { pendingStudies: pending, completedStudies: completed };
-}, [selectedStudent, studyAssignments, studyPlans]);
+    return { upcomingEvents: upcoming, pastEvents: past };
+  }, [calendarEvents]);
 
 
   
@@ -524,7 +523,7 @@ export default function EducationPage() {
                                                 <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
                                             </CardContent>
                                             <CardFooter className="p-0">
-                                                <Progress value={progressValue} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
+                                                <Progress value={progressValue} className="h-2 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
                                             </CardFooter>
                                         </Card>
                                     </Link>
@@ -607,7 +606,7 @@ export default function EducationPage() {
                                                 <p className="text-sm text-green-600 font-medium">{progress.completed} Tamamlandı</p>
                                             </CardContent>
                                             <CardFooter className="p-0">
-                                                <Progress value={(progress.completed / progress.total) * 100} className="h-1 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName="bg-pink-500" />
+                                                <Progress value={(progress.completed / progress.total) * 100} className="h-2 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName="bg-pink-500" />
                                             </CardFooter>
                                         </Card>
                                     </Link>
