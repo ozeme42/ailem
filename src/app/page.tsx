@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -421,7 +422,7 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="space-y-4 pt-6">
+        <div className="space-y-2 pt-6">
              <div className="grid grid-cols-2">
                 <Link href="/shopping" className="group block rounded-l-xl overflow-hidden rounded-r-none">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
