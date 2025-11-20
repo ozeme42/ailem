@@ -27,6 +27,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { getCategoryName } from "@/app/education/page";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 type TopicStats = {
@@ -142,6 +143,9 @@ export default function CategoryDetailPage() {
     }
   };
 
+  const pendingTests = filteredTests.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
+  const completedTests = filteredTests.filter(t => t.status === 'Sonuçlandı');
+
 
   if (loading) {
     return <div>Yükleniyor...</div>;
@@ -188,33 +192,54 @@ export default function CategoryDetailPage() {
               </CardContent>
           </Card>
       )}
-
-      {filteredTests.length > 0 ? (
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold">Atanmış Sınavlar ({filteredTests.length})</h3>
-          {studentId ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTests.map((test) => {
-                 const topicName = test.topicId;
-                 return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
-              })}
-            </div>
-          ) : (
-            <Accordion type="multiple" className="w-full space-y-2" defaultValue={filteredTests.map(t => t.id)}>
-              {filteredTests.map((test) => {
-                const studentForTest = familyMembers.find(m => m.id === test.studentId);
-                return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
-              })}
-            </Accordion>
-          )}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            Bu kategoride atanmış test bulunmuyor.
-          </CardContent>
-        </Card>
-      )}
+        <Tabs defaultValue="pending" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pending">Bekleyenler ({pendingTests.length})</TabsTrigger>
+                <TabsTrigger value="completed">Bitenler ({completedTests.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="pending" className="mt-6">
+                {pendingTests.length > 0 ? (
+                     studentId ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {pendingTests.map((test) => {
+                                const topicName = test.topicId;
+                                return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                            })}
+                        </div>
+                    ) : (
+                        <Accordion type="multiple" className="w-full space-y-2" defaultValue={pendingTests.map(t => t.id)}>
+                            {pendingTests.map((test) => {
+                                const studentForTest = familyMembers.find(m => m.id === test.studentId);
+                                return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
+                            })}
+                        </Accordion>
+                    )
+                ) : (
+                    <Card><CardContent className="p-8 text-center text-muted-foreground">Bekleyen sınav bulunmuyor.</CardContent></Card>
+                )}
+            </TabsContent>
+            <TabsContent value="completed" className="mt-6">
+                 {completedTests.length > 0 ? (
+                     studentId ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {completedTests.map((test) => {
+                                const topicName = test.topicId;
+                                return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                            })}
+                        </div>
+                    ) : (
+                        <Accordion type="multiple" className="w-full space-y-2" defaultValue={completedTests.map(t => t.id)}>
+                            {completedTests.map((test) => {
+                                const studentForTest = familyMembers.find(m => m.id === test.studentId);
+                                return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
+                            })}
+                        </Accordion>
+                    )
+                ) : (
+                    <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış sınav bulunmuyor.</CardContent></Card>
+                )}
+            </TabsContent>
+        </Tabs>
 
       {selectedTopic && student && (
         <NewTestFromTopicForm
