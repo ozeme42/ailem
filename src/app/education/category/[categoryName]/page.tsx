@@ -163,35 +163,6 @@ export default function CategoryDetailPage() {
         </Button>
       </PageHeader>
       
-      {student && topicStats.length > 0 && (
-          <Card>
-              <CardHeader>
-                  <CardTitle>Konu Başarı Durumu</CardTitle>
-                  <CardDescription>Bu dersteki konulara göre başarı dağılımı. Zayıf konulardan hızlıca ödev oluşturun.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                  {topicStats.map(topic => {
-                      const progressColor = topic.successRate >= 75 ? "bg-green-500" : topic.successRate >= 50 ? "bg-yellow-500" : "bg-red-500";
-                      return (
-                           <div key={topic.id} className="p-3 border rounded-lg">
-                              <div className="flex justify-between items-center mb-2">
-                                <p className="font-semibold">{topic.name}</p>
-                                 <Link href="/education/management/questions">
-                                    <Button size="sm" variant="secondary">
-                                        <Send className="mr-2 h-4 w-4"/> Ödev Ata
-                                    </Button>
-                                </Link>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <Progress value={topic.successRate} className="h-2 flex-grow" indicatorClassName={progressColor} />
-                                <p className="text-xs text-muted-foreground font-medium">{topic.correct} / {topic.total} Doğru</p>
-                              </div>
-                           </div>
-                      )
-                  })}
-              </CardContent>
-          </Card>
-      )}
         <Tabs defaultValue="pending" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="pending">Bekleyenler ({pendingTests.length})</TabsTrigger>
@@ -463,4 +434,5 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
+
 
