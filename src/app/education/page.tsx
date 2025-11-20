@@ -506,10 +506,16 @@ export default function EducationPage() {
                                 const colorClass = categoryCardColors[category] || 'bg-gray-500/10 text-gray-800';
                                 const progressColor = categoryProgressColors[category] || 'bg-gray-500';
                                 const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
+                                const pending = data.total - data.completed;
                     
                                 return (
                                     <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
-                                        <Card className={cn("flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                                        <Card className={cn("relative flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
+                                            {pending > 0 && (
+                                                <Badge className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold animate-in fade-in-0 zoom-in-75">
+                                                    {pending}
+                                                </Badge>
+                                            )}
                                             <CardHeader className="text-center">
                                                 <Icon className="w-16 h-16 mx-auto mb-4 opacity-80" />
                                                 <CardTitle className="text-xl text-current">{category}</CardTitle>
@@ -672,4 +678,5 @@ export default function EducationPage() {
     
 
     
+
 
