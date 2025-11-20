@@ -134,25 +134,6 @@ export default function EducationPage() {
           }
       });
   }, [selectedStudent, allTests]);
-
-  const { upcomingEvents, pastEvents } = React.useMemo(() => {
-    const eventsWithParsedDates = calendarEvents.map(e => ({
-      ...e,
-      parsedDate: parseISO(e.startDate)
-    }));
-
-    const upcoming = eventsWithParsedDates
-      .filter(e => isFuture(e.parsedDate) || isToday(e.parsedDate))
-      .sort((a, b) => compareAsc(a.parsedDate, b.parsedDate));
-
-    const past = eventsWithParsedDates
-      .filter(e => isPast(e.parsedDate) && !isToday(e.parsedDate))
-      .sort((a, b) => compareDesc(a.parsedDate, b.parsedDate));
-      
-    return { upcomingEvents: upcoming, pastEvents: past };
-  }, [calendarEvents]);
-
-
   
   const overallStats = React.useMemo(() => {
     const evaluatedTests = tests.filter(t => t.status === 'Sonuçlandı');
