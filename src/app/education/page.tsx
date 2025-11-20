@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -512,7 +511,7 @@ export default function EducationPage() {
                                     <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
                                         <Card className={cn("relative flex flex-col shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full", colorClass)}>
                                             {pending > 0 && (
-                                                <Badge className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold animate-in fade-in-0 zoom-in-75">
+                                                <Badge className="absolute top-2 right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold animate-pulse">
                                                     {pending}
                                                 </Badge>
                                             )}
@@ -674,9 +673,3 @@ export default function EducationPage() {
     </>
   );
 }
-
-    
-
-    
-
-
