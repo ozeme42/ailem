@@ -421,8 +421,8 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="space-y-6 pt-6">
-            <div className="grid grid-cols-2">
+        <div className="space-y-4 pt-6">
+             <div className="grid grid-cols-2">
                 <Link href="/shopping" className="group block rounded-l-xl overflow-hidden rounded-r-none">
                     <div className="flex flex-col p-4 shadow-lg text-white bg-gradient-to-br from-teal-500 to-cyan-500 h-full transition-transform group-hover:-translate-y-1">
                         <h3 className="flex items-center gap-3 text-sm sm:text-base font-semibold"><ShoppingCart /> Alışveriş Listesi</h3>
@@ -469,7 +469,7 @@ export default function Home() {
                 </Link>
             </div>
             
-             <div className="grid grid-cols-2 gap-0">
+             <div className="grid grid-cols-2">
                 <Link href="/notes" className="group block rounded-l-xl overflow-hidden rounded-r-none">
                      <Card className="flex h-full flex-col justify-center py-3 text-center shadow-lg transition-transform group-hover:-translate-y-1 border-0 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-r-none">
                         <h3 className="flex items-center justify-center gap-2 text-sm sm:text-base font-semibold"><Notebook /> Notlar</h3>
@@ -784,3 +784,5 @@ export default function Home() {
     </>
   );
 }
+
+    
