@@ -232,9 +232,8 @@ export default function StatsClient() {
                     {stats.subjectStats.map(s => (<Cell key={s.name} fill="hsl(var(--chart-1))" />))}
                      <LabelList
                         dataKey="successRate"
-                        position="right"
-                        offset={8}
-                        className="fill-foreground text-xs"
+                        position="center"
+                        className="fill-primary-foreground text-xs"
                         formatter={(value: number) => `${value.toFixed(1)}%`}
                     />
                 </Bar>
