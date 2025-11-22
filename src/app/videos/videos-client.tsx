@@ -402,8 +402,8 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
       {shelves.map(([shelfName, shelfVideos], index) => {
           const color = brightColors[index % brightColors.length];
           return (
-             <AccordionItem key={shelfName} value={shelfName} className="border-b-0">
-                <Card className={cn("text-white border-0 rounded-none", color.gradient)}>
+             <div key={shelfName} className={cn("text-white border-0", `bg-gradient-to-br ${color.gradient}`)}>
+                <AccordionItem value={shelfName} className="border-b-0">
                     <CardHeader className="p-0">
                         <AccordionTrigger className="flex items-center gap-3 p-4 text-left hover:no-underline">
                             <Folder className="h-6 w-6 text-white" />
@@ -417,10 +417,11 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
                              ))}
                         </div>
                     </AccordionContent>
-                 </Card>
-            </AccordionItem>
+                 </AccordionItem>
+            </div>
           )
       })}
     </Accordion>
   );
 }
+
