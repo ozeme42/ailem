@@ -178,7 +178,7 @@ export default function CategoryDetailPage() {
                             })}
                         </div>
                     ) : (
-                        <Accordion type="multiple" className="w-full space-y-2" defaultValue={pendingTests.map(t => t.id)}>
+                        <Accordion type="multiple" className="w-full space-y-2">
                             {pendingTests.map((test) => {
                                 const studentForTest = familyMembers.find(m => m.id === test.studentId);
                                 return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
@@ -199,7 +199,7 @@ export default function CategoryDetailPage() {
                             })}
                         </div>
                     ) : (
-                        <Accordion type="multiple" className="w-full space-y-2" defaultValue={completedTests.map(t => t.id)}>
+                        <Accordion type="multiple" className="w-full space-y-2">
                             {completedTests.map((test) => {
                                 const studentForTest = familyMembers.find(m => m.id === test.studentId);
                                 return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
@@ -302,7 +302,7 @@ function ManagementTestCard({ test, student, onDelete }: { test: Test, student?:
     const cardStyle = student ? { backgroundColor: hexToRgba(student.color, 0.15) } : {};
 
     return (
-        <AccordionItem value={test.id} className="border-0 rounded-md mb-2 overflow-hidden" style={cardStyle}>
+        <AccordionItem value={test.id} className="border bg-background rounded-md mb-2" style={cardStyle}>
             <AccordionTrigger className="p-4 hover:no-underline">
                 <div className="flex justify-between items-center w-full pr-4">
                     <div>
@@ -443,6 +443,7 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
+
 
 
 
