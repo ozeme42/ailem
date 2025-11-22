@@ -45,6 +45,7 @@ export default function StatsClient() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [sortKey, setSortKey] = React.useState<SortKey>('score');
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
+  const [selectedSubject, setSelectedSubject] = React.useState<string | null>(null);
 
 
   const student = React.useMemo(() => familyMembers.find(m => m.id === studentId), [familyMembers, studentId]);
@@ -82,8 +83,6 @@ export default function StatsClient() {
       if (test.sourceType === 'exam' && test.sourceId) {
         const exam = practiceExams.find(e => e.id === test.sourceId);
         if (exam) {
-           // This is a simplification. Real distribution would be more complex.
-           // We'll distribute correct/incorrect answers proportionally.
            const testSuccessRate = test.questionCount > 0 ? (test.correctAnswers || 0) / test.questionCount : 0;
            exam.subjects.forEach(subject => {
              const current = subjectStatsMap.get(subject.name) || { total: 0, correct: 0, incorrect: 0, empty: 0 };
@@ -112,11 +111,11 @@ export default function StatsClient() {
       successRate: data.total > 0 ? (data.correct / data.total) * 100 : 0
     })).sort((a,b) => b.successRate - a.successRate);
     
-    // Topic Analysis
-    const allTopics = bankQuestions.map(q => ({ subject: q.subject, topic: q.topic, id: q.topic }));
     const topicStatsMap = new Map<string, { total: number; correct: number; successRate: number, subject: string, name: string }>();
     
-    tests.filter(t => t.sourceType === 'bank' && t.questions).forEach(test => {
+    const testsForTopicAnalysis = selectedSubject ? tests.filter(t => t.subject === selectedSubject) : tests;
+
+    testsForTopicAnalysis.filter(t => t.sourceType === 'bank' && t.questions).forEach(test => {
         test.questions?.forEach(q => {
             const bankQ = bankQuestions.find(bq => bq.id === q.questionId);
             if (bankQ) {
@@ -141,12 +140,16 @@ export default function StatsClient() {
     const strongTopics = sortedTopics.filter(t => t.successRate >= 75).slice(0, 5);
     const weakTopics = sortedTopics.filter(t => t.successRate < 75).sort((a,b) => a.successRate - b.successRate).slice(0, 5);
 
+    const topicStatsForSelectedSubject = Array.from(topicStatsMap.values())
+        .filter(t => t.subject === selectedSubject)
+        .sort((a, b) => b.successRate - a.successRate);
+
 
     return {
       totalQuestions, totalCorrect, totalIncorrect, totalEmpty, successRate,
-      subjectStats, strongTopics, weakTopics
+      subjectStats, strongTopics, weakTopics, topicStatsForSelectedSubject
     };
-  }, [tests, practiceExams, bankQuestions]);
+  }, [tests, practiceExams, bankQuestions, selectedSubject]);
   
   const handleSort = (key: SortKey) => {
       if (sortKey === key) {
@@ -186,7 +189,6 @@ export default function StatsClient() {
 
 
   if (loading) {
-    // Skeleton can be improved later
     return <div>Yükleniyor...</div>;
   }
   
@@ -253,29 +255,46 @@ export default function StatsClient() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <Card>
-          <CardHeader>
-            <CardTitle>Derslere Göre Başarı Dağılımı</CardTitle>
-            <CardDescription>Her dersteki başarı yüzdesi.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <ChartContainer config={chartConfig} className="h-64 w-full">
-               <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 10, right: 30 }}>
-                <CartesianGrid horizontal={false} />
-                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12}/>
-                <XAxis dataKey="successRate" type="number" hide />
-                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                <Bar dataKey="successRate" name="Başarı" radius={5}>
-                    {stats.subjectStats.map((s, index) => (<Cell key={s.name} fill={chartColors[index % chartColors.length]} />))}
-                     <LabelList
-                        dataKey="successRate"
-                        position="center"
-                        className="fill-primary-foreground text-xs"
-                        formatter={(value: number) => `${value.toFixed(1)}%`}
-                    />
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <CardTitle>{selectedSubject ? `${selectedSubject} Konu Analizi` : 'Derslere Göre Başarı Dağılımı'}</CardTitle>
+                     {selectedSubject && (
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedSubject(null)}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Derslere Dön
+                        </Button>
+                    )}
+                </div>
+                <CardDescription>{selectedSubject ? 'Bu dersteki konuların başarı yüzdeleri.' : 'Her dersteki genel başarı yüzdesi.'}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {selectedSubject ? (
+                     <ChartContainer config={chartConfig} className="h-64 w-full">
+                       <BarChart data={stats.topicStatsForSelectedSubject} layout="vertical" margin={{ left: 10, right: 30 }}>
+                        <CartesianGrid horizontal={false} />
+                        <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12}/>
+                        <XAxis dataKey="successRate" type="number" hide />
+                        <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                        <Bar dataKey="successRate" name="Başarı" radius={5}>
+                             {stats.topicStatsForSelectedSubject.map((s, index) => (<Cell key={s.name} fill={chartColors[index % chartColors.length]} />))}
+                             <LabelList dataKey="successRate" position="center" className="fill-primary-foreground text-xs" formatter={(value: number) => `${value.toFixed(1)}%`}/>
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+                ) : (
+                    <ChartContainer config={chartConfig} className="h-64 w-full">
+                       <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 10, right: 30 }} onClick={(e) => e.activePayload && setSelectedSubject(e.activePayload[0].payload.name)}>
+                        <CartesianGrid horizontal={false} />
+                        <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12}/>
+                        <XAxis dataKey="successRate" type="number" hide />
+                        <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                        <Bar dataKey="successRate" name="Başarı" radius={5} className="cursor-pointer">
+                            {stats.subjectStats.map((s, index) => (<Cell key={s.name} fill={chartColors[index % chartColors.length]} />))}
+                             <LabelList dataKey="successRate" position="center" className="fill-primary-foreground text-xs" formatter={(value: number) => `${value.toFixed(1)}%`}/>
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+                )}
+            </CardContent>
         </Card>
 
         <Card>
