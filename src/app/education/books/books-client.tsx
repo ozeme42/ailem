@@ -87,7 +87,7 @@ export function BooksClient() {
   };
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
         <PageHeader title="Kitap Takibi">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
