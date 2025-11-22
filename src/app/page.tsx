@@ -484,39 +484,41 @@ export default function Home() {
             </div>
             
             <div className="rounded-xl overflow-hidden">
-                <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden border-0">
-                    <Carousel opts={{ loop: true, startIndex: 4 }} className="w-full">
-                        <CarouselContent>
-                            {monthlyBudgetSummary.map((summary, index) => (
-                                <CarouselItem key={index}>
-                                    <div className="p-1">
-                                        <CardContent className="flex flex-col p-4">
-                                            <h3 className="flex items-center gap-3 text-sm sm:text-base font-semibold"><Wallet /> {summary.monthName} Bütçe Özeti</h3>
-                                            <div className="flex-grow my-4 grid grid-cols-3 gap-2">
-                                                <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                                    <p className="text-xs font-semibold text-white/90">Gelir</p>
-                                                    <p className="text-sm sm:text-base font-bold truncate">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                 <Link href="/budget" className="group block">
+                    <Card className="shadow-lg bg-gradient-to-br from-lime-600 to-green-600 text-white rounded-xl overflow-hidden border-0 transition-transform group-hover:-translate-y-1">
+                        <Carousel opts={{ loop: true, startIndex: 4 }} className="w-full">
+                            <CarouselContent>
+                                {monthlyBudgetSummary.map((summary, index) => (
+                                    <CarouselItem key={index}>
+                                        <div className="p-1">
+                                            <CardContent className="flex flex-col p-4">
+                                                <h3 className="flex items-center gap-3 text-sm sm:text-base font-semibold"><Wallet /> {summary.monthName} Bütçe Özeti</h3>
+                                                <div className="flex-grow my-4 grid grid-cols-3 gap-2">
+                                                    <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                                        <p className="text-xs font-semibold text-white/90">Gelir</p>
+                                                        <p className="text-sm sm:text-base font-bold truncate">{summary.income.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                                    </div>
+                                                    <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                                        <p className="text-xs font-semibold text-white/90">Gider</p>
+                                                        <p className="text-sm sm:text-base font-bold truncate text-red-200">{summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                                    </div>
+                                                    <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
+                                                        <p className="text-xs font-semibold text-white/90">Kalan</p>
+                                                        <p className={cn("text-sm sm:text-base font-bold truncate", summary.net < 0 ? 'text-red-200' : '')}>
+                                                            {summary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                                    <p className="text-xs font-semibold text-white/90">Gider</p>
-                                                    <p className="text-sm sm:text-base font-bold truncate text-red-200">{summary.expense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-                                                </div>
-                                                <div className="p-2 rounded-md bg-white/20 backdrop-blur-sm text-center">
-                                                    <p className="text-xs font-semibold text-white/90">Kalan</p>
-                                                    <p className={cn("text-sm sm:text-base font-bold truncate", summary.net < 0 ? 'text-red-200' : '')}>
-                                                        {summary.net.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </div>
-                                </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 text-white bg-white/20 hover:bg-white/30 border-none" />
-                        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 text-white bg-white/20 hover:bg-white/30 border-none" />
-                    </Carousel>
-                </Card>
+                                            </CardContent>
+                                        </div>
+                                    </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                            <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 text-white bg-white/20 hover:bg-white/30 border-none" />
+                            <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 text-white bg-white/20 hover:bg-white/30 border-none" />
+                        </Carousel>
+                    </Card>
+                </Link>
             </div>
 
 
@@ -787,3 +789,4 @@ export default function Home() {
 }
 
     
+
