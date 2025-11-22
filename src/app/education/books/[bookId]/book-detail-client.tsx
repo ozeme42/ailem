@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit, Trash2, Send, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject } from "@/lib/dataService";
-import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic } from "@/lib/data";
+import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject, onTestsUpdate } from "@/lib/dataService";
+import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic, Test } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 
 export function BookDetailClient() {
@@ -36,6 +37,7 @@ export function BookDetailClient() {
 
   const [book, setBook] = useState<TrackedBook | null>(null);
   const [tests, setTests] = useState<TrackedBookTest[]>([]);
+  const [allTests, setAllTests] = useState<Test[]>([]);
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
 
   // Dialog states
@@ -62,9 +64,11 @@ export function BookDetailClient() {
     if (!bookId) return;
     const unsubBook = onTrackedBookUpdate(bookId, setBook);
     const unsubTests = onTrackedBookTestsUpdate(bookId, setTests);
+    const unsubAllTests = onTestsUpdate(setAllTests);
     return () => {
       unsubBook();
       unsubTests();
+      unsubAllTests();
     };
   }, [bookId]);
   
@@ -327,35 +331,52 @@ export function BookDetailClient() {
                                 </AccordionTrigger>
                                 <AccordionContent className="pt-2">
                                     <div className="space-y-2">
-                                    {tests.filter(t => t.topicId === topic.id).map(test => (
-                                        <div key={test.id} className="flex items-center justify-between p-2 border rounded-md">
-                                          <div className="flex items-center gap-3">
-                                            <Checkbox
-                                              checked={selectedTests.includes(test.id)}
-                                              onCheckedChange={() => toggleTestSelection(test.id)}
-                                            />
-                                            <p>{test.name} ({test.questionCount} soru)</p>
-                                          </div>
-                                          <div className="flex gap-1">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); handleOpenTestDialog(test); }}><Edit className="h-4 w-4" /></Button>
-                                             <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                        <AlertDialogDescription>"{test.name}" testi kalıcı olarak silinecektir.</AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Evet, Sil</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                          </div>
-                                        </div>
-                                    ))}
+                                    {tests.filter(t => t.topicId === topic.id).map(test => {
+                                        const assignments = allTests.filter(t => t.sourceType === 'trackedBook' && t.sourceId === test.id);
+                                        return (
+                                            <div key={test.id} className="flex items-center justify-between p-2 border rounded-md">
+                                            <div className="flex items-center gap-3">
+                                                <Checkbox
+                                                checked={selectedTests.includes(test.id)}
+                                                onCheckedChange={() => toggleTestSelection(test.id)}
+                                                />
+                                                <div className="flex flex-col">
+                                                    <p>{test.name} ({test.questionCount} soru)</p>
+                                                    {assignments.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {assignments.map(assignment => {
+                                                                const student = familyMembers.find(m => m.id === assignment.studentId);
+                                                                return student ? (
+                                                                    <Badge key={assignment.id} variant="secondary" style={{ backgroundColor: student.color, color: 'white' }}>
+                                                                        {student.name}
+                                                                    </Badge>
+                                                                ) : null;
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); handleOpenTestDialog(test); }}><Edit className="h-4 w-4" /></Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                            <AlertDialogDescription>"{test.name}" testi kalıcı olarak silinecektir.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Evet, Sil</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                            </div>
+                                        )
+                                    })}
                                     <div className="grid grid-cols-2 gap-2">
                                         <Button variant="secondary" className="w-full" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); handleOpenTestDialog(null); }}>
                                             <Plus className="mr-2 h-4 w-4" /> Tek Test Ekle
@@ -498,3 +519,5 @@ export function BookDetailClient() {
     </div>
   );
 }
+
+    
