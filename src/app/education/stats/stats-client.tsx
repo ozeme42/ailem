@@ -171,40 +171,40 @@ export default function StatsClient() {
       </PageHeader>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
+        <Card className="bg-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Soru</CardTitle>
-            <Sigma className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-primary">Toplam Soru</CardTitle>
+            <Sigma className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalQuestions}</div>
+            <div className="text-2xl font-bold text-primary">{stats.totalQuestions}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-green-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Doğru Cevap</CardTitle>
-            <Check className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-green-600">Doğru Cevap</CardTitle>
+            <Check className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCorrect}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.totalCorrect}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-red-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Yanlış Cevap</CardTitle>
-            <X className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-medium text-red-600">Yanlış Cevap</CardTitle>
+            <X className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalIncorrect}</div>
+            <div className="text-2xl font-bold text-red-600">{stats.totalIncorrect}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-blue-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Genel Başarı</CardTitle>
-            <Percent className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium text-blue-600">Genel Başarı</CardTitle>
+            <Percent className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.successRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.successRate.toFixed(1)}%</div>
           </CardContent>
         </Card>
       </div>
