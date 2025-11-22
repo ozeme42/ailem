@@ -144,6 +144,9 @@ export default function StatsClient() {
   const chartConfig = {
     Başarı: { label: "Başarı %", color: "hsl(var(--chart-1))" },
   } satisfies ChartConfig
+  
+  const chartColors = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+
 
   if (loading) {
     // Skeleton can be improved later
@@ -229,7 +232,7 @@ export default function StatsClient() {
                 <XAxis dataKey="successRate" type="number" hide />
                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                 <Bar dataKey="successRate" name="Başarı" radius={5}>
-                    {stats.subjectStats.map(s => (<Cell key={s.name} fill="hsl(var(--chart-1))" />))}
+                    {stats.subjectStats.map((s, index) => (<Cell key={s.name} fill={chartColors[index % chartColors.length]} />))}
                      <LabelList
                         dataKey="successRate"
                         position="center"
