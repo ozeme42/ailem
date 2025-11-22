@@ -217,7 +217,7 @@ export function VideosClient() {
                 </Button>
               ))}
             </div>
-            <div className="flex-grow overflow-y-auto">
+            <div className="flex-grow overflow-y-auto -mx-4 sm:-mx-6 lg:-mx-8">
               <VideoShelf videos={filteredVideos} onEdit={handleOpenForm} onDelete={handleDeleteVideo} />
             </div>
         </div>
@@ -398,7 +398,7 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
   }
 
   return (
-    <Accordion type="multiple" className="w-full space-y-4">
+    <Accordion type="multiple" className="w-full" defaultValue={shelves.map(s => s[0])}>
       {shelves.map(([shelfName, shelfVideos], index) => {
           const color = brightColors[index % brightColors.length];
           return (
