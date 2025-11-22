@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, BookCheck, BookX, Check, Percent, Sigma, Target, ThumbsDown, ThumbsUp, X, Search } from "lucide-react";
+import { ArrowLeft, BookCheck, BookX, Check, Percent, Sigma, Target, ThumbsDown, ThumbsUp, X, Search, ArrowUpDown } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, LabelList } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
@@ -16,6 +16,8 @@ import { onTestsUpdate, onBankQuestionsUpdate, onPracticeExamsUpdate } from "@/l
 import { Test, BankQuestion, PracticeExam, Topic } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
 
 type SubjectStats = {
   name: string;
@@ -28,6 +30,8 @@ type SubjectStats = {
 
 type TopicWithSubject = Topic & { subjectName: string; name: string; total: number; correct: number; successRate: number, subject: string };
 
+type SortKey = keyof Test | null;
+
 export default function StatsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -39,6 +43,9 @@ export default function StatsClient() {
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [sortKey, setSortKey] = React.useState<SortKey>('score');
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
+
 
   const student = React.useMemo(() => familyMembers.find(m => m.id === studentId), [familyMembers, studentId]);
 
@@ -140,6 +147,36 @@ export default function StatsClient() {
       subjectStats, strongTopics, weakTopics
     };
   }, [tests, practiceExams, bankQuestions]);
+  
+  const handleSort = (key: SortKey) => {
+      if (sortKey === key) {
+          setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      } else {
+          setSortKey(key);
+          setSortDirection('desc');
+      }
+  }
+
+  const sortedTests = React.useMemo(() => {
+    let filtered = tests.filter(test =>
+        test.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (sortKey) {
+        filtered.sort((a, b) => {
+            const valA = a[sortKey as keyof Test] as number | undefined || 0;
+            const valB = b[sortKey as keyof Test] as number | undefined || 0;
+            
+            if (sortDirection === 'asc') {
+                return valA - valB;
+            } else {
+                return valB - valA;
+            }
+        });
+    }
+
+    return filtered;
+  }, [tests, searchTerm, sortKey, sortDirection]);
 
   const chartConfig = {
     Başarı: { label: "Başarı %", color: "hsl(var(--chart-1))" },
@@ -166,10 +203,6 @@ export default function StatsClient() {
     )
   }
   
-  const filteredTests = tests.filter(test =>
-    test.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <>
       <PageHeader title={`${student.name}'in Başarı İstatistikleri 📈`}>
@@ -179,7 +212,7 @@ export default function StatsClient() {
         </Button>
       </PageHeader>
       
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-8">
         <Card className="bg-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-primary">Toplam Soru</CardTitle>
@@ -219,16 +252,16 @@ export default function StatsClient() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
           <CardHeader>
             <CardTitle>Derslere Göre Başarı Dağılımı</CardTitle>
-            <CardDescription>Her dersteki başarı yüzdesi.</CardDescription>
+            <CardDescription className="text-white/80">Her dersteki başarı yüzdesi.</CardDescription>
           </CardHeader>
           <CardContent>
              <ChartContainer config={chartConfig} className="h-64 w-full">
                <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <CartesianGrid horizontal={false} />
-                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12} />
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12} stroke="white"/>
                 <XAxis dataKey="successRate" type="number" hide />
                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                 <Bar dataKey="successRate" name="Başarı" radius={5}>
@@ -297,15 +330,15 @@ export default function StatsClient() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                        <TableHead>Test Adı</TableHead>
-                        <TableHead className="text-center">Doğru</TableHead>
-                        <TableHead className="text-center">Yanlış</TableHead>
-                        <TableHead className="text-center">Boş</TableHead>
-                        <TableHead className="text-right">Puan</TableHead>
+                            <TableHead><Button variant="ghost" onClick={() => handleSort('title')}>Test Adı <ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></Button></TableHead>
+                            <TableHead className="text-center"><Button variant="ghost" onClick={() => handleSort('correctAnswers')}>Doğru <ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></Button></TableHead>
+                            <TableHead className="text-center"><Button variant="ghost" onClick={() => handleSort('incorrectAnswers')}>Yanlış <ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></Button></TableHead>
+                            <TableHead className="text-center"><Button variant="ghost" onClick={() => handleSort('emptyAnswers')}>Boş <ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></Button></TableHead>
+                            <TableHead className="text-right"><Button variant="ghost" onClick={() => handleSort('score')}>Puan <ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></Button></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredTests.map(test => (
+                        {sortedTests.map(test => (
                             <TableRow key={test.id}>
                                 <TableCell className="font-medium">{test.title}</TableCell>
                                 <TableCell className="text-center text-green-600 font-semibold">{test.correctAnswers}</TableCell>
@@ -319,7 +352,7 @@ export default function StatsClient() {
                     </TableBody>
                 </Table>
              </div>
-             {filteredTests.length === 0 && (
+             {sortedTests.length === 0 && (
                 <p className="text-center py-8 text-muted-foreground">
                     Aranan kriterlere uygun test sonucu bulunamadı.
                 </p>
