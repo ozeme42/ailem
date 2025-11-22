@@ -34,6 +34,15 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
 };
 
+const cardColors = [
+    'from-blue-500 to-indigo-600',
+    'from-green-500 to-teal-600',
+    'from-pink-500 to-purple-600',
+    'from-orange-400 to-rose-400',
+    'from-yellow-400 to-amber-500',
+    'from-lime-500 to-green-600',
+];
+
 export default function EducationManagementPage() {
     const { toast } = useToast();
     const { familyMembers, familyId } = useAuth();
@@ -95,30 +104,30 @@ export default function EducationManagementPage() {
             </PageHeader>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                {Object.entries(testsBySubject).map(([subject, subjectTests]) => {
+                {Object.entries(testsBySubject).map(([subject, subjectTests], index) => {
                     const total = subjectTests.length;
                     const completed = subjectTests.filter(t => t.status === 'Sonuçlandı').length;
                     const pending = total - completed;
                     const Icon = categoryIcons[subject] || FileText;
 
                     return (
-                        <Card key={subject} className="flex flex-col hover:shadow-lg transition-shadow">
+                        <Card key={subject} className={cn("flex flex-col hover:shadow-lg transition-shadow border-0 bg-gradient-to-br text-white", cardColors[index % cardColors.length])}>
                            <CardHeader>
                                 <div className="flex items-center gap-3">
-                                    <Icon className="h-6 w-6 text-primary" />
+                                    <Icon className="h-6 w-6 text-white" />
                                     <CardTitle>{subject}</CardTitle>
                                 </div>
                             </CardHeader>
                             <CardContent className="flex-grow">
-                                <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>Toplam: <Badge variant="outline">{total}</Badge></span>
-                                    <span>Bekleyen: <Badge variant="secondary">{pending}</Badge></span>
-                                    <span>Çözülen: <Badge variant="default" className="bg-green-600 hover:bg-green-700">{completed}</Badge></span>
+                                <div className="flex justify-between text-sm text-white/80">
+                                    <span>Toplam: <Badge variant="secondary" className="bg-white/20 text-white border-none">{total}</Badge></span>
+                                    <span>Bekleyen: <Badge variant="secondary" className="bg-white/20 text-white border-none">{pending}</Badge></span>
+                                    <span>Çözülen: <Badge variant="secondary" className="bg-white/20 text-white border-none">{completed}</Badge></span>
                                 </div>
                            </CardContent>
                            <CardFooter>
                                 <Link href={`/education/category/${encodeURIComponent(subject)}`} className="w-full">
-                                    <Button variant="outline" className="w-full">Detayları Gör</Button>
+                                    <Button variant="secondary" className="w-full bg-white/20 hover:bg-white/30 text-white">Detayları Gör</Button>
                                 </Link>
                            </CardFooter>
                         </Card>
