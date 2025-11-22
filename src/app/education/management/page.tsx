@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, ClipboardList, Send, Archive, Settings, MoreVertical, BarChart3, CheckCircle, X, MinusCircle, BookHeart, FileText, BookMarked } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, ClipboardList, Send, Archive, Settings, MoreVertical, BarChart3, CheckCircle, X, MinusCircle, BookHeart, FileText, BookMarked, Check, Percent, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -106,9 +106,16 @@ export default function EducationManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 {Object.entries(testsBySubject).map(([subject, subjectTests], index) => {
                     const total = subjectTests.length;
-                    const completed = subjectTests.filter(t => t.status === 'Sonuçlandı').length;
+                    const completedTests = subjectTests.filter(t => t.status === 'Sonuçlandı');
+                    const completed = completedTests.length;
                     const pending = total - completed;
                     const Icon = categoryIcons[subject] || FileText;
+                    
+                    const totalCorrect = completedTests.reduce((sum, test) => sum + (test.correctAnswers || 0), 0);
+                    const totalIncorrect = completedTests.reduce((sum, test) => sum + (test.incorrectAnswers || 0), 0);
+                    const totalEmpty = completedTests.reduce((sum, test) => sum + (test.emptyAnswers || 0), 0);
+                    const totalQuestions = totalCorrect + totalIncorrect + totalEmpty;
+                    const successRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
 
                     return (
                         <Card key={subject} className={cn("flex flex-col hover:shadow-lg transition-shadow border-0 bg-gradient-to-br text-white", cardColors[index % cardColors.length])}>
@@ -118,12 +125,29 @@ export default function EducationManagementPage() {
                                     <CardTitle>{subject}</CardTitle>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex-grow">
+                            <CardContent className="flex-grow space-y-4">
                                 <div className="flex justify-between text-sm text-white/80">
                                     <span>Toplam: <Badge variant="secondary" className="bg-white/20 text-white border-none">{total}</Badge></span>
                                     <span>Bekleyen: <Badge variant="secondary" className="bg-white/20 text-white border-none">{pending}</Badge></span>
                                     <span>Çözülen: <Badge variant="secondary" className="bg-white/20 text-white border-none">{completed}</Badge></span>
                                 </div>
+                                {completed > 0 && (
+                                    <div className="space-y-3 text-sm text-white/80 pt-4 border-t border-white/20">
+                                        <h4 className="font-semibold text-white">Çözüm İstatistikleri</h4>
+                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                            <div className="p-2 rounded bg-white/10"><p className="flex items-center justify-center gap-1 text-green-300"><CheckCircle className="h-3 w-3"/>Doğru</p><p className="font-bold text-white text-base">{totalCorrect}</p></div>
+                                            <div className="p-2 rounded bg-white/10"><p className="flex items-center justify-center gap-1 text-red-300"><X className="h-3 w-3"/>Yanlış</p><p className="font-bold text-white text-base">{totalIncorrect}</p></div>
+                                            <div className="p-2 rounded bg-white/10"><p className="flex items-center justify-center gap-1"><MinusCircle className="h-3 w-3"/>Boş</p><p className="font-bold text-white text-base">{totalEmpty}</p></div>
+                                        </div>
+                                         <div>
+                                            <div className="flex justify-between text-xs text-white/80 mb-1">
+                                                <span>Başarı Oranı</span>
+                                                <span>{successRate.toFixed(1)}%</span>
+                                            </div>
+                                            <Progress value={successRate} className="h-1.5 bg-white/20" indicatorClassName="bg-white" />
+                                        </div>
+                                    </div>
+                                )}
                            </CardContent>
                            <CardFooter>
                                 <Link href={`/education/category/${encodeURIComponent(subject)}`} className="w-full">
