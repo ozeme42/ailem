@@ -292,9 +292,18 @@ function ManagementTestCard({ test, student, onDelete }: { test: Test, student?:
     const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
     const scorePercentage = test.score || 0;
 
+    const hexToRgba = (hex: string, alpha: number) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    
+    const cardStyle = student ? { backgroundColor: hexToRgba(student.color, 0.15) } : {};
+
     return (
-        <AccordionItem value={test.id} className="border bg-background rounded-md mb-2">
-            <AccordionTrigger className="p-4">
+        <AccordionItem value={test.id} className="border-0 rounded-md mb-2 overflow-hidden" style={cardStyle}>
+            <AccordionTrigger className="p-4 hover:no-underline">
                 <div className="flex justify-between items-center w-full pr-4">
                     <div>
                         <p className="font-semibold">{test.title}</p>
@@ -434,5 +443,6 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
+
 
 
