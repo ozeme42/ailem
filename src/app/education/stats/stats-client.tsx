@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, BookCheck, BookX, Check, Percent, Sigma, Target, ThumbsDown, ThumbsUp, X, Search } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, LabelList } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -223,13 +223,20 @@ export default function StatsClient() {
           </CardHeader>
           <CardContent>
              <ChartContainer config={chartConfig} className="h-64 w-full">
-               <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 10, right: 20 }}>
+               <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <CartesianGrid horizontal={false} />
                 <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12} />
                 <XAxis dataKey="successRate" type="number" hide />
                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                <Bar dataKey="successRate" name="Başarı" radius={5} background={{ fill: 'hsl(var(--muted))', radius: 5 }}>
+                <Bar dataKey="successRate" name="Başarı" radius={5}>
                     {stats.subjectStats.map(s => (<Cell key={s.name} fill="hsl(var(--chart-1))" />))}
+                     <LabelList
+                        dataKey="successRate"
+                        position="right"
+                        offset={8}
+                        className="fill-foreground text-xs"
+                        formatter={(value: number) => `${value.toFixed(1)}%`}
+                    />
                 </Bar>
               </BarChart>
             </ChartContainer>
