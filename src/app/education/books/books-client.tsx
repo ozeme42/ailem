@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle } from "lucide-react";
@@ -16,6 +16,16 @@ import type { TrackedBook } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+const cardColors = [
+    'from-blue-500 to-indigo-600',
+    'from-green-500 to-teal-600',
+    'from-pink-500 to-purple-600',
+    'from-orange-400 to-rose-400',
+    'from-yellow-400 to-amber-500',
+    'from-lime-500 to-green-600',
+];
 
 export function BooksClient() {
   const router = useRouter();
@@ -153,17 +163,17 @@ export function BooksClient() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {books.map((book) => (
-            <Card key={book.id} className="flex flex-col">
+          {books.map((book, index) => (
+            <Card key={book.id} className={cn("flex flex-col text-white border-0 bg-gradient-to-br", cardColors[index % cardColors.length])}>
               <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
                         <CardTitle className="text-lg">{book.title}</CardTitle>
-                        <CardDescription>{book.publisher}</CardDescription>
+                        <CardDescription className="text-white/80">{book.publisher}</CardDescription>
                     </div>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive -mt-2 -mr-2">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-white/80 hover:text-white hover:bg-white/20 -mt-2 -mr-2">
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </AlertDialogTrigger>
@@ -183,27 +193,27 @@ export function BooksClient() {
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
-                 <Badge variant={book.bookType === 'open_ended' ? 'outline' : 'secondary'} className="w-fit mt-2">{book.bookType === 'open_ended' ? 'Açık Uçlu' : 'Standart Soru Bankası'}</Badge>
+                 <Badge variant={book.bookType === 'open_ended' ? 'outline' : 'secondary'} className="w-fit mt-2 bg-white/20 text-white border-none">{book.bookType === 'open_ended' ? 'Açık Uçlu' : 'Standart Soru Bankası'}</Badge>
               </CardHeader>
               <CardContent className="flex-grow space-y-4">
-                 <div className="space-y-3 text-sm text-muted-foreground">
-                    <h4 className="font-semibold text-foreground">Kitap İçeriği</h4>
+                 <div className="space-y-3 text-sm text-white/80">
+                    <h4 className="font-semibold text-white">Kitap İçeriği</h4>
                     <div className="flex items-center gap-2"><Library className="h-4 w-4" /><span>{book.subjectCount || 0} Ders</span></div>
                     <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>{book.testCount || 0} Test</span></div>
                     <div className="flex items-center gap-2"><HelpCircle className="h-4 w-4" /><span>{book.questionCount || 0} Soru</span></div>
                 </div>
                 {(book.solvedTestCount || 0) > 0 && (
-                    <div className="space-y-3 text-sm text-muted-foreground pt-4 border-t">
-                        <h4 className="font-semibold text-foreground">Çözüm İstatistikleri</h4>
+                    <div className="space-y-3 text-sm text-white/80 pt-4 border-t border-white/20">
+                        <h4 className="font-semibold text-white">Çözüm İstatistikleri</h4>
                         <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>{book.solvedTestCount || 0} Test Çözüldü</span></div>
-                        <div className="flex items-center gap-2 text-green-600"><CheckCircle className="h-4 w-4" /><span>{book.totalCorrectAnswers || 0} Doğru</span></div>
-                        <div className="flex items-center gap-2 text-red-600"><XCircle className="h-4 w-4" /><span>{book.totalIncorrectAnswers || 0} Yanlış</span></div>
+                        <div className="flex items-center gap-2 text-green-300"><CheckCircle className="h-4 w-4" /><span>{book.totalCorrectAnswers || 0} Doğru</span></div>
+                        <div className="flex items-center gap-2 text-red-300"><XCircle className="h-4 w-4" /><span>{book.totalIncorrectAnswers || 0} Yanlış</span></div>
                     </div>
                 )}
               </CardContent>
-              <CardHeader>
-                <Button className="w-full" onClick={() => handleManageBook(book.id)}>Kitabı Yönet</Button>
-              </CardHeader>
+              <CardFooter className="p-4">
+                <Button className="w-full bg-white/90 text-primary hover:bg-white" onClick={() => handleManageBook(book.id)}>Kitabı Yönet</Button>
+              </CardFooter>
             </Card>
           ))}
         </div>
