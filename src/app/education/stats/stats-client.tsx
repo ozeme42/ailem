@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, BookCheck, BookX, Check, Percent, Sigma, Target, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { ArrowLeft, BookCheck, BookX, Check, Percent, Sigma, Target, ThumbsDown, ThumbsUp, X, Search } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
 
 import { PageHeader } from "@/components/page-header";
@@ -15,6 +15,7 @@ import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onBankQuestionsUpdate, onPracticeExamsUpdate } from "@/lib/dataService";
 import { Test, BankQuestion, PracticeExam, Topic } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 type SubjectStats = {
   name: string;
@@ -37,6 +38,7 @@ export default function StatsClient() {
   const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
   const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   const student = React.useMemo(() => familyMembers.find(m => m.id === studentId), [familyMembers, studentId]);
 
@@ -160,6 +162,10 @@ export default function StatsClient() {
         </div>
     )
   }
+  
+  const filteredTests = tests.filter(test =>
+    test.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <>
@@ -170,7 +176,7 @@ export default function StatsClient() {
         </Button>
       </PageHeader>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
         <Card className="bg-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-primary">Toplam Soru</CardTitle>
@@ -182,7 +188,7 @@ export default function StatsClient() {
         </Card>
         <Card className="bg-green-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-600">Doğru Cevap</CardTitle>
+            <CardTitle className="text-sm font-medium text-green-600">Doğru</CardTitle>
             <Check className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -191,7 +197,7 @@ export default function StatsClient() {
         </Card>
         <Card className="bg-red-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-600">Yanlış Cevap</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-600">Yanlış</CardTitle>
             <X className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -200,7 +206,7 @@ export default function StatsClient() {
         </Card>
         <Card className="bg-blue-500/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-600">Genel Başarı</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-600">Başarı</CardTitle>
             <Percent className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -216,10 +222,10 @@ export default function StatsClient() {
             <CardDescription>Her dersteki başarı yüzdesi.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-64">
-              <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 20 }}>
+             <ChartContainer config={chartConfig} className="h-64 w-full">
+               <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 10, right: 20 }}>
                 <CartesianGrid horizontal={false} />
-                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} />
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12} />
                 <XAxis dataKey="successRate" type="number" hide />
                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                 <Bar dataKey="successRate" name="Başarı" radius={5} background={{ fill: 'hsl(var(--muted))', radius: 5 }}>
@@ -235,7 +241,7 @@ export default function StatsClient() {
                 <CardTitle>Konu Analizi</CardTitle>
                 <CardDescription>En başarılı ve geliştirilmesi gereken konular.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <h4 className="font-semibold flex items-center gap-2 mb-2"><ThumbsUp className="text-green-500"/> En Güçlü Konular</h4>
                     <div className="space-y-2">
@@ -267,33 +273,48 @@ export default function StatsClient() {
        <Card>
           <CardHeader>
             <CardTitle>Test Sonuçları</CardTitle>
-            <CardDescription>Tüm sonuçlanan testlerin detaylı dökümü.</CardDescription>
+             <div className="relative w-full max-w-sm mt-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Test adına göre filtrele..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
           </CardHeader>
           <CardContent>
-             <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>Test Adı</TableHead>
-                    <TableHead className="text-center">Doğru</TableHead>
-                    <TableHead className="text-center">Yanlış</TableHead>
-                    <TableHead className="text-center">Boş</TableHead>
-                    <TableHead className="text-right">Puan</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {tests.map(test => (
-                        <TableRow key={test.id}>
-                            <TableCell className="font-medium">{test.title}</TableCell>
-                            <TableCell className="text-center text-green-600 font-semibold">{test.correctAnswers}</TableCell>
-                            <TableCell className="text-center text-red-600 font-semibold">{test.incorrectAnswers}</TableCell>
-                            <TableCell className="text-center">{test.emptyAnswers}</TableCell>
-                            <TableCell className="text-right">
-                                <Badge variant="outline">{test.score?.toFixed(1)}</Badge>
-                            </TableCell>
+             <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Test Adı</TableHead>
+                        <TableHead className="text-center">Doğru</TableHead>
+                        <TableHead className="text-center">Yanlış</TableHead>
+                        <TableHead className="text-center">Boş</TableHead>
+                        <TableHead className="text-right">Puan</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredTests.map(test => (
+                            <TableRow key={test.id}>
+                                <TableCell className="font-medium">{test.title}</TableCell>
+                                <TableCell className="text-center text-green-600 font-semibold">{test.correctAnswers}</TableCell>
+                                <TableCell className="text-center text-red-600 font-semibold">{test.incorrectAnswers}</TableCell>
+                                <TableCell className="text-center">{test.emptyAnswers}</TableCell>
+                                <TableCell className="text-right">
+                                    <Badge variant="outline">{test.score?.toFixed(1)}</Badge>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+             </div>
+             {filteredTests.length === 0 && (
+                <p className="text-center py-8 text-muted-foreground">
+                    Aranan kriterlere uygun test sonucu bulunamadı.
+                </p>
+             )}
           </CardContent>
         </Card>
     </>
