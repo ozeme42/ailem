@@ -398,7 +398,7 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
   }
 
   return (
-    <Accordion type="multiple" className="w-full" defaultValue={shelves.map(s => s[0])}>
+    <Accordion type="multiple" className="w-full">
       {shelves.map(([shelfName, shelfVideos], index) => {
           const color = brightColors[index % brightColors.length];
           return (
