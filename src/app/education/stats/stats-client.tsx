@@ -252,16 +252,16 @@ export default function StatsClient() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+        <Card>
           <CardHeader>
             <CardTitle>Derslere Göre Başarı Dağılımı</CardTitle>
-            <CardDescription className="text-white/80">Her dersteki başarı yüzdesi.</CardDescription>
+            <CardDescription>Her dersteki başarı yüzdesi.</CardDescription>
           </CardHeader>
           <CardContent>
              <ChartContainer config={chartConfig} className="h-64 w-full">
                <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <CartesianGrid horizontal={false} />
-                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12} stroke="white"/>
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} fontSize={12}/>
                 <XAxis dataKey="successRate" type="number" hide />
                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                 <Bar dataKey="successRate" name="Başarı" radius={5}>
