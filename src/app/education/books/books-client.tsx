@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook } from "@/lib/dataService";
+import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook, updateTrackedBook } from "@/lib/dataService";
 import type { TrackedBook } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -33,6 +33,7 @@ export function BooksClient() {
   const [books, setBooks] = useState<TrackedBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBook, setEditingBook] = useState<TrackedBook | null>(null);
   const [newBook, setNewBook] = useState({ title: "", publisher: "", bookType: "standard" as "standard" | "open_ended" });
 
   useEffect(() => {
@@ -42,8 +43,16 @@ export function BooksClient() {
     });
     return () => unsubscribe();
   }, []);
+  
+  useEffect(() => {
+    if (editingBook) {
+        setNewBook({ title: editingBook.title, publisher: editingBook.publisher, bookType: editingBook.bookType || 'standard' });
+    } else {
+        setNewBook({ title: "", publisher: "", bookType: "standard" });
+    }
+  }, [editingBook])
 
-  const handleAddBook = async () => {
+  const handleAddOrUpdateBook = async () => {
     if (!newBook.title.trim() || !newBook.publisher.trim()) {
       toast({
         title: "Hata",
@@ -54,15 +63,21 @@ export function BooksClient() {
     }
 
     try {
-      await addTrackedBook(newBook);
+        if(editingBook) {
+            await updateTrackedBook(editingBook.id, newBook);
+            toast({ title: "Kitap başarıyla güncellendi!" });
+        } else {
+            await addTrackedBook(newBook);
+            toast({ title: "Kitap başarıyla eklendi!" });
+        }
       setNewBook({ title: "", publisher: "", bookType: "standard" });
       setIsDialogOpen(false);
-      toast({ title: "Kitap başarıyla eklendi!" });
+      setEditingBook(null);
     } catch (error: any) {
-      console.error('Error adding book:', error);
+      console.error('Error processing book:', error);
       toast({
         title: "Hata",
-        description: error.message || 'Kitap eklenemedi!',
+        description: error.message || 'İşlem sırasında bir hata oluştu!',
         variant: "destructive"
       });
     }
@@ -86,20 +101,25 @@ export function BooksClient() {
     router.push(`/education/books/${bookId}`);
   };
   
+  const openDialog = (book: TrackedBook | null) => {
+      setEditingBook(book);
+      setIsDialogOpen(true);
+  }
+  
   return (
     <div className="space-y-6 pb-24">
         <PageHeader title="Kitap Takibi">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open) setEditingBook(null); setIsDialogOpen(open)}}>
             <DialogTrigger asChild>
-                <Button>
+                <Button onClick={() => openDialog(null)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Yeni Kitap Ekle
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                <DialogTitle>Yeni Kitap Ekle</DialogTitle>
-                <DialogDescription>Takip edilecek yeni bir kitap oluşturun.</DialogDescription>
+                <DialogTitle>{editingBook ? "Kitabı Düzenle" : "Yeni Kitap Ekle"}</DialogTitle>
+                <DialogDescription>{editingBook ? "Kitap bilgilerini güncelleyin." : "Takip edilecek yeni bir kitap oluşturun."}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -140,7 +160,7 @@ export function BooksClient() {
                 </div>
                 <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>İptal</Button>
-                <Button onClick={handleAddBook}>Ekle</Button>
+                <Button onClick={handleAddOrUpdateBook}>{editingBook ? "Güncelle" : "Ekle"}</Button>
                 </DialogFooter>
             </DialogContent>
             </Dialog>
@@ -171,27 +191,32 @@ export function BooksClient() {
                         <CardTitle className="text-lg">{book.title}</CardTitle>
                         <CardDescription className="text-white/80">{book.publisher}</CardDescription>
                     </div>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-white/80 hover:text-white hover:bg-white/20 -mt-2 -mr-2">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Kitabı silmek istediğinizden emin misiniz?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Bu işlem "{book.title}" adlı kitabı ve içindeki tüm verileri (dersler, konular, testler) kalıcı olarak silecektir. Bu işlem geri alınamaz.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteBook(book.id)}>
-                                    Evet, Sil
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                     <div className="flex items-center -mt-2 -mr-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20" onClick={() => openDialog(book)}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Kitabı silmek istediğinizden emin misiniz?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Bu işlem "{book.title}" adlı kitabı ve içindeki tüm verileri (dersler, konular, testler) kalıcı olarak silecektir. Bu işlem geri alınamaz.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteBook(book.id)}>
+                                        Evet, Sil
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                     </div>
                 </div>
                  <Badge variant={book.bookType === 'open_ended' ? 'outline' : 'secondary'} className="w-fit mt-2 bg-white/20 text-white border-none">{book.bookType === 'open_ended' ? 'Açık Uçlu' : 'Standart Soru Bankası'}</Badge>
               </CardHeader>
