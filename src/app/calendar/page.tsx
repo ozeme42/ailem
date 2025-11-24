@@ -334,7 +334,7 @@ export default function CalendarPage() {
           <CardDescription>Yaklaşan ve geçmiş tüm etkinlikleriniz.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Accordion type="multiple" defaultValue={['upcoming', 'past']} className="w-full">
+          <Accordion type="multiple" defaultValue={['upcoming']} className="w-full">
             <AccordionItem value="upcoming">
               <AccordionTrigger>
                 <div className="flex items-center gap-2">
