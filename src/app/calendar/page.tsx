@@ -331,7 +331,7 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      <Accordion type="single" collapsible className="w-full">
+      <Accordion type="single" collapsible className="w-full" defaultValue="calendar-view">
         <AccordionItem value="calendar-view" className="border-b-0">
           <Card className="shadow-sm">
             <AccordionTrigger className="p-0 hover:no-underline w-full">
