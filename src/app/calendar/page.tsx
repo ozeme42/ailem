@@ -214,6 +214,122 @@ export default function CalendarPage() {
               />
           </DialogContent>
         </Dialog>
+      
+       <Card className="shadow-sm bg-card">
+        <CardHeader>
+          <CardTitle>Tüm Hatırlatıcılar</CardTitle>
+          <CardDescription>Yaklaşan ve geçmiş tüm etkinlikleriniz.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="multiple" defaultValue={['upcoming']} className="w-full">
+            <AccordionItem value="upcoming">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2">
+                    <ListChecks className="h-5 w-5 text-primary"/>
+                    <h3 className="text-lg font-medium">Yaklaşan Etkinlikler ({upcomingEvents.length})</h3>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2">
+                {upcomingEvents.length > 0 ? (
+                    upcomingEvents.map((event, index) => {
+                      const color = eventColors[index % eventColors.length];
+                      return (
+                        <div key={event.id} className={cn("p-3 border rounded-lg flex justify-between items-center", color.bg, color.text, color.border)}>
+                            <div>
+                                <p className="font-semibold">{event.title}</p>
+                                <p className={cn("text-sm", color.text, "opacity-80")}>
+                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
+                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline" className={cn(color.border, color.text, color.bg, "opacity-90")}>{getRecurrenceText(event.recurrence)}</Badge>
+                                {event.daysLeft > 0 ? (
+                                    <Badge variant="secondary">{event.daysLeft} gün kaldı</Badge>
+                                ) : event.daysLeft === 0 ? (
+                                    <Badge variant="default">Bugün</Badge>
+                                ) : (
+                                     <Badge variant="destructive">Süresi Geçti</Badge>
+                                )}
+                                <Button variant="ghost" size="icon" className={cn("h-8 w-8", color.text, `hover:${color.text}`)} onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                            <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>İptal</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
+                    )})
+                ) : (
+                    <p className="text-muted-foreground text-sm p-3">Yaklaşan bir etkinlik yok.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="past">
+              <AccordionTrigger>
+                 <div className="flex items-center gap-2 justify-between w-full">
+                    <div className="flex items-center gap-2">
+                        <History className="h-5 w-5 text-muted-foreground"/>
+                        <h3 className="text-lg font-medium">Geçmiş Etkinlikler ({pastEvents.length})</h3>
+                    </div>
+                 </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2">
+                 {pastEvents.length > 0 && (
+                    <div className="flex justify-end mb-4">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Geçmişi Temizle
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tüm geçmiş etkinlikler kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleClearPastEvents}>Evet, Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                )}
+                {pastEvents.length > 0 ? (
+                    pastEvents.map(event => (
+                        <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center bg-muted/30">
+                            <div>
+                                <p className="font-semibold text-muted-foreground">{event.title}</p>
+                                <p className="text-sm text-muted-foreground/80">
+                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
+                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
+                                </p>
+                            </div>
+                            <Badge variant="secondary">{getRecurrenceText(event.recurrence)}</Badge>
+                        </div>
+                    ))
+                 ) : (
+                    <p className="text-muted-foreground text-sm p-3">Geçmiş bir etkinlik yok.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
 
       <Accordion type="single" collapsible className="w-full">
         <AccordionItem value="calendar-view" className="border-b-0">
@@ -335,122 +451,6 @@ export default function CalendarPage() {
           </Card>
         </AccordionItem>
       </Accordion>
-      
-       <Card className="shadow-sm bg-card">
-        <CardHeader>
-          <CardTitle>Tüm Hatırlatıcılar</CardTitle>
-          <CardDescription>Yaklaşan ve geçmiş tüm etkinlikleriniz.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Accordion type="multiple" defaultValue={['upcoming']} className="w-full">
-            <AccordionItem value="upcoming">
-              <AccordionTrigger>
-                <div className="flex items-center gap-2">
-                    <ListChecks className="h-5 w-5 text-primary"/>
-                    <h3 className="text-lg font-medium">Yaklaşan Etkinlikler ({upcomingEvents.length})</h3>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-2">
-                {upcomingEvents.length > 0 ? (
-                    upcomingEvents.map((event, index) => {
-                      const color = eventColors[index % eventColors.length];
-                      return (
-                        <div key={event.id} className={cn("p-3 border rounded-lg flex justify-between items-center", color.bg, color.text, color.border)}>
-                            <div>
-                                <p className="font-semibold">{event.title}</p>
-                                <p className={cn("text-sm", color.text, "opacity-80")}>
-                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
-                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={cn(color.border, color.text, color.bg, "opacity-90")}>{getRecurrenceText(event.recurrence)}</Badge>
-                                {event.daysLeft > 0 ? (
-                                    <Badge variant="secondary">{event.daysLeft} gün kaldı</Badge>
-                                ) : event.daysLeft === 0 ? (
-                                    <Badge variant="default">Bugün</Badge>
-                                ) : (
-                                     <Badge variant="destructive">Süresi Geçti</Badge>
-                                )}
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                            <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    )})
-                ) : (
-                    <p className="text-muted-foreground text-sm p-3">Yaklaşan bir etkinlik yok.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="past">
-              <AccordionTrigger>
-                 <div className="flex items-center gap-2 justify-between w-full">
-                    <div className="flex items-center gap-2">
-                        <History className="h-5 w-5 text-muted-foreground"/>
-                        <h3 className="text-lg font-medium">Geçmiş Etkinlikler ({pastEvents.length})</h3>
-                    </div>
-                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-2">
-                 {pastEvents.length > 0 && (
-                    <div className="flex justify-end mb-4">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Geçmişi Temizle
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Tüm geçmiş etkinlikler kalıcı olarak silinecektir. Bu işlem geri alınamaz.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleClearPastEvents}>Evet, Sil</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                )}
-                {pastEvents.length > 0 ? (
-                    pastEvents.map(event => (
-                        <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center bg-muted/30">
-                            <div>
-                                <p className="font-semibold text-muted-foreground">{event.title}</p>
-                                <p className="text-sm text-muted-foreground/80">
-                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
-                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
-                                </p>
-                            </div>
-                            <Badge variant="secondary">{getRecurrenceText(event.recurrence)}</Badge>
-                        </div>
-                    ))
-                 ) : (
-                    <p className="text-muted-foreground text-sm p-3">Geçmiş bir etkinlik yok.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
     </div>
   );
 }
