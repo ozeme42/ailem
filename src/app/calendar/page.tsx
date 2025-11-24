@@ -215,118 +215,126 @@ export default function CalendarPage() {
           </DialogContent>
         </Dialog>
 
-      <Card className="shadow-sm">
-        <CardHeader className="bg-card rounded-t-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex-grow">
-                    <h2 className="text-xl font-semibold capitalize">
-                        {format(currentDate, 'MMMM yyyy', { locale: tr })}
-                    </h2>
-                </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
-                        <TabsList>
-                            <TabsTrigger value="month">Aylık</TabsTrigger>
-                            <TabsTrigger value="week">Haftalık</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={handlePrev}>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button variant="default" className="bg-primary text-primary-foreground" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
-                        <Button variant="outline" size="icon" onClick={handleNext}>
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                     </div>
-                </div>
-            </div>
-        </CardHeader>
-        <CardContent className="p-0 bg-background">
-          <div className={cn("grid border-t border-l", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
-             {viewMode === 'month' && weekHeaderDays.map(day => (
-                <div key={day.toISOString()} className="p-2 border-r border-b text-center font-semibold text-sm capitalize bg-muted/50">
-                    {format(day, 'EEE', { locale: tr })}
-                </div>
-            ))}
-            {displayedDays.map(day => {
-              const dayEvents = getEventsForDay(day);
-              const isCurrentMonth = isSameMonth(day, currentDate);
-              const isDayToday = isToday(day);
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="calendar-view" className="border-b-0">
+          <Card className="shadow-sm">
+            <AccordionTrigger className="p-0 hover:no-underline w-full">
+              <CardHeader className="w-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex-grow">
+                          <h2 className="text-xl font-semibold capitalize">
+                              {format(currentDate, 'MMMM yyyy', { locale: tr })}
+                          </h2>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
+                              <TabsList>
+                                  <TabsTrigger value="month">Aylık</TabsTrigger>
+                                  <TabsTrigger value="week">Haftalık</TabsTrigger>
+                              </TabsList>
+                          </Tabs>
+                           <div className="flex items-center gap-2">
+                              <Button variant="outline" size="icon" onClick={handlePrev}>
+                                  <ChevronLeft className="h-4 w-4" />
+                              </Button>
+                              <Button variant="default" className="bg-primary text-primary-foreground" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+                              <Button variant="outline" size="icon" onClick={handleNext}>
+                                  <ChevronRight className="h-4 w-4" />
+                              </Button>
+                           </div>
+                      </div>
+                  </div>
+              </CardHeader>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CardContent className="p-0 bg-background">
+                <div className={cn("grid border-t border-l", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
+                   {viewMode === 'month' && weekHeaderDays.map(day => (
+                      <div key={day.toISOString()} className="p-2 border-r border-b text-center font-semibold text-sm capitalize bg-muted/50">
+                          {format(day, 'EEE', { locale: tr })}
+                      </div>
+                  ))}
+                  {displayedDays.map(day => {
+                    const dayEvents = getEventsForDay(day);
+                    const isCurrentMonth = isSameMonth(day, currentDate);
+                    const isDayToday = isToday(day);
 
-              return (
-                <Dialog key={day.toString()}>
-                  <DialogTrigger asChild disabled={dayEvents.length === 0}>
-                     <div className={cn(
-                       "border-b border-r p-2 flex relative", 
-                       dayEvents.length > 0 && 'cursor-pointer hover:bg-muted/50', 
-                       viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'min-h-24 flex-row gap-4',
-                       !isCurrentMonth && 'bg-muted/30',
-                       isDayToday && "bg-primary/10",
-                       isPast(day) && !isDayToday && 'opacity-70'
-                     )}>
-                        <div className={cn("flex-shrink-0", viewMode === 'week' && 'w-24 text-center border-r pr-4 flex flex-col justify-center items-center')}>
-                            <span className={cn(
-                              `font-semibold`, 
-                              isDayToday ? 'text-primary' : 'text-foreground', 
-                              !isCurrentMonth && 'text-muted-foreground/50'
-                            )}>
-                              {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM', { locale: tr })}
-                            </span>
-                             {viewMode === 'week' && <span className="block text-xs capitalize text-muted-foreground">{format(day, 'EEE', {locale: tr})}</span>}
-                        </div>
-                        <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start py-2')}>
-                           {dayEvents.map((event, index) => {
-                               const color = eventColors[index % eventColors.length];
-                               return (
-                               <div key={event.id} className={cn('p-1.5 rounded-md border text-xs font-semibold truncate', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
-                                {event.title}
+                    return (
+                      <Dialog key={day.toString()}>
+                        <DialogTrigger asChild disabled={dayEvents.length === 0}>
+                           <div className={cn(
+                             "border-b border-r p-2 flex relative", 
+                             dayEvents.length > 0 && 'cursor-pointer hover:bg-muted/50', 
+                             viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'min-h-24 flex-row gap-4',
+                             !isCurrentMonth && 'bg-muted/30',
+                             isDayToday && "bg-primary/10",
+                             isPast(day) && !isDayToday && 'opacity-70'
+                           )}>
+                              <div className={cn("flex-shrink-0", viewMode === 'week' && 'w-24 text-center border-r pr-4 flex flex-col justify-center items-center')}>
+                                  <span className={cn(
+                                    `font-semibold`, 
+                                    isDayToday ? 'text-primary' : 'text-foreground', 
+                                    !isCurrentMonth && 'text-muted-foreground/50'
+                                  )}>
+                                    {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM', { locale: tr })}
+                                  </span>
+                                   {viewMode === 'week' && <span className="block text-xs capitalize text-muted-foreground">{format(day, 'EEE', {locale: tr})}</span>}
                               </div>
-                            )})}
-                        </div>
-                      </div>
-                  </DialogTrigger>
-                   <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>{format(day, 'd MMMM yyyy, EEEE', { locale: tr })}</DialogTitle>
-                        <DialogDescription>Bu gündeki hatırlatıcılar.</DialogDescription>
-                      </DialogHeader>
-                       <div className="space-y-2 py-4">
-                        {dayEvents.map(event => (
-                            <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold">{event.title}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                       Tekrarlanma: {getRecurrenceText(event.recurrence)}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
+                              <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start py-2')}>
+                                 {dayEvents.map((event, index) => {
+                                     const color = eventColors[index % eventColors.length];
+                                     return (
+                                     <div key={event.id} className={cn('p-1.5 rounded-md border text-xs font-semibold truncate', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
+                                      {event.title}
+                                    </div>
+                                  )})}
+                              </div>
                             </div>
-                        ))}
-                      </div>
-                  </DialogContent>
-                </Dialog>
-            )})}
-          </div>
-        </CardContent>
-      </Card>
+                        </DialogTrigger>
+                         <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>{format(day, 'd MMMM yyyy, EEEE', { locale: tr })}</DialogTitle>
+                              <DialogDescription>Bu gündeki hatırlatıcılar.</DialogDescription>
+                            </DialogHeader>
+                             <div className="space-y-2 py-4">
+                              {dayEvents.map(event => (
+                                  <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center">
+                                      <div>
+                                          <p className="font-semibold">{event.title}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                             Tekrarlanma: {getRecurrenceText(event.recurrence)}
+                                          </p>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                      <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                      <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                      <AlertDialogCancel>İptal</AlertDialogCancel>
+                                                      <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
+                                      </div>
+                                  </div>
+                              ))}
+                            </div>
+                        </DialogContent>
+                      </Dialog>
+                  )})}
+                </div>
+              </CardContent>
+            </AccordionContent>
+          </Card>
+        </AccordionItem>
+      </Accordion>
       
        <Card className="shadow-sm bg-card">
         <CardHeader>
