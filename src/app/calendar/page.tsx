@@ -186,7 +186,7 @@ export default function CalendarPage() {
   const weekHeaderDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
           <PageHeader title="Hatırlatıcılar 🗓️">
             <Button onClick={handleOpenNewDialog}>
