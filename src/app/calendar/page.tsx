@@ -344,17 +344,19 @@ export default function CalendarPage() {
               </AccordionTrigger>
               <AccordionContent className="space-y-2">
                 {upcomingEvents.length > 0 ? (
-                    upcomingEvents.map(event => (
-                        <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center">
+                    upcomingEvents.map((event, index) => {
+                      const color = eventColors[index % eventColors.length];
+                      return (
+                        <div key={event.id} className={cn("p-3 border rounded-lg flex justify-between items-center", color.bg, color.text, color.border)}>
                             <div>
                                 <p className="font-semibold">{event.title}</p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className={cn("text-sm", color.text, "opacity-80")}>
                                     {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
                                     {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Badge variant="outline">{getRecurrenceText(event.recurrence)}</Badge>
+                                <Badge variant="outline" className={cn(color.border, color.text, color.bg, "opacity-90")}>{getRecurrenceText(event.recurrence)}</Badge>
                                 {event.daysLeft > 0 ? (
                                     <Badge variant="secondary">{event.daysLeft} gün kaldı</Badge>
                                 ) : event.daysLeft === 0 ? (
@@ -380,7 +382,7 @@ export default function CalendarPage() {
                                 </AlertDialog>
                             </div>
                         </div>
-                    ))
+                    )})
                 ) : (
                     <p className="text-muted-foreground text-sm p-3">Yaklaşan bir etkinlik yok.</p>
                 )}
