@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, endOfMonth, addMonths } from 'date-fns';
+import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, endOfMonth, addMonths, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History, Trash2, Edit } from "lucide-react";
 
@@ -48,9 +48,11 @@ export default function CalendarPage() {
   }, []);
   
   const { upcomingEvents, pastEvents } = React.useMemo(() => {
+    const today = new Date();
     const eventsWithParsedDates = calendarEvents.map(e => ({
       ...e,
-      parsedDate: parseISO(e.startDate)
+      parsedDate: parseISO(e.startDate),
+      daysLeft: differenceInDays(parseISO(e.startDate), today),
     }));
 
     const upcoming = eventsWithParsedDates
@@ -351,8 +353,15 @@ export default function CalendarPage() {
                                     {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
                                 </p>
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2">
                                 <Badge variant="outline">{getRecurrenceText(event.recurrence)}</Badge>
+                                {event.daysLeft > 0 ? (
+                                    <Badge variant="secondary">{event.daysLeft} gün kaldı</Badge>
+                                ) : event.daysLeft === 0 ? (
+                                    <Badge variant="default">Bugün</Badge>
+                                ) : (
+                                     <Badge variant="destructive">Süresi Geçti</Badge>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
