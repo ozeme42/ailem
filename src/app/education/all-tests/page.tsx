@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 import { Test, FamilyMember } from "@/lib/data";
 import { onTestsUpdate, deleteTest } from "@/lib/dataService";
@@ -111,9 +111,9 @@ export default function AllTestsPage() {
                 <CardContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="all">Tümü ({tests.length})</TabsTrigger>
-                            <TabsTrigger value="pending">Bekleyenler ({tests.filter(t => t.status !== 'Sonuçlandı').length})</TabsTrigger>
-                            <TabsTrigger value="completed">Bitenler ({tests.filter(t => t.status === 'Sonuçlandı').length})</TabsTrigger>
+                            <TabsTrigger value="all">Tümü ({filteredTests.length})</TabsTrigger>
+                            <TabsTrigger value="pending">Bekleyenler ({filteredTests.filter(t => t.status !== 'Sonuçlandı').length})</TabsTrigger>
+                            <TabsTrigger value="completed">Bitenler ({filteredTests.filter(t => t.status === 'Sonuçlandı').length})</TabsTrigger>
                         </TabsList>
                     </Tabs>
 
@@ -200,4 +200,3 @@ function ManagementTestCard({ test, student, onDelete }: { test: Test, student?:
         </Card>
     );
 }
-
