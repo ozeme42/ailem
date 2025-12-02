@@ -25,7 +25,6 @@ export default function AllTestsPage() {
     const { familyMembers, familyId } = useAuth();
     
     const [tests, setTests] = React.useState<Test[]>([]);
-    const [activeTab, setActiveTab] = React.useState('all');
     const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
     
     const studentMembers = React.useMemo(() => 
@@ -46,21 +45,21 @@ export default function AllTestsPage() {
         }
     };
     
-    const filteredTests = React.useMemo(() => {
-        let filtered = tests;
+    const { pendingTests, completedTests, allFilteredTests } = React.useMemo(() => {
+        const filteredByStudent = selectedStudents.length > 0 
+            ? tests.filter(t => selectedStudents.includes(t.studentId))
+            : tests;
+
+        const pending = filteredByStudent.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
+        const completed = filteredByStudent.filter(t => t.status === 'Sonuçlandı');
         
-        if (selectedStudents.length > 0) {
-            filtered = filtered.filter(t => selectedStudents.includes(t.studentId));
-        }
+        return {
+            pendingTests: pending,
+            completedTests: completed,
+            allFilteredTests: filteredByStudent
+        };
+    }, [tests, selectedStudents]);
 
-        if (activeTab === 'pending') {
-            return filtered.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
-        } else if (activeTab === 'completed') {
-            return filtered.filter(t => t.status === 'Sonuçlandı');
-        }
-
-        return filtered;
-    }, [tests, activeTab, selectedStudents]);
 
     return (
         <>
@@ -115,23 +114,40 @@ export default function AllTestsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <Tabs defaultValue="all" className="w-full">
                         <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="all">Tümü ({tests.filter(t => selectedStudents.length === 0 || selectedStudents.includes(t.studentId)).length})</TabsTrigger>
-                            <TabsTrigger value="pending">Bekleyenler ({filteredTests.filter(t => t.status !== 'Sonuçlandı').length})</TabsTrigger>
-                            <TabsTrigger value="completed">Bitenler ({filteredTests.filter(t => t.status === 'Sonuçlandı').length})</TabsTrigger>
+                            <TabsTrigger value="all">Tümü ({allFilteredTests.length})</TabsTrigger>
+                            <TabsTrigger value="pending">Bekleyenler ({pendingTests.length})</TabsTrigger>
+                            <TabsTrigger value="completed">Bitenler ({completedTests.length})</TabsTrigger>
                         </TabsList>
+                        <TabsContent value="all" className="mt-4 space-y-3">
+                           {allFilteredTests.map(test => {
+                                const student = familyMembers.find(m => m.id === test.studentId);
+                                return <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />
+                           })}
+                           {allFilteredTests.length === 0 && (
+                                <p className="text-center text-muted-foreground pt-8">Bu filtreye uygun ödev bulunamadı.</p>
+                           )}
+                        </TabsContent>
+                        <TabsContent value="pending" className="mt-4 space-y-3">
+                            {pendingTests.map(test => {
+                                const student = familyMembers.find(m => m.id === test.studentId);
+                                return <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />
+                            })}
+                            {pendingTests.length === 0 && (
+                                <p className="text-center text-muted-foreground pt-8">Bekleyen ödev bulunamadı.</p>
+                            )}
+                        </TabsContent>
+                        <TabsContent value="completed" className="mt-4 space-y-3">
+                            {completedTests.map(test => {
+                                const student = familyMembers.find(m => m.id === test.studentId);
+                                return <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />
+                            })}
+                            {completedTests.length === 0 && (
+                                <p className="text-center text-muted-foreground pt-8">Tamamlanmış ödev bulunamadı.</p>
+                            )}
+                        </TabsContent>
                     </Tabs>
-
-                    <div className="mt-4 space-y-3">
-                        {filteredTests.map(test => {
-                            const student = familyMembers.find(m => m.id === test.studentId);
-                            return <ManagementTestCard key={test.id} test={test} student={student} onDelete={handleDeleteTest} />
-                        })}
-                         {filteredTests.length === 0 && (
-                            <p className="text-center text-muted-foreground pt-8">Bu filtreye uygun ödev bulunamadı.</p>
-                        )}
-                    </div>
                 </CardContent>
              </Card>
         </>
