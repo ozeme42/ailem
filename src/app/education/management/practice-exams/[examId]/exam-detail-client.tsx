@@ -260,6 +260,7 @@ function AssignExamForm({ isOpen, onOpenChange, exam, students }: {isOpen: boole
                 sourceId: exam.id,
                 gradingType: 'auto',
                 answerKey: combinedAnswerKey,
+                status: 'Atandı',
             });
         }
         toast({ title: "Ödev Atandı!", description: `${exam.name} denemesi ${data.studentIds.length} öğrenciye atandı.`});
