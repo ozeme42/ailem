@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, Sparkles, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, GraduationCap, Check } from "lucide-react";
+import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, Sparkles, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, GraduationCap, Check, Library } from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTask, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment, onBooksUpdate, onUserLibrariesUpdate, onGoalsUpdate, updateGoal, getGoal, addBook, onMemorizationItemsUpdate, onMemorizationProgressUpdate, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession, onTrackedBooksUpdate, addBookToMemberLibrary } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTask, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment, onTrackedBooksUpdate, onBooksUpdate, onUserLibrariesUpdate, onGoalsUpdate, updateGoal, getGoal, addBook, onMemorizationItemsUpdate, onMemorizationProgressUpdate, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession, addBookToMemberLibrary } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfMonth, endOfDay, isWithinInterval, startOfMonth, addMonths, subMonths, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -37,28 +37,6 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'İngilizce': MessageSquare,
     'Serbest Etkinlikler': Gamepad2,
     'Diğer': FileText,
-};
-
-const categoryColors: { [key: string]: string } = {
-    'Genel Deneme Sınavları': 'yellow-500',
-    'Matematik': 'red-500',
-    'Fen Bilimleri': 'orange-500',
-    'Türkçe': 'yellow-400',
-    'Sosyal Bilgiler': 'cyan-500',
-    'İngilizce': 'blue-500',
-    'Serbest Etkinlikler': 'purple-500',
-    'Diğer': 'gray-500',
-};
-
-const categoryProgressColors: { [key: string]: string } = {
-    'Genel Deneme Sınavları': 'bg-yellow-500',
-    'Matematik': 'bg-red-500',
-    'Fen Bilimleri': 'bg-orange-500',
-    'Türkçe': 'bg-yellow-400',
-    'Sosyal Bilgiler': 'bg-cyan-500',
-    'İngilizce': 'bg-blue-500',
-    'Serbest Etkinlikler': 'bg-purple-500',
-    'Diğer': 'bg-gray-500',
 };
 
 const categoryCardColors: { [key: string]: string } = {
@@ -106,7 +84,7 @@ export default function EducationPage() {
   }, [studentMembers, selectedStudent]);
 
   React.useEffect(() => {
-    const unsubTests = onTestsUpdate(setAllTests);
+    const unsubTests = onTestsUpdate(setAllTests, false, 'assignedDate', 'desc');
     const unsubStudyAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
     const unsubStudyPlans = onStudyPlansUpdate(setStudyPlans);
     const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
@@ -122,7 +100,6 @@ export default function EducationPage() {
   
   const tests = React.useMemo(() => {
     if (!selectedStudent) return [];
-    // Already sorted from dataService
     return allTests.filter(t => t.studentId === selectedStudent.id);
   }, [selectedStudent, allTests]);
   
@@ -382,15 +359,6 @@ export default function EducationPage() {
 
 
   const pendingTests = tests.filter(test => test.status === 'Atandı');
-  const pendingTestsBySubject = pendingTests.reduce((acc, test) => {
-    const subject = getCategoryName(test);
-    if (!acc[subject]) {
-        acc[subject] = [];
-    }
-    acc[subject].push(test);
-    return acc;
-  }, {} as Record<string, Test[]>);
-
 
   return (
     <>
@@ -481,12 +449,17 @@ export default function EducationPage() {
                     <div>
                         <h2 className="text-xl font-bold mb-4">Test Kategorileri</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Link href="/education/all-tests" className="block group">
+                                <Card className="relative flex flex-col items-center justify-center shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 h-full bg-slate-500/10 text-slate-900 dark:bg-slate-500/10 dark:text-slate-200">
+                                    <CardHeader className="text-center flex-grow">
+                                        <Library className="w-16 h-16 mx-auto mb-4 opacity-80" />
+                                        <CardTitle className="text-xl text-current">Tümünü Gör</CardTitle>
+                                    </CardHeader>
+                                </Card>
+                            </Link>
                             {testsByCategory.map(([category, data]) => {
-                                if (data.total === 0) return null;
                                 const Icon = categoryIcons[category] || FileText;
                                 const colorClass = categoryCardColors[category] || 'bg-gray-500/10 text-gray-800';
-                                const progressColor = categoryProgressColors[category] || 'bg-gray-500';
-                                const progressValue = data.total > 0 ? (data.completed / data.total) * 100 : 0;
                                 const pending = data.total - data.completed;
                     
                                 return (
@@ -497,16 +470,12 @@ export default function EducationPage() {
                                                     {pending}
                                                 </Badge>
                                             )}
-                                            <CardHeader className="text-center">
+                                            <CardHeader className="text-center flex-grow">
                                                 <Icon className="w-16 h-16 mx-auto mb-4 opacity-80" />
                                                 <CardTitle className="text-xl text-current">{category}</CardTitle>
                                             </CardHeader>
-                                            <CardContent className="flex-grow flex flex-col justify-center items-center text-center">
-                                                <p className="text-lg font-semibold">{data.total} Adet Sınav</p>
-                                                <p className="text-sm text-green-600 font-medium">{data.completed} Adet Tamamlandı</p>
-                                            </CardContent>
-                                            <CardFooter className="p-0">
-                                                <Progress value={progressValue} className="h-2 rounded-b-lg rounded-t-none bg-black/10" indicatorClassName={progressColor} />
+                                            <CardFooter>
+                                                <p className="text-sm text-current/80 w-full text-center">{data.total} Toplam Ödev</p>
                                             </CardFooter>
                                         </Card>
                                     </Link>
@@ -515,9 +484,9 @@ export default function EducationPage() {
                         </div>
                     </div>
 
-                    <div>
-                        <h2 className="text-xl font-bold mb-4">Konu Anlatım Planları</h2>
-                        {studyPlanStats.length > 0 ? (
+                    {studyPlanStats.length > 0 && (
+                        <div>
+                            <h2 className="text-xl font-bold mb-4">Konu Anlatım Planları</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {studyPlanStats.map(({ plan, progress }) => (
                                     <Link key={plan.id} href={`/education/study`} className="block group">
@@ -537,73 +506,59 @@ export default function EducationPage() {
                                     </Link>
                                 ))}
                             </div>
-                        ) : (
-                             <Card>
-                                <CardContent className="p-10 text-center">
-                                    <BookHeart className="mx-auto h-12 w-12 text-muted-foreground" />
-                                    <h3 className="mt-4 text-lg font-medium">Atanmış konu anlatım planı yok</h3>
-                                    <p className="mt-2 text-sm text-muted-foreground">Yönetim panelinden yeni planlar oluşturabilir ve atayabilirsiniz.</p>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
+                        </div>
+                    )}
                     
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Çözülecek Testler</CardTitle>
-                            <CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                        {pendingTests.length > 0 ? (
-                            Object.entries(pendingTestsBySubject).map(([subject, tests]) => (
-                                <div key={subject}>
-                                    <h3 className="font-semibold mb-2">{subject}</h3>
-                                    <div className="space-y-3">
-                                        {tests.map(test => {
-                                            const categoryName = getCategoryName(test);
-                                            const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
-                                            const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                                            const now = new Date();
-                                            const daysDiff = differenceInDays(dueDate, now);
-                                            const isTestDue = isPast(dueDate) && !isToday(dueDate);
-                                            const allTopics = trackedBooks.flatMap(book => 
-                                                (book.subjects || []).flatMap(subject => 
-                                                    (subject.topics || []).map(topic => ({...topic, subjectName: subject.name}))
-                                                )
-                                            ) || [];
-                                            const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                     {pendingTests.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Çözülecek Testler</CardTitle>
+                                <CardDescription>{selectedStudent?.name} için atanmış ve henüz çözülmemiş tüm testler.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                            {pendingTests.map(test => {
+                                const categoryName = getCategoryName(test);
+                                const cardColor = categoryCardColors[categoryName] || 'bg-gray-500/10 text-gray-800 dark:bg-gray-500/10 dark:text-gray-200';
+                                const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                                const now = new Date();
+                                const daysDiff = differenceInDays(dueDate, now);
+                                const isTestDue = isPast(dueDate) && !isToday(dueDate);
+                                const allTopics = trackedBooks.flatMap(book => 
+                                    (book.subjects || []).flatMap(subject => 
+                                        (subject.topics || []).map(topic => ({...topic, subjectName: subject.name}))
+                                    )
+                                ) || [];
+                                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                                const displayName = topicName ? `${topicName} - ${test.title}` : test.title;
 
-                                            return (
-                                                <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
-                                                    <div className="flex items-center p-4 gap-4">
-                                                        <div className="flex-grow">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <div className={cn('w-4 h-4 text-current')}>{React.createElement(categoryIcons[categoryName] || FileText, { className: "w-4 h-4" })}</div>
-                                                                <h3 className="font-semibold text-lg">{topicName ? `${topicName} - ${test.title}` : test.title}</h3>
-                                                            </div>
-                                                            <div className="flex items-center gap-4 ml-6">
-                                                                <p className="text-sm text-current/80">Son Teslim: {test.dueDate}</p>
-                                                                {isTestDue
-                                                                    ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
-                                                                    : isToday(dueDate)
-                                                                        ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
-                                                                        : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                        <Link href={`/education/${test.id}`} className="ml-auto">
-                                                            <Button size="sm" variant="default">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
-                                                        </Link>
-                                                    </div>
-                                                </Card>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))
-                        ) : (<p className="text-center text-muted-foreground p-4">Bekleyen test bulunmuyor. Harika!</p>)}
-                        </CardContent>
-                    </Card>
+                                return (
+                                    <Card key={test.id} className={cn('overflow-hidden', cardColor)}>
+                                        <div className="flex items-center p-4 gap-4">
+                                            <div className="flex-grow">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Badge variant="outline">{getCategoryName(test)}</Badge>
+                                                    <h3 className="font-semibold text-base">{displayName}</h3>
+                                                </div>
+                                                <div className="flex items-center gap-4 text-sm text-current/80">
+                                                    <p>Son Teslim: {test.dueDate}</p>
+                                                    {isTestDue
+                                                        ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
+                                                        : isToday(dueDate)
+                                                            ? <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+                                                            : <Badge variant="secondary">Son {daysDiff + 1} gün</Badge>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <Link href={`/education/${test.id}`} className="ml-auto">
+                                                <Button size="sm" variant="default">Teste Git <ArrowRight className="h-4 w-4 ml-2"/></Button>
+                                            </Link>
+                                        </div>
+                                    </Card>
+                                );
+                            })}
+                            </CardContent>
+                        </Card>
+                     )}
 
                  </div>
             ) : renderCalendarView() }

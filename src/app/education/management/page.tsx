@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, ClipboardList, Send, Archive, Settings, MoreVertical, BarChart3, CheckCircle, X, MinusCircle, BookHeart, FileText, BookMarked, Check, Percent, ThumbsDown, ThumbsUp } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, ClipboardList, Send, Archive, Settings, MoreVertical, BarChart3, CheckCircle, X, MinusCircle, BookHeart, FileText, BookMarked, Check, Percent, ThumbsDown, ThumbsUp, Library } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -105,6 +105,19 @@ export default function EducationManagementPage() {
             </PageHeader>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                <Link href="/education/all-tests" className="block h-full group">
+                    <Card className="flex flex-col h-full hover:shadow-lg transition-shadow border-0 bg-gradient-to-br from-slate-500 to-slate-700 text-white group-hover:-translate-y-1">
+                        <CardHeader>
+                            <div className="flex items-center gap-3">
+                                <Library className="h-6 w-6 text-white" />
+                                <CardTitle>Tüm Ödevler</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-4">
+                             <p className="text-sm text-white/80">Tüm öğrencilere atanmış bütün ödevleri tek bir yerden görüntüleyin ve yönetin.</p>
+                        </CardContent>
+                    </Card>
+                </Link>
                 {Object.entries(testsBySubject).map(([subject, subjectTests], index) => {
                     const total = subjectTests.length;
                     const completedTests = subjectTests.filter(t => t.status === 'Sonuçlandı');

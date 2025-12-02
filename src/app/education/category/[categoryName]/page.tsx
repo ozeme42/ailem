@@ -58,42 +58,25 @@ export default function CategoryDetailPage() {
   React.useEffect(() => {
     const unsubscribeTests = onTestsUpdate((tests) => {
         setAllTests(tests);
-        if (loading) setLoading(false);
-    });
+        setLoading(false);
+    }, false, 'assignedDate', 'desc');
     const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
     
-    Promise.all([
-        new Promise(resolve => onTestsUpdate(t => resolve(t), true)),
-    ]).then(() => setLoading(false));
-
     return () => {
         unsubscribeTests();
         unsubTrackedBooks();
     };
-  }, [loading]);
+  }, []);
 
-  const { filteredTests, testsByStudent } = React.useMemo(() => {
-    const testsForCategory = allTests.filter(test => getCategoryName(test) === categoryName);
-    
-    if (studentId) {
-        return { 
-            filteredTests: testsForCategory.filter(test => test.studentId === studentId),
-            testsByStudent: {}
-        };
-    }
-    
-    // Management view: group by student
-    const studentGroup: { [studentId: string]: Test[] } = {};
-    testsForCategory.forEach(test => {
-        if (!test.studentId) return;
-        if (!studentGroup[test.studentId]) {
-            studentGroup[test.studentId] = [];
-        }
-        studentGroup[test.studentId].push(test);
+  const filteredTests = React.useMemo(() => {
+    return allTests.filter(test => {
+        const testCategory = getCategoryName(test);
+        const categoryMatch = testCategory === categoryName;
+        const studentMatch = !studentId || test.studentId === studentId;
+        return categoryMatch && studentMatch;
     });
-    return { filteredTests: [], testsByStudent: studentGroup };
-
   }, [allTests, categoryName, studentId]);
+
 
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
   
@@ -127,69 +110,33 @@ export default function CategoryDetailPage() {
       
         <Tabs defaultValue="pending" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="pending">Bekleyenler ({studentId ? pendingTests.length : Object.values(testsByStudent).flat().filter(t => t.status !== 'Sonuçlandı').length})</TabsTrigger>
-                <TabsTrigger value="completed">Bitenler ({studentId ? completedTests.length : Object.values(testsByStudent).flat().filter(t => t.status === 'Sonuçlandı').length})</TabsTrigger>
+                <TabsTrigger value="pending">Bekleyenler ({pendingTests.length})</TabsTrigger>
+                <TabsTrigger value="completed">Bitenler ({completedTests.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="pending" className="mt-6">
-                {studentId ? (
-                    pendingTests.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {pendingTests.map((test) => {
-                                 const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
-                                 const topicName = allTopics.find(t => t.id === test.topicId)?.name;
-                                return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
-                            })}
-                        </div>
-                    ) : (
-                        <Card><CardContent className="p-8 text-center text-muted-foreground">Bekleyen sınav bulunmuyor.</CardContent></Card>
-                    )
+                {pendingTests.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {pendingTests.map((test) => {
+                             const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+                             const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                            return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                        })}
+                    </div>
                 ) : (
-                    <Accordion type="multiple" className="w-full space-y-2">
-                         {Object.entries(testsByStudent).map(([sId, studentTests]) => {
-                             const studentForTest = familyMembers.find(m => m.id === sId);
-                             const pending = studentTests.filter(t => t.status !== 'Sonuçlandı');
-                             if(pending.length === 0) return null;
-                             return (
-                                <AccordionItem key={sId} value={sId}>
-                                    <AccordionTrigger className="p-3 bg-muted/50 rounded-t-lg text-lg font-semibold">{studentForTest?.name} ({pending.length})</AccordionTrigger>
-                                    <AccordionContent className="p-2 space-y-2">
-                                        {pending.map(test => <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />)}
-                                    </AccordionContent>
-                                </AccordionItem>
-                             )
-                         })}
-                    </Accordion>
+                    <Card><CardContent className="p-8 text-center text-muted-foreground">Bekleyen sınav bulunmuyor.</CardContent></Card>
                 )}
             </TabsContent>
             <TabsContent value="completed" className="mt-6">
-                {studentId ? (
-                     completedTests.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {completedTests.map((test) => {
-                                const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
-                                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
-                                return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
-                            })}
-                        </div>
-                    ) : (
-                        <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış sınav bulunmuyor.</CardContent></Card>
-                    )
+                 {completedTests.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {completedTests.map((test) => {
+                            const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+                            const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                            return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                        })}
+                    </div>
                 ) : (
-                     <Accordion type="multiple" className="w-full space-y-2">
-                         {Object.entries(testsByStudent).map(([sId, studentTests]) => {
-                             const studentForTest = familyMembers.find(m => m.id === sId);
-                             const completed = studentTests.filter(t => t.status === 'Sonuçlandı');
-                             if(completed.length === 0) return null;
-                             return (
-                                <AccordionItem key={sId} value={sId}>
-                                    <AccordionTrigger className="p-3 bg-muted/50 rounded-t-lg text-lg font-semibold">{studentForTest?.name} ({completed.length})</AccordionTrigger>
-                                    <AccordionContent className="p-2 space-y-2">
-                                        {completed.map(test => <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />)}
-                                    </AccordionContent>
-                                </AccordionItem>
-                             )
-                         })}
-                    </Accordion>
+                    <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış sınav bulunmuyor.</CardContent></Card>
                 )}
             </TabsContent>
         </Tabs>
@@ -314,103 +261,6 @@ function ManagementTestCard({ test, student, onDelete }: { test: Test, student?:
                 </div>
             </AccordionContent>
         </AccordionItem>
-    );
-}
-
-const formSchema = z.object({
-  title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
-  questionCount: z.coerce.number().min(1, "Soru sayısı en az 1 olmalıdır."),
-});
-
-type NewTestFromTopicFormProps = {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    student: FamilyMember;
-    subject: string;
-    topic: string;
-    allBankQuestions: BankQuestion[];
-}
-
-function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, allBankQuestions }: NewTestFromTopicFormProps) {
-    const { toast } = useToast();
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            title: `${topic} Tekrar Testi`,
-            questionCount: 10,
-        },
-    });
-    
-    const availableQuestions = React.useMemo(() => 
-        allBankQuestions.filter(q => q.subject === subject && q.topic === topic),
-    [allBankQuestions, subject, topic]);
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (values.questionCount > availableQuestions.length) {
-            toast({
-                title: "Yetersiz Soru",
-                description: `Bu konuda sadece ${availableQuestions.length} soru mevcut. Lütfen daha az soru sayısı girin.`,
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random());
-        const selectedQuestions = shuffled.slice(0, values.questionCount);
-
-        const testData = {
-          title: values.title,
-          subject: subject,
-          studentId: student.id,
-          questionCount: values.questionCount,
-          assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
-          dueDate: format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: tr }),
-          sourceType: 'bank' as const,
-          sourceId: topic, // Using topic as sourceId for simplicity
-          topicId: topic,
-          gradingType: 'auto' as const,
-        };
-
-        try {
-            await addTest(testData, selectedQuestions);
-            toast({
-                title: "✅ Ödev Atandı",
-                description: `${values.title} testi ${student.name} öğrencisine başarıyla atandı.`,
-            });
-            onOpenChange(false);
-            form.reset();
-        } catch (error) {
-            console.error(error);
-            toast({ title: "Hata", variant: "destructive" });
-        }
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{topic} konusundan ödev ata</DialogTitle>
-                    <DialogDescription>
-                        {student.name} için {subject} dersinden yeni bir test oluşturun. 
-                        Soru bankasında bu konu için toplam {availableQuestions.length} soru bulunmaktadır.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                        <FormField control={form.control} name="title" render={({ field }) => (
-                            <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="questionCount" render={({ field }) => (
-                            <FormItem><FormLabel>Soru Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <div className="flex justify-end gap-2">
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-                            <Button type="submit">Ödevi Ata</Button>
-                        </div>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
     );
 }
 
