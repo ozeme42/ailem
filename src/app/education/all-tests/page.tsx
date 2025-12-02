@@ -48,15 +48,15 @@ export default function AllTestsPage() {
     
     const filteredTests = React.useMemo(() => {
         let filtered = tests;
-
-        if (activeTab === 'pending') {
-            filtered = filtered.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
-        } else if (activeTab === 'completed') {
-            filtered = filtered.filter(t => t.status === 'Sonuçlandı');
-        }
         
         if (selectedStudents.length > 0) {
             filtered = filtered.filter(t => selectedStudents.includes(t.studentId));
+        }
+
+        if (activeTab === 'pending') {
+            return filtered.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
+        } else if (activeTab === 'completed') {
+            return filtered.filter(t => t.status === 'Sonuçlandı');
         }
 
         return filtered;
@@ -89,6 +89,12 @@ export default function AllTestsPage() {
                             <DropdownMenuContent className="w-56">
                                 <DropdownMenuLabel>Öğrenciye Göre Filtrele</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
+                                <DropdownMenuCheckboxItem
+                                    checked={selectedStudents.length === 0}
+                                    onCheckedChange={() => setSelectedStudents([])}
+                                >
+                                    Tümü
+                                </DropdownMenuCheckboxItem>
                                 {studentMembers.map(student => (
                                     <DropdownMenuCheckboxItem
                                         key={student.id}
@@ -111,7 +117,7 @@ export default function AllTestsPage() {
                 <CardContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="all">Tümü ({filteredTests.length})</TabsTrigger>
+                            <TabsTrigger value="all">Tümü ({tests.filter(t => selectedStudents.length === 0 || selectedStudents.includes(t.studentId)).length})</TabsTrigger>
                             <TabsTrigger value="pending">Bekleyenler ({filteredTests.filter(t => t.status !== 'Sonuçlandı').length})</TabsTrigger>
                             <TabsTrigger value="completed">Bitenler ({filteredTests.filter(t => t.status === 'Sonuçlandı').length})</TabsTrigger>
                         </TabsList>
@@ -172,12 +178,16 @@ function ManagementTestCard({ test, student, onDelete }: { test: Test, student?:
                          <Badge variant={isPendingGrade ? "secondary" : "outline"} className={cn(isPendingGrade && "bg-yellow-500/20 text-yellow-700")}>{test.status}</Badge>
                     )}
                     <div className="flex justify-end gap-2 w-full">
-                        {isPendingGrade && (
+                        {isPendingGrade ? (
                             <Link href={`/education/${test.id}`}>
                                 <Button variant="secondary" size="sm">Not Ver</Button>
                             </Link>
-                        )}
-                        <Link href={`/education/management/assign?edit=${test.id}`}>
+                        ) : isCompleted ? (
+                             <Link href={`/education/${test.id}`}>
+                                <Button variant="secondary" size="sm">Sonuçları Gör</Button>
+                            </Link>
+                        ) : null}
+                        <Link href={`/education/management/questions?edit=${test.id}`}>
                             <Button variant="outline" size="sm"><Edit className="w-3 h-3 mr-1"/>Düzenle</Button>
                         </Link>
                         <AlertDialog>
@@ -201,3 +211,4 @@ function ManagementTestCard({ test, student, onDelete }: { test: Test, student?:
         </Card>
     );
 }
+
