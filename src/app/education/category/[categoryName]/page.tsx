@@ -4,9 +4,9 @@
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { onTestsUpdate, onBankQuestionsUpdate, addTest, deleteTest, updateTest, onTopicsUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onBankQuestionsUpdate, addTest, deleteTest, updateTest, onTopicsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { Test, FamilyMember, BankQuestion, Topic } from "@/lib/data";
+import { Test, FamilyMember, BankQuestion, Topic, TrackedBook } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles, Send, Edit, Trash2, CheckCircle, X as XIcon, MinusCircle } from "lucide-react";
@@ -48,12 +48,9 @@ export default function CategoryDetailPage() {
 
   const { familyMembers, user } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
-  const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
-  const [allTopics, setAllTopics] = React.useState<string[]>([]);
+  const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
-  const [selectedTopic, setSelectedTopic] = React.useState<TopicStats | null>(null);
-
+  
   const student = React.useMemo(() => 
     studentId ? familyMembers.find(m => m.id === studentId) : null,
   [familyMembers, studentId]);
@@ -63,75 +60,40 @@ export default function CategoryDetailPage() {
         setAllTests(tests);
         if (loading) setLoading(false);
     });
-    const unsubscribeBanks = onBankQuestionsUpdate((questions) => {
-        setBankQuestions(questions);
-        if (loading) setLoading(false);
-    });
-    const unsubscribeTopics = onTopicsUpdate(setAllTopics);
-
-    // Initial loading state management
+    const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
+    
     Promise.all([
         new Promise(resolve => onTestsUpdate(t => resolve(t), true)),
-        new Promise(resolve => onBankQuestionsUpdate(b => resolve(b), true))
     ]).then(() => setLoading(false));
 
     return () => {
         unsubscribeTests();
-        unsubscribeBanks();
-        unsubscribeTopics();
+        unsubTrackedBooks();
     };
   }, [loading]);
 
-  const { filteredTests, topicStats } = React.useMemo(() => {
-    let testsForCategory = allTests.filter(test => getCategoryName(test) === categoryName);
+  const { filteredTests, testsByStudent } = React.useMemo(() => {
+    const testsForCategory = allTests.filter(test => getCategoryName(test) === categoryName);
     
     if (studentId) {
-        testsForCategory = testsForCategory.filter(test => test.studentId === studentId);
+        return { 
+            filteredTests: testsForCategory.filter(test => test.studentId === studentId),
+            testsByStudent: {}
+        };
     }
-
-    const sortedTests = [...testsForCategory].sort((a, b) => {
-        try {
-            const dateA = a.assignedDate ? parse(a.assignedDate, 'dd MMMM yyyy', new Date()) : 0;
-            const dateB = b.assignedDate ? parse(b.assignedDate, 'dd MMMM yyyy', new Date()) : 0;
-            if (!dateA || !dateB) return 0;
-            return compareDesc(dateA, dateB);
-        } catch(e) {
-            return 0;
+    
+    // Management view: group by student
+    const studentGroup: { [studentId: string]: Test[] } = {};
+    testsForCategory.forEach(test => {
+        if (!test.studentId) return;
+        if (!studentGroup[test.studentId]) {
+            studentGroup[test.studentId] = [];
         }
+        studentGroup[test.studentId].push(test);
     });
-      
-    // Calculate Topic Stats
-    const tempTopicStats = new Map<string, { name: string; correct: number; total: number }>();
-    const allTopicsForSubject = Array.from(new Set(bankQuestions.filter(q => q.subject === categoryName).map(q => q.topic)));
+    return { filteredTests: [], testsByStudent: studentGroup };
 
-    testsForCategory
-      .filter(t => t.status === 'Sonuçlandı' && (t.sourceType === 'bank' || t.sourceType === 'trackedBook'))
-      .forEach(test => {
-          let testTopicName: string | undefined;
-
-          if (test.sourceType === 'bank') {
-            testTopicName = bankQuestions.find(q => q.id === test.sourceId)?.topic;
-          } else if (test.sourceType === 'trackedBook') {
-            testTopicName = allTopics.find(topic => topic === test.topicId) || test.topicId;
-          }
-          
-          if (testTopicName && test.subject === categoryName) {
-              const stats = tempTopicStats.get(testTopicName) || { name: testTopicName, correct: 0, total: 0 };
-              stats.correct += test.correctAnswers || 0;
-              stats.total += test.questionCount || 0;
-              tempTopicStats.set(testTopicName, stats);
-          }
-      });
-
-    const finalTopicStats: TopicStats[] = Array.from(tempTopicStats.entries()).map(([name, data]) => ({
-      id: name,
-      ...data,
-      successRate: data.total > 0 ? (data.correct / data.total) * 100 : 0,
-    })).sort((a, b) => b.successRate - a.successRate);
-
-    return { filteredTests: sortedTests, topicStats: finalTopicStats };
-
-  }, [allTests, categoryName, bankQuestions, studentId, allTopics]);
+  }, [allTests, categoryName, studentId]);
 
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
   
@@ -165,63 +127,72 @@ export default function CategoryDetailPage() {
       
         <Tabs defaultValue="pending" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="pending">Bekleyenler ({pendingTests.length})</TabsTrigger>
-                <TabsTrigger value="completed">Bitenler ({completedTests.length})</TabsTrigger>
+                <TabsTrigger value="pending">Bekleyenler ({studentId ? pendingTests.length : Object.values(testsByStudent).flat().filter(t => t.status !== 'Sonuçlandı').length})</TabsTrigger>
+                <TabsTrigger value="completed">Bitenler ({studentId ? completedTests.length : Object.values(testsByStudent).flat().filter(t => t.status === 'Sonuçlandı').length})</TabsTrigger>
             </TabsList>
             <TabsContent value="pending" className="mt-6">
-                {pendingTests.length > 0 ? (
-                     studentId ? (
+                {studentId ? (
+                    pendingTests.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {pendingTests.map((test) => {
-                                const topicName = test.topicId;
+                                 const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+                                 const topicName = allTopics.find(t => t.id === test.topicId)?.name;
                                 return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
                             })}
                         </div>
                     ) : (
-                        <Accordion type="multiple" className="w-full space-y-2">
-                            {pendingTests.map((test) => {
-                                const studentForTest = familyMembers.find(m => m.id === test.studentId);
-                                return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
-                            })}
-                        </Accordion>
+                        <Card><CardContent className="p-8 text-center text-muted-foreground">Bekleyen sınav bulunmuyor.</CardContent></Card>
                     )
                 ) : (
-                    <Card><CardContent className="p-8 text-center text-muted-foreground">Bekleyen sınav bulunmuyor.</CardContent></Card>
+                    <Accordion type="multiple" className="w-full space-y-2">
+                         {Object.entries(testsByStudent).map(([sId, studentTests]) => {
+                             const studentForTest = familyMembers.find(m => m.id === sId);
+                             const pending = studentTests.filter(t => t.status !== 'Sonuçlandı');
+                             if(pending.length === 0) return null;
+                             return (
+                                <AccordionItem key={sId} value={sId}>
+                                    <AccordionTrigger className="p-3 bg-muted/50 rounded-t-lg text-lg font-semibold">{studentForTest?.name} ({pending.length})</AccordionTrigger>
+                                    <AccordionContent className="p-2 space-y-2">
+                                        {pending.map(test => <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />)}
+                                    </AccordionContent>
+                                </AccordionItem>
+                             )
+                         })}
+                    </Accordion>
                 )}
             </TabsContent>
             <TabsContent value="completed" className="mt-6">
-                 {completedTests.length > 0 ? (
-                     studentId ? (
+                {studentId ? (
+                     completedTests.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {completedTests.map((test) => {
-                                const topicName = test.topicId;
+                                const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+                                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
                                 return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
                             })}
                         </div>
                     ) : (
-                        <Accordion type="multiple" className="w-full space-y-2">
-                            {completedTests.map((test) => {
-                                const studentForTest = familyMembers.find(m => m.id === test.studentId);
-                                return <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />;
-                            })}
-                        </Accordion>
+                        <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış sınav bulunmuyor.</CardContent></Card>
                     )
                 ) : (
-                    <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış sınav bulunmuyor.</CardContent></Card>
+                     <Accordion type="multiple" className="w-full space-y-2">
+                         {Object.entries(testsByStudent).map(([sId, studentTests]) => {
+                             const studentForTest = familyMembers.find(m => m.id === sId);
+                             const completed = studentTests.filter(t => t.status === 'Sonuçlandı');
+                             if(completed.length === 0) return null;
+                             return (
+                                <AccordionItem key={sId} value={sId}>
+                                    <AccordionTrigger className="p-3 bg-muted/50 rounded-t-lg text-lg font-semibold">{studentForTest?.name} ({completed.length})</AccordionTrigger>
+                                    <AccordionContent className="p-2 space-y-2">
+                                        {completed.map(test => <ManagementTestCard key={test.id} test={test} student={studentForTest} onDelete={handleDeleteTest} />)}
+                                    </AccordionContent>
+                                </AccordionItem>
+                             )
+                         })}
+                    </Accordion>
                 )}
             </TabsContent>
         </Tabs>
-
-      {selectedTopic && student && (
-        <NewTestFromTopicForm
-          isOpen={isAssignDialogOpen}
-          onOpenChange={setIsAssignDialogOpen}
-          student={student}
-          subject={categoryName}
-          topic={selectedTopic.name}
-          allBankQuestions={bankQuestions}
-        />
-      )}
     </div>
   );
 }
@@ -246,17 +217,16 @@ function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: st
 
     const isMistakeTest = test.sourceType === 'mistake';
     const duration = test.durationMinutes || test.questionCount * 1.5;
+    const finalTitle = topicName ? `${topicName} - ${test.title}` : test.title;
 
     return (
         <Card key={test.id} className="flex flex-col shadow-sm overflow-hidden">
             <CardHeader>
                 <div className="flex justify-between items-start gap-2">
-                    <CardTitle>{test.title}</CardTitle>
+                    <CardTitle title={finalTitle} className="line-clamp-2">{finalTitle}</CardTitle>
                     {statusBadge}
                 </div>
                  <CardDescription>
-                     {topicName && <span className="font-semibold text-foreground">{topicName}</span>}
-                     {topicName && ' - '}
                     {test.assignedDate} - {test.dueDate}
                 </CardDescription>
             </CardHeader>
@@ -443,7 +413,4 @@ function NewTestFromTopicForm({ isOpen, onOpenChange, student, subject, topic, a
         </Dialog>
     );
 }
-
-
-
 

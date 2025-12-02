@@ -60,7 +60,8 @@ export default function EducationManagementPage() {
     
     const testsBySubject = React.useMemo(() => {
         const grouped: { [subject: string]: Test[] } = {};
-        tests.forEach(test => {
+        // Only include tests that have been assigned to a student
+        tests.filter(test => test.studentId).forEach(test => {
             const subject = getCategoryName(test);
             if (!grouped[subject]) {
                 grouped[subject] = [];

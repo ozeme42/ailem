@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTest, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment, onTrackedBooksUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTask, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment, onBooksUpdate, onUserLibrariesUpdate, onGoalsUpdate, updateGoal, getGoal, addBook, onMemorizationItemsUpdate, onMemorizationProgressUpdate, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession, onTrackedBooksUpdate, addBookToMemberLibrary } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfMonth, endOfDay, isWithinInterval, startOfMonth, addMonths, subMonths, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -122,18 +122,8 @@ export default function EducationPage() {
   
   const tests = React.useMemo(() => {
     if (!selectedStudent) return [];
-    return allTests
-      .filter(t => t.studentId === selectedStudent.id)
-      .sort((a,b) => {
-          try {
-              const dateA = parse(a.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-              const dateB = parse(b.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-              if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-              return compareDesc(dateA, dateB);
-          } catch (e) {
-              return 0;
-          }
-      });
+    // Already sorted from dataService
+    return allTests.filter(t => t.studentId === selectedStudent.id);
   }, [selectedStudent, allTests]);
   
   const overallStats = React.useMemo(() => {
@@ -348,7 +338,7 @@ export default function EducationPage() {
                                                     <a.Icon className="h-5 w-5 shrink-0 text-blue-500" />
                                                     <div className="flex-grow">
                                                         <p className="font-semibold">{a.title}</p>
-                                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})}</p>
+                                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', { locale: tr })}</p>
                                                     </div>
                                                     {isDue
                                                         ? <Badge variant="destructive">{-daysDiff} gün geçti</Badge>
@@ -376,7 +366,7 @@ export default function EducationPage() {
                                     <a.Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
                                     <div className="flex-grow">
                                         <p className="font-semibold text-muted-foreground line-through">{a.title}</p>
-                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})}</p>
+                                        <p className="text-xs text-muted-foreground">{format(a.endDate, 'dd MMMM yyyy', { locale: tr })}</p>
                                     </div>
                                     <Badge variant="secondary">Tamamlandı</Badge>
                                 </Card>
@@ -393,7 +383,7 @@ export default function EducationPage() {
 
   const pendingTests = tests.filter(test => test.status === 'Atandı');
   const pendingTestsBySubject = pendingTests.reduce((acc, test) => {
-    const subject = test.subject || 'Diğer';
+    const subject = getCategoryName(test);
     if (!acc[subject]) {
         acc[subject] = [];
     }
@@ -622,4 +612,3 @@ export default function EducationPage() {
     </>
   );
 }
-
