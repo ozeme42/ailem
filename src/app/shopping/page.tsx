@@ -440,7 +440,7 @@ export default function ShoppingPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="divide-y divide-sky-200 dark:divide-sky-800">
+                             <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                 {pendingItems.map((item) => (
                                     <div key={item.id} className="group flex items-center gap-4 py-4">
                                         <div 
@@ -501,7 +501,7 @@ export default function ShoppingPage() {
                     </TabsContent>
                 </Tabs>
             </div>
-
+            
             <div className="fixed bottom-24 md:bottom-6 right-6 z-10">
                 <Button className={cn("rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95", theme.gradient)} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
                     <Plus className="h-8 w-8 text-white"/>
@@ -570,14 +570,14 @@ export default function ShoppingPage() {
 
   // --- HOME VIEW ---
   return (
-    <div className="space-y-6">
-        <header>
-            <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">Alışveriş</h1>
+    <div className="p-0 sm:p-6 space-y-6">
+        <div className="pt-12 pb-8 px-6 flex-shrink-0">
+             <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">Alışveriş</h1>
             <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
-        </header>
+        </div>
 
         {shoppingLists.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 px-6">
                 {shoppingLists.map((list, index) => (
                     <ListCard 
                         key={list.id} 
@@ -601,7 +601,7 @@ export default function ShoppingPage() {
                 </button>
             </div>
         ) : (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-md mx-auto">
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-md mx-auto px-6">
                 <div className="relative mb-8">
                     <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
                     <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl relative z-10 rotate-3 transition-transform hover:rotate-0">
