@@ -24,6 +24,9 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 // --- Modern & Vibrant Color Palette (Gradients) ---
 const themeColors = [
@@ -425,7 +428,7 @@ export default function ShoppingPage() {
                     </div>
 
                     {/* List Area */}
-                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0 bg-white/30 dark:bg-black/10">
+                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0 bg-sky-50 dark:bg-sky-900/20">
                         {pendingItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center space-y-6 opacity-60">
                                 <div className={cn("p-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner")}>
@@ -437,34 +440,37 @@ export default function ShoppingPage() {
                                 </div>
                             </div>
                         ) : (
-                            pendingItems.map((item) => (
-                                <div key={item.id} className="group flex items-center gap-4 p-4 border border-white/50 backdrop-blur-sm bg-white/30 dark:bg-black/10 rounded-2xl shadow-sm hover:shadow-md transition-all animate-in slide-in-from-bottom-4 duration-300">
-                                    <div 
-                                        className={cn("h-7 w-7 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all active:scale-90 flex-shrink-0", theme.icon.replace('text-', 'border-'))}
-                                        onClick={() => moveItemToBought(selectedList.id, item.id)}
-                                    >
-                                        <div className={cn("h-4 w-4 rounded-full opacity-0 transition-opacity bg-current group-hover:opacity-20")} />
+                            <div className="divide-y divide-sky-200 dark:divide-sky-800">
+                                {pendingItems.map((item) => (
+                                    <div key={item.id} className="group flex items-center gap-4 py-4">
+                                        <div 
+                                            className={cn("h-7 w-7 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all active:scale-90 flex-shrink-0", theme.icon.replace('text-', 'border-'))}
+                                            onClick={() => moveItemToBought(selectedList.id, item.id)}
+                                        >
+                                            <div className={cn("h-4 w-4 rounded-full opacity-0 transition-opacity bg-current group-hover:opacity-20")} />
+                                        </div>
+                                        <span className="flex-grow font-semibold text-gray-800 dark:text-gray-200 text-base leading-snug">{item.name}</span>
+                                        
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-xl">
+                                                <DropdownMenuItem onClick={() => moveItemToBought(selectedList.id, item.id)}>
+                                                    <CheckCircle2 className="mr-2 h-4 w-4"/> Alındı İşaretle
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, false)} className="text-destructive focus:text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4"/> Sil
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
-                                    <span className="flex-grow font-semibold text-gray-800 text-base leading-snug">{item.name}</span>
-                                    
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="rounded-xl">
-                                            <DropdownMenuItem onClick={() => moveItemToBought(selectedList.id, item.id)}>
-                                                <CheckCircle2 className="mr-2 h-4 w-4"/> Alındı İşaretle
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, false)} className="text-destructive focus:text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4"/> Sil
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            ))
+                                ))
+                            )}
+                            </div>
                         )}
                     </TabsContent>
 
@@ -474,20 +480,23 @@ export default function ShoppingPage() {
                                 <p>Henüz satın alınan ürün yok.</p>
                             </div>
                         ) : (
-                            boughtItems.map((item) => (
-                                <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 border border-transparent rounded-2xl opacity-60 hover:opacity-100 transition-opacity">
-                                    <div 
-                                        className="h-7 w-7 rounded-full flex items-center justify-center cursor-pointer bg-green-500 text-white shadow-sm flex-shrink-0"
-                                        onClick={() => moveItemToPending(selectedList.id, item.id)}
-                                    >
-                                        <CheckCircle2 className="h-5 w-5" />
+                             <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {boughtItems.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-4 py-3 group">
+                                        <div 
+                                            className="h-7 w-7 rounded-full flex items-center justify-center cursor-pointer bg-green-500 text-white shadow-sm flex-shrink-0"
+                                            onClick={() => moveItemToPending(selectedList.id, item.id)}
+                                        >
+                                            <CheckCircle2 className="h-5 w-5" />
+                                        </div>
+                                        <span className="flex-grow font-medium text-base line-through text-gray-500 dark:text-gray-400">{item.name}</span>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <span className="flex-grow font-medium text-base line-through text-gray-500">{item.name}</span>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))
+                                ))
+                            )}
+                            </div>
                         )}
                     </TabsContent>
                 </Tabs>
@@ -561,9 +570,9 @@ export default function ShoppingPage() {
 
   // --- HOME VIEW ---
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
         <header>
-            <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Alışveriş</h1>
+            <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">Alışveriş</h1>
             <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
         </header>
 
@@ -583,12 +592,12 @@ export default function ShoppingPage() {
                 {/* Add New List Card (Dashed) */}
                 <button 
                     onClick={() => { setEditingList(null); setListDialogOpen(true); }}
-                    className="group flex flex-col items-center justify-center border-3 border-dashed border-gray-200 rounded-3xl p-6 h-[180px] hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-300"
+                    className="group flex flex-col items-center justify-center border-3 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-6 h-[180px] hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-100/50 dark:hover:bg-gray-800/20 transition-all duration-300"
                 >
-                    <div className="h-12 w-12 rounded-full bg-gray-100 group-hover:bg-white flex items-center justify-center mb-3 shadow-sm transition-all group-hover:scale-110">
-                        <Plus className="h-6 w-6 text-gray-500 group-hover:text-black" />
+                    <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-gray-700 flex items-center justify-center mb-3 shadow-sm transition-all group-hover:scale-110">
+                        <Plus className="h-6 w-6 text-gray-500 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
                     </div>
-                    <span className="font-bold text-gray-500 group-hover:text-gray-900">Yeni Liste Oluştur</span>
+                    <span className="font-bold text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200">Yeni Liste Oluştur</span>
                 </button>
             </div>
         ) : (
@@ -599,8 +608,8 @@ export default function ShoppingPage() {
                         <ShoppingCart className="h-12 w-12 text-white" />
                     </div>
                 </div>
-                <h3 className="text-2xl font-bold mb-3 text-gray-900">Alışverişe Başla</h3>
-                <p className="text-gray-500 mb-8 leading-relaxed">Hiç listeniz yok. Haftalık market, pazar veya özel günler için şık listeler oluşturun.</p>
+                <h3 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Alışverişe Başla</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">Hiç listeniz yok. Haftalık market, pazar veya özel günler için şık listeler oluşturun.</p>
                 <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }} size="lg" className="rounded-2xl px-10 h-14 text-lg font-bold bg-black text-white hover:bg-gray-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
                     <Plus className="mr-2 h-5 w-5" /> Liste Oluştur
                 </Button>
