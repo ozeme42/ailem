@@ -21,7 +21,7 @@ export function MobileNavbar() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
 
-  if (!isMobile || pathname.startsWith('/pomodoro')) {
+  if (!isMobile || pathname.startsWith('/pomodoro') || pathname.startsWith('/shopping')) {
     return null;
   }
 
