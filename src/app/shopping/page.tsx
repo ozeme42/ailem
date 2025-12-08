@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Circle, Search, Sparkles, Zap } from "lucide-react";
+import { Plus, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Circle, Search, Sparkles, Zap, Archive } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -439,7 +440,7 @@ export default function ShoppingPage() {
                                 <div key={item.id} className="group flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all animate-in slide-in-from-bottom-4 duration-300">
                                     <div 
                                         className={cn("h-7 w-7 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all active:scale-90 flex-shrink-0", theme.icon.replace('text-', 'border-'))}
-                                        onClick={() => toggleShoppingListItemStatusInList(selectedList.id, item.id)}
+                                        onClick={() => moveItemToBought(selectedList.id, item.id)}
                                     >
                                         <div className={cn("h-4 w-4 rounded-full opacity-0 transition-opacity bg-current group-hover:opacity-20")} />
                                     </div>
