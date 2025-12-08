@@ -425,7 +425,7 @@ export default function ShoppingPage() {
                     </div>
 
                     {/* List Area */}
-                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
+                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0 bg-white/30 dark:bg-black/10">
                         {pendingItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center space-y-6 opacity-60">
                                 <div className={cn("p-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner")}>
@@ -438,7 +438,7 @@ export default function ShoppingPage() {
                             </div>
                         ) : (
                             pendingItems.map((item) => (
-                                <div key={item.id} className="group flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all animate-in slide-in-from-bottom-4 duration-300">
+                                <div key={item.id} className="group flex items-center gap-4 p-4 border border-white/50 backdrop-blur-sm bg-white/30 dark:bg-black/10 rounded-2xl shadow-sm hover:shadow-md transition-all animate-in slide-in-from-bottom-4 duration-300">
                                     <div 
                                         className={cn("h-7 w-7 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all active:scale-90 flex-shrink-0", theme.icon.replace('text-', 'border-'))}
                                         onClick={() => moveItemToBought(selectedList.id, item.id)}
