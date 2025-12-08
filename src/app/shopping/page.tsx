@@ -385,7 +385,7 @@ export default function ShoppingPage() {
     const theme = themeColors[listIndex >= 0 ? listIndex % themeColors.length : 0];
 
     return (
-        <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-background text-foreground animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+        <div className="bg-background text-foreground animate-in fade-in zoom-in-95 duration-300">
             {/* Header */}
             <div className={cn("flex-shrink-0 px-6 pt-12 pb-6 flex items-center justify-between shadow-lg z-20 transition-all rounded-b-[2rem]", theme.gradient)}>
                 <div className="flex items-center gap-4 text-white">
@@ -493,7 +493,7 @@ export default function ShoppingPage() {
             </div>
 
             {/* --- ULTRA MODERN QUICK ADD DOCK --- */}
-            <div className="absolute bottom-0 left-0 w-full z-50">
+            <div className="fixed bottom-0 left-0 w-full z-50">
                 {/* Gradient Fade Overlay */}
                 <div className="h-16 bg-gradient-to-t from-background via-background/80 to-transparent w-full pointer-events-none" />
                 
@@ -575,10 +575,10 @@ export default function ShoppingPage() {
   return (
     <div className="h-full bg-gray-50/50">
         <div className="max-w-5xl mx-auto p-6 space-y-6">
-            <div className="flex-shrink-0">
+            <header>
                 <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Alışveriş</h1>
                 <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
-            </div>
+            </header>
 
             {shoppingLists.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
