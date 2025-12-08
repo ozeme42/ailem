@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Circle, Search, Sparkles, Zap, Archive } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -417,7 +417,7 @@ export default function ShoppingPage() {
         return (categoryOrder[catB] || 99) - (categoryOrder[catA] || 99);
     });
 
-     return (
+    return (
         <div className="h-full flex flex-col">
             {/* Header */}
             <div className={cn("flex-shrink-0 px-6 pt-12 pb-6 flex items-center justify-between shadow-lg z-20 transition-all rounded-b-[2rem]", theme.gradient)}>
@@ -455,7 +455,7 @@ export default function ShoppingPage() {
                         </TabsList>
                     </div>
 
-                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-52 bg-sky-50 dark:bg-sky-900/20">
+                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
                         {pendingItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60 mt-[-5rem]">
                                 <div className={cn("p-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner")}>
@@ -471,11 +471,11 @@ export default function ShoppingPage() {
                                 {sortedPendingCategories.map(([category, items]) => (
                                     <div key={category}>
                                         {category !== 'Diğer' && <h3 className="font-semibold text-base py-3 text-sky-800 dark:text-sky-200">{category}</h3>}
-                                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
+                                        <div className="space-y-2">
                                         {items.map((item) => (
-                                            <div key={item.id} className="group flex items-center gap-4 py-3">
+                                            <div key={item.id} className="group flex items-center gap-4 py-3 px-4 bg-white/50 dark:bg-card/50 border rounded-2xl shadow-sm transition-all hover:shadow-md hover:border-primary/20">
                                                 <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => handleToggleItem(selectedList!.id, item)} className="size-6 rounded-md border-sky-400 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-600" />
-                                                <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                                <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer text-base", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
                                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -488,7 +488,7 @@ export default function ShoppingPage() {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-52 pt-2 bg-sky-50 dark:bg-sky-900/20">
+                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-24 pt-2">
                         {boughtItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center opacity-50">
                                 <p>Henüz satın alınan ürün yok.</p>
@@ -504,7 +504,7 @@ export default function ShoppingPage() {
                                             <CheckCircle2 className="h-5 w-5" />
                                         </div>
                                         <span className="flex-grow font-medium text-base line-through text-gray-500 dark:text-gray-400">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)} title="Kalıcı olarak sil">
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -516,8 +516,8 @@ export default function ShoppingPage() {
             </div>
             
              <div className="fixed bottom-24 md:bottom-6 right-6 z-30">
-                <Button className="rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95" style={{ background: theme.gradient.split(' ')[2], color: 'white' }} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
-                    <Plus className="h-8 w-8"/>
+                <Button className={cn("rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95", theme.gradient)} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
+                    <Plus className="h-8 w-8 text-white"/>
                 </Button>
             </div>
 
