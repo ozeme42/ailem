@@ -251,6 +251,7 @@ export default function ShoppingPage() {
   const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
   
   // Detail page states
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -424,7 +425,7 @@ export default function ShoppingPage() {
                     </div>
 
                     {/* List Area */}
-                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0">
+                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
                         {pendingItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center space-y-6 opacity-60">
                                 <div className={cn("p-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner")}>
@@ -467,7 +468,7 @@ export default function ShoppingPage() {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0">
+                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
                         {boughtItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center opacity-50">
                                 <p>Henüz satın alınan ürün yok.</p>
@@ -492,42 +493,31 @@ export default function ShoppingPage() {
                 </Tabs>
             </div>
 
-            {/* --- ULTRA MODERN QUICK ADD DOCK --- */}
-            <div className="fixed bottom-0 left-0 w-full z-50">
-                {/* Gradient Fade Overlay */}
-                <div className="h-16 bg-gradient-to-t from-background via-background/80 to-transparent w-full pointer-events-none" />
-                
-                <div className="bg-background/90 backdrop-blur-xl border-t shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-[80px] sm:pb-safe-area-inset-bottom">
-                    
-                    {/* Quick Suggestion Chips (Scrollable) */}
-                    <div className="pt-3 pb-2 overflow-x-auto no-scrollbar px-4 flex gap-2">
-                        <div className="flex items-center gap-2 pr-2 shrink-0">
-                            <Zap className="h-4 w-4 text-amber-500 fill-amber-500 animate-pulse" />
-                        </div>
-                        {quickSuggestions.map((item, i) => (
-                            <button
-                                key={i}
-                                onClick={() => handleSuggestionClick(item)}
-                                className="flex-shrink-0 px-4 py-1.5 bg-secondary/50 hover:bg-primary/10 hover:text-primary hover:border-primary/20 border border-transparent rounded-full text-xs font-medium transition-all active:scale-95 whitespace-nowrap"
-                            >
-                                {item}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="p-4 pt-1 max-w-3xl mx-auto">
+            <div className="fixed bottom-6 right-6 z-10">
+                <Button className={cn("rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95", theme.gradient)} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
+                    <Plus className="h-8 w-8 text-white"/>
+                </Button>
+            </div>
+             <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+                <DialogContent>
+                     <DialogHeader>
+                        <DialogTitle>Yeni Ürün Ekle</DialogTitle>
+                        <DialogDescription>
+                          Hızlıca bir ürün ekleyin veya yapay zeka ile birden fazla ürünü listeye dağıtın.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="pt-4 space-y-4">
                         <form 
                             onSubmit={(e) => handleAddItem(e)} 
                             className="relative flex items-center gap-3"
                         >
                             <div className="relative flex-grow group">
-                                <div className={cn("absolute -inset-0.5 rounded-2xl bg-gradient-to-r opacity-20 group-focus-within:opacity-100 transition duration-500 blur pointer-events-none", theme.gradient)}></div>
                                 <Input 
                                     ref={inputRef}
                                     value={newItemName}
                                     onChange={(e) => setNewItemName(e.target.value)}
-                                    placeholder="Ürün adı yazın..."
-                                    className="relative pl-5 pr-12 h-14 rounded-2xl border-0 bg-secondary/40 focus:bg-background focus:ring-0 text-lg shadow-sm placeholder:text-muted-foreground/50 transition-all"
+                                    placeholder="2kg domates, 1 paket süt..."
+                                    className="pl-5 pr-12 h-12 rounded-xl text-base"
                                     autoComplete="off"
                                 />
                                 {isAiProcessing && (
@@ -538,88 +528,84 @@ export default function ShoppingPage() {
                             </div>
                             <Button 
                                 type="submit" 
-                                size="icon" 
-                                className={cn("h-14 w-14 rounded-2xl shadow-xl shrink-0 transition-transform active:scale-95", theme.gradient)}
+                                size="sm" 
+                                className="h-10"
                                 disabled={!newItemName.trim() || isAiProcessing}
                             >
-                                <Plus className="h-7 w-7 text-white" />
+                                Ekle
                             </Button>
-
-                            {/* Smart Suggestions Popover */}
-                            {suggestions.length > 0 && newItemName.length > 0 && (
-                                <div className="absolute bottom-full left-0 w-full mb-3 bg-white/95 backdrop-blur-xl border rounded-2xl shadow-2xl p-2 z-50 animate-in slide-in-from-bottom-4 zoom-in-95">
-                                    <div className="flex flex-col gap-1">
-                                        {suggestions.map((s, i) => (
-                                            <button
-                                                key={i}
-                                                type="button"
-                                                onClick={() => handleSuggestionClick(s)}
-                                                className="px-4 py-3 hover:bg-primary/5 rounded-xl text-sm font-medium transition-colors text-left flex items-center gap-3 group"
-                                            >
-                                                <Search className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                                                {s}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </form>
+                        {suggestions.length > 0 && newItemName.length > 0 && (
+                            <div className="p-2 border rounded-lg max-h-32 overflow-y-auto">
+                                <div className="flex flex-col gap-1">
+                                    {suggestions.map((s, i) => (
+                                        <button
+                                            key={i}
+                                            type="button"
+                                            onClick={() => handleSuggestionClick(s)}
+                                            className="px-3 py-2 hover:bg-muted rounded-lg text-sm font-medium transition-colors text-left flex items-center gap-3 group"
+                                        >
+                                            <Search className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div>
-            </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
   }
 
   // --- HOME VIEW ---
   return (
-    <div className="h-full bg-gray-50/50">
-        <div className="max-w-5xl mx-auto p-6 space-y-6">
-            <header>
-                <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Alışveriş</h1>
-                <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
-            </header>
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <header>
+            <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Alışveriş</h1>
+            <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
+        </header>
 
-            {shoppingLists.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {shoppingLists.map((list, index) => (
-                        <ListCard 
-                            key={list.id} 
-                            index={index}
-                            list={list} 
-                            onClick={() => setSelectedList(list)}
-                            onEdit={() => { setEditingList(list); setListDialogOpen(true); }}
-                            onDelete={handleDeleteList}
-                        />
-                    ))}
-                    
-                    {/* Add New List Card (Dashed) */}
-                    <button 
-                        onClick={() => { setEditingList(null); setListDialogOpen(true); }}
-                        className="group flex flex-col items-center justify-center border-3 border-dashed border-gray-200 rounded-3xl p-6 h-[180px] hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-300"
-                    >
-                        <div className="h-12 w-12 rounded-full bg-gray-100 group-hover:bg-white flex items-center justify-center mb-3 shadow-sm transition-all group-hover:scale-110">
-                            <Plus className="h-6 w-6 text-gray-500 group-hover:text-black" />
-                        </div>
-                        <span className="font-bold text-gray-500 group-hover:text-gray-900">Yeni Liste Oluştur</span>
-                    </button>
-                </div>
-            ) : (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-md mx-auto">
-                    <div className="relative mb-8">
-                        <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
-                        <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl relative z-10 rotate-3 transition-transform hover:rotate-0">
-                            <ShoppingCart className="h-12 w-12 text-white" />
-                        </div>
+        {shoppingLists.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {shoppingLists.map((list, index) => (
+                    <ListCard 
+                        key={list.id} 
+                        index={index}
+                        list={list} 
+                        onClick={() => setSelectedList(list)}
+                        onEdit={() => { setEditingList(list); setListDialogOpen(true); }}
+                        onDelete={handleDeleteList}
+                    />
+                ))}
+                
+                {/* Add New List Card (Dashed) */}
+                <button 
+                    onClick={() => { setEditingList(null); setListDialogOpen(true); }}
+                    className="group flex flex-col items-center justify-center border-3 border-dashed border-gray-200 rounded-3xl p-6 h-[180px] hover:border-gray-400 hover:bg-gray-100/50 transition-all duration-300"
+                >
+                    <div className="h-12 w-12 rounded-full bg-gray-100 group-hover:bg-white flex items-center justify-center mb-3 shadow-sm transition-all group-hover:scale-110">
+                        <Plus className="h-6 w-6 text-gray-500 group-hover:text-black" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Alışverişe Başla</h3>
-                    <p className="text-gray-500 mb-8 leading-relaxed">Hiç listeniz yok. Haftalık market, pazar veya özel günler için şık listeler oluşturun.</p>
-                    <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }} size="lg" className="rounded-2xl px-10 h-14 text-lg font-bold bg-black text-white hover:bg-gray-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
-                        <Plus className="mr-2 h-5 w-5" /> Liste Oluştur
-                    </Button>
+                    <span className="font-bold text-gray-500 group-hover:text-gray-900">Yeni Liste Oluştur</span>
+                </button>
+            </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-md mx-auto">
+                <div className="relative mb-8">
+                    <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
+                    <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl relative z-10 rotate-3 transition-transform hover:rotate-0">
+                        <ShoppingCart className="h-12 w-12 text-white" />
+                    </div>
                 </div>
-            )}
-        </div>
+                <h3 className="text-2xl font-bold mb-3 text-gray-900">Alışverişe Başla</h3>
+                <p className="text-gray-500 mb-8 leading-relaxed">Hiç listeniz yok. Haftalık market, pazar veya özel günler için şık listeler oluşturun.</p>
+                <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }} size="lg" className="rounded-2xl px-10 h-14 text-lg font-bold bg-black text-white hover:bg-gray-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                    <Plus className="mr-2 h-5 w-5" /> Liste Oluştur
+                </Button>
+            </div>
+        )}
 
       <CreateListDialog isOpen={isListDialogOpen} onOpenChange={setListDialogOpen} onCreate={handleCreateOrUpdateList} initialData={editingList} />
     </div>
