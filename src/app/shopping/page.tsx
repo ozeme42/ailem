@@ -425,7 +425,7 @@ export default function ShoppingPage() {
                     </div>
 
                     {/* List Area */}
-                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0">
+                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
                         {pendingItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center space-y-6 opacity-60">
                                 <div className={cn("p-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner")}>
@@ -468,7 +468,7 @@ export default function ShoppingPage() {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0">
+                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
                         {boughtItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center opacity-50">
                                 <p>Henüz satın alınan ürün yok.</p>
