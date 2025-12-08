@@ -573,15 +573,15 @@ export default function ShoppingPage() {
 
   // --- HOME VIEW ---
   return (
-    <div className="h-[100dvh] flex flex-col bg-gray-50/50 max-w-5xl mx-auto overflow-hidden">
-        <div className="pt-12 pb-8 px-6 flex-shrink-0">
-            <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Alışveriş</h1>
-            <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
-        </div>
+    <div className="h-full bg-gray-50/50">
+        <div className="max-w-5xl mx-auto p-6 space-y-6">
+            <div className="flex-shrink-0">
+                <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Alışveriş</h1>
+                <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
+            </div>
 
-        <ScrollArea className="flex-grow px-6 pb-32">
             {shoppingLists.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-20">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {shoppingLists.map((list, index) => (
                         <ListCard 
                             key={list.id} 
@@ -605,7 +605,7 @@ export default function ShoppingPage() {
                     </button>
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center h-[50vh] text-center max-w-md mx-auto">
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-md mx-auto">
                     <div className="relative mb-8">
                         <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
                         <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl relative z-10 rotate-3 transition-transform hover:rotate-0">
@@ -619,7 +619,7 @@ export default function ShoppingPage() {
                     </Button>
                 </div>
             )}
-        </ScrollArea>
+        </div>
 
       <CreateListDialog isOpen={isListDialogOpen} onOpenChange={setListDialogOpen} onCreate={handleCreateOrUpdateList} initialData={editingList} />
     </div>
