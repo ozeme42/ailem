@@ -364,7 +364,7 @@ export default function ShoppingPage() {
 
   if (!isLoaded) {
     return (
-      <div className="p-6 space-y-6 max-w-5xl mx-auto h-[100dvh]">
+      <div className="p-6 space-y-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between">
             <Skeleton className="h-10 w-40 rounded-xl" />
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -425,7 +425,7 @@ export default function ShoppingPage() {
                     </div>
 
                     {/* List Area */}
-                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
+                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0">
                         {pendingItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center space-y-6 opacity-60">
                                 <div className={cn("p-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner")}>
@@ -468,7 +468,7 @@ export default function ShoppingPage() {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
+                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-52 space-y-3 pt-0">
                         {boughtItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center opacity-50">
                                 <p>Henüz satın alınan ürün yok.</p>
@@ -493,7 +493,7 @@ export default function ShoppingPage() {
                 </Tabs>
             </div>
 
-            <div className="fixed bottom-6 right-6 z-10">
+            <div className="fixed bottom-24 md:bottom-6 right-6 z-10">
                 <Button className={cn("rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95", theme.gradient)} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
                     <Plus className="h-8 w-8 text-white"/>
                 </Button>
