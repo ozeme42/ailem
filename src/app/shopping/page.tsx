@@ -280,7 +280,6 @@ export default function ShoppingPage() {
     }
   }, [shoppingLists, selectedList]);
   
-  // Suggestion engine
   const historicalItems = useMemo(() => {
     const items = new Set<string>();
     shoppingLists.forEach(list => {
@@ -364,13 +363,17 @@ export default function ShoppingPage() {
           toast({ title: "Hata", variant: "destructive" });
       }
   };
+  
+  const handleToggleItem = async (listId: string, item: ShoppingListItemType) => {
+    await moveItemToBought(listId, item.id);
+  }
 
   if (!isLoaded) {
     return (
-      <div className="p-6 space-y-6 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 max-w-5xl mx-auto p-6">
+        <div className="pt-12 pb-8">
             <Skeleton className="h-10 w-40 rounded-xl" />
-            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-6 w-64 rounded-xl mt-3" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Skeleton className="h-48 w-full rounded-2xl" />
@@ -380,16 +383,42 @@ export default function ShoppingPage() {
     );
   }
 
-  // --- DETAIL VIEW ---
   if (selectedList) {
-    const pendingItems = (selectedList.items || []).sort((a,b) => (new Date(b.createdAt||0).getTime()) - (new Date(a.createdAt||0).getTime()));
-    const boughtItems = (selectedList.boughtItems || []).sort((a,b) => (new Date(b.createdAt||0).getTime()) - (new Date(a.createdAt||0).getTime()));
-    
     const listIndex = shoppingLists.findIndex(l => l.id === selectedList.id);
     const theme = themeColors[listIndex >= 0 ? listIndex % themeColors.length : 0];
+    const pendingItems = (selectedList.items || []).sort((a,b) => (new Date(b.createdAt||0).getTime()) - (new Date(a.createdAt||0).getTime()));
+    const boughtItems = (selectedList.boughtItems || []).sort((a,b) => (new Date(b.createdAt||0).getTime()) - (new Date(a.createdAt||0).getTime()));
+        
+    const groupedPendingItems = pendingItems.reduce((acc, item) => {
+            const category = item.category || 'Diğer';
+            if (!acc[category]) acc[category] = [];
+            acc[category].push(item);
+            return acc;
+        }, {} as Record<string, ShoppingListItemType[]>);
+        
+    const groupedBoughtItems = boughtItems.reduce((acc, item) => {
+            const category = item.category || 'Diğer';
+            if (!acc[category]) acc[category] = [];
+            acc[category].push(item);
+            return acc;
+        }, {} as Record<string, ShoppingListItemType[]>);
+        
+    const categoryOrder: { [key: string]: number } = {
+        'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
+        'Temel Gıda': 5, 'Atıştırmalık': 6, 'İçecekler': 7, 'Dondurulmuş Gıdalar': 8,
+        'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11, 'Diğer': 99
+    };
+    
+    const sortedPendingCategories = Object.entries(groupedPendingItems).sort(([catA], [catB]) => {
+        return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
+    });
+    
+    const sortedBoughtCategories = Object.entries(groupedBoughtItems).sort(([catA], [catB]) => {
+        return (categoryOrder[catB] || 99) - (categoryOrder[catA] || 99);
+    });
 
-    return (
-        <div className="bg-background text-foreground animate-in fade-in zoom-in-95 duration-300">
+     return (
+        <div className="h-full flex flex-col">
             {/* Header */}
             <div className={cn("flex-shrink-0 px-6 pt-12 pb-6 flex items-center justify-between shadow-lg z-20 transition-all rounded-b-[2rem]", theme.gradient)}>
                 <div className="flex items-center gap-4 text-white">
@@ -413,7 +442,6 @@ export default function ShoppingPage() {
             {/* Content with Tabs */}
             <div className="flex-grow flex flex-col min-h-0 relative">
                 <Tabs defaultValue="pending" className="flex flex-col h-full">
-                    {/* Segmented Control */}
                     <div className="px-6 py-4 flex-shrink-0">
                         <TabsList className="w-full h-12 bg-muted/50 p-1 rounded-2xl shadow-inner">
                             <TabsTrigger value="pending" className="flex-1 h-full rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all font-semibold">
@@ -427,62 +455,48 @@ export default function ShoppingPage() {
                         </TabsList>
                     </div>
 
-                    {/* List Area */}
-                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0 bg-sky-50 dark:bg-sky-900/20">
+                    <TabsContent value="pending" className="flex-grow overflow-y-auto px-6 pb-52 bg-sky-50 dark:bg-sky-900/20">
                         {pendingItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-64 text-center space-y-6 opacity-60">
+                            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-60 mt-[-5rem]">
                                 <div className={cn("p-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner")}>
                                     <ListChecks className="h-16 w-16 text-gray-400" />
                                 </div>
                                 <div>
                                     <p className="text-xl font-bold text-gray-700">Listeniz boş</p>
-                                    <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto">Aşağıdaki hızlı ekleme panelini kullanarak ihtiyaçlarınızı yazın.</p>
+                                    <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto">Aşağıdaki butonu kullanarak ihtiyaçlarınızı ekleyin.</p>
                                 </div>
                             </div>
                         ) : (
-                             <div className="divide-y divide-sky-200 dark:divide-sky-800">
-                                {pendingItems.map((item) => (
-                                    <div key={item.id} className="group flex items-center gap-4 py-4">
-                                        <div 
-                                            className={cn("h-7 w-7 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all active:scale-90 flex-shrink-0", theme.icon.replace('text-', 'border-'))}
-                                            onClick={() => moveItemToBought(selectedList.id, item.id)}
-                                        >
-                                            <div className={cn("h-4 w-4 rounded-full opacity-0 transition-opacity bg-current group-hover:opacity-20")} />
-                                        </div>
-                                        <span className="flex-grow font-semibold text-gray-800 dark:text-gray-200 text-base leading-snug">{item.name}</span>
-                                        
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
-                                                    <MoreVertical className="h-4 w-4" />
+                            <div className="space-y-4">
+                                {sortedPendingCategories.map(([category, items]) => (
+                                    <div key={category}>
+                                        {category !== 'Diğer' && <h3 className="font-semibold text-base py-3 text-sky-800 dark:text-sky-200">{category}</h3>}
+                                        <div className="divide-y divide-sky-200 dark:divide-sky-800">
+                                        {items.map((item) => (
+                                            <div key={item.id} className="group flex items-center gap-4 py-3">
+                                                <Checkbox id={item.id} checked={item.isBought} onCheckedChange={() => handleToggleItem(selectedList!.id, item)} className="size-6 rounded-md border-sky-400 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-600" />
+                                                <label htmlFor={item.id} className={cn("font-semibold flex-grow cursor-pointer", item.isBought && "line-through text-muted-foreground")}>{item.name}</label>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, false)}>
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="rounded-xl">
-                                                <DropdownMenuItem onClick={() => moveItemToBought(selectedList.id, item.id)}>
-                                                    <CheckCircle2 className="mr-2 h-4 w-4"/> Alındı İşaretle
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, false)} className="text-destructive focus:text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4"/> Sil
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                            </div>
+                                        ))}
+                                        </div>
                                     </div>
-                                ))
-                            )}
+                                ))}
                             </div>
                         )}
                     </TabsContent>
 
-                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-24 space-y-3 pt-0">
+                    <TabsContent value="bought" className="flex-grow overflow-y-auto px-6 pb-52 pt-2 bg-sky-50 dark:bg-sky-900/20">
                         {boughtItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center opacity-50">
                                 <p>Henüz satın alınan ürün yok.</p>
                             </div>
                         ) : (
-                             <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                            <div className="space-y-3">
                                 {boughtItems.map((item) => (
-                                    <div key={item.id} className="flex items-center gap-4 py-3 group">
+                                    <div key={item.id} className="flex items-center gap-4 py-3 px-4 group bg-gray-100/50 dark:bg-card/50 border rounded-2xl">
                                         <div 
                                             className="h-7 w-7 rounded-full flex items-center justify-center cursor-pointer bg-green-500 text-white shadow-sm flex-shrink-0"
                                             onClick={() => moveItemToPending(selectedList.id, item.id)}
@@ -494,32 +508,27 @@ export default function ShoppingPage() {
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>
-                                ))
-                            )}
+                                ))}
                             </div>
                         )}
                     </TabsContent>
                 </Tabs>
             </div>
             
-            <div className="fixed bottom-24 md:bottom-6 right-6 z-10">
-                <Button className={cn("rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95", theme.gradient)} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
-                    <Plus className="h-8 w-8 text-white"/>
+             <div className="fixed bottom-24 md:bottom-6 right-6 z-30">
+                <Button className="rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95" style={{ background: theme.gradient.split(' ')[2], color: 'white' }} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
+                    <Plus className="h-8 w-8"/>
                 </Button>
             </div>
-             <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+
+            <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
                 <DialogContent>
-                     <DialogHeader>
+                    <DialogHeader>
                         <DialogTitle>Yeni Ürün Ekle</DialogTitle>
-                        <DialogDescription>
-                          Hızlıca bir ürün ekleyin veya yapay zeka ile birden fazla ürünü listeye dağıtın.
-                        </DialogDescription>
+                        <DialogDescription>Hızlıca bir ürün ekleyin veya yapay zeka ile birden fazla ürünü listeye dağıtın.</DialogDescription>
                     </DialogHeader>
                     <div className="pt-4 space-y-4">
-                        <form 
-                            onSubmit={(e) => handleAddItem(e)} 
-                            className="relative flex items-center gap-3"
-                        >
+                        <form onSubmit={handleAddItem} className="relative flex items-center gap-3">
                             <div className="relative flex-grow group">
                                 <Input 
                                     ref={inputRef}
@@ -535,12 +544,7 @@ export default function ShoppingPage() {
                                     </div>
                                 )}
                             </div>
-                            <Button 
-                                type="submit" 
-                                size="sm" 
-                                className="h-10"
-                                disabled={!newItemName.trim() || isAiProcessing}
-                            >
+                            <Button type="submit" size="sm" className="h-10" disabled={!newItemName.trim() || isAiProcessing}>
                                 Ekle
                             </Button>
                         </form>
@@ -570,52 +574,52 @@ export default function ShoppingPage() {
 
   // --- HOME VIEW ---
   return (
-    <div className="p-0 sm:p-6 space-y-6">
-        <div className="pt-12 pb-8 px-6 flex-shrink-0">
-             <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">Alışveriş</h1>
-            <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
-        </div>
-
-        {shoppingLists.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 px-6">
-                {shoppingLists.map((list, index) => (
-                    <ListCard 
-                        key={list.id} 
-                        index={index}
-                        list={list} 
-                        onClick={() => setSelectedList(list)}
-                        onEdit={() => { setEditingList(list); setListDialogOpen(true); }}
-                        onDelete={handleDeleteList}
-                    />
-                ))}
-                
-                {/* Add New List Card (Dashed) */}
-                <button 
-                    onClick={() => { setEditingList(null); setListDialogOpen(true); }}
-                    className="group flex flex-col items-center justify-center border-3 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-6 h-[180px] hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-100/50 dark:hover:bg-gray-800/20 transition-all duration-300"
-                >
-                    <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-gray-700 flex items-center justify-center mb-3 shadow-sm transition-all group-hover:scale-110">
-                        <Plus className="h-6 w-6 text-gray-500 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
-                    </div>
-                    <span className="font-bold text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200">Yeni Liste Oluştur</span>
-                </button>
+    <div className="min-h-[100dvh] bg-background">
+        <div className="space-y-6 max-w-5xl mx-auto p-6">
+            <div className="pt-12 pb-8 flex-shrink-0">
+                <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">Alışveriş</h1>
+                <p className="text-muted-foreground text-lg font-medium">İhtiyaçlarınızı organize edin.</p>
             </div>
-        ) : (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-md mx-auto px-6">
-                <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
-                    <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl relative z-10 rotate-3 transition-transform hover:rotate-0">
-                        <ShoppingCart className="h-12 w-12 text-white" />
-                    </div>
+
+            {shoppingLists.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {shoppingLists.map((list, index) => (
+                        <ListCard 
+                            key={list.id} 
+                            index={index}
+                            list={list} 
+                            onClick={() => setSelectedList(list)}
+                            onEdit={() => { setEditingList(list); setListDialogOpen(true); }}
+                            onDelete={handleDeleteList}
+                        />
+                    ))}
+                    
+                    <button 
+                        onClick={() => { setEditingList(null); setListDialogOpen(true); }}
+                        className="group flex flex-col items-center justify-center border-3 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-6 h-[180px] hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-100/50 dark:hover:bg-gray-800/20 transition-all duration-300"
+                    >
+                        <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-gray-700 flex items-center justify-center mb-3 shadow-sm transition-all group-hover:scale-110">
+                            <Plus className="h-6 w-6 text-gray-500 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
+                        </div>
+                        <span className="font-bold text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200">Yeni Liste Oluştur</span>
+                    </button>
                 </div>
-                <h3 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Alışverişe Başla</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">Hiç listeniz yok. Haftalık market, pazar veya özel günler için şık listeler oluşturun.</p>
-                <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }} size="lg" className="rounded-2xl px-10 h-14 text-lg font-bold bg-black text-white hover:bg-gray-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
-                    <Plus className="mr-2 h-5 w-5" /> Liste Oluştur
-                </Button>
-            </div>
-        )}
-
+            ) : (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-md mx-auto px-6">
+                    <div className="relative mb-8">
+                        <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
+                        <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl relative z-10 rotate-3 transition-transform hover:rotate-0">
+                            <ShoppingCart className="h-12 w-12 text-white" />
+                        </div>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Alışverişe Başla</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">Hiç listeniz yok. Haftalık market, pazar veya özel günler için şık listeler oluşturun.</p>
+                    <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }} size="lg" className="rounded-2xl px-10 h-14 text-lg font-bold bg-black text-white hover:bg-gray-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                        <Plus className="mr-2 h-5 w-5" /> Liste Oluştur
+                    </Button>
+                </div>
+            )}
+        </div>
       <CreateListDialog isOpen={isListDialogOpen} onOpenChange={setListDialogOpen} onCreate={handleCreateOrUpdateList} initialData={editingList} />
     </div>
   );
