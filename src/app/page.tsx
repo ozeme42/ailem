@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -90,10 +91,15 @@ export default function Home() {
         defaultValues: { progress: '' as any },
     });
 
-    // İlk yüklemede ilk üyeyi aktif yap
+    // İlk yüklemede ilk çocuğu aktif yap
     React.useEffect(() => {
         if (familyMembers.length > 0 && !activeMemberId) {
-            setActiveMemberId(familyMembers[0].id);
+            const childMember = familyMembers.find(m => m.role.includes('Çocuk'));
+            if (childMember) {
+                setActiveMemberId(childMember.id);
+            } else {
+                setActiveMemberId(familyMembers[0].id);
+            }
         }
     }, [familyMembers, activeMemberId]);
 
