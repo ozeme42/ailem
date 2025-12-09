@@ -2,14 +2,13 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, endOfMonth, addMonths, differenceInDays } from 'date-fns';
+import { addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, isAfter, isPast, parseISO, compareAsc, compareDesc, isFuture, startOfMonth, addMonths, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, PlusCircle, AlertCircle, Calendar as CalendarIcon, Repeat, Repeat1, ListChecks, History, Trash2, Edit } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlusCircle, Calendar as CalendarIcon, Edit, Trash2, Clock, Bell, History, ListChecks } from "lucide-react";
 
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CalendarEvent } from "@/lib/data";
 import { onCalendarEventsUpdate, deletePastCalendarEvents, deleteCalendarEvent } from "@/lib/dataService";
@@ -19,26 +18,37 @@ import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAuth } from "@/components/auth-provider";
 
 const eventColors = [
-    { bg: "bg-blue-100 dark:bg-blue-900/50", text: "text-blue-800 dark:text-blue-200", border: "border-blue-300 dark:border-blue-700" },
-    { bg: "bg-green-100 dark:bg-green-900/50", text: "text-green-800 dark:text-green-200", border: "border-green-300 dark:border-green-700" },
-    { bg: "bg-purple-100 dark:bg-purple-900/50", text: "text-purple-800 dark:text-purple-200", border: "border-purple-300 dark:border-purple-700" },
-    { bg: "bg-red-100 dark:bg-red-900/50", text: "text-red-800 dark:text-red-200", border: "border-red-300 dark:border-red-700" },
-    { bg: "bg-yellow-100 dark:bg-yellow-900/50", text: "text-yellow-800 dark:text-yellow-200", border: "border-yellow-300 dark:border-yellow-700" },
-    { bg: "bg-indigo-100 dark:bg-indigo-900/50", text: "text-indigo-800 dark:text-indigo-200", border: "border-indigo-300 dark:border-indigo-700" },
-    { bg: "bg-pink-100 dark:bg-pink-900/50", text: "text-pink-800 dark:text-pink-200", border: "border-pink-300 dark:border-pink-700" },
+    { bg: "bg-blue-100/50", text: "text-blue-700", border: "border-blue-200", icon: "text-blue-500", dot: "bg-blue-500" },
+    { bg: "bg-emerald-100/50", text: "text-emerald-700", border: "border-emerald-200", icon: "text-emerald-500", dot: "bg-emerald-500" },
+    { bg: "bg-purple-100/50", text: "text-purple-700", border: "border-purple-200", icon: "text-purple-500", dot: "bg-purple-500" },
+    { bg: "bg-rose-100/50", text: "text-rose-700", border: "border-rose-200", icon: "text-rose-500", dot: "bg-rose-500" },
+    { bg: "bg-amber-100/50", text: "text-amber-700", border: "border-amber-200", icon: "text-amber-500", dot: "bg-amber-500" },
+    { bg: "bg-indigo-100/50", text: "text-indigo-700", border: "border-indigo-200", icon: "text-indigo-500", dot: "bg-indigo-500" },
+    { bg: "bg-cyan-100/50", text: "text-cyan-700", border: "border-cyan-200", icon: "text-cyan-500", dot: "bg-cyan-500" },
 ];
 
-
 export default function CalendarPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | null>(null);
-  const { toast } = useToast();
-  const [viewMode, setViewMode] = React.useState<'month' | 'week'>('week');
+  const [viewMode, setViewMode] = React.useState<'month' | 'week'>('month');
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+      const handleScroll = () => {
+          setIsScrolled(window.scrollY > 10);
+      };
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   React.useEffect(() => {
     const unsubscribeEvents = onCalendarEventsUpdate(setCalendarEvents);
@@ -66,20 +76,19 @@ export default function CalendarPage() {
     return { upcomingEvents: upcoming, pastEvents: past };
   }, [calendarEvents]);
 
-
- const displayedDays = React.useMemo(() => {
+  const displayedDays = React.useMemo(() => {
     if (viewMode === 'month') {
       const monthStart = startOfMonth(currentDate);
       const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
       const days = [];
       let day = startDate;
-      // Ensure we render 6 weeks to keep the layout consistent
+      // 6 hafta (42 gün) göstererek düzeni koruyoruz
       while (days.length < 42) {
           days.push(day);
           day = addDays(day, 1);
       }
       return days;
-    } else { // week view
+    } else {
       const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
       const days = [];
       for (let i = 0; i < 7; i++) {
@@ -108,24 +117,21 @@ export default function CalendarPage() {
   const getEventsForDay = (day: Date) => {
     return calendarEvents.filter(event => {
       const eventStartDate = new Date(event.startDate);
-      // Adjust for timezone differences by creating dates in UTC context for comparisons
       const eventStartDay = new Date(eventStartDate.getUTCFullYear(), eventStartDate.getUTCMonth(), eventStartDate.getUTCDate());
 
       if (isAfter(eventStartDay, day)) {
-          return false; // Event hasn't started yet
-      }
-
-      switch (event.recurrence) {
-        case 'one-time':
-          const eventEndDate = event.endDate ? new Date(new Date(event.endDate).setUTCHours(23, 59, 59, 999)) : eventStartDay;
-          return isWithinInterval(day, { start: eventStartDay, end: eventEndDate });
-        case 'monthly':
-          return eventStartDay.getDate() === day.getDate() && day >= eventStartDay;
-        case 'yearly':
-          return eventStartDay.getDate() === day.getDate() && eventStartDay.getMonth() === day.getMonth() && day >= eventStartDay;
-        default:
           return false;
       }
+
+      if (event.recurrence === 'one-time') {
+          const eventEndDate = event.endDate ? new Date(new Date(event.endDate).setUTCHours(23, 59, 59, 999)) : eventStartDay;
+          return isWithinInterval(day, { start: eventStartDay, end: eventEndDate });
+      } else if (event.recurrence === 'monthly') {
+          return eventStartDay.getDate() === day.getDate() && day >= eventStartDay;
+      } else if (event.recurrence === 'yearly') {
+          return eventStartDay.getDate() === day.getDate() && eventStartDay.getMonth() === day.getMonth() && day >= eventStartDay;
+      }
+      return false;
     });
   };
   
@@ -146,7 +152,6 @@ export default function CalendarPage() {
             description: `${count} geçmiş etkinlik takvimden silindi.`,
         });
     } catch (error) {
-        console.error("Failed to clear past events:", error);
         toast({
             title: "❌ Hata",
             description: "Geçmiş etkinlikler silinirken bir sorun oluştu.",
@@ -175,282 +180,317 @@ export default function CalendarPage() {
   const handleOpenEditDialog = (event: CalendarEvent) => {
       setEditingEvent(event);
       setIsFormDialogOpen(true);
-  }
+  };
   
   const handleOpenNewDialog = () => {
       setEditingEvent(null);
       setIsFormDialogOpen(true);
-  }
+  };
 
-
-  const weekHeaderDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
+  const weekHeaderDays = React.useMemo(() => {
+    return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(new Date(), {weekStartsOn: 1}), i));
+  }, []);
 
   return (
-    <div className="space-y-6 pb-24">
-       <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-          <PageHeader title="Hatırlatıcılar 🗓️">
-            <Button onClick={handleOpenNewDialog}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Yeni Hatırlatıcı Ekle
-            </Button>
-          </PageHeader>
-           <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>{editingEvent ? 'Hatırlatıcıyı Düzenle' : 'Yeni Hatırlatıcı Oluştur'}</DialogTitle>
-                <DialogDescription>
-                  {editingEvent ? 'Mevcut etkinliğin ayrıntılarını güncelleyin.' : 'Unutmak istemediğiniz önemli tarihleri ve olayları ekleyin.'}
-                </DialogDescription>
-              </DialogHeader>
-              <NewEventForm
-                  onSave={() => {
-                      setIsFormDialogOpen(false);
-                      setEditingEvent(null);
-                      toast({
-                          title: `✅ ${editingEvent ? 'Güncellendi' : 'Oluşturuldu'}`,
-                          description: `Hatırlatıcı başarıyla ${editingEvent ? 'güncellendi' : 'eklendi'}.`,
-                      });
-                  }}
-                  initialData={editingEvent}
-              />
-          </DialogContent>
-        </Dialog>
-      
-       <Card className="shadow-sm bg-card">
-        <CardHeader>
-          <CardTitle>Tüm Hatırlatıcılar</CardTitle>
-          <CardDescription>Yaklaşan ve geçmiş tüm etkinlikleriniz.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Accordion type="multiple" defaultValue={['upcoming']} className="w-full">
-            <AccordionItem value="upcoming">
-              <AccordionTrigger>
-                <div className="flex items-center gap-2">
-                    <ListChecks className="h-5 w-5 text-primary"/>
-                    <h3 className="text-lg font-medium">Yaklaşan Etkinlikler ({upcomingEvents.length})</h3>
+    <div className="min-h-[100dvh] bg-[#F3F6F8] font-sans pb-24">
+        {/* Dekoratif Arkaplan */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-pink-100/60 rounded-full blur-[120px]" />
+            <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-purple-100/50 rounded-full blur-[120px]" />
+        </div>
+
+        {/* --- HEADER --- */}
+        <div className="sticky top-2 z-50 px-4 md:px-6 w-full flex justify-center">
+            <header className={cn(
+                "w-full max-w-7xl flex items-center justify-between py-2 px-3 transition-all duration-300 rounded-[2rem]",
+                isScrolled 
+                    ? "bg-white/80 backdrop-blur-xl border border-white/40 shadow-lg shadow-black/5" 
+                    : "bg-white/50 backdrop-blur-md border border-white/20"
+            )}>
+                <div className="flex items-center gap-3">
+                    <SidebarTrigger className="h-10 w-10 rounded-full hover:bg-black/5 transition-colors text-slate-700" />
+                    <div className="flex flex-col">
+                        <h1 className="text-lg font-black tracking-tight bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent leading-none">
+                            Özgürdere
+                        </h1>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ailesi</span>
+                    </div>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-2">
-                {upcomingEvents.length > 0 ? (
-                    upcomingEvents.map((event, index) => {
-                      const color = eventColors[index % eventColors.length];
-                      return (
-                        <div key={event.id} className={cn("p-3 border rounded-lg flex justify-between items-center", color.bg, color.text, color.border)}>
-                            <div>
-                                <p className="font-semibold">{event.title}</p>
-                                <p className={cn("text-sm", color.text, "opacity-80")}>
-                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
-                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
-                                </p>
+
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-black/5 text-slate-600 relative">
+                        <Bell className="h-5 w-5" />
+                        <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                    </Button>
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 p-[2px] shadow-md cursor-pointer hover:scale-105 transition-transform">
+                            <div className="h-full w-full rounded-full bg-white flex items-center justify-center">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-br from-pink-600 to-purple-600 font-bold text-sm">
+                                {user?.displayName?.charAt(0) || "A"}
+                            </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={cn(color.border, color.text, color.bg, "opacity-90")}>{getRecurrenceText(event.recurrence)}</Badge>
-                                {event.daysLeft > 0 ? (
-                                    <Badge variant="secondary">{event.daysLeft} gün kaldı</Badge>
-                                ) : event.daysLeft === 0 ? (
-                                    <Badge variant="default">Bugün</Badge>
-                                ) : (
-                                     <Badge variant="destructive">Süresi Geçti</Badge>
-                                )}
-                                <Button variant="ghost" size="icon" className={cn("h-8 w-8", color.text, `hover:${color.text}`)} onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
+                    </div>
+                </div>
+            </header>
+        </div>
+
+        <div className="max-w-7xl mx-auto md:p-6 p-4 relative z-10 space-y-6">
+            
+            <div className="flex flex-col gap-6 pt-2">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1 text-slate-800 flex items-center gap-3">
+                            Etkinlik <span className="text-pink-600 text-lg md:text-xl font-bold bg-pink-50 px-3 py-1 rounded-full border border-pink-100">Takvimi</span>
+                        </h1>
+                        <p className="text-slate-500 font-medium ml-1">Önemli günleri ve hatırlatıcıları planla.</p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-center justify-between bg-white/60 backdrop-blur-md p-2 rounded-[2rem] shadow-sm border border-white gap-4 md:gap-0">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white" onClick={handlePrev}><ChevronLeft className="h-5 w-5 text-slate-600" /></Button>
+                        <div className="px-6 py-2 bg-white rounded-xl shadow-sm min-w-[180px] text-center font-bold text-slate-700 border border-slate-100 flex items-center justify-center gap-2">
+                            <CalendarIcon className="h-4 w-4 text-pink-500" />
+                            {format(currentDate, 'MMMM yyyy', { locale: tr })}
+                        </div>
+                        <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white" onClick={handleNext}><ChevronRight className="h-5 w-5 text-slate-600" /></Button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 pr-2">
+                        <Button variant="ghost" className="rounded-full px-4 font-bold text-slate-600 hover:bg-white text-xs" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
+                        <div className="h-6 w-px bg-slate-300 mx-1"></div>
+                        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
+                            <TabsList className="bg-slate-100/50 p-1 rounded-full h-10">
+                                <TabsTrigger value="month" className="rounded-full px-4 h-full data-[state=active]:bg-white data-[state=active]:text-pink-600 data-[state=active]:shadow-sm font-bold text-slate-500 text-xs transition-all">Aylık</TabsTrigger>
+                                <TabsTrigger value="week" className="rounded-full px-4 h-full data-[state=active]:bg-white data-[state=active]:text-pink-600 data-[state=active]:shadow-sm font-bold text-slate-500 text-xs transition-all">Haftalık</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                
+                <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white shadow-sm overflow-hidden p-4">
+                    {viewMode === 'month' && (
+                        <div className="grid grid-cols-7 mb-2">
+                            {weekHeaderDays.map(day => (
+                                <div key={day.toISOString()} className="text-center py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                    {format(day, 'EEE', { locale: tr })}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
+                    <div className={cn("grid gap-2", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
+                        {displayedDays.map(day => {
+                            const dayEvents = getEventsForDay(day);
+                            const isCurrentMonth = isSameMonth(day, currentDate);
+                            const isDayToday = isToday(day);
+
+                            return (
+                                <div 
+                                    key={day.toString()} 
+                                    className={cn(
+                                        "relative rounded-2xl border transition-all duration-200 overflow-hidden group",
+                                        viewMode === 'month' ? 'min-h-[100px] p-2 flex flex-col' : 'min-h-[80px] p-4 flex flex-row items-center gap-6',
+                                        isDayToday ? "bg-pink-50 border-pink-200 ring-2 ring-pink-100 z-10" : "bg-white border-slate-100 hover:border-slate-200 hover:shadow-md",
+                                        !isCurrentMonth && viewMode === 'month' && "opacity-40 bg-slate-50 grayscale"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "flex-shrink-0 font-bold transition-colors", 
+                                        viewMode === 'month' ? "text-right mb-1" : "text-center w-16",
+                                        isDayToday ? "text-pink-600" : "text-slate-600"
+                                    )}>
+                                        <span className={cn("text-sm", viewMode === 'week' && "text-2xl block")}>
+                                            {format(day, 'd')}
+                                        </span>
+                                        {viewMode === 'week' && <span className="text-[10px] uppercase text-slate-400 block">{format(day, 'EEE', {locale: tr})}</span>}
+                                    </div>
+
+                                    <div className={cn("flex-grow space-y-1.5", viewMode === 'week' && "flex flex-wrap gap-2 items-center")}>
+                                        {dayEvents.map((event, index) => {
+                                            const color = eventColors[index % eventColors.length];
+                                            return (
+                                                <Dialog key={event.id}>
+                                                    <DialogTrigger asChild>
+                                                        <div className={cn(
+                                                            "rounded-lg px-2 py-1 text-[10px] font-bold truncate cursor-pointer transition-transform hover:scale-[1.02] flex items-center gap-1.5 border",
+                                                            color.bg, color.text, color.border,
+                                                            viewMode === 'week' && "px-3 py-1.5 text-xs"
+                                                        )}>
+                                                            <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", color.dot)}></div>
+                                                            {event.title}
+                                                        </div>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-md rounded-[2rem]">
+                                                        <DialogHeader>
+                                                            <DialogTitle className="flex items-center gap-2">
+                                                                <CalendarIcon className={cn("h-5 w-5", color.text)}/> 
+                                                                {event.title}
+                                                            </DialogTitle>
+                                                            <DialogDescription>
+                                                                {format(day, 'd MMMM yyyy, EEEE', { locale: tr })}
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <div className="py-4 space-y-4">
+                                                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-slate-400 uppercase">Tekrarlanma</p>
+                                                                    <p className="text-slate-700 font-medium">{getRecurrenceText(event.recurrence)}</p>
+                                                                </div>
+                                                                <Badge variant="outline" className={cn("border-0", color.bg, color.text)}>{event.recurrence === 'one-time' ? 'Tek Seferlik' : 'Tekrarlı'}</Badge>
+                                                            </div>
+                                                            
+                                                            <div className="flex justify-end gap-2">
+                                                                <Button variant="outline" onClick={() => handleOpenEditDialog(event)} className="rounded-xl border-slate-200">
+                                                                    <Edit className="mr-2 h-4 w-4"/> Düzenle
+                                                                </Button>
+                                                                <AlertDialog>
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <Button variant="destructive" className="rounded-xl bg-rose-500 hover:bg-rose-600">
+                                                                            <Trash2 className="mr-2 h-4 w-4"/> Sil
+                                                                        </Button>
+                                                                    </AlertDialogTrigger>
+                                                                    <AlertDialogContent className="rounded-3xl">
+                                                                        <AlertDialogHeader>
+                                                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                                            <AlertDialogDescription>Bu etkinlik kalıcı olarak silinecek.</AlertDialogDescription>
+                                                                        </AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel className="rounded-xl">İptal</AlertDialogCancel>
+                                                                            <AlertDialogAction onClick={() => handleDeleteEvent(event.id)} className="rounded-xl bg-rose-500 hover:bg-rose-600">Evet, Sil</AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </div>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            )
+                                        })}
+                                        {dayEvents.length === 0 && viewMode === 'week' && (
+                                            <p className="text-xs text-slate-400 italic">Etkinlik yok</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white/60 backdrop-blur-md rounded-[2rem] p-6 border border-white shadow-sm">
+                         <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                             <Clock className="h-4 w-4 text-emerald-500"/> Yaklaşan Etkinlikler
+                         </h3>
+                         <div className="space-y-3">
+                             {upcomingEvents.length > 0 ? upcomingEvents.slice(0, 5).map((event, index) => {
+                                 const color = eventColors[index % eventColors.length];
+                                 return (
+                                     <div key={event.id} className="flex items-center gap-4 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                                         <div className={cn("h-12 w-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0", color.bg, color.text)}>
+                                             <span className="text-xs font-bold uppercase">{format(event.parsedDate, 'MMM', {locale: tr})}</span>
+                                             <span className="text-lg font-black leading-none">{format(event.parsedDate, 'd')}</span>
+                                         </div>
+                                         <div className="flex-grow min-w-0">
+                                             <p className="font-bold text-slate-800 truncate">{event.title}</p>
+                                             <p className="text-xs text-slate-400 font-medium">
+                                                 {event.daysLeft === 0 ? <span className="text-emerald-500 font-bold">Bugün</span> : 
+                                                  event.daysLeft === 1 ? <span className="text-emerald-500 font-bold">Yarın</span> : 
+                                                  `${event.daysLeft} gün kaldı`}
+                                             </p>
+                                         </div>
+                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-300 hover:text-slate-600 hover:bg-slate-50 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleOpenEditDialog(event)}>
+                                             <Edit className="h-4 w-4"/>
+                                         </Button>
+                                     </div>
+                                 )
+                             }) : (
+                                 <div className="text-center py-8 text-slate-400 text-sm">Hiç yaklaşan etkinlik yok.</div>
+                             )}
+                         </div>
+                    </div>
+
+                    <div className="bg-white/60 backdrop-blur-md rounded-[2rem] p-6 border border-white shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+                         <div className="flex justify-between items-center mb-4">
+                             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                 <History className="h-4 w-4 text-slate-400"/> Geçmiş
+                             </h3>
+                             {pastEvents.length > 0 && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="sm" className="h-6 text-[10px] text-rose-400 hover:text-rose-600 hover:bg-rose-50 px-2 rounded-full">
+                                            Temizle
+                                        </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent>
+                                    <AlertDialogContent className="rounded-3xl">
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                            <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
+                                            <AlertDialogTitle>Geçmişi Temizle</AlertDialogTitle>
+                                            <AlertDialogDescription>Tüm geçmiş etkinlikler silinecek.</AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
+                                            <AlertDialogCancel className="rounded-xl">İptal</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleClearPastEvents} className="bg-rose-500 hover:bg-rose-600 rounded-xl">Evet, Sil</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                            </div>
-                        </div>
-                    )})
-                ) : (
-                    <p className="text-muted-foreground text-sm p-3">Yaklaşan bir etkinlik yok.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="past">
-              <AccordionTrigger>
-                 <div className="flex items-center gap-2 justify-between w-full">
-                    <div className="flex items-center gap-2">
-                        <History className="h-5 w-5 text-muted-foreground"/>
-                        <h3 className="text-lg font-medium">Geçmiş Etkinlikler ({pastEvents.length})</h3>
+                             )}
+                         </div>
+                         <div className="space-y-3">
+                             {pastEvents.length > 0 ? pastEvents.slice(0, 3).map((event) => (
+                                 <div key={event.id} className="flex items-center gap-4 p-3 bg-slate-50/50 rounded-2xl border border-transparent hover:border-slate-200 transition-all">
+                                     <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 text-slate-400 grayscale">
+                                         <CalendarIcon className="h-5 w-5"/>
+                                     </div>
+                                     <div className="flex-grow min-w-0 grayscale opacity-70">
+                                         <p className="font-bold text-slate-600 truncate text-sm line-through">{event.title}</p>
+                                         <p className="text-[10px] text-slate-400 font-medium">
+                                             {format(event.parsedDate, 'd MMMM yyyy', {locale: tr})}
+                                         </p>
+                                     </div>
+                                 </div>
+                             )) : (
+                                 <div className="text-center py-8 text-slate-400 text-sm">Geçmiş etkinlik yok.</div>
+                             )}
+                         </div>
                     </div>
-                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-2">
-                 {pastEvents.length > 0 && (
-                    <div className="flex justify-end mb-4">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Geçmişi Temizle
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Tüm geçmiş etkinlikler kalıcı olarak silinecektir. Bu işlem geri alınamaz.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleClearPastEvents}>Evet, Sil</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                )}
-                {pastEvents.length > 0 ? (
-                    pastEvents.map(event => (
-                        <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center bg-muted/30">
-                            <div>
-                                <p className="font-semibold text-muted-foreground">{event.title}</p>
-                                <p className="text-sm text-muted-foreground/80">
-                                    {format(event.parsedDate, 'd MMMM yyyy, EEEE', { locale: tr })}
-                                    {event.endDate && ` - ${format(parseISO(event.endDate), 'd MMMM yyyy, EEEE', { locale: tr })}`}
-                                </p>
-                            </div>
-                            <Badge variant="secondary">{getRecurrenceText(event.recurrence)}</Badge>
-                        </div>
-                    ))
-                 ) : (
-                    <p className="text-muted-foreground text-sm p-3">Geçmiş bir etkinlik yok.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
-
-      <Accordion type="single" collapsible className="w-full" defaultValue="calendar-view">
-        <AccordionItem value="calendar-view" className="border-b-0">
-          <Card className="shadow-sm">
-            <AccordionTrigger className="p-0 hover:no-underline w-full">
-              <CardHeader className="w-full">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex-grow">
-                          <h2 className="text-xl font-semibold capitalize">
-                              {format(currentDate, 'MMMM yyyy', { locale: tr })}
-                          </h2>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week')}>
-                              <TabsList>
-                                  <TabsTrigger value="month">Aylık</TabsTrigger>
-                                  <TabsTrigger value="week">Haftalık</TabsTrigger>
-                              </TabsList>
-                          </Tabs>
-                           <div className="flex items-center gap-2">
-                              <Button variant="outline" size="icon" onClick={handlePrev}>
-                                  <ChevronLeft className="h-4 w-4" />
-                              </Button>
-                              <Button variant="default" className="bg-primary text-primary-foreground" onClick={() => setCurrentDate(new Date())}>Bugün</Button>
-                              <Button variant="outline" size="icon" onClick={handleNext}>
-                                  <ChevronRight className="h-4 w-4" />
-                              </Button>
-                           </div>
-                      </div>
-                  </div>
-              </CardHeader>
-            </AccordionTrigger>
-            <AccordionContent>
-              <CardContent className="p-0 bg-background">
-                <div className={cn("grid border-t border-l", viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1')}>
-                   {viewMode === 'month' && weekHeaderDays.map(day => (
-                      <div key={day.toISOString()} className="p-2 border-r border-b text-center font-semibold text-sm capitalize bg-muted/50">
-                          {format(day, 'EEE', { locale: tr })}
-                      </div>
-                  ))}
-                  {displayedDays.map(day => {
-                    const dayEvents = getEventsForDay(day);
-                    const isCurrentMonth = isSameMonth(day, currentDate);
-                    const isDayToday = isToday(day);
-
-                    return (
-                      <Dialog key={day.toString()}>
-                        <DialogTrigger asChild disabled={dayEvents.length === 0}>
-                           <div className={cn(
-                             "border-b border-r p-2 flex relative", 
-                             dayEvents.length > 0 && 'cursor-pointer hover:bg-muted/50', 
-                             viewMode === 'month' ? 'h-32 sm:h-40 flex-col' : 'min-h-24 flex-row gap-4',
-                             !isCurrentMonth && 'bg-muted/30',
-                             isDayToday && "bg-primary/10",
-                             isPast(day) && !isDayToday && 'opacity-70'
-                           )}>
-                              <div className={cn("flex-shrink-0", viewMode === 'week' && 'w-24 text-center border-r pr-4 flex flex-col justify-center items-center')}>
-                                  <span className={cn(
-                                    `font-semibold`, 
-                                    isDayToday ? 'text-primary' : 'text-foreground', 
-                                    !isCurrentMonth && 'text-muted-foreground/50'
-                                  )}>
-                                    {viewMode === 'month' ? format(day, 'd') : format(day, 'd MMM', { locale: tr })}
-                                  </span>
-                                   {viewMode === 'week' && <span className="block text-xs capitalize text-muted-foreground">{format(day, 'EEE', {locale: tr})}</span>}
-                              </div>
-                              <div className={cn("flex-grow overflow-y-auto", viewMode === 'month' ? 'mt-1 space-y-1' : 'flex flex-wrap gap-2 items-start py-2')}>
-                                 {dayEvents.map((event, index) => {
-                                     const color = eventColors[index % eventColors.length];
-                                     return (
-                                     <div key={event.id} className={cn('p-1.5 rounded-md border text-xs font-semibold truncate', color.bg, color.text, color.border, viewMode === 'week' && 'h-fit')}>
-                                      {event.title}
-                                    </div>
-                                  )})}
-                              </div>
-                            </div>
-                        </DialogTrigger>
-                         <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>{format(day, 'd MMMM yyyy, EEEE', { locale: tr })}</DialogTitle>
-                              <DialogDescription>Bu gündeki hatırlatıcılar.</DialogDescription>
-                            </DialogHeader>
-                             <div className="space-y-2 py-4">
-                              {dayEvents.map(event => (
-                                  <div key={event.id} className="p-3 border rounded-lg flex justify-between items-center">
-                                      <div>
-                                          <p className="font-semibold">{event.title}</p>
-                                          <p className="text-sm text-muted-foreground">
-                                             Tekrarlanma: {getRecurrenceText(event.recurrence)}
-                                          </p>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditDialog(event)}><Edit className="h-4 w-4" /></Button>
-                                          <AlertDialog>
-                                              <AlertDialogTrigger asChild>
-                                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                              </AlertDialogTrigger>
-                                              <AlertDialogContent>
-                                                  <AlertDialogHeader>
-                                                      <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                      <AlertDialogDescription>"{event.title}" etkinliği kalıcı olarak silinecektir.</AlertDialogDescription>
-                                                  </AlertDialogHeader>
-                                                  <AlertDialogFooter>
-                                                      <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                      <AlertDialogAction onClick={() => handleDeleteEvent(event.id)}>Evet, Sil</AlertDialogAction>
-                                                  </AlertDialogFooter>
-                                              </AlertDialogContent>
-                                          </AlertDialog>
-                                      </div>
-                                  </div>
-                              ))}
-                            </div>
-                        </DialogContent>
-                      </Dialog>
-                  )})}
                 </div>
-              </CardContent>
-            </AccordionContent>
-          </Card>
-        </AccordionItem>
-      </Accordion>
+
+            </div>
+
+            <div className="fixed bottom-24 md:bottom-8 right-6 z-50">
+                <Button 
+                    className="rounded-full w-16 h-16 bg-slate-900 hover:bg-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.3)] transition-transform hover:scale-105 active:scale-95 border-4 border-white"
+                    onClick={handleOpenNewDialog}
+                >
+                    <PlusCircle className="h-8 w-8 text-white" />
+                </Button>
+            </div>
+            
+            <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+                <DialogContent className="sm:max-w-md rounded-[2rem]">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-slate-800">{editingEvent ? 'Hatırlatıcıyı Düzenle' : 'Yeni Hatırlatıcı'}</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">
+                            {editingEvent ? 'Etkinlik detaylarını güncelle.' : 'Önemli bir tarihi kaydet.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <NewEventForm
+                        onSave={() => {
+                            setIsFormDialogOpen(false);
+                            setEditingEvent(null);
+                            toast({
+                                title: `✅ ${editingEvent ? 'Güncellendi' : 'Oluşturuldu'}`,
+                                description: `Hatırlatıcı başarıyla ${editingEvent ? 'güncellendi' : 'eklendi'}.`,
+                            });
+                        }}
+                        initialData={editingEvent}
+                    />
+                </DialogContent>
+            </Dialog>
     </div>
   );
 }
+
+    

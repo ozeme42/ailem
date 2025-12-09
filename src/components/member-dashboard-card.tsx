@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, BrainCircuit, Check, Flame, GraduationCap, Users, ListChecks, Gamepad2, Youtube, Heart, Clock, Trophy } from 'lucide-react';
+import { BookOpen, BrainCircuit, Check, Flame, GraduationCap, Users, ListChecks, Gamepad2, Youtube, Heart, Clock, Trophy, CheckCircle2, Sparkles, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabitCompletion } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video, TrackedBook } from '@/lib/data';
@@ -31,13 +31,61 @@ interface MemberDashboardCardProps {
     trackedBooks: TrackedBook[];
 }
 
-const roleGradients: { [key: string]: string } = {
-    Baba: "from-blue-600 to-indigo-800",
-    Anne: "from-pink-600 to-purple-800",
-    'Kız Çocuk': "from-violet-600 to-fuchsia-800",
-    'Erkek Çocuk': "from-teal-600 to-emerald-800",
-    Bebek: "from-amber-400 to-orange-600",
-    'Ev İşleri': "from-cyan-600 to-blue-700",
+// --- Bölüm Temaları (Modern & Şık Pastel Tonlar) ---
+const sectionThemes = {
+    prayer: { 
+        container: "bg-gradient-to-br from-teal-50/80 to-cyan-50/80 border-teal-100",
+        title: "text-teal-800",
+        icon: "text-teal-600",
+        itemBg: "bg-teal-100/50 border-teal-200",
+        activeItem: "bg-teal-500 text-white shadow-teal-200"
+    },
+    habits: { 
+        container: "bg-gradient-to-br from-orange-50/80 to-amber-50/80 border-orange-100",
+        title: "text-orange-800",
+        icon: "text-orange-600",
+        itemBg: "bg-orange-100/50 border-orange-200",
+        progressCheck: "bg-orange-500"
+    },
+    memorization: { 
+        container: "bg-gradient-to-br from-violet-50/80 to-purple-50/80 border-violet-100",
+        title: "text-violet-800",
+        icon: "text-violet-600",
+        itemHover: "hover:border-violet-300 hover:bg-violet-50",
+        badge: "bg-violet-100 text-violet-700"
+    },
+    videos: { 
+        container: "bg-gradient-to-br from-rose-50/80 to-pink-50/80 border-rose-100",
+        title: "text-rose-800",
+        icon: "text-rose-600",
+        itemHover: "hover:border-rose-300 hover:bg-rose-50",
+        progressIndicator: "bg-rose-500"
+    },
+    reading: { 
+        container: "bg-gradient-to-br from-yellow-50/80 to-amber-50/80 border-yellow-100",
+        title: "text-yellow-800",
+        icon: "text-yellow-600",
+        itemHover: "hover:border-yellow-300 hover:bg-yellow-50",
+        bookCover: "bg-yellow-100 text-yellow-500 border-yellow-200",
+        progressIndicator: "bg-yellow-500"
+    },
+    todo: { 
+        container: "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100",
+        title: "text-blue-800",
+        icon: "text-blue-600",
+        itemHover: "hover:border-blue-300 hover:bg-blue-50",
+        checkbox: "data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+    }
+};
+
+// Rol Temaları
+const roleThemes: { [key: string]: { text: string, badge: string, bgRing: string } } = {
+    Baba: { text: "text-blue-900", badge: "bg-blue-100 text-blue-800", bgRing: "bg-blue-600" },
+    Anne: { text: "text-pink-900", badge: "bg-pink-100 text-pink-800", bgRing: "bg-pink-600" },
+    'Kız Çocuk': { text: "text-violet-900", badge: "bg-violet-100 text-violet-800", bgRing: "bg-violet-600" },
+    'Erkek Çocuk': { text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800", bgRing: "bg-emerald-600" },
+    Bebek: { text: "text-amber-900", badge: "bg-amber-100 text-amber-800", bgRing: "bg-amber-500" },
+    'Ev İşleri': { text: "text-cyan-900", badge: "bg-cyan-100 text-cyan-800", bgRing: "bg-cyan-600" },
 };
 
 export function MemberDashboardCard({
@@ -57,11 +105,12 @@ export function MemberDashboardCard({
     const { toast } = useToast();
     const { familyId, familyMembers } = useAuth();
     
-     const [isClient, setIsClient] = React.useState(false);
+    const [isClient, setIsClient] = React.useState(false);
     React.useEffect(() => {
         setIsClient(true);
     }, []);
     
+    // --- Veri Hesaplamaları ---
     const { habits, pendingTasks, pendingTests, pendingStudies, completedStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes, pendingVideos } = React.useMemo(() => {
         const memberId = member.id;
         let completedActivityCount = 0;
@@ -69,7 +118,6 @@ export function MemberDashboardCard({
 
         const memberTasks = tasks.filter(t => t.assigneeId === memberId);
         
-        // Count completed recurring tasks (habits) for today
         const habits = memberTasks.filter(t => t.isRecurring);
         habits.forEach(habit => {
             if (habit.completedDates?.includes(todayKey)) {
@@ -150,363 +198,363 @@ export function MemberDashboardCard({
             pendingTasks: otherTasks, 
             pendingTests: memberTests, 
             pendingStudies, 
-            completedStudies,
-            readingBooks: readingBooksData,
-            pendingVideos: memberVideos,
-            pendingMemorization: pendingMemorizationData,
-            todaysPrayers: todaysPrayersData,
-            earnedFreeTimeMinutes: earnedTime,
+            completedStudies, 
+            readingBooks: readingBooksData, 
+            pendingVideos: memberVideos, 
+            pendingMemorization: pendingMemorizationData, 
+            todaysPrayers: todaysPrayersData, 
+            earnedFreeTimeMinutes: earnedTime 
         };
     }, [member.id, tasks, tests, studyAssignments, studyPlans, userLibraries, books, videos, memorizationItems, memorizationProgress, prayerProgress, isClient, trackedBooks]);
-
+    
+    // --- Aksiyonlar ---
     const handleTaskCompletion = async (task: Task) => {
         if (!familyId || !member) return;
         try {
             await updateTask(task.id, { completed: true });
             const xpChange = task.points;
-            const completedTasksChange = 1;
-            const newXp = (member.xp || 0) + xpChange;
-            const newLevel = Math.floor(newXp / 1000) + 1;
-
             await updateFamilyMemberInFamily(familyId, member.id, {
-                xp: newXp,
-                completedTasks: (member.completedTasks || 0) + completedTasksChange,
-                level: newLevel,
+                xp: (member.xp || 0) + xpChange,
+                completedTasks: (member.completedTasks || 0) + 1,
+                level: Math.floor(((member.xp || 0) + xpChange) / 1000) + 1,
             });
             await checkAndAwardBadges(member.id, familyId, { type: 'task_completed', task });
-            toast({ title: "🎉 Görev Tamamlandı!", description: `Harika iş, ${member.name}! ${task.points} XP kazandın.` });
+            toast({ title: "🎉 Görev Tamamlandı!", description: `${task.points} XP kazandın.` });
         } catch (error) {
-            toast({ title: "Hata", description: "Görev güncellenirken bir sorun oluştu.", variant: "destructive" });
+            toast({ title: "Hata", variant: "destructive" });
         }
     };
     
     const handleHabitCompletion = async (habitId: string, day: Date) => {
         const habit = habits.find(h => h.id === habitId);
         if (!habit) return;
-
         const dateKey = format(day, 'yyyy-MM-dd');
         const isCompleted = habit.completedDates?.includes(dateKey) || false;
-        
         try {
             await updateHabitCompletion(habit.id, day, !isCompleted);
-             if (!isCompleted) {
-                 toast({ title: '🎉 Alışkanlık tamamlandı!', description: `"${habit.title}" alışkanlığını bugün de tamamladın.` });
-             }
+             if (!isCompleted) toast({ title: '🎉 Süper!', description: `"${habit.title}" tamamlandı.` });
         } catch(e) {
-            toast({ title: 'Hata', description: 'İşaretleme sırasında bir sorun oluştu.', variant: 'destructive'});
+            toast({ title: 'Hata', variant: 'destructive'});
         }
     };
     
-    const gradient = roleGradients[member.role] || 'from-gray-700 to-gray-900';
+    const theme = roleThemes[member.role] || { text: "text-slate-800", badge: "bg-slate-100 text-slate-700", bgRing: "bg-slate-400" };
+    const allPendingItems = [...habits, ...pendingTasks, ...pendingTests, ...pendingStudies, ...readingBooks, ...pendingMemorization, ...pendingVideos, ...todaysPrayers.filter(p => !p.completed)];
+    const lastSevenDays = Array.from({ length: 7 }).map((_, i) => subDays(new Date(), i)).reverse();
 
+    // --- EV KARTI ---
     if (member.id === 'house') {
         const houseTasks = tasks.filter(t => (t.category === 'Ev İşleri' || t.category === 'Görev') && !t.completed);
         if (houseTasks.length === 0) return null;
         
         return (
-             <Link href="/tasks" className="block transition-all hover:-translate-y-1 group">
-                <Card className="shadow-xl border-0 overflow-hidden bg-gradient-to-br from-teal-600 to-cyan-700 text-white h-full relative">
-                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
-                    <CardHeader className="pb-2">
-                        <CardTitle className='flex items-center gap-3 text-xl'>
-                            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm"><Users className="w-5 h-5"/></div>
+             <Link href="/tasks" className="block transition-all hover:-translate-y-1 group relative z-10">
+                <Card className="shadow-sm border border-cyan-200/50 bg-gradient-to-br from-cyan-50/90 to-sky-50/90 backdrop-blur-md overflow-hidden h-full">
+                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-cyan-200/30 rounded-full blur-2xl pointer-events-none"></div>
+                    <CardHeader className="pb-3 border-b border-cyan-100/50 relative">
+                        <CardTitle className='flex items-center gap-3 text-lg text-cyan-900 font-bold'>
+                            <div className="p-2 bg-cyan-100/80 shadow-sm rounded-xl text-cyan-700"><Users className="w-5 h-5"/></div>
                             Ev Görevleri
                         </CardTitle>
-                        <CardDescription className="text-teal-100/80">Ortak sorumluluklar</CardDescription>
+                        <CardDescription className="text-cyan-700/70 font-medium">Ortak sorumluluklar</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3 pt-4">
+                    <CardContent className="space-y-3 pt-4 relative">
                     {houseTasks.slice(0, 3).map(task => {
                         const assignee = familyMembers.find(m => m.id === task.assigneeId);
                         return (
-                            <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors">
-                            <Checkbox id={`home-task-${task.id}`} className="border-teal-200 text-teal-700 data-[state=checked]:bg-white data-[state=checked]:text-teal-700" />
+                            <div key={task.id} className="flex items-center gap-3 p-3 rounded-2xl bg-white/70 border border-cyan-100/50 shadow-sm hover:shadow-md hover:bg-white/90 transition-all">
+                            <Checkbox id={`home-task-${task.id}`} className="border-cyan-300 text-cyan-600 data-[state=checked]:bg-cyan-600 data-[state=checked]:text-white rounded-full" />
                             <div className="flex-grow">
-                                <label htmlFor={`home-task-${task.id}`} className="font-medium cursor-pointer text-sm">{task.title}</label>
+                                <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer text-sm text-slate-700">{task.title}</label>
                             </div>
-                            {assignee && <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-0 text-[10px]">{assignee.name}</Badge>}
+                            {assignee && <Badge variant="secondary" className="bg-cyan-100/80 text-cyan-800 border-0 text-[10px] font-bold px-2">{assignee.name}</Badge>}
                             </div>
                         );
                     })}
-                     {houseTasks.length > 3 && <p className="text-xs text-center text-teal-100/70 pt-2 font-medium">+ {houseTasks.length - 3} görev daha</p>}
+                     {houseTasks.length > 3 && <p className="text-xs text-center text-cyan-700/70 pt-2 font-bold flex items-center justify-center gap-1"><Sparkles className="w-3 h-3"/> + {houseTasks.length - 3} görev daha</p>}
                     </CardContent>
                 </Card>
             </Link>
         )
     }
 
-    const allPendingItems = [
-        ...habits,
-        ...pendingTasks,
-        ...pendingTests,
-        ...pendingStudies,
-        ...readingBooks,
-        ...pendingMemorization,
-        ...todaysPrayers.filter(p => !p.completed),
-        ...pendingVideos,
-    ];
-
     if (allPendingItems.length === 0 && completedStudies.length === 0) return null;
-    
-    const lastSevenDays = Array.from({ length: 7 }).map((_, i) => subDays(new Date(), i)).reverse();
-
 
     return (
-        <Card className={cn("shadow-xl border-0 overflow-hidden flex flex-col relative transition-all duration-300 hover:shadow-2xl", `bg-gradient-to-br text-white ${gradient}`)}>
-            {/* Dekoratif Arka Plan Efektleri */}
-            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-48 h-48 bg-black/10 rounded-full blur-3xl pointer-events-none"></div>
-
-            <CardHeader className="border-b border-white/10 relative z-10 pb-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white shrink-0 bg-white/20 backdrop-blur-md border-2 border-white/20 shadow-inner">
-                                {member.name.charAt(0).toUpperCase()}
-                            </div>
-                            {['Baba', 'Anne'].includes(member.role) && (
-                                <div className="absolute -bottom-1 -right-1 bg-yellow-400 rounded-full p-1 shadow-md">
-                                    <Trophy className="w-3 h-3 text-yellow-900" />
-                                </div>
-                            )}
+        <Card className="shadow-none border-0 bg-transparent flex flex-col gap-6 relative z-10">
+            
+            {/* --- HEADER --- */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-[2rem] bg-white/40 backdrop-blur-lg border border-white/50 shadow-sm">
+                 <div className="relative shrink-0">
+                    <div className={cn("w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-xl ring-4 ring-white", theme.bgRing)} style={{ backgroundColor: member.color }}>
+                        {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    {['Baba', 'Anne'].includes(member.role) && (
+                        <div className="absolute -bottom-2 -right-2 bg-amber-400 text-white rounded-full p-1.5 shadow-md border-2 border-white">
+                            <Trophy className="w-4 h-4 fill-current" />
                         </div>
-                        <div>
-                            <CardTitle className="text-2xl font-bold tracking-tight">{member.name}</CardTitle>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-white border-white/30 bg-white/10 text-[10px] uppercase tracking-wider">{member.role}</Badge>
-                                {member.xp ? <span className="text-xs text-white/70 font-medium">{member.xp.toLocaleString()} XP</span> : null}
-                            </div>
-                        </div>
+                    )}
+                </div>
+                <div className="text-center sm:text-left flex-grow">
+                    <h3 className={cn("text-3xl font-black tracking-tight", theme.text)}>{member.name}</h3>
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
+                        <Badge variant="outline" className={cn("border-0 text-xs uppercase font-extrabold tracking-wider px-3 py-1 rounded-full", theme.badge)}>
+                            {member.role}
+                        </Badge>
+                        {member.xp ? <span className="text-sm text-slate-500 font-bold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400"/> {member.xp.toLocaleString()} XP</span> : null}
                     </div>
                 </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-6 pt-6 flex-grow relative z-10">
-                 {/* Serbest Zaman Widget */}
-                 {member.role.includes('Çocuk') && (
-                    <div className="relative overflow-hidden rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10 p-4">
-                        <div className="flex items-center justify-between relative z-10">
-                             <div>
-                                <h4 className="font-medium text-sm text-white/90 flex items-center gap-2 mb-1">
-                                    <Gamepad2 className="h-4 w-4 text-emerald-300"/> Serbest Zaman
-                                </h4>
-                                <p className="text-xs text-white/60">Aktivitelerden kazanılan</p>
-                             </div>
-                             <div className="text-right">
-                                <p className="font-bold text-3xl tabular-nums leading-none tracking-tight">{earnedFreeTimeMinutes}<span className="text-sm font-medium ml-1 opacity-70">dk</span></p>
-                             </div>
-                         </div>
+
+                {/* Serbest Zaman */}
+                {member.role.includes('Çocuk') && (
+                    <div className="sm:ml-auto mt-3 sm:mt-0 bg-gradient-to-br from-emerald-50 to-teal-50 backdrop-blur-md border border-emerald-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm min-w-[160px] hover:shadow-md transition-shadow">
+                        <div className="p-3 bg-emerald-100/80 rounded-xl text-emerald-600 shadow-sm">
+                             <Gamepad2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                             <p className="text-[10px] text-emerald-700/70 font-extrabold uppercase tracking-wider">Serbest Zaman</p>
+                             <p className="text-2xl font-black text-emerald-800 leading-none mt-0.5">{earnedFreeTimeMinutes}<span className="text-sm font-bold ml-0.5 opacity-80">dk</span></p>
+                        </div>
                     </div>
                 )}
+            </div>
 
-                {/* Namaz Widget */}
-                {member.role.includes('Çocuk') && (todaysPrayers.filter(p=>!p.completed).length > 0) && (
-                    <div>
-                        <h4 className="font-bold text-[11px] uppercase tracking-widest text-white/70 mb-3 flex items-center gap-2 pl-1">
-                            <Clock className="h-3 w-3"/> Namaz Takibi
-                        </h4>
-                        <Link href="/prayers">
-                            <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/15 transition-colors flex justify-between items-center">
+            {/* --- GRID --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                
+                {/* SOL KOLON */}
+                <div className="space-y-6">
+                     
+                     {/* 1. NAMAZ TAKİBİ */}
+                    {member.role.includes('Çocuk') && (todaysPrayers.filter(p=>!p.completed).length > 0) && (
+                        <div className={cn("backdrop-blur-md rounded-[2rem] p-6 shadow-sm border transition-all hover:shadow-md", sectionThemes.prayer.container)}>
+                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.prayer.title)}>
+                                <Clock className={cn("h-4 w-4", sectionThemes.prayer.icon)}/> Namaz Takibi
+                            </h4>
+                            <div className="flex justify-between items-center gap-2 p-2 bg-white/40 rounded-2xl border border-white/50">
                                 {todaysPrayers.map(prayer => (
                                     <div key={prayer.name} className="flex flex-col items-center gap-2 group">
-                                         <div className={cn("p-2 rounded-full transition-all duration-300 group-hover:scale-110", prayer.completed ? "bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]" : "bg-black/20 text-white/30")}>
-                                            <Heart className={cn("size-5 transition-all", prayer.completed ? "fill-current" : "")} />
+                                         <div className={cn(
+                                             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-2",
+                                             prayer.completed 
+                                                ? `${sectionThemes.prayer.activeItem} border-teal-400 scale-110` 
+                                                : "bg-white border-slate-200 text-slate-300 group-hover:border-teal-200"
+                                         )}>
+                                            <Heart className={cn("w-5 h-5 transition-all", prayer.completed ? "fill-white" : "group-hover:text-teal-400")} />
                                          </div>
-                                        <p className={cn("text-[10px] font-medium transition-colors", prayer.completed ? "text-emerald-200" : "text-white/40")}>{prayer.name}</p>
+                                        <p className={cn("text-[10px] font-bold transition-colors", prayer.completed ? "text-teal-700" : "text-slate-400 group-hover:text-teal-600")}>{prayer.name}</p>
                                     </div>
                                 ))}
                             </div>
-                        </Link>
-                    </div>
-                )}
+                        </div>
+                    )}
 
-                {/* Alışkanlıklar Listesi */}
-                {habits.length > 0 && (
-                      <div>
-                        <h4 className="font-bold text-[11px] uppercase tracking-widest text-white/70 mb-3 flex items-center gap-2 pl-1">
-                            <Flame className="h-3 w-3"/> Alışkanlık Zinciri
-                        </h4>
-                        <div className="space-y-3">
-                             {habits.map(habit => {
-                                const todayKey = format(new Date(), 'yyyy-MM-dd');
-                                return (
-                                    <div key={habit.id} className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
-                                      <p className="font-semibold text-sm mb-3 flex items-center justify-between">
-                                          {habit.title}
-                                          <Badge className="bg-white/20 hover:bg-white/30 text-[10px] border-0">Haftalık</Badge>
-                                      </p>
-                                      <div className="flex justify-between items-center px-1">
-                                        {lastSevenDays.map(day => {
-                                          const dayKey = format(day, 'yyyy-MM-dd');
-                                          const isCompleted = habit.completedDates?.includes(dayKey) || false;
-                                          const isTodayDate = isToday(day);
-                                          return (
-                                              <div key={dayKey} className="flex flex-col items-center gap-2" onClick={() => handleHabitCompletion(habit.id, day)}>
-                                                  <div className={cn(
-                                                      "w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 border",
-                                                      isCompleted 
-                                                        ? "bg-rose-500 border-rose-400 text-white shadow-lg scale-110" 
-                                                        : "bg-white/5 border-white/10 text-white/20 hover:border-white/40",
-                                                      isTodayDate && !isCompleted && "ring-2 ring-white/30 ring-offset-2 ring-offset-transparent"
-                                                  )}>
-                                                      <Check className={cn("w-4 h-4", isCompleted ? "opacity-100" : "opacity-0")} />
+                    {/* 2. ALIŞKANLIKLAR */}
+                    {habits.length > 0 && (
+                          <div className={cn("backdrop-blur-md rounded-[2rem] p-6 shadow-sm border transition-all hover:shadow-md", sectionThemes.habits.container)}>
+                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.habits.title)}>
+                                <Flame className={cn("h-4 w-4", sectionThemes.habits.icon)}/> Alışkanlık Zinciri
+                            </h4>
+                            <div className="space-y-4">
+                                 {habits.map(habit => {
+                                    return (
+                                        <div key={habit.id} className={cn("rounded-2xl p-4 border shadow-sm", sectionThemes.habits.itemBg)}>
+                                          <div className="flex justify-between items-center mb-4">
+                                              <p className="font-bold text-sm text-slate-800 line-clamp-1">{habit.title}</p>
+                                              <Badge variant="secondary" className="bg-white/60 text-orange-700 text-[9px] border-orange-100 font-bold px-2">Haftalık</Badge>
+                                          </div>
+                                          <div className="flex justify-between items-center bg-white/40 p-2 rounded-xl border border-white/50">
+                                            {lastSevenDays.map(day => {
+                                              const dayKey = format(day, 'yyyy-MM-dd');
+                                              const isCompleted = habit.completedDates?.includes(dayKey) || false;
+                                              const isTodayDate = isToday(day);
+                                              return (
+                                                  <div key={dayKey} className="flex flex-col items-center gap-1.5 cursor-pointer group" onClick={() => handleHabitCompletion(habit.id, day)}>
+                                                      <div className={cn(
+                                                          "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 border-2",
+                                                          isCompleted 
+                                                            ? `${sectionThemes.habits.progressCheck} border-orange-400 text-white shadow-md scale-105` 
+                                                            : "bg-white border-slate-200 text-transparent hover:border-orange-300 hover:bg-orange-50",
+                                                          isTodayDate && !isCompleted && "ring-2 ring-orange-300 ring-offset-1 border-orange-300"
+                                                      )}>
+                                                          <Check className="w-4 h-4" strokeWidth={3} />
+                                                      </div>
+                                                      <p className={cn("text-[9px] font-bold uppercase", isTodayDate ? "text-orange-700" : "text-slate-400 group-hover:text-orange-600")}>{format(day, 'EEE', { locale: tr }).slice(0,1)}</p>
                                                   </div>
-                                                  <p className={cn("text-[10px] font-medium", isTodayDate ? "text-white" : "text-white/50")}>{format(day, 'EEE', { locale: tr })}</p>
-                                              </div>
-                                          )
-                                        })}
-                                      </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Video Dersler */}
-                {pendingVideos.length > 0 && (
-                      <div>
-                        <h4 className="font-bold text-[11px] uppercase tracking-widest text-white/70 mb-3 flex items-center gap-2 pl-1">
-                            <Youtube className="h-3 w-3"/> Video Dersler
-                        </h4>
-                        <div className="space-y-3">
-                        {pendingVideos.slice(0, 2).map(video => (
-                             <Link href="/videos" key={video.id} className="block group">
-                                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <p className="font-semibold text-sm line-clamp-1">{video.title}</p>
-                                        <div className="bg-red-500/20 p-1 rounded-md"><Youtube className="w-3 h-3 text-red-200"/></div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-1.5 bg-black/20" indicatorClassName="bg-white/90"/>
-                                        <p className="text-[10px] text-white/60 text-right font-medium">{video.completedVideos || 0} / {video.totalVideos} tamamlandı</p>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Okunan Kitaplar */}
-                 {readingBooks.length > 0 && (
-                    <div>
-                        <h4 className="font-bold text-[11px] uppercase tracking-widest text-white/70 mb-3 flex items-center gap-2 pl-1">
-                            <BookOpen className="h-3 w-3"/> Okuma Köşesi
-                        </h4>
-                        <div className="space-y-3">
-                            {readingBooks.slice(0, 2).map(book => {
-                                const pagesRead = book.pageCount && book.progress ? Math.round((book.progress / 100) * book.pageCount) : 0;
-                                return (
-                                 <Link href="/library" key={book.id} className="block group">
-                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all">
-                                        <div className="w-10 h-14 bg-white/20 rounded shadow-sm flex items-center justify-center shrink-0">
-                                            <BookOpen className="w-5 h-5 text-white/50"/>
+                                              )
+                                            })}
+                                          </div>
                                         </div>
-                                        <div className="flex-grow min-w-0">
-                                            <p className="font-semibold text-sm truncate">{book.title}</p>
-                                            <p className="text-xs text-white/70 truncate mb-1.5">{book.author}</p>
-                                            {book.libraryStatus === 'reading' && book.progress !== undefined && (
-                                                <div className="flex items-center gap-2">
-                                                    <Progress value={book.progress} className="h-1 bg-black/20 flex-grow" indicatorClassName="bg-yellow-300"/>
-                                                    <span className="text-[10px] font-bold text-yellow-200">%{book.progress.toFixed(0)}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </Link>
-                            )})}
+                                    )
+                                })}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Ezberler */}
-                {pendingMemorization.length > 0 && (
-                   <div>
-                        <h4 className="font-bold text-[11px] uppercase tracking-widest text-white/70 mb-3 flex items-center gap-2 pl-1">
-                            <BrainCircuit className="h-3 w-3"/> Hafızlık & Ezber
-                        </h4>
-                        <div className="grid grid-cols-2 gap-2">
-                            {pendingMemorization.slice(0,2).map(item => (
-                                <Link href="/memorization" key={item.id} className="block group">
-                                    <div className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all text-center">
-                                        <p className="font-semibold text-sm truncate">{item.title}</p>
-                                        <p className="text-[10px] text-white/60 mt-1 group-hover:text-white/80">Devam ediyor</p>
-                                    </div>
-                                </Link>
-                            ))}
+                    {/* 3. EZBERLER */}
+                    {pendingMemorization.length > 0 && (
+                        <div className={cn("backdrop-blur-md rounded-[2rem] p-6 shadow-sm border transition-all hover:shadow-md", sectionThemes.memorization.container)}>
+                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.memorization.title)}>
+                                <BrainCircuit className={cn("h-4 w-4", sectionThemes.memorization.icon)}/> Ezberler
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                {pendingMemorization.slice(0,2).map(item => (
+                                    <Link href="/memorization" key={item.id} className="block group">
+                                        <div className={cn("p-4 rounded-2xl bg-white/70 border border-violet-100/50 transition-all text-center shadow-sm", sectionThemes.memorization.itemHover)}>
+                                            <p className="font-bold text-sm text-slate-800 truncate">{item.title}</p>
+                                            <span className={cn("text-[10px] font-bold mt-2 inline-block px-2.5 py-0.5 rounded-full", sectionThemes.memorization.badge)}>Çalışılıyor</span>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
-                {/* Eğitim ve Görevler */}
-                {(pendingTests.length > 0 || pendingStudies.length > 0 || completedStudies.length > 0 || pendingTasks.length > 0) && (
-                    <div>
-                        <h4 className="font-bold text-[11px] uppercase tracking-widest text-white/70 mb-3 flex items-center gap-2 pl-1">
-                            <ListChecks className="h-3 w-3"/> Görevler & Ödevler
-                        </h4>
-                        <div className="space-y-2">
-                            {/* Testler */}
-                            {pendingTests.map(test => (
-                                <Link href={`/education/${test.id}`} key={test.id} className="block group">
-                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all border-l-4 border-l-blue-400">
-                                        <div className="truncate">
-                                            <p className="font-semibold text-sm truncate">{test.displayName}</p>
-                                            <p className="text-[10px] text-white/70 truncate uppercase tracking-wider mt-0.5">Sınav • {test.subject}</p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-
-                            {/* Çalışmalar */}
-                            {pendingStudies.map(study => (
-                                <Link href="/education/study" key={study.id} className="block group">
-                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all border-l-4 border-l-purple-400">
-                                         <div className="truncate">
-                                            <p className="font-semibold text-sm truncate">{study.topic}</p>
-                                            <p className="text-[10px] text-white/70 truncate uppercase tracking-wider mt-0.5">Çalışma • {study.subject}</p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-
-                            {/* Tamamlanan Çalışmalar Accordion */}
-                             {completedStudies.length > 0 && (
-                                <Accordion type="single" collapsible className="w-full">
-                                <AccordionItem value="item-1" className="border-0">
-                                    <AccordionTrigger className="text-[11px] font-medium text-white/60 hover:text-white hover:no-underline justify-start gap-2 py-2 px-1">
-                                        <Check className="w-3 h-3"/> {completedStudies.length} tamamlanan çalışma
-                                    </AccordionTrigger>
-                                    <AccordionContent className="space-y-2 pt-1 pb-2">
-                                    {completedStudies.map(study => (
-                                        <div key={study.id} className="flex items-center gap-3 p-2 rounded-lg bg-black/20 opacity-70">
-                                            <div className="truncate">
-                                                <p className="font-medium text-xs text-white/80 line-through">{study.topic}</p>
+                {/* SAĞ KOLON */}
+                <div className="space-y-6">
+                    
+                    {/* 4. VIDEO DERSLER */}
+                    {pendingVideos.length > 0 && (
+                          <div className={cn("backdrop-blur-md rounded-[2rem] p-6 shadow-sm border transition-all hover:shadow-md", sectionThemes.videos.container)}>
+                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.videos.title)}>
+                                <Youtube className={cn("h-4 w-4", sectionThemes.videos.icon)}/> Video Dersler
+                            </h4>
+                            <div className="space-y-4">
+                                {pendingVideos.slice(0, 2).map(video => (
+                                     <Link href="/videos" key={video.id} className="block group">
+                                        <div className={cn("p-4 rounded-2xl bg-white/70 border border-rose-100/50 transition-all shadow-sm", sectionThemes.videos.itemHover)}>
+                                            <div className="flex justify-between items-start mb-3">
+                                                <p className="font-bold text-sm text-slate-800 line-clamp-1 pr-2">{video.title}</p>
+                                                <div className="bg-rose-100 p-1.5 rounded-lg shadow-sm shrink-0"><Youtube className="w-4 h-4 text-rose-600"/></div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-2 bg-rose-100/50 rounded-full" indicatorClassName={sectionThemes.videos.progressIndicator}/>
+                                                <p className="text-[10px] text-rose-700/70 text-right font-bold">{video.completedVideos || 0} / {video.totalVideos} izlendi</p>
                                             </div>
                                         </div>
-                                    ))}
-                                    </AccordionContent>
-                                </AccordionItem>
-                                </Accordion>
-                            )}
-
-                            {/* Normal Görevler */}
-                            {pendingTasks.slice(0, 3).map(task => (
-                                <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/5 hover:bg-white/10 transition-colors">
-                                    <Checkbox
-                                        id={`personal-task-${task.id}-${member.id}`}
-                                        onCheckedChange={() => handleTaskCompletion(task)}
-                                        className="mt-0.5 border-white/40 text-emerald-600 data-[state=checked]:bg-white data-[state=checked]:text-emerald-600 ring-offset-transparent"
-                                    />
-                                    <div className="flex-grow">
-                                        <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-sm font-medium leading-tight cursor-pointer block">{task.title}</label>
-                                        {task.points > 0 && <span className="text-[10px] text-emerald-300 font-bold mt-1 inline-block">+{task.points} XP</span>}
-                                    </div>
-                                </div>
-                            ))}
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </CardContent>
+                    )}
+
+                    {/* 5. OKUMA KÖŞESİ */}
+                    {readingBooks.length > 0 && (
+                        <div className={cn("backdrop-blur-md rounded-[2rem] p-6 shadow-sm border transition-all hover:shadow-md", sectionThemes.reading.container)}>
+                             <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.reading.title)}>
+                                <BookOpen className={cn("h-4 w-4", sectionThemes.reading.icon)}/> Okuma Köşesi
+                            </h4>
+                            <div className="space-y-4">
+                                {readingBooks.slice(0, 2).map(book => (
+                                    <Link href="/library" key={book.id} className="block group">
+                                        <div className={cn("flex items-center gap-4 p-4 rounded-2xl bg-white/70 border border-yellow-100/50 transition-all shadow-sm", sectionThemes.reading.itemHover)}>
+                                            <div className={cn("w-12 h-16 rounded-lg shadow-sm border flex items-center justify-center shrink-0", sectionThemes.reading.bookCover)}>
+                                                <BookOpen className="w-6 h-6"/>
+                                            </div>
+                                            <div className="flex-grow min-w-0">
+                                                <div>
+                                                    <p className="font-bold text-sm text-slate-800 truncate">{book.title}</p>
+                                                    <p className="text-xs text-slate-500 truncate font-medium">{book.author}</p>
+                                                </div>
+                                                {book.libraryStatus === 'reading' && book.progress !== undefined && (
+                                                    <div className="space-y-1.5 mt-2">
+                                                        <div className="flex justify-between items-center text-[10px] font-bold text-yellow-700/80">
+                                                            <span>%{book.progress.toFixed(0)}</span>
+                                                            <span>{Math.round((book.progress / 100) * (book.pageCount || 0))} / {book.pageCount} sayfa</span>
+                                                        </div>
+                                                        <div className="w-full bg-yellow-100/50 rounded-full h-2 overflow-hidden">
+                                                            <div className={cn("h-full rounded-full transition-all", sectionThemes.reading.progressIndicator)} style={{ width: `${book.progress}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 6. YAPILACAKLAR */}
+                    {(pendingTests.length > 0 || pendingStudies.length > 0 || pendingTasks.length > 0 || completedStudies.length > 0) && (
+                        <div className={cn("backdrop-blur-md rounded-[2rem] p-6 shadow-sm border transition-all hover:shadow-md", sectionThemes.todo.container)}>
+                             <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.todo.title)}>
+                                <ListChecks className={cn("h-4 w-4", sectionThemes.todo.icon)}/> Yapılacaklar
+                            </h4>
+                            <div className="space-y-3">
+                                {/* Testler */}
+                                {pendingTests.map(test => (
+                                    <Link href={`/education/${test.id}`} key={test.id} className="block group">
+                                        <div className={cn("flex items-center gap-4 p-3 rounded-2xl bg-white/70 border border-blue-100/50 transition-all shadow-sm relative overflow-hidden pl-3", sectionThemes.todo.itemHover)}>
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+                                            <div className="bg-blue-100 p-2 rounded-xl text-blue-600 shadow-sm shrink-0">
+                                                <GraduationCap className="w-4 h-4" />
+                                            </div>
+                                            <div className="truncate flex-grow">
+                                                <p className="font-bold text-sm text-slate-800 truncate">{test.displayName}</p>
+                                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Sınav • {test.subject}</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-blue-300 group-hover:text-blue-500 transition-colors"/>
+                                        </div>
+                                    </Link>
+                                ))}
+
+                                {/* Çalışmalar/Ödevler */}
+                                {pendingStudies.map(study => (
+                                    <Link href="/education/study" key={study.id} className="block group">
+                                        <div className={cn("flex items-center gap-4 p-3 rounded-2xl bg-white/70 border border-indigo-100/50 transition-all shadow-sm relative overflow-hidden pl-3 hover:border-indigo-300 hover:bg-indigo-50")}>
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+                                             <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600 shadow-sm shrink-0">
+                                                <BookOpen className="w-4 h-4" />
+                                            </div>
+                                            <div className="truncate flex-grow">
+                                                 <p className="font-bold text-sm text-slate-800 truncate">{study.topic}</p>
+                                                 <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">Çalışma • {study.subject}</p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-500 transition-colors"/>
+                                        </div>
+                                    </Link>
+                                ))}
+
+                                {/* Tamamlanan Çalışmalar (Accordion) */}
+                                {completedStudies.length > 0 && (
+                                    <Accordion type="single" collapsible className="w-full border border-slate-200/60 rounded-2xl bg-slate-50/50 shadow-sm overflow-hidden">
+                                        <AccordionItem value="item-1" className="border-0">
+                                            <AccordionTrigger className="text-xs font-bold text-slate-600 hover:text-slate-800 justify-start gap-2 py-3 px-4 no-underline hover:bg-slate-100/50 transition-colors">
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-500"/> {completedStudies.length} tamamlanan çalışma
+                                            </AccordionTrigger>
+                                            <AccordionContent className="space-y-1 px-4 pb-4 bg-white/40">
+                                                {completedStudies.map(study => (
+                                                    <div key={study.id} className="flex items-center gap-3 pl-2 py-1">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-300 shrink-0"></div>
+                                                        <p className="text-xs font-medium text-slate-500 line-through truncate">{study.topic}</p>
+                                                    </div>
+                                                ))}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
+                                )}
+
+                                {/* Normal Görevler */}
+                                {pendingTasks.slice(0, 4).map(task => (
+                                    <div key={task.id} className={cn("flex items-start gap-3 p-3 rounded-2xl bg-white/70 border border-blue-100/50 transition-all shadow-sm", sectionThemes.todo.itemHover)}>
+                                        <Checkbox
+                                            id={`personal-task-${task.id}-${member.id}`}
+                                            onCheckedChange={() => handleTaskCompletion(task)}
+                                            className={cn("mt-0.5 border-slate-300 rounded-full", sectionThemes.todo.checkbox)}
+                                        />
+                                        <div className="flex-grow">
+                                            <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-sm font-bold text-slate-700 leading-tight cursor-pointer block">{task.title}</label>
+                                            {task.points > 0 && <span className="text-[10px] text-blue-600 font-bold mt-1 inline-block bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">+{task.points} XP</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
         </Card>
     );
 }
