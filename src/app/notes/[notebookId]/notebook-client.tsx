@@ -1,13 +1,13 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
 import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FolderPlus, Folder, ChevronDown, MoreVertical, LayoutGrid, FileText, Settings, Sparkles } from 'lucide-react';
+import { Plus, ArrowLeft, Edit, Trash2, Image as ImageIcon, Loader2, StickyNote, FolderPlus, Folder, ChevronDown, MoreVertical, LayoutGrid, FileText, Settings, Sparkles, Palette, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import { Card } from '@/components/ui/card';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-// EKLENEN EKSİK IMPORTLAR:
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -36,14 +36,16 @@ const glassColors = {
     BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10",
 };
 
-// Updated Colors for Dark Mode
+// Updated Colors for Dark Mode (High Contrast & Glass)
 const noteColors = [
-    { name: 'Sarı', class: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-100 hover:bg-yellow-500/30', color: 'hsl(48, 96%, 58%)' },
-    { name: 'Mavi', class: 'bg-blue-500/20 border-blue-500/30 text-blue-100 hover:bg-blue-500/30', color: 'hsl(217, 91%, 60%)' },
-    { name: 'Yeşil', class: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-100 hover:bg-emerald-500/30', color: 'hsl(142, 71%, 45%)' },
-    { name: 'Pembe', class: 'bg-pink-500/20 border-pink-500/30 text-pink-100 hover:bg-pink-500/30', color: 'hsl(330, 84%, 60%)' },
-    { name: 'Mor', class: 'bg-violet-500/20 border-violet-500/30 text-violet-100 hover:bg-violet-500/30', color: 'hsl(262, 83%, 58%)' },
-    { name: 'Gri', class: 'bg-slate-700/30 border-slate-600/30 text-slate-200 hover:bg-slate-700/40', color: 'hsl(215, 16%, 47%)' },
+    { name: 'Sarı', class: 'bg-amber-500/40 border-amber-400/30 text-amber-50 hover:bg-amber-500/50' },
+    { name: 'Mavi', class: 'bg-blue-600/40 border-blue-400/30 text-blue-50 hover:bg-blue-600/50' },
+    { name: 'Yeşil', class: 'bg-emerald-600/40 border-emerald-400/30 text-emerald-50 hover:bg-emerald-600/50' },
+    { name: 'Pembe', class: 'bg-pink-600/40 border-pink-400/30 text-pink-50 hover:bg-pink-600/50' },
+    { name: 'Mor', class: 'bg-violet-600/40 border-violet-400/30 text-violet-50 hover:bg-violet-600/50' },
+    { name: 'Turkuaz', class: 'bg-cyan-500/40 border-cyan-400/30 text-cyan-50 hover:bg-cyan-500/50' },
+    { name: 'Fuşya', class: 'bg-fuchsia-600/40 border-fuchsia-400/30 text-fuchsia-50 hover:bg-fuchsia-600/50' },
+    { name: 'Nane', class: 'bg-lime-600/40 border-lime-400/30 text-lime-50 hover:bg-lime-600/50' },
 ];
 
 const folderGradients = [
@@ -385,7 +387,7 @@ export default function NotebookClient() {
                 </div>
             </div>
          ) : (
-             <Accordion type="multiple" className="w-full space-y-6" defaultValue={[sections[0]?.id]}>
+             <Accordion type="multiple" className="w-full space-y-6">
                  {sections.map((section, index) => {
                      const sectionNotes = notes.filter(note => note.sectionId === section.id);
                      const notesByFolder = sectionNotes.reduce((acc, note) => {
@@ -406,7 +408,7 @@ export default function NotebookClient() {
                                     <div className="relative flex items-center justify-between p-4 sm:p-5">
                                         <AccordionTrigger className="flex-1 hover:no-underline p-0 text-white group">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm shadow-sm">
+                                                <div className="p-2 bg-white/20 backdrop-blur-md rounded-2xl shadow-sm">
                                                     {notebook.icon ? <span className="text-lg">{notebook.icon}</span> : <FileText className="w-5 h-5 text-white" />}
                                                 </div>
                                                 <div className="text-left">
@@ -650,16 +652,16 @@ interface StickyNoteCardProps {
 function StickyNoteCard({ note, onOpenDialog, onDelete }: StickyNoteCardProps) {
     // Map light colors to dark glass variants
     const getNoteStyle = (colorClass: string | undefined) => {
-        if (!colorClass) return "bg-slate-800/40 border-white/5 text-slate-200"; // Default Gray
-        
+        if (!colorClass) return "bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-800/80"; // Default Gray
+
         // Simple mapping based on the class string content
-        if (colorClass.includes('yellow')) return "bg-yellow-500/10 border-yellow-500/20 text-yellow-100 hover:border-yellow-500/40";
-        if (colorClass.includes('blue')) return "bg-blue-500/10 border-blue-500/20 text-blue-100 hover:border-blue-500/40";
-        if (colorClass.includes('green') || colorClass.includes('emerald')) return "bg-emerald-500/10 border-emerald-500/20 text-emerald-100 hover:border-emerald-500/40";
-        if (colorClass.includes('pink') || colorClass.includes('rose')) return "bg-pink-500/10 border-pink-500/20 text-pink-100 hover:border-pink-500/40";
-        if (colorClass.includes('purple') || colorClass.includes('violet')) return "bg-violet-500/10 border-violet-500/20 text-violet-100 hover:border-violet-500/40";
+        if (colorClass.includes('yellow') || colorClass.includes('amber')) return "bg-amber-500/40 border-amber-400/30 text-amber-50 hover:bg-amber-500/50";
+        if (colorClass.includes('blue') || colorClass.includes('sky')) return "bg-blue-600/40 border-blue-400/30 text-blue-50 hover:bg-blue-600/50";
+        if (colorClass.includes('green') || colorClass.includes('emerald')) return "bg-emerald-600/40 border-emerald-400/30 text-emerald-50 hover:bg-emerald-600/50";
+        if (colorClass.includes('pink') || colorClass.includes('rose') || colorClass.includes('red')) return "bg-pink-600/40 border-pink-400/30 text-pink-50 hover:bg-pink-600/50";
+        if (colorClass.includes('purple') || colorClass.includes('violet')) return "bg-violet-600/40 border-violet-400/30 text-violet-50 hover:bg-violet-600/50";
         
-        return "bg-slate-800/40 border-white/5 text-slate-200 hover:bg-slate-800/60";
+        return "bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-800/80";
     };
 
     const noteStyle = getNoteStyle(note.color);
@@ -683,29 +685,29 @@ function StickyNoteCard({ note, onOpenDialog, onDelete }: StickyNoteCardProps) {
                 </div>
             )}
             
-            <div className="p-4 flex-grow flex flex-col min-h-[5rem]">
-                <h3 className="font-bold text-base leading-snug mb-2">{note.title || "Başlıksız Not"}</h3>
+            <div className="p-5 flex-grow flex flex-col min-h-[6rem]">
+                <h3 className="font-bold text-lg leading-snug mb-2 drop-shadow-md">{note.title || "Başlıksız Not"}</h3>
                 {textContent && (
-                    <p className="text-xs opacity-70 line-clamp-4 leading-relaxed font-medium">
+                    <p className="text-sm opacity-90 line-clamp-4 leading-relaxed font-medium drop-shadow-sm">
                         {textContent}
                     </p>
                 )}
                 {!textContent && !note.imageUrl && (
-                    <div className="flex-grow flex items-center justify-center opacity-30">
-                        <FileText className="w-8 h-8" />
+                    <div className="flex-grow flex items-center justify-center opacity-40">
+                        <FileText className="w-10 h-10" />
                     </div>
                 )}
             </div>
             
             {/* Quick Actions (Hover) */}
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <Button variant="ghost" size="icon" className="h-7 w-7 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md" onClick={(e) => { e.stopPropagation(); onOpenDialog(); }}>
-                    <Edit className="h-3.5 w-3.5"/>
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                <Button variant="ghost" size="icon" className="h-8 w-8 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md border border-white/10" onClick={(e) => { e.stopPropagation(); onOpenDialog(); }}>
+                    <Edit className="h-4 w-4"/>
                 </Button>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 bg-rose-500/80 hover:bg-rose-600 text-white rounded-full backdrop-blur-md" onClick={(e) => e.stopPropagation()}>
-                            <Trash2 className="h-3.5 w-3.5"/>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 bg-rose-500/80 hover:bg-rose-600 text-white rounded-full backdrop-blur-md border border-white/10" onClick={(e) => e.stopPropagation()}>
+                            <Trash2 className="h-4 w-4"/>
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent onClick={(e) => e.stopPropagation()} className="bg-slate-900 border-white/10 text-slate-100">
@@ -744,16 +746,17 @@ interface NoteEditFormProps {
 function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFormProps) {
   const form = useForm<NoteFormData>();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isOptionsOpen, setIsOptionsOpen] = React.useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const contentValue = form.watch('content');
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [contentValue]);
-  
+  }, [form.watch('content')]);
+
+
   useEffect(() => {
     if (note) {
       form.reset({
@@ -781,60 +784,130 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
   const folderOptions = [{label: 'Genel Notlar', value: ''}, ...sectionFolders.map(f => ({ label: f, value: f }))];
   const watchedColor = form.watch('color');
 
+  // Dinamik arka plan rengi için (NoteEditForm içinde de doğru rengi göstermek için)
+  const getEditorBackgroundClass = (colorClass: string | undefined) => {
+        if (!colorClass) return "bg-transparent"; 
+        if (colorClass.includes('yellow') || colorClass.includes('amber')) return "bg-amber-500/20";
+        if (colorClass.includes('blue')) return "bg-blue-600/20";
+        if (colorClass.includes('green') || colorClass.includes('emerald')) return "bg-emerald-600/20";
+        if (colorClass.includes('pink') || colorClass.includes('rose') || colorClass.includes('red')) return "bg-pink-600/20";
+        if (colorClass.includes('purple') || colorClass.includes('violet')) return "bg-violet-600/20";
+        if (colorClass.includes('lime')) return 'bg-lime-600/20';
+        if (colorClass.includes('cyan')) return 'bg-cyan-500/20';
+        if (colorClass.includes('fuchsia')) return 'bg-fuchsia-600/20';
+        return "bg-slate-800/30";
+  }
+  
+  // Renk etkisini sadece Tool Bar ve Başlık çizgisine yansıtan helper
+  const getAccentColor = (colorClass: string | undefined) => {
+    if (!colorClass) return "border-white/5";
+    if (colorClass.includes('yellow') || colorClass.includes('amber')) return "border-amber-400/50";
+    if (colorClass.includes('blue')) return "border-blue-400/50";
+    if (colorClass.includes('green') || colorClass.includes('emerald')) return "border-emerald-400/50";
+    if (colorClass.includes('pink') || colorClass.includes('rose') || colorClass.includes('red')) return "border-rose-400/50";
+    if (colorClass.includes('purple') || colorClass.includes('violet')) return "border-violet-400/50";
+    if (colorClass.includes('lime')) return 'border-lime-400/50';
+    if (colorClass.includes('cyan')) return 'border-cyan-400/50';
+    if (colorClass.includes('fuchsia')) return 'border-fuchsia-400/50';
+    return "border-white/20";
+  }
+
+
   if (!note) return null;
 
   return (
     <Dialog open={!!note} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-slate-900 border-white/10 text-slate-100 rounded-3xl p-0 overflow-hidden flex flex-col h-[90vh] md:h-auto">
+      <DialogContent className="w-[100vw] h-[100dvh] md:w-full md:max-w-3xl md:h-[750px] p-0 bg-slate-950 border-none md:border md:border-white/10 text-slate-100 md:rounded-3xl flex flex-col shadow-2xl">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
-            <DialogHeader className="p-6 pb-2 border-b border-white/5 bg-white/5">
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                  <StickyNote className="w-5 h-5 text-indigo-400" />
-                  {note.id ? "Notu Düzenle" : "Yeni Not Oluştur"}
-              </DialogTitle>
-            </DialogHeader>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <FormField name="title" control={form.control} render={({ field }) => (
-                <FormItem>
-                    <FormControl>
-                        <Input 
-                            {...field} 
-                            placeholder="Başlık" 
-                            className="bg-transparent border-none text-2xl font-bold p-0 placeholder:text-slate-600 focus-visible:ring-0 text-white" 
-                        />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-              )}/>
-              
-              <FormField name="content" control={form.control} render={({ field }) => (
-                <FormItem className="flex-1 h-full">
-                    <FormControl>
-                        <Textarea 
-                            ref={textareaRef}
-                            {...field} 
-                            placeholder="Notunu buraya yaz..." 
-                            className="bg-transparent border-none resize-none p-0 text-base text-slate-300 focus-visible:ring-0" 
-                        />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-              )}/>
-              
-              <div className="pt-4 border-t border-white/5">
-                  <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button type="button" variant="ghost" className="text-xs text-slate-400 hover:text-white -ml-2 h-auto py-1">
-                            <ChevronDown className="h-4 w-4 mr-1" /> Gelişmiş Seçenekler
+            {/* 1. HEADER / TOOLBAR (Fixed Top) */}
+            <div className={cn("flex items-center justify-between px-6 py-4 border-b shrink-0", glassColors.HEADER_BG, getAccentColor(watchedColor))}>
+               <div className="flex items-center gap-2 text-slate-400">
+                  <StickyNote className="w-5 h-5 text-indigo-400" />
+                  <span className="text-sm font-medium">{note.id ? "Notu Düzenle" : "Yeni Not"}</span>
+               </div>
+               <div className="flex items-center gap-2">
+                   {watchedColor && (
+                       <div className={cn("w-3 h-3 rounded-full shadow-sm ring-1 ring-white/10", watchedColor.replace('/40', '/80'))} />
+                   )}
+                   <DialogClose asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/5 rounded-full">
+                            <X className="h-5 w-5" />
                         </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 pt-4 animate-accordion-down">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </DialogClose>
+               </div>
+            </div>
+            
+            {/* 2. WRITING CANVAS (Scrollable Content Area) */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                {/* Background Tint - Fixed to match selection */}
+                <div className={cn("absolute inset-0 pointer-events-none transition-colors duration-500", getEditorBackgroundClass(watchedColor))} />
+
+                <div className="p-6 md:p-8 space-y-6 relative z-10">
+                    
+                    {/* Title Input - Ayrı Cam Panelde */}
+                    <div className={cn("relative p-4 md:p-6 rounded-2xl", glassColors.CARD_BG)}>
+                        <FormField name="title" control={form.control} render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <Input 
+                                        {...field} 
+                                        placeholder="Not Başlığı" 
+                                        className="bg-transparent border-none text-3xl md:text-4xl font-black p-0 placeholder:text-slate-600 focus-visible:ring-0 text-white leading-tight focus:bg-transparent" 
+                                    />
+                                </FormControl>
+                                <FormMessage className="text-rose-400" />
+                            </FormItem>
+                        )}/>
+                        {/* Title Altı Çizgisi */}
+                        <div className={cn("absolute bottom-0 left-0 w-full h-0.5 opacity-50", getAccentColor(watchedColor).replace('border', 'bg'))} />
+                    </div>
+                    
+                    {/* Content Textarea - Expansive */}
+                    <div className={cn("relative p-4 md:p-6 rounded-2xl bg-black/20")}>
+                        <FormField name="content" control={form.control} render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <Textarea 
+                                        ref={textareaRef}
+                                        {...field} 
+                                        placeholder="Düşüncelerini buraya yaz..." 
+                                        className="bg-transparent border-none resize-none p-0 text-base text-slate-300 focus-visible:ring-0 min-h-[300px] leading-relaxed placeholder:text-slate-500 focus:bg-transparent" 
+                                    />
+                                </FormControl>
+                                <FormMessage className="text-rose-400" />
+                            </FormItem>
+                        )}/>
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. BOTTOM CONTROLS PANEL (Fixed Bottom) */}
+            <div className="border-t border-white/5 bg-slate-900/80 backdrop-blur-xl p-4 shrink-0 transition-all">
+                <Collapsible open={isOptionsOpen} onOpenChange={setIsOptionsOpen}>
+                    <div className="flex items-center justify-between">
+                        <CollapsibleTrigger asChild>
+                            <Button type="button" variant="ghost" className="text-xs text-slate-400 hover:text-white h-auto py-2 px-3 rounded-lg hover:bg-white/5 group">
+                                <ChevronDown className={cn("h-4 w-4 mr-2 transition-transform duration-300 text-indigo-400", isOptionsOpen && "rotate-180")} />
+                                <span className="font-medium">Detaylar & Ayarlar</span>
+                            </Button>
+                        </CollapsibleTrigger>
+                        
+                        <div className="flex gap-2">
+                            <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-6 shadow-lg shadow-indigo-500/20">
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Kaydet
+                            </Button>
+                        </div>
+                    </div>
+
+                    <CollapsibleContent className="mt-4 space-y-6 animate-accordion-down overflow-hidden">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/5 rounded-2xl p-5 border border-white/5">
                             <FormField name="folder" control={form.control} render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-xs text-slate-400 uppercase font-bold tracking-wider">Klasör</FormLabel>
+                                    <FormLabel className="text-xs text-slate-400 uppercase font-bold tracking-wider flex items-center gap-2 mb-2">
+                                        <Folder className="w-3.5 h-3.5" /> Klasör
+                                    </FormLabel>
                                     <FormControl>
                                         <Combobox 
                                             options={folderOptions} 
@@ -842,52 +915,65 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
                                             onChange={field.onChange} 
                                             placeholder='Klasör seç...' 
                                             notfoundText='Klasör bulunamadı.' 
-                                            className={glassColors.INPUT_BG}
+                                            className="bg-slate-950/50 border-white/10 text-slate-200 h-11 w-full rounded-xl"
                                         />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage className="text-rose-400" />
                                 </FormItem>
                             )}/>
+
                             <FormField name="color" control={form.control} render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-xs text-slate-400 uppercase font-bold tracking-wider">Renk Etiketi</FormLabel>
+                                    <FormLabel className="text-xs text-slate-400 uppercase font-bold tracking-wider flex items-center gap-2 mb-2">
+                                        <Palette className="w-3.5 h-3.5" /> Renk Etiketi
+                                    </FormLabel>
                                     <FormControl>
-                                        <div className="flex gap-2 p-2 rounded-xl border border-white/10 bg-black/20">
+                                        <div className="flex gap-2 items-center flex-wrap">
                                             {noteColors.map(color => (
-                                                <button 
-                                                    type="button" 
-                                                    key={color.name} 
-                                                    aria-label={color.name} 
-                                                    className={cn(
-                                                        "h-6 w-6 rounded-full transition-transform hover:scale-110", 
-                                                        color.class, 
-                                                        field.value === color.class && "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110"
-                                                    )} 
-                                                    onClick={() => field.onChange(color.class)} 
-                                                />
+                                                <TooltipProvider key={color.name}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <button 
+                                                                type="button" 
+                                                                aria-label={color.name} 
+                                                                className={cn(
+                                                                    "h-8 w-8 rounded-full transition-all duration-200 border", 
+                                                                    color.class.split(' ')[0], 
+                                                                    field.value === color.class 
+                                                                        ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110 shadow-lg shadow-white/10" 
+                                                                        : "border-transparent hover:scale-110 hover:border-white/20 opacity-70 hover:opacity-100"
+                                                                )} 
+                                                                onClick={() => field.onChange(color.class)} 
+                                                            />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-slate-900 text-white border-white/10 text-xs">
+                                                            {color.name}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => field.onChange("")}
+                                                className="h-8 w-8 rounded-full border border-white/10 bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all ml-2"
+                                                title="Rengi Sıfırla"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage className="text-rose-400" />
                                 </FormItem>
                             )}/>
                         </div>
                     </CollapsibleContent>
-                  </Collapsible>
-              </div>
+                </Collapsible>
             </div>
-
-            <DialogFooter className="p-6 pt-4 border-t border-white/5 bg-white/5 mt-auto">
-              <DialogClose asChild>
-                  <Button type="button" variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
-              </DialogClose>
-              <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-500/20">
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Kaydet
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
