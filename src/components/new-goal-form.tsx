@@ -1,26 +1,31 @@
 
-
 "use client";
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm, Controller } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { FamilyMember, Goal, GoalSection } from "@/lib/data";
 import { ScrollArea } from "./ui/scroll-area";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Alert, AlertTitle } from "./ui/alert";
-import { AlertTriangle, Trash2, Youtube } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Trash2, Youtube, BookOpen, Layers, User, Edit3, Type, X, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { DialogHeader, DialogTitle, DialogDescription, DialogClose } from "./ui/dialog";
 
+// --- DESIGN SYSTEM ---
+const glassColors = {
+    INPUT_BG: "bg-slate-950/50 border-white/10 text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20 placeholder:text-slate-500",
+    CARD_BG: "bg-white/5 border border-white/10",
+    TAB_LIST: "bg-slate-950/50 border border-white/10 p-1",
+    TAB_TRIGGER: "data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200",
+};
 
 const sectionSchema = z.object({
   title: z.string().min(1, "Bölüm başlığı boş olamaz.").default(""),
@@ -37,7 +42,6 @@ const formSchema = z.object({
   sections: z.array(sectionSchema),
   videoUrl: z.string().url("Lütfen geçerli bir YouTube URL'si girin.").optional().or(z.literal('')),
 });
-
 
 type NewGoalFormProps = {
   familyMembers: FamilyMember[];
@@ -148,144 +152,192 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
 
   return (
     <Form {...form}>
-       <DialogHeader>
-        <DialogTitle>{initialData ? "Yol Haritasını Düzenle" : "Yeni Yol Haritası Oluştur"}</DialogTitle>
-        <DialogDescription>
-          {initialData ? "Mevcut hedefin ayrıntılarını güncelleyin." : "Yeni bir okuma veya izleme hedefi oluşturun."}
-        </DialogDescription>
-      </DialogHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <ScrollArea className="h-[65vh] pr-4">
-            <div className="space-y-4">
-                 <FormField
-                    control={form.control}
-                    name="goalType"
-                    render={({ field }) => (
-                         <FormItem className="p-0">
-                            <Tabs onValueChange={field.onChange} defaultValue={field.value} className="w-full">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="book">Kitap Okuma</TabsTrigger>
-                                    <TabsTrigger value="video">Video İzleme</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                         </FormItem>
-                    )}
-                 />
-
-                 <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Başlık</FormLabel>
-                        <FormControl><Input placeholder={goalType === 'book' ? "Okunacak kitabın adı..." : "İzlenecek oynatma listesi..."} {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Açıklama (Opsiyonel)</FormLabel>
-                        <FormControl><Textarea placeholder="Bu hedefin önemini veya detaylarını açıkla..." {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="assigneeId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Sorumlu Kişi</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Bu hedef kimin için?" /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {familyMembers.map((member) => (
-                                <SelectItem key={member.id} value={member.id}>
-                                {member.name}
-                                </SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                {goalType === 'video' && (
-                     <FormField
+      <div className="flex flex-col h-full w-full">
+        
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <ScrollArea className="flex-1 w-full">
+                <div className="px-4 md:px-6 py-4 space-y-6">
+                    {/* Type Selection */}
+                    <FormField
                         control={form.control}
-                        name="videoUrl"
+                        name="goalType"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>YouTube Playlist URL</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input placeholder="https://www.youtube.com/playlist?list=..." {...field} className="pl-10" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
+                                <Tabs onValueChange={field.onChange} defaultValue={field.value} className="w-full">
+                                    <TabsList className={cn("grid w-full grid-cols-2 rounded-xl h-12", glassColors.TAB_LIST)}>
+                                        <TabsTrigger value="book" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
+                                            <BookOpen className="w-4 h-4 mr-2" /> Kitap
+                                        </TabsTrigger>
+                                        <TabsTrigger value="video" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
+                                            <Youtube className="w-4 h-4 mr-2" /> Video
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
                             </FormItem>
                         )}
                     />
-                )}
 
-                <Card className="p-4 bg-muted/50">
-                    <CardHeader className="p-0 pb-4">
-                        <CardTitle className="text-lg">Hedef Yapılandırması</CardTitle>
-                        <CardDescription>Hedefini otomatik olarak bölümlere ayırmak için bu alanları doldur.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0 space-y-4">
-                         <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="totalUnits" render={({ field }) => (
-                                <FormItem><FormLabel>Toplam Birim</FormLabel><FormControl><Input type="number" placeholder={goalType === 'book' ? "300" : "25"} {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                             <FormField control={form.control} name="unitName" render={({ field }) => (
-                                <FormItem><FormLabel>Birim Adı</FormLabel><FormControl><Input placeholder={goalType === 'book' ? "sayfa" : "video"} {...field} disabled={goalType === 'video'} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                        </div>
-                        {goalType === 'book' && (
-                             <FormField control={form.control} name="sectionCount" render={({ field }) => (
-                                <FormItem><FormLabel>Bölüm Sayısı</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {goalType === 'book' && (
+                    {/* Basic Info */}
                     <div className="space-y-4">
-                        <FormLabel>Bölümleri Özelleştir</FormLabel>
-                        {fields.map((sectionField, sectionIndex) => {
-                            return (
-                                <Card key={sectionField.id} className="p-4 relative">
-                                <div className="flex justify-between items-start">
-                                        <p className="text-sm font-semibold text-primary">Bölüm {sectionIndex + 1}</p>
-                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 absolute top-1 right-1" onClick={() => remove(sectionIndex)}>
-                                            <Trash2 className="h-4 w-4 text-destructive"/>
-                                        </Button>
-                                </div>
-                                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 items-end mt-2")}>
-                                        <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
-                                            <FormItem><FormLabel>Bölüm Adı</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )}/>
-                                </div>
-                                </Card>
-                            )
-                        })}
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-slate-300">Başlık</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                            <Input placeholder={goalType === 'book' ? "Kitap adı..." : "Playlist adı..."} {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage className="text-rose-400" />
+                                </FormItem>
+                            )}
+                        />
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="assigneeId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel className="text-slate-300">Sorumlu Kişi</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className={cn("h-11 rounded-xl", glassColors.INPUT_BG)}>
+                                                <div className="flex items-center gap-2">
+                                                    <User className="h-4 w-4 text-slate-500" />
+                                                    <SelectValue placeholder="Seçiniz" />
+                                                </div>
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                            {familyMembers.map((member) => (
+                                                <SelectItem key={member.id} value={member.id} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                                                    {member.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage className="text-rose-400" />
+                                    </FormItem>
+                                )}
+                            />
+                            
+                            {goalType === 'video' ? (
+                                <FormField
+                                    control={form.control}
+                                    name="videoUrl"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-slate-300">Video Linki</FormLabel>
+                                            <FormControl>
+                                                <div className="relative">
+                                                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                                    <Input placeholder="youtube.com/..." {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage className="text-rose-400" />
+                                        </FormItem>
+                                    )}
+                                />
+                            ) : (
+                                <FormField
+                                    control={form.control}
+                                    name="description"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel className="text-slate-300">Açıklama</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Edit3 className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                                                <Textarea placeholder="Kısa not..." {...field} className={cn("pl-10 min-h-[44px] h-11 py-2.5 rounded-xl resize-none", glassColors.INPUT_BG)} />
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage className="text-rose-400" />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+                        </div>
                     </div>
-                )}
+
+                    {/* Configuration Card */}
+                    <Card className={cn("rounded-2xl overflow-hidden", glassColors.CARD_BG)}>
+                        <CardHeader className="px-5 py-4 border-b border-white/5 bg-white/5">
+                            <div className="flex items-center gap-2">
+                                <Layers className="w-5 h-5 text-indigo-400" />
+                                <CardTitle className="text-base text-slate-200">Yapılandırma</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="totalUnits" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Miktar</FormLabel>
+                                        <FormControl><Input type="number" placeholder="300" {...field} className={glassColors.INPUT_BG} /></FormControl>
+                                        <FormMessage className="text-rose-400" />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="unitName" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Birim</FormLabel>
+                                        <FormControl><Input placeholder="sayfa" {...field} disabled={goalType === 'video'} className={glassColors.INPUT_BG} /></FormControl>
+                                        <FormMessage className="text-rose-400" />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                            {goalType === 'book' && (
+                                <FormField control={form.control} name="sectionCount" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Bölüm Sayısı</FormLabel>
+                                        <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG} /></FormControl>
+                                        <FormMessage className="text-rose-400" />
+                                    </FormItem>
+                                )}/>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Section Customization */}
+                    {goalType === 'book' && (
+                        <div className="space-y-3 pb-6">
+                            <FormLabel className="text-slate-300 pl-1 block">Bölüm İsimleri</FormLabel>
+                            <div className="grid grid-cols-1 gap-3">
+                                {fields.map((sectionField, sectionIndex) => {
+                                    return (
+                                        <div key={sectionField.id} className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormControl>
+                                                            <Input {...field} className={cn("h-10 rounded-lg", glassColors.INPUT_BG)} placeholder={`Bölüm ${sectionIndex + 1}`} />
+                                                        </FormControl>
+                                                        <FormMessage className="text-rose-400" />
+                                                    </FormItem>
+                                                )}/>
+                                            </div>
+                                            <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg" onClick={() => remove(sectionIndex)}>
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </ScrollArea>
+            
+            {/* FOOTER: Fixed Bottom */}
+            <div className="p-4 md:p-6 border-t border-white/5 bg-slate-900/80 backdrop-blur-md shrink-0 safe-area-pb">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
+                    {initialData ? "Değişiklikleri Kaydet" : "Hedefi Oluştur"}
+                </Button>
             </div>
-        </ScrollArea>
-        <div className="pt-4 border-t">
-            <Button type="submit" className="w-full">{initialData ? "Değişiklikleri Kaydet" : "Yol Haritasını Oluştur"}</Button>
-        </div>
-      </form>
+        </form>
+      </div>
     </Form>
   );
 }

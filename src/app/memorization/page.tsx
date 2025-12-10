@@ -1,33 +1,23 @@
-
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MemorizationItem, FamilyMember, MemorizationProgress } from '@/lib/data';
-import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, CheckCircle, RotateCcw } from 'lucide-react';
+import { Loader2, Plus, Search, Trash2, Library, FilePlus, Edit, Settings, UserPlus, RotateCcw, Check, Sparkles, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, updateMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag, removeMemorizationProgress, resetAllMemorizationProgress, deleteAllMemorizationItems } from '@/lib/dataService';
+import { onMemorizationItemsUpdate, onTagsUpdate, addMemorizationItem, deleteMemorizationItem, updateTags, onMemorizationProgressUpdate, updateMemorizationProgress, deleteTag, removeMemorizationProgress, resetAllMemorizationProgress, deleteAllMemorizationItems } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,6 +25,17 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '
 import { NewMemorizationItemForm } from '@/components/new-memorization-item-form';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
+// --- DESIGN SYSTEM: Glassmorphism Colors ---
+const glassColors = {
+    CARD_BG: "bg-white/5 backdrop-blur-md border border-white/10 shadow-lg",
+    CARD_HOVER: "hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
+    TEXT_MAIN: "text-slate-100",
+    TEXT_MUTED: "text-slate-400",
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
+    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10",
+};
 
 // SCHEMAS & TYPES
 const itemFormSchema = z.object({
@@ -44,12 +45,10 @@ const itemFormSchema = z.object({
 });
 type ItemFormData = z.infer<typeof itemFormSchema>;
 
-
 const shelfFormSchema = z.object({
     name: z.string().min(1, "Kategori adı boş olamaz."),
 });
 type ShelfFormData = z.infer<typeof shelfFormSchema>;
-
 
 export default function MemorizationPage() {
     const { user, familyId, familyMembers } = useAuth();
@@ -63,13 +62,11 @@ export default function MemorizationPage() {
     const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
     
     const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     
     const [view, setView] = useState<'items' | 'management'>('items');
     const [localSearchQuery, setLocalSearchQuery] = useState("");
 
     const { toast } = useToast();
-    const formMethods = useForm<ItemFormData>({ resolver: zodResolver(itemFormSchema) });
     const shelfFormMethods = useForm<ShelfFormData>({ resolver: zodResolver(shelfFormSchema) });
   
     React.useEffect(() => {
@@ -129,12 +126,6 @@ export default function MemorizationPage() {
     }
   };
   
-  const handleOpenShelfDialog = (shelfName: string | null) => {
-      const isNew = shelfName === null;
-      shelfFormMethods.reset({ name: isNew ? '' : shelfName });
-      setEditingShelf({ originalName: shelfName || '', isNew });
-  }
-
   const handleShelfFormSubmit = async (data: ShelfFormData) => {
       if (!editingShelf) return;
       const newShelfName = data.name.trim();
@@ -149,7 +140,6 @@ export default function MemorizationPage() {
             await updateTags("memorizationTags", [...allTags, newShelfName]);
             toast({ title: "Kategori Eklendi"});
         } else {
-            // This needs a specific implementation if we want to update tags in all items
             toast({ title: "Not implemented yet"});
         }
       } catch (e) {
@@ -214,104 +204,162 @@ export default function MemorizationPage() {
   }, [items, localSearchQuery, progress, selectedMember, view]);
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      <PageHeader title="Ezber Takibi">
-          <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setView(view === 'items' ? 'management' : 'items')}>
-              <Settings className="mr-2 h-4 w-4"/>
-              {view === 'items' ? 'Sureler ve Dualar' : 'Ezberleri Gör'}
-          </Button>
-          <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => handleOpenForm(null)}>
-            <PlusCircle className="mr-2 h-4 w-4"/> Yeni Öğe Ekle
-          </Button>
-           <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none" onClick={() => setIsBulkDialogOpen(true)}>
-            <FilePlus className="mr-2 h-4 w-4"/> Toplu Ekle
-          </Button>
-      </PageHeader>
-      
-      <div className="flex flex-col flex-grow min-h-0">
-          {view === 'items' ? (
-              <div className="flex items-center gap-4 border-b pb-4 mb-4 overflow-x-auto">
-                {familyMembers.map((member) => (
-                <Button
-                    key={member.id}
-                    variant={selectedMember?.id === member.id ? "default" : "outline"}
-                    className={`flex-shrink-0 h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
-                    onClick={() => setSelectedMember(member)}
-                >
-                    <div 
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" 
-                        style={{ backgroundColor: member.color, color: '#fff' }}
-                    >
-                        {member.name.charAt(0).toUpperCase()}
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-32 md:pb-10 selection:bg-indigo-500/30 relative overflow-hidden flex flex-col">
+        
+        {/* AMBIENT BACKGROUND */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-900/20 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[10%] left-[-5%] w-[400px] h-[400px] bg-indigo-900/20 rounded-full blur-[120px]" />
+        </div>
+
+        {/* HEADER */}
+        <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
+            <div className="max-w-7xl mx-auto px-4 md:px-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className={cn(glassColors.ICON_BOX, "from-emerald-500 to-teal-500")}>
+                            <Sparkles className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className={cn("text-xl font-black tracking-tight leading-none", glassColors.TEXT_MAIN)}>
+                                Ezber Takibi
+                            </h1>
+                            <p className={cn("text-xs font-medium mt-0.5", glassColors.TEXT_MUTED)}>Sureler, dualar ve ilerleme durumu</p>
+                        </div>
                     </div>
-                    <p className="font-bold text-sm">{member.name}</p>
-                </Button>
-                ))}
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                                placeholder="Ara..."
+                                className={cn("pl-9 h-10 rounded-xl", glassColors.INPUT_BG)}
+                                value={localSearchQuery}
+                                onChange={(e) => setLocalSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                size="icon"
+                                className={cn("rounded-xl h-10 w-10 shrink-0", glassColors.BUTTON_GLASS, view === 'management' && "bg-indigo-500/20 border-indigo-500/50 text-indigo-300")}
+                                onClick={() => setView(view === 'items' ? 'management' : 'items')}
+                            >
+                                <Settings className="h-5 w-5" />
+                            </Button>
+                            
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button className="rounded-xl px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20 border border-indigo-400/20">
+                                        <Plus className="mr-2 h-4 w-4" /> Ekle
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-slate-900 border-white/10 text-slate-100 min-w-[200px]">
+                                    <DropdownMenuItem onClick={() => handleOpenForm(null)} className="cursor-pointer hover:bg-white/10">
+                                        <BookOpen className="mr-2 h-4 w-4 text-emerald-400" /> Yeni Ezber Ekle
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setIsBulkDialogOpen(true)} className="cursor-pointer hover:bg-white/10">
+                                        <FilePlus className="mr-2 h-4 w-4 text-blue-400" /> Toplu Ekle (Metin)
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+      
+      <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 overflow-y-auto">
+          {view === 'items' ? (
+              <>
+                {/* Family Member Selector */}
+                <div className="flex items-center gap-3 overflow-x-auto pb-4 scrollbar-hide mb-2">
+                    {familyMembers.map((member) => {
+                        const isSelected = selectedMember?.id === member.id;
+                        return (
+                            <button
+                                key={member.id}
+                                onClick={() => setSelectedMember(member)}
+                                className={cn(
+                                    "relative flex items-center gap-2 px-1 pr-4 py-1 rounded-full transition-all duration-300 border select-none",
+                                    isSelected 
+                                        ? "bg-white/10 border-white/20 shadow-lg shadow-indigo-500/10" 
+                                        : "bg-transparent border-transparent hover:bg-white/5 hover:border-white/5 opacity-60 hover:opacity-100"
+                                )}
+                            >
+                                <div 
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md ring-2 ring-white/10" 
+                                    style={{ backgroundColor: member.color }}
+                                >
+                                    {member.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className={cn("text-sm font-bold", isSelected ? "text-white" : "text-slate-400")}>
+                                    {member.name}
+                                </span>
+                                {isSelected && (
+                                    <div className="absolute inset-x-0 -bottom-2 mx-auto w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_10px_currentColor]" />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+              </>
           ) : (
-             <Card className="mb-4">
-                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                     <div>
-                        <CardTitle>Sure ve Dua Kütüphanesi</CardTitle>
-                        <CardDescription>Burada tüm ezber öğelerini görebilir ve aile üyelerinin listelerine ekleyebilirsiniz.</CardDescription>
-                     </div>
-                      <div className="flex flex-col sm:flex-row gap-2 self-start sm:self-center">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="secondary" size="sm">
-                                  <RotateCcw className="mr-2 h-4 w-4"/>
-                                  Tüm İlerlemeyi Sıfırla
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
-                                  <AlertDialogDescription>
-                                      Bu işlem, tüm aile üyelerinin ezber ilerlemesini kalıcı olarak silecektir. Bu işlem geri alınamaz.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooterComponent>
-                                  <AlertDialogCancel>İptal</AlertDialogCancel>
-                                  <AlertDialogAction onClick={handleResetProgress}>Evet, Sıfırla</AlertDialogAction>
-                              </AlertDialogFooterComponent>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                         <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                  <Trash2 className="mr-2 h-4 w-4"/>
-                                  Tüm Sureleri ve Duaları Sil
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
-                                  <AlertDialogDescription>
-                                      Bu işlem, tüm sure ve dua listesini kalıcı olarak silecektir. Bu işlem geri alınamaz.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooterComponent>
-                                  <AlertDialogCancel>İptal</AlertDialogCancel>
-                                  <AlertDialogAction onClick={handleDeleteAllItems}>Evet, Hepsini Sil</AlertDialogAction>
-                              </AlertDialogFooterComponent>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                </CardHeader>
-             </Card>
+             <div className={cn("rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-dashed border-indigo-500/30 bg-indigo-500/5")}>
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
+                        <Library className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-lg text-indigo-100">Kütüphane Yönetimi</h3>
+                        <p className="text-sm text-indigo-200/60">Tüm sure ve duaları buradan yönetebilir, sıfırlayabilir veya silebilirsin.</p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-amber-400 hover:text-amber-300 hover:bg-amber-400/10">
+                              <RotateCcw className="mr-2 h-4 w-4"/> İlerlemeyi Sıfırla
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                          <AlertDialogHeader>
+                              <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
+                              <AlertDialogDescription className="text-slate-400">
+                                  Bu işlem, tüm aile üyelerinin ezber ilerlemesini kalıcı olarak silecektir.
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooterComponent>
+                              <AlertDialogCancel className="bg-white/5 hover:bg-white/10 border-white/10 text-slate-200">İptal</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleResetProgress} className="bg-amber-600 hover:bg-amber-700 text-white">Sıfırla</AlertDialogAction>
+                          </AlertDialogFooterComponent>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-rose-400 hover:text-rose-300 hover:bg-rose-400/10">
+                              <Trash2 className="mr-2 h-4 w-4"/> Tümünü Sil
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                          <AlertDialogHeader>
+                              <AlertDialogTitleComponent>Dikkat!</AlertDialogTitleComponent>
+                              <AlertDialogDescription className="text-slate-400">
+                                  Tüm sure ve dua listesi kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooterComponent>
+                              <AlertDialogCancel className="bg-white/5 hover:bg-white/10 border-white/10 text-slate-200">İptal</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteAllItems} className="bg-rose-600 hover:bg-rose-700 text-white">Hepsini Sil</AlertDialogAction>
+                          </AlertDialogFooterComponent>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+             </div>
           )}
 
-          <div className="relative w-full sm:flex-1 my-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Ezber ara (başlık, kategori...)"
-              className="pl-10"
-              value={localSearchQuery}
-              onChange={(e) => setLocalSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex-grow overflow-y-auto">
+          <div className="mt-2">
              <ItemShelf 
                 items={view === 'items' ? itemsToShow : allFilteredItems}
                 viewMode={view}
@@ -326,7 +374,7 @@ export default function MemorizationPage() {
 
       {/* Add/Edit Item Dialog */}
        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="sm:max-w-lg flex flex-col h-full max-h-[90vh]">
+          <DialogContent className="sm:max-w-lg bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
              <NewMemorizationItemForm 
                 onFormSubmit={() => {
                     setIsFormOpen(false);
@@ -347,7 +395,7 @@ export default function MemorizationPage() {
 
       {/* Edit Shelf Dialog */}
         <Dialog open={!!editingShelf} onOpenChange={(open) => !open && setEditingShelf(null)}>
-            <DialogContent>
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100">
                 <DialogHeader>
                     <DialogTitle>{editingShelf?.isNew ? "Yeni Kategori Ekle" : "Kategoriyi Düzenle"}</DialogTitle>
                 </DialogHeader>
@@ -360,7 +408,7 @@ export default function MemorizationPage() {
                                 <FormItem>
                                     <FormLabel>Kategori Adı</FormLabel>
                                     <FormControl>
-                                        <Input {...field} placeholder="örn: Namaz Duaları"/>
+                                        <Input {...field} placeholder="örn: Namaz Duaları" className={glassColors.INPUT_BG}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -369,16 +417,14 @@ export default function MemorizationPage() {
                     </form>
                 </FormProvider>
                  <DialogFooter>
-                    <Button variant="ghost" onClick={() => setEditingShelf(null)}>İptal</Button>
-                    <Button type="submit" form="shelf-form">Kaydet</Button>
+                    <Button variant="ghost" onClick={() => setEditingShelf(null)} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
+                    <Button type="submit" form="shelf-form" className="bg-indigo-600 hover:bg-indigo-500">Kaydet</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     </div>
   );
 }
-
-
 
 // ItemShelf COMPONENT
 function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress, selectedMemberId }: { 
@@ -412,7 +458,6 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
         return [null, title];
     };
     
-    // Sort items within each shelf numerically then alphabetically
     for (const key in grouped) {
         grouped[key].sort((a,b) => {
             const [numA, titleA] = extractNumber(a.title);
@@ -421,14 +466,13 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
             if (numA !== null && numB !== null) {
                 if (numA !== numB) return numA - numB;
             }
-            if (numA !== null) return -1; // Numbers first
+            if (numA !== null) return -1;
             if (numB !== null) return 1;
 
             return titleA.localeCompare(titleB, 'tr');
         });
     }
 
-    // Sort shelves alphabetically
     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, 'tr'));
   }, [items]);
   
@@ -478,27 +522,32 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
 
   if (items.length === 0) {
      return (
-      <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed bg-muted/20 p-8 text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-3xl border border-dashed border-white/10">
+        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center">
+            <Library className="h-8 w-8 text-slate-500" />
+        </div>
         <div>
-          <Library className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-md font-medium">Gösterilecek öğe yok.</p>
+          <p className="text-lg font-bold text-slate-300">Liste Boş</p>
+          <p className="text-sm text-slate-500">Görüntülenecek ezber öğesi bulunamadı.</p>
         </div>
       </div>
      );
   }
 
+  // Management Mode (Accordions)
   if (viewMode === 'management') {
     return (
         <Accordion type="multiple" className="w-full space-y-4" defaultValue={shelves.map(s => s[0])}>
             {shelves.map(([shelfName, shelfItems]) => (
-                <AccordionItem key={shelfName} value={shelfName} className="border-b-0">
-                    <Card>
-                        <CardHeader className="p-0">
-                            <AccordionTrigger className="p-4">
-                                <h2 className="text-xl font-bold">{shelfName} ({shelfItems.length})</h2>
-                            </AccordionTrigger>
-                        </CardHeader>
-                        <AccordionContent className="p-4 pt-0">
+                <AccordionItem key={shelfName} value={shelfName} className="border-none">
+                    <div className={cn("rounded-2xl overflow-hidden", glassColors.CARD_BG)}>
+                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-white/5 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <Badge variant="outline" className="bg-indigo-500/10 text-indigo-300 border-indigo-500/30 px-2 py-0.5">{shelfItems.length}</Badge>
+                                <span className="text-lg font-bold text-slate-200">{shelfName}</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6 pb-6 pt-2">
                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {shelfItems.map(item => (
                                     <MemorizationItemCard
@@ -518,18 +567,23 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
                                 ))}
                             </div>
                         </AccordionContent>
-                    </Card>
+                    </div>
                 </AccordionItem>
             ))}
         </Accordion>
     );
   }
 
+  // Items Mode (Direct Grid)
   return (
     <div className="space-y-8">
       {shelves.map(([shelfName, shelfItems]) => (
-        <div key={shelfName}>
-          <h2 className="text-xl font-bold mb-4">{shelfName}</h2>
+        <div key={shelfName} className="space-y-3">
+          <div className="flex items-center gap-3 px-1">
+             <div className="h-4 w-1 bg-gradient-to-b from-indigo-500 to-emerald-500 rounded-full"></div>
+             <h2 className="text-lg font-bold text-slate-200">{shelfName}</h2>
+             <div className="h-px flex-1 bg-white/5"></div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {shelfItems.map(item => (
                     <MemorizationItemCard
@@ -554,7 +608,6 @@ function ItemShelf({ items, viewMode, onEdit, onDelete, familyMembers, progress,
   );
 }
 
-
 // BULK ADD TEXT DIALOG
 function BulkAddTextDialog({ open, onOpenChange, onImport, existingTags }: { open: boolean, onOpenChange: (open: boolean) => void, onImport: (titles: string[], category: string) => void, existingTags: string[] }) {
     const [textInput, setTextInput] = useState('');
@@ -574,7 +627,8 @@ function BulkAddTextDialog({ open, onOpenChange, onImport, existingTags }: { ope
         }
         
         setIsImporting(true);
-        onImport(titles, category).finally(() => setIsImporting(false));
+        onImport(titles, category);
+        setIsImporting(false);
         setTextInput('');
         setCategory('');
     };
@@ -587,14 +641,17 @@ function BulkAddTextDialog({ open, onOpenChange, onImport, existingTags }: { ope
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl">
+            <DialogContent className="sm:max-w-xl bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
                 <DialogHeader>
-                    <DialogTitle>Toplu Öğe Ekle (Metin)</DialogTitle>
-                    <DialogDescription>
-                       Her satıra bir öğe başlığı gelecek şekilde yapıştırın. Tüm öğeler aşağıdaki seçili kategoriye eklenecektir.
+                    <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+                        <FilePlus className="w-5 h-5 text-blue-400" />
+                        Toplu Öğe Ekle
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                       Her satıra bir başlık gelecek şekilde yapıştırın.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 mt-4">
+                <div className="space-y-4 mt-2">
                      <Combobox
                         options={tagOptions}
                         value={category}
@@ -603,19 +660,20 @@ function BulkAddTextDialog({ open, onOpenChange, onImport, existingTags }: { ope
                         placeholder="Kategori seç veya oluştur..."
                         notfoundText="Kategori bulunamadı."
                         createText="Yeni kategori oluştur:"
+                        className={glassColors.INPUT_BG}
                     />
                     <Textarea 
                       id="text-input" 
                       value={textInput} 
                       onChange={(e) => setTextInput(e.target.value)} 
-                      className="h-48 font-mono text-sm" 
+                      className={cn("h-48 font-mono text-sm", glassColors.INPUT_BG)} 
                       placeholder="Fatiha Suresi&#10;Sübhaneke Duası&#10;..."
                       disabled={isImporting} 
                     />
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
-                    <Button onClick={handleImportClick} disabled={isImporting}>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
+                    <Button onClick={handleImportClick} disabled={isImporting} className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl">
                         {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         İçeri Aktar
                     </Button>
@@ -624,7 +682,6 @@ function BulkAddTextDialog({ open, onOpenChange, onImport, existingTags }: { ope
         </Dialog>
     );
 }
-
 
 // MemorizationItemCard
 interface MemorizationItemCardProps {
@@ -640,132 +697,141 @@ interface MemorizationItemCardProps {
     onAddToMember: (itemId: string, memberId: string) => void;
     onRemoveFromMember: (itemId: string, memberId: string) => void;
 }
+
 function MemorizationItemCard({ item, viewMode, isCompleted, onProgressChange, onEdit, onDelete, onAddToMember, onRemoveFromMember, familyMembers, progressMap, selectedMemberId }: MemorizationItemCardProps) {
     const isAddedToCurrentMember = progressMap.has(`${item.id}_${selectedMemberId}`);
     
     return (
         <Dialog>
-             <Card className="flex flex-col group transition-all hover:shadow-md hover:-translate-y-0.5">
+             <Card className={cn(
+                 "flex flex-col group relative overflow-hidden border-0 rounded-2xl", 
+                 glassColors.CARD_BG,
+                 glassColors.CARD_HOVER,
+                 isCompleted && "border-emerald-500/30 shadow-emerald-900/10"
+             )}>
                  {item.imageUrl && (
-                    <CardHeader className="p-0 relative">
+                    <CardHeader className="p-0 relative h-32 overflow-hidden">
                         <DialogTrigger asChild>
-                            <div className="cursor-pointer aspect-video w-full relative">
+                            <div className="cursor-pointer w-full h-full relative">
                                 <Image
                                     src={item.imageUrl}
                                     alt={item.title}
                                     layout="fill"
                                     objectFit="cover"
-                                    className="rounded-t-lg"
-                                    data-ai-hint="religious illustration"
+                                    className="transition-transform duration-500 group-hover:scale-110"
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80" />
                             </div>
                         </DialogTrigger>
+                        {isCompleted && (
+                            <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded-full shadow-lg shadow-emerald-500/40">
+                                <Check className="w-4 h-4" />
+                            </div>
+                        )}
                     </CardHeader>
                  )}
+                
                 <DialogTrigger asChild>
-                    <CardContent className="p-4 flex-grow cursor-pointer">
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors">{item.title}</CardTitle>
+                    <CardContent className={cn("p-4 flex-grow cursor-pointer relative", !item.imageUrl && "pt-6")}>
+                        {!item.imageUrl && isCompleted && (
+                             <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-400 p-1 rounded-full">
+                                <Check className="w-4 h-4" />
+                            </div>
+                        )}
+                        <CardTitle className={cn(
+                            "text-lg font-bold transition-colors leading-tight",
+                            isCompleted ? "text-emerald-400" : "text-slate-200 group-hover:text-indigo-400"
+                        )}>
+                            {item.title}
+                        </CardTitle>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-1">{item.tags?.join(", ")}</p>
                     </CardContent>
                 </DialogTrigger>
-                <CardFooter className="p-2 border-t flex items-center justify-between gap-1">
+
+                <CardFooter className="p-3 pt-0 mt-auto flex items-center justify-between gap-2">
                     { viewMode === 'items' ? (
-                         <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center space-x-2 cursor-pointer py-1 px-2" onClick={() => onProgressChange(!isCompleted)}>
-                                <Checkbox id={`check-${item.id}`} checked={isCompleted} className="size-5" />
+                         <div className="flex items-center justify-between w-full bg-white/5 rounded-xl p-1 pr-2">
+                            <div 
+                                className="flex items-center space-x-3 cursor-pointer py-1.5 px-3 rounded-lg hover:bg-white/5 transition-colors flex-1" 
+                                onClick={() => onProgressChange(!isCompleted)}
+                            >
+                                <Checkbox 
+                                    id={`check-${item.id}`} 
+                                    checked={isCompleted} 
+                                    className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 border-white/20 w-5 h-5" 
+                                />
                                 <label
                                     htmlFor={`check-${item.id}`}
-                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                    className={cn("text-sm font-medium leading-none cursor-pointer", isCompleted ? "text-emerald-300" : "text-slate-300")}
                                 >
-                                    Ezberlendi
+                                    {isCompleted ? "Tamamlandı" : "Ezberle"}
                                 </label>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onRemoveFromMember(item.id, selectedMemberId)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors" onClick={() => onRemoveFromMember(item.id, selectedMemberId)}>
                                 <Trash2 className="h-4 w-4"/>
                             </Button>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-1 w-full">
+                        <div className="flex items-center gap-2 w-full">
                             <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="w-full text-xs" 
+                                className={cn(
+                                    "w-full text-xs h-9 rounded-xl border-white/10 hover:bg-white/10",
+                                    isAddedToCurrentMember ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-transparent text-slate-300"
+                                )}
                                 onClick={() => onAddToMember(item.id, selectedMemberId)}
                                 disabled={isAddedToCurrentMember}
                             >
-                                <UserPlus className="mr-1.5 h-3 w-3"/> 
-                                {isAddedToCurrentMember ? 'Listemde' : 'Listeme Ekle'}
+                                {isAddedToCurrentMember ? <Check className="mr-1.5 h-3.5 w-3.5"/> : <UserPlus className="mr-1.5 h-3.5 w-3.5"/>}
+                                {isAddedToCurrentMember ? 'Listede' : 'Ekle'}
                             </Button>
+                            
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                        <UserPlus className="h-4 w-4"/>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white">
+                                        <Edit className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuLabel>Başkasının Listesine Ekle</DropdownMenuLabel>
-                                    {familyMembers.filter(m => m.id !== selectedMemberId).map(member => (
-                                        <DropdownMenuItem 
-                                            key={member.id} 
-                                            onClick={() => onAddToMember(item.id, member.id)}
-                                            disabled={progressMap.has(`${item.id}_${member.id}`)}
-                                        >
-                                            {member.name}
-                                            {progressMap.has(`${item.id}_${member.id}`) && <span className="text-xs text-muted-foreground ml-auto">Ekli</span>}
-                                        </DropdownMenuItem>
-                                    ))}
+                                <DropdownMenuContent align="end" className="bg-slate-900 border-white/10 text-slate-100">
+                                    <DropdownMenuItem onClick={onEdit} className="cursor-pointer hover:bg-white/10">
+                                        <Edit className="mr-2 h-4 w-4"/> Düzenle
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={onDelete} className="cursor-pointer text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 focus:text-rose-300 focus:bg-rose-500/10">
+                                        <Trash2 className="mr-2 h-4 w-4"/> Sil
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
                     )}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={onEdit}><Edit className="mr-2 h-4 w-4"/>Düzenle</DropdownMenuItem>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4"/>Sil
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
-                                        <AlertDialogDescription>"{item.title}" öğesi kalıcı olarak silinecektir.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooterComponent>
-                                        <AlertDialogCancel>İptal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
-                                    </AlertDialogFooterComponent>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
                 </CardFooter>
             </Card>
-             <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>{item.title}</DialogTitle>
+
+             <DialogContent className="max-w-4xl bg-slate-950/95 border-white/10 text-slate-100 p-0 overflow-hidden rounded-3xl">
+                <DialogHeader className="p-6 bg-white/5 backdrop-blur-xl border-b border-white/5 absolute top-0 w-full z-10">
+                    <DialogTitle className="text-2xl">{item.title}</DialogTitle>
                 </DialogHeader>
-                {item.imageUrl ? (
-                     <div className="relative w-full h-[80vh] my-4 rounded-lg overflow-hidden">
-                        <Image
-                            src={item.imageUrl}
-                            alt={item.title}
-                            layout="fill"
-                            objectFit="contain"
-                            className="bg-muted"
-                            data-ai-hint="religious illustration"
-                        />
-                    </div>
-                ): (
-                    <div className="my-4 p-8 text-center bg-muted rounded-lg">
-                        <p className="text-muted-foreground">Bu öğe için bir görsel bulunmuyor.</p>
-                    </div>
-                )}
+                <div className="pt-20 pb-6 px-6 h-[80vh] overflow-y-auto">
+                    {item.imageUrl ? (
+                         <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl">
+                            <Image
+                                src={item.imageUrl}
+                                alt={item.title}
+                                width={800}
+                                height={1200}
+                                objectFit="contain"
+                                className="w-full h-auto"
+                            />
+                        </div>
+                    ): (
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
+                            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
+                                <BookOpen className="h-10 w-10 text-slate-400" />
+                            </div>
+                            <p className="text-lg font-medium text-slate-400">Bu öğe için henüz bir görsel eklenmemiş.</p>
+                        </div>
+                    )}
+                </div>
             </DialogContent>
         </Dialog>
     );
