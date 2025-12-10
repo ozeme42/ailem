@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Trash2, Youtube, BookOpen, Layers, User, Edit3, Type, X, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import { DialogHeader, DialogTitle, DialogDescription, DialogClose } from "./ui/dialog";
+import { DialogFooter } from "./ui/dialog";
 
 // --- DESIGN SYSTEM ---
 const glassColors = {
@@ -47,9 +47,10 @@ type NewGoalFormProps = {
   familyMembers: FamilyMember[];
   onCreate: (data: Omit<Goal, 'id' | 'familyId' | 'createdAt' | 'status'>) => void;
   initialData?: Goal | null;
+  formId: string;
 };
 
-export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFormProps) {
+export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: NewGoalFormProps) {
     const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -152,192 +153,182 @@ export function NewGoalForm({ familyMembers, onCreate, initialData }: NewGoalFor
 
   return (
     <Form {...form}>
-      <div className="flex flex-col h-full w-full">
-        
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-            <ScrollArea className="flex-1 w-full">
-                <div className="px-4 md:px-6 py-4 space-y-6">
-                    {/* Type Selection */}
-                    <FormField
-                        control={form.control}
-                        name="goalType"
-                        render={({ field }) => (
-                            <FormItem>
-                                <Tabs onValueChange={field.onChange} defaultValue={field.value} className="w-full">
-                                    <TabsList className={cn("grid w-full grid-cols-2 rounded-xl h-12", glassColors.TAB_LIST)}>
-                                        <TabsTrigger value="book" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
-                                            <BookOpen className="w-4 h-4 mr-2" /> Kitap
-                                        </TabsTrigger>
-                                        <TabsTrigger value="video" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
-                                            <Youtube className="w-4 h-4 mr-2" /> Video
-                                        </TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </FormItem>
-                        )}
-                    />
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="flex-1 w-full">
+              <div className="px-4 md:px-6 py-4 space-y-6">
+                  {/* Type Selection */}
+                  <FormField
+                      control={form.control}
+                      name="goalType"
+                      render={({ field }) => (
+                          <FormItem>
+                              <Tabs onValueChange={field.onChange} defaultValue={field.value} className="w-full">
+                                  <TabsList className={cn("grid w-full grid-cols-2 rounded-xl h-12", glassColors.TAB_LIST)}>
+                                      <TabsTrigger value="book" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
+                                          <BookOpen className="w-4 h-4 mr-2" /> Kitap
+                                      </TabsTrigger>
+                                      <TabsTrigger value="video" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
+                                          <Youtube className="w-4 h-4 mr-2" /> Video
+                                      </TabsTrigger>
+                                  </TabsList>
+                              </Tabs>
+                          </FormItem>
+                      )}
+                  />
 
-                    {/* Basic Info */}
-                    <div className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-slate-300">Başlık</FormLabel>
-                                    <FormControl>
-                                        <div className="relative">
-                                            <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                                            <Input placeholder={goalType === 'book' ? "Kitap adı..." : "Playlist adı..."} {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
-                                        </div>
-                                    </FormControl>
-                                    <FormMessage className="text-rose-400" />
-                                </FormItem>
-                            )}
-                        />
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="assigneeId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel className="text-slate-300">Sorumlu Kişi</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger className={cn("h-11 rounded-xl", glassColors.INPUT_BG)}>
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-slate-500" />
-                                                    <SelectValue placeholder="Seçiniz" />
-                                                </div>
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
-                                            {familyMembers.map((member) => (
-                                                <SelectItem key={member.id} value={member.id} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 focus:text-white">
-                                                    {member.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage className="text-rose-400" />
-                                    </FormItem>
-                                )}
-                            />
-                            
-                            {goalType === 'video' ? (
-                                <FormField
-                                    control={form.control}
-                                    name="videoUrl"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-slate-300">Video Linki</FormLabel>
-                                            <FormControl>
-                                                <div className="relative">
-                                                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                                                    <Input placeholder="youtube.com/..." {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage className="text-rose-400" />
-                                        </FormItem>
-                                    )}
-                                />
-                            ) : (
-                                <FormField
-                                    control={form.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel className="text-slate-300">Açıklama</FormLabel>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <Edit3 className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-                                                <Textarea placeholder="Kısa not..." {...field} className={cn("pl-10 min-h-[44px] h-11 py-2.5 rounded-xl resize-none", glassColors.INPUT_BG)} />
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage className="text-rose-400" />
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
-                        </div>
-                    </div>
+                  {/* Basic Info */}
+                  <div className="space-y-4">
+                      <FormField
+                          control={form.control}
+                          name="title"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-slate-300">Başlık</FormLabel>
+                                  <FormControl>
+                                      <div className="relative">
+                                          <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                          <Input placeholder={goalType === 'book' ? "Kitap adı..." : "Playlist adı..."} {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
+                                      </div>
+                                  </FormControl>
+                                  <FormMessage className="text-rose-400" />
+                              </FormItem>
+                          )}
+                      />
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                              control={form.control}
+                              name="assigneeId"
+                              render={({ field }) => (
+                                  <FormItem>
+                                  <FormLabel className="text-slate-300">Sorumlu Kişi</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                      <FormControl>
+                                          <SelectTrigger className={cn("h-11 rounded-xl", glassColors.INPUT_BG)}>
+                                              <div className="flex items-center gap-2">
+                                                  <User className="h-4 w-4 text-slate-500" />
+                                                  <SelectValue placeholder="Seçiniz" />
+                                              </div>
+                                          </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                          {familyMembers.map((member) => (
+                                              <SelectItem key={member.id} value={member.id} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                                                  {member.name}
+                                              </SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                  </Select>
+                                  <FormMessage className="text-rose-400" />
+                                  </FormItem>
+                              )}
+                          />
+                          
+                          {goalType === 'video' ? (
+                              <FormField
+                                  control={form.control}
+                                  name="videoUrl"
+                                  render={({ field }) => (
+                                      <FormItem>
+                                          <FormLabel className="text-slate-300">Video Linki</FormLabel>
+                                          <FormControl>
+                                              <div className="relative">
+                                                  <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                                  <Input placeholder="youtube.com/..." {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
+                                              </div>
+                                          </FormControl>
+                                          <FormMessage className="text-rose-400" />
+                                      </FormItem>
+                                  )}
+                              />
+                          ) : (
+                              <FormField
+                                  control={form.control}
+                                  name="description"
+                                  render={({ field }) => (
+                                      <FormItem>
+                                      <FormLabel className="text-slate-300">Açıklama</FormLabel>
+                                      <FormControl>
+                                          <div className="relative">
+                                              <Edit3 className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                                              <Textarea placeholder="Kısa not..." {...field} className={cn("pl-10 min-h-[44px] h-11 py-2.5 rounded-xl resize-none", glassColors.INPUT_BG)} />
+                                          </div>
+                                      </FormControl>
+                                      <FormMessage className="text-rose-400" />
+                                      </FormItem>
+                                  )}
+                              />
+                          )}
+                      </div>
+                  </div>
 
-                    {/* Configuration Card */}
-                    <Card className={cn("rounded-2xl overflow-hidden", glassColors.CARD_BG)}>
-                        <CardHeader className="px-5 py-4 border-b border-white/5 bg-white/5">
-                            <div className="flex items-center gap-2">
-                                <Layers className="w-5 h-5 text-indigo-400" />
-                                <CardTitle className="text-base text-slate-200">Yapılandırma</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-5 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField control={form.control} name="totalUnits" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Miktar</FormLabel>
-                                        <FormControl><Input type="number" placeholder="300" {...field} className={glassColors.INPUT_BG} /></FormControl>
-                                        <FormMessage className="text-rose-400" />
-                                    </FormItem>
-                                )}/>
-                                <FormField control={form.control} name="unitName" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Birim</FormLabel>
-                                        <FormControl><Input placeholder="sayfa" {...field} disabled={goalType === 'video'} className={glassColors.INPUT_BG} /></FormControl>
-                                        <FormMessage className="text-rose-400" />
-                                    </FormItem>
-                                )}/>
-                            </div>
-                            {goalType === 'book' && (
-                                <FormField control={form.control} name="sectionCount" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Bölüm Sayısı</FormLabel>
-                                        <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG} /></FormControl>
-                                        <FormMessage className="text-rose-400" />
-                                    </FormItem>
-                                )}/>
-                            )}
-                        </CardContent>
-                    </Card>
+                  {/* Configuration Card */}
+                  <Card className={cn("rounded-2xl overflow-hidden", glassColors.CARD_BG)}>
+                      <CardHeader className="px-5 py-4 border-b border-white/5 bg-white/5">
+                          <div className="flex items-center gap-2">
+                              <Layers className="w-5 h-5 text-indigo-400" />
+                              <CardTitle className="text-base text-slate-200">Yapılandırma</CardTitle>
+                          </div>
+                      </CardHeader>
+                      <CardContent className="p-5 space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                              <FormField control={form.control} name="totalUnits" render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Miktar</FormLabel>
+                                      <FormControl><Input type="number" placeholder="300" {...field} className={glassColors.INPUT_BG} /></FormControl>
+                                      <FormMessage className="text-rose-400" />
+                                  </FormItem>
+                              )}/>
+                              <FormField control={form.control} name="unitName" render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Birim</FormLabel>
+                                      <FormControl><Input placeholder="sayfa" {...field} disabled={goalType === 'video'} className={glassColors.INPUT_BG} /></FormControl>
+                                      <FormMessage className="text-rose-400" />
+                                  </FormItem>
+                              )}/>
+                          </div>
+                          {goalType === 'book' && (
+                              <FormField control={form.control} name="sectionCount" render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Bölüm Sayısı</FormLabel>
+                                      <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG} /></FormControl>
+                                      <FormMessage className="text-rose-400" />
+                                  </FormItem>
+                              )}/>
+                          )}
+                      </CardContent>
+                  </Card>
 
-                    {/* Section Customization */}
-                    {goalType === 'book' && (
-                        <div className="space-y-3 pb-6">
-                            <FormLabel className="text-slate-300 pl-1 block">Bölüm İsimleri</FormLabel>
-                            <div className="grid grid-cols-1 gap-3">
-                                {fields.map((sectionField, sectionIndex) => {
-                                    return (
-                                        <div key={sectionField.id} className="flex items-center gap-2">
-                                            <div className="flex-1">
-                                                <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormControl>
-                                                            <Input {...field} className={cn("h-10 rounded-lg", glassColors.INPUT_BG)} placeholder={`Bölüm ${sectionIndex + 1}`} />
-                                                        </FormControl>
-                                                        <FormMessage className="text-rose-400" />
-                                                    </FormItem>
-                                                )}/>
-                                            </div>
-                                            <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg" onClick={() => remove(sectionIndex)}>
-                                                <Trash2 className="h-4 w-4"/>
-                                            </Button>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </ScrollArea>
-            
-            {/* FOOTER: Fixed Bottom */}
-            <div className="p-4 md:p-6 border-t border-white/5 bg-slate-900/80 backdrop-blur-md shrink-0 safe-area-pb">
-                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
-                    {initialData ? "Değişiklikleri Kaydet" : "Hedefi Oluştur"}
-                </Button>
-            </div>
-        </form>
-      </div>
+                  {/* Section Customization */}
+                  {goalType === 'book' && (
+                      <div className="space-y-3 pb-6">
+                          <FormLabel className="text-slate-300 pl-1 block">Bölüm İsimleri</FormLabel>
+                          <div className="grid grid-cols-1 gap-3">
+                              {fields.map((sectionField, sectionIndex) => {
+                                  return (
+                                      <div key={sectionField.id} className="flex items-center gap-2">
+                                          <div className="flex-1">
+                                              <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
+                                                  <FormItem>
+                                                      <FormControl>
+                                                          <Input {...field} className={cn("h-10 rounded-lg", glassColors.INPUT_BG)} placeholder={`Bölüm ${sectionIndex + 1}`} />
+                                                      </FormControl>
+                                                      <FormMessage className="text-rose-400" />
+                                                  </FormItem>
+                                              )}/>
+                                          </div>
+                                          <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg" onClick={() => remove(sectionIndex)}>
+                                              <Trash2 className="h-4 w-4"/>
+                                          </Button>
+                                      </div>
+                                  )
+                              })}
+                          </div>
+                      </div>
+                  )}
+              </div>
+          </ScrollArea>
+      </form>
     </Form>
   );
 }

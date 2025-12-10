@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -6,8 +7,8 @@ import { useAuth } from '@/components/auth-provider';
 import { onGoalsUpdate, addGoal, deleteGoal, updateGoal } from '@/lib/dataService';
 import type { Goal, FamilyMember } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from '@/components/ui/progress';
 import { Plus, Target, Trash2, Edit, Youtube, User, Map, Trophy, ArrowRight, Sparkles } from 'lucide-react';
 import { NewGoalForm } from '@/components/new-goal-form';
@@ -171,13 +172,37 @@ export default function GoalsClient() {
                             </div>
                         </div>
 
-                        <DialogContent className="w-[100vw] h-[100dvh] md:w-full md:h-auto md:max-w-xl md:max-h-[85vh] p-0 bg-slate-900 border-none md:border md:border-white/10 text-slate-100 md:rounded-3xl flex flex-col">
-                            <NewGoalForm
-                                 familyMembers={familyMembers}
+                        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                            <DialogTrigger asChild>
+                                <Button onClick={() => handleOpenDialog(null)} className="rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20 border border-indigo-400/20">
+                                    <Plus className="mr-2 h-4 w-4" /> Yeni Hedef
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="w-[100vw] h-[100dvh] md:w-full md:h-auto md:max-w-xl md:max-h-[85vh] p-0 bg-slate-900 border-none md:border md:border-white/10 text-slate-100 md:rounded-3xl flex flex-col">
+                                <DialogHeader className="p-4 md:p-6 border-b border-white/10 shrink-0">
+                                    <DialogTitle className="text-xl font-bold">
+                                        {editingGoal ? 'Yol Haritasını Düzenle' : 'Yeni Yol Haritası Oluştur'}
+                                    </DialogTitle>
+                                    <DialogDescription className="text-slate-400">
+                                        {editingGoal ? 'Mevcut yol haritasının ayrıntılarını değiştir.' : 'Yeni bir kitap veya video hedefi belirle.'}
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <NewGoalForm
+                                    formId="goal-form"
+                                    familyMembers={familyMembers}
                                     onCreate={handleFormSubmit}
-                                         initialData={editingGoal}
-                                            />
-                        </DialogContent>
+                                    initialData={editingGoal}
+                                />
+                                <DialogFooter className="p-4 md:p-6 border-t border-white/5 bg-slate-900/80 backdrop-blur-md shrink-0 safe-area-pb">
+                                     <DialogClose asChild>
+                                        <Button type="button" variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5">İptal</Button>
+                                    </DialogClose>
+                                    <Button type="submit" form="goal-form" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
+                                        {editingGoal ? "Değişiklikleri Kaydet" : "Hedefi Oluştur"}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </div>
             </div>
