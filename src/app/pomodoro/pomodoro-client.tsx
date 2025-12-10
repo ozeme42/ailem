@@ -1,26 +1,31 @@
-
-
 "use client";
 
 import * as React from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PomodoroProject, PomodoroSession } from "@/lib/data";
 import { onPomodoroProjectsUpdate, addPomodoroProject, deletePomodoroProject, addPomodoroSession, onPomodoroSessionsForUserUpdate } from "@/lib/dataService";
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink, Music, Circle, Minus, Hourglass } from "lucide-react";
+import { Play, Pause, RefreshCw, Settings, Plus, Trash2, Check, Expand, Shrink, Music, Timer as TimerIcon, Volume2, MoreVertical, LayoutGrid } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { onAmbientSoundsUpdate } from "@/lib/dataService";
 import { AmbientSound } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
+// --- DESIGN SYSTEM ---
+const glassColors = {
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10",
+    ACTIVE_MODE: "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30",
+    INACTIVE_MODE: "text-slate-400 hover:text-white hover:bg-white/5",
+};
 
 function formatTime(seconds: number) {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -85,6 +90,7 @@ export function PomodoroClient() {
         toast({
             title: "🎉 Süre Doldu!",
             description: mode === 'pomodoro' ? "Harika iş, şimdi kısa bir mola zamanı!" : "Mola bitti, tekrar iş başına!",
+            className: "bg-indigo-950 border-indigo-500/50 text-indigo-100"
         });
         
         const completedSessionsToday = allSessions.filter(s => {
@@ -171,7 +177,7 @@ export function PomodoroClient() {
             });
             setNewProjectName("");
             setIsProjectModalOpen(false);
-            toast({title: "Proje Eklendi"});
+            toast({title: "Proje Eklendi", className: "bg-emerald-950 border-emerald-500/50 text-emerald-100"});
         } catch(e) {
             toast({title: "Hata", variant: 'destructive'});
         }
@@ -206,207 +212,372 @@ export function PomodoroClient() {
     const activeProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-        <div className="h-full flex flex-col items-center justify-center gap-8">
-            <PageHeader title="Pomodoro Zamanlayıcı" className="mb-0" />
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
             
-            <AnimatePresence>
-            {isFullScreen && (
-                <motion.div 
-                    className="fixed inset-0 bg-black/80 z-40 backdrop-blur-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                />
-            )}
-            </AnimatePresence>
+            {/* FIXED BACKGROUND */}
+            <div className="fixed inset-0 bg-slate-950 -z-50" />
             
-            <motion.div
-              layout
-              className={cn(
-                "relative w-72 sm:w-80 rounded-full shadow-2xl bg-card",
-                timerStyle === 'circle' && 'h-72 sm:h-80',
-                timerStyle === 'bar' && 'w-full max-w-lg h-auto rounded-xl p-8',
-                timerStyle === 'hourglass' && 'h-72 sm:h-80 w-auto aspect-[3/4] rounded-2xl bg-transparent shadow-none',
-                isFullScreen && "fixed inset-0 w-screen h-screen max-w-none rounded-none p-0 flex flex-col items-center justify-center gap-8 z-50 bg-transparent"
-              )}
-               transition={{ duration: 0.3, ease: 'easeInOut' }}
-            >
-             {timerStyle === 'circle' ? (
-                <>
-                    <motion.svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-                        <defs>
-                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="hsl(var(--chart-1))" />
-                                <stop offset="25%" stopColor="hsl(var(--chart-5))" />
-                                <stop offset="50%" stopColor="hsl(var(--chart-3))" />
-                                <stop offset="100%" stopColor="hsl(var(--primary))" />
-                            </linearGradient>
-                        </defs>
-                        <circle cx="50" cy="50" r="45" stroke="hsl(var(--primary) / 0.2)" strokeWidth="8" fill="transparent" />
-                        <motion.circle
-                            cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="8" fill="transparent"
-                            strokeLinecap="round" transform="rotate(-90 50 50)" pathLength="1"
-                            strokeDasharray="1"
-                            initial={{ strokeDashoffset: 1 }}
-                            animate={isActive ? { strokeDashoffset: 1 - progress / 100 } : { strokeDashoffset: 1 - progress / 100, transition: {duration: 0} }}
-                            transition={isActive ? { duration: 1, ease: 'linear' } : {duration: 0}}
-                        />
-                    </motion.svg>
-                    <div className="relative text-center flex flex-col items-center justify-center h-full">
-                        <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2 z-50", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
-                            {isFullScreen ? <Shrink/> : <Expand/>}
-                        </Button>
-                        <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
-                        <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
-                    </div>
-                </>
-             ) : timerStyle === 'bar' ? (
-                <div className="relative text-center flex flex-col items-center justify-center h-full gap-4">
-                    <Button variant="ghost" size="icon" className={cn("absolute top-2 right-2 z-50", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
-                        {isFullScreen ? <Shrink/> : <Expand/>}
-                    </Button>
-                     <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-9xl text-white" : "text-6xl sm:text-7xl")}>{formatTime(timeLeft)}</h2>
-                    <Progress value={progress} className={cn("w-full h-4", isFullScreen && "bg-white/20")} indicatorClassName={cn(isFullScreen && "bg-white")} />
-                     <p className={cn("text-muted-foreground", isFullScreen && "text-white/80")}>{activeProject?.title || "Proje Seçilmedi"}</p>
-                </div>
-             ) : (
-                <div className="relative w-full h-full flex items-center justify-center">
-                    <Button variant="ghost" size="icon" className={cn("absolute -top-12 right-0 z-50", isFullScreen ? "text-white hover:text-white hover:bg-white/20" : "")} onClick={() => setIsFullScreen(f => !f)}>
-                        {isFullScreen ? <Shrink/> : <Expand/>}
-                    </Button>
-                     <motion.svg viewBox="0 0 100 120" className="w-full h-full">
-                        <defs>
-                            <linearGradient id="sandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="#fde68a" />
-                                <stop offset="100%" stopColor="#facc15" />
-                            </linearGradient>
-                        </defs>
-                        {/* Hourglass shape */}
-                        <path d="M20 10 H80 L50 50 L80 90 H20 L50 50 Z" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="3" fill="hsl(var(--background) / 0.5)"/>
-                        {/* Top sand */}
-                        <motion.rect
-                            x="25"
-                            y="15"
-                            width="50"
-                            fill="url(#sandGradient)"
-                            initial={{ height: 30 }}
-                            animate={isActive ? { height: 30 * (1 - progress / 100) } : { height: 30 * (1 - progress / 100) }}
-                            transition={{ duration: 1, ease: 'linear'}}
-                        />
-                        {/* Bottom sand */}
-                        <motion.rect
-                            x="25"
-                            y="90"
-                            width="50"
-                            fill="url(#sandGradient)"
-                            initial={{ height: 0, y: 90 }}
-                            animate={isActive ? { height: 30 * (progress / 100), y: 90 - 30 * (progress / 100) } : { height: 30 * (progress / 100), y: 90 - 30 * (progress / 100) }}
-                            transition={{ duration: 1, ease: 'linear' }}
-                        />
-                         <path d="M20 110 H80" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="3" strokeLinecap="round" />
-                    </motion.svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                         <h2 className={cn("font-bold font-mono tracking-tighter", isFullScreen ? "text-7xl text-white" : "text-5xl")}>{formatTime(timeLeft)}</h2>
-                    </div>
-                </div>
-             )}
-            </motion.div>
+            {/* AMBIENT BACKGROUND */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-900/20 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-orange-900/20 rounded-full blur-[120px]" />
+            </div>
 
-            <div className="flex flex-col items-center gap-6">
-                 <div className="flex gap-2 p-1 rounded-full bg-muted">
-                    <Button variant={mode === 'pomodoro' ? 'default' : 'ghost'} onClick={() => switchMode('pomodoro')} className="rounded-full">Pomodoro</Button>
-                    <Button variant={mode === 'shortBreak' ? 'default' : 'ghost'} onClick={() => switchMode('shortBreak')} className="rounded-full">Kısa Mola</Button>
-                    <Button variant={mode === 'longBreak' ? 'default' : 'ghost'} onClick={() => switchMode('longBreak')} className="rounded-full">Uzun Mola</Button>
-                </div>
-                <div className="flex items-center gap-4">
-                     <Button size="icon" variant="outline" className="rounded-full w-16 h-16" onClick={resetTimer}>
-                        <RefreshCw />
-                    </Button>
-                    <Button size="lg" className="rounded-full w-40 h-20 text-xl" onClick={() => setIsActive(!isActive)}>
-                        {isActive ? <Pause className="mr-2 h-8 w-8"/> : <Play className="mr-2 h-8 w-8"/>}
-                        {isActive ? 'Durdur' : 'Başlat'}
-                    </Button>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                             <Button size="icon" variant="outline" className="rounded-full w-16 h-16">
-                                <Settings className="h-7 w-7"/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuLabel>Ayarlar</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel className="text-xs font-normal">Zamanlayıcı Stili</DropdownMenuLabel>
-                            <DropdownMenuRadioGroup value={timerStyle} onValueChange={(v) => setTimerStyle(v as TimerStyle)}>
-                                <DropdownMenuRadioItem value="circle">Dairesel</DropdownMenuRadioItem>
-                                <DropdownMenuRadioItem value="bar">Çubuk</DropdownMenuRadioItem>
-                                <DropdownMenuRadioItem value="hourglass">Kum Saati</DropdownMenuRadioItem>
-                            </DropdownMenuRadioGroup>
-                             <DropdownMenuSeparator />
-                            <DropdownMenuLabel className="text-xs font-normal">Ambiyans Sesi</DropdownMenuLabel>
-                            <DropdownMenuRadioGroup value={selectedSoundId || ''} onValueChange={setSelectedSoundId}>
-                                {ambientSounds.map(sound => (
-                                     <DropdownMenuRadioItem key={sound.id} value={sound.id}>{sound.name}</DropdownMenuRadioItem>
-                                ))}
-                            </DropdownMenuRadioGroup>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
-                             <DropdownMenuSeparator />
-                             <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)}>Projeleri Yönet</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+            {/* HEADER */}
+            <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
+                <div className="max-w-5xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-red-500 to-orange-600 p-2 rounded-xl shadow-lg shadow-red-500/20">
+                            <TimerIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <h1 className="text-lg font-bold tracking-tight text-slate-100 hidden md:block">Pomodoro</h1>
+                    </div>
+
+                    {/* Mode Switcher - Header Center */}
+                    <div className="flex bg-slate-900/50 p-1 rounded-full border border-white/5 backdrop-blur-md">
+                        <button onClick={() => switchMode('pomodoro')} className={cn("px-4 py-1.5 rounded-full text-xs font-bold transition-all", mode === 'pomodoro' ? glassColors.ACTIVE_MODE : glassColors.INACTIVE_MODE)}>Odaklan</button>
+                        <button onClick={() => switchMode('shortBreak')} className={cn("px-4 py-1.5 rounded-full text-xs font-bold transition-all", mode === 'shortBreak' ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30" : glassColors.INACTIVE_MODE)}>Kısa Mola</button>
+                        <button onClick={() => switchMode('longBreak')} className={cn("px-4 py-1.5 rounded-full text-xs font-bold transition-all", mode === 'longBreak' ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" : glassColors.INACTIVE_MODE)}>Uzun Mola</button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white" onClick={() => setIsProjectModalOpen(true)}>
+                            <LayoutGrid className="w-5 h-5" />
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
+                                    <Settings className="w-5 h-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-slate-900 border-white/10 text-slate-100 w-56">
+                                <DropdownMenuLabel>Görünüm</DropdownMenuLabel>
+                                <DropdownMenuSeparator className="bg-white/10" />
+                                <DropdownMenuRadioGroup value={timerStyle} onValueChange={(v) => setTimerStyle(v as TimerStyle)}>
+                                    <DropdownMenuRadioItem value="circle">Dairesel</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="bar">Çubuk</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="hourglass">Kum Saati</DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                                <DropdownMenuSeparator className="bg-white/10" />
+                                <DropdownMenuLabel>Sesler</DropdownMenuLabel>
+                                <DropdownMenuRadioGroup value={selectedSoundId || ''} onValueChange={setSelectedSoundId}>
+                                    {ambientSounds.map(sound => (
+                                        <DropdownMenuRadioItem key={sound.id} value={sound.id}>{sound.name}</DropdownMenuRadioItem>
+                                    ))}
+                                </DropdownMenuRadioGroup>
+                                <DropdownMenuSeparator className="bg-white/10" />
+                                <DropdownMenuItem onClick={() => setSelectedSoundId(null)}>Sesi Kapat</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </div>
 
+            {/* FULL SCREEN OVERLAY */}
+            <AnimatePresence>
+                {isFullScreen && (
+                    <motion.div 
+                        className="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <Button variant="ghost" size="icon" className="absolute top-6 right-6 text-white/50 hover:text-white hover:bg-white/10" onClick={() => setIsFullScreen(false)}>
+                            <Shrink className="w-8 h-8"/>
+                        </Button>
+                        <div className="scale-150 transform">
+                             {/* Re-render timer here simplified or same component */}
+                             <h1 className="text-[12rem] font-black text-white font-mono leading-none tracking-tighter">
+                                {formatTime(timeLeft)}
+                             </h1>
+                             <p className="text-center text-2xl text-slate-400 mt-4 font-medium">{activeProject?.title || "Odaklanma Zamanı"}</p>
+                             <div className="flex justify-center gap-6 mt-12">
+                                <Button size="lg" className="h-20 w-20 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/10" onClick={() => setIsActive(!isActive)}>
+                                    {isActive ? <Pause className="w-8 h-8 text-white" /> : <Play className="w-8 h-8 text-white ml-1" />}
+                                </Button>
+                             </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="flex-1 flex flex-col items-center justify-center p-6 relative z-10 w-full max-w-5xl mx-auto">
+                
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-center">
+                    
+                    {/* LEFT: TIMER */}
+                    <div className="lg:col-span-7 flex flex-col items-center justify-center">
+                        <div className="relative group">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="absolute -top-12 right-0 text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" 
+                                onClick={() => setIsFullScreen(true)}
+                            >
+                                <Expand className="w-5 h-5" />
+                            </Button>
+
+                            <motion.div
+                                layout
+                                className={cn(
+                                    "relative flex items-center justify-center",
+                                    timerStyle === 'circle' && "w-80 h-80 sm:w-96 sm:h-96",
+                                    timerStyle === 'bar' && "w-full max-w-xl py-12",
+                                    timerStyle === 'hourglass' && "w-64 h-80"
+                                )}
+                            >
+                                {timerStyle === 'circle' && (
+                                    <>
+                                        {/* Outer Glow */}
+                                        <div className="absolute inset-0 rounded-full bg-indigo-500/20 blur-3xl animate-pulse" />
+                                        <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-800" />
+                                            <motion.circle
+                                                cx="50" cy="50" r="45" stroke="url(#gradient)" strokeWidth="6" fill="transparent"
+                                                strokeLinecap="round"
+                                                initial={{ pathLength: 1 }}
+                                                animate={{ pathLength: 1 - progress / 100 }}
+                                                transition={{ duration: 1, ease: "linear" }}
+                                                className="drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                                            />
+                                            <defs>
+                                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#6366f1" />
+                                                    <stop offset="100%" stopColor="#ec4899" />
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <div className="text-7xl sm:text-8xl font-black font-mono tracking-tighter text-white drop-shadow-2xl">
+                                                {formatTime(timeLeft)}
+                                            </div>
+                                            <div className="mt-2 flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: activeProject?.color || '#94a3b8' }} />
+                                                <span className="text-sm font-medium text-slate-300 max-w-[150px] truncate">
+                                                    {activeProject?.title || "Proje Seçilmedi"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {timerStyle === 'bar' && (
+                                    <div className="w-full space-y-6">
+                                        <div className="text-9xl font-black font-mono tracking-tighter text-center text-white">
+                                            {formatTime(timeLeft)}
+                                        </div>
+                                        <div className="relative h-6 w-full bg-slate-900 rounded-full overflow-hidden border border-white/10">
+                                            <motion.div 
+                                                className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
+                                                initial={{ width: "100%" }}
+                                                animate={{ width: `${100 - progress}%` }}
+                                                transition={{ duration: 1, ease: "linear" }}
+                                            />
+                                        </div>
+                                        <div className="text-center text-slate-400 font-medium text-lg">
+                                            {activeProject?.title || "Proje Seçilmedi"}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {timerStyle === 'hourglass' && (
+                                    <div className="relative w-full h-full">
+                                        <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-2xl">
+                                            <defs>
+                                                <linearGradient id="sandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                    <stop offset="0%" stopColor="#fbbf24" />
+                                                    <stop offset="100%" stopColor="#d97706" />
+                                                </linearGradient>
+                                            </defs>
+                                            {/* Glass Container */}
+                                            <path d="M20 10 H80 L50 50 L80 90 H20 L50 50 Z" stroke="rgba(255,255,255,0.2)" strokeWidth="4" fill="rgba(255,255,255,0.05)" strokeLinejoin="round" />
+                                            
+                                            {/* Top Sand */}
+                                            <mask id="topSandMask">
+                                                <path d="M20 10 H80 L50 50 Z" fill="white"/>
+                                            </mask>
+                                            <motion.rect
+                                                x="0" y="0" width="100" height="60"
+                                                fill="url(#sandGradient)"
+                                                mask="url(#topSandMask)"
+                                                initial={{ y: 0 }}
+                                                animate={{ y: 50 * (progress / 100) }}
+                                                transition={{ duration: 1, ease: 'linear' }}
+                                            />
+
+                                            {/* Bottom Sand */}
+                                            <mask id="bottomSandMask">
+                                                <path d="M50 50 L80 90 H20 Z" fill="white"/>
+                                            </mask>
+                                            <motion.rect
+                                                x="0" y="50" width="100" height="50"
+                                                fill="url(#sandGradient)"
+                                                mask="url(#bottomSandMask)"
+                                                initial={{ height: 0, y: 100 }}
+                                                animate={{ height: 40 * (progress / 100), y: 100 - (40 * (progress / 100)) }}
+                                                transition={{ duration: 1, ease: 'linear' }}
+                                            />
+                                        </svg>
+                                        <div className="absolute -bottom-16 w-full text-center text-4xl font-mono font-bold text-white">
+                                            {formatTime(timeLeft)}
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="mt-12 flex items-center gap-6">
+                            <Button 
+                                size="icon" 
+                                variant="outline" 
+                                className="h-14 w-14 rounded-full border-white/10 hover:bg-white/10 text-slate-400 hover:text-white" 
+                                onClick={resetTimer}
+                            >
+                                <RefreshCw className="w-6 h-6" />
+                            </Button>
+                            
+                            <Button 
+                                size="lg" 
+                                className={cn(
+                                    "h-20 w-20 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95",
+                                    isActive 
+                                        ? "bg-rose-600 hover:bg-rose-500 shadow-rose-500/30" 
+                                        : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/30"
+                                )} 
+                                onClick={() => setIsActive(!isActive)}
+                            >
+                                {isActive ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
+                            </Button>
+
+                            <Button 
+                                size="icon" 
+                                variant="outline" 
+                                className={cn("h-14 w-14 rounded-full border-white/10 hover:bg-white/10", selectedSoundId ? "text-indigo-400 border-indigo-500/50 bg-indigo-500/10" : "text-slate-400 hover:text-white")}
+                                onClick={() => setSelectedSoundId(selectedSoundId ? null : (ambientSounds[0]?.id || null))}
+                            >
+                                {selectedSoundId ? <Volume2 className="w-6 h-6" /> : <Music className="w-6 h-6" />}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* RIGHT: PROJECT STATS */}
+                    <div className="lg:col-span-5 h-full max-h-[500px] flex flex-col">
+                        <div className={cn("flex-1 rounded-3xl p-6 overflow-hidden flex flex-col", glassColors.CARD_BG)}>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <LayoutGrid className="w-5 h-5 text-indigo-400" />
+                                    Projeler
+                                </h3>
+                                <Button size="sm" onClick={() => setIsProjectModalOpen(true)} className={glassColors.BUTTON_GLASS}>
+                                    <Plus className="w-4 h-4 mr-1" /> Yeni
+                                </Button>
+                            </div>
+                            
+                            <ScrollArea className="flex-1 pr-4 -mr-4">
+                                <div className="space-y-3">
+                                    {projects.map(project => {
+                                        const stats = projectStats.get(project.id);
+                                        const isSelected = selectedProjectId === project.id;
+                                        return (
+                                            <div 
+                                                key={project.id} 
+                                                onClick={() => setSelectedProjectId(project.id)}
+                                                className={cn(
+                                                    "group p-4 rounded-2xl border transition-all cursor-pointer",
+                                                    isSelected 
+                                                        ? "bg-white/10 border-white/20 shadow-lg" 
+                                                        : "bg-white/5 border-transparent hover:bg-white/10 hover:border-white/5"
+                                                )}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex items-center gap-3">
+                                                        <div 
+                                                            className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-inner text-xs font-bold text-white/90", isSelected ? "ring-2 ring-white/20" : "")}
+                                                            style={{ backgroundColor: project.color }}
+                                                        >
+                                                            {project.title.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className={cn("font-semibold text-sm", isSelected ? "text-white" : "text-slate-300")}>{project.title}</h4>
+                                                            <div className="flex items-center gap-3 mt-1">
+                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider bg-black/20 px-1.5 py-0.5 rounded">
+                                                                    {stats?.sessionCount || 0} Seans
+                                                                </span>
+                                                                <span className="text-xs text-slate-400 font-mono">
+                                                                    {formatTime(stats?.totalSeconds || 0)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {isSelected && (
+                                                        <div className="flex gap-1">
+                                                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    
+                                    {projects.length === 0 && (
+                                        <div className="text-center py-10 text-slate-500">
+                                            <p>Henüz proje yok.</p>
+                                            <p className="text-sm">Yeni bir proje ekleyerek başla.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* PROJECT DIALOG */}
             <Dialog open={isProjectModalOpen} onOpenChange={setIsProjectModalOpen}>
-                <DialogContent>
+                <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>Projeleri Yönet</DialogTitle>
-                        <DialogDescription>Çalışma seanslarınızı organize etmek için projeler oluşturun.</DialogDescription>
+                        <DialogDescription className="text-slate-400">Çalışma seanslarınızı organize etmek için projeler oluşturun.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                           {projects.map(project => {
-                               const stats = projectStats.get(project.id);
-                               return (
-                               <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                   <div className="flex items-center gap-3">
-                                       <div className="w-3 h-3 rounded-full" style={{backgroundColor: project.color}} />
-                                       <div>
-                                           <span className="font-medium">{project.title}</span>
-                                           <div className="text-xs text-muted-foreground flex gap-3">
-                                                <span>{stats?.sessionCount || 0} seans</span>
-                                                <span>{formatTime(stats?.totalSeconds || 0)}</span>
-                                           </div>
-                                       </div>
-                                   </div>
-                                    <div className="flex items-center gap-2">
-                                        {selectedProjectId === project.id ? (
-                                             <Check className="h-5 w-5 text-primary"/>
-                                        ) : (
-                                            <Button variant="ghost" size="sm" onClick={() => setSelectedProjectId(project.id)}>Seç</Button>
-                                        )}
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>"{project.title}" projesini sil?</AlertDialogTitle>
-                                                    <AlertDialogDescription>Bu işlem geri alınamaz.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteProject(project.id)}>Sil</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                   </div>
-                               </div>
-                           )})}
-                        </div>
                         <div className="flex gap-2">
-                            <Input value={newProjectName} onChange={e => setNewProjectName(e.target.value)} placeholder="Yeni proje adı..."/>
-                            <Button onClick={handleAddProject}><Plus className="mr-2 h-4 w-4"/> Ekle</Button>
+                            <Input 
+                                value={newProjectName} 
+                                onChange={e => setNewProjectName(e.target.value)} 
+                                placeholder="Yeni proje adı..." 
+                                className="bg-slate-950/50 border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-500/50"
+                            />
+                            <Button onClick={handleAddProject} className="bg-indigo-600 hover:bg-indigo-500 text-white"><Plus className="w-4 h-4"/></Button>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                           {projects.map(project => (
+                               <div key={project.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                                   <div className="flex items-center gap-3">
+                                       <div className="w-3 h-3 rounded-full shadow-[0_0_8px_currentColor]" style={{backgroundColor: project.color, color: project.color}} />
+                                       <span className="text-sm font-medium text-slate-200">{project.title}</span>
+                                   </div>
+                                   <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10"><Trash2 className="h-4 w-4"/></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Projeyi Sil?</AlertDialogTitle>
+                                                <AlertDialogDescription className="text-slate-400">"{project.title}" projesi ve istatistikleri silinecek. Bu işlem geri alınamaz.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteProject(project.id)} className="bg-rose-600 hover:bg-rose-700 text-white">Sil</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                   </AlertDialog>
+                               </div>
+                           ))}
                         </div>
                     </div>
                 </DialogContent>
@@ -414,7 +585,3 @@ export function PomodoroClient() {
         </div>
     );
 }
-
-    
-
-    

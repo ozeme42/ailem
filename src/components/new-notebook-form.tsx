@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -9,24 +8,27 @@ import { useState, useEffect } from 'react';
 import { Notebook } from '@/lib/data';
 
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Loader2 } from 'lucide-react';
-import { DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter } from './ui/dialog';
+import { Loader2, Palette, Type, Edit3, Smile } from 'lucide-react';
+import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { cn } from '@/lib/utils';
 
+// --- DESIGN SYSTEM ---
+const glassColors = {
+    INPUT_BG: "bg-slate-950/50 border-white/10 text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20 placeholder:text-slate-500",
+};
 
 const notebookColors = [
-    { id: 'red', class: 'from-red-500 to-rose-500', name: 'Gül' },
-    { id: 'orange', class: 'from-orange-500 to-amber-500', name: 'Kehribar' },
-    { id: 'green', class: 'from-green-500 to-emerald-500', name: 'Zümrüt' },
-    { id: 'teal', class: 'from-teal-500 to-cyan-500', name: 'Turkuaz' },
-    { id: 'blue', class: 'from-blue-500 to-indigo-600', name: 'Çivit' },
-    { id: 'purple', class: 'from-purple-600 to-fuchsia-700', name: 'Menekşe' },
-    { id: 'pink', class: 'from-pink-500 to-fuchsia-500', name: 'Fuşya' },
-    { id: 'gray', class: 'from-gray-600 to-gray-800', name: 'Füme' },
+    { id: 'red', class: 'from-red-500 to-rose-600', name: 'Gül' },
+    { id: 'orange', class: 'from-orange-500 to-amber-600', name: 'Kehribar' },
+    { id: 'green', class: 'from-emerald-500 to-teal-600', name: 'Zümrüt' },
+    { id: 'teal', class: 'from-cyan-500 to-blue-500', name: 'Turkuaz' },
+    { id: 'blue', class: 'from-blue-600 to-indigo-600', name: 'Okyanus' },
+    { id: 'purple', class: 'from-violet-600 to-purple-600', name: 'Menekşe' },
+    { id: 'pink', class: 'from-fuchsia-600 to-pink-600', name: 'Fuşya' },
+    { id: 'gray', class: 'from-slate-600 to-slate-800', name: 'Füme' },
 ];
 
 const formSchema = z.object({
@@ -70,7 +72,7 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
     setLoading(true);
     const notebookData = {
         ...values,
-        sections: initialData?.sections || [], // Preserve sections if editing
+        sections: initialData?.sections || [], 
     };
     try {
       onSubmit(notebookData);
@@ -80,83 +82,107 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
   };
 
   return (
-    <>
-    <DialogHeader>
-        <DialogTitle>{initialData ? "Defteri Düzenle" : "Yeni Not Defteri"}</DialogTitle>
-        <DialogDescriptionComponent>Notlarınızı düzenlemek için yeni bir defter oluşturun.</DialogDescriptionComponent>
-    </DialogHeader>
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 pt-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Defter Adı</FormLabel>
-              <FormControl><Input placeholder="Proje Notları" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Açıklama (Opsiyonel)</FormLabel>
-              <FormControl><Textarea placeholder="Bu defterin içeriği hakkında kısa bir bilgi..." {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="icon"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>İkon (Emoji)</FormLabel>
-              <FormControl><Input placeholder="🗒️" maxLength={2} {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <div className="flex flex-col h-full">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-white/5">
+            <DialogTitle className="text-xl text-slate-100">{initialData ? "Defteri Düzenle" : "Yeni Not Defteri"}</DialogTitle>
+            <DialogDescription className="text-slate-400">Notlarınızı düzenlemek için bir defter oluşturun.</DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1">
+            <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto">
+                {/* Title & Icon Row */}
+                <div className="flex gap-4">
+                    <FormField
+                      control={form.control}
+                      name="icon"
+                      render={({ field }) => (
+                        <FormItem className="w-24 shrink-0">
+                          <FormLabel className="text-slate-300 flex items-center gap-2"><Smile className="w-4 h-4"/> İkon</FormLabel>
+                          <FormControl>
+                              <div className="relative">
+                                  <Input 
+                                    placeholder="🗒️" 
+                                    maxLength={2} 
+                                    {...field} 
+                                    className={cn("text-center text-2xl h-12 rounded-xl", glassColors.INPUT_BG)} 
+                                  />
+                              </div>
+                          </FormControl>
+                          <FormMessage className="text-rose-400" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel className="text-slate-300 flex items-center gap-2"><Type className="w-4 h-4"/> Defter Adı</FormLabel>
+                          <FormControl>
+                              <Input placeholder="Proje Notları" {...field} className={cn("h-12 rounded-xl", glassColors.INPUT_BG)} />
+                          </FormControl>
+                          <FormMessage className="text-rose-400" />
+                        </FormItem>
+                      )}
+                    />
+                </div>
 
-        <FormField
-            control={form.control}
-            name="color"
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Defter Rengi</FormLabel>
-                    <FormControl>
-                        <div className="grid grid-cols-4 gap-2">
-                            {notebookColors.map(color => (
-                                <button
-                                    key={color.id}
-                                    type="button"
-                                    className={cn(
-                                        "h-12 rounded-md bg-gradient-to-br transition-all", 
-                                        color.class,
-                                        field.value === color.class ? "ring-2 ring-offset-2 ring-ring ring-offset-background" : "hover:scale-105"
-                                    )}
-                                    onClick={() => field.onChange(color.class)}
-                                    aria-label={color.name}
-                                />
-                            ))}
-                        </div>
-                    </FormControl>
-                </FormItem>
-            )}
-        />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-300 flex items-center gap-2"><Edit3 className="w-4 h-4"/> Açıklama</FormLabel>
+                      <FormControl>
+                          <Textarea 
+                            placeholder="Bu defterin içeriği hakkında kısa bir bilgi..." 
+                            {...field} 
+                            className={cn("min-h-[80px] rounded-xl resize-none", glassColors.INPUT_BG)} 
+                          />
+                      </FormControl>
+                      <FormMessage className="text-rose-400" />
+                    </FormItem>
+                  )}
+                />
 
+                <FormField
+                    control={form.control}
+                    name="color"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-slate-300 flex items-center gap-2"><Palette className="w-4 h-4"/> Renk Teması</FormLabel>
+                            <FormControl>
+                                <div className="grid grid-cols-4 gap-3">
+                                    {notebookColors.map(color => (
+                                        <button
+                                            key={color.id}
+                                            type="button"
+                                            className={cn(
+                                                "h-10 rounded-lg bg-gradient-to-br transition-all hover:scale-105 hover:shadow-lg", 
+                                                color.class,
+                                                field.value === color.class ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105" : "opacity-80 hover:opacity-100"
+                                            )}
+                                            onClick={() => field.onChange(color.class)}
+                                            aria-label={color.name}
+                                        />
+                                    ))}
+                                </div>
+                            </FormControl>
+                            <FormMessage className="text-rose-400" />
+                        </FormItem>
+                    )}
+                />
+            </div>
 
-        <DialogFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? "Değişiklikleri Kaydet" : "Defteri Oluştur"}
-            </Button>
-        </DialogFooter>
-      </form>
-    </Form>
-    </>
+            <DialogFooter className="px-6 py-4 border-t border-white/5 bg-slate-900/50 backdrop-blur-sm">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {initialData ? "Değişiklikleri Kaydet" : "Defteri Oluştur"}
+                </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+    </div>
   );
 }
