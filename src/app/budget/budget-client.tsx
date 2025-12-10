@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User, FileOutput, GripVertical, Settings, HandCoins, ArrowUpRight, ArrowDownLeft, DollarSign, Calendar as CalendarIcon, Filter } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, MoreHorizontal, ChevronLeft, ChevronRight, Edit, Trash2, Banknote, Landmark, CreditCard, BarChart2, PieChart, User, FileOutput, GripVertical, Settings, HandCoins, ArrowUpRight, ArrowDownLeft, DollarSign, Calendar as CalendarIcon, Filter, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,19 @@ import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
+
+// --- DESIGN SYSTEM: Glassmorphism Colors ---
+const glassColors = {
+    CARD_BG: "bg-white/5 backdrop-blur-md border border-white/10 shadow-lg",
+    CARD_HOVER: "hover:bg-white/10 hover:border-white/20 transition-all duration-300",
+    TEXT_MAIN: "text-slate-100",
+    TEXT_MUTED: "text-slate-400",
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-500 p-2 rounded-xl shadow-lg",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/20",
+    ACCENT_GRADIENT: "bg-gradient-to-r from-indigo-600 to-purple-600",
+};
 
 const accountIcons: { [key: string]: React.ElementType } = {
     'cash': Banknote,
@@ -29,21 +42,22 @@ const accountIcons: { [key: string]: React.ElementType } = {
     'other': Wallet
 };
 
-// --- Kategori Renkleri ---
+// --- Kategori Renkleri (Modern Palette) ---
 const categoryColors: {[key: string]: string} = {
-    'Market': 'bg-orange-100 text-orange-700',
-    'Yemek': 'bg-yellow-100 text-yellow-700',
-    'Ulaşım': 'bg-blue-100 text-blue-700',
-    'Fatura': 'bg-red-100 text-red-700',
-    'Eğlence': 'bg-purple-100 text-purple-700',
-    'Sağlık': 'bg-green-100 text-green-700',
-    'Giyim': 'bg-pink-100 text-pink-700',
-    'Eğitim': 'bg-indigo-100 text-indigo-700',
-    'Maaş': 'bg-emerald-100 text-emerald-700',
-    'Diğer': 'bg-slate-100 text-slate-700'
+    'Market': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    'Yemek': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    'Ulaşım': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    'Fatura': 'bg-red-500/20 text-red-300 border-red-500/30',
+    'Eğlence': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    'Sağlık': 'bg-green-500/20 text-green-300 border-green-500/30',
+    'Giyim': 'bg-pink-500/20 text-pink-300 border-pink-500/30',
+    'Eğitim': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+    'Maaş': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    'Diğer': 'bg-slate-500/20 text-slate-300 border-slate-500/30'
 };
 
 export function BudgetClient() {
+    const router = useRouter();
     const { familyId, familyMembers } = useAuth();
     const { toast } = useToast();
     
@@ -184,102 +198,92 @@ export function BudgetClient() {
     const openTransactionForm = (transaction: Transaction | null) => { setEditingTransaction(transaction); setIsTransactionFormOpen(true); }
 
     return (
-        <div className="min-h-[100dvh] bg-[#F3F6F8] font-sans pb-24">
-            {/* Dekoratif Arkaplan */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 left-0 w-[50%] h-[50%] bg-blue-100/60 rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 right-0 w-[40%] h-[40%] bg-indigo-100/50 rounded-full blur-[120px]" />
+        <div className="min-h-[100dvh] bg-slate-950 font-sans text-slate-100 pb-24 relative overflow-hidden">
+            {/* Ambient Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/30 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-emerald-900/20 rounded-full blur-[100px]" />
+                <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-purple-900/20 rounded-full blur-[100px]" />
+            </div>
+
+            {/* HEADER (Dynamic Glass) */}
+            <div className={cn("sticky top-0 z-40 py-4 sm:px-6 transition-all duration-300", glassColors.HEADER_BG)}>
+                <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" size="icon" onClick={() => router.back()} className={cn("rounded-full mr-1 text-slate-400 hover:text-white hover:bg-white/10")}>
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                        <div className={glassColors.ICON_BOX}>
+                            <Wallet className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <p className={cn("text-xs font-semibold uppercase tracking-wider", glassColors.TEXT_MUTED)}>Finans</p>
+                            <h1 className={cn("text-lg font-bold leading-none", glassColors.TEXT_MAIN)}>Bütçe Takibi</h1>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                        {/* Tarih Navigasyonu */}
+                        <div className={cn("flex items-center p-1 rounded-full border border-white/10", glassColors.CARD_BG)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-white" onClick={() => handleNavDate('prev')}><ChevronLeft className="h-4 w-4"/></Button>
+                            <span className={cn("text-sm font-bold w-32 text-center", glassColors.TEXT_MAIN)}>{format(currentDate, dateDisplayFormat, { locale: tr })}</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/10 text-slate-400 hover:text-white" onClick={() => handleNavDate('next')}><ChevronRight className="h-4 w-4"/></Button>
+                        </div>
+
+                        {/* Raporlar Butonu (Masaüstü) */}
+                        <Link href="/budget/stats" className="hidden md:block">
+                            <Button variant="outline" className={cn("rounded-full px-4 border-white/20", glassColors.BUTTON_GLASS)}>
+                                <BarChart2 className="mr-2 h-4 w-4" /> Raporlar
+                            </Button>
+                        </Link>
+                        {/* Raporlar Butonu (Mobil) */}
+                        <Link href="/budget/stats" className="md:hidden">
+                            <Button variant="outline" size="icon" className={cn("rounded-full border-white/20", glassColors.BUTTON_GLASS)}>
+                                <BarChart2 className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
             </div>
 
             <div className="max-w-7xl mx-auto md:p-6 p-4 relative z-10 space-y-6">
                 
-                {/* --- HEADER (Modern & Dinamik) --- */}
-                <div className="flex flex-col gap-6 pt-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1 text-slate-800 flex items-center gap-3">
-                                Bütçe <span className="text-indigo-600 text-lg md:text-xl font-bold bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">Takibi</span>
-                            </h1>
-                            <p className="text-slate-500 font-medium ml-1">Gelir ve giderlerini kontrol et.</p>
-                        </div>
-                        
-                        {/* --- YENİ: RAPORLAR BUTONU (Mobil ve Masaüstü Uyumlu) --- */}
-                        <Link href="/budget/stats">
-                            {/* Mobilde İkon */}
-                            <Button variant="outline" size="icon" className="rounded-full border-indigo-200 text-indigo-600 bg-white hover:bg-indigo-50 md:hidden shadow-sm">
-                                <BarChart2 className="h-5 w-5" />
-                            </Button>
-                            {/* Masaüstünde Yazılı */}
-                            <Button variant="outline" className="rounded-2xl border-indigo-200 text-indigo-600 bg-white hover:bg-indigo-50 hidden md:flex font-bold shadow-sm">
-                                <BarChart2 className="mr-2 h-4 w-4" /> Raporlar & Analiz
-                            </Button>
-                        </Link>
-                    </div>
-
-                    {/* Tarih Navigasyonu & Filtre */}
-                    <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-2 rounded-[2rem] shadow-sm border border-white">
-                        <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white" onClick={() => handleNavDate('prev')}><ChevronLeft className="h-5 w-5 text-slate-600" /></Button>
-                            <div className="px-4 py-2 bg-white rounded-xl shadow-sm min-w-[140px] text-center font-bold text-slate-700 border border-slate-100 flex items-center justify-center gap-2">
-                                <CalendarIcon className="h-4 w-4 text-indigo-500" />
-                                {format(currentDate, dateDisplayFormat, { locale: tr })}
-                            </div>
-                            <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white" onClick={() => handleNavDate('next')}><ChevronRight className="h-5 w-5 text-slate-600" /></Button>
-                        </div>
-                        
-                        <Tabs value={mainTab} onValueChange={setMainTab} className="hidden sm:block">
-                            <TabsList className="bg-slate-100/50 p-1 rounded-full h-12">
-                                <TabsTrigger value="day" className="rounded-full px-6 h-full data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-md font-bold text-slate-500 transition-all">Günlük</TabsTrigger>
-                                <TabsTrigger value="month" className="rounded-full px-6 h-full data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-md font-bold text-slate-500 transition-all">Aylık</TabsTrigger>
-                                <TabsTrigger value="accounts" className="rounded-full px-6 h-full data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-md font-bold text-slate-500 transition-all">Hesaplar</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                        
-                        <div className="sm:hidden">
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><Filter className="h-5 w-5 text-slate-600"/></Button></DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setMainTab('day')}>Günlük</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setMainTab('month')}>Aylık</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setMainTab('accounts')}>Hesaplar</DropdownMenuItem>
-                                </DropdownMenuContent>
-                             </DropdownMenu>
-                        </div>
-                    </div>
-                </div>
-
                 {/* --- ÖZET KARTI (Credit Card Style) --- */}
                 {mainTab !== 'accounts' && (
-                    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-200 relative overflow-hidden">
+                    <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 shadow-2xl group transition-all duration-500 hover:scale-[1.01]">
+                        {/* Card Background Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-700 z-0"></div>
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none"></div>
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none"></div>
                         
-                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div className="text-center md:text-left">
-                                <p className="text-indigo-200 text-sm font-medium mb-1 uppercase tracking-wider">Toplam Bakiye (Net)</p>
-                                <h2 className="text-4xl font-black tracking-tight flex items-center gap-2">
-                                    {headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                    {headerTotal >= 0 ? <TrendingUp className="h-6 w-6 text-emerald-300" /> : <TrendingDown className="h-6 w-6 text-rose-300" />}
-                                </h2>
-                            </div>
-                            
-                            <div className="flex gap-4 w-full md:w-auto">
-                                <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300">
-                                        <ArrowDownLeft className="h-6 w-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-indigo-200 uppercase font-bold">Gelir</p>
-                                        <p className="text-lg font-bold text-emerald-300">{headerIncome.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
-                                    </div>
+                        <div className="relative z-10">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="text-center md:text-left">
+                                    <p className="text-indigo-200 text-sm font-medium mb-1 uppercase tracking-widest opacity-80">Toplam Net Varlık</p>
+                                    <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-white flex items-center justify-center md:justify-start gap-3 drop-shadow-sm">
+                                        {headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        {headerTotal >= 0 ? <TrendingUp className="h-8 w-8 text-emerald-300 animate-pulse" /> : <TrendingDown className="h-8 w-8 text-rose-300 animate-pulse" />}
+                                    </h2>
                                 </div>
-                                <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-300">
-                                        <ArrowUpRight className="h-6 w-6" />
+                                
+                                <div className="flex gap-4 w-full md:w-auto">
+                                    <div className="flex-1 bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-4 hover:bg-black/30 transition-colors">
+                                        <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-300 shadow-inner border border-emerald-500/30">
+                                            <ArrowDownLeft className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-emerald-200 uppercase font-bold tracking-wider opacity-80">Gelir</p>
+                                            <p className="text-lg font-bold text-white">{headerIncome.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-indigo-200 uppercase font-bold">Gider</p>
-                                        <p className="text-lg font-bold text-rose-300">{headerExpense.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
+                                    <div className="flex-1 bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-4 hover:bg-black/30 transition-colors">
+                                        <div className="h-10 w-10 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-300 shadow-inner border border-rose-500/30">
+                                            <ArrowUpRight className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-rose-200 uppercase font-bold tracking-wider opacity-80">Gider</p>
+                                            <p className="text-lg font-bold text-white">{headerExpense.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -287,44 +291,60 @@ export function BudgetClient() {
                     </div>
                 )}
 
+                {/* --- SEKMELER (Glass) --- */}
+                <div className={cn("p-1 rounded-2xl flex relative overflow-x-auto", glassColors.CARD_BG)}>
+                    <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+                        <TabsList className="bg-transparent w-full justify-start md:justify-center p-0 gap-2 h-auto">
+                            <TabsTrigger value="day" className="flex-1 rounded-xl py-3 data-[state=active]:bg-white/10 data-[state=active]:text-white font-bold text-slate-400 transition-all min-w-[100px]">
+                                Günlük
+                            </TabsTrigger>
+                            <TabsTrigger value="month" className="flex-1 rounded-xl py-3 data-[state=active]:bg-white/10 data-[state=active]:text-white font-bold text-slate-400 transition-all min-w-[100px]">
+                                Aylık
+                            </TabsTrigger>
+                            <TabsTrigger value="accounts" className="flex-1 rounded-xl py-3 data-[state=active]:bg-white/10 data-[state=active]:text-white font-bold text-slate-400 transition-all min-w-[100px]">
+                                Hesaplar
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+
                 {/* --- İÇERİK --- */}
-                <main className="space-y-4">
+                <div className="space-y-4">
                     {/* GÜNLÜK GÖRÜNÜM */}
                     {mainTab === 'day' && dailyGroups.map(group => (
-                        <div key={group.dateISO} className="bg-white/60 backdrop-blur-md rounded-[1.5rem] border border-white shadow-sm overflow-hidden">
-                            <div className="bg-slate-50/80 px-6 py-3 flex justify-between items-center border-b border-slate-100">
-                                <div className="font-bold text-slate-700 text-sm">{group.date}</div>
+                        <div key={group.dateISO} className={cn("rounded-[1.5rem] overflow-hidden", glassColors.CARD_BG)}>
+                            <div className="bg-white/5 px-6 py-3 flex justify-between items-center border-b border-white/5 backdrop-blur-sm">
+                                <div className={cn("font-bold text-sm", glassColors.TEXT_MAIN)}>{group.date}</div>
                                 <div className="flex gap-4 text-xs font-bold">
-                                    {group.dayTotalIncome > 0 && <span className="text-emerald-600">+{group.dayTotalIncome.toLocaleString('tr-TR')} ₺</span>}
-                                    {group.dayTotalExpense > 0 && <span className="text-rose-600">-{group.dayTotalExpense.toLocaleString('tr-TR')} ₺</span>}
+                                    {group.dayTotalIncome > 0 && <span className="text-emerald-400">+{group.dayTotalIncome.toLocaleString('tr-TR')} ₺</span>}
+                                    {group.dayTotalExpense > 0 && <span className="text-rose-400">-{group.dayTotalExpense.toLocaleString('tr-TR')} ₺</span>}
                                 </div>
                             </div>
                             <div className="p-2 space-y-1">
                                 {group.transactions.map(tx => {
                                     const account = accounts.find(a => a.id === tx.accountId);
                                     return (
-                                        <div key={tx.id} className="group flex items-center justify-between p-3 hover:bg-white rounded-2xl transition-all cursor-pointer border border-transparent hover:border-slate-100 hover:shadow-sm" onClick={() => openTransactionForm(tx)}>
+                                        <div key={tx.id} className="group flex items-center justify-between p-3 hover:bg-white/5 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-white/5" onClick={() => openTransactionForm(tx)}>
                                             <div className="flex items-center gap-4">
-                                                <div className={cn("h-10 w-10 rounded-full flex items-center justify-center shadow-sm text-lg", categoryColors[tx.category] || 'bg-slate-100 text-slate-600')}>
-                                                    {/* Kategoriye özel ikon eklenebilir, şimdilik ilk harf */}
+                                                <div className={cn("h-10 w-10 rounded-full flex items-center justify-center shadow-sm text-lg border", categoryColors[tx.category] || 'bg-slate-700 text-slate-300 border-slate-600')}>
                                                     {tx.category.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-sm text-slate-700">{tx.category}</p>
+                                                    <p className={cn("font-bold text-sm", glassColors.TEXT_MAIN)}>{tx.category}</p>
                                                     <div className="flex items-center gap-1.5">
-                                                        {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-3 w-3 text-slate-400" })}
-                                                        <p className="text-xs text-slate-400 font-medium">{account?.name || 'Hesap Yok'}</p>
+                                                        {account && React.createElement(accountIcons[account.type] || Wallet, { className: "h-3 w-3 text-slate-500" })}
+                                                        <p className={cn("text-xs font-medium", glassColors.TEXT_MUTED)}>{account?.name || 'Hesap Yok'}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <p className={cn("font-bold text-sm", tx.type === 'expense' ? 'text-rose-600' : 'text-emerald-600')}>
+                                                <p className={cn("font-bold text-sm", tx.type === 'expense' ? 'text-rose-400' : 'text-emerald-400')}>
                                                     {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺
                                                 </p>
                                                 <Button 
                                                     variant="ghost" 
                                                     size="icon" 
-                                                    className="h-8 w-8 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all"
+                                                    className="h-8 w-8 rounded-full text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
                                                     onClick={(e) => { e.stopPropagation(); handleDeleteTransaction(tx.id); }}
                                                 >
                                                     <Trash2 className="h-4 w-4"/>
@@ -341,36 +361,35 @@ export function BudgetClient() {
                     {mainTab === 'month' && (
                         <div className="space-y-3">
                             {monthlySummaries.map(summary => (
-                                <Accordion type="single" collapsible className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden" key={summary.monthKey}>
+                                <Accordion type="single" collapsible className={cn("rounded-[1.5rem] overflow-hidden", glassColors.CARD_BG)} key={summary.monthKey}>
                                     <AccordionItem value={summary.monthKey} className="border-0">
-                                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-slate-50/50">
+                                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-white/5 transition-colors">
                                             <div className="flex items-center justify-between w-full pr-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shadow-inner uppercase">
+                                                    <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center font-bold text-slate-400 text-xs shadow-inner uppercase border border-white/5">
                                                         {summary.month.substring(0, 3)}
                                                     </div>
-                                                    <span className="font-bold text-slate-700 capitalize">{summary.month}</span>
+                                                    <span className={cn("font-bold capitalize", glassColors.TEXT_MAIN)}>{summary.month}</span>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className={cn("font-black text-sm", summary.total >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                                                    <p className={cn("font-black text-sm", summary.total >= 0 ? "text-emerald-400" : "text-rose-400")}>
                                                         {summary.total >= 0 ? '+' : ''}{summary.total.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺
                                                     </p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Net Durum</p>
+                                                    <p className={cn("text-[10px] font-bold uppercase", glassColors.TEXT_MUTED)}>Net Durum</p>
                                                 </div>
                                             </div>
                                         </AccordionTrigger>
-                                        <AccordionContent className="bg-slate-50/50 px-2 pb-2">
+                                        <AccordionContent className="bg-black/20 px-2 pb-2 pt-2">
                                             <div className="grid grid-cols-2 gap-2 mb-2 px-2">
-                                                <div className="bg-emerald-50 rounded-xl p-2 text-center border border-emerald-100">
+                                                <div className="bg-emerald-500/10 rounded-xl p-2 text-center border border-emerald-500/20">
                                                     <p className="text-[10px] font-bold text-emerald-400 uppercase">Gelir</p>
-                                                    <p className="font-bold text-emerald-700">{summary.income.toLocaleString()} ₺</p>
+                                                    <p className="font-bold text-emerald-200">{summary.income.toLocaleString()} ₺</p>
                                                 </div>
-                                                <div className="bg-rose-50 rounded-xl p-2 text-center border border-rose-100">
+                                                <div className="bg-rose-500/10 rounded-xl p-2 text-center border border-rose-500/20">
                                                     <p className="text-[10px] font-bold text-rose-400 uppercase">Gider</p>
-                                                    <p className="font-bold text-rose-700">{summary.expense.toLocaleString()} ₺</p>
+                                                    <p className="font-bold text-rose-200">{summary.expense.toLocaleString()} ₺</p>
                                                 </div>
                                             </div>
-                                            {/* İşlemler listesi burada da gösterilebilir */}
                                         </AccordionContent>
                                     </AccordionItem>
                                 </Accordion>
@@ -388,25 +407,25 @@ export function BudgetClient() {
                                 </h3>
                                 <div className="grid gap-3">
                                     {accountStats.assets.map((account) => (
-                                        <div key={account.id} className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm flex justify-between items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => openAccountForm(account)}>
+                                        <div key={account.id} className={cn("p-4 rounded-[1.5rem] flex justify-between items-center group cursor-pointer", glassColors.CARD_BG, glassColors.CARD_HOVER)} onClick={() => openAccountForm(account)}>
                                             <div className="flex items-center gap-4">
-                                                <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm">
+                                                <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shadow-sm">
                                                     {React.createElement(accountIcons[account.type] || Wallet, { className: "h-6 w-6" })}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-800">{account.name}</p>
-                                                    <p className="text-xs text-slate-400 font-medium capitalize">{account.type === 'bank' ? 'Banka Hesabı' : 'Nakit'}</p>
+                                                    <p className={cn("font-bold", glassColors.TEXT_MAIN)}>{account.name}</p>
+                                                    <p className={cn("text-xs font-medium capitalize", glassColors.TEXT_MUTED)}>{account.type === 'bank' ? 'Banka Hesabı' : 'Nakit'}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-black text-slate-800 text-lg">{account.balance.toLocaleString()} ₺</p>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleDeleteAccount(account.id); }}>
+                                                <p className="font-black text-slate-200 text-lg">{account.balance.toLocaleString()} ₺</p>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleDeleteAccount(account.id); }}>
                                                     <Trash2 className="h-4 w-4"/>
                                                 </Button>
                                             </div>
                                         </div>
                                     ))}
-                                    <Button variant="outline" className="w-full rounded-[1.5rem] border-dashed border-slate-300 h-14 text-slate-500 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50" onClick={() => openAccountForm(null)}>
+                                    <Button variant="outline" className={cn("w-full rounded-[1.5rem] h-14 border-dashed border-white/10 hover:border-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-500/10", glassColors.TEXT_MUTED)} onClick={() => openAccountForm(null)}>
                                         <Plus className="mr-2 h-5 w-5" /> Yeni Varlık Ekle
                                     </Button>
                                 </div>
@@ -419,19 +438,19 @@ export function BudgetClient() {
                                 </h3>
                                 <div className="grid gap-3">
                                     {accountStats.debts.map((account) => (
-                                        <div key={account.id} className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm flex justify-between items-center group cursor-pointer hover:shadow-md transition-all" onClick={() => openAccountForm(account)}>
+                                        <div key={account.id} className={cn("p-4 rounded-[1.5rem] flex justify-between items-center group cursor-pointer", glassColors.CARD_BG, glassColors.CARD_HOVER)} onClick={() => openAccountForm(account)}>
                                             <div className="flex items-center gap-4">
-                                                <div className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shadow-sm">
+                                                <div className="h-12 w-12 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center shadow-sm">
                                                     {React.createElement(accountIcons[account.type] || Wallet, { className: "h-6 w-6" })}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-800">{account.name}</p>
-                                                    <p className="text-xs text-slate-400 font-medium capitalize">{account.type === 'credit-card' ? 'Kredi Kartı' : 'Borç'}</p>
+                                                    <p className={cn("font-bold", glassColors.TEXT_MAIN)}>{account.name}</p>
+                                                    <p className={cn("text-xs font-medium capitalize", glassColors.TEXT_MUTED)}>{account.type === 'credit-card' ? 'Kredi Kartı' : 'Borç'}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-black text-rose-600 text-lg">{account.balance.toLocaleString()} ₺</p>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleDeleteAccount(account.id); }}>
+                                                <p className="font-black text-rose-400 text-lg">{account.balance.toLocaleString()} ₺</p>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleDeleteAccount(account.id); }}>
                                                     <Trash2 className="h-4 w-4"/>
                                                 </Button>
                                             </div>
@@ -439,47 +458,38 @@ export function BudgetClient() {
                                     ))}
                                 </div>
                             </div>
-                            
-                            {/* --- YENİ: Raporlara Git Kısa Yolu --- */}
-                            <div className="pt-4">
-                                <Link href="/budget/stats">
-                                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[1.5rem] p-6 text-white text-center shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mb-1">
-                                                <BarChart2 className="h-6 w-6 text-white" />
-                                            </div>
-                                            <h3 className="text-lg font-black">Detaylı Raporlar</h3>
-                                            <p className="text-indigo-100 text-sm">Harcama alışkanlıklarını grafiklerle incele.</p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </div>
                         </div>
                     )}
-                </main>
+                </div>
             </div>
 
             {/* --- FLOAT ACTION BUTTON --- */}
             <div className="fixed bottom-24 md:bottom-8 right-6 z-50">
                 <Button 
-                    className="rounded-full w-16 h-16 bg-slate-900 hover:bg-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.3)] transition-transform hover:scale-105 active:scale-95 border-4 border-white"
+                    className="rounded-full w-16 h-16 bg-white text-slate-900 hover:bg-slate-200 shadow-2xl shadow-indigo-500/40 transition-transform hover:scale-105 active:scale-95"
                     onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
                 >
-                    <Plus className="h-8 w-8 text-white" />
+                    <Plus className="h-8 w-8" />
                 </Button>
             </div>
 
-            {/* --- Dialoglar --- */}
+            {/* --- Dialoglar (Glass/Dark Mode Uyumlu) --- */}
             <Dialog open={isAccountFormOpen} onOpenChange={setIsAccountFormOpen}>
-                <DialogContent className="sm:max-w-md rounded-[2rem]">
-                    <NewAccountForm familyMembers={familyMembers} onSubmit={handleAccountSubmit} initialData={editingAccount} />
+                <DialogContent className="sm:max-w-md rounded-[2rem] bg-slate-900 border-white/10 text-slate-100">
+                    {/* NewAccountForm'u dark mode uyumlu sarmalayarak kullanıyoruz */}
+                    <div className="text-slate-100 [&_label]:text-slate-300 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-slate-100 [&_select]:bg-slate-800 [&_select]:border-white/10">
+                        <NewAccountForm familyMembers={familyMembers} onSubmit={handleAccountSubmit} initialData={editingAccount} />
+                    </div>
                 </DialogContent>
             </Dialog>
             
             <Dialog open={isTransactionFormOpen} onOpenChange={(open) => { if (!open) setEditingTransaction(null); setIsTransactionFormOpen(open); }}>
                 <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-md w-full">
-                    <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden">
-                        <NewTransactionForm accounts={accounts} familyMembers={familyMembers} onSubmit={handleTransactionSubmit} initialData={editingTransaction} />
+                    <div className="bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-white/10 text-slate-100">
+                         {/* NewTransactionForm'u dark mode uyumlu sarmalayarak kullanıyoruz */}
+                        <div className="text-slate-100 [&_label]:text-slate-300 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-slate-100 [&_select]:bg-slate-800 [&_select]:border-white/10">
+                            <NewTransactionForm accounts={accounts} familyMembers={familyMembers} onSubmit={handleTransactionSubmit} initialData={editingTransaction} />
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

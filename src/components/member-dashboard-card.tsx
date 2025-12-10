@@ -31,61 +31,61 @@ interface MemberDashboardCardProps {
     trackedBooks: TrackedBook[];
 }
 
-// --- Bölüm Temaları (Modern & Şık Pastel Tonlar) ---
+// --- Bölüm Temaları (Modern Glassmorphism) ---
 const sectionThemes = {
     prayer: { 
-        container: "bg-gradient-to-br from-teal-50/80 to-cyan-50/80 border-teal-100",
-        title: "text-teal-800",
-        icon: "text-teal-600",
-        itemBg: "bg-teal-100/50 border-teal-200",
-        activeItem: "bg-teal-500 text-white shadow-teal-200"
+        container: "bg-teal-500/10 border-teal-500/20 backdrop-blur-md shadow-lg shadow-teal-500/5",
+        title: "text-teal-200",
+        icon: "text-teal-400",
+        itemBg: "bg-teal-500/10 border-teal-500/20 hover:bg-teal-500/20",
+        activeItem: "bg-teal-500 text-white shadow-teal-500/50 shadow-md"
     },
     habits: { 
-        container: "bg-gradient-to-br from-orange-50/80 to-amber-50/80 border-orange-100",
-        title: "text-orange-800",
-        icon: "text-orange-600",
-        itemBg: "bg-orange-100/50 border-orange-200",
+        container: "bg-orange-500/10 border-orange-500/20 backdrop-blur-md shadow-lg shadow-orange-500/5",
+        title: "text-orange-200",
+        icon: "text-orange-400",
+        itemBg: "bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20",
         progressCheck: "bg-orange-500"
     },
     memorization: { 
-        container: "bg-gradient-to-br from-violet-50/80 to-purple-50/80 border-violet-100",
-        title: "text-violet-800",
-        icon: "text-violet-600",
-        itemHover: "hover:border-violet-300 hover:bg-violet-50",
-        badge: "bg-violet-100 text-violet-700"
+        container: "bg-violet-500/10 border-violet-500/20 backdrop-blur-md shadow-lg shadow-violet-500/5",
+        title: "text-violet-200",
+        icon: "text-violet-400",
+        itemHover: "hover:border-violet-500/30 hover:bg-violet-500/20 transition-all",
+        badge: "bg-violet-500/20 text-violet-300 border border-violet-500/30"
     },
     videos: { 
-        container: "bg-gradient-to-br from-rose-50/80 to-pink-50/80 border-rose-100",
-        title: "text-rose-800",
-        icon: "text-rose-600",
-        itemHover: "hover:border-rose-300 hover:bg-rose-50",
+        container: "bg-rose-500/10 border-rose-500/20 backdrop-blur-md shadow-lg shadow-rose-500/5",
+        title: "text-rose-200",
+        icon: "text-rose-400",
+        itemHover: "hover:border-rose-500/30 hover:bg-rose-500/20 transition-all",
         progressIndicator: "bg-rose-500"
     },
     reading: { 
-        container: "bg-gradient-to-br from-yellow-50/80 to-amber-50/80 border-yellow-100",
-        title: "text-yellow-800",
-        icon: "text-yellow-600",
-        itemHover: "hover:border-yellow-300 hover:bg-yellow-50",
-        bookCover: "bg-yellow-100 text-yellow-500 border-yellow-200",
-        progressIndicator: "bg-yellow-500"
+        container: "bg-amber-500/10 border-amber-500/20 backdrop-blur-md shadow-lg shadow-amber-500/5",
+        title: "text-amber-200",
+        icon: "text-amber-400",
+        itemHover: "hover:border-amber-500/30 hover:bg-amber-500/20 transition-all",
+        bookCover: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+        progressIndicator: "bg-amber-500"
     },
     todo: { 
-        container: "bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-blue-100",
-        title: "text-blue-800",
-        icon: "text-blue-600",
-        itemHover: "hover:border-blue-300 hover:bg-blue-50",
-        checkbox: "data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+        container: "bg-indigo-500/10 border-indigo-500/20 backdrop-blur-md shadow-lg shadow-indigo-500/5",
+        title: "text-indigo-200",
+        icon: "text-indigo-400",
+        itemHover: "hover:border-indigo-500/30 hover:bg-indigo-500/20 transition-all",
+        checkbox: "data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500 border-indigo-400/50"
     }
 };
 
 // Rol Temaları
 const roleThemes: { [key: string]: { text: string, badge: string, bgRing: string } } = {
-    Baba: { text: "text-blue-900", badge: "bg-blue-100 text-blue-800", bgRing: "bg-blue-600" },
-    Anne: { text: "text-pink-900", badge: "bg-pink-100 text-pink-800", bgRing: "bg-pink-600" },
-    'Kız Çocuk': { text: "text-violet-900", badge: "bg-violet-100 text-violet-800", bgRing: "bg-violet-600" },
-    'Erkek Çocuk': { text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800", bgRing: "bg-emerald-600" },
-    Bebek: { text: "text-amber-900", badge: "bg-amber-100 text-amber-800", bgRing: "bg-amber-500" },
-    'Ev İşleri': { text: "text-cyan-900", badge: "bg-cyan-100 text-cyan-800", bgRing: "bg-cyan-600" },
+    Baba: { text: "text-blue-200", badge: "bg-blue-500/20 text-blue-300 border-blue-500/30", bgRing: "ring-blue-500/50" },
+    Anne: { text: "text-pink-200", badge: "bg-pink-500/20 text-pink-300 border-pink-500/30", bgRing: "ring-pink-500/50" },
+    'Kız Çocuk': { text: "text-violet-200", badge: "bg-violet-500/20 text-violet-300 border-violet-500/30", bgRing: "ring-violet-500/50" },
+    'Erkek Çocuk': { text: "text-emerald-200", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", bgRing: "ring-emerald-500/50" },
+    Bebek: { text: "text-amber-200", badge: "bg-amber-500/20 text-amber-300 border-amber-500/30", bgRing: "ring-amber-500/50" },
+    'Ev İşleri': { text: "text-cyan-200", badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30", bgRing: "ring-cyan-500/50" },
 };
 
 export function MemberDashboardCard({
@@ -219,7 +219,7 @@ export function MemberDashboardCard({
                 level: Math.floor(((member.xp || 0) + xpChange) / 1000) + 1,
             });
             await checkAndAwardBadges(member.id, familyId, { type: 'task_completed', task });
-            toast({ title: "🎉 Görev Tamamlandı!", description: `${task.points} XP kazandın.` });
+            toast({ title: "🎉 Görev Tamamlandı!", description: `${task.points} XP kazandın.`, className: "bg-indigo-900 border-indigo-800 text-indigo-100" });
         } catch (error) {
             toast({ title: "Hata", variant: "destructive" });
         }
@@ -232,46 +232,46 @@ export function MemberDashboardCard({
         const isCompleted = habit.completedDates?.includes(dateKey) || false;
         try {
             await updateHabitCompletion(habit.id, day, !isCompleted);
-             if (!isCompleted) toast({ title: '🎉 Süper!', description: `"${habit.title}" tamamlandı.` });
+             if (!isCompleted) toast({ title: '🎉 Süper!', description: `"${habit.title}" tamamlandı.`, className: "bg-orange-900 border-orange-800 text-orange-100" });
         } catch(e) {
             toast({ title: 'Hata', variant: 'destructive'});
         }
     };
     
-    const theme = roleThemes[member.role] || { text: "text-slate-800", badge: "bg-slate-100 text-slate-700", bgRing: "bg-slate-400" };
+    const theme = roleThemes[member.role] || { text: "text-slate-200", badge: "bg-slate-500/20 text-slate-300 border-slate-500/30", bgRing: "ring-slate-500/50" };
     const allPendingItems = [...habits, ...pendingTasks, ...pendingTests, ...pendingStudies, ...readingBooks, ...pendingMemorization, ...pendingVideos, ...todaysPrayers.filter(p => !p.completed)];
     const lastSevenDays = Array.from({ length: 7 }).map((_, i) => subDays(new Date(), i)).reverse();
 
-    // --- EV KARTI ---
+    // --- EV KARTI (GLASS) ---
     if (member.id === 'house') {
         const houseTasks = tasks.filter(t => (t.category === 'Ev İşleri' || t.category === 'Görev') && !t.completed);
         if (houseTasks.length === 0) return null;
         
         return (
              <Link href="/tasks" className="block transition-all hover:-translate-y-1 group relative z-10">
-                <Card className="shadow-sm border border-cyan-200/50 bg-gradient-to-br from-cyan-50/90 to-sky-50/90 backdrop-blur-md overflow-hidden h-full">
-                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-cyan-200/30 rounded-full blur-2xl pointer-events-none"></div>
-                    <CardHeader className="pb-3 border-b border-cyan-100/50 relative">
-                        <CardTitle className='flex items-center gap-3 text-lg text-cyan-900 font-bold'>
-                            <div className="p-2 bg-cyan-100/80 shadow-sm rounded-xl text-cyan-700"><Users className="w-5 h-5"/></div>
+                <Card className="shadow-lg border border-cyan-500/20 bg-gradient-to-br from-cyan-900/60 to-blue-900/60 backdrop-blur-md overflow-hidden h-full">
+                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                    <CardHeader className="pb-3 border-b border-cyan-500/20 relative">
+                        <CardTitle className='flex items-center gap-3 text-lg text-cyan-200 font-bold'>
+                            <div className="p-2 bg-cyan-500/20 shadow-sm rounded-xl text-cyan-400 border border-cyan-500/30"><Users className="w-5 h-5"/></div>
                             Ev Görevleri
                         </CardTitle>
-                        <CardDescription className="text-cyan-700/70 font-medium">Ortak sorumluluklar</CardDescription>
+                        <CardDescription className="text-cyan-200/60 font-medium">Ortak sorumluluklar</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3 pt-4 relative">
                     {houseTasks.slice(0, 3).map(task => {
                         const assignee = familyMembers.find(m => m.id === task.assigneeId);
                         return (
-                            <div key={task.id} className="flex items-center gap-3 p-3 rounded-2xl bg-white/70 border border-cyan-100/50 shadow-sm hover:shadow-md hover:bg-white/90 transition-all">
-                            <Checkbox id={`home-task-${task.id}`} className="border-cyan-300 text-cyan-600 data-[state=checked]:bg-cyan-600 data-[state=checked]:text-white rounded-full" />
+                            <div key={task.id} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-cyan-500/20 shadow-sm hover:bg-white/10 transition-all">
+                            <Checkbox id={`home-task-${task.id}`} className="border-cyan-400/50 text-cyan-400 data-[state=checked]:bg-cyan-500 data-[state=checked]:text-white rounded-full" />
                             <div className="flex-grow">
-                                <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer text-sm text-slate-700">{task.title}</label>
+                                <label htmlFor={`home-task-${task.id}`} className="font-semibold cursor-pointer text-sm text-slate-200">{task.title}</label>
                             </div>
-                            {assignee && <Badge variant="secondary" className="bg-cyan-100/80 text-cyan-800 border-0 text-[10px] font-bold px-2">{assignee.name}</Badge>}
+                            {assignee && <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold px-2">{assignee.name}</Badge>}
                             </div>
                         );
                     })}
-                     {houseTasks.length > 3 && <p className="text-xs text-center text-cyan-700/70 pt-2 font-bold flex items-center justify-center gap-1"><Sparkles className="w-3 h-3"/> + {houseTasks.length - 3} görev daha</p>}
+                     {houseTasks.length > 3 && <p className="text-xs text-center text-cyan-400/70 pt-2 font-bold flex items-center justify-center gap-1"><Sparkles className="w-3 h-3"/> + {houseTasks.length - 3} görev daha</p>}
                     </CardContent>
                 </Card>
             </Link>
@@ -284,36 +284,38 @@ export function MemberDashboardCard({
         <Card className="shadow-none border-0 bg-transparent flex flex-col gap-6 relative z-10">
             
             {/* --- HEADER --- */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-[2rem] bg-white/40 backdrop-blur-lg border border-white/50 shadow-sm">
-                 <div className="relative shrink-0">
-                    <div className={cn("w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-xl ring-4 ring-white", theme.bgRing)} style={{ backgroundColor: member.color }}>
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-6 rounded-[2rem] bg-white/5 backdrop-blur-md border border-white/10 shadow-lg relative overflow-hidden">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                 
+                 <div className="relative shrink-0 z-10">
+                    <div className={cn("w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-xl ring-4 ring-offset-2 ring-offset-slate-900", theme.bgRing)} style={{ backgroundColor: member.color }}>
                         {member.name.charAt(0).toUpperCase()}
                     </div>
                     {['Baba', 'Anne'].includes(member.role) && (
-                        <div className="absolute -bottom-2 -right-2 bg-amber-400 text-white rounded-full p-1.5 shadow-md border-2 border-white">
+                        <div className="absolute -bottom-2 -right-2 bg-amber-500 text-slate-900 rounded-full p-1.5 shadow-md border-2 border-slate-900">
                             <Trophy className="w-4 h-4 fill-current" />
                         </div>
                     )}
                 </div>
-                <div className="text-center sm:text-left flex-grow">
+                <div className="text-center sm:text-left flex-grow z-10">
                     <h3 className={cn("text-3xl font-black tracking-tight", theme.text)}>{member.name}</h3>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
-                        <Badge variant="outline" className={cn("border-0 text-xs uppercase font-extrabold tracking-wider px-3 py-1 rounded-full", theme.badge)}>
+                        <Badge variant="outline" className={cn("text-xs uppercase font-extrabold tracking-wider px-3 py-1 rounded-full", theme.badge)}>
                             {member.role}
                         </Badge>
-                        {member.xp ? <span className="text-sm text-slate-500 font-bold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400"/> {member.xp.toLocaleString()} XP</span> : null}
+                        {member.xp ? <span className="text-sm text-slate-400 font-bold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400"/> {member.xp.toLocaleString()} XP</span> : null}
                     </div>
                 </div>
 
                 {/* Serbest Zaman */}
                 {member.role.includes('Çocuk') && (
-                    <div className="sm:ml-auto mt-3 sm:mt-0 bg-gradient-to-br from-emerald-50 to-teal-50 backdrop-blur-md border border-emerald-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm min-w-[160px] hover:shadow-md transition-shadow">
-                        <div className="p-3 bg-emerald-100/80 rounded-xl text-emerald-600 shadow-sm">
+                    <div className="sm:ml-auto mt-3 sm:mt-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-4 shadow-lg min-w-[160px] z-10">
+                        <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-400 shadow-inner border border-emerald-500/20">
                              <Gamepad2 className="w-6 h-6" />
                         </div>
                         <div>
-                             <p className="text-[10px] text-emerald-700/70 font-extrabold uppercase tracking-wider">Serbest Zaman</p>
-                             <p className="text-2xl font-black text-emerald-800 leading-none mt-0.5">{earnedFreeTimeMinutes}<span className="text-sm font-bold ml-0.5 opacity-80">dk</span></p>
+                             <p className="text-[10px] text-emerald-300/80 font-extrabold uppercase tracking-wider">Serbest Zaman</p>
+                             <p className="text-2xl font-black text-emerald-400 leading-none mt-0.5">{earnedFreeTimeMinutes}<span className="text-sm font-bold ml-0.5 opacity-80">dk</span></p>
                         </div>
                     </div>
                 )}
@@ -324,25 +326,25 @@ export function MemberDashboardCard({
                 
                 {/* SOL KOLON */}
                 <div className="space-y-6">
-                     
-                     {/* 1. NAMAZ TAKİBİ */}
+                      
+                      {/* 1. NAMAZ TAKİBİ */}
                     {member.role.includes('Çocuk') && (todaysPrayers.filter(p=>!p.completed).length > 0) && (
                         <div className={cn("backdrop-blur-md rounded-[2rem] p-6 shadow-sm border transition-all hover:shadow-md", sectionThemes.prayer.container)}>
                             <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.prayer.title)}>
                                 <Clock className={cn("h-4 w-4", sectionThemes.prayer.icon)}/> Namaz Takibi
                             </h4>
-                            <div className="flex justify-between items-center gap-2 p-2 bg-white/40 rounded-2xl border border-white/50">
+                            <div className="flex justify-between items-center gap-2 p-3 bg-black/20 rounded-2xl border border-white/5">
                                 {todaysPrayers.map(prayer => (
                                     <div key={prayer.name} className="flex flex-col items-center gap-2 group">
-                                         <div className={cn(
-                                             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-2",
-                                             prayer.completed 
-                                                ? `${sectionThemes.prayer.activeItem} border-teal-400 scale-110` 
-                                                : "bg-white border-slate-200 text-slate-300 group-hover:border-teal-200"
-                                         )}>
-                                            <Heart className={cn("w-5 h-5 transition-all", prayer.completed ? "fill-white" : "group-hover:text-teal-400")} />
-                                         </div>
-                                        <p className={cn("text-[10px] font-bold transition-colors", prayer.completed ? "text-teal-700" : "text-slate-400 group-hover:text-teal-600")}>{prayer.name}</p>
+                                             <div className={cn(
+                                                "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-2",
+                                                prayer.completed 
+                                                    ? `${sectionThemes.prayer.activeItem} border-teal-400 scale-110` 
+                                                    : "bg-white/5 border-white/10 text-slate-500 group-hover:border-teal-500/50 group-hover:text-teal-400"
+                                            )}>
+                                                <Heart className={cn("w-5 h-5 transition-all", prayer.completed ? "fill-white" : "fill-none")} />
+                                             </div>
+                                            <p className={cn("text-[10px] font-bold transition-colors", prayer.completed ? "text-teal-300" : "text-slate-500 group-hover:text-teal-400")}>{prayer.name}</p>
                                     </div>
                                 ))}
                             </div>
@@ -358,33 +360,33 @@ export function MemberDashboardCard({
                             <div className="space-y-4">
                                  {habits.map(habit => {
                                     return (
-                                        <div key={habit.id} className={cn("rounded-2xl p-4 border shadow-sm", sectionThemes.habits.itemBg)}>
-                                          <div className="flex justify-between items-center mb-4">
-                                              <p className="font-bold text-sm text-slate-800 line-clamp-1">{habit.title}</p>
-                                              <Badge variant="secondary" className="bg-white/60 text-orange-700 text-[9px] border-orange-100 font-bold px-2">Haftalık</Badge>
-                                          </div>
-                                          <div className="flex justify-between items-center bg-white/40 p-2 rounded-xl border border-white/50">
-                                            {lastSevenDays.map(day => {
-                                              const dayKey = format(day, 'yyyy-MM-dd');
-                                              const isCompleted = habit.completedDates?.includes(dayKey) || false;
-                                              const isTodayDate = isToday(day);
-                                              return (
-                                                  <div key={dayKey} className="flex flex-col items-center gap-1.5 cursor-pointer group" onClick={() => handleHabitCompletion(habit.id, day)}>
-                                                      <div className={cn(
-                                                          "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 border-2",
-                                                          isCompleted 
-                                                            ? `${sectionThemes.habits.progressCheck} border-orange-400 text-white shadow-md scale-105` 
-                                                            : "bg-white border-slate-200 text-transparent hover:border-orange-300 hover:bg-orange-50",
-                                                          isTodayDate && !isCompleted && "ring-2 ring-orange-300 ring-offset-1 border-orange-300"
-                                                      )}>
-                                                          <Check className="w-4 h-4" strokeWidth={3} />
-                                                      </div>
-                                                      <p className={cn("text-[9px] font-bold uppercase", isTodayDate ? "text-orange-700" : "text-slate-400 group-hover:text-orange-600")}>{format(day, 'EEE', { locale: tr }).slice(0,1)}</p>
-                                                  </div>
-                                              )
-                                            })}
-                                          </div>
-                                        </div>
+                                            <div key={habit.id} className={cn("rounded-2xl p-4 border shadow-sm", sectionThemes.habits.itemBg)}>
+                                              <div className="flex justify-between items-center mb-4">
+                                                  <p className="font-bold text-sm text-slate-200 line-clamp-1">{habit.title}</p>
+                                                  <Badge variant="secondary" className="bg-orange-500/20 text-orange-300 text-[9px] border border-orange-500/30 font-bold px-2">Haftalık</Badge>
+                                              </div>
+                                              <div className="flex justify-between items-center bg-black/20 p-2 rounded-xl border border-white/5">
+                                                  {lastSevenDays.map(day => {
+                                                    const dayKey = format(day, 'yyyy-MM-dd');
+                                                    const isCompleted = habit.completedDates?.includes(dayKey) || false;
+                                                    const isTodayDate = isToday(day);
+                                                    return (
+                                                        <div key={dayKey} className="flex flex-col items-center gap-1.5 cursor-pointer group" onClick={() => handleHabitCompletion(habit.id, day)}>
+                                                              <div className={cn(
+                                                                "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 border-2",
+                                                                isCompleted 
+                                                                  ? `${sectionThemes.habits.progressCheck} border-orange-400 text-white shadow-md scale-105` 
+                                                                  : "bg-white/5 border-white/10 text-transparent hover:border-orange-500/50 hover:bg-orange-500/10",
+                                                                isTodayDate && !isCompleted && "ring-2 ring-orange-500/50 ring-offset-1 ring-offset-slate-900 border-orange-500/50"
+                                                              )}>
+                                                                  <Check className="w-4 h-4" strokeWidth={3} />
+                                                              </div>
+                                                              <p className={cn("text-[9px] font-bold uppercase", isTodayDate ? "text-orange-400" : "text-slate-500 group-hover:text-orange-300")}>{format(day, 'EEE', { locale: tr }).slice(0,1)}</p>
+                                                        </div>
+                                                    )
+                                                  })}
+                                              </div>
+                                            </div>
                                     )
                                 })}
                             </div>
@@ -400,10 +402,10 @@ export function MemberDashboardCard({
                             <div className="grid grid-cols-2 gap-3">
                                 {pendingMemorization.slice(0,2).map(item => (
                                     <Link href="/memorization" key={item.id} className="block group">
-                                        <div className={cn("p-4 rounded-2xl bg-white/70 border border-violet-100/50 transition-all text-center shadow-sm", sectionThemes.memorization.itemHover)}>
-                                            <p className="font-bold text-sm text-slate-800 truncate">{item.title}</p>
-                                            <span className={cn("text-[10px] font-bold mt-2 inline-block px-2.5 py-0.5 rounded-full", sectionThemes.memorization.badge)}>Çalışılıyor</span>
-                                        </div>
+                                            <div className={cn("p-4 rounded-2xl bg-white/5 border border-violet-500/20 transition-all text-center shadow-sm", sectionThemes.memorization.itemHover)}>
+                                                <p className="font-bold text-sm text-slate-200 truncate">{item.title}</p>
+                                                <span className={cn("text-[10px] font-bold mt-2 inline-block px-2.5 py-0.5 rounded-full", sectionThemes.memorization.badge)}>Çalışılıyor</span>
+                                            </div>
                                     </Link>
                                 ))}
                             </div>
@@ -423,16 +425,16 @@ export function MemberDashboardCard({
                             <div className="space-y-4">
                                 {pendingVideos.slice(0, 2).map(video => (
                                      <Link href="/videos" key={video.id} className="block group">
-                                        <div className={cn("p-4 rounded-2xl bg-white/70 border border-rose-100/50 transition-all shadow-sm", sectionThemes.videos.itemHover)}>
-                                            <div className="flex justify-between items-start mb-3">
-                                                <p className="font-bold text-sm text-slate-800 line-clamp-1 pr-2">{video.title}</p>
-                                                <div className="bg-rose-100 p-1.5 rounded-lg shadow-sm shrink-0"><Youtube className="w-4 h-4 text-rose-600"/></div>
+                                            <div className={cn("p-4 rounded-2xl bg-white/5 border border-rose-500/20 transition-all shadow-sm", sectionThemes.videos.itemHover)}>
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <p className="font-bold text-sm text-slate-200 line-clamp-1 pr-2">{video.title}</p>
+                                                    <div className="bg-rose-500/20 p-1.5 rounded-lg shadow-sm shrink-0 border border-rose-500/30"><Youtube className="w-4 h-4 text-rose-400"/></div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-2 bg-rose-950/50 rounded-full" indicatorClassName={sectionThemes.videos.progressIndicator}/>
+                                                    <p className="text-[10px] text-rose-300/70 text-right font-bold">{video.completedVideos || 0} / {video.totalVideos} izlendi</p>
+                                                </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-2 bg-rose-100/50 rounded-full" indicatorClassName={sectionThemes.videos.progressIndicator}/>
-                                                <p className="text-[10px] text-rose-700/70 text-right font-bold">{video.completedVideos || 0} / {video.totalVideos} izlendi</p>
-                                            </div>
-                                        </div>
                                     </Link>
                                 ))}
                             </div>
@@ -448,28 +450,28 @@ export function MemberDashboardCard({
                             <div className="space-y-4">
                                 {readingBooks.slice(0, 2).map(book => (
                                     <Link href="/library" key={book.id} className="block group">
-                                        <div className={cn("flex items-center gap-4 p-4 rounded-2xl bg-white/70 border border-yellow-100/50 transition-all shadow-sm", sectionThemes.reading.itemHover)}>
-                                            <div className={cn("w-12 h-16 rounded-lg shadow-sm border flex items-center justify-center shrink-0", sectionThemes.reading.bookCover)}>
-                                                <BookOpen className="w-6 h-6"/>
-                                            </div>
-                                            <div className="flex-grow min-w-0">
-                                                <div>
-                                                    <p className="font-bold text-sm text-slate-800 truncate">{book.title}</p>
-                                                    <p className="text-xs text-slate-500 truncate font-medium">{book.author}</p>
+                                            <div className={cn("flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-amber-500/20 transition-all shadow-sm", sectionThemes.reading.itemHover)}>
+                                                <div className={cn("w-12 h-16 rounded-lg shadow-sm border flex items-center justify-center shrink-0", sectionThemes.reading.bookCover)}>
+                                                    <BookOpen className="w-6 h-6"/>
                                                 </div>
-                                                {book.libraryStatus === 'reading' && book.progress !== undefined && (
-                                                    <div className="space-y-1.5 mt-2">
-                                                        <div className="flex justify-between items-center text-[10px] font-bold text-yellow-700/80">
-                                                            <span>%{book.progress.toFixed(0)}</span>
-                                                            <span>{Math.round((book.progress / 100) * (book.pageCount || 0))} / {book.pageCount} sayfa</span>
-                                                        </div>
-                                                        <div className="w-full bg-yellow-100/50 rounded-full h-2 overflow-hidden">
-                                                            <div className={cn("h-full rounded-full transition-all", sectionThemes.reading.progressIndicator)} style={{ width: `${book.progress}%` }}></div>
-                                                        </div>
+                                                <div className="flex-grow min-w-0">
+                                                    <div>
+                                                        <p className="font-bold text-sm text-slate-200 truncate">{book.title}</p>
+                                                        <p className="text-xs text-slate-400 truncate font-medium">{book.author}</p>
                                                     </div>
-                                                )}
+                                                    {book.libraryStatus === 'reading' && book.progress !== undefined && (
+                                                        <div className="space-y-1.5 mt-2">
+                                                            <div className="flex justify-between items-center text-[10px] font-bold text-amber-300/80">
+                                                                <span>%{book.progress.toFixed(0)}</span>
+                                                                <span>{Math.round((book.progress / 100) * (book.pageCount || 0))} / {book.pageCount} sayfa</span>
+                                                            </div>
+                                                            <div className="w-full bg-amber-950/50 rounded-full h-2 overflow-hidden">
+                                                                <div className={cn("h-full rounded-full transition-all", sectionThemes.reading.progressIndicator)} style={{ width: `${book.progress}%` }}></div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
                                     </Link>
                                 ))}
                             </div>
@@ -486,68 +488,68 @@ export function MemberDashboardCard({
                                 {/* Testler */}
                                 {pendingTests.map(test => (
                                     <Link href={`/education/${test.id}`} key={test.id} className="block group">
-                                        <div className={cn("flex items-center gap-4 p-3 rounded-2xl bg-white/70 border border-blue-100/50 transition-all shadow-sm relative overflow-hidden pl-3", sectionThemes.todo.itemHover)}>
-                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
-                                            <div className="bg-blue-100 p-2 rounded-xl text-blue-600 shadow-sm shrink-0">
-                                                <GraduationCap className="w-4 h-4" />
+                                            <div className={cn("flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-indigo-500/20 transition-all shadow-sm relative overflow-hidden pl-3", sectionThemes.todo.itemHover)}>
+                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+                                                <div className="bg-indigo-500/20 p-2 rounded-xl text-indigo-400 shadow-sm shrink-0 border border-indigo-500/30">
+                                                    <GraduationCap className="w-4 h-4" />
+                                                </div>
+                                                <div className="truncate flex-grow">
+                                                     <p className="font-bold text-sm text-slate-200 truncate">{test.displayName}</p>
+                                                     <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Sınav • {test.subject}</p>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-indigo-500/50 group-hover:text-indigo-400 transition-colors"/>
                                             </div>
-                                            <div className="truncate flex-grow">
-                                                <p className="font-bold text-sm text-slate-800 truncate">{test.displayName}</p>
-                                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Sınav • {test.subject}</p>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-blue-300 group-hover:text-blue-500 transition-colors"/>
-                                        </div>
                                     </Link>
                                 ))}
 
                                 {/* Çalışmalar/Ödevler */}
                                 {pendingStudies.map(study => (
                                     <Link href="/education/study" key={study.id} className="block group">
-                                        <div className={cn("flex items-center gap-4 p-3 rounded-2xl bg-white/70 border border-indigo-100/50 transition-all shadow-sm relative overflow-hidden pl-3 hover:border-indigo-300 hover:bg-indigo-50")}>
-                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
-                                             <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600 shadow-sm shrink-0">
-                                                <BookOpen className="w-4 h-4" />
+                                            <div className={cn("flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-indigo-500/20 transition-all shadow-sm relative overflow-hidden pl-3", sectionThemes.todo.itemHover)}>
+                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+                                                 <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400 shadow-sm shrink-0 border border-blue-500/30">
+                                                    <BookOpen className="w-4 h-4" />
+                                                </div>
+                                                <div className="truncate flex-grow">
+                                                     <p className="font-bold text-sm text-slate-200 truncate">{study.topic}</p>
+                                                     <p className="text-[10px] text-blue-300 font-bold uppercase tracking-wider">Çalışma • {study.subject}</p>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-blue-500/50 group-hover:text-blue-400 transition-colors"/>
                                             </div>
-                                            <div className="truncate flex-grow">
-                                                 <p className="font-bold text-sm text-slate-800 truncate">{study.topic}</p>
-                                                 <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">Çalışma • {study.subject}</p>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-500 transition-colors"/>
-                                        </div>
                                     </Link>
                                 ))}
 
                                 {/* Tamamlanan Çalışmalar (Accordion) */}
                                 {completedStudies.length > 0 && (
-                                    <Accordion type="single" collapsible className="w-full border border-slate-200/60 rounded-2xl bg-slate-50/50 shadow-sm overflow-hidden">
-                                        <AccordionItem value="item-1" className="border-0">
-                                            <AccordionTrigger className="text-xs font-bold text-slate-600 hover:text-slate-800 justify-start gap-2 py-3 px-4 no-underline hover:bg-slate-100/50 transition-colors">
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-500"/> {completedStudies.length} tamamlanan çalışma
-                                            </AccordionTrigger>
-                                            <AccordionContent className="space-y-1 px-4 pb-4 bg-white/40">
-                                                {completedStudies.map(study => (
-                                                    <div key={study.id} className="flex items-center gap-3 pl-2 py-1">
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-300 shrink-0"></div>
-                                                        <p className="text-xs font-medium text-slate-500 line-through truncate">{study.topic}</p>
-                                                    </div>
-                                                ))}
-                                            </AccordionContent>
-                                        </AccordionItem>
+                                    <Accordion type="single" collapsible className="w-full border border-indigo-500/20 rounded-2xl bg-indigo-900/10 shadow-sm overflow-hidden">
+                                            <AccordionItem value="item-1" className="border-0">
+                                                <AccordionTrigger className="text-xs font-bold text-slate-400 hover:text-slate-200 justify-start gap-2 py-3 px-4 no-underline hover:bg-white/5 transition-colors">
+                                                    <CheckCircle2 className="w-4 h-4 text-emerald-500"/> {completedStudies.length} tamamlanan çalışma
+                                                </AccordionTrigger>
+                                                <AccordionContent className="space-y-1 px-4 pb-4 bg-black/20">
+                                                    {completedStudies.map(study => (
+                                                        <div key={study.id} className="flex items-center gap-3 pl-2 py-1">
+                                                            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></div>
+                                                            <p className="text-xs font-medium text-slate-500 line-through truncate">{study.topic}</p>
+                                                        </div>
+                                                    ))}
+                                                </AccordionContent>
+                                            </AccordionItem>
                                     </Accordion>
                                 )}
 
                                 {/* Normal Görevler */}
                                 {pendingTasks.slice(0, 4).map(task => (
-                                    <div key={task.id} className={cn("flex items-start gap-3 p-3 rounded-2xl bg-white/70 border border-blue-100/50 transition-all shadow-sm", sectionThemes.todo.itemHover)}>
-                                        <Checkbox
-                                            id={`personal-task-${task.id}-${member.id}`}
-                                            onCheckedChange={() => handleTaskCompletion(task)}
-                                            className={cn("mt-0.5 border-slate-300 rounded-full", sectionThemes.todo.checkbox)}
-                                        />
-                                        <div className="flex-grow">
-                                            <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-sm font-bold text-slate-700 leading-tight cursor-pointer block">{task.title}</label>
-                                            {task.points > 0 && <span className="text-[10px] text-blue-600 font-bold mt-1 inline-block bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">+{task.points} XP</span>}
-                                        </div>
+                                    <div key={task.id} className={cn("flex items-start gap-3 p-3 rounded-2xl bg-white/5 border border-indigo-500/20 transition-all shadow-sm", sectionThemes.todo.itemHover)}>
+                                            <Checkbox
+                                                id={`personal-task-${task.id}-${member.id}`}
+                                                onCheckedChange={() => handleTaskCompletion(task)}
+                                                className={cn("mt-0.5 border-slate-500 rounded-full", sectionThemes.todo.checkbox)}
+                                            />
+                                            <div className="flex-grow">
+                                                <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-sm font-bold text-slate-300 leading-tight cursor-pointer block hover:text-white transition-colors">{task.title}</label>
+                                                {task.points > 0 && <span className="text-[10px] text-blue-300 font-bold mt-1 inline-block bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full">+{task.points} XP</span>}
+                                            </div>
                                     </div>
                                 ))}
                             </div>

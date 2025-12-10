@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -11,7 +10,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowLeft } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -28,8 +27,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend } from "recharts";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend, LabelList } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { useRouter } from "next/navigation";
+
+// --- DESIGN SYSTEM: Glassmorphism Colors ---
+const glassColors = {
+    CARD_BG: "bg-white/5 backdrop-blur-md border border-white/10 shadow-lg",
+    CARD_HOVER: "hover:bg-white/10 hover:border-white/20 hover:shadow-xl transition-all duration-300",
+    TEXT_MAIN: "text-slate-100",
+    TEXT_MUTED: "text-slate-400",
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    ICON_BOX: "bg-gradient-to-br from-amber-500 to-orange-600 p-2 rounded-xl shadow-lg",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/20",
+    ACCENT_GRADIENT: "bg-gradient-to-r from-amber-600 to-orange-600",
+};
 
 const progressFormSchema = z.object({
   currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
@@ -72,10 +84,10 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100 rounded-[2rem]">
                 <DialogHeader>
-                    <DialogTitle>İlerleme Gir: {book.title}</DialogTitle>
-                    <DialogDescription>Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
+                    <DialogTitle className="text-xl font-bold">İlerleme Gir: {book.title}</DialogTitle>
+                    <DialogDescription className="text-slate-400">Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleProgressSave)} className="py-4 space-y-4">
@@ -84,15 +96,17 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
                             name="currentPage"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Geldiğin Sayfa Numarası</FormLabel>
-                                    <FormControl><Input type="number" {...field} autoFocus /></FormControl>
+                                    <FormLabel className="text-slate-300 font-bold text-xs uppercase tracking-wider">Sayfa Numarası</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} autoFocus className="bg-white/5 border-white/10 text-slate-100 h-12 rounded-xl focus:border-amber-500 transition-all" />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-                            <Button type="submit">Kaydet</Button>
+                        <DialogFooter className="gap-2">
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
+                            <Button type="submit" className="bg-amber-600 hover:bg-amber-500 text-white rounded-xl px-6 font-bold shadow-lg shadow-amber-900/20">Kaydet</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -102,6 +116,7 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
 }
 
 export default function LibraryPage() {
+  const router = useRouter();
   const { familyId, familyMembers } = useAuth();
   const [allBooks, setAllBooks] = React.useState<BookType[]>([]);
   const [userLibraries, setUserLibraries] = React.useState<UserLibrary[]>([]);
@@ -174,7 +189,7 @@ export default function LibraryPage() {
             bookId: book.id,
             startTime: new Date().toISOString(),
             endTime: new Date().toISOString(),
-            durationSeconds: 0, // Manual entry, so duration is 0
+            durationSeconds: 0, 
             pagesRead: session.pagesRead,
         });
         toast({ title: "Okuma Oturumu Kaydedildi!", description: `${session.pagesRead} sayfa okudun.` });
@@ -303,197 +318,233 @@ export default function LibraryPage() {
   }, [readingGoals, readingSessions, userLibraries, selectedMember]);
 
   return (
-    <>
-      <div className="space-y-6 pb-24 md:pb-8">
-        <PageHeader title="Kişisel Kütüphanem">
-            <Link href="/library/archive">
-                <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-none">
-                    <Library className="mr-2 h-4 w-4"/>
-                    Kitaplığımız
-                </Button>
-            </Link>
-        </PageHeader>
-        
-        <div className="flex items-center gap-4 border-b pb-4 overflow-x-auto">
-          {familyMembers.map((member) => (
-            <Button
-              key={member.id}
-              variant={selectedMember?.id === member.id ? "default" : "outline"}
-              className={`h-auto p-2 flex items-center gap-2 rounded-full transition-all duration-200 shrink-0 ${selectedMember?.id === member.id ? 'scale-105 shadow-lg' : 'hover:bg-accent'}`}
-              onClick={() => setSelectedMember(member)}
-            >
-              <div 
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" 
-                  style={{ backgroundColor: member.color, color: '#fff' }}
-              >
-                  {member.name.charAt(0).toUpperCase()}
-              </div>
-              <p className="font-bold text-sm">{member.name}</p>
-            </Button>
-          ))}
+    <div className="min-h-[100dvh] bg-slate-950 font-sans text-slate-100 relative overflow-hidden pb-24">
+         {/* Ambient Background */}
+         <div className="fixed inset-0 z-0 pointer-events-none">
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-900/20 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-orange-900/20 rounded-full blur-[100px]" />
+            <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-yellow-900/10 rounded-full blur-[100px]" />
         </div>
-        
-        {readingGoals && (
-             <Card className="shadow-lg bg-gradient-to-br from-pink-500 to-purple-600 text-white">
-                <CardHeader>
-                    <CardTitle>Aylık Okuma Hedefleri</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-6">
+
+        {/* HEADER (Dynamic Glass) */}
+        <div className={cn("sticky top-0 z-40 py-4 sm:px-6 transition-all duration-300", glassColors.HEADER_BG)}>
+            <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()} className={cn("rounded-full mr-1 text-slate-400 hover:text-white hover:bg-white/10")}>
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <div className={glassColors.ICON_BOX}>
+                        <Library className="w-6 h-6 text-white" />
+                    </div>
                     <div>
-                        <div className="flex justify-between text-xs sm:text-sm mb-1">
-                            <span className="text-white/80">Sayfa Hedefi</span>
-                            <span className="font-semibold">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly?.pages || 0}</span>
-                        </div>
-                        <Progress value={monthlyGoalProgress.pages} className="h-1.5 bg-white/30" indicatorClassName="bg-white" />
+                        <p className={cn("text-xs font-semibold uppercase tracking-wider", glassColors.TEXT_MUTED)}>Eğitim</p>
+                        <h1 className={cn("text-lg font-bold leading-none", glassColors.TEXT_MAIN)}>Kişisel Kütüphane</h1>
                     </div>
-                     <div>
-                        <div className="flex justify-between text-xs sm:text-sm mb-1">
-                            <span className="text-white/80">Kitap Hedefi</span>
-                             <span className="font-semibold">{monthlyGoalProgress.booksRead} / {readingGoals.monthly?.books || 0}</span>
-                        </div>
-                        <Progress value={monthlyGoalProgress.books} className="h-1.5 bg-white/30" indicatorClassName="bg-green-300" />
-                    </div>
-                </CardContent>
-            </Card>
-        )}
+                </div>
 
-        <Card className="shadow-lg bg-gradient-to-br from-green-500 to-teal-600 text-white">
-            <CardHeader>
-                <CardTitle>Kütüphane Özeti</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-4 gap-4 text-center">
-                <div>
-                    <BookOpen className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{stats.reading}</p>
-                    <p className="text-xs text-white/80">Okunuyor</p>
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                    <Link href="/library/archive">
+                        <Button variant="outline" className={cn("rounded-full px-6 font-bold", glassColors.BUTTON_GLASS)}>
+                            <Library className="mr-2 h-4 w-4"/> Arşiv
+                        </Button>
+                    </Link>
                 </div>
-                 <div>
-                    <BookUp className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{toReadBooks.length}</p>
-                    <p className="text-xs text-white/80">Okunacak</p>
-                </div>
-                <div>
-                    <BookCheck className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{stats.finished}</p>
-                    <p className="text-xs text-white/80">Okunan</p>
-                </div>
-                 <div>
-                    <BookIcon className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{stats.total}</p>
-                    <p className="text-xs text-white/80">Toplam</p>
-                </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
 
-        <Card className="shadow-lg bg-gradient-to-r from-orange-400 to-rose-400 text-white">
-             <CardHeader>
-                 <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)} className="w-full">
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                            <BarChart2 /> Okuma İstatistikleri
-                        </CardTitle>
-                         <TabsList className="grid w-full grid-cols-2 sm:w-auto">
-                            <TabsTrigger value="weekly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Haftalık</TabsTrigger>
-                            <TabsTrigger value="monthly" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Aylık</TabsTrigger>
-                        </TabsList>
-                    </div>
-                </Tabs>
-            </CardHeader>
-            <CardContent>
-                 {readingStatsPeriod === 'weekly' ? (
-                     <div className="grid grid-cols-7 gap-2 text-center">
-                        {readingStatsByPeriod.weeklyChartData.map((data: any, index) => {
-                             const dailyGoal = readingGoals?.daily?.pages || 0;
-                             const isCompleted = dailyGoal > 0 && data.pagesRead >= dailyGoal;
-                             return (
-                                <div key={index} className="relative flex flex-col items-center justify-end h-32 p-1 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden">
-                                     {isCompleted && (
-                                        <div className="absolute inset-0 bg-white/30 flex flex-col items-center justify-center">
-                                            <Check className="h-8 w-8 text-white" />
-                                        </div>
-                                     )}
-                                     <p className="font-bold text-lg">{data.pagesRead}</p>
-                                     <p className="text-xs font-semibold text-white/90 relative z-10">{data.day}</p>
+        <div className="max-w-7xl mx-auto md:p-6 p-4 relative z-10 space-y-8">
+            
+            {/* Member Selection */}
+             <div className="overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex gap-3 min-w-max">
+                  {familyMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      onClick={() => setSelectedMember(member)}
+                      className={cn(
+                        "flex items-center gap-2 pl-2 pr-4 py-2 rounded-full transition-all duration-300 border font-bold text-sm",
+                        selectedMember?.id === member.id
+                          ? "bg-slate-100 text-slate-900 border-white shadow-lg scale-105"
+                          : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-slate-200"
+                      )}
+                    >
+                         <div 
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm" 
+                            style={{ backgroundColor: member.color }}
+                        >
+                            {member.name.charAt(0)}
+                        </div>
+                      {member.name}
+                    </button>
+                  ))}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Sol Kolon: İstatistikler ve Hedefler */}
+                <div className="lg:col-span-1 space-y-6">
+                    {/* Kütüphane Özeti */}
+                    <Card className={cn(glassColors.CARD_BG)}>
+                        <CardHeader className="pb-2">
+                            <CardTitle className={cn("text-sm font-bold uppercase tracking-wider text-slate-400")}>Kütüphane Özeti</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-4">
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center">
+                                <BookOpen className="h-6 w-6 text-amber-400 mb-1" />
+                                <p className="text-2xl font-black text-slate-100">{stats.reading}</p>
+                                <p className="text-xs text-slate-500 font-bold uppercase">Okunuyor</p>
+                            </div>
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center">
+                                <BookCheck className="h-6 w-6 text-emerald-400 mb-1" />
+                                <p className="text-2xl font-black text-slate-100">{stats.finished}</p>
+                                <p className="text-xs text-slate-500 font-bold uppercase">Bitti</p>
+                            </div>
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center">
+                                <BookUp className="h-6 w-6 text-blue-400 mb-1" />
+                                <p className="text-2xl font-black text-slate-100">{stats.toRead}</p>
+                                <p className="text-xs text-slate-500 font-bold uppercase">Sırada</p>
+                            </div>
+                             <div className="bg-white/5 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center">
+                                <BookIcon className="h-6 w-6 text-purple-400 mb-1" />
+                                <p className="text-2xl font-black text-slate-100">{stats.total}</p>
+                                <p className="text-xs text-slate-500 font-bold uppercase">Toplam</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Hedefler */}
+                    {readingGoals && (
+                        <Card className={cn(glassColors.CARD_BG, "relative overflow-hidden")}>
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                            <CardHeader className="pb-2 relative z-10">
+                                <CardTitle className={cn("text-sm font-bold uppercase tracking-wider text-slate-400")}>Bu Ayki Hedefler</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6 relative z-10">
+                                <div>
+                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                        <span className="text-slate-300">Sayfa Hedefi</span>
+                                        <span className="text-amber-400">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly?.pages || 0}</span>
+                                    </div>
+                                    <Progress value={monthlyGoalProgress.pages} className="h-2 bg-slate-800" indicatorClassName="bg-amber-500" />
                                 </div>
-                            )
-                        })}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 text-center">
-                        {readingStatsByPeriod.monthlyPageData.map((data, index) => {
-                             const monthlyGoal = readingGoals?.monthly?.pages || 0;
-                             const monthTotalPages = data.pagesRead;
-                             const isCompleted = monthlyGoal > 0 && monthTotalPages >= monthlyGoal;
-                             return (
-                                <div key={index} className="relative flex flex-col items-center justify-center p-2 rounded-lg bg-white/10 backdrop-blur-sm overflow-hidden min-h-[80px]">
-                                     {isCompleted && (
-                                        <div className="absolute inset-0 bg-white/30 flex items-center justify-center">
-                                            <Check className="h-6 w-6 text-white" />
-                                        </div>
-                                     )}
-                                     <p className="font-bold text-lg">{monthTotalPages.toLocaleString('tr-TR')}</p>
-                                     <p className="text-xs font-semibold text-white/90 relative z-10">{data.month}</p>
+                                <div>
+                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                        <span className="text-slate-300">Kitap Hedefi</span>
+                                        <span className="text-orange-400">{monthlyGoalProgress.booksRead} / {readingGoals.monthly?.books || 0}</span>
+                                    </div>
+                                    <Progress value={monthlyGoalProgress.books} className="h-2 bg-slate-800" indicatorClassName="bg-orange-500" />
                                 </div>
-                            )
-                        })}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-        
-        {readingBooks.length > 0 && (
-            <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Şu An Okudukların</h2>
-                <div className="grid grid-cols-1 gap-6">
-                    {readingBooks.map(book => <ReadingBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onViewDetails={() => setViewingBook(book)} onOpenProgressDialog={() => setEditingProgressForBook(book)} />)}
-                </div>
-            </div>
-        )}
-        
-        {toReadBooks.length > 0 && (
-            <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Sıradakiler</h2>
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
-                </div>
-            </div>
-        )}
+                            </CardContent>
+                        </Card>
+                    )}
 
-        {finishedBooks.length > 0 && (
-             <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400">
-                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2 text-amber-900"><BookCheck/> Bitirdiklerim</h2>
-                 <div className="relative">
-                    <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-4 -mb-4">
-                        <div className="flex flex-nowrap gap-4">
-                            {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                    {/* Okuma İstatistikleri Grafik */}
+                    <Card className={cn(glassColors.CARD_BG)}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-400">Okuma Grafiği</CardTitle>
+                             <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)}>
+                                <TabsList className="bg-white/5 border border-white/10 h-8">
+                                    <TabsTrigger value="weekly" className="text-xs h-6 px-2 data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-400">Haftalık</TabsTrigger>
+                                    <TabsTrigger value="monthly" className="text-xs h-6 px-2 data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-400">Aylık</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </CardHeader>
+                         <CardContent>
+                             {readingStatsPeriod === 'weekly' ? (
+                                <div className="h-40 w-full mt-4">
+                                     <ChartContainer config={{ pages: { label: "Sayfa", color: "#f59e0b" } }} className="h-full w-full">
+                                        <BarChart data={readingStatsByPeriod.weeklyChartData} margin={{ top: 20 }}>
+                                            <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
+                                            <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} content={<ChartTooltipContent hideLabel className="bg-slate-900 border-white/10 text-slate-100"/>} />
+                                            <Bar dataKey="pagesRead" fill="var(--color-pages)" radius={[4, 4, 4, 4]}>
+                                                 <LabelList 
+                                                    dataKey="pagesRead" 
+                                                    position="top" 
+                                                    offset={8} 
+                                                    className="fill-slate-400 font-bold" 
+                                                    fontSize={10} 
+                                                    formatter={(value: any) => value > 0 ? value : ""}
+                                                />
+                                            </Bar>
+                                        </BarChart>
+                                     </ChartContainer>
+                                </div>
+                             ) : (
+                                 <div className="grid grid-cols-4 gap-2 mt-4">
+                                     {readingStatsByPeriod.monthlyPageData.slice(0, 8).map((data, i) => (
+                                         <div key={i} className="bg-white/5 rounded-lg p-2 text-center border border-white/5">
+                                             <p className="text-[10px] font-bold text-slate-500 uppercase">{data.month}</p>
+                                             <p className="text-sm font-bold text-slate-200">{data.pagesRead}</p>
+                                         </div>
+                                     ))}
+                                 </div>
+                             )}
+                         </CardContent>
+                    </Card>
+                </div>
+
+                {/* Sağ Kolon: Kitap Listeleri */}
+                <div className="lg:col-span-2 space-y-8">
+                    
+                    {/* Okunanlar */}
+                    {readingBooks.length > 0 && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2">
+                                <BookOpen className="w-5 h-5 text-amber-400" /> Şu An Okudukların
+                            </h2>
+                            <div className="grid gap-4">
+                                {readingBooks.map(book => (
+                                    <ReadingBookCard 
+                                        key={book.id} 
+                                        book={book} 
+                                        onUpdateStatus={handleUpdateStatus} 
+                                        onRemove={handleRemoveFromLibrary} 
+                                        onViewDetails={() => setViewingBook(book)} 
+                                        onOpenProgressDialog={() => setEditingProgressForBook(book)} 
+                                    />
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
+                    
+                    {/* Sıradakiler */}
+                    {toReadBooks.length > 0 && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2">
+                                <BookUp className="w-5 h-5 text-blue-400" /> Sıradakiler
+                            </h2>
+                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bitirilenler */}
+                    {finishedBooks.length > 0 && (
+                         <div className={cn("p-6 rounded-[2rem] relative overflow-hidden", glassColors.CARD_BG)}>
+                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500"></div>
+                            <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2 mb-4">
+                                <BookCheck className="w-5 h-5 text-emerald-400" /> Bitirdiklerim
+                            </h2>
+                            <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-hide -mx-2 px-2">
+                                {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+        </div>
+
+        {selectedMember && (
+            <div className="fixed bottom-24 md:bottom-8 right-6 z-50">
+                <Button 
+                    onClick={() => setIsGoalDialogOpen(true)}
+                    className="rounded-full w-14 h-14 bg-amber-600 text-white shadow-2xl shadow-amber-900/50 hover:bg-amber-500 transition-transform hover:scale-105 active:scale-95 border-2 border-amber-400"
+                >
+                    <Target className="w-6 h-6" />
+                </Button>
+            </div>
         )}
-
-      </div>
-
-      {selectedMember && (
-          <div className="fixed bottom-20 right-6 md:bottom-6 md:right-6 z-50">
-              <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
-                  <DialogTrigger asChild>
-                      <Button className="rounded-full w-14 h-14 shadow-lg bg-gradient-to-br from-blue-500 to-purple-600 hover:scale-105 transition-transform">
-                          <Target className="w-7 h-7" />
-                      </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                      <DialogHeader>
-                          <DialogTitle>{selectedMember.name} için Hedef Belirle</DialogTitle>
-                      </DialogHeader>
-                      <SetReadingGoalForm
-                          initialGoals={selectedMember.readingGoals}
-                          onSave={handleSaveGoals}
-                      />
-                  </DialogContent>
-              </Dialog>
-          </div>
-      )}
       
       <BookDetailDialog 
         book={viewingBook} 
@@ -506,7 +557,21 @@ export default function LibraryPage() {
         onOpenChange={() => setEditingProgressForBook(null)}
         onSaveSession={handleSaveSession}
       />
-    </>
+      <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
+          <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100 rounded-[2rem]">
+              <DialogHeader>
+                  <DialogTitle>Hedef Belirle</DialogTitle>
+                  <DialogDescription className="text-slate-400">{selectedMember?.name} için okuma hedeflerini düzenle.</DialogDescription>
+              </DialogHeader>
+              <div className="text-slate-100 [&_label]:text-slate-300 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-slate-100">
+                  <SetReadingGoalForm
+                      initialGoals={selectedMember?.readingGoals}
+                      onSave={handleSaveGoals}
+                  />
+              </div>
+          </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -514,60 +579,70 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
-        <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-            <div className="p-4 flex flex-col sm:flex-row gap-4">
-                <Image 
-                    src={book.image} 
-                    alt={book.title} 
-                    width={100} 
-                    height={150} 
-                    className="w-24 sm:w-28 h-auto rounded-md aspect-[2/3] object-cover shadow-md mx-auto sm:mx-0 cursor-pointer" 
-                    onClick={onViewDetails}
-                    data-ai-hint="book cover"
-                />
-                <div className="flex-grow flex flex-col min-w-0">
-                    <div className="flex-grow flex flex-col min-w-0 cursor-pointer" onClick={onViewDetails}>
-                        <h3 className="font-bold text-lg leading-tight truncate">{book.title}</h3>
-                        <p className="text-sm text-white/80 truncate">{book.author}</p>
-                        {book.startedAt && <p className="text-xs text-white/80 mt-1">Başlangıç: {format(parseISO(book.startedAt), 'dd MMM yyyy', {locale: tr})}</p>}
+        <div className={cn("p-4 rounded-2xl flex flex-col sm:flex-row gap-5 transition-all group relative overflow-hidden", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
+             {/* Progress Bar Background */}
+             <div className="absolute bottom-0 left-0 h-1 bg-amber-500/20 w-full">
+                 <div className="h-full bg-amber-500 transition-all duration-1000" style={{ width: `${book.progress || 0}%` }}></div>
+             </div>
+
+            <Image 
+                src={book.image} 
+                alt={book.title} 
+                width={100} 
+                height={150} 
+                className="w-24 sm:w-28 h-auto rounded-lg aspect-[2/3] object-cover shadow-lg mx-auto sm:mx-0 cursor-pointer hover:scale-105 transition-transform" 
+                onClick={onViewDetails}
+                data-ai-hint="book cover"
+            />
+            <div className="flex-grow flex flex-col min-w-0 py-1">
+                <div className="flex justify-between items-start">
+                    <div className="cursor-pointer" onClick={onViewDetails}>
+                        <h3 className={cn("font-bold text-lg leading-tight truncate text-slate-100 group-hover:text-amber-400 transition-colors")}>{book.title}</h3>
+                        <p className="text-sm text-slate-400 truncate">{book.author}</p>
                     </div>
-                    
-                    <div className="mt-4 space-y-2">
-                        <div className="relative h-4">
-                            <Progress value={book.progress || 0} className="h-full bg-white/30" indicatorClassName="bg-white" />
-                            <div className="absolute inset-0 flex justify-between items-center px-2 text-xs font-medium text-purple-900">
-                                <span>{pagesRead} / {book.pageCount || '?'} sayfa</span>
-                                <span className="font-semibold">{book.progress || 0}%</span>
-                            </div>
-                        </div>
-                        <div className="flex gap-2 pt-2 items-center justify-center">
-                             <Button variant="secondary" className="flex-1 bg-white/20 text-white hover:bg-white/30" onClick={onOpenProgressDialog}>İlerleme Gir</Button>
-                            <Link href={`/library/session/${book.id}`}>
-                                <Button size="icon" className="rounded-full bg-amber-400 text-amber-900 hover:bg-amber-500">
-                                    <Clock className="h-5 w-5"/>
+                    <div className="flex gap-1">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-full">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-slate-900 border-white/10 text-slate-100" align="end">
+                                <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)} className="hover:bg-white/10 cursor-pointer">
+                                    <BookCheck className="mr-2 h-4 w-4 text-emerald-400"/> Kitabı Bitir
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-rose-400 focus:text-rose-300 hover:bg-white/10 cursor-pointer" onClick={() => onRemove(book.id)}>
+                                    <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+                
+                <div className="mt-auto space-y-4 pt-4">
+                    <div className="flex items-end justify-between">
+                         <div>
+                             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">İlerleme</p>
+                             <div className="flex items-baseline gap-1">
+                                 <span className="text-2xl font-black text-amber-500">{book.progress || 0}%</span>
+                                 <span className="text-sm text-slate-400 font-medium">({pagesRead} / {book.pageCount || '?'} syf)</span>
+                             </div>
+                         </div>
+                         <div className="flex gap-2">
+                             <Button size="sm" variant="outline" className={cn("rounded-xl border-white/10 text-slate-300 hover:text-white", glassColors.BUTTON_GLASS)} onClick={onOpenProgressDialog}>
+                                 <Edit className="w-3 h-3 mr-2"/> Güncelle
+                             </Button>
+                             <Link href={`/library/session/${book.id}`}>
+                                <Button size="icon" className="rounded-xl bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/20">
+                                    <Play className="h-4 w-4 fill-current"/>
                                 </Button>
                             </Link>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:text-white hover:bg-white/20">
-                                        <MoreVertical className="h-5 w-5" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)}>
-                                        <BookCheck className="mr-2 h-4 w-4"/> Kitabı Bitir
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
-                                        <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
+                         </div>
                     </div>
                 </div>
             </div>
-        </Card>
-    );
+        </div>
+    )
 }
 
 
@@ -576,54 +651,41 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                 <div className="group/book relative w-32 shrink-0 cursor-pointer">
-                    <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md transition-transform duration-300 group-hover/book:scale-105" data-ai-hint="book cover" />
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg flex flex-col justify-end">
-                       <p className="font-semibold text-[11px] text-white leading-tight line-clamp-2" title={book.title}>{book.title}</p>
-                       <p className="text-white/80 text-[10px] font-semibold sm:hidden">Bitiş: {book.finishedAt ? format(parseISO(book.finishedAt), 'dd.MM.yy') : ''}</p>
-                   </div>
-                   <div className="absolute inset-0 bg-black/60 rounded-lg flex-col items-center justify-center p-2 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
-                       <p className="text-white/80 text-[10px] font-semibold">Bitiş: {book.finishedAt ? format(parseISO(book.finishedAt), 'dd.MM.yy') : ''}</p>
-                       <div className="flex gap-2 mt-auto">
-                           <Button variant="secondary" size="sm" className="h-7 px-2 text-xs" onClick={(e) => {e.stopPropagation(); onUpdateStatus(book.id, 'reading', 0); }}>
-                               <RotateCcw className="mr-1 h-3 w-3"/> Tekrar
-                           </Button>
-                           <AlertDialog>
-                                 <AlertDialogTrigger asChild>
-                                     <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                                        <Trash2 className="h-3 w-3"/>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                 <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                                     <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                     <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onRemove(book.id)}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                       </div>
-                   </div>
+                 <div className="group/book relative w-28 shrink-0 cursor-pointer transition-transform hover:-translate-y-2 duration-300">
+                    <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-md" data-ai-hint="book cover" />
+                    
+                    {/* Overlay */}
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent rounded-lg opacity-0 group-hover/book:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                        <div className="text-center">
+                             <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-1 shadow-sm">Tamamlandı</div>
+                             <p className="text-[10px] text-slate-300">{book.finishedAt ? format(parseISO(book.finishedAt), 'dd.MM.yy') : ''}</p>
+                        </div>
+                    </div>
                 </div>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xs">
+            <DialogContent className="sm:max-w-xs bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
                  <DialogHeader>
-                    <DialogTitle>{book.title}</DialogTitle>
-                    <DialogDescription>{book.author}</DialogDescription>
+                    <DialogTitle className="text-center text-lg">{book.title}</DialogTitle>
+                    <DialogDescription className="text-center text-slate-400">{book.author}</DialogDescription>
                 </DialogHeader>
-                <div className="py-4 text-center text-sm text-muted-foreground">
-                    {book.finishedAt && `Bitirme Tarihi: ${format(parseISO(book.finishedAt), 'dd MMMM yyyy')}`}
+                <div className="py-6 flex justify-center">
+                     <div className="relative w-32 shadow-2xl rotate-3 transition-transform hover:rotate-0">
+                        <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover rounded-lg aspect-[2/3]" />
+                     </div>
                 </div>
-                <DialogFooter className="flex-col gap-2">
-                     <Button variant="secondary" className="w-full" onClick={() => { onUpdateStatus(book.id, 'reading', 0); setIsOpen(false); }}>
+                <DialogFooter className="flex-col gap-2 sm:gap-2">
+                     <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 text-white border-0" onClick={() => { onUpdateStatus(book.id, 'reading', 0); setIsOpen(false); }}>
                         <RotateCcw className="mr-2 h-4 w-4"/> Tekrar Oku
                     </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                             <Button variant="destructive" className="w-full">
+                             <Button variant="ghost" className="w-full text-rose-400 hover:text-rose-300 hover:bg-rose-500/10">
                                 <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription>"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}}>Kaldır</AlertDialogAction></AlertDialogFooterComponent>
+                        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                            <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription className="text-slate-400">"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooterComponent><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-300">İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}} className="bg-rose-600 hover:bg-rose-700 text-white">Kaldır</AlertDialogAction></AlertDialogFooterComponent>
                         </AlertDialogContent>
                     </AlertDialog>
                 </DialogFooter>
@@ -634,35 +696,34 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
 
 function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
-        <Card className="overflow-hidden flex flex-col group text-center transition-all hover:shadow-md hover:-translate-y-1 relative bg-gradient-to-br from-green-400 to-teal-500 text-white">
-            <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3]" data-ai-hint="book cover"/>
-            <div className="p-2 flex flex-col flex-grow">
-                <p className="font-semibold text-sm leading-tight flex-grow line-clamp-2 text-white/90" title={book.title}>{book.title}</p>
-                <p className="text-xs text-white/70 truncate">{book.author}</p>
+        <Card className={cn("overflow-hidden flex flex-col group text-center transition-all relative p-0 border-0 bg-transparent h-full")}>
+            <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-lg mb-3 group-hover:-translate-y-1 transition-transform duration-300">
+                 <Image src={book.image} alt={book.title} width={150} height={225} className="w-full h-full object-cover" data-ai-hint="book cover"/>
+                 
+                 {/* Hover Overlay */}
+                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                     <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-lg" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
+                        <BookUp className="mr-2 h-4 w-4"/> Başla
+                    </Button>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                             <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 text-white border-0">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-slate-900 border-white/10 text-slate-100">
+                            <DropdownMenuItem className="text-rose-400 focus:text-rose-300 cursor-pointer" onClick={() => onRemove(book.id)}>
+                                <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                 </div>
             </div>
-            <CardFooter className="p-2">
-                 <Button variant="secondary" size="sm" className="w-full bg-white/20 text-white hover:bg-white/30" onClick={() => onUpdateStatus(book.id, 'reading', 0)}>
-                    <BookUp className="mr-2 h-4 w-4"/> Başla
-                </Button>
-            </CardFooter>
-             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-7 w-7 bg-black/20 hover:bg-black/30 border-none text-white">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(book.id)}>
-                            <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+            
+            <div className="px-1">
+                <p className="font-bold text-sm leading-tight line-clamp-2 text-slate-200 mb-0.5" title={book.title}>{book.title}</p>
+                <p className="text-xs text-slate-500 truncate font-medium">{book.author}</p>
             </div>
         </Card>
     )
 }
-
-    
-
-    

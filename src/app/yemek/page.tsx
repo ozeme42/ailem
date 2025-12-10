@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save, Utensils, Flame, Activity, PieChart as PieChartIcon, CalendarPlus, Check } from "lucide-react";
+import { PlusCircle, Search, Clock, Soup, Star, ChevronLeft, ChevronRight, XCircle, Wheat, BarChart2, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Save, Utensils, Flame, Activity, PieChart as PieChartIcon, CalendarPlus, Check, ArrowLeft, TrendingUp } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, subDays, startOfMonth, endOfMonth, endOfDay, addWeeks, subWeeks, addMonths, subMonths, isWithinInterval, eachDayOfInterval, isSameDay } from "date-fns";
 import { tr } from "date-fns/locale";
-import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,6 @@ import { onMealPlanUpdate, onRecipesUpdate, addRecipe, updateRecipe, deleteRecip
 import { cn } from "@/lib/utils";
 import { NewRecipeForm } from "@/components/new-recipe-form";
 import { useToast } from "@/hooks/use-toast";
-import { PageHeader } from "@/components/page-header";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -30,17 +29,26 @@ import { useAuth } from "@/components/auth-provider";
 import { Calendar } from "@/components/ui/calendar";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-// --- Temalar ---
+// --- DESIGN SYSTEM: Glassmorphism Colors ---
+const glassColors = {
+    CARD_BG: "bg-white/5 backdrop-blur-md border border-white/10 shadow-lg",
+    CARD_HOVER: "hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
+    TEXT_MAIN: "text-slate-100",
+    TEXT_MUTED: "text-slate-400",
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    ICON_BOX: "bg-gradient-to-br from-orange-500 to-amber-500 p-2 rounded-xl shadow-lg",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/20",
+};
+
 const categoryColors: { [key: string]: string } = {
-  "Çorba": "bg-amber-100 text-amber-800",
-  "Ana Yemek": "bg-emerald-100 text-emerald-800",
-  "Salata": "bg-green-100 text-green-800",
-  "Tatlı": "bg-pink-100 text-pink-800",
-  "Kahvaltılık": "bg-orange-100 text-orange-800",
-  "Hamur İşi": "bg-yellow-100 text-yellow-800",
-  "Diğer": "bg-slate-100 text-slate-800",
+  "Çorba": "bg-amber-500/20 text-amber-200 border-amber-500/30",
+  "Ana Yemek": "bg-emerald-500/20 text-emerald-200 border-emerald-500/30",
+  "Salata": "bg-green-500/20 text-green-200 border-green-500/30",
+  "Tatlı": "bg-pink-500/20 text-pink-200 border-pink-500/30",
+  "Kahvaltılık": "bg-orange-500/20 text-orange-200 border-orange-500/30",
+  "Hamur İşi": "bg-yellow-500/20 text-yellow-200 border-yellow-500/30",
+  "Diğer": "bg-slate-500/20 text-slate-200 border-slate-500/30",
 };
 
 const mealTypes = ["Kahvaltı", "Akşam Yemeği"];
@@ -54,8 +62,6 @@ const calorieFormSchema = z.object({
 });
 
 function CalorieTracker() {
-    // ... (Kalori takibi kodları aynı kalıyor, yer tasarrufu için kısalttım, önceki cevaptaki kodlar buraya gelecek)
-    // ... Önceki kod bloğundaki CalorieTracker fonksiyonunun aynısı ...
     const { user } = useAuth();
     const { toast } = useToast();
     const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
@@ -171,34 +177,34 @@ function CalorieTracker() {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-sm bg-white/50 backdrop-blur-md">
-                <CardHeader className="pb-4">
+            <Card className={cn(glassColors.CARD_BG)}>
+                <CardHeader className="pb-4 border-b border-white/5">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <Activity className="h-5 w-5 text-indigo-500" /> Günlük Giriş
+                        <CardTitle className={cn("text-xl font-bold flex items-center gap-2", glassColors.TEXT_MAIN)}>
+                            <Activity className="h-5 w-5 text-indigo-400" /> Günlük Giriş
                         </CardTitle>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="w-full sm:w-auto rounded-full border-slate-200 text-slate-600 bg-white hover:bg-slate-50">
+                                <Button variant="outline" size="sm" className={cn("w-full sm:w-auto rounded-full border-white/10 text-slate-300", glassColors.BUTTON_GLASS)}>
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {format(selectedDate, "d MMM yyyy", { locale: tr })}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
+                            <PopoverContent className="w-auto p-0 bg-slate-900 border-white/10 text-slate-100">
                                 <Calendar mode="single" selected={selectedDate} onSelect={(date) => setSelectedDate(date || new Date())} initialFocus />
                             </PopoverContent>
                         </Popover>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="flex justify-center mb-8">
-                        <div className="relative w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center rounded-full border-8 border-slate-100 shadow-inner bg-white">
+                        <div className="relative w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center rounded-full border-8 border-white/5 shadow-inner bg-white/5 backdrop-blur-md">
                             <div className="text-center">
-                                <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Net Kalori</p>
-                                <p className={cn("text-2xl sm:text-3xl font-black", calorieDifference > 0 ? "text-rose-500" : "text-emerald-500")}>
+                                <p className={cn("text-[10px] sm:text-xs font-bold uppercase tracking-wide mb-1", glassColors.TEXT_MUTED)}>Net Kalori</p>
+                                <p className={cn("text-2xl sm:text-3xl font-black", calorieDifference > 0 ? "text-rose-400" : "text-emerald-400")}>
                                     {Math.abs(calorieDifference)}
                                 </p>
-                                <Badge variant="secondary" className="mt-2 bg-slate-100 text-slate-500 text-[10px] sm:text-xs">{calorieStatus}</Badge>
+                                <Badge variant="secondary" className="mt-2 bg-white/10 text-slate-300 text-[10px] sm:text-xs border-0">{calorieStatus}</Badge>
                             </div>
                         </div>
                     </div>
@@ -208,43 +214,43 @@ function CalorieTracker() {
                             <div className="grid grid-cols-2 gap-4">
                                 <FormField control={form.control} name="caloriesTaken" render={({ field }) => (
                                     <FormItem className="space-y-1">
-                                        <FormLabel className="text-xs font-bold text-slate-500 uppercase">Alınan</FormLabel>
-                                        <FormControl><Input type="number" className="bg-white border-slate-200 h-12 text-lg font-bold text-slate-700 text-center" {...field} /></FormControl>
+                                        <FormLabel className="text-xs font-bold text-slate-400 uppercase">Alınan</FormLabel>
+                                        <FormControl><Input type="number" className="bg-white/5 border-white/10 h-12 text-lg font-bold text-slate-200 text-center focus:bg-white/10" {...field} /></FormControl>
                                     </FormItem>
                                 )}/>
                                 <FormField control={form.control} name="caloriesBurned" render={({ field }) => (
                                     <FormItem className="space-y-1">
-                                        <FormLabel className="text-xs font-bold text-slate-500 uppercase">Yakılan</FormLabel>
-                                        <FormControl><Input type="number" className="bg-white border-slate-200 h-12 text-lg font-bold text-slate-700 text-center" {...field} /></FormControl>
+                                        <FormLabel className="text-xs font-bold text-slate-400 uppercase">Yakılan</FormLabel>
+                                        <FormControl><Input type="number" className="bg-white/5 border-white/10 h-12 text-lg font-bold text-slate-200 text-center focus:bg-white/10" {...field} /></FormControl>
                                     </FormItem>
                                 )}/>
                             </div>
                             
-                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
                                 <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wide text-center">Makro Besinler (g)</p>
                                 <div className="grid grid-cols-3 gap-3">
                                     <FormField control={form.control} name="protein" render={({ field }) => (
                                         <FormItem className="space-y-1 text-center">
-                                            <FormLabel className="text-[10px] text-indigo-500 font-bold">PRO</FormLabel>
-                                            <FormControl><Input type="number" className="h-9 text-sm bg-white border-slate-200 text-center" {...field} /></FormControl>
+                                            <FormLabel className="text-[10px] text-indigo-400 font-bold">PRO</FormLabel>
+                                            <FormControl><Input type="number" className="h-9 text-sm bg-white/5 border-white/10 text-center text-slate-300" {...field} /></FormControl>
                                         </FormItem>
                                     )}/>
                                     <FormField control={form.control} name="carbs" render={({ field }) => (
                                         <FormItem className="space-y-1 text-center">
-                                            <FormLabel className="text-[10px] text-blue-500 font-bold">KARB</FormLabel>
-                                            <FormControl><Input type="number" className="h-9 text-sm bg-white border-slate-200 text-center" {...field} /></FormControl>
+                                            <FormLabel className="text-[10px] text-blue-400 font-bold">KARB</FormLabel>
+                                            <FormControl><Input type="number" className="h-9 text-sm bg-white/5 border-white/10 text-center text-slate-300" {...field} /></FormControl>
                                         </FormItem>
                                     )}/>
                                     <FormField control={form.control} name="fat" render={({ field }) => (
                                         <FormItem className="space-y-1 text-center">
-                                            <FormLabel className="text-[10px] text-rose-500 font-bold">YAĞ</FormLabel>
-                                            <FormControl><Input type="number" className="h-9 text-sm bg-white border-slate-200 text-center" {...field} /></FormControl>
+                                            <FormLabel className="text-[10px] text-rose-400 font-bold">YAĞ</FormLabel>
+                                            <FormControl><Input type="number" className="h-9 text-sm bg-white/5 border-white/10 text-center text-slate-300" {...field} /></FormControl>
                                         </FormItem>
                                     )}/>
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-200">
+                            <Button type="submit" className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20 border border-indigo-400/20">
                                 <Save className="mr-2 h-4 w-4" /> Günü Kaydet
                             </Button>
                         </form>
@@ -252,26 +258,26 @@ function CalorieTracker() {
                 </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm bg-white/50 backdrop-blur-md">
-                <CardHeader>
+            <Card className={cn(glassColors.CARD_BG)}>
+                <CardHeader className="border-b border-white/5">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <BarChart2 className="h-5 w-5 text-indigo-500" /> Analiz
+                        <CardTitle className={cn("text-xl font-bold flex items-center gap-2", glassColors.TEXT_MAIN)}>
+                            <BarChart2 className="h-5 w-5 text-indigo-400" /> Analiz
                         </CardTitle>
-                        <div className="flex items-center gap-2 bg-white/50 p-1 rounded-full border border-white">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleStatsNav('prev')}><ChevronLeft className="h-4 w-4"/></Button>
-                            <span className="text-sm font-bold text-slate-600 w-24 text-center">{format(statsDate, statsPeriod === 'weekly' ? 'MMM' : 'yyyy', {locale: tr})}</span>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleStatsNav('next')}><ChevronRight className="h-4 w-4"/></Button>
+                        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-full border border-white/10">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/10 text-slate-300" onClick={() => handleStatsNav('prev')}><ChevronLeft className="h-4 w-4"/></Button>
+                            <span className="text-sm font-bold text-slate-300 w-24 text-center">{format(statsDate, statsPeriod === 'weekly' ? 'MMM' : 'yyyy', {locale: tr})}</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/10 text-slate-300" onClick={() => handleStatsNav('next')}><ChevronRight className="h-4 w-4"/></Button>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 pt-6">
                     <div className="h-56 w-full">
                         <ChartContainer config={barChartConfig} className="h-full w-full">
                             <BarChart data={chartData} accessibilityLayer>
-                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip cursor={{fill: 'transparent'}} content={<ChartTooltipContent hideLabel />} />
-                                <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="3 3" />
+                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#94a3b8'}} />
+                                <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} content={<ChartTooltipContent hideLabel className="bg-slate-900 border-white/10 text-slate-100" />} />
+                                <ReferenceLine y={0} stroke="#475569" strokeDasharray="3 3" />
                                 <Bar dataKey="Net" radius={[4, 4, 4, 4]}>
                                     {chartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry["Net"] >= 0 ? "#f43f5e" : "#10b981" } />
@@ -282,32 +288,32 @@ function CalorieTracker() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-center items-center">
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col justify-center items-center">
                             <p className="text-xs font-bold text-slate-400 mb-2 uppercase">Makro Dağılımı</p>
                             <div className="h-32 w-full">
                                 <ChartContainer config={pieChartConfig} className="h-full w-full aspect-square mx-auto">
                                     <PieChart>
-                                        <Pie data={macroData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={50}>
+                                        <Pie data={macroData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={50} stroke="none">
                                             {macroData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                                         </Pie>
-                                        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                                        <ChartTooltip content={<ChartTooltipContent hideLabel className="bg-slate-900 border-white/10 text-slate-100" />} />
                                     </PieChart>
                                 </ChartContainer>
                             </div>
-                            <div className="flex gap-3 text-[10px] font-bold text-slate-500 mt-2">
+                            <div className="flex gap-3 text-[10px] font-bold text-slate-400 mt-2">
                                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-violet-500"/>Pro</span>
                                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"/>Karb</span>
                                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-rose-500"/>Yağ</span>
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-center">
-                                <p className="text-xs text-indigo-400 font-bold mb-1 uppercase">Top. Alınan</p>
-                                <p className="text-lg font-black text-indigo-700">{stats.totalTaken.toLocaleString()} kcal</p>
+                            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-center">
+                                <p className="text-xs text-indigo-300 font-bold mb-1 uppercase">Top. Alınan</p>
+                                <p className="text-lg font-black text-indigo-400">{stats.totalTaken.toLocaleString()} kcal</p>
                             </div>
-                            <div className="p-3 rounded-xl bg-orange-50 border border-orange-100 text-center">
-                                <p className="text-xs text-orange-400 font-bold mb-1 uppercase">Top. Yakılan</p>
-                                <p className="text-lg font-black text-orange-700">{stats.totalBurned.toLocaleString()} kcal</p>
+                            <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center">
+                                <p className="text-xs text-orange-300 font-bold mb-1 uppercase">Top. Yakılan</p>
+                                <p className="text-lg font-black text-orange-400">{stats.totalBurned.toLocaleString()} kcal</p>
                             </div>
                         </div>
                     </div>
@@ -318,6 +324,7 @@ function CalorieTracker() {
 }
 
 export default function YemekPlanlamaPage() {
+  const router = useRouter();
   const [recipes, setRecipes] = React.useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("Hepsi");
@@ -327,15 +334,14 @@ export default function YemekPlanlamaPage() {
   const [mealPlan, setMealPlan] = React.useState<MealPlan>({});
   const [isRecipeSelectorOpen, setIsRecipeSelectorOpen] = React.useState(false);
   const [isNewRecipeDialogOpen, setIsNewRecipeDialogOpen] = React.useState(false);
-  const [isAddToPlanDialogOpen, setIsAddToPlanDialogOpen] = React.useState(false); // Yeni State
+  const [isAddToPlanDialogOpen, setIsAddToPlanDialogOpen] = React.useState(false); 
   
   const [editingRecipe, setEditingRecipe] = React.useState<Recipe | null>(null);
-  const [recipeToAddToPlan, setRecipeToAddToPlan] = React.useState<Recipe | null>(null); // Yeni State
+  const [recipeToAddToPlan, setRecipeToAddToPlan] = React.useState<Recipe | null>(null); 
   
-  const [currentMealSelection, setCurrentMealSelection] = React.useState<MealSelection>(null);
+  const [currentMealSelection, setCurrentMealSelection] = React.useState<{ day: Date, mealType: string } | null>(null);
   const [recipeSearchTerm, setRecipeSearchTerm] = React.useState("");
 
-  // Plan'a Ekleme Dialog'u için state
   const [selectedPlanDay, setSelectedPlanDay] = React.useState<Date>(new Date());
   const [selectedPlanMeal, setSelectedPlanMeal] = React.useState<string>("Akşam Yemeği");
 
@@ -352,10 +358,10 @@ export default function YemekPlanlamaPage() {
     try {
         if (editingRecipe) {
             await updateRecipe(editingRecipe.id, recipeData);
-            toast({ title: "✅ Tarif Güncellendi" });
+            toast({ title: "✅ Tarif Güncellendi", className: "bg-emerald-900 border-emerald-800 text-emerald-100" });
         } else {
             const newRecipeId = await addRecipe(recipeData);
-            toast({ title: "✅ Tarif Eklendi" });
+            toast({ title: "✅ Tarif Eklendi", className: "bg-emerald-900 border-emerald-800 text-emerald-100" });
             if (currentMealSelection) {
                 handleSelectRecipe({ ...recipeData, id: newRecipeId, familyId: '' });
             }
@@ -368,7 +374,7 @@ export default function YemekPlanlamaPage() {
   };
 
   const handleDeleteRecipe = async (id: string) => {
-    try { await deleteRecipe(id); toast({ title: "Tarif Silindi" }); } 
+    try { await deleteRecipe(id); toast({ title: "Tarif Silindi", className: "bg-rose-900 border-rose-800 text-rose-100" }); } 
     catch(e) { toast({ title: "Hata", variant: "destructive" }); }
   };
 
@@ -392,7 +398,6 @@ export default function YemekPlanlamaPage() {
      updateMealPlan(dayKey, updatedDayPlan);
   };
 
-  // Yeni Fonksiyon: Tariften Plan'a Ekleme
   const handleAddRecipeToPlan = () => {
       if (!recipeToAddToPlan) return;
       const dayKey = format(selectedPlanDay, 'yyyy-MM-dd');
@@ -402,7 +407,8 @@ export default function YemekPlanlamaPage() {
       
       toast({ 
           title: "Plan Güncellendi! 📅", 
-          description: `${recipeToAddToPlan.title}, ${format(selectedPlanDay, 'EEEE', {locale: tr})} günü ${selectedPlanMeal.toLowerCase()}ne eklendi.` 
+          description: `${recipeToAddToPlan.title}, ${format(selectedPlanDay, 'EEEE', {locale: tr})} günü ${selectedPlanMeal.toLowerCase()}ne eklendi.`,
+          className: "bg-indigo-900 border-indigo-800 text-indigo-100"
       });
       
       setIsAddToPlanDialogOpen(false);
@@ -424,114 +430,117 @@ export default function YemekPlanlamaPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3F6F8] font-sans pb-24">
-      {/* Dekoratif Arkaplan */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-orange-100/60 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-rose-100/50 rounded-full blur-[120px]" />
+    <div className="min-h-[100dvh] bg-slate-950 font-sans text-slate-100 pb-24 relative overflow-hidden">
+      {/* Ambient Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-900/30 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-rose-900/20 rounded-full blur-[100px]" />
+      </div>
+
+      {/* Header */}
+      <div className={cn("sticky top-0 z-40 py-4 sm:px-6 transition-all duration-300", glassColors.HEADER_BG)}>
+          <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-3">
+                  <Button variant="ghost" size="icon" onClick={() => router.back()} className={cn("rounded-full mr-1 text-slate-400 hover:text-white hover:bg-white/10")}>
+                      <ArrowLeft className="w-5 h-5" />
+                  </Button>
+                  <div className={cn(glassColors.ICON_BOX, "from-orange-500 to-red-500")}>
+                      <Utensils className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Mutfak</p>
+                      <h1 className="text-lg font-bold text-slate-100 leading-none">Yemek Planlayıcı</h1>
+                  </div>
+              </div>
+              <Button onClick={handleOpenNewRecipeDialog} className={cn("w-full md:w-auto rounded-full px-6 h-10 font-bold shadow-lg shadow-orange-900/20", glassColors.BUTTON_GLASS, "bg-orange-600 hover:bg-orange-500 border-orange-500/50")}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Yeni Tarif
+              </Button>
+          </div>
       </div>
 
       <div className="max-w-7xl mx-auto md:p-6 p-4 relative z-10 space-y-8">
-          {/* Header */}
-          <div className="pt-8 flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                  <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-2 text-slate-800 flex items-center gap-2 md:gap-3">
-                      Yemek <span className="text-orange-500 text-lg md:text-xl font-bold bg-orange-50 px-3 py-1 rounded-full border border-orange-100">Planlayıcı</span>
-                  </h1>
-                  <p className="text-slate-500 text-sm md:text-lg font-medium ml-1">Haftalık menülerini oluştur, kalorini takip et.</p>
-              </div>
-              <Button onClick={handleOpenNewRecipeDialog} className="w-full md:w-auto rounded-2xl px-6 h-12 bg-slate-800 hover:bg-slate-700 text-white font-bold shadow-lg">
-                  <PlusCircle className="mr-2 h-5 w-5" /> Yeni Tarif Ekle
-              </Button>
-          </div>
-
           <Tabs defaultValue="planner" className="w-full">
-              {/* Scrollable Tabs */}
-              <div className="flex justify-center mb-8 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                  <TabsList className="bg-white/70 p-1.5 rounded-full shadow-sm backdrop-blur-md h-14 flex w-max">
-                      <TabsTrigger value="planner" className="rounded-full px-6 md:px-8 h-full data-[state=active]:bg-orange-500 data-[state=active]:text-white font-bold transition-all text-xs md:text-sm">
-                          <Utensils className="mr-2 h-3 w-3 md:h-4 md:w-4" /> Haftalık Plan
+              <div className={cn("p-1 rounded-2xl flex relative mb-8 overflow-x-auto", glassColors.CARD_BG)}>
+                  <TabsList className="bg-transparent h-auto flex w-full justify-start md:justify-center p-0 gap-2">
+                      <TabsTrigger value="planner" className="rounded-xl px-6 py-3 data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-400 font-bold transition-all flex-1 min-w-max">
+                          <Utensils className="mr-2 h-4 w-4" /> Haftalık Plan
                       </TabsTrigger>
-                      <TabsTrigger value="recipes" className="rounded-full px-6 md:px-8 h-full data-[state=active]:bg-emerald-500 data-[state=active]:text-white font-bold transition-all text-xs md:text-sm">
-                          <Soup className="mr-2 h-3 w-3 md:h-4 md:w-4" /> Tarifler
+                      <TabsTrigger value="recipes" className="rounded-xl px-6 py-3 data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-400 font-bold transition-all flex-1 min-w-max">
+                          <Soup className="mr-2 h-4 w-4" /> Tarifler
                       </TabsTrigger>
-                      <TabsTrigger value="calorie" className="rounded-full px-6 md:px-8 h-full data-[state=active]:bg-indigo-500 data-[state=active]:text-white font-bold transition-all text-xs md:text-sm">
-                          <Flame className="mr-2 h-3 w-3 md:h-4 md:w-4" /> Kalori Takibi
+                      <TabsTrigger value="calorie" className="rounded-xl px-6 py-3 data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-400 font-bold transition-all flex-1 min-w-max">
+                          <Flame className="mr-2 h-4 w-4" /> Kalori Takibi
                       </TabsTrigger>
                   </TabsList>
               </div>
 
               {/* TAB: HAFTALIK PLANLAYICI */}
               <TabsContent value="planner">
-                  <div className="flex flex-col sm:flex-row items-center justify-between mb-6 px-2 gap-4">
-                      {/* Tarih Aralığı */}
-                      <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-2xl border border-white shadow-sm w-full sm:w-auto text-center sm:text-left">
-                           <h3 className="text-lg md:text-xl font-black text-slate-700 flex items-center justify-center sm:justify-start gap-2">
-                              <CalendarIcon className="h-5 w-5 text-orange-500" />
-                              <span className="text-slate-600">{format(weekStartDate, 'd MMM', { locale: tr })}</span>
-                              <span className="text-slate-300">-</span>
-                              <span className="text-slate-600">{format(addDays(weekStartDate, 6), 'd MMM', { locale: tr })}</span>
+                  <div className={cn("rounded-[2rem] p-4 md:p-6", glassColors.CARD_BG)}>
+                      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4 border-b border-white/5 pb-4">
+                          <h3 className="text-lg md:text-xl font-bold text-slate-200 flex items-center gap-2">
+                              <CalendarIcon className="h-5 w-5 text-orange-400" />
+                              <span>{format(weekStartDate, 'd MMM', { locale: tr })} - {format(addDays(weekStartDate, 6), 'd MMM', { locale: tr })}</span>
                           </h3>
+
+                          <div className="flex items-center bg-white/5 p-1 rounded-full border border-white/10">
+                              <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 hover:bg-white/10 text-slate-300" onClick={() => setCurrentDate(d => addDays(d, -7))}><ChevronLeft className="h-4 w-4" /></Button>
+                              <div className="h-4 w-px bg-white/10 mx-1"></div>
+                              <Button variant="ghost" size="sm" className="rounded-full px-4 font-bold text-sm text-slate-300 hover:text-white hover:bg-white/10" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
+                              <div className="h-4 w-px bg-white/10 mx-1"></div>
+                              <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 hover:bg-white/10 text-slate-300" onClick={() => setCurrentDate(d => addDays(d, 7))}><ChevronRight className="h-4 w-4" /></Button>
+                          </div>
                       </div>
 
-                      {/* Navigasyon */}
-                      <div className="flex items-center bg-white p-1.5 rounded-full border border-slate-200 shadow-sm w-full sm:w-auto justify-between sm:justify-start">
-                          <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 hover:bg-slate-100 text-slate-600" onClick={() => setCurrentDate(d => addDays(d, -7))}><ChevronLeft className="h-5 w-5" /></Button>
-                          <div className="h-6 w-px bg-slate-200 mx-1"></div>
-                          <Button variant="ghost" className="rounded-full px-6 font-bold text-sm text-slate-700 hover:bg-slate-100 hover:text-orange-600 flex-grow sm:flex-grow-0" onClick={() => setCurrentDate(new Date())}>Bu Hafta</Button>
-                          <div className="h-6 w-px bg-slate-200 mx-1"></div>
-                          <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 hover:bg-slate-100 text-slate-600" onClick={() => setCurrentDate(d => addDays(d, 7))}><ChevronRight className="h-5 w-5" /></Button>
-                      </div>
-                  </div>
+                      <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
+                          <div className="flex gap-4 min-w-max">
+                              {weekDays.map(day => {
+                                  const dayKey = format(day, 'yyyy-MM-dd');
+                                  const plannedMeals = mealPlan[dayKey] || {};
+                                  const isToday = isSameDay(day, new Date());
 
-                  <div className="overflow-x-auto pb-6 -mx-4 px-4 scrollbar-hide snap-x">
-                      <div className="flex gap-4 min-w-max">
-                          {weekDays.map(day => {
-                              const dayKey = format(day, 'yyyy-MM-dd');
-                              const plannedMeals = mealPlan[dayKey] || {};
-                              const isToday = isSameDay(day, new Date());
-
-                              return (
-                                  <div key={day.toString()} className={cn("snap-center w-72 flex-shrink-0 flex flex-col gap-3 p-4 rounded-[2rem] border transition-all", isToday ? "bg-white border-orange-200 shadow-xl shadow-orange-100/50 scale-100 md:scale-105 ring-2 ring-orange-100" : "bg-white/60 border-white shadow-sm")}>
-                                      <div className={cn("text-center pb-2 border-b", isToday ? "border-orange-100" : "border-slate-100")}>
-                                          <p className={cn("text-lg font-black", isToday ? "text-orange-600" : "text-slate-700")}>{format(day, 'EEEE', { locale: tr })}</p>
-                                          <p className="text-sm font-medium text-slate-400">{format(day, 'd MMMM', { locale: tr })}</p>
-                                      </div>
-                                      
-                                      <div className="space-y-3 flex-grow">
-                                          {/* Kahvaltı */}
-                                          <div className="group relative">
-                                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Kahvaltı</p>
-                                              {plannedMeals["Kahvaltı"] ? (
-                                                  <div className="relative overflow-hidden rounded-2xl bg-orange-50 border border-orange-100 p-3 shadow-sm hover:shadow-md transition-all group-hover:border-orange-200">
-                                                      <p className="font-bold text-orange-900 text-sm line-clamp-2 pr-4">{plannedMeals["Kahvaltı"]!.title}</p>
-                                                      <button onClick={() => handleRemoveRecipe(day, "Kahvaltı")} className="absolute top-1 right-1 text-orange-300 hover:text-orange-600 bg-white rounded-full p-0.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all shadow-sm"><XCircle className="h-4 w-4"/></button>
-                                                  </div>
-                                              ) : (
-                                                  <button onClick={() => handleOpenRecipeSelector(day, "Kahvaltı")} className="w-full h-12 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 hover:text-orange-500 hover:border-orange-300 hover:bg-orange-50 transition-all">
-                                                      <PlusCircle className="h-5 w-5" />
-                                                  </button>
-                                              )}
+                                  return (
+                                      <div key={day.toString()} className={cn("snap-center w-72 flex-shrink-0 flex flex-col gap-3 p-4 rounded-[1.5rem] border transition-all", isToday ? "bg-white/10 border-orange-500/50 shadow-lg shadow-orange-900/20 scale-100 md:scale-105" : "bg-white/5 border-white/5 hover:bg-white/10")}>
+                                          <div className={cn("text-center pb-2 border-b", isToday ? "border-orange-500/30" : "border-white/5")}>
+                                              <p className={cn("text-lg font-black", isToday ? "text-orange-400" : "text-slate-300")}>{format(day, 'EEEE', { locale: tr })}</p>
+                                              <p className="text-sm font-medium text-slate-500">{format(day, 'd MMMM', { locale: tr })}</p>
                                           </div>
+                                          
+                                          <div className="space-y-3 flex-grow">
+                                              {/* Kahvaltı */}
+                                              <div className="group relative">
+                                                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Kahvaltı</p>
+                                                  {plannedMeals["Kahvaltı"] ? (
+                                                      <div className="relative overflow-hidden rounded-xl bg-orange-500/10 border border-orange-500/20 p-3 hover:bg-orange-500/20 transition-all">
+                                                          <p className="font-bold text-orange-200 text-sm line-clamp-2 pr-4">{plannedMeals["Kahvaltı"]!.title}</p>
+                                                          <button onClick={() => handleRemoveRecipe(day, "Kahvaltı")} className="absolute top-1 right-1 text-orange-400 hover:text-orange-200 bg-black/20 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-all"><XCircle className="h-4 w-4"/></button>
+                                                      </div>
+                                                  ) : (
+                                                      <button onClick={() => handleOpenRecipeSelector(day, "Kahvaltı")} className="w-full h-12 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-slate-500 hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all">
+                                                          <PlusCircle className="h-5 w-5" />
+                                                      </button>
+                                                  )}
+                                              </div>
 
-                                          {/* Akşam Yemeği */}
-                                          <div className="group relative">
-                                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Akşam</p>
-                                              {plannedMeals["Akşam Yemeği"] ? (
-                                                  <div className="relative overflow-hidden rounded-2xl bg-indigo-50 border border-indigo-100 p-3 shadow-sm hover:shadow-md transition-all group-hover:border-indigo-200">
-                                                      <p className="font-bold text-indigo-900 text-sm line-clamp-2 pr-4">{plannedMeals["Akşam Yemeği"]!.title}</p>
-                                                      <button onClick={() => handleRemoveRecipe(day, "Akşam Yemeği")} className="absolute top-1 right-1 text-indigo-300 hover:text-indigo-600 bg-white rounded-full p-0.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all shadow-sm"><XCircle className="h-4 w-4"/></button>
-                                                  </div>
-                                              ) : (
-                                                  <button onClick={() => handleOpenRecipeSelector(day, "Akşam Yemeği")} className="w-full h-12 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
-                                                      <PlusCircle className="h-5 w-5" />
-                                                  </button>
-                                              )}
+                                              {/* Akşam Yemeği */}
+                                              <div className="group relative">
+                                                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Akşam</p>
+                                                  {plannedMeals["Akşam Yemeği"] ? (
+                                                      <div className="relative overflow-hidden rounded-xl bg-indigo-500/10 border border-indigo-500/20 p-3 hover:bg-indigo-500/20 transition-all">
+                                                          <p className="font-bold text-indigo-200 text-sm line-clamp-2 pr-4">{plannedMeals["Akşam Yemeği"]!.title}</p>
+                                                          <button onClick={() => handleRemoveRecipe(day, "Akşam Yemeği")} className="absolute top-1 right-1 text-indigo-400 hover:text-indigo-200 bg-black/20 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-all"><XCircle className="h-4 w-4"/></button>
+                                                      </div>
+                                                  ) : (
+                                                      <button onClick={() => handleOpenRecipeSelector(day, "Akşam Yemeği")} className="w-full h-12 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-slate-500 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all">
+                                                          <PlusCircle className="h-5 w-5" />
+                                                      </button>
+                                                  )}
+                                              </div>
                                           </div>
                                       </div>
-                                  </div>
-                              )
-                          })}
+                                  )
+                              })}
+                          </div>
                       </div>
                   </div>
               </TabsContent>
@@ -543,18 +552,17 @@ export default function YemekPlanlamaPage() {
                       <div className="w-full md:w-64 flex-shrink-0 space-y-6">
                           <div className="relative">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                              <Input placeholder="Tarif ara..." className="pl-10 h-12 rounded-xl bg-white border-slate-200 shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                              <Input placeholder="Tarif ara..." className="pl-10 h-12 rounded-xl bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-500 focus:bg-white/10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                           </div>
                           
-                          {/* Mobil Yatay Scroll */}
-                          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white shadow-sm overflow-x-auto md:overflow-visible">
-                              <h3 className="font-bold text-slate-700 mb-3 px-2 hidden md:block">Kategoriler</h3>
+                          <div className={cn("rounded-2xl p-4 overflow-x-auto md:overflow-visible", glassColors.CARD_BG)}>
+                              <h3 className="font-bold text-slate-300 mb-3 px-2 hidden md:block uppercase text-xs tracking-wider">Kategoriler</h3>
                               <div className="flex md:flex-col gap-2 md:gap-1 min-w-max md:min-w-0">
-                                  <button onClick={() => setActiveTab("Hepsi")} className={cn("text-left px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap", activeTab === "Hepsi" ? "bg-slate-800 text-white shadow-md" : "text-slate-500 hover:bg-white hover:text-slate-700 bg-white/50 md:bg-transparent")}>Hepsi</button>
+                                  <button onClick={() => setActiveTab("Hepsi")} className={cn("text-left px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap", activeTab === "Hepsi" ? "bg-slate-100 text-slate-900 shadow-md" : "text-slate-400 hover:bg-white/5 hover:text-slate-200")}>Hepsi</button>
                                   {Object.keys(categoryColors).map(cat => (
-                                      <button key={cat} onClick={() => setActiveTab(cat)} className={cn("text-left px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-between group whitespace-nowrap gap-2", activeTab === cat ? "bg-white text-slate-800 shadow-md ring-1 ring-slate-100" : "text-slate-500 hover:bg-white hover:text-slate-700 bg-white/50 md:bg-transparent")}>
+                                      <button key={cat} onClick={() => setActiveTab(cat)} className={cn("text-left px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-between group whitespace-nowrap gap-2", activeTab === cat ? "bg-slate-100 text-slate-900 shadow-md" : "text-slate-400 hover:bg-white/5 hover:text-slate-200")}>
                                           {cat}
-                                          <div className={cn("w-2 h-2 rounded-full hidden md:block", activeTab === cat ? "bg-emerald-500" : "bg-slate-200 group-hover:bg-slate-300")} />
+                                          <div className={cn("w-2 h-2 rounded-full hidden md:block", activeTab === cat ? "bg-emerald-500" : "bg-slate-600 group-hover:bg-slate-500")} />
                                       </button>
                                   ))}
                               </div>
@@ -566,38 +574,36 @@ export default function YemekPlanlamaPage() {
                           {filteredRecipes.length > 0 ? (
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                                   {filteredRecipes.map((recipe) => (
-                                      <div key={recipe.id} className="group bg-white rounded-[1.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden flex flex-col h-full relative">
-                                          {/* Action Buttons */}
+                                      <div key={recipe.id} className={cn("group relative rounded-[1.5rem] overflow-hidden flex flex-col h-full", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
                                           <div className="absolute top-3 right-3 z-10 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                              {/* YENİ: Plan'a Ekle Butonu */}
-                                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 shadow-sm hover:bg-emerald-50 text-emerald-600" onClick={() => { setRecipeToAddToPlan(recipe); setIsAddToPlanDialogOpen(true); }}>
+                                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-black/40 hover:bg-emerald-500/20 text-emerald-400 backdrop-blur-md border border-white/10" onClick={() => { setRecipeToAddToPlan(recipe); setIsAddToPlanDialogOpen(true); }}>
                                                   <CalendarPlus className="h-4 w-4"/>
                                               </Button>
-                                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 shadow-sm hover:bg-white text-slate-600" onClick={() => handleOpenNewRecipeDialog()}>
+                                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-black/40 hover:bg-white/10 text-slate-200 backdrop-blur-md border border-white/10" onClick={() => { setEditingRecipe(recipe); setIsNewRecipeDialogOpen(true); }}>
                                                   <Edit className="h-4 w-4"/>
                                               </Button>
-                                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 shadow-sm hover:bg-rose-50 text-rose-500" onClick={() => handleDeleteRecipe(recipe.id)}>
+                                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-black/40 hover:bg-rose-500/20 text-rose-400 backdrop-blur-md border border-white/10" onClick={() => handleDeleteRecipe(recipe.id)}>
                                                   <Trash2 className="h-4 w-4"/>
                                               </Button>
                                           </div>
 
-                                          <div className={cn("h-24 w-full flex items-center justify-center relative overflow-hidden", categoryColors[recipe.category] || "bg-slate-100")}>
-                                              <div className="absolute inset-0 bg-white/20" />
-                                              <Utensils className="h-8 w-8 opacity-20" />
-                                              <Badge className="absolute bottom-2 left-2 bg-white/90 text-slate-800 hover:bg-white shadow-sm border-0">{recipe.category}</Badge>
+                                          <div className={cn("h-24 w-full flex items-center justify-center relative overflow-hidden", categoryColors[recipe.category] || "bg-slate-800")}>
+                                              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+                                              <Utensils className="h-8 w-8 opacity-40" />
+                                              <Badge className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-md text-slate-200 border border-white/10">{recipe.category}</Badge>
                                           </div>
                                           
                                           <div className="p-5 flex flex-col flex-grow">
-                                              <h3 className="font-bold text-lg text-slate-800 mb-1 leading-tight">{recipe.title}</h3>
+                                              <h3 className="font-bold text-lg text-slate-200 mb-1 leading-tight">{recipe.title}</h3>
                                               <div className="flex items-center gap-1 mb-3">
                                                   {Array.from({length: 5}).map((_, i) => (
-                                                      <Star key={i} className={cn("h-3 w-3", i < recipe.rating ? "fill-amber-400 text-amber-400" : "text-slate-200")} />
+                                                      <Star key={i} className={cn("h-3 w-3", i < recipe.rating ? "fill-amber-400 text-amber-400" : "text-slate-700")} />
                                                   ))}
                                               </div>
                                               {recipe.instructions && (
-                                                  <p className="text-sm text-slate-500 line-clamp-3 mb-4 flex-grow">{recipe.instructions}</p>
+                                                  <p className="text-sm text-slate-400 line-clamp-3 mb-4 flex-grow">{recipe.instructions}</p>
                                               )}
-                                              <Button variant="outline" className="w-full rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 mt-auto" onClick={() => { setEditingRecipe(recipe); setIsNewRecipeDialogOpen(true); }}>
+                                              <Button variant="outline" className={cn("w-full rounded-xl mt-auto", glassColors.BUTTON_GLASS)} onClick={() => { setEditingRecipe(recipe); setIsNewRecipeDialogOpen(true); }}>
                                                   Detaylar
                                               </Button>
                                           </div>
@@ -606,8 +612,10 @@ export default function YemekPlanlamaPage() {
                               </div>
                           ) : (
                               <div className="flex flex-col items-center justify-center h-64 text-center opacity-50">
-                                  <Soup className="h-16 w-16 text-slate-300 mb-4" />
-                                  <p className="text-lg font-medium text-slate-500">Tarif bulunamadı.</p>
+                                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                      <Soup className="h-8 w-8 text-slate-500" />
+                                  </div>
+                                  <p className="text-lg font-medium text-slate-400">Tarif bulunamadı.</p>
                               </div>
                           )}
                       </div>
@@ -621,18 +629,16 @@ export default function YemekPlanlamaPage() {
           </Tabs>
 
           {/* --- DIALOGS --- */}
-          
-          {/* Plan'a Ekleme Dialog'u */}
           <Dialog open={isAddToPlanDialogOpen} onOpenChange={setIsAddToPlanDialogOpen}>
-              <DialogContent className="sm:max-w-md rounded-[2rem]">
+              <DialogContent className="sm:max-w-md rounded-[2rem] bg-slate-900 border-white/10 text-slate-100">
                   <DialogHeader>
                       <DialogTitle>Plana Ekle</DialogTitle>
-                      <DialogDescription className="text-slate-500">{recipeToAddToPlan?.title} tarifini hangi güne eklemek istersiniz?</DialogDescription>
+                      <DialogDescription className="text-slate-400">{recipeToAddToPlan?.title} tarifini hangi güne eklemek istersiniz?</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-6 pt-4">
-                      {/* Gün Seçimi - Modern Grid */}
+                      {/* Gün Seçimi */}
                       <div className="space-y-3">
-                          <p className="text-sm font-bold text-slate-700">Hangi Gün?</p>
+                          <p className="text-sm font-bold text-slate-300">Hangi Gün?</p>
                           <div className="grid grid-cols-4 gap-2">
                               {weekDays.map(day => (
                                   <button
@@ -641,8 +647,8 @@ export default function YemekPlanlamaPage() {
                                       className={cn(
                                           "flex flex-col items-center justify-center py-2 rounded-xl border transition-all",
                                           isSameDay(day, selectedPlanDay) 
-                                              ? "bg-slate-800 text-white border-slate-800 shadow-md scale-105" 
-                                              : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                                              ? "bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-500/20 scale-105" 
+                                              : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10"
                                       )}
                                   >
                                       <span className="text-[10px] font-bold uppercase">{format(day, 'EEE', {locale: tr})}</span>
@@ -654,7 +660,7 @@ export default function YemekPlanlamaPage() {
 
                       {/* Öğün Seçimi */}
                       <div className="space-y-3">
-                          <p className="text-sm font-bold text-slate-700">Hangi Öğün?</p>
+                          <p className="text-sm font-bold text-slate-300">Hangi Öğün?</p>
                           <div className="grid grid-cols-2 gap-3">
                               {mealTypes.map(meal => (
                                   <button
@@ -663,8 +669,8 @@ export default function YemekPlanlamaPage() {
                                       className={cn(
                                           "flex items-center justify-center gap-2 py-3 rounded-xl border transition-all font-bold text-sm",
                                           selectedPlanMeal === meal
-                                              ? (meal === "Kahvaltı" ? "bg-orange-500 text-white border-orange-500 shadow-md" : "bg-indigo-500 text-white border-indigo-500 shadow-md")
-                                              : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                                              ? (meal === "Kahvaltı" ? "bg-orange-600 text-white border-orange-500 shadow-lg" : "bg-indigo-600 text-white border-indigo-500 shadow-lg")
+                                              : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10"
                                       )}
                                   >
                                       {meal === "Kahvaltı" ? <PlusCircle className="w-4 h-4"/> : <Soup className="w-4 h-4"/>}
@@ -674,7 +680,7 @@ export default function YemekPlanlamaPage() {
                           </div>
                       </div>
 
-                      <Button className="w-full h-12 rounded-xl bg-slate-900 text-white font-bold text-lg hover:bg-slate-800" onClick={handleAddRecipeToPlan}>
+                      <Button className="w-full h-12 rounded-xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-500 shadow-lg shadow-emerald-900/20" onClick={handleAddRecipeToPlan}>
                           <Check className="mr-2 h-5 w-5" /> Planla
                       </Button>
                   </div>
@@ -682,22 +688,22 @@ export default function YemekPlanlamaPage() {
           </Dialog>
 
           <Dialog open={isRecipeSelectorOpen} onOpenChange={setIsRecipeSelectorOpen}>
-              <DialogContent className="sm:max-w-2xl rounded-[2rem] max-h-[90vh] flex flex-col">
+              <DialogContent className="sm:max-w-2xl rounded-[2rem] max-h-[90vh] flex flex-col bg-slate-900 border-white/10 text-slate-100">
                   <DialogHeader>
                       <DialogTitle>Ne Yiyeceksiniz?</DialogTitle>
-                      <DialogDescription>Listeden bir tarif seçin veya yenisini oluşturun.</DialogDescription>
+                      <DialogDescription className="text-slate-400">Listeden bir tarif seçin.</DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4 flex-grow overflow-hidden flex flex-col">
-                      <Input placeholder="Tariflerde ara..." value={recipeSearchTerm} onChange={(e) => setRecipeSearchTerm(e.target.value)} className="rounded-xl h-12" />
+                      <Input placeholder="Tariflerde ara..." value={recipeSearchTerm} onChange={(e) => setRecipeSearchTerm(e.target.value)} className="rounded-xl h-12 bg-white/5 border-white/10 text-slate-100 focus:bg-white/10" />
                       <ScrollArea className="flex-grow">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1">
                               {recipes.filter(r => r.title.toLowerCase().includes(recipeSearchTerm.toLowerCase())).map(recipe => (
-                                  <div key={recipe.id} onClick={() => handleSelectRecipe(recipe)} className="cursor-pointer hover:ring-2 ring-orange-400 ring-offset-2 rounded-xl border p-3 flex items-center gap-3 transition-all hover:bg-orange-50/50">
+                                  <div key={recipe.id} onClick={() => handleSelectRecipe(recipe)} className="cursor-pointer hover:ring-2 ring-orange-500/50 ring-offset-2 ring-offset-slate-900 rounded-xl border border-white/10 p-3 flex items-center gap-3 transition-all hover:bg-white/5 bg-white/5">
                                       <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", categoryColors[recipe.category])}>
-                                          <Utensils className="h-5 w-5 opacity-60" />
+                                          <Utensils className="h-5 w-5 opacity-80" />
                                       </div>
                                       <div className="overflow-hidden">
-                                          <p className="font-bold text-sm text-slate-800 truncate">{recipe.title}</p>
+                                          <p className="font-bold text-sm text-slate-200 truncate">{recipe.title}</p>
                                           <p className="text-xs text-slate-500">{recipe.category}</p>
                                       </div>
                                   </div>
@@ -709,11 +715,14 @@ export default function YemekPlanlamaPage() {
           </Dialog>
 
           <Dialog open={isNewRecipeDialogOpen} onOpenChange={(open) => { if (!open) setEditingRecipe(null); setIsNewRecipeDialogOpen(open); }}>
-              <DialogContent className="rounded-[2rem] max-h-[90vh] overflow-y-auto">
+              <DialogContent className="rounded-[2rem] max-h-[90vh] overflow-y-auto bg-slate-900 border-white/10 text-slate-100">
                   <DialogHeader>
                       <DialogTitle>{editingRecipe ? 'Tarifi Düzenle' : 'Yeni Tarif Ekle'}</DialogTitle>
                   </DialogHeader>
-                  <NewRecipeForm onSubmit={handleSaveRecipe} initialData={editingRecipe} />
+                  {/* Form Wrapper for Dark Mode Styles */}
+                  <div className="text-slate-100 [&_label]:text-slate-300 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-slate-100 [&_textarea]:bg-white/5 [&_textarea]:border-white/10 [&_textarea]:text-slate-100 [&_select]:bg-slate-800 [&_select]:border-white/10">
+                      <NewRecipeForm onSubmit={handleSaveRecipe} initialData={editingRecipe} />
+                  </div>
               </DialogContent>
           </Dialog>
       </div>
