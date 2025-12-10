@@ -8,7 +8,7 @@ import { onGoalsUpdate, addGoal, deleteGoal, updateGoal } from '@/lib/dataServic
 import type { Goal, FamilyMember } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { Progress } from '@/components/ui/progress';
 import { Plus, Target, Trash2, Edit, Youtube, User, Map, Trophy, ArrowRight, Sparkles } from 'lucide-react';
 import { NewGoalForm } from '@/components/new-goal-form';
