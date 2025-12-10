@@ -86,6 +86,7 @@ export default function CalendarPage() {
     return () => unsubscribeEvents();
   }, []);
   
+  // Gelecek etkinlikleri hesapla ve sırala
   const { upcomingEvents, monthlyStats } = React.useMemo(() => {
     const today = startOfDay(new Date());
     
@@ -144,6 +145,7 @@ export default function CalendarPage() {
       return days;
   }, [currentDate]);
 
+  // Takvimdeki noktalar için gerekli (görsel işaretleme)
   const getEventsForDay = (day: Date) => {
     return calendarEvents.filter(event => {
       const eventStartDate = parseISO(event.startDate);
@@ -162,16 +164,8 @@ export default function CalendarPage() {
     });
   };
 
-  const selectedDayEvents = getEventsForDay(selectedDate);
-  const isSelectedDayEmpty = selectedDayEvents.length === 0;
-  
-  const eventsToDisplay = (isSelectedDayEmpty || searchQuery.length > 0) 
-    ? upcomingEvents 
-    : selectedDayEvents.map(e => ({
-      ...e,
-      displayDate: selectedDate, 
-      daysLeft: differenceInDays(selectedDate, startOfDay(new Date()))
-  }));
+  // Listede GÖSTERİLECEK etkinlikler (Değişiklik burada yapıldı: Her zaman tüm liste)
+  const eventsToDisplay = upcomingEvents;
 
   const handlePrevMonth = () => setCurrentDate(d => addMonths(d, -1));
   const handleNextMonth = () => setCurrentDate(d => addMonths(d, 1));
@@ -328,14 +322,13 @@ export default function CalendarPage() {
                 <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
                       <div>
                         <h3 className={cn("font-bold", glassColors.TEXT_MAIN)}>
-                             {searchQuery ? "Arama Sonuçları" : (isSelectedDayEmpty ? "Sıradaki Etkinlikler" : "Seçili Gün")}
+                             {searchQuery ? "Arama Sonuçları" : "Yaklaşan Etkinlikler"}
                         </h3>
                         <p className={cn("text-xs mt-0.5", glassColors.TEXT_MUTED)}>
-                            {!searchQuery && !isSelectedDayEmpty && format(selectedDate, 'd MMMM, EEEE', {locale: tr})}
-                            {!searchQuery && isSelectedDayEmpty && "Listelenen etkinlikler aşağıdadır."}
+                             {searchQuery ? "Bulunan kayıtlar listeleniyor." : "Tüm aktif planlarınız ve önemli günler."}
                         </p>
                       </div>
-                      {!isSelectedDayEmpty && !searchQuery && (
+                      {!searchQuery && (
                           <Badge variant="outline" className="border-white/20 text-slate-300">
                               {eventsToDisplay.length} Plan
                           </Badge>

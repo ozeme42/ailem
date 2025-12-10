@@ -6,7 +6,7 @@ import {
   CheckSquare, Calendar, BookOpen, ShoppingCart, UtensilsCrossed, 
   PlusCircle, ListChecks, Check, Users, Target, User, Flame, 
   BarChart2, BookCheck, Wallet, ChevronRight, LayoutDashboard, 
-  Settings2, Pencil, Sparkles, Trophy, Star, Bell, Menu, ArrowLeft 
+  Settings2, Pencil, Sparkles, Trophy, Star, Bell, Menu, ArrowLeft, GraduationCap 
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -232,6 +232,14 @@ export default function Home() {
             toast({ title: "Başarılı", description: "Kitap kütüphaneye eklendi.", className: "bg-emerald-900 text-emerald-100 border-emerald-800" });
         } catch (e) { toast({ title: "Hata", variant: "destructive" }); }
     };
+    
+    const { pendingTests } = React.useMemo(() => {
+        if (!activeMember) return { pendingTests: [] };
+        const memberId = activeMember.id;
+        const memberTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
+        return { pendingTests: memberTests };
+    }, [activeMember, tests]);
+
 
     if (loading) return <div className="p-8 flex items-center justify-center min-h-screen bg-slate-950"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div></div>;
 
@@ -260,10 +268,12 @@ export default function Home() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white/10 text-slate-300 relative">
-                                <Bell className="h-5 w-5" />
-                                <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-slate-900"></span>
-                            </Button>
+                            <Link href="/education">
+                                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white/10 text-slate-300 relative">
+                                    <GraduationCap className="h-5 w-5" />
+                                    {pendingTests.length > 0 && <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-slate-900"></span>}
+                                </Button>
+                            </Link>
 
                             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[2px] shadow-lg shadow-indigo-500/20 cursor-pointer hover:scale-105 transition-transform">
                                  <div className="h-full w-full rounded-full bg-slate-950 flex items-center justify-center">
