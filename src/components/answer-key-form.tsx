@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -11,6 +10,14 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { ScrollArea } from "./ui/scroll-area";
 import { DialogFooter } from "./ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+// --- DESIGN SYSTEM: Glassmorphism Colors ---
+const glassColors = {
+    ITEM_BG: "bg-white/5 border border-white/10 hover:bg-white/10 transition-colors",
+    RADIO_ITEM: "border-white/20 text-white data-[state=checked]:border-indigo-500 data-[state=checked]:text-indigo-400",
+    BUTTON_PRIMARY: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20",
+};
 
 type AnswerKey = { [key: number | string]: string };
 
@@ -32,8 +39,6 @@ type AnswerKeyFormProps = {
 export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFormProps) {
   const { toast } = useToast();
 
-  // Initialize form with defaultValues derived from props directly.
-  // This ensures the form re-initializes when the key (in the parent) or props change.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,7 +49,6 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
     },
   });
 
-  // This effect will re-sync the form if the props change *after* the initial render.
   React.useEffect(() => {
     form.reset({
       answers: Array.from({ length: totalQuestions }, (_, i) => ({
@@ -67,39 +71,39 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
       }
     });
     onSave(newKey);
-    toast({ title: "Cevap Anahtarı Geçici Olarak Kaydedildi", description: "Değişiklikleri kalıcı hale getirmek için ana formu kaydedin."});
+    toast({ title: "Cevap Anahtarı Geçici Olarak Kaydedildi", description: "Değişiklikleri kalıcı hale getirmek için ana formu kaydedin.", className: "bg-slate-900 border-white/10 text-white" });
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <ScrollArea className="h-96 pr-6">
-          <div className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+        <ScrollArea className="flex-1 pr-4 -mr-4">
+          <div className="space-y-3 pb-4">
             {fields.map((field, index) => (
               <FormField
                 key={field.id}
                 control={form.control}
                 name={`answers.${index}.value`}
                 render={({ field }) => (
-                  <FormItem className="flex items-center gap-4 sm:gap-8 p-3 rounded-lg border">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold shrink-0">
+                  <FormItem className={cn("flex items-center gap-4 sm:gap-6 p-3 rounded-xl", glassColors.ITEM_BG)}>
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-sm shrink-0 shadow-inner border border-indigo-500/20">
                       {index + 1}
                     </div>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
                         value={field.value || ""}
-                        className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6"
+                        className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-8"
                       >
                         {["A", "B", "C", "D"].map((option) => (
                           <FormItem
                             key={option}
-                            className="flex items-center space-x-2"
+                            className="flex items-center space-x-2 space-y-0"
                           >
                             <FormControl>
-                              <RadioGroupItem value={option} />
+                              <RadioGroupItem value={option} className={glassColors.RADIO_ITEM} />
                             </FormControl>
-                            <FormLabel>{option}</FormLabel>
+                            <FormLabel className="font-semibold text-slate-300 cursor-pointer hover:text-white transition-colors">{option}</FormLabel>
                           </FormItem>
                         ))}
                       </RadioGroup>
@@ -110,8 +114,8 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
             ))}
           </div>
         </ScrollArea>
-        <DialogFooter className="pt-6">
-          <Button type="submit">Cevap Anahtarını Kaydet</Button>
+        <DialogFooter className="pt-6 mt-auto border-t border-white/5">
+          <Button type="submit" className={cn("w-full sm:w-auto", glassColors.BUTTON_PRIMARY)}>Cevap Anahtarını Kaydet</Button>
         </DialogFooter>
       </form>
     </Form>

@@ -1,15 +1,14 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { z } from "zod";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud, Send, Calendar as CalendarIcon, FileQuestion } from "lucide-react";
+import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Plus, Minus, X, KeyRound, MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud, Send, Calendar as CalendarIcon, FileQuestion, BookCopy, Settings, Search, CheckCircle2, ChevronRight, LayoutGrid, CheckSquare, Layers, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
@@ -35,6 +34,16 @@ import { tr } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 
+// --- DESIGN SYSTEM: Glassmorphism ---
+const glassColors = {
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
+    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
+    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
+    TAB_LIST: "bg-slate-900/50 border border-white/10 p-1",
+    TAB_TRIGGER: "data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200",
+};
 
 export function QuestionsClient() {
   const { user, familyMembers } = useAuth();
@@ -60,6 +69,7 @@ export function QuestionsClient() {
 
 
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     setIsLoading(true);
@@ -166,117 +176,168 @@ export function QuestionsClient() {
 
 
   if (isLoading) {
-    return <p>Yükleniyor...</p>;
+    return (
+        <div className="flex h-screen items-center justify-center bg-slate-950">
+             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue="bank">
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="bank">Soru Bankası</TabsTrigger>
-            <TabsTrigger value="mistakes">Yanlış Havuzu ({mistakes.length})</TabsTrigger>
-        </TabsList>
-        <TabsContent value="bank">
-            <Tabs defaultValue="mcq">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="mcq">Çoktan Seçmeli Sorular ({mcqQuestions.length})</TabsTrigger>
-                    <TabsTrigger value="open_ended">Açık Uçlu Sorular ({openEndedQuestions.length})</TabsTrigger>
-                </TabsList>
-                <TabsContent value="mcq">
-                    <QuestionList 
-                      questions={mcqQuestions} 
-                      onAdd={() => handleOpenForm(null, 'mcq')}
-                      onBulkAdd={() => { setBulkDialogType('mcq'); setIsBulkDialogOpen(true); }}
-                      onEdit={(q) => handleOpenForm(q, 'mcq')} 
-                      onDelete={handleDeleteQuestion}
-                      onDeleteSelected={handleDeleteSelectedBankQuestions}
-                      selectedQuestions={selectedQuestionIds}
-                      setSelectedQuestions={setSelectedQuestionIds}
-                      onAssign={() => { setAssignmentType('bank'); setIsAssignDialogOpen(true); }}
-                    />
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
+        {/* FIXED BACKGROUND */}
+        <div className="fixed inset-0 bg-slate-950 -z-50" />
+        
+        {/* AMBIENT BACKGROUND */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-900/20 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-emerald-900/20 rounded-full blur-[120px]" />
+        </div>
+
+        {/* HEADER */}
+        <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
+            <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Button 
+                        onClick={() => router.back()} 
+                        variant="ghost" 
+                        size="icon"
+                        className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors -ml-2"
+                    >
+                        <ArrowLeft className="h-6 w-6" />
+                    </Button>
+                    <div className={cn("from-indigo-500 to-cyan-500", glassColors.ICON_BOX)}>
+                         <BookCopy className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">
+                            Soru Bankası
+                        </h1>
+                        <p className="text-xs font-medium text-slate-400 mt-0.5">İçerik Yönetimi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+      <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
+          
+          <Tabs defaultValue="bank" className="space-y-6 flex flex-col h-full">
+            <TabsList className={cn("grid w-full max-w-md mx-auto grid-cols-2 h-12 rounded-2xl", glassColors.TAB_LIST)}>
+                <TabsTrigger value="bank" className={cn("rounded-xl transition-all", glassColors.TAB_TRIGGER)}>Soru Bankası</TabsTrigger>
+                <TabsTrigger value="mistakes" className={cn("rounded-xl transition-all", glassColors.TAB_TRIGGER)}>Yanlış Havuzu ({mistakes.length})</TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-20">
+                <TabsContent value="bank" className="space-y-6 mt-0 animate-in fade-in zoom-in-95 duration-300">
+                    <Tabs defaultValue="mcq" className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                            <TabsList className="bg-transparent p-0 gap-6 h-auto">
+                                <TabsTrigger value="mcq" className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-500 data-[state=active]:bg-transparent data-[state=active]:text-indigo-400 text-slate-400 pb-2 px-1 hover:text-slate-200">Çoktan Seçmeli ({mcqQuestions.length})</TabsTrigger>
+                                <TabsTrigger value="open_ended" className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-500 data-[state=active]:bg-transparent data-[state=active]:text-indigo-400 text-slate-400 pb-2 px-1 hover:text-slate-200">Açık Uçlu ({openEndedQuestions.length})</TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <TabsContent value="mcq" className="mt-0">
+                            <QuestionList 
+                            questions={mcqQuestions} 
+                            onAdd={() => handleOpenForm(null, 'mcq')}
+                            onBulkAdd={() => { setBulkDialogType('mcq'); setIsBulkDialogOpen(true); }}
+                            onEdit={(q) => handleOpenForm(q, 'mcq')} 
+                            onDelete={handleDeleteQuestion}
+                            onDeleteSelected={handleDeleteSelectedBankQuestions}
+                            selectedQuestions={selectedQuestionIds}
+                            setSelectedQuestions={setSelectedQuestionIds}
+                            onAssign={() => { setAssignmentType('bank'); setIsAssignDialogOpen(true); }}
+                            />
+                        </TabsContent>
+                        <TabsContent value="open_ended" className="mt-0">
+                            <QuestionList 
+                            questions={openEndedQuestions} 
+                            onAdd={() => handleOpenForm(null, 'open_ended')} 
+                            onBulkAdd={() => { setBulkDialogType('open_ended'); setIsBulkDialogOpen(true); }}
+                            onEdit={(q) => handleOpenForm(q, 'open_ended')} 
+                            onDelete={handleDeleteQuestion}
+                            onDeleteSelected={handleDeleteSelectedBankQuestions}
+                            selectedQuestions={selectedQuestionIds}
+                            setSelectedQuestions={setSelectedQuestionIds}
+                            onAssign={() => { setAssignmentType('bank'); setIsAssignDialogOpen(true); }}
+                            />
+                        </TabsContent>
+                    </Tabs>
                 </TabsContent>
-                <TabsContent value="open_ended">
-                    <QuestionList 
-                      questions={openEndedQuestions} 
-                      onAdd={() => handleOpenForm(null, 'open_ended')} 
-                      onBulkAdd={() => { setBulkDialogType('open_ended'); setIsBulkDialogOpen(true); }}
-                      onEdit={(q) => handleOpenForm(q, 'open_ended')} 
-                      onDelete={handleDeleteQuestion}
-                      onDeleteSelected={handleDeleteSelectedBankQuestions}
-                      selectedQuestions={selectedQuestionIds}
-                      setSelectedQuestions={setSelectedQuestionIds}
-                      onAssign={() => { setAssignmentType('bank'); setIsAssignDialogOpen(true); }}
-                    />
+                
+                <TabsContent value="mistakes" className="space-y-6 mt-0 animate-in fade-in zoom-in-95 duration-300">
+                    <Tabs defaultValue="mcq" className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                             <TabsList className="bg-transparent p-0 gap-6 h-auto">
+                                <TabsTrigger value="mcq" className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-500 data-[state=active]:bg-transparent data-[state=active]:text-indigo-400 text-slate-400 pb-2 px-1 hover:text-slate-200">Çoktan Seçmeli ({mcqMistakes.length})</TabsTrigger>
+                                <TabsTrigger value="open_ended" className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-500 data-[state=active]:bg-transparent data-[state=active]:text-indigo-400 text-slate-400 pb-2 px-1 hover:text-slate-200">Açık Uçlu ({openEndedMistakes.length})</TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <TabsContent value="mcq" className="mt-0">
+                            <MistakePoolList 
+                                mistakes={mcqMistakes}
+                                tests={tests}
+                                onDelete={handleDeleteMistake}
+                                onDeleteSelected={handleDeleteSelectedMistakes}
+                                selectedMistakes={selectedMistakeIds}
+                                setSelectedMistakes={setSelectedMistakeIds}
+                                onAssign={() => { setAssignmentType('mistake'); setIsAssignDialogOpen(true); }}
+                            />
+                        </TabsContent>
+                        <TabsContent value="open_ended" className="mt-0">
+                            <MistakePoolList 
+                                mistakes={openEndedMistakes}
+                                tests={tests}
+                                onDelete={handleDeleteMistake}
+                                onDeleteSelected={handleDeleteSelectedMistakes}
+                                selectedMistakes={selectedMistakeIds}
+                                setSelectedMistakes={setSelectedMistakeIds}
+                                onAssign={() => { setAssignmentType('mistake'); setIsAssignDialogOpen(true); }}
+                            />
+                        </TabsContent>
+                    </Tabs>
                 </TabsContent>
-            </Tabs>
-        </TabsContent>
-        <TabsContent value="mistakes">
-             <Tabs defaultValue="mcq">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="mcq">Çoktan Seçmeli Yanlışlar ({mcqMistakes.length})</TabsTrigger>
-                    <TabsTrigger value="open_ended">Açık Uçlu Yanlışlar ({openEndedMistakes.length})</TabsTrigger>
-                </TabsList>
-                <TabsContent value="mcq">
-                    <MistakePoolList 
-                        mistakes={mcqMistakes}
-                        tests={tests}
-                        onDelete={handleDeleteMistake}
-                        onDeleteSelected={handleDeleteSelectedMistakes}
-                        selectedMistakes={selectedMistakeIds}
-                        setSelectedMistakes={setSelectedMistakeIds}
-                        onAssign={() => { setAssignmentType('mistake'); setIsAssignDialogOpen(true); }}
-                    />
-                </TabsContent>
-                <TabsContent value="open_ended">
-                    <MistakePoolList 
-                        mistakes={openEndedMistakes}
-                        tests={tests}
-                        onDelete={handleDeleteMistake}
-                        onDeleteSelected={handleDeleteSelectedMistakes}
-                        selectedMistakes={selectedMistakeIds}
-                        setSelectedMistakes={setSelectedMistakeIds}
-                        onAssign={() => { setAssignmentType('mistake'); setIsAssignDialogOpen(true); }}
-                    />
-                </TabsContent>
-            </Tabs>
-        </TabsContent>
-      </Tabs>
-      
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <NewQuestionBankForm
-            availableSubjects={allSubjects}
-            onSubjectCreated={handleCreateSubject}
-            availableTopics={allTopics}
-            onTopicCreated={handleCreateTopic}
-            onQuestionProcessed={() => setIsFormOpen(false)}
-            initialData={editingQuestion}
-            defaultType={defaultQuestionType}
+            </div>
+          </Tabs>
+          
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="sm:max-w-lg bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
+              <NewQuestionBankForm
+                availableSubjects={allSubjects}
+                onSubjectCreated={handleCreateSubject}
+                availableTopics={allTopics}
+                onTopicCreated={handleCreateTopic}
+                onQuestionProcessed={() => setIsFormOpen(false)}
+                initialData={editingQuestion}
+                defaultType={defaultQuestionType}
+              />
+            </DialogContent>
+          </Dialog>
+          <BulkAddImagesDialog 
+            open={isBulkDialogOpen} 
+            onOpenChange={setIsBulkDialogOpen} 
+            onImport={handleBulkImport}
+            existingSubjects={allSubjects}
+            existingTopics={allTopics}
+            onSubjectCreate={handleCreateSubject}
+            onTopicCreate={handleCreateTopic}
+            type={bulkDialogType}
           />
-        </DialogContent>
-      </Dialog>
-      <BulkAddImagesDialog 
-        open={isBulkDialogOpen} 
-        onOpenChange={setIsBulkDialogOpen} 
-        onImport={handleBulkImport}
-        existingSubjects={allSubjects}
-        existingTopics={allTopics}
-        onSubjectCreate={handleCreateSubject}
-        onTopicCreate={handleCreateTopic}
-        type={bulkDialogType}
-      />
-       <AssignTestDialog
-        isOpen={isAssignDialogOpen}
-        onOpenChange={setIsAssignDialogOpen}
-        allQuestions={bankQuestions}
-        allMistakes={mistakes}
-        selectedIds={assignmentType === 'bank' ? selectedQuestionIds : selectedMistakeIds}
-        type={assignmentType}
-        onAssignmentComplete={() => {
-            setSelectedQuestionIds([]);
-            setSelectedMistakeIds([]);
-        }}
-      />
+           <AssignTestDialog
+            isOpen={isAssignDialogOpen}
+            onOpenChange={setIsAssignDialogOpen}
+            allQuestions={bankQuestions}
+            allMistakes={mistakes}
+            selectedIds={assignmentType === 'bank' ? selectedQuestionIds : selectedMistakeIds}
+            type={assignmentType}
+            onAssignmentComplete={() => {
+                setSelectedQuestionIds([]);
+                setSelectedMistakeIds([]);
+            }}
+          />
+        </div>
     </div>
   );
 }
@@ -320,106 +381,119 @@ function QuestionList({ questions, onAdd, onBulkAdd, onEdit, onDelete, onDeleteS
     };
     
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+    <Card className={cn("border-0 shadow-none bg-transparent")}>
+      <CardHeader className="px-0 pt-0 pb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
-                <CardTitle>Mevcut Sorular ({questions.length})</CardTitle>
-                <CardDescription>
-                Bu kategorideki tüm soruları buradan görüntüleyebilirsiniz.
+                <CardTitle className="text-xl text-slate-200">Mevcut Sorular</CardTitle>
+                <CardDescription className="text-slate-400">
+                Bu kategorideki tüm soruları buradan yönetebilirsiniz.
                 </CardDescription>
             </div>
             <div className="flex gap-2 self-start sm:self-center flex-wrap">
                  {selectedQuestions.length > 0 && (
                      <>
-                        <Button variant="secondary" onClick={onAssign}><Send className="mr-2 h-4 w-4"/> {selectedQuestions.length} Soruyu Ata</Button>
+                        <Button variant="secondary" onClick={onAssign} className="bg-indigo-600 hover:bg-indigo-500 text-white border-0"><Send className="mr-2 h-4 w-4"/> {selectedQuestions.length} Ata</Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Sil</Button>
+                                <Button variant="destructive" className="bg-rose-600 hover:bg-rose-700 border-0"><Trash2 className="mr-2 h-4 w-4" /> Sil</Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Emin misiniz?</AlertDialogTitle><AlertDialogDescription>{selectedQuestions.length} soruyu kalıcı olarak silmek üzeresiniz. Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={onDeleteSelected}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                <AlertDialogHeader><AlertDialogTitle>Emin misiniz?</AlertDialogTitle><AlertDialogDescription className="text-slate-400">{selectedQuestions.length} soruyu kalıcı olarak silmek üzeresiniz. Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={onDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     </>
                  )}
-                 <Button variant="outline" onClick={onBulkAdd}><FilePlus className="mr-2 h-4 w-4" /> Toplu Ekle</Button>
-                 <Button onClick={onAdd}><Plus className="mr-2 h-4 w-4" /> Yeni Soru Ekle</Button>
+                 <Button variant="outline" onClick={onBulkAdd} className={glassColors.BUTTON_GLASS}><FilePlus className="mr-2 h-4 w-4" /> Toplu</Button>
+                 <Button onClick={onAdd} className="bg-emerald-600 hover:bg-emerald-500 text-white border-0"><Plus className="mr-2 h-4 w-4" /> Yeni</Button>
             </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         {Object.keys(groupedQuestions).length > 0 ? (
-          <Accordion type="multiple" className="w-full">
+          <Accordion type="multiple" className="w-full space-y-4">
             {Object.entries(groupedQuestions).map(([subject, topics]) => (
-              <AccordionItem value={subject} key={subject}>
-                <AccordionTrigger className="text-lg font-medium">{subject}</AccordionTrigger>
-                <AccordionContent className="pl-4">
-                  <Accordion type="multiple" className="w-full">
-                    {Object.entries(topics).map(([topic, topicQuestions]) => {
-                        const allTopicQuestionsSelected = topicQuestions.every(q => selectedQuestions.includes(q.id));
-                        const someTopicQuestionsSelected = topicQuestions.some(q => selectedQuestions.includes(q.id));
+              <AccordionItem value={subject} key={subject} className="border-none rounded-2xl bg-white/5 overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-white/5 text-slate-200 font-semibold text-lg">{subject}</AccordionTrigger>
+                <AccordionContent className="p-0">
+                    <div className="p-2 space-y-2">
+                      <Accordion type="multiple" className="w-full space-y-2">
+                        {Object.entries(topics).map(([topic, topicQuestions]) => {
+                            const allTopicQuestionsSelected = topicQuestions.every(q => selectedQuestions.includes(q.id));
+                            const someTopicQuestionsSelected = topicQuestions.some(q => selectedQuestions.includes(q.id));
 
-                        return (
-                          <AccordionItem value={topic} key={topic}>
-                            <div className="flex items-center">
-                                <Checkbox
-                                    checked={allTopicQuestionsSelected ? true : (someTopicQuestionsSelected ? "indeterminate" : false)}
-                                    onCheckedChange={() => handleToggleTopicSelection(topicQuestions)}
-                                    className="mr-2"
-                                />
-                                <AccordionTrigger className="flex-1">{topic} ({topicQuestions.length})</AccordionTrigger>
-                            </div>
-                            <AccordionContent className="pl-4">
-                              <div className="space-y-3">
-                                {topicQuestions.map((q) => (
-                                  <div key={q.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-md">
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                      <Checkbox
-                                        checked={selectedQuestions.includes(q.id)}
-                                        onCheckedChange={(checked) => {
-                                            setSelectedQuestions(prev => checked ? [...prev, q.id] : prev.filter(id => id !== q.id))
-                                        }}
-                                      />
-                                      <div className="relative shrink-0">
-                                          <NextImage src={q.imageUrl} alt={q.topic} width={80} height={60} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />
-                                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 rounded-b-sm">
-                                             <p className="text-white text-[10px] font-semibold truncate" title={q.originalFilename || q.title}>{q.originalFilename || q.title}</p>
+                            return (
+                              <AccordionItem value={topic} key={topic} className="border border-white/5 rounded-xl bg-slate-900/30">
+                                <div className="flex items-center px-3 py-2">
+                                    <Checkbox
+                                        checked={allTopicQuestionsSelected ? true : (someTopicQuestionsSelected ? "indeterminate" : false)}
+                                        onCheckedChange={() => handleToggleTopicSelection(topicQuestions)}
+                                        className="mr-3 border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                    />
+                                    <AccordionTrigger className="flex-1 hover:no-underline py-0 text-slate-300 font-medium text-base">{topic} <span className="ml-2 text-xs text-slate-500 font-normal">({topicQuestions.length})</span></AccordionTrigger>
+                                </div>
+                                <AccordionContent className="px-3 pb-3 pt-1">
+                                  <div className="space-y-2 mt-2">
+                                    {topicQuestions.map((q) => (
+                                      <div key={q.id} className="flex items-center justify-between p-3 bg-slate-950/50 rounded-lg border border-white/5 group hover:border-white/10 transition-colors">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                          <Checkbox
+                                            checked={selectedQuestions.includes(q.id)}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedQuestions(prev => checked ? [...prev, q.id] : prev.filter(id => id !== q.id))
+                                            }}
+                                            className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                          />
+                                          <div className="relative shrink-0 w-20 h-14 bg-black/20 rounded-md overflow-hidden border border-white/5">
+                                              {q.imageUrl ? (
+                                                  <NextImage src={q.imageUrl} alt={q.topic} fill className="object-contain" />
+                                              ) : (
+                                                  <div className="flex items-center justify-center h-full text-slate-600"><FileQuestion className="w-6 h-6"/></div>
+                                              )}
                                           </div>
+                                          <div className="flex-grow min-w-0">
+                                              <p className="font-medium truncate text-sm text-slate-200" title={q.originalFilename || q.title}>{q.originalFilename || q.title}</p>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                {q.type !== 'open_ended' && <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/30 text-emerald-400 bg-emerald-500/10">Cevap: {q.correctAnswer}</Badge>}
+                                                <Badge variant="outline" className="text-[10px] h-5 border-white/10 text-slate-500">{q.subject}</Badge>
+                                              </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10" onClick={() => onEdit(q)}><Edit className="h-4 w-4"/></Button>
+                                          <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 h-8 w-8"><Trash2 className="h-4 w-4"/></Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                              <AlertDialogHeader><AlertDialogTitle>Soruyu Sil</AlertDialogTitle><AlertDialogDescription className="text-slate-400">Bu soruyu bankadan kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                              <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(q.id)} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
+                                        </div>
                                       </div>
-                                      <div className="flex-grow min-w-0">
-                                          <p className="font-semibold truncate text-sm">{q.topic}</p>
-                                          <p className="text-xs text-muted-foreground truncate">{q.subject}</p>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {q.type !== 'open_ended' && <Badge variant="outline">Doğru: {q.correctAnswer}</Badge>}
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(q)}><Edit className="h-4 w-4"/></Button>
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7"><Trash2 className="h-4 w-4"/></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader><AlertDialogTitle>Soruyu Sil</AlertDialogTitle><AlertDialogDescription>Bu soruyu bankadan kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                          <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(q.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        )
-                    })}
-                  </Accordion>
+                                </AccordionContent>
+                              </AccordionItem>
+                            )
+                        })}
+                      </Accordion>
+                    </div>
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         ) : (
-          <p className="text-center py-10 text-muted-foreground">Bu kategoride henüz soru eklenmemiş.</p>
+          <div className="text-center py-16 text-slate-500 border border-dashed border-white/10 rounded-3xl bg-white/5 flex flex-col items-center">
+             <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-3">
+                <FileQuestion className="w-8 h-8 text-slate-600" />
+             </div>
+             <p className="text-lg font-medium text-slate-300">Soru Yok</p>
+             <p className="text-sm mt-1">Bu kategoride henüz soru eklenmemiş.</p>
+             <Button variant="link" className="text-indigo-400 mt-2" onClick={onAdd}>İlk soruyu ekle</Button>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -480,47 +554,42 @@ function MistakePoolList({ mistakes, tests, onDelete, onDeleteSelected, selected
     };
     
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+        <Card className="border-0 shadow-none bg-transparent">
+            <CardHeader className="px-0 pt-0 pb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
-                        <CardTitle>Yanlış Havuzu ({mistakes.length})</CardTitle>
-                        <CardDescription>Öğrencilerin yanlış yaptığı tüm sorular burada toplanır.</CardDescription>
+                        <CardTitle className="text-xl text-slate-200">Yanlış Havuzu ({mistakes.length})</CardTitle>
+                        <CardDescription className="text-slate-400">Öğrencilerin yanlış yaptığı sorular.</CardDescription>
                     </div>
                     {selectedMistakes.length > 0 && (
                         <div className="flex gap-2 self-start sm:self-center">
-                            <Button variant="secondary" onClick={onAssign}><Send className="mr-2 h-4 w-4"/> {selectedMistakes.length} Soruyu Ata</Button>
+                            <Button variant="secondary" onClick={onAssign} className="bg-indigo-600 hover:bg-indigo-500 text-white border-0"><Send className="mr-2 h-4 w-4"/> {selectedMistakes.length} Ata</Button>
                             <AlertDialog>
-                                <AlertDialogTrigger asChild><Button variant="destructive"><Trash2 className="mr-2 h-4 w-4"/> Sil</Button></AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Emin misiniz?</AlertDialogTitle><AlertDialogDescription>{selectedMistakes.length} yanlış soruyu havuzdan kalıcı olarak silmek üzeresiniz.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={onDeleteSelected}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                                <AlertDialogTrigger asChild><Button variant="destructive" className="bg-rose-600 hover:bg-rose-700 border-0"><Trash2 className="mr-2 h-4 w-4"/> Sil</Button></AlertDialogTrigger>
+                                <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                    <AlertDialogHeader><AlertDialogTitle>Emin misiniz?</AlertDialogTitle><AlertDialogDescription className="text-slate-400">{selectedMistakes.length} yanlış soruyu havuzdan kalıcı olarak silmek üzeresiniz.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={onDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
                     )}
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-0">
                 {mistakes.length > 0 ? (
-                    <Accordion type="multiple" className="w-full" defaultValue={Object.keys(groupedMistakes)}>
+                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={Object.keys(groupedMistakes)}>
                         {Object.entries(groupedMistakes).map(([studentName, subjects]) => {
                             const allStudentMistakeIds = Object.values(subjects).flatMap(topics => Object.values(topics).flatMap(tests => Object.values(tests).flat().map(m => m.id)));
                             const allSelected = allStudentMistakeIds.every(id => selectedMistakes.includes(id));
                             const someSelected = allStudentMistakeIds.some(id => selectedMistakes.includes(id));
 
                             return (
-                                <AccordionItem value={studentName} key={studentName} className="border-b-0">
-                                <Card className="mb-2">
-                                <CardHeader className="p-0">
-                                    <AccordionTrigger className="p-3">
-                                    <div className="flex items-center gap-3 w-full">
-                                        <Checkbox checked={allSelected ? true : someSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allStudentMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
-                                        <span className="font-semibold text-lg">{studentName} ({allStudentMistakeIds.length})</span>
-                                    </div>
-                                    </AccordionTrigger>
-                                </CardHeader>
-                                <AccordionContent className="p-3 pt-0">
+                                <AccordionItem value={studentName} key={studentName} className="border-none rounded-2xl bg-white/5 overflow-hidden">
+                                <div className="flex items-center px-4 py-3 bg-indigo-500/10">
+                                    <Checkbox checked={allSelected ? true : someSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allStudentMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()} className="mr-3 border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"/>
+                                    <AccordionTrigger className="flex-1 hover:no-underline py-0 text-indigo-200 font-bold text-lg">{studentName} <span className="ml-2 text-xs font-normal text-indigo-400/80">({allStudentMistakeIds.length})</span></AccordionTrigger>
+                                </div>
+                                <AccordionContent className="p-2">
                                     <Accordion type="multiple" className="w-full space-y-2">
                                         {Object.entries(subjects).map(([subjectName, topics]) => {
                                              const allSubjectMistakeIds = Object.values(topics).flatMap(tests => Object.values(tests).flat().map(m => m.id));
@@ -528,78 +597,76 @@ function MistakePoolList({ mistakes, tests, onDelete, onDeleteSelected, selected
                                              const someSubSelected = allSubjectMistakeIds.some(id => selectedMistakes.includes(id));
 
                                             return(
-                                            <AccordionItem value={subjectName} key={subjectName}>
-                                                <AccordionTrigger>
-                                                    <div className="flex items-center gap-3 w-full">
-                                                        <Checkbox checked={allSubSelected ? true : someSubSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allSubjectMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
-                                                        {subjectName}
-                                                    </div>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="pl-4">
+                                            <AccordionItem value={subjectName} key={subjectName} className="border border-white/5 rounded-xl bg-slate-900/30">
+                                                <div className="flex items-center px-3 py-2">
+                                                    <Checkbox checked={allSubSelected ? true : someSubSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allSubjectMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()} className="mr-3 border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"/>
+                                                    <AccordionTrigger className="flex-1 hover:no-underline py-0 text-slate-300 font-medium">{subjectName}</AccordionTrigger>
+                                                </div>
+                                                <AccordionContent className="px-2 pb-2">
                                                      {Object.entries(topics).map(([topicName, tests]) => {
                                                          const allTopicMistakeIds = Object.values(tests).flat().map(m => m.id);
                                                          const allTopicSelected = allTopicMistakeIds.every(id => selectedMistakes.includes(id));
                                                          const someTopicSelected = allTopicMistakeIds.some(id => selectedMistakes.includes(id));
                                                         return(
-                                                          <AccordionItem value={topicName} key={topicName}>
-                                                              <AccordionTrigger>
-                                                                  <div className="flex items-center gap-3 w-full">
-                                                                    <Checkbox checked={allTopicSelected ? true : someTopicSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allTopicMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
-                                                                    {topicName}
-                                                                  </div>
-                                                              </AccordionTrigger>
-                                                              <AccordionContent className="pl-4">
+                                                          <AccordionItem value={topicName} key={topicName} className="border-t border-white/5 mt-2 pt-2">
+                                                              <div className="flex items-center px-2 py-1">
+                                                                    <Checkbox checked={allTopicSelected ? true : someTopicSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allTopicMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()} className="mr-3 scale-90 border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"/>
+                                                                    <AccordionTrigger className="flex-1 hover:no-underline py-0 text-slate-400 text-sm">{topicName}</AccordionTrigger>
+                                                              </div>
+                                                              <AccordionContent className="pl-6 pt-2 space-y-2">
                                                                   {Object.entries(tests).map(([testName, testMistakes]) => {
                                                                       const allTestMistakeIds = testMistakes.map(m => m.id);
                                                                       const allTestSelected = allTestMistakeIds.every(id => selectedMistakes.includes(id));
                                                                       const someTestSelected = allTestMistakeIds.some(id => selectedMistakes.includes(id));
 
                                                                       return(
-                                                                          <AccordionItem value={testName} key={testName}>
-                                                                              <AccordionTrigger>
-                                                                                   <div className="flex items-center gap-3 w-full">
-                                                                                        <Checkbox checked={allTestSelected ? true : someTestSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allTestMistakeIds, !!checked)} onClick={(e) => e.stopPropagation()}/>
-                                                                                        {testName}
-                                                                                    </div>
-                                                                              </AccordionTrigger>
-                                                                              <AccordionContent className="pl-4 space-y-2">
-                                                                                  {testMistakes.map(m => (
-                                                                                      <div key={m.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
-                                                                                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                                                                <Checkbox checked={selectedMistakes.includes(m.id)} onCheckedChange={(checked) => handleToggleSelection([m.id], !!checked)} />
-                                                                                                {m.imageUrl && <NextImage src={m.imageUrl} alt={m.topic} width={60} height={45} className="rounded-sm border object-contain aspect-video" data-ai-hint="question paper" />}
+                                                                          <div key={testName} className="space-y-2">
+                                                                              <div className="flex items-center gap-2 pl-2">
+                                                                                  <Checkbox checked={allTestSelected ? true : someTestSelected ? "indeterminate" : false} onCheckedChange={(checked) => handleToggleSelection(allTestMistakeIds, !!checked)} className="scale-75 border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"/>
+                                                                                  <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{testName}</p>
+                                                                              </div>
+                                                                              
+                                                                              {testMistakes.map(m => (
+                                                                                  <div key={m.id} className="flex items-center justify-between p-2 bg-slate-950/50 rounded-lg border border-white/5 hover:border-white/10 group">
+                                                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                                            <Checkbox checked={selectedMistakes.includes(m.id)} onCheckedChange={(checked) => handleToggleSelection([m.id], !!checked)} className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"/>
+                                                                                            <div className="relative shrink-0 w-16 h-12 bg-black/20 rounded overflow-hidden">
+                                                                                                {m.imageUrl && <NextImage src={m.imageUrl} alt={m.topic} fill className="object-contain" />}
                                                                                             </div>
-                                                                                            <AlertDialog>
-                                                                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive h-7 w-7"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                                                                                <AlertDialogContent>
-                                                                                                    <AlertDialogHeader><AlertDialogTitle>Yanlışı Sil</AlertDialogTitle><AlertDialogDescription>Bu yanlış soruyu havuzdan kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                                                                    <AlertDialogFooter><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(m.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                                                                                                </AlertDialogContent>
-                                                                                            </AlertDialog>
-                                                                                      </div>
-                                                                                  ))}
-                                                                              </AccordionContent>
-                                                                          </AccordionItem>
+                                                                                        </div>
+                                                                                        <AlertDialog>
+                                                                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-slate-500 hover:text-rose-400 h-6 w-6"><Trash2 className="h-3.5 w-3.5"/></Button></AlertDialogTrigger>
+                                                                                            <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                                                                                <AlertDialogHeader><AlertDialogTitle>Yanlışı Sil</AlertDialogTitle><AlertDialogDescription className="text-slate-400">Bu soruyu kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
+                                                                                                <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(m.id)} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                                                                                            </AlertDialogContent>
+                                                                                        </AlertDialog>
+                                                                                  </div>
+                                                                              ))}
+                                                                          </div>
                                                                       )
                                                                   })}
                                                               </AccordionContent>
-                                                          </AccordionItem>  
+                                                          </AccordionItem>
                                                         )
                                                      })}
                                                 </AccordionContent>
-                                            </AccordionItem>
-                                        )})}
+                                            </AccordionItem> 
+                                            )
+                                        })}
                                     </Accordion>
                                 </AccordionContent>
-                                </Card>
                                 </AccordionItem>
                             )
                         })}
                     </Accordion>
                 ) : (
-                    <div className="text-center py-10 text-muted-foreground flex flex-col items-center">
-                        <FileQuestion className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                        Yanlış havuzu boş.
+                    <div className="text-center py-16 text-slate-500 border border-dashed border-white/10 rounded-3xl bg-white/5 flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-3">
+                            <AlertTriangle className="h-8 w-8 text-slate-600"/>
+                        </div>
+                        <p className="text-lg font-medium text-slate-300">Havuz Boş</p>
+                        <p className="text-sm mt-1">Yanlış havuzunda soru bulunmuyor.</p>
                     </div>
                 )}
             </CardContent>
@@ -691,50 +758,63 @@ function BulkAddImagesDialog({
 
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-2xl bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
                 <DialogHeader>
-                    <DialogTitle>Toplu Soru Ekle</DialogTitle>
-                    <DialogDescription>
-                       Birden çok soru görseli seçin. Tüm sorular seçili ders ve konuya eklenecektir.
+                    <DialogTitle className="text-xl font-bold">Toplu Soru Ekle</DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        Birden çok soru görseli seçin. Tüm sorular seçili ders ve konuya eklenecektir.
                     </DialogDescription>
                 </DialogHeader>
                 <RhfForm {...form}>
                     <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-4">
                         <ScrollArea className="h-[60vh] pr-4">
-                          <div className="space-y-4 mt-4">
+                          <div className="space-y-6 mt-2">
                                <div 
                                   {...getRootProps()} 
-                                  className={`w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary cursor-pointer ${isDragActive ? 'border-primary bg-primary/10' : ''}`}
+                                  className={`w-full aspect-video border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-indigo-500 hover:bg-indigo-500/5 transition-all cursor-pointer ${isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'bg-black/20'}`}
                                >
                                   <input {...getInputProps()} />
-                                  <UploadCloud className="h-10 w-10"/>
-                                  <p className="mt-2 text-sm">Resimleri sürükle bırak veya tıkla</p>
+                                  <UploadCloud className="h-12 w-12 mb-2 opacity-50"/>
+                                  <p className="text-sm font-medium">Resimleri buraya sürükleyin veya tıklayın</p>
+                                  <p className="text-xs text-slate-500 mt-1">JPG, PNG, GIF</p>
                                </div>
                                
-                               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                                  {(form.watch('images') || []).map((image, index) => (
-                                      <div key={index} className="relative group">
-                                          <NextImage src={image.dataUri} alt={`Önizleme ${index}`} width={100} height={100} className="w-full h-auto object-cover rounded-md border"/>
-                                          <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveImage(index)}>
-                                             <X className="h-4 w-4"/>
-                                          </Button>
-                                      </div>
-                                  ))}
-                               </div>
+                               {form.watch('images')?.length > 0 && (
+                                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                                      {form.watch('images').map((image, index) => (
+                                          <div key={index} className="relative group aspect-square rounded-lg overflow-hidden border border-white/10">
+                                              <NextImage src={image.dataUri} alt={`Önizleme ${index}`} fill className="object-cover"/>
+                                              <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveImage(index)}>
+                                                 <X className="h-3 w-3"/>
+                                              </Button>
+                                          </div>
+                                      ))}
+                                   </div>
+                               )}
                                
-                               <FormField control={form.control} name="subject" render={({field}) => (
-                                 <FormItem><FormLabel>Ders</FormLabel><Combobox options={subjectOptions} value={field.value} onChange={field.onChange} onCreate={onSubjectCreate} placeholder="Ders seç veya oluştur..." notfoundText="Ders bulunamadı." createText="Yeni ders oluştur:"/><FormMessage/></FormItem>
-                               )}/>
-                               <FormField control={form.control} name="topic" render={({field}) => (
-                                 <FormItem><FormLabel>Konu</FormLabel><Combobox options={topicOptions} value={field.value} onChange={field.onChange} onCreate={onTopicCreate} placeholder="Konu seç veya oluştur..." notfoundText="Konu bulunamadı." createText="Yeni konu oluştur:"/><FormMessage/></FormItem>
-                               )}/>
+                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                   <FormField control={form.control} name="subject" render={({field}) => (
+                                     <FormItem>
+                                         <FormLabel className="text-slate-300">Ders</FormLabel>
+                                         <Combobox options={subjectOptions} value={field.value} onChange={field.onChange} onCreate={onSubjectCreate} placeholder="Ders seç..." notfoundText="Bulunamadı." createText="Oluştur:" className={glassColors.INPUT_BG}/>
+                                         <FormMessage/>
+                                     </FormItem>
+                                   )}/>
+                                   <FormField control={form.control} name="topic" render={({field}) => (
+                                     <FormItem>
+                                         <FormLabel className="text-slate-300">Konu</FormLabel>
+                                         <Combobox options={topicOptions} value={field.value} onChange={field.onChange} onCreate={onTopicCreate} placeholder="Konu seç..." notfoundText="Bulunamadı." createText="Oluştur:" className={glassColors.INPUT_BG}/>
+                                         <FormMessage/>
+                                     </FormItem>
+                                   )}/>
+                               </div>
                           </div>
                         </ScrollArea>
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting}>İptal</Button>
-                            <Button type="submit" disabled={isImporting || (form.watch('images') || []).length === 0}>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isImporting} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
+                            <Button type="submit" disabled={isImporting || (form.watch('images') || []).length === 0} className="bg-indigo-600 hover:bg-indigo-500 text-white">
                                 {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {form.getValues('images')?.length || 0} Soruyu İçe Aktar
+                                {form.getValues('images')?.length || 0} Soruyu Ekle
                             </Button>
                         </DialogFooter>
                     </form>
@@ -878,20 +958,20 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Ödev Ata ({selectedIds.length} Soru)</DialogTitle>
-          <DialogDescription>Seçilen sorularla yeni bir test oluşturun ve öğrencilere atayın.</DialogDescription>
+          <DialogTitle className="text-xl font-bold">Ödev Ata ({selectedIds.length} Soru)</DialogTitle>
+          <DialogDescription className="text-slate-400">Seçilen sorularla yeni bir test oluşturun ve öğrencilere atayın.</DialogDescription>
         </DialogHeader>
         <RhfForm {...form}>
-          <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-4 pt-4">
+          <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-4 pt-2">
              <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Test Başlığı</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormLabel className="text-slate-300">Test Başlığı</FormLabel>
+                    <FormControl><Input {...field} className={glassColors.INPUT_BG}/></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -901,8 +981,8 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                 name="durationMinutes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Süre (dakika)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormLabel className="text-slate-300">Süre (dakika)</FormLabel>
+                    <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG}/></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -912,15 +992,15 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
               name="studentIds"
               render={() => (
                 <FormItem>
-                    <FormLabel>Öğrenciler</FormLabel>
-                    <div className="space-y-2">
+                    <FormLabel className="text-slate-300">Öğrenciler</FormLabel>
+                    <div className="space-y-2 p-3 bg-black/20 rounded-xl border border-white/5">
                         {students.map((student) => (
                             <FormField
                                 key={student.id}
                                 control={form.control}
                                 name="studentIds"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                                         <FormControl>
                                             <Checkbox
                                                 checked={field.value?.includes(student.id)}
@@ -929,9 +1009,10 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                                                     ? field.onChange([...(field.value || []), student.id])
                                                     : field.onChange(field.value?.filter((value) => value !== student.id));
                                                 }}
+                                                className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                                             />
                                         </FormControl>
-                                        <FormLabel className="font-normal">{student.name}</FormLabel>
+                                        <FormLabel className="font-medium text-slate-200 cursor-pointer w-full">{student.name}</FormLabel>
                                     </FormItem>
                                 )}
                             />
@@ -946,12 +1027,12 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                 name="dateRange"
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
-                    <FormLabel>Ödev Tarihleri</FormLabel>
+                    <FormLabel className="text-slate-300">Ödev Tarihleri</FormLabel>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
                                 variant={"outline"}
-                                className={cn("w-full justify-start text-left font-normal", !field.value.from && "text-muted-foreground")}
+                                className={cn("w-full justify-start text-left font-normal border-white/10 hover:bg-white/5 hover:text-white", !field.value.from && "text-muted-foreground")}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {field.value?.from ? (
@@ -968,7 +1049,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 bg-slate-900 border-white/10" align="start">
                             <Calendar
                                 initialFocus
                                 mode="range"
@@ -976,6 +1057,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 numberOfMonths={1}
+                                className="bg-slate-900 text-slate-100"
                             />
                         </PopoverContent>
                     </Popover>
@@ -984,8 +1066,8 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                 )}
                 />
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
+              <Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Ödevi Ata
               </Button>

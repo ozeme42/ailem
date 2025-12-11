@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Send, Edit, Trash2, BookCopy, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, Plus, Send, Edit, Trash2, BookCopy, Calendar as CalendarIcon, ClipboardList, BookOpen, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onSinglePracticeExamUpdate, addTest, updatePracticeExam } from "@/lib/dataService";
 import type { PracticeExam, PracticeExamSubject, FamilyMember } from "@/lib/data";
@@ -26,6 +25,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+// --- DESIGN SYSTEM: Glassmorphism ---
+const glassColors = {
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
+    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
+    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
+};
 
 const subjectSchema = z.object({
   name: z.string().min(2, "Ders adı zorunludur."),
@@ -84,66 +93,149 @@ export function ExamDetailClient() {
   };
 
 
-  if (!exam) return <div>Yükleniyor...</div>;
+  if (!exam) return (
+      <div className="flex h-screen items-center justify-center bg-slate-950">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+      </div>
+  );
   
   const totalQuestions = (exam.subjects || []).reduce((acc, s) => acc + s.questionCount, 0);
 
   return (
-    <div className="space-y-6">
-      <PageHeader title={exam.name}>
-        <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/education/management/practice-exams')} className="bg-white/20 text-white hover:bg-white/30 border-none">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
-            </Button>
-            <Button onClick={() => setIsSubjectDialogOpen(true)} className="bg-white/20 text-white hover:bg-white/30 border-none">
-                <Plus className="mr-2 h-4 w-4" /> Ders Ekle
-            </Button>
-            <Button onClick={() => setIsAssignDialogOpen(true)} disabled={totalQuestions === 0} className="bg-white/20 text-white hover:bg-white/30 border-none">
-                <Send className="mr-2 h-4 w-4"/> Ödev Ata
-            </Button>
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
+        {/* FIXED BACKGROUND */}
+        <div className="fixed inset-0 bg-slate-950 -z-50" />
+        
+        {/* AMBIENT BACKGROUND */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-900/20 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-orange-900/20 rounded-full blur-[120px]" />
         </div>
-      </PageHeader>
+
+        {/* HEADER */}
+        <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
+            <div className="max-w-4xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Button 
+                        onClick={() => router.push('/education/management/practice-exams')} 
+                        variant="ghost" 
+                        size="icon"
+                        className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors -ml-2"
+                    >
+                        <ArrowLeft className="h-6 w-6" />
+                    </Button>
+                    <div className={cn("from-amber-500 to-orange-600", glassColors.ICON_BOX)}>
+                         <ClipboardList className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none truncate max-w-[200px] sm:max-w-md">
+                            {exam.name}
+                        </h1>
+                        <p className="text-xs font-medium text-slate-400 mt-0.5">Deneme Yönetimi</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => setIsSubjectDialogOpen(true)} className={glassColors.BUTTON_GLASS}>
+                        <Plus className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Ders Ekle</span>
+                    </Button>
+                    <Button onClick={() => setIsAssignDialogOpen(true)} disabled={totalQuestions === 0} className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20">
+                        <Send className="mr-1.5 h-4 w-4"/> <span className="hidden sm:inline">Ata</span>
+                    </Button>
+                </div>
+            </div>
+        </div>
       
-       <Card>
-            <CardHeader>
-                <CardTitle>Deneme Özeti</CardTitle>
-                <CardDescription>Bu deneme {exam.subjects?.length || 0} dersten ve toplam {totalQuestions} sorudan oluşmaktadır.</CardDescription>
-            </CardHeader>
-       </Card>
+      <div className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
+          
+        <div className={cn("rounded-3xl p-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-6 border border-white/5", glassColors.CARD_BG)}>
+            <div className="text-center sm:text-left">
+                <h2 className="text-lg font-bold text-slate-200">Deneme Özeti</h2>
+                <p className="text-slate-400 text-sm">Toplam soru ve ders dağılımı.</p>
+            </div>
+            <div className="flex gap-8">
+                <div className="text-center">
+                    <p className="text-3xl font-black text-white">{exam.subjects?.length || 0}</p>
+                    <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Ders</p>
+                </div>
+                <div className="text-center">
+                    <p className="text-3xl font-black text-amber-400">{totalQuestions}</p>
+                    <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Soru</p>
+                </div>
+            </div>
+        </div>
 
       <Accordion type="multiple" className="w-full space-y-4" defaultValue={(exam.subjects || []).map(s => s.id)}>
         {(exam.subjects || []).map(subject => (
-          <AccordionItem key={subject.id} value={subject.id} className="border-b-0">
-             <div className="bg-muted/50 rounded-lg">
-                <AccordionTrigger className="p-4 font-semibold text-lg hover:no-underline">
-                    {subject.name} - ({subject.questionCount} Soru)
+          <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-2xl overflow-hidden bg-white/5 border border-white/5">
+              <div className="flex items-center justify-between pr-4 bg-slate-900/30">
+                <AccordionTrigger className="p-4 hover:no-underline flex gap-3 text-slate-200 hover:text-white transition-colors">
+                    <span className="font-bold text-lg">{subject.name}</span>
+                    <Badge variant="secondary" className="bg-white/10 text-slate-300 font-mono">{subject.questionCount} Soru</Badge>
                 </AccordionTrigger>
-                <AccordionContent className="p-4 pt-0 space-y-3">
-                   <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { setCurrentSubject(subject); setIsAnswerKeyDialogOpen(true); }}>
-                           <BookCopy className="mr-2 h-4 w-4" /> Cevap Anahtarı
-                        </Button>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4" /> Dersi Sil</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                    <AlertDialogDescription>"{subject.name}" dersini bu denemeden kaldırmak istediğinizden emin misiniz?</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>Evet, Sil</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="h-8 text-xs border-white/10 hover:bg-white/10 text-slate-300" onClick={(e) => { e.stopPropagation(); setCurrentSubject(subject); setIsAnswerKeyDialogOpen(true); }}>
+                       <CheckSquare className="mr-1.5 h-3.5 w-3.5 text-emerald-400" /> Cevap Anahtarı
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10" onClick={(e) => e.stopPropagation()}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-400">"{subject.name}" dersini bu denemeden kaldırmak istediğinizden emin misiniz?</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 </div>
+              </div>
+               <AccordionContent className="p-0 border-t border-white/5 bg-black/20">
+                   <div className="p-4 flex gap-4 overflow-x-auto custom-scrollbar">
+                       {/* Quick preview of answer key if exists */}
+                       {subject.answerKey && Object.keys(subject.answerKey).length > 0 ? (
+                           <div className="flex gap-2">
+                               {Object.entries(subject.answerKey).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).slice(0, 10).map(([q, a]) => (
+                                   <div key={q} className="flex flex-col items-center bg-white/5 rounded p-1 min-w-[2rem] border border-white/5">
+                                       <span className="text-[10px] text-slate-500 font-bold">{q}</span>
+                                       <span className="text-sm font-bold text-emerald-400">{a}</span>
+                                   </div>
+                               ))}
+                               {Object.keys(subject.answerKey).length > 10 && (
+                                   <div className="flex items-center justify-center px-2 text-xs text-slate-500 italic">
+                                       +{Object.keys(subject.answerKey).length - 10} daha...
+                                   </div>
+                               )}
+                           </div>
+                       ) : (
+                           <div className="text-sm text-slate-500 italic w-full text-center py-2">Henüz cevap anahtarı girilmemiş.</div>
+                       )}
                    </div>
-                </AccordionContent>
-             </div>
+               </AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
+      
+      {/* Empty State */}
+        {(exam.subjects || []).length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10">
+                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
+                    <BookOpen className="h-8 w-8 text-slate-500" />
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-slate-200">Ders Yok</h3>
+                    <p className="text-slate-400 mt-1 text-sm">Bu denemeye henüz hiç ders eklenmemiş.</p>
+                    <Button variant="link" className="text-indigo-400 mt-2" onClick={() => setIsSubjectDialogOpen(true)}>İlk dersi ekle</Button>
+                </div>
+            </div>
+        )}
 
       <SubjectFormDialog 
         isOpen={isSubjectDialogOpen}
@@ -153,17 +245,22 @@ export function ExamDetailClient() {
       
       {currentSubject && (
           <Dialog open={isAnswerKeyDialogOpen} onOpenChange={setIsAnswerKeyDialogOpen}>
-              <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                      <DialogTitle>{currentSubject.name} - Cevap Anahtarı</DialogTitle>
-                      <DialogDescription>Toplam {currentSubject.questionCount} soru için cevapları girin.</DialogDescription>
+              <DialogContent className="max-w-2xl bg-slate-900 border-white/10 text-slate-100 rounded-2xl h-[80vh] flex flex-col p-0 overflow-hidden">
+                  <DialogHeader className="p-6 pb-2 bg-white/5 border-b border-white/5">
+                      <DialogTitle className="text-xl flex items-center gap-2">
+                          <CheckSquare className="w-5 h-5 text-emerald-400"/>
+                          {currentSubject.name} - Cevap Anahtarı
+                      </DialogTitle>
+                      <DialogDescription className="text-slate-400">Toplam {currentSubject.questionCount} soru için cevapları girin.</DialogDescription>
                   </DialogHeader>
-                  <AnswerKeyForm 
-                    key={currentSubject.id} // Add a key to force re-mount
-                    totalQuestions={currentSubject.questionCount} 
-                    answerKey={currentSubject.answerKey || {}}
-                    onSave={(newKey) => handleAnswerKeySave(currentSubject.id, newKey)}
-                  />
+                  <div className="flex-1 overflow-hidden p-6 pt-2">
+                       <AnswerKeyForm 
+                        key={currentSubject.id} // Add a key to force re-mount
+                        totalQuestions={currentSubject.questionCount} 
+                        answerKey={currentSubject.answerKey || {}}
+                        onSave={(newKey) => handleAnswerKeySave(currentSubject.id, newKey)}
+                      />
+                  </div>
               </DialogContent>
           </Dialog>
       )}
@@ -174,6 +271,7 @@ export function ExamDetailClient() {
         exam={exam}
         students={familyMembers.filter(m => m.role.includes("Çocuk"))}
       />
+    </div>
     </div>
   );
 }
@@ -192,7 +290,7 @@ function SubjectFormDialog({ isOpen, onOpenChange, onSave }: { isOpen: boolean, 
 
     return (
          <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl">
                 <DialogHeader>
                     <DialogTitle>Yeni Ders Ekle</DialogTitle>
                 </DialogHeader>
@@ -200,18 +298,20 @@ function SubjectFormDialog({ isOpen, onOpenChange, onSave }: { isOpen: boolean, 
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2 sm:col-span-1">
-                                <Input {...form.register("name")} placeholder="Ders adı (örn: Matematik)" />
-                                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+                                <Label className="text-xs font-semibold text-slate-300 uppercase mb-2 block">Ders Adı</Label>
+                                <Input {...form.register("name")} placeholder="Örn: Matematik" className={glassColors.INPUT_BG}/>
+                                {form.formState.errors.name && <p className="text-sm text-rose-400 mt-1">{form.formState.errors.name.message}</p>}
                             </div>
                             <div className="col-span-2 sm:col-span-1">
-                                <Input type="number" {...form.register("questionCount")} placeholder="Soru Sayısı" />
-                                {form.formState.errors.questionCount && <p className="text-sm text-destructive mt-1">{form.formState.errors.questionCount.message}</p>}
+                                <Label className="text-xs font-semibold text-slate-300 uppercase mb-2 block">Soru Sayısı</Label>
+                                <Input type="number" {...form.register("questionCount")} placeholder="20" className={glassColors.INPUT_BG}/>
+                                {form.formState.errors.questionCount && <p className="text-sm text-rose-400 mt-1">{form.formState.errors.questionCount.message}</p>}
                             </div>
                         </div>
 
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-                            <Button type="submit">Ekle</Button>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
+                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white">Ekle</Button>
                         </DialogFooter>
                     </form>
                 </FormProvider>
@@ -248,75 +348,88 @@ function AssignExamForm({ isOpen, onOpenChange, exam, students }: {isOpen: boole
             questionOffset += subject.questionCount;
         });
 
-        for (const studentId of data.studentIds) {
-            await addTest({
-                title: exam.name,
-                subject: 'Genel Deneme Sınavları',
-                studentId: studentId,
-                questionCount: questionCount,
-                assignedDate: format(data.assignedDate, 'dd MMMM yyyy', { locale: tr }),
-                dueDate: format(data.dueDate, 'dd MMMM yyyy', { locale: tr }),
-                sourceType: 'exam',
-                sourceId: exam.id,
-                gradingType: 'auto',
-                answerKey: combinedAnswerKey,
-                status: 'Atandı',
-            });
+        try {
+            for (const studentId of data.studentIds) {
+                await addTest({
+                    title: exam.name,
+                    subject: 'Genel Deneme Sınavları',
+                    studentId: studentId,
+                    questionCount: questionCount,
+                    assignedDate: format(data.assignedDate, 'dd MMMM yyyy', { locale: tr }),
+                    dueDate: format(data.dueDate, 'dd MMMM yyyy', { locale: tr }),
+                    sourceType: 'exam',
+                    sourceId: exam.id,
+                    gradingType: 'auto',
+                    answerKey: combinedAnswerKey,
+                    status: 'Atandı',
+                });
+            }
+            toast({ title: "Ödev Atandı!", description: `${exam.name} denemesi ${data.studentIds.length} öğrenciye atandı.`});
+            onOpenChange(false);
+            router.push('/education/management/practice-exams');
+        } catch (error) {
+             toast({ title: "Hata", description: "Ödev atanırken bir sorun oluştu.", variant: "destructive" });
         }
-        toast({ title: "Ödev Atandı!", description: `${exam.name} denemesi ${data.studentIds.length} öğrenciye atandı.`});
-        onOpenChange(false);
-        router.push('/education/management/practice-exams');
     }
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl">
                  <DialogHeader>
                     <DialogTitle>{exam.name} Ata</DialogTitle>
                 </DialogHeader>
                 <FormProvider {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                         <div className="space-y-2">
-                            <Label>Öğrenci(ler)</Label>
-                            {students.map(s => (
-                                <div key={s.id} className="flex items-center gap-2">
-                                     <Checkbox
-                                        id={`student-${s.id}`}
-                                        checked={form.watch('studentIds').includes(s.id)}
-                                        onCheckedChange={(checked) => {
-                                            const currentIds = form.getValues('studentIds');
-                                            const newIds = checked ? [...currentIds, s.id] : currentIds.filter(id => id !== s.id);
-                                            form.setValue('studentIds', newIds);
-                                        }}
-                                    />
-                                    <label htmlFor={`student-${s.id}`}>{s.name}</label>
-                                </div>
-                            ))}
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+                         <div className="space-y-3">
+                            <Label className="text-xs font-semibold text-slate-300 uppercase">Öğrenci(ler)</Label>
+                            <div className="space-y-2 p-3 bg-black/20 rounded-xl border border-white/5 max-h-40 overflow-y-auto custom-scrollbar">
+                                {students.map(s => (
+                                    <div key={s.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer" onClick={() => {
+                                        const current = form.getValues('studentIds');
+                                        const next = current.includes(s.id) ? current.filter(id => id !== s.id) : [...current, s.id];
+                                        form.setValue('studentIds', next);
+                                    }}>
+                                        <Checkbox
+                                            id={`student-${s.id}`}
+                                            checked={form.watch('studentIds').includes(s.id)}
+                                            onCheckedChange={(checked) => {
+                                                const current = form.getValues('studentIds');
+                                                const next = checked ? [...current, s.id] : current.filter(id => id !== s.id);
+                                                form.setValue('studentIds', next);
+                                            }}
+                                            className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                        />
+                                        <label htmlFor={`student-${s.id}`} className="font-medium text-slate-200 cursor-pointer w-full text-sm">{s.name}</label>
+                                    </div>
+                                ))}
+                            </div>
+                            {form.formState.errors.studentIds && <p className="text-sm text-rose-400">{form.formState.errors.studentIds.message}</p>}
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2">
-                                <Label>Başlangıç Tarihi</Label>
+                                <Label className="text-xs font-semibold text-slate-300 uppercase">Başlangıç</Label>
                                 <Popover>
-                                    <PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal")}><CalendarIcon className="mr-2 h-4 w-4" />{format(form.watch('assignedDate'), "PPP", { locale: tr })}</Button></PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.watch('assignedDate')} onSelect={(d) => form.setValue('assignedDate', d || new Date())} initialFocus /></PopoverContent>
+                                    <PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal border-white/10 bg-white/5 hover:bg-white/10 hover:text-white")}><CalendarIcon className="mr-2 h-4 w-4" />{format(form.watch('assignedDate'), "d MMM yyyy", { locale: tr })}</Button></PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 bg-slate-900 border-white/10 text-slate-100"><Calendar mode="single" selected={form.watch('assignedDate')} onSelect={(d) => form.setValue('assignedDate', d || new Date())} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent>
                                 </Popover>
                             </div>
                             <div className="space-y-2">
-                                <Label>Bitiş Tarihi</Label>
+                                <Label className="text-xs font-semibold text-slate-300 uppercase">Bitiş</Label>
                                 <Popover>
-                                    <PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal")}><CalendarIcon className="mr-2 h-4 w-4" />{format(form.watch('dueDate'), "PPP", { locale: tr })}</Button></PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.watch('dueDate')} onSelect={(d) => form.setValue('dueDate', d || new Date())} initialFocus /></PopoverContent>
+                                    <PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal border-white/10 bg-white/5 hover:bg-white/10 hover:text-white")}><CalendarIcon className="mr-2 h-4 w-4" />{format(form.watch('dueDate'), "d MMM yyyy", { locale: tr })}</Button></PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 bg-slate-900 border-white/10 text-slate-100"><Calendar mode="single" selected={form.watch('dueDate')} onSelect={(d) => form.setValue('dueDate', d || new Date())} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent>
                                 </Popover>
                             </div>
                         </div>
 
-                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>İptal</Button>
-                            <Button type="submit">Ödevi Ata</Button>
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
+                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">Ödevi Ata</Button>
                         </DialogFooter>
                     </form>
                 </FormProvider>
             </DialogContent>
         </Dialog>
-    )
+    );
 }

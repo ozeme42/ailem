@@ -39,13 +39,13 @@ const glassColors = {
 // Updated Colors for Dark Mode (High Contrast & Glass)
 const noteColors = [
     { name: 'Sarı', class: 'bg-amber-500/40 border-amber-400/30 text-amber-50 hover:bg-amber-500/50' },
+    { name: 'Turkuaz', class: 'bg-cyan-500/40 border-cyan-400/30 text-cyan-50 hover:bg-cyan-500/50' },
+    { name: 'Fuşya', class: 'bg-fuchsia-600/40 border-fuchsia-400/30 text-fuchsia-50 hover:bg-fuchsia-600/50' },
+    { name: 'Nane', class: 'bg-lime-600/40 border-lime-400/30 text-lime-50 hover:bg-lime-600/50' },
     { name: 'Mavi', class: 'bg-blue-600/40 border-blue-400/30 text-blue-50 hover:bg-blue-600/50' },
     { name: 'Yeşil', class: 'bg-emerald-600/40 border-emerald-400/30 text-emerald-50 hover:bg-emerald-600/50' },
     { name: 'Pembe', class: 'bg-pink-600/40 border-pink-400/30 text-pink-50 hover:bg-pink-600/50' },
     { name: 'Mor', class: 'bg-violet-600/40 border-violet-400/30 text-violet-50 hover:bg-violet-600/50' },
-    { name: 'Turkuaz', class: 'bg-cyan-500/40 border-cyan-400/30 text-cyan-50 hover:bg-cyan-500/50' },
-    { name: 'Fuşya', class: 'bg-fuchsia-600/40 border-fuchsia-400/30 text-fuchsia-50 hover:bg-fuchsia-600/50' },
-    { name: 'Nane', class: 'bg-lime-600/40 border-lime-400/30 text-lime-50 hover:bg-lime-600/50' },
 ];
 
 const folderGradients = [
@@ -111,7 +111,7 @@ export default function NotebookClient() {
       }
     });
     return () => unsubscribe();
-  }, [notebookId, user, activeSectionId]);
+  }, [notebookId, user]);
 
   const handleOpenSectionDialog = (section: NotebookSection | null) => {
     setEditingSection(section);
@@ -650,16 +650,17 @@ interface StickyNoteCardProps {
 }
 
 function StickyNoteCard({ note, onOpenDialog, onDelete }: StickyNoteCardProps) {
-    // Map light colors to dark glass variants
     const getNoteStyle = (colorClass: string | undefined) => {
-        if (!colorClass) return "bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-800/80"; // Default Gray
+        if (!colorClass) return "bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-800/80";
 
-        // Simple mapping based on the class string content
         if (colorClass.includes('yellow') || colorClass.includes('amber')) return "bg-amber-500/40 border-amber-400/30 text-amber-50 hover:bg-amber-500/50";
-        if (colorClass.includes('blue') || colorClass.includes('sky')) return "bg-blue-600/40 border-blue-400/30 text-blue-50 hover:bg-blue-600/50";
+        if (colorClass.includes('blue')) return "bg-blue-600/40 border-blue-400/30 text-blue-50 hover:bg-blue-600/50";
         if (colorClass.includes('green') || colorClass.includes('emerald')) return "bg-emerald-600/40 border-emerald-400/30 text-emerald-50 hover:bg-emerald-600/50";
         if (colorClass.includes('pink') || colorClass.includes('rose') || colorClass.includes('red')) return "bg-pink-600/40 border-pink-400/30 text-pink-50 hover:bg-pink-600/50";
         if (colorClass.includes('purple') || colorClass.includes('violet')) return "bg-violet-600/40 border-violet-400/30 text-violet-50 hover:bg-violet-600/50";
+        if (colorClass.includes('lime')) return 'bg-lime-600/40 border-lime-400/30 text-lime-50 hover:bg-lime-600/50';
+        if (colorClass.includes('cyan')) return 'bg-cyan-500/40 border-cyan-400/30 text-cyan-50 hover:bg-cyan-500/50';
+        if (colorClass.includes('fuchsia')) return 'bg-fuchsia-600/40 border-fuchsia-400/30 text-fuchsia-50 hover:bg-fuchsia-600/50';
         
         return "bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-800/80";
     };
@@ -681,7 +682,7 @@ function StickyNoteCard({ note, onOpenDialog, onDelete }: StickyNoteCardProps) {
                         objectFit="cover" 
                         className="transition-transform duration-500 group-hover:scale-105" 
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
                 </div>
             )}
             
@@ -752,7 +753,8 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
   useLayoutEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      // Added a buffer to prevent scrollbar flicker
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
     }
   }, [form.watch('content')]);
 
@@ -786,7 +788,7 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
 
   // Dinamik arka plan rengi için (NoteEditForm içinde de doğru rengi göstermek için)
   const getEditorBackgroundClass = (colorClass: string | undefined) => {
-        if (!colorClass) return "bg-transparent"; 
+        if (!colorClass) return "bg-transparent";
         if (colorClass.includes('yellow') || colorClass.includes('amber')) return "bg-amber-500/20";
         if (colorClass.includes('blue')) return "bg-blue-600/20";
         if (colorClass.includes('green') || colorClass.includes('emerald')) return "bg-emerald-600/20";
@@ -873,7 +875,7 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
                                         ref={textareaRef}
                                         {...field} 
                                         placeholder="Düşüncelerini buraya yaz..." 
-                                        className="bg-transparent border-none resize-none p-0 text-base text-slate-300 focus-visible:ring-0 min-h-[300px] leading-relaxed placeholder:text-slate-500 focus:bg-transparent" 
+                                        className="bg-transparent border-none resize-none p-0 text-base text-slate-300 focus-visible:ring-0 leading-relaxed placeholder:text-slate-500 focus:bg-transparent" 
                                     />
                                 </FormControl>
                                 <FormMessage className="text-rose-400" />
@@ -938,7 +940,7 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
                                                                 aria-label={color.name} 
                                                                 className={cn(
                                                                     "h-8 w-8 rounded-full transition-all duration-200 border", 
-                                                                    color.class.split(' ')[0], 
+                                                                    color.class.replace('/40',''), 
                                                                     field.value === color.class 
                                                                         ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110 shadow-lg shadow-white/10" 
                                                                         : "border-transparent hover:scale-110 hover:border-white/20 opacity-70 hover:opacity-100"
