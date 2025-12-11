@@ -32,7 +32,7 @@ const glassColors = {
     HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
     CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
     SECTION_HEADER: "bg-white/5 border-b border-white/5 hover:bg-white/10 transition-colors",
-    INPUT_BG: "bg-slate-950/50 border-white/10 text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20 placeholder:text-slate-500",
+    INPUT_BG: "bg-slate-950/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-indigo-500/20",
     BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10",
 };
 
@@ -96,27 +96,21 @@ export default function NotebookClient() {
   useEffect(() => {
     if (!notebookId || !user) return;
     const unsubscribe = onNotebookDetailsUpdate(notebookId, (data) => {
-        if (data) {
-            const sortedSections = (data.notebook.sections || []).sort((a, b) => a.order - b.order);
-            
-            // This check prevents re-setting the active section on every data refresh
-            if (!details) { 
-                if (sortedSections.length > 0) {
-                    setActiveSectionId(sortedSections[0].id);
-                }
-            }
-            
-            setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
-            setSections(sortedSections);
-
-        } else {
-            setDetails(null);
-            setSections([]);
-            setActiveSectionId(null);
+      if (data) {
+        const sortedSections = (data.notebook.sections || []).sort((a, b) => a.order - b.order);
+        if (!activeSectionId && sortedSections.length > 0) {
+          setActiveSectionId(sortedSections[0].id);
         }
+        setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
+        setSections(sortedSections);
+      } else {
+        setDetails(null);
+        setSections([]);
+        setActiveSectionId(null);
+      }
     });
     return () => unsubscribe();
-  }, [notebookId, user]);
+  }, [notebookId, user, activeSectionId]);
 
   const handleOpenSectionDialog = (section: NotebookSection | null) => {
     setEditingSection(section);
@@ -431,13 +425,13 @@ export default function NotebookClient() {
                                                 onClick={(e) => { e.stopPropagation(); setActiveSectionId(section.id); handleAddNewNote(); }}
                                                 title="Hızlı Not Ekle"
                                             >
-                                                <StickyNote className="h-5 w-5" />
+                                                <StickyNote className="h-5 h-5" />
                                             </Button>
                                             
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 rounded-full" onClick={(e) => e.stopPropagation()}>
-                                                        <MoreVertical className="h-5 w-5" />
+                                                        <MoreVertical className="h-5 h-5" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="bg-slate-900 border-white/10 text-slate-100">
@@ -945,7 +939,7 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
                                                                 aria-label={color.name} 
                                                                 className={cn(
                                                                     "h-8 w-8 rounded-full transition-all duration-200 border", 
-                                                                    color.class.replace('/40',''), 
+                                                                    color.class, 
                                                                     field.value === color.class 
                                                                         ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110 shadow-lg shadow-white/10" 
                                                                         : "border-transparent hover:scale-110 hover:border-white/20 opacity-70 hover:opacity-100"
