@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Send, Edit, Trash2, BookCopy, Calendar as CalendarIcon, ClipboardList, BookOpen, CheckSquare } from "lucide-react";
+import { ArrowLeft, Plus, Send, Edit, Trash2, BookCopy, Calendar as CalendarIcon, ClipboardList, BookOpen, CheckSquare, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onSinglePracticeExamUpdate, addTest, updatePracticeExam } from "@/lib/dataService";
 import type { PracticeExam, PracticeExamSubject, FamilyMember } from "@/lib/data";
@@ -26,6 +26,8 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -380,31 +382,43 @@ function AssignExamForm({ isOpen, onOpenChange, exam, students }: {isOpen: boole
                 </DialogHeader>
                 <FormProvider {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-                         <div className="space-y-3">
-                            <Label className="text-xs font-semibold text-slate-300 uppercase">Öğrenci(ler)</Label>
-                            <div className="space-y-2 p-3 bg-black/20 rounded-xl border border-white/5 max-h-40 overflow-y-auto custom-scrollbar">
-                                {students.map(s => (
-                                    <div key={s.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer" onClick={() => {
-                                        const current = form.getValues('studentIds');
-                                        const next = current.includes(s.id) ? current.filter(id => id !== s.id) : [...current, s.id];
-                                        form.setValue('studentIds', next);
-                                    }}>
-                                        <Checkbox
-                                            id={`student-${s.id}`}
-                                            checked={form.watch('studentIds').includes(s.id)}
-                                            onCheckedChange={(checked) => {
-                                                const current = form.getValues('studentIds');
-                                                const next = checked ? [...current, s.id] : current.filter(id => id !== s.id);
-                                                form.setValue('studentIds', next);
-                                            }}
-                                            className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
-                                        />
-                                        <label htmlFor={`student-${s.id}`} className="font-medium text-slate-200 cursor-pointer w-full text-sm">{s.name}</label>
+                         <FormField
+                            control={form.control}
+                            name="studentIds"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-semibold text-slate-300 uppercase">Öğrenci(ler)</FormLabel>
+                                    <div className="space-y-2 p-3 bg-black/20 rounded-xl border border-white/5 max-h-40 overflow-y-auto custom-scrollbar">
+                                        {students.map((student) => (
+                                            <FormItem
+                                                key={student.id}
+                                                className="flex flex-row items-center space-x-3 space-y-0 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                                            >
+                                                <FormControl>
+                                                    <Checkbox
+                                                        checked={field.value?.includes(student.id)}
+                                                        onCheckedChange={(checked) => {
+                                                            return checked
+                                                                ? field.onChange([...field.value, student.id])
+                                                                : field.onChange(
+                                                                    field.value?.filter(
+                                                                        (value) => value !== student.id
+                                                                    )
+                                                                )
+                                                        }}
+                                                        className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                                    />
+                                                </FormControl>
+                                                <FormLabel className="font-medium text-slate-200 cursor-pointer w-full text-sm font-normal">
+                                                    {student.name}
+                                                </FormLabel>
+                                            </FormItem>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                            {form.formState.errors.studentIds && <p className="text-sm text-rose-400">{form.formState.errors.studentIds.message}</p>}
-                        </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2">
