@@ -36,7 +36,6 @@ const glassColors = {
     BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10",
 };
 
-// Updated Colors for Dark Mode (High Contrast & Glass)
 const noteColors = [
     { name: 'Sarı', class: 'bg-amber-500/40 border-amber-400/30 text-amber-50 hover:bg-amber-500/50' },
     { name: 'Turkuaz', class: 'bg-cyan-500/40 border-cyan-400/30 text-cyan-50 hover:bg-cyan-500/50' },
@@ -97,18 +96,24 @@ export default function NotebookClient() {
   useEffect(() => {
     if (!notebookId || !user) return;
     const unsubscribe = onNotebookDetailsUpdate(notebookId, (data) => {
-      if (data) {
-        const sortedSections = (data.notebook.sections || []).sort((a, b) => a.order - b.order);
-        setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
-        setSections(sortedSections);
+        if (data) {
+            const sortedSections = (data.notebook.sections || []).sort((a, b) => a.order - b.order);
+            
+            // This check prevents re-setting the active section on every data refresh
+            if (!details) { 
+                if (sortedSections.length > 0) {
+                    setActiveSectionId(sortedSections[0].id);
+                }
+            }
+            
+            setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
+            setSections(sortedSections);
 
-        if (sortedSections.length > 0 && !activeSectionId) {
-            setActiveSectionId(sortedSections[0].id);
+        } else {
+            setDetails(null);
+            setSections([]);
+            setActiveSectionId(null);
         }
-      } else {
-        setDetails(null);
-        setSections([]);
-      }
     });
     return () => unsubscribe();
   }, [notebookId, user]);
@@ -387,7 +392,7 @@ export default function NotebookClient() {
                 </div>
             </div>
          ) : (
-             <Accordion type="multiple" className="w-full space-y-6">
+             <Accordion type="multiple" className="w-full space-y-6" defaultValue={(activeSectionId ? [activeSectionId] : [])}>
                  {sections.map((section, index) => {
                      const sectionNotes = notes.filter(note => note.sectionId === section.id);
                      const notesByFolder = sectionNotes.reduce((acc, note) => {
@@ -831,7 +836,7 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
                </div>
                <div className="flex items-center gap-2">
                    {watchedColor && (
-                       <div className={cn("w-3 h-3 rounded-full shadow-sm ring-1 ring-white/10", watchedColor.replace('/40', '/80'))} />
+                       <div className={cn("w-3 h-3 rounded-full shadow-sm ring-1 ring-white/10", getNoteStyle(watchedColor))} />
                    )}
                    <DialogClose asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/5 rounded-full">
@@ -977,5 +982,20 @@ function NoteEditForm({ note, onOpenChange, onSave, sectionFolders }: NoteEditFo
     </Dialog>
   );
 }
+
+const getNoteStyle = (colorClass: string | undefined) => {
+    if (!colorClass) return "bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-800/80";
+
+    if (colorClass.includes('yellow') || colorClass.includes('amber')) return "bg-amber-500/40 border-amber-400/30 text-amber-50 hover:bg-amber-500/50";
+    if (colorClass.includes('blue')) return "bg-blue-600/40 border-blue-400/30 text-blue-50 hover:bg-blue-600/50";
+    if (colorClass.includes('green') || colorClass.includes('emerald')) return "bg-emerald-600/40 border-emerald-400/30 text-emerald-50 hover:bg-emerald-600/50";
+    if (colorClass.includes('pink') || colorClass.includes('rose') || colorClass.includes('red')) return "bg-pink-600/40 border-pink-400/30 text-pink-50 hover:bg-pink-600/50";
+    if (colorClass.includes('purple') || colorClass.includes('violet')) return "bg-violet-600/40 border-violet-400/30 text-violet-50 hover:bg-violet-600/50";
+    if (colorClass.includes('lime')) return 'bg-lime-600/40 border-lime-400/30 text-lime-50 hover:bg-lime-600/50';
+    if (colorClass.includes('cyan')) return 'bg-cyan-500/40 border-cyan-400/30 text-cyan-50 hover:bg-cyan-500/50';
+    if (colorClass.includes('fuchsia')) return 'bg-fuchsia-600/40 border-fuchsia-400/30 text-fuchsia-50 hover:bg-fuchsia-600/50';
+    
+    return "bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-800/80";
+};
 
     
