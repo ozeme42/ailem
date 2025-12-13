@@ -9,7 +9,7 @@ import { onTestsUpdate, deleteTest, addTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember, JsonTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { NewJsonTestForm } from "@/components/new-json-test-form";
@@ -77,7 +77,7 @@ export function JsonTestsClient() {
                       </Button>
                     </Link>
                     <div className={cn(glassColors.ICON_BOX)}>
-                         <FileJson className="w-6 w-6 text-white" />
+                         <FileJson className="w-6 h-6 text-white" />
                     </div>
                     <div>
                         <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">Yazılı Testler</h1>

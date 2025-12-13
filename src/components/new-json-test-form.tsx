@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Code, FileJson, User, BookOpen, Calendar as CalendarLucide, Copy, Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,16 @@ import { Textarea } from "@/components/ui/textarea";
 import type { FamilyMember, Test } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
+
+// --- DESIGN SYSTEM: Glassmorphism ---
+const glassColors = {
+    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50 hover:bg-slate-900/70 transition-colors",
+    LABEL: "text-slate-300 font-medium text-xs uppercase tracking-wider mb-1.5 flex items-center gap-2",
+    BUTTON_PRIMARY: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02]",
+    POPOVER_BG: "bg-slate-950 border-white/10 text-slate-200",
+    CODE_AREA: "bg-black/40 font-mono text-sm border-white/10 text-emerald-400 placeholder:text-slate-600 focus:ring-emerald-500/20",
+    ICON_BUTTON: "h-6 px-2 text-[10px] bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 transition-colors rounded-md ml-auto"
+};
 
 const jsonQuestionSchema = z.object({
   id: z.string(),
@@ -51,27 +60,17 @@ type NewJsonTestFormProps = {
 
 const sampleJsonPlaceholder = `[
   {
-    "id": "mat001",
-    "text": "Bir çiftlikteki tavuk ve koyunların toplam sayısı 50'dir. Bu hayvanların toplam ayak sayısı 140 olduğuna göre, çiftlikte kaç tavuk vardır?",
-    "options": ["15", "20", "25", "30"],
-    "answer": "30"
-  },
-  {
-    "id": "tr001",
-    "text": "Aşağıdaki cümlelerin hangisinde yazım yanlışı yapılmıştır?",
-    "options": [
-      "Herşey yolunda gibi görünüyordu.",
-      "Ankara'ya yarın sabah gideceğim.",
-      "Bu konuyu da mı anlamadın?",
-      "TBMM'nin açılışı coşkuyla kutlandı."
-    ],
-    "answer": "Herşey yolunda gibi görünüyordu."
+    "id": "q1",
+    "text": "Soru metni buraya...",
+    "options": ["A Seçeneği", "B Seçeneği", "C Seçeneği", "D Seçeneği"],
+    "answer": "A Seçeneği"
   }
 ]`;
 
 export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: NewJsonTestFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -83,6 +82,23 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
       jsonContent: initialData?.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
     },
   });
+
+  const handleCopySample = () => {
+    navigator.clipboard.writeText(sampleJsonPlaceholder);
+    setCopied(true);
+    toast({
+        title: "Kopyalandı",
+        description: "Örnek JSON formatı panoya kopyalandı.",
+        className: "bg-slate-900 border-white/10 text-white"
+    });
+    
+    // Formu da dolduralım ki kullanıcı hemen görsün (opsiyonel)
+    if (!form.getValues("jsonContent")) {
+        form.setValue("jsonContent", sampleJsonPlaceholder);
+    }
+
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
@@ -111,55 +127,115 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-1 -mx-6 px-6">
-            <div className="space-y-4 py-4">
-                <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Test Başlığı</FormLabel><FormControl><Input placeholder="Örn: 1. Dönem Tekrar Testi" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="subject" render={({ field }) => (
-                    <FormItem><FormLabel>Ders</FormLabel><FormControl><Input placeholder="Matematik" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="assigneeId" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Sorumlu Kişi</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Birini seçin" /></SelectTrigger></FormControl>
-                            <SelectContent>{familyMembers.map((member) => (<SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>))}</SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                )}/>
-                <FormField control={form.control} name="dueDate" render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                        <FormLabel>Bitiş Tarihi</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
+            <div className="space-y-5 py-4 pt-2">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField control={form.control} name="title" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className={glassColors.LABEL}><FileJson className="w-3.5 h-3.5 text-indigo-400"/> Test Başlığı</FormLabel>
+                            <FormControl><Input placeholder="Örn: 1. Dönem Tekrar Testi" {...field} className={glassColors.INPUT_BG}/></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                    
+                    <FormField control={form.control} name="subject" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className={glassColors.LABEL}><BookOpen className="w-3.5 h-3.5 text-pink-400"/> Ders</FormLabel>
+                            <FormControl><Input placeholder="Örn: Matematik" {...field} className={glassColors.INPUT_BG}/></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField control={form.control} name="assigneeId" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className={glassColors.LABEL}><User className="w-3.5 h-3.5 text-emerald-400"/> Sorumlu Kişi</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                    <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                        {field.value ? format(field.value, "PPP", { locale: tr }) : <span>Tarih seçin</span>}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
+                                    <SelectTrigger className={glassColors.INPUT_BG}>
+                                        <SelectValue placeholder="Birini seçin" />
+                                    </SelectTrigger>
                                 </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus /></PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                    </FormItem>
-                )}/>
+                                <SelectContent className={glassColors.POPOVER_BG}>
+                                    {familyMembers.map((member) => (<SelectItem key={member.id} value={member.id} className="text-slate-200 focus:bg-white/10 focus:text-white">{member.name}</SelectItem>))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                    
+                    <FormField control={form.control} name="dueDate" render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel className={glassColors.LABEL}><CalendarLucide className="w-3.5 h-3.5 text-blue-400"/> Bitiş Tarihi</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground", glassColors.INPUT_BG)}>
+                                            {field.value ? format(field.value, "d MMMM yyyy", { locale: tr }) : <span>Tarih seçin</span>}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className={cn("w-auto p-0", glassColors.POPOVER_BG)} align="start">
+                                    <Calendar 
+                                        mode="single" 
+                                        selected={field.value} 
+                                        onSelect={field.onChange} 
+                                        disabled={(date) => date < new Date()} 
+                                        initialFocus 
+                                        className="bg-slate-950 text-slate-200 rounded-md border border-white/10"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
+
                 <FormField control={form.control} name="jsonContent" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Sorular (JSON Formatında)</FormLabel>
-                        <FormControl><Textarea placeholder={sampleJsonPlaceholder} className="h-48 font-mono text-xs" {...field} /></FormControl>
+                    <FormItem className="flex-1 flex flex-col min-h-0">
+                        <div className="flex items-center justify-between">
+                            <FormLabel className={glassColors.LABEL}><Code className="w-3.5 h-3.5 text-yellow-400"/> JSON Verisi</FormLabel>
+                            <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={handleCopySample} 
+                                className={glassColors.ICON_BUTTON}
+                            >
+                                {copied ? <Check className="w-3 h-3 mr-1.5 text-emerald-400" /> : <Copy className="w-3 h-3 mr-1.5" />}
+                                {copied ? "Kopyalandı" : "Örnek Şablon"}
+                            </Button>
+                        </div>
+                        <FormControl>
+                            <div className="relative group">
+                                <Textarea 
+                                    placeholder={sampleJsonPlaceholder} 
+                                    className={cn("h-64 font-mono text-xs leading-relaxed resize-none custom-scrollbar", glassColors.CODE_AREA)} 
+                                    {...field} 
+                                />
+                                <div className="absolute bottom-2 right-2 text-[10px] text-slate-500 font-mono bg-black/60 px-2 py-1 rounded border border-white/5 opacity-50 group-hover:opacity-100 transition-opacity">JSON</div>
+                            </div>
+                        </FormControl>
                         <FormMessage />
+                        <p className="text-xs text-slate-500 mt-1">Soruları yukarıdaki örnek formata uygun bir JSON dizisi olarak yapıştırın.</p>
                     </FormItem>
                 )}/>
             </div>
         </ScrollArea>
-        <div className="pt-4 border-t mt-auto">
-            <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? 'Değişiklikleri Kaydet' : 'Testi Oluştur ve Ata'}
+        
+        <div className="pt-6 border-t border-white/5 mt-auto">
+            <Button type="submit" className={cn("w-full h-12 text-base font-semibold", glassColors.BUTTON_PRIMARY)} disabled={loading}>
+            {loading ? (
+                <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> İşleniyor...
+                </>
+            ) : (
+                initialData ? 'Değişiklikleri Kaydet' : 'Testi Oluştur ve Ata'
+            )}
             </Button>
         </div>
       </form>
