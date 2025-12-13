@@ -526,18 +526,27 @@ export default function OpticalFormPage() {
         return (
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
-                    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col p-4 sm:p-8">
-                        <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
-                            <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
-                                <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
-                            </Button>
-                            <div className="text-right">
-                                <h1 className="text-xl font-bold text-white">{test.title}</h1>
-                                <p className="text-sm text-slate-400">{test.subject}</p>
-                            </div>
-                        </header>
+                    <motion.div
+                        className={cn("min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col transition-all duration-300", fullscreen ? "fixed inset-0 z-50 p-8" : "relative p-4 sm:p-8")}
+                        animate={{ backgroundColor: fullscreen ? "rgba(15, 23, 42, 1)" : "rgba(15, 23, 42, 0)" }}
+                    >
+                         {!fullscreen && (
+                            <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
+                                <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
+                                    <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
+                                </Button>
+                                <div className="text-right">
+                                    <h1 className="text-xl font-bold text-white">{test.title}</h1>
+                                    <p className="text-sm text-slate-400">{test.subject}</p>
+                                </div>
+                            </header>
+                         )}
+
+                         <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 z-50 text-slate-400 hover:text-white" onClick={() => setFullscreen(!fullscreen)}>
+                           {fullscreen ? <Shrink /> : <Expand />}
+                        </Button>
                         
-                        <main className="max-w-4xl mx-auto w-full flex-grow flex flex-col">
+                        <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col", fullscreen && "justify-center")}>
                             <Card className={cn("border-l-4 border-l-indigo-500 mb-8", glassColors.CARD_BG)}>
                                 <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
                                         <div className="flex-grow w-full">
@@ -567,7 +576,7 @@ export default function OpticalFormPage() {
                                 <CardFooter className="p-6 bg-black/20 border-t border-white/5 mt-auto">
                                     <div className="w-full flex flex-col gap-6">
                                         {test.openEnded ? (
-                                            <Input 
+                                            <Textarea 
                                                 placeholder="Cevabınızı buraya yazın..."
                                                 value={textAnswers[currentQNumStr] || ""}
                                                 onChange={(e) => handleTextAnswerChange(parseInt(currentQNumStr), e.target.value)}
@@ -605,7 +614,7 @@ export default function OpticalFormPage() {
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                                            <AlertDialogAction type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
+                                                            <AlertDialogAction type="button" onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
@@ -624,7 +633,7 @@ export default function OpticalFormPage() {
                                 <Image src={fullscreenImage || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
                             </DialogContent>
                         </Dialog>
-                    </div>
+                    </motion.div>
                 </form>
              </Form>
         )
@@ -789,7 +798,7 @@ export default function OpticalFormPage() {
                                             <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-white/5 transition-colors group">
                                                 <div className="w-12 text-center font-bold text-slate-400 text-lg">{qNum}</div>
                                                 {test.openEnded ? (
-                                                    <Input 
+                                                    <Textarea 
                                                         placeholder="Cevabınızı yazın..." 
                                                         value={textAnswers[qNum] || ""}
                                                         onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
