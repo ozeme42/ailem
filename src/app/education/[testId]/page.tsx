@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth-provider";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 
 // --- DESIGN SYSTEM: Glassmorphism ---
@@ -96,6 +97,8 @@ export default function OpticalFormPage() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [fullscreenImage, setFullscreenImage] = React.useState<string | null>(null);
     
+    const form = useForm();
+
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test || !user) return;
         
@@ -511,79 +514,83 @@ export default function OpticalFormPage() {
     // --- VIEW: JSON-BASED WRITTEN TEST ---
     if (isJsonTest) {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col p-4 sm:p-8">
-                 <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
-                    <Button variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
-                        <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
-                    </Button>
-                    <div className="text-right">
-                        <h1 className="text-xl font-bold text-white">{test.title}</h1>
-                        <p className="text-sm text-slate-400">{test.subject}</p>
-                    </div>
-                </header>
-
-                <main className="max-w-4xl mx-auto w-full space-y-8">
-                     <Card className={cn("border-l-4 border-l-indigo-500", glassColors.CARD_BG)}>
-                        <CardContent className="flex items-center justify-between p-6">
-                            <div>
-                                <h3 className="font-bold text-lg text-slate-200">Süreniz İşliyor</h3>
-                                <p className="text-slate-400 text-sm">Cevaplarınızı dikkatlice işaretleyin.</p>
+             <Form {...form}>
+                <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
+                    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col p-4 sm:p-8">
+                        <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
+                            <Button variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
+                                <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
+                            </Button>
+                            <div className="text-right">
+                                <h1 className="text-xl font-bold text-white">{test.title}</h1>
+                                <p className="text-sm text-slate-400">{test.subject}</p>
                             </div>
-                            <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
-                        </CardContent>
-                    </Card>
+                        </header>
 
-                    {test.jsonQuestions!.map((q, index) => {
-                        const qNumStr = (index + 1).toString();
-                        return(
-                        <Card key={q.id} className={cn("overflow-hidden", glassColors.CARD_BG)}>
-                             <CardHeader className="bg-white/5 border-b border-white/5">
-                                <CardTitle className="text-slate-200">Soru {qNumStr}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6 space-y-4">
-                                <p className="text-lg leading-relaxed whitespace-pre-wrap">{q.text}</p>
-                                <RadioGroup 
-                                    value={mcqAnswers[qNumStr] || ""} 
-                                    onValueChange={(value) => handleMcqAnswerChange(qNumStr, value)}
-                                    className="space-y-3"
-                                >
-                                    {q.options.map((option, optIndex) => (
-                                        <FormItem key={optIndex} className="flex items-center space-x-3 space-y-0 p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500/50">
-                                            <FormControl>
-                                                <RadioGroupItem value={option} className="text-indigo-500 border-indigo-500/50"/>
-                                            </FormControl>
-                                            <FormLabel className="font-normal text-base cursor-pointer flex-grow">{option}</FormLabel>
-                                        </FormItem>
-                                    ))}
-                                </RadioGroup>
-                            </CardContent>
-                        </Card>
-                        )
-                    })}
+                        <main className="max-w-4xl mx-auto w-full space-y-8">
+                            <Card className={cn("border-l-4 border-l-indigo-500", glassColors.CARD_BG)}>
+                                <CardContent className="flex items-center justify-between p-6">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-200">Süreniz İşliyor</h3>
+                                        <p className="text-slate-400 text-sm">Cevaplarınızı dikkatlice işaretleyin.</p>
+                                    </div>
+                                    <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                                </CardContent>
+                            </Card>
 
-                    <CardFooter className="p-0">
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button size="lg" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 shadow-lg shadow-emerald-600/20">
-                                    Testi Tamamla <Check className="ml-2 h-5 w-5" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                    <AlertDialogDescription className="text-slate-400">
-                                        Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </CardFooter>
-                </main>
-            </div>
+                            {test.jsonQuestions!.map((q, index) => {
+                                const qNumStr = (index + 1).toString();
+                                return(
+                                <Card key={q.id} className={cn("overflow-hidden", glassColors.CARD_BG)}>
+                                    <CardHeader className="bg-white/5 border-b border-white/5">
+                                        <CardTitle className="text-slate-200">Soru {qNumStr}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 space-y-4">
+                                        <p className="text-lg leading-relaxed whitespace-pre-wrap">{q.text}</p>
+                                        <RadioGroup 
+                                            value={mcqAnswers[qNumStr] || ""} 
+                                            onValueChange={(value) => handleMcqAnswerChange(qNumStr, value)}
+                                            className="space-y-3"
+                                        >
+                                            {q.options.map((option, optIndex) => (
+                                                <FormItem key={optIndex} className="flex items-center space-x-3 space-y-0 p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500/50">
+                                                    <FormControl>
+                                                        <RadioGroupItem value={option} className="text-indigo-500 border-indigo-500/50"/>
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal text-base cursor-pointer flex-grow">{option}</FormLabel>
+                                                </FormItem>
+                                            ))}
+                                        </RadioGroup>
+                                    </CardContent>
+                                </Card>
+                                )
+                            })}
+
+                            <CardFooter className="p-0">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="lg" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 shadow-lg shadow-emerald-600/20">
+                                            Testi Tamamla <Check className="ml-2 h-5 w-5" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-slate-400">
+                                                Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </CardFooter>
+                        </main>
+                    </div>
+                </form>
+             </Form>
         )
     }
     
@@ -638,7 +645,7 @@ export default function OpticalFormPage() {
                                             />
                                         ) : (
                                             <RadioGroup 
-                                                value={mcqAnswers[qNum] || ""} 
+                                                value={mcqAnswers[qNum.toString()] || ""} 
                                                 onValueChange={(value) => handleMcqAnswerChange(qNum.toString(), value)}
                                                 className="flex-1 flex justify-center sm:justify-start gap-3 sm:gap-6 ml-4"
                                             >
@@ -687,3 +694,6 @@ export default function OpticalFormPage() {
     );
 }
 
+
+
+    
