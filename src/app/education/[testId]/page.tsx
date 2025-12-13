@@ -451,16 +451,16 @@ export default function OpticalFormPage() {
             )
         }
 
-        // Teacher/Parent grading view
+        // Teacher/Parent grading view for open-ended tests
         if (test.openEnded && test.questions) {
             return (
                 <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8">
                      <header className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
-                        <Button variant="ghost" onClick={() => router.back()}>
+                        <Button type="button" variant="ghost" onClick={() => router.back()}>
                             <ArrowLeft className="mr-2 h-5 w-5" /> Geri
                         </Button>
                         <h1 className="text-xl font-bold">{test.title} - Değerlendirme</h1>
-                        <Button onClick={handleFinalizeEvaluation} size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold">
+                        <Button type="button" onClick={handleFinalizeEvaluation} size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold">
                             Değerlendirmeyi Tamamla
                         </Button>
                     </header>
@@ -474,15 +474,22 @@ export default function OpticalFormPage() {
                                     <CardHeader className="bg-white/5 border-b border-white/5 p-4 flex flex-row justify-between items-center">
                                         <CardTitle className="text-lg">Soru {qNumStr}</CardTitle>
                                         <div className="flex gap-2">
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8", evalStatus === 'correct' ? "bg-emerald-600" : "bg-transparent border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10")}>Doğru</Button>
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8", evalStatus === 'incorrect' ? "bg-rose-600" : "bg-transparent border border-rose-500/30 text-rose-400 hover:bg-rose-500/10")}>Yanlış</Button>
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'empty')} className={cn("h-8", evalStatus === 'empty' ? "bg-slate-600" : "bg-transparent border border-slate-500/30 text-slate-400 hover:bg-slate-500/10")}>Boş</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8", evalStatus === 'correct' ? "bg-emerald-600 hover:bg-emerald-500" : "bg-transparent border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10")}>Doğru</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8", evalStatus === 'incorrect' ? "bg-rose-600 hover:bg-rose-500" : "bg-transparent border border-rose-500/30 text-rose-400 hover:bg-rose-500/10")}>Yanlış</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'empty')} className={cn("h-8", evalStatus === 'empty' ? "bg-slate-600 hover:bg-slate-500" : "bg-transparent border border-slate-500/30 text-slate-400 hover:bg-slate-500/10")}>Boş</Button>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                                            <Image src={q.imageUrl} alt={`Soru ${qNumStr}`} layout="fill" objectFit="contain" unoptimized />
-                                        </div>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <div className="relative aspect-video bg-black rounded-lg overflow-hidden cursor-pointer">
+                                                    <Image src={q.imageUrl} alt={`Soru ${qNumStr}`} layout="fill" objectFit="contain" unoptimized />
+                                                </div>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-[90vw] max-h-[90vh] h-auto w-auto bg-transparent border-none shadow-none flex items-center justify-center p-0">
+                                                <Image src={q.imageUrl || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
+                                            </DialogContent>
+                                        </Dialog>
                                         <div className="space-y-2">
                                             <Label className="text-xs font-bold text-slate-400">Öğrenci Cevabı</Label>
                                             <div className="p-3 rounded-lg bg-slate-900 border border-slate-700 min-h-[100px] text-sm text-slate-200 whitespace-pre-wrap">
@@ -502,7 +509,7 @@ export default function OpticalFormPage() {
         return (
             <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8">
                  <header className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
-                    <Button variant="ghost" onClick={() => router.back()}>
+                    <Button type="button" variant="ghost" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2 h-5 w-5" /> Geri
                     </Button>
                 </header>
@@ -557,8 +564,6 @@ export default function OpticalFormPage() {
     const options = ['A', 'B', 'C', 'D', 'E'];
     const testDurationMinutes = test.durationMinutes || (isJsonTest ? test.jsonQuestions!.length * 1.5 : test.questionCount * 2);
     
-    const currentJsonQuestion = isJsonTest ? test.jsonQuestions![currentQuestionIndex] : null;
-
     // --- VIEW: IMAGE-BASED TEST (MCQ or Open-Ended) ---
     if (hasImages) {
         const currentQuestion = test.questions![currentQuestionIndex];
@@ -604,15 +609,21 @@ export default function OpticalFormPage() {
                             <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
                                 <CardContent className="p-4 flex-grow flex items-center justify-center">
                                     <div className="w-full relative aspect-[4/3]">
-                                    <Image 
-                                            src={currentQuestion.imageUrl}
-                                            alt={`Soru ${currentQuestionIndex + 1}`}
-                                            layout="fill"
-                                            objectFit="contain"
-                                            className="cursor-pointer"
-                                            onClick={() => setFullscreenImage(currentQuestion.imageUrl)}
-                                            unoptimized
-                                    />
+                                    <Dialog open={!!fullscreenImage} onOpenChange={() => setFullscreenImage(null)}>
+                                        <DialogTrigger asChild>
+                                            <Image 
+                                                    src={currentQuestion.imageUrl}
+                                                    alt={`Soru ${currentQuestionIndex + 1}`}
+                                                    layout="fill"
+                                                    objectFit="contain"
+                                                    className="cursor-pointer"
+                                                    unoptimized
+                                            />
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-[90vw] max-h-[90vh] h-auto w-auto bg-transparent border-none shadow-none flex items-center justify-center p-0">
+                                            <Image src={fullscreenImage || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
+                                        </DialogContent>
+                                    </Dialog>
                                     </div>
                                 </CardContent>
                                 <CardFooter className="p-6 bg-black/20 border-t border-white/5 mt-auto">
@@ -670,11 +681,6 @@ export default function OpticalFormPage() {
                                 </CardFooter>
                             </Card>
                         </main>
-                        <Dialog open={!!fullscreenImage} onOpenChange={() => setFullscreenImage(null)}>
-                            <DialogContent className="max-w-[90vw] max-h-[90vh] h-auto w-auto bg-transparent border-none shadow-none flex items-center justify-center p-0">
-                                <Image src={fullscreenImage || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
-                            </DialogContent>
-                        </Dialog>
                     </motion.div>
                 </form>
              </Form>
@@ -733,19 +739,13 @@ export default function OpticalFormPage() {
                                         className="grid grid-cols-1 md:grid-cols-2 gap-4"
                                     >
                                         {currentJsonQuestion.options.map((option, optIndex) => (
-                                            <FormItem key={optIndex} className="has-[:checked]:ring-2 has-[:checked]:ring-indigo-500 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                                            <FormItem key={optIndex} className="flex items-center space-x-3 space-y-0 p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500/50">
                                                 <FormControl>
-                                                    <Label className="flex items-center gap-4 p-5 cursor-pointer w-full">
-                                                         <div className={cn(
-                                                            "w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center font-bold text-slate-400 transition-all",
-                                                            (mcqAnswers[(currentQuestionIndex + 1).toString()] === option) && "bg-indigo-600 border-indigo-500 text-white scale-110 shadow-lg"
-                                                         )}>
-                                                            {String.fromCharCode(65 + optIndex)}
-                                                         </div>
-                                                         <RadioGroupItem value={option} className="sr-only"/>
-                                                         <span className="font-medium text-base text-slate-200">{option}</span>
-                                                    </Label>
+                                                    <RadioGroupItem value={option} className="text-indigo-500 border-indigo-500/50"/>
                                                 </FormControl>
+                                                <FormLabel className="font-medium text-base text-slate-200 cursor-pointer w-full">
+                                                    {option}
+                                                </FormLabel>
                                             </FormItem>
                                         ))}
                                     </RadioGroup>
@@ -898,6 +898,7 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
 
 
 
