@@ -7,8 +7,9 @@ import { Test as TestType, QuickTestQuestion, Mistake, JsonTestQuestion } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand, Shrink } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -22,9 +23,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth-provider";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Progress } from "@/components/ui/progress";
+import { motion } from "framer-motion";
 
 
 // --- DESIGN SYSTEM: Glassmorphism ---
@@ -97,6 +98,7 @@ export default function OpticalFormPage() {
     const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluation>({});
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [fullscreenImage, setFullscreenImage] = React.useState<string | null>(null);
+    const [fullscreen, setFullscreen] = React.useState(false);
     
     const form = useForm();
 
@@ -519,18 +521,27 @@ export default function OpticalFormPage() {
         return (
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
-                    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col p-4 sm:p-8">
-                        <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
-                            <Button variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
-                                <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
-                            </Button>
-                            <div className="text-right">
-                                <h1 className="text-xl font-bold text-white">{test.title}</h1>
-                                <p className="text-sm text-slate-400">{test.subject}</p>
-                            </div>
-                        </header>
+                    <motion.div
+                        className={cn("min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col transition-all duration-300", fullscreen ? "fixed inset-0 z-50 p-8" : "relative p-4 sm:p-8")}
+                        animate={{ backgroundColor: fullscreen ? "rgba(15, 23, 42, 1)" : "rgba(15, 23, 42, 0)" }}
+                    >
+                        {!fullscreen && (
+                            <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
+                                <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
+                                    <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
+                                </Button>
+                                <div className="text-right">
+                                    <h1 className="text-xl font-bold text-white">{test.title}</h1>
+                                    <p className="text-sm text-slate-400">{test.subject}</p>
+                                </div>
+                            </header>
+                        )}
+                        
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 z-50 text-slate-400 hover:text-white" onClick={() => setFullscreen(!fullscreen)}>
+                           {fullscreen ? <Shrink /> : <Expand />}
+                        </Button>
 
-                        <main className="max-w-4xl mx-auto w-full flex-grow flex flex-col">
+                        <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col", fullscreen && "justify-center")}>
                             
                             {/* TIMER & PROGRESS */}
                             <Card className={cn("border-l-4 border-l-indigo-500 mb-8", glassColors.CARD_BG)}>
@@ -588,7 +599,7 @@ export default function OpticalFormPage() {
                                         {currentQuestionIndex === test.jsonQuestions!.length - 1 ? (
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11 shadow-lg shadow-emerald-600/20">
+                                                    <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11 shadow-lg shadow-emerald-600/20">
                                                         Testi Tamamla <Check className="ml-2 h-5 w-5" />
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -619,7 +630,7 @@ export default function OpticalFormPage() {
                                 </CardFooter>
                             </Card>
                         </main>
-                    </div>
+                    </motion.div>
                 </form>
              </Form>
         )
@@ -639,7 +650,7 @@ export default function OpticalFormPage() {
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col p-4 sm:p-8">
             <header className="max-w-3xl mx-auto w-full mb-8 flex justify-between items-center">
-                <Button variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
+                <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
                     <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
                 </Button>
                 <div className="text-right">
@@ -706,7 +717,7 @@ export default function OpticalFormPage() {
                     <CardFooter className="p-6 bg-white/5 border-t border-white/5">
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button size="lg" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 shadow-lg shadow-emerald-600/20">
+                                <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 shadow-lg shadow-emerald-600/20">
                                     Testi Tamamla <Check className="ml-2 h-5 w-5" />
                                 </Button>
                             </AlertDialogTrigger>
