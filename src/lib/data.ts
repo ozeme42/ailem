@@ -417,6 +417,12 @@ export interface PracticeExam {
   subjects: PracticeExamSubject[];
 }
 
+export interface JsonTestQuestion {
+  id: string;
+  text: string;
+  options: string[];
+  answer: string;
+}
 
 export interface Test {
   id: string;
@@ -430,7 +436,7 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
   isArchived: boolean;
-  sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook';
+  sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook' | 'json';
   sourceId?: string;
   gradingType?: GradingType;
   score?: number;
@@ -446,6 +452,7 @@ export interface Test {
   studentTextAnswers?: { [key: string]: string }; // For open-ended questions
   studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
   topicId?: string;
+  jsonQuestions?: JsonTestQuestion[]; // For text-based questions
 }
 
 export interface ShoppingItem {

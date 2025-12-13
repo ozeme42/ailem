@@ -1,9 +1,10 @@
+
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 // ArrowRight ikonu buraya eklendi
-import { PlusCircle, ArrowLeft, ArrowRight, BookCopy, ClipboardList, Settings, BarChart3, CheckCircle, X, MinusCircle, FileText, BookMarked, Library, MoreVertical, Trash2, Edit, BookOpen } from "lucide-react";
+import { PlusCircle, ArrowLeft, ArrowRight, BookCopy, ClipboardList, Settings, BarChart3, CheckCircle, X, MinusCircle, FileText, BookMarked, Library, MoreVertical, Trash2, Edit, BookOpen, FileJson } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,7 @@ export default function EducationManagementPage() {
         <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
             
             {/* Quick Actions Grid (Mobile Friendly) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
                  <Link href="/education/management/questions" className="block group">
                     <div className={cn("flex flex-col items-center justify-center p-4 rounded-2xl transition-all border border-white/5 hover:border-emerald-500/30 hover:bg-emerald-500/10 bg-white/5 h-full")}>
                         <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -166,6 +167,14 @@ export default function EducationManagementPage() {
                             <BookMarked className="h-5 w-5 text-blue-400" />
                         </div>
                         <span className="text-sm font-semibold text-slate-300 group-hover:text-blue-300">Kitap Takibi</span>
+                    </div>
+                 </Link>
+                 <Link href="/education/management/json-tests" className="block group">
+                    <div className={cn("flex flex-col items-center justify-center p-4 rounded-2xl transition-all border border-white/5 hover:border-purple-500/30 hover:bg-purple-500/10 bg-white/5 h-full")}>
+                        <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <FileJson className="h-5 w-5 text-purple-400" />
+                        </div>
+                        <span className="text-sm font-semibold text-slate-300 group-hover:text-purple-300">Yazılı Testler</span>
                     </div>
                  </Link>
             </div>

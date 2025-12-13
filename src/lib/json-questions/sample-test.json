@@ -1,0 +1,26 @@
+
+[
+  {
+    "id": "mat001",
+    "text": "Bir çiftlikteki tavuk ve koyunların toplam sayısı 50'dir. Bu hayvanların toplam ayak sayısı 140 olduğuna göre, çiftlikte kaç tavuk vardır?",
+    "options": ["15", "20", "25", "30"],
+    "answer": "30"
+  },
+  {
+    "id": "tr001",
+    "text": "Aşağıdaki cümlelerin hangisinde yazım yanlışı yapılmıştır?",
+    "options": [
+      "Herşey yolunda gibi görünüyordu.",
+      "Ankara'ya yarın sabah gideceğim.",
+      "Bu konuyu da mı anlamadın?",
+      "TBMM'nin açılışı coşkuyla kutlandı."
+    ],
+    "answer": "Herşey yolunda gibi görünüyordu."
+  },
+  {
+    "id": "fen001",
+    "text": "Aşağıdakilerden hangisi bir gezegen değildir?",
+    "options": ["Mars", "Jüpiter", "Ay", "Venüs"],
+    "answer": "Ay"
+  }
+]
