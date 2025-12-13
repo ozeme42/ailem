@@ -11,12 +11,16 @@ import { ScrollArea } from "./ui/scroll-area";
 import { DialogFooter } from "./ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
+import { Label } from "@/components/ui/label"; // Label bileşenini import ediyoruz
 
 // --- DESIGN SYSTEM: Glassmorphism Colors ---
 const glassColors = {
-    ITEM_BG: "bg-white/5 border border-white/10 hover:bg-white/10 transition-colors",
-    RADIO_ITEM: "border-white/20 text-white data-[state=checked]:border-indigo-500 data-[state=checked]:text-indigo-400",
-    BUTTON_PRIMARY: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20",
+    ITEM_BG: "bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200",
+    // Yeni buton stili: Normalde şeffaf, seçilince İndigo ve Parlak
+    OPTION_BUTTON: "flex items-center justify-center w-10 h-10 rounded-lg border border-white/10 bg-white/5 text-slate-400 cursor-pointer transition-all hover:bg-white/10 hover:text-white font-bold text-sm peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-500 peer-data-[state=checked]:shadow-[0_0_15px_rgba(79,70,229,0.4)] peer-data-[state=checked]:scale-110",
+    BUTTON_PRIMARY: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02]",
+    NUMBER_BADGE: "bg-slate-900 text-slate-400 border border-white/10 shadow-inner",
 };
 
 type AnswerKey = { [key: number | string]: string };
@@ -71,39 +75,62 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
       }
     });
     onSave(newKey);
-    toast({ title: "Cevap Anahtarı Geçici Olarak Kaydedildi", description: "Değişiklikleri kalıcı hale getirmek için ana formu kaydedin.", className: "bg-slate-900 border-white/10 text-white" });
+    toast({ 
+        title: "Cevap Anahtarı Kaydedildi", 
+        description: "Girdiğiniz cevaplar başarıyla kaydedildi.", 
+        className: "bg-slate-900 border-white/10 text-slate-100" 
+    });
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
         <ScrollArea className="flex-1 pr-4 -mr-4">
-          <div className="space-y-3 pb-4">
+          <div className="space-y-2 pb-4 pt-1">
             {fields.map((field, index) => (
               <FormField
                 key={field.id}
                 control={form.control}
                 name={`answers.${index}.value`}
                 render={({ field }) => (
-                  <FormItem className={cn("flex items-center gap-4 sm:gap-6 p-3 rounded-xl", glassColors.ITEM_BG)}>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-sm shrink-0 shadow-inner border border-indigo-500/20">
-                      {index + 1}
+                  <FormItem className={cn("flex items-center justify-between p-2 px-4 rounded-xl group", glassColors.ITEM_BG)}>
+                    <div className="flex items-center gap-3">
+                        <div className={cn("flex items-center justify-center w-7 h-7 rounded-md font-mono text-xs shrink-0", glassColors.NUMBER_BADGE)}>
+                            {index + 1}
+                        </div>
+                        {/* Mobilde yer kaplamaması için 'Soru' yazısını gizleyebiliriz veya küçük tutabiliriz */}
+                        <span className="text-xs font-medium text-slate-500 hidden sm:inline-block">Soru</span>
                     </div>
+                    
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
                         value={field.value || ""}
-                        className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-8"
+                        className="flex items-center gap-2"
                       >
-                        {["A", "B", "C", "D"].map((option) => (
+                        {["A", "B", "C", "D", "E"].map((option) => (
                           <FormItem
                             key={option}
-                            className="flex items-center space-x-2 space-y-0"
+                            className="flex items-center space-x-0 space-y-0"
                           >
                             <FormControl>
-                              <RadioGroupItem value={option} className={glassColors.RADIO_ITEM} />
+                              <div className="relative">
+                                  {/* Asıl Radio input'u gizliyoruz (sr-only) ama 'peer' class'ı veriyoruz */}
+                                  <RadioGroupItem 
+                                    value={option} 
+                                    id={`q${index}-${option}`} 
+                                    className="peer sr-only" 
+                                  />
+                                  
+                                  {/* Görsel butonumuz bu Label olacak. Peer checked olduğunda stili değişecek */}
+                                  <Label 
+                                    htmlFor={`q${index}-${option}`}
+                                    className={glassColors.OPTION_BUTTON}
+                                  >
+                                    {option}
+                                  </Label>
+                              </div>
                             </FormControl>
-                            <FormLabel className="font-semibold text-slate-300 cursor-pointer hover:text-white transition-colors">{option}</FormLabel>
                           </FormItem>
                         ))}
                       </RadioGroup>
@@ -115,7 +142,10 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
           </div>
         </ScrollArea>
         <DialogFooter className="pt-6 mt-auto border-t border-white/5">
-          <Button type="submit" className={cn("w-full sm:w-auto", glassColors.BUTTON_PRIMARY)}>Cevap Anahtarını Kaydet</Button>
+          <Button type="submit" className={cn("w-full sm:w-auto font-semibold", glassColors.BUTTON_PRIMARY)}>
+            <Check className="w-4 h-4 mr-2" />
+            Cevap Anahtarını Kaydet
+          </Button>
         </DialogFooter>
       </form>
     </Form>

@@ -1,41 +1,26 @@
-
-
 "use client";
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { onTestsUpdate, onBankQuestionsUpdate, addTest, deleteTest, updateTest, onTopicsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
+import { onTestsUpdate, deleteTest, onTrackedBooksUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { Test, FamilyMember, BankQuestion, Topic, TrackedBook } from "@/lib/data";
-import { PageHeader } from "@/components/page-header";
+import { Test, TrackedBook } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, BookOpen, Clock, Box, CalendarClock, Hourglass, NotebookText, Sparkles, Send, Edit, Trash2, CheckCircle, X as XIcon, MinusCircle } from "lucide-react";
+import { ArrowLeft, Clock, CalendarClock, Hourglass, CheckCircle, X as XIcon, MinusCircle, BookOpen, GraduationCap, LayoutGrid } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { compareDesc, format, parse } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { getCategoryName } from "@/app/education/page";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-
-type TopicStats = {
-  id: string;
-  name: string;
-  correct: number;
-  total: number;
-  successRate: number;
+// --- DESIGN SYSTEM: Glassmorphism ---
+const glassColors = {
+    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
+    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
+    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
+    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
 };
 
 export default function CategoryDetailPage() {
@@ -46,7 +31,7 @@ export default function CategoryDetailPage() {
   const categoryName = decodeURIComponent(params.categoryName as string);
   const studentId = searchParams.get('studentId');
 
-  const { familyMembers, user } = useAuth();
+  const { familyMembers } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -79,67 +64,116 @@ export default function CategoryDetailPage() {
 
 
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
-  
-   const handleDeleteTest = async (testId: string) => {
-    try {
-        await deleteTest(testId);
-    } catch (error) {
-        console.error("Error deleting test:", error);
-    }
-  };
 
   const pendingTests = filteredTests.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
   const completedTests = filteredTests.filter(t => t.status === 'Sonuçlandı');
 
 
   if (loading) {
-    return <div>Yükleniyor...</div>;
+     return (
+        <div className="flex h-screen items-center justify-center bg-slate-950">
+             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        </div>
+    );
   }
 
   if (studentId && !student) {
-    return <div className="text-center p-8">Öğrenci bulunamadı.</div>;
+    return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-950 text-slate-400">
+             <p>Öğrenci bulunamadı.</p>
+             <Button variant="link" onClick={() => router.back()}>Geri Dön</Button>
+        </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      <PageHeader title={pageTitle}>
-        <Button onClick={() => router.back()} variant="outline" className="bg-background/20 text-foreground hover:bg-background/30">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Geri Dön
-        </Button>
-      </PageHeader>
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
+        {/* FIXED BACKGROUND */}
+        <div className="fixed inset-0 bg-slate-950 -z-50" />
+        
+        {/* AMBIENT BACKGROUND */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-900/20 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-indigo-900/20 rounded-full blur-[120px]" />
+        </div>
+
+        {/* HEADER */}
+        <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
+            <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Button 
+                        onClick={() => router.back()} 
+                        variant="ghost" 
+                        size="icon"
+                        className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors -ml-2"
+                    >
+                        <ArrowLeft className="h-6 w-6" />
+                    </Button>
+                    <div className={cn("from-purple-500 to-indigo-600", glassColors.ICON_BOX)}>
+                         <LayoutGrid className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none truncate max-w-[200px] sm:max-w-md">
+                            {pageTitle}
+                        </h1>
+                        <p className="text-xs font-medium text-slate-400 mt-0.5">Kategori Detayı</p>
+                    </div>
+                </div>
+            </div>
+        </div>
       
-        <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="pending">Bekleyenler ({pendingTests.length})</TabsTrigger>
-                <TabsTrigger value="completed">Bitenler ({completedTests.length})</TabsTrigger>
-            </TabsList>
-            <TabsContent value="pending" className="mt-6">
-                {pendingTests.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {pendingTests.map((test) => {
-                             const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
-                             const topicName = allTopics.find(t => t.id === test.topicId)?.name;
-                            return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
-                        })}
-                    </div>
-                ) : (
-                    <Card><CardContent className="p-8 text-center text-muted-foreground">Bekleyen sınav bulunmuyor.</CardContent></Card>
-                )}
-            </TabsContent>
-            <TabsContent value="completed" className="mt-6">
-                 {completedTests.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {completedTests.map((test) => {
-                            const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
-                            const topicName = allTopics.find(t => t.id === test.topicId)?.name;
-                            return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
-                        })}
-                    </div>
-                ) : (
-                    <Card><CardContent className="p-8 text-center text-muted-foreground">Henüz tamamlanmış sınav bulunmuyor.</CardContent></Card>
-                )}
-            </TabsContent>
-        </Tabs>
+        <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
+             <Tabs defaultValue="pending" className="w-full space-y-6">
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-12 p-1 rounded-2xl bg-slate-900/50 border border-white/10 backdrop-blur-md">
+                    <TabsTrigger value="pending" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Bekleyenler ({pendingTests.length})</TabsTrigger>
+                    <TabsTrigger value="completed" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Bitenler ({completedTests.length})</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="pending" className="mt-0 animate-in fade-in zoom-in-95 duration-300">
+                    {pendingTests.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {pendingTests.map((test) => {
+                                const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+                                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                                return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                            })}
+                        </div>
+                    ) : (
+                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 m-auto max-w-lg w-full">
+                            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
+                                <Clock className="h-8 w-8 text-slate-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-200">Bekleyen Yok</h3>
+                                <p className="text-slate-400 mt-1 text-sm">Bu kategoride çözülecek test kalmadı.</p>
+                            </div>
+                        </div>
+                    )}
+                </TabsContent>
+                
+                <TabsContent value="completed" className="mt-0 animate-in fade-in zoom-in-95 duration-300">
+                     {completedTests.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {completedTests.map((test) => {
+                                const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+                                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                                return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 m-auto max-w-lg w-full">
+                            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
+                                <CheckCircle className="h-8 w-8 text-slate-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-200">Tamamlanan Yok</h3>
+                                <p className="text-slate-400 mt-1 text-sm">Henüz tamamlanmış bir sınav bulunmuyor.</p>
+                            </div>
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
+        </div>
     </div>
   );
 }
@@ -147,19 +181,22 @@ export default function CategoryDetailPage() {
 
 function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: string }) {
     let buttonText = 'Sınava Gir';
-    let buttonClass = "bg-cyan-500 hover:bg-cyan-600";
+    let buttonClass = "bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-500/20";
     let buttonDisabled = false;
-    let statusBadge: React.ReactNode = <Badge variant="outline" className="w-fit text-cyan-600 border-cyan-500/50 bg-cyan-500/10">Atandı</Badge>;
+    let statusBadge: React.ReactNode = <Badge variant="outline" className="w-fit text-cyan-400 border-cyan-500/30 bg-cyan-500/10">Atandı</Badge>;
+    let cardBorder = "border-white/5 hover:border-cyan-500/30";
     
     if (test.status === 'Sonuçlandı') {
         buttonText = 'Sonuçları Göster';
-        buttonClass = "bg-pink-600 hover:bg-pink-700";
-        statusBadge = <Badge variant="outline" className="w-fit text-green-600 border-green-500/50 bg-green-500/10">Çözüldü</Badge>;
+        buttonClass = "bg-pink-600 hover:bg-pink-500 text-white shadow-pink-500/20";
+        statusBadge = <Badge variant="outline" className="w-fit text-emerald-400 border-emerald-500/30 bg-emerald-500/10">Çözüldü</Badge>;
+        cardBorder = "border-white/5 hover:border-pink-500/30";
     } else if (test.status === 'Değerlendirme Bekliyor') {
         buttonText = 'Değerlendiriliyor...';
         buttonDisabled = true;
-        buttonClass = "bg-yellow-500 hover:bg-yellow-600";
-        statusBadge = <Badge variant="outline" className="w-fit text-yellow-600 border-yellow-500/50 bg-yellow-500/10">Değerlendiriliyor</Badge>;
+        buttonClass = "bg-yellow-600 hover:bg-yellow-500 text-white opacity-80 cursor-not-allowed";
+        statusBadge = <Badge variant="outline" className="w-fit text-yellow-400 border-yellow-500/30 bg-yellow-500/10">Değerlendiriliyor</Badge>;
+        cardBorder = "border-white/5 hover:border-yellow-500/30";
     }
 
     const isMistakeTest = test.sourceType === 'mistake';
@@ -167,33 +204,36 @@ function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: st
     const finalTitle = topicName ? `${topicName} - ${test.title}` : test.title;
 
     return (
-        <Card key={test.id} className="flex flex-col shadow-sm overflow-hidden">
-            <CardHeader>
-                <div className="flex justify-between items-start gap-2">
-                    <CardTitle title={finalTitle} className="line-clamp-2">{finalTitle}</CardTitle>
+        <Card key={test.id} className={cn("flex flex-col shadow-lg overflow-hidden transition-all bg-white/5 backdrop-blur-md group hover:-translate-y-1", cardBorder)}>
+            <CardHeader className="pb-3">
+                <div className="flex justify-between items-start gap-2 mb-2">
+                    <CardTitle title={finalTitle} className="line-clamp-2 text-lg text-slate-200 group-hover:text-white transition-colors">{finalTitle}</CardTitle>
                     {statusBadge}
                 </div>
-                 <CardDescription>
-                    {test.assignedDate} - {test.dueDate}
+                 <CardDescription className="text-slate-400 text-xs flex items-center gap-2">
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    <span>{test.assignedDate} - {test.dueDate}</span>
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-between">
-                <div className="text-center">
-                    <p className="text-3xl font-bold">{test.questionCount}</p>
-                    <p className="text-sm text-muted-foreground">SORU</p>
+            
+            <CardContent className="flex-grow flex items-center justify-between py-2 border-y border-white/5 bg-black/10">
+                <div className="text-center px-4 border-r border-white/5 w-1/2">
+                    <p className="text-2xl font-black text-white">{test.questionCount}</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">SORU</p>
                 </div>
                 {!isMistakeTest && (
-                    <div className="text-center">
-                        <p className="text-3xl font-bold">{duration}</p>
-                        <p className="text-sm text-muted-foreground">DAKİKA</p>
+                    <div className="text-center px-4 w-1/2">
+                        <p className="text-2xl font-black text-white">{duration}</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">DAKİKA</p>
                     </div>
                 )}
             </CardContent>
-            <CardFooter className="p-0">
-            <Link href={`/education/${test.id}`} passHref className="w-full">
+            
+            <CardFooter className="p-0 mt-auto">
+            <Link href={`/education/${test.id}`} className="w-full">
                 <Button 
                     size="lg" 
-                    className={cn("w-full rounded-t-none h-12 text-base", buttonClass)}
+                    className={cn("w-full rounded-t-none h-12 text-sm font-bold shadow-lg transition-all", buttonClass)}
                     disabled={buttonDisabled}
                 >
                 {buttonText}
@@ -203,64 +243,3 @@ function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: st
         </Card>
     );
 }
-
-function ManagementTestCard({ test, student, onDelete }: { test: Test, student?: FamilyMember, onDelete: (id: string) => void }) {
-    const isCompleted = test.status === 'Sonuçlandı';
-    const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
-    const scorePercentage = test.score || 0;
-
-    const hexToRgba = (hex: string, alpha: number) => {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
-    
-    const cardStyle = student ? { backgroundColor: hexToRgba(student.color, 0.15) } : {};
-
-    return (
-        <AccordionItem value={test.id} className="border bg-background rounded-md mb-2" style={cardStyle}>
-            <AccordionTrigger className="p-4 hover:no-underline">
-                <div className="flex justify-between items-center w-full pr-4">
-                    <div>
-                        <p className="font-semibold">{test.title}</p>
-                        <p className="text-sm text-muted-foreground">{student?.name}</p>
-                    </div>
-                     <Badge variant={isCompleted ? "default" : "outline"} className={cn("text-xs", isCompleted && "bg-green-600", isPendingGrade && "bg-yellow-500 text-yellow-900")}>{test.status}</Badge>
-                </div>
-            </AccordionTrigger>
-            <AccordionContent className="p-4 pt-0">
-                 {isCompleted && (
-                     <div className="space-y-2 mb-4">
-                        <Progress value={scorePercentage} className="h-1.5" />
-                        <div className="flex justify-between text-xs font-medium">
-                            <span className="flex items-center gap-1 text-green-600"><CheckCircle className="h-3 w-3"/> D: {test.correctAnswers}</span>
-                            <span className="flex items-center gap-1 text-red-600"><XIcon className="h-3 w-3"/> Y: {test.incorrectAnswers}</span>
-                            <span className="flex items-center gap-1 text-gray-500"><MinusCircle className="h-3 w-3"/> B: {test.emptyAnswers}</span>
-                        </div>
-                    </div>
-                )}
-                <div className="flex justify-end gap-2">
-                     {isPendingGrade && (
-                        <Link href={`/education/${test.id}`}>
-                            <Button variant="secondary" size="sm">Not Ver</Button>
-                        </Link>
-                    )}
-                     <Link href={`/education/management/assign?edit=${test.id}`}>
-                        <Button variant="outline" size="sm"><Edit className="w-3 h-3 mr-1"/>Düzenle</Button>
-                    </Link>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm"><Trash2 className="w-3 h-3 mr-1"/>Sil</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooterComponent><AlertDialogCancel>İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            </AccordionContent>
-        </AccordionItem>
-    );
-}
-
