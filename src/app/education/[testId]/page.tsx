@@ -577,6 +577,7 @@ export default function OpticalFormPage() {
                                 <CardFooter className="p-6 bg-black/20 border-t border-white/5 mt-auto">
                                     <div className="flex justify-between w-full">
                                         <Button 
+                                            type="button"
                                             variant="outline" 
                                             className={glassColors.BUTTON_GLASS}
                                             onClick={() => setCurrentQuestionIndex(p => p - 1)} 
@@ -606,6 +607,7 @@ export default function OpticalFormPage() {
                                             </AlertDialog>
                                         ) : (
                                             <Button 
+                                                type="button"
                                                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11"
                                                 onClick={() => setCurrentQuestionIndex(p => p + 1)} 
                                                 disabled={currentQuestionIndex === test.jsonQuestions!.length - 1}
