@@ -7,7 +7,7 @@ import { Test as TestType, QuickTestQuestion, Mistake, JsonTestQuestion } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Form, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand, Shrink } from "lucide-react";
 import Link from "next/link";
@@ -209,7 +209,7 @@ export default function OpticalFormPage() {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 
                 // Fetch questions subcollection if they are not already on the test doc
-                if (currentTest.sourceType !== 'json' && (!currentTest.questions || currentTest.questions.length === 0)) {
+                if ((currentTest.sourceType === 'quick' || currentTest.sourceType === 'bank') && (!currentTest.questions || currentTest.questions.length === 0)) {
                   const questionsColRef = collection(db, 'tests', testId, 'questions');
                   const questionsQuery = query(questionsColRef, orderBy("questionNumber"));
                   const questionsSnap = await getDocs(questionsQuery);
@@ -509,7 +509,7 @@ export default function OpticalFormPage() {
         setTextAnswers(prev => ({...prev, [questionNumber]: value}));
     };
     
-    const hasImages = test.questions && test.questions.length > 0;
+    const hasImages = test.sourceType === 'quick' || test.sourceType === 'bank';
     const isJsonTest = test.sourceType === 'json' && test.jsonQuestions && test.jsonQuestions.length > 0;
     const options = ['A', 'B', 'C', 'D', 'E']; // Allow E option just in case
     const testDurationMinutes = test.durationMinutes || (isJsonTest ? test.jsonQuestions!.length * 1.5 : test.questionCount * 2);
@@ -744,3 +744,4 @@ export default function OpticalFormPage() {
 
 
     
+
