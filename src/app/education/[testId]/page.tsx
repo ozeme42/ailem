@@ -452,8 +452,49 @@ export default function OpticalFormPage() {
         }
 
         // Teacher/Parent grading view
-        if (test.openEnded) {
-             // Open Ended Test Grading UI here
+        if (test.openEnded && test.questions) {
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8">
+                     <header className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
+                        <Button variant="ghost" onClick={() => router.back()}>
+                            <ArrowLeft className="mr-2 h-5 w-5" /> Geri
+                        </Button>
+                        <h1 className="text-xl font-bold">{test.title} - Değerlendirme</h1>
+                        <Button onClick={handleFinalizeEvaluation} size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold">
+                            Değerlendirmeyi Tamamla
+                        </Button>
+                    </header>
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        {test.questions.map((q, index) => {
+                            const qNumStr = (index + 1).toString();
+                            const studentAnswer = test.studentTextAnswers?.[qNumStr] || "Cevap verilmemiş";
+                            const evalStatus = manualEvaluations[qNumStr];
+                            return (
+                                <Card key={q.questionId} className={cn("overflow-hidden", glassColors.CARD_BG)}>
+                                    <CardHeader className="bg-white/5 border-b border-white/5 p-4 flex flex-row justify-between items-center">
+                                        <CardTitle className="text-lg">Soru {qNumStr}</CardTitle>
+                                        <div className="flex gap-2">
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8", evalStatus === 'correct' ? "bg-emerald-600" : "bg-transparent border border-emerald-500/30 text-emerald-400")}>Doğru</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8", evalStatus === 'incorrect' ? "bg-rose-600" : "bg-transparent border border-rose-500/30 text-rose-400")}>Yanlış</Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                                            <Image src={q.imageUrl} alt={`Soru ${qNumStr}`} layout="fill" objectFit="contain" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-slate-400">Öğrenci Cevabı</Label>
+                                            <div className="p-3 rounded-lg bg-slate-900 border border-slate-700 min-h-[100px] text-sm text-slate-200 whitespace-pre-wrap">
+                                                {studentAnswer}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                </div>
+            );
         }
         
          // Optical Form grading fallback
@@ -856,4 +897,5 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
 
