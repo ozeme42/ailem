@@ -210,7 +210,7 @@ export default function OpticalFormPage() {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 
                 // Fetch questions subcollection if they are not already on the test doc
-                if ((currentTest.sourceType === 'quick' || currentTest.sourceType === 'bank') && (!currentTest.questions || currentTest.questions.length === 0)) {
+                if ((currentTest.sourceType === 'quick' || currentTest.sourceType === 'bank' || currentTest.sourceType === 'mistake') && (!currentTest.questions || currentTest.questions.length === 0)) {
                   const questionsColRef = collection(db, 'tests', testId, 'questions');
                   const questionsQuery = query(questionsColRef, orderBy("questionNumber"));
                   const questionsSnap = await getDocs(questionsQuery);
@@ -510,7 +510,7 @@ export default function OpticalFormPage() {
         setTextAnswers(prev => ({...prev, [questionNumber]: value}));
     };
     
-    const hasImages = (test.sourceType === 'quick' || test.sourceType === 'bank') && test.questions && test.questions.length > 0;
+    const hasImages = (test.sourceType === 'quick' || test.sourceType === 'bank' || test.sourceType === 'mistake') && test.questions && test.questions.length > 0;
     const isJsonTest = test.sourceType === 'json' && test.jsonQuestions && test.jsonQuestions.length > 0;
     const options = ['A', 'B', 'C', 'D', 'E']; // Allow E option just in case
     const testDurationMinutes = test.durationMinutes || (isJsonTest ? test.jsonQuestions!.length * 1.5 : test.questionCount * 2);
@@ -621,8 +621,7 @@ export default function OpticalFormPage() {
                                             <Button 
                                                 type="button"
                                                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11"
-                                                onClick={() => setCurrentQuestionIndex(p => p + 1)} 
-                                                disabled={currentQuestionIndex === test.jsonQuestions!.length - 1}
+                                                onClick={() => setCurrentQuestionIndex(p => p + 1)}
                                             >
                                                 Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
                                             </Button>
@@ -839,5 +838,6 @@ export default function OpticalFormPage() {
 
 
     
+
 
 
