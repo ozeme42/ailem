@@ -51,9 +51,7 @@ const nextConfig = {
     buildActivityPosition: 'bottom-right',
   },
   experimental: {
-    allowedDevOrigins: [
-      'https://9000-firebase-studio-1752942593865.cluster-ombtxv25tbd6yrjpp3lukp6zhc.cloudworkstations.dev',
-    ],
+    
   },
 };
 
