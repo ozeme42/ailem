@@ -885,16 +885,14 @@ export default function OpticalFormPage() {
                                                 className={cn("flex-1", glassColors.INPUT_BG)}
                                             />
                                         ) : (
-                                            <div className="flex-1 flex justify-center sm:justify-start gap-3 sm:gap-6 ml-4">
+                                            <RadioGroup 
+                                                value={mcqAnswers[qNum] || ""} 
+                                                onValueChange={(value) => handleMcqAnswerChange(qNum, value)}
+                                                className="flex-1 flex justify-center sm:justify-start gap-3 sm:gap-6 ml-4"
+                                            >
                                                 {options.map(option => (
                                                     <div key={option} className="relative">
-                                                        <RadioGroupItem 
-                                                            value={option} 
-                                                            id={`q${qNum}-${option}`} 
-                                                            className="peer sr-only"
-                                                            checked={mcqAnswers[qNum] === option}
-                                                            onClick={() => handleMcqAnswerChange(qNum, option)}
-                                                        />
+                                                        <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
                                                         <Label 
                                                             htmlFor={`q${qNum}-${option}`} 
                                                             className={cn(
@@ -906,7 +904,7 @@ export default function OpticalFormPage() {
                                                         </Label>
                                                     </div>
                                                 ))}
-                                            </div>
+                                            </RadioGroup>
                                         )}
                                     </div>
                                 )
