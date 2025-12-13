@@ -512,13 +512,13 @@ export default function OpticalFormPage() {
     
     const hasImages = (test.sourceType === 'quick' || test.sourceType === 'bank' || test.sourceType === 'mistake') && test.questions && test.questions.length > 0;
     const isJsonTest = test.sourceType === 'json' && test.jsonQuestions && test.jsonQuestions.length > 0;
-    const options = ['A', 'B', 'C', 'D', 'E']; // Allow E option just in case
+    const options = ['A', 'B', 'C', 'D', 'E'];
     const testDurationMinutes = test.durationMinutes || (isJsonTest ? test.jsonQuestions!.length * 1.5 : test.questionCount * 2);
     
     const currentJsonQuestion = isJsonTest ? test.jsonQuestions![currentQuestionIndex] : null;
 
-    // --- VIEW: JSON-BASED WRITTEN TEST ---
-    if (isJsonTest && currentJsonQuestion) {
+    // --- VIEW: JSON-BASED TEST (MCQ) ---
+    if (isJsonTest && !test.openEnded && currentJsonQuestion) {
         return (
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
@@ -637,7 +637,7 @@ export default function OpticalFormPage() {
     }
     
     // --- VIEW: ACTIVE TEST (Questions with Images) ---
-    if (hasImages) {
+    if (hasImages && !test.openEnded) {
         const currentQuestion = test.questions![currentQuestionIndex];
         const totalQuestions = test.questions!.length;
         const currentQNumStr = (currentQuestionIndex + 1).toString();
@@ -736,7 +736,7 @@ export default function OpticalFormPage() {
         )
     }
 
-    // --- VIEW: ACTIVE TEST (Optical Form / Manual) ---
+    // --- VIEW: ACTIVE TEST (Optical Form / Manual / Open-Ended) ---
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
@@ -757,7 +757,7 @@ export default function OpticalFormPage() {
                             <CardContent className="flex items-center justify-between p-6">
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-200">Süreniz İşliyor</h3>
-                                    <p className="text-slate-400 text-sm">Optik formu doldurmayı unutmayın.</p>
+                                    <p className="text-slate-400 text-sm">Cevap kağıdını doldurmayı unutmayın.</p>
                                 </div>
                                 <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                             </CardContent>
@@ -834,10 +834,4 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
-
-
-
-    
-
-
 
