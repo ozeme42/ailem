@@ -75,7 +75,7 @@ function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeU
             <Clock className="h-5 w-5 text-indigo-400" />
             <span>{formatTime(timeLeft)}</span>
         </div>
-        <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" onClick={() => setIsRunning(!isRunning)}>
+        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" onClick={() => setIsRunning(!isRunning)}>
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>
     </div>
