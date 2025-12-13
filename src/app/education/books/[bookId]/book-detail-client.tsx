@@ -353,7 +353,7 @@ export default function BookDetailClient() {
                  </div>
 
                  <TabsContent value="contents" className="animate-in fade-in zoom-in-95 duration-300">
-                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={(book.subjects || []).map(s => s.id)}>
+                    <Accordion type="multiple" className="w-full space-y-4">
                         {(book.subjects || []).map(subject => (
                             <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-2xl overflow-hidden bg-white/5 border border-white/5">
                                 <div className="flex items-center justify-between bg-slate-900/30 pr-2">
