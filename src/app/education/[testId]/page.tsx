@@ -474,13 +474,14 @@ export default function OpticalFormPage() {
                                     <CardHeader className="bg-white/5 border-b border-white/5 p-4 flex flex-row justify-between items-center">
                                         <CardTitle className="text-lg">Soru {qNumStr}</CardTitle>
                                         <div className="flex gap-2">
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8", evalStatus === 'correct' ? "bg-emerald-600" : "bg-transparent border border-emerald-500/30 text-emerald-400")}>Doğru</Button>
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8", evalStatus === 'incorrect' ? "bg-rose-600" : "bg-transparent border border-rose-500/30 text-rose-400")}>Yanlış</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8", evalStatus === 'correct' ? "bg-emerald-600" : "bg-transparent border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10")}>Doğru</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8", evalStatus === 'incorrect' ? "bg-rose-600" : "bg-transparent border border-rose-500/30 text-rose-400 hover:bg-rose-500/10")}>Yanlış</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'empty')} className={cn("h-8", evalStatus === 'empty' ? "bg-slate-600" : "bg-transparent border border-slate-500/30 text-slate-400 hover:bg-slate-500/10")}>Boş</Button>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                                            <Image src={q.imageUrl} alt={`Soru ${qNumStr}`} layout="fill" objectFit="contain" />
+                                            <Image src={q.imageUrl} alt={`Soru ${qNumStr}`} layout="fill" objectFit="contain" unoptimized />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-xs font-bold text-slate-400">Öğrenci Cevabı</Label>
@@ -897,5 +898,6 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
 
 
