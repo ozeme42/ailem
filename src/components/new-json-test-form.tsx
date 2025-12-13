@@ -49,6 +49,26 @@ type NewJsonTestFormProps = {
   initialData?: Test | null;
 };
 
+const sampleJsonPlaceholder = `[
+  {
+    "id": "mat001",
+    "text": "Bir çiftlikteki tavuk ve koyunların toplam sayısı 50'dir. Bu hayvanların toplam ayak sayısı 140 olduğuna göre, çiftlikte kaç tavuk vardır?",
+    "options": ["15", "20", "25", "30"],
+    "answer": "30"
+  },
+  {
+    "id": "tr001",
+    "text": "Aşağıdaki cümlelerin hangisinde yazım yanlışı yapılmıştır?",
+    "options": [
+      "Herşey yolunda gibi görünüyordu.",
+      "Ankara'ya yarın sabah gideceğim.",
+      "Bu konuyu da mı anlamadın?",
+      "TBMM'nin açılışı coşkuyla kutlandı."
+    ],
+    "answer": "Herşey yolunda gibi görünüyordu."
+  }
+]`;
+
 export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: NewJsonTestFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
@@ -130,7 +150,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                 <FormField control={form.control} name="jsonContent" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Sorular (JSON Formatında)</FormLabel>
-                        <FormControl><Textarea placeholder="Soruları buraya yapıştırın..." className="h-48 font-mono text-xs" {...field} /></FormControl>
+                        <FormControl><Textarea placeholder={sampleJsonPlaceholder} className="h-48 font-mono text-xs" {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )}/>
