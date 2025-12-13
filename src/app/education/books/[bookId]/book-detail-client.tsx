@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject, onTestsUpdate } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic, Test } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -288,6 +288,42 @@ export default function BookDetailClient() {
       );
   };
 
+  const handleDownloadMistakes = () => {
+    if (!book || Object.keys(mistakeList).length === 0) {
+      toast({ title: "Hata", description: "İndirilecek yanlış bulunamadı.", variant: "destructive" });
+      return;
+    }
+
+    let content = `"${book.title}" Kitabı Yanlış Analizi\n`;
+    content += "====================================\n\n";
+
+    for (const subjectName in mistakeList) {
+      content += `DERS: ${subjectName}\n`;
+      content += "--------------------\n";
+      for (const topicName in mistakeList[subjectName]) {
+        content += `  Konu: ${topicName}\n`;
+        mistakeList[subjectName][topicName].forEach(mistake => {
+          const student = familyMembers.find(m => m.id === mistake.test.studentId);
+          content += `    - Test: ${mistake.testDefinition.name}, Soru: ${mistake.questionNumber} (${student?.name || 'Bilinmiyor'})\n`;
+        });
+        content += "\n";
+      }
+      content += "\n";
+    }
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `yanlis-analizi-${book.title.replace(/ /g, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({ title: "Başarılı", description: "Yanlış analizi indirildi." });
+  };
+
 
   if (!book) return (
       <div className="flex h-screen items-center justify-center bg-slate-950">
@@ -449,12 +485,19 @@ export default function BookDetailClient() {
                  
                  <TabsContent value="mistakes" className="animate-in fade-in zoom-in-95 duration-300">
                       <div className={cn("rounded-2xl p-6 space-y-4", glassColors.CARD_BG)}>
-                         <div className="flex items-center gap-3 pb-4 border-b border-white/10">
-                            <ListX className="w-6 h-6 text-rose-400"/>
-                             <div>
-                                <h3 className="text-xl font-bold text-slate-100">Yanlış Analizi</h3>
-                                <p className="text-sm text-slate-400">Çözülen testlerdeki yanlış cevapların dökümü.</p>
-                             </div>
+                         <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                            <div className="flex items-center gap-3">
+                                <ListX className="w-6 h-6 text-rose-400"/>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-100">Yanlış Analizi</h3>
+                                    <p className="text-sm text-slate-400">Çözülen testlerdeki yanlış cevapların dökümü.</p>
+                                </div>
+                            </div>
+                            {Object.keys(mistakeList).length > 0 && (
+                                <Button variant="outline" className={glassColors.BUTTON_GLASS} onClick={handleDownloadMistakes}>
+                                    <FileOutput className="mr-2 h-4 w-4" /> İndir
+                                </Button>
+                            )}
                          </div>
                           {Object.keys(mistakeList).length > 0 ? (
                             <Accordion type="multiple" className="w-full space-y-3">
