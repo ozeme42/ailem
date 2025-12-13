@@ -347,7 +347,8 @@ export default function BookDetailClient() {
                             İçindekiler
                         </TabsTrigger>
                          <TabsTrigger value="mistakes" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-400 font-bold transition-all flex items-center gap-2">
-                            Yanlış Analizi <Badge variant="destructive" className="bg-rose-500 text-white border-0">{Object.values(mistakeList).flat().length}</Badge>
+                            Yanlış Analizi 
+                            {Object.keys(mistakeList).length > 0 && <Badge variant="destructive" className="bg-rose-500 text-white border-0">{Object.values(mistakeList).flatMap(Object.values).flat().length}</Badge>}
                         </TabsTrigger>
                     </TabsList>
                  </div>
@@ -463,23 +464,27 @@ export default function BookDetailClient() {
                                             {subjectName}
                                         </AccordionTrigger>
                                         <AccordionContent className="px-4 pb-4 pt-2">
-                                            <div className="space-y-2">
+                                            <Accordion type="multiple" className="space-y-2">
                                                 {Object.entries(topics).map(([topicName, mistakes]) => (
-                                                    <div key={topicName}>
-                                                         <h5 className="font-semibold text-sm text-slate-400 pl-2 border-l-2 border-rose-500/50 mb-2">{topicName}</h5>
-                                                         <div className="pl-4 space-y-1">
-                                                            {mistakes.map((mistake, i) => {
-                                                                const student = familyMembers.find(m => m.id === mistake.test.studentId);
-                                                                return (
-                                                                <div key={i} className="flex items-center justify-between text-xs p-2 rounded-md bg-rose-900/30">
-                                                                    <span className="font-medium text-slate-300">{mistake.testDefinition.name}, Soru: {mistake.questionNumber}</span>
-                                                                    {student && <Badge variant="destructive" className="bg-transparent border border-rose-400/30 text-rose-400">{student.name}</Badge>}
-                                                                </div>
-                                                            )})}
-                                                         </div>
-                                                    </div>
+                                                    <AccordionItem key={topicName} value={topicName} className="border-none rounded-lg bg-black/20 overflow-hidden">
+                                                        <AccordionTrigger className="px-3 py-2 text-sm font-semibold text-slate-300 hover:no-underline hover:bg-black/20">
+                                                            {topicName}
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="px-3 pb-3 pt-1">
+                                                             <div className="pl-4 space-y-1">
+                                                                {mistakes.map((mistake, i) => {
+                                                                    const student = familyMembers.find(m => m.id === mistake.test.studentId);
+                                                                    return (
+                                                                    <div key={i} className="flex items-center justify-between text-xs p-2 rounded-md bg-rose-900/30">
+                                                                        <span className="font-medium text-slate-300">{mistake.testDefinition.name}, Soru: {mistake.questionNumber}</span>
+                                                                        {student && <Badge variant="destructive" className="bg-transparent border border-rose-400/30 text-rose-400">{student.name}</Badge>}
+                                                                    </div>
+                                                                )})}
+                                                             </div>
+                                                        </AccordionContent>
+                                                    </AccordionItem>
                                                 ))}
-                                            </div>
+                                            </Accordion>
                                         </AccordionContent>
                                     </AccordionItem>
                                 ))}
