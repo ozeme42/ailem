@@ -2,7 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, Sparkles, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, GraduationCap, Check, Library, LayoutGrid, AlertCircle } from "lucide-react";
+import { 
+  PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, 
+  BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, 
+  Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, 
+  Sparkles, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, GraduationCap, Check, 
+  Library, LayoutGrid, AlertCircle 
+} from "lucide-react";
 import Image from "next/image";
 
 import { PageHeader } from "@/components/page-header";
@@ -24,6 +30,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -416,9 +423,9 @@ export default function EducationPage() {
         <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-xl", glassColors.ICON_BOX)}>
-                         <GraduationCap className="w-6 h-6 text-white" />
-                    </div>
+                    <SidebarTrigger className={cn("p-2 rounded-xl", "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20", "text-white")}>
+                         <GraduationCap className="w-6 h-6" />
+                    </SidebarTrigger>
                     <div>
                         <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">
                             Eğitim & Sınav
