@@ -262,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={authContextValue}>
-        <SidebarProvider defaultOpen={true}>
+        <SidebarProvider defaultOpen={false}>
             <AppSidebar />
             <SidebarInset>
                 <main className={cn("pb-24 md:pb-8 h-full bg-muted/30", hasPadding && "p-4 sm:p-6 lg:p-8")}>
