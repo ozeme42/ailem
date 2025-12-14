@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import * as React from "react";
@@ -10,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand, Shrink } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand, Shrink, Home } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -177,7 +175,8 @@ export default function OpticalFormPage() {
                 if (test.familyId && test.studentId) {
                      await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
                 }
-                 router.push('/education');
+                // DÜZELTME: Otomatik yönlendirme kaldırıldı. Sonuç ekranı görünecek.
+                // router.push('/education'); 
             } else {
                  toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
@@ -361,7 +360,7 @@ export default function OpticalFormPage() {
         )
     }
 
-    // --- VIEW: RESULTS SUMMARY ---
+    // --- VIEW: RESULTS SUMMARY (SONUÇ EKRANI) ---
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const studentAnswers = test.studentAnswers || {};
         const answerKey = test.sourceType === 'json' 
@@ -377,10 +376,10 @@ export default function OpticalFormPage() {
                     <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-emerald-900/20 rounded-full blur-[120px]" />
                 </div>
 
-                <div className="max-w-4xl mx-auto w-full space-y-8 relative z-10">
+                <div className="max-w-4xl mx-auto w-full space-y-8 relative z-10 pb-20">
                     <header className="flex justify-between items-center">
-                        <Button variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
-                            <ArrowLeft className="mr-2 h-5 w-5" /> Geri
+                        <Button variant="ghost" onClick={() => router.push('/education')} className="text-slate-400 hover:text-white">
+                            <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
                         </Button>
                         <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1">Tamamlandı</Badge>
                     </header>
@@ -427,6 +426,18 @@ export default function OpticalFormPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                     {/* EK EKRAN KAPATMA BUTONU */}
+                     <div className="flex justify-center mt-8">
+                        <Button 
+                            size="lg" 
+                            className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg font-bold shadow-2xl"
+                            onClick={() => router.push('/education')}
+                        >
+                            <Home className="mr-3 h-6 w-6" />
+                            Sonuç Ekranını Kapat / Eğitime Dön
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
@@ -561,6 +572,7 @@ export default function OpticalFormPage() {
     
     const hasImages = (test.sourceType === 'quick' || test.sourceType === 'bank' || test.sourceType === 'mistake') && test.questions && test.questions.length > 0;
     const isJsonTest = test.sourceType === 'json' && test.jsonQuestions && test.jsonQuestions.length > 0;
+    const currentJsonQuestion = isJsonTest ? test.jsonQuestions![currentQuestionIndex] : null;
     const options = ['A', 'B', 'C', 'D', 'E'];
     const testDurationMinutes = test.durationMinutes || (isJsonTest ? test.jsonQuestions!.length * 1.5 : test.questionCount * 2);
     
@@ -886,7 +898,13 @@ export default function OpticalFormPage() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                            <AlertDialogAction type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
+                                            <AlertDialogAction 
+                                                type="button" 
+                                                onClick={() => handleSubmit(false)} 
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                            >
+                                                Evet, Bitir
+                                            </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -898,7 +916,3 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
-
-
-
-
