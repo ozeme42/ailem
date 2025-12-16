@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -82,6 +83,7 @@ const glassColors = {
     BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10",
     ACTIVE_MEMBER: "bg-indigo-600 border-indigo-500/50 text-white shadow-lg shadow-indigo-500/20",
     INACTIVE_MEMBER: "bg-white/5 border-transparent text-slate-400 hover:text-white hover:bg-white/10",
+    TEXT_MUTED: "text-slate-400",
 };
 
 export default function EducationPage() {
@@ -138,17 +140,22 @@ export default function EducationPage() {
     }
   }, [tests]);
   
+  // --- GÜNCELLENEN KISIM: İstatistik Hesaplama ---
   const testsByCategory = React.useMemo(() => {
-    const categories: { [key: string]: { total: number, completed: number } } = {};
+    const categories: { [key: string]: { total: number, completed: number, correct: number, wrong: number, questionCount: number } } = {};
 
     tests.forEach(test => {
         const categoryName = getCategoryName(test);
         if (!categories[categoryName]) {
-            categories[categoryName] = { total: 0, completed: 0 };
+            categories[categoryName] = { total: 0, completed: 0, correct: 0, wrong: 0, questionCount: 0 };
         }
         categories[categoryName].total++;
+        
         if (test.status === 'Sonuçlandı') {
             categories[categoryName].completed++;
+            categories[categoryName].correct += (test.correctAnswers || 0);
+            categories[categoryName].wrong += (test.incorrectAnswers || 0);
+            categories[categoryName].questionCount += (test.questionCount || 0);
         }
     });
 
@@ -423,9 +430,9 @@ export default function EducationPage() {
         <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <SidebarTrigger className={cn("p-2 rounded-xl", "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20", "text-white")}>
+                    <div className={cn("p-2 rounded-xl flex items-center justify-center", "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20")}>
                          <GraduationCap className="w-6 h-6" />
-                    </SidebarTrigger>
+                    </div>
                     <div>
                         <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">
                             Eğitim & Sınav
@@ -548,14 +555,14 @@ export default function EducationPage() {
                             </div>
                         )}
                         
-                        {/* Categories Grid */}
+                        {/* Categories Grid - GÜNCELLENMİŞ TASARIM */}
                         <div>
                             <h2 className="text-xl font-bold mb-5 flex items-center gap-2 text-slate-200">
                                 <LayoutGrid className="w-5 h-5 text-indigo-400" />
                                 Test Kategorileri
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                                <Link href="/education/all-tests" className="block group h-full">
+                                <Link href="/education/all-tests" className="block h-full group">
                                     <div className={cn("relative flex flex-col items-center justify-center h-full p-6 rounded-3xl transition-all border border-dashed border-slate-700 hover:border-slate-500 bg-slate-900/50 hover:bg-slate-800/50 group-hover:-translate-y-1")}>
                                         <Library className="w-10 h-10 mb-3 text-slate-500 group-hover:text-slate-300 transition-colors" />
                                         <span className="font-bold text-slate-400 group-hover:text-slate-200">Tümünü Gör</span>
@@ -563,35 +570,90 @@ export default function EducationPage() {
                                 </Link>
                                 {testsByCategory.map(([category, data]) => {
                                     const Icon = categoryIcons[category] || FileText;
-                                    // Custom colors for specific cards
                                     const hoverColor = categoryCardColors[category] || 'hover:shadow-slate-500/20 hover:border-slate-500/50';
                                     const iconStyle = categoryIconColors[category] || 'text-slate-400 bg-slate-400/10';
                                     const pending = data.total - data.completed;
-                        
+
+                                    // --- Yeni Hesaplamalar ---
+                                    const successRate = data.questionCount > 0 ? (data.correct / data.questionCount) * 100 : 0;
+                                    const emptyCount = Math.max(0, data.questionCount - (data.correct + data.wrong));
+                                    
+                                    let progressColor = "bg-slate-500";
+                                    if (successRate >= 80) progressColor = "bg-emerald-500";
+                                    else if (successRate >= 50) progressColor = "bg-amber-500";
+                                    else if (data.completed > 0) progressColor = "bg-rose-500";
+
                                     return (
                                         <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group h-full">
                                             <div className={cn(
-                                                "relative flex flex-col h-full p-5 rounded-3xl transition-all border border-white/5 bg-white/5 backdrop-blur-md group-hover:-translate-y-1",
+                                                "relative flex flex-col h-full p-5 rounded-3xl transition-all border border-white/5 bg-white/5 backdrop-blur-md group-hover:-translate-y-1 overflow-hidden",
                                                 hoverColor
                                             )}>
+                                                {/* Background Glow Efekti */}
+                                                <div className={cn("absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none", iconStyle.split(' ')[0].replace('text-', 'bg-'))} />
+
                                                 {pending > 0 && (
-                                                    <Badge className="absolute top-3 right-3 bg-rose-500 text-white border-0 h-5 px-1.5 text-[10px] font-bold shadow-lg shadow-rose-500/40 animate-pulse">
+                                                    <Badge className="absolute top-3 right-3 bg-rose-500 text-white border-0 h-5 px-1.5 text-[10px] font-bold shadow-lg shadow-rose-500/40 animate-pulse z-10">
                                                         {pending} YENİ
                                                     </Badge>
                                                 )}
                                                 
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className={cn("p-3 rounded-2xl", iconStyle)}>
+                                                <div className="flex items-start justify-between mb-3 z-10 relative">
+                                                    <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110", iconStyle)}>
                                                         <Icon className="w-6 h-6" />
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="mt-auto">
-                                                    <h3 className="text-lg font-bold text-slate-200 mb-1 leading-tight group-hover:text-white transition-colors">{category}</h3>
-                                                    <div className="flex items-center justify-between text-xs font-medium text-slate-500 mt-3 pt-3 border-t border-white/5">
-                                                        <span>Toplam: {data.total}</span>
-                                                        <span className="text-emerald-400">{data.completed} Tamamlandı</span>
+                                                <h3 className="text-lg font-bold text-slate-200 mb-4 leading-tight group-hover:text-white transition-colors z-10 relative truncate">
+                                                    {category}
+                                                </h3>
+
+                                                {/* İstatistikler */}
+                                                <div className="mt-auto space-y-3 z-10 relative">
+                                                    
+                                                    {/* Başarı Çubuğu */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex justify-between items-end text-xs">
+                                                            <span className="text-slate-500 font-medium">Başarı</span>
+                                                            <span className={cn("font-bold", successRate >= 50 ? "text-slate-200" : "text-slate-400")}>
+                                                                %{successRate.toFixed(0)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-1.5 w-full bg-slate-950/50 rounded-full overflow-hidden">
+                                                            <div 
+                                                                className={cn("h-full rounded-full transition-all duration-500", progressColor)} 
+                                                                style={{ width: `${successRate}%` }} 
+                                                            />
+                                                        </div>
                                                     </div>
+
+                                                    {/* Kompakt İstatistik Izgarası */}
+                                                    <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/5">
+                                                        {/* Doğru */}
+                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/10">
+                                                            <span className="text-[10px] text-emerald-500/70 font-bold uppercase">D</span>
+                                                            <span className="text-sm font-bold text-emerald-400">{data.correct}</span>
+                                                        </div>
+                                                        
+                                                        {/* Yanlış */}
+                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-rose-500/10 border border-rose-500/10">
+                                                            <span className="text-[10px] text-rose-500/70 font-bold uppercase">Y</span>
+                                                            <span className="text-sm font-bold text-rose-400">{data.wrong}</span>
+                                                        </div>
+
+                                                        {/* Boş */}
+                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-slate-500/10 border border-slate-500/10">
+                                                            <span className="text-[10px] text-slate-500/70 font-bold uppercase">B</span>
+                                                            <span className="text-sm font-bold text-slate-400">{emptyCount}</span>
+                                                        </div>
+
+                                                        {/* Test */}
+                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-indigo-500/10 border border-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors">
+                                                            <span className="text-[10px] text-indigo-400/70 font-bold uppercase">Test</span>
+                                                            <span className="text-sm font-bold text-indigo-300">{data.completed}</span>
+                                                        </div>
+                                                    </div>
+
                                                 </div>
                                             </div>
                                         </Link>
@@ -686,7 +748,7 @@ export default function EducationPage() {
                                                                 <div className="flex-grow min-w-0">
                                                                     <div className="flex items-start justify-between md:block">
                                                                         <h3 className="font-semibold text-slate-200 text-sm md:text-base break-words min-w-0 pr-2">
-                                                                            {displayName}
+                                                                                {displayName}
                                                                         </h3>
                                                                         {isTestDue && <Badge variant="destructive" className="md:hidden h-5 text-[10px] shrink-0">Gecikti</Badge>}
                                                                     </div>
