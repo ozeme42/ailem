@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -833,7 +834,7 @@ export default function OpticalFormPage() {
                             <CardContent className="flex items-center justify-between p-6">
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-200">Süreniz İşliyor</h3>
-                                    <p className="text-slate-400 text-sm">Cevap kağıdını doldurmayı unutmayın.</p>
+                                    <p className="text-slate-400 text-sm">Cevaplarınızı aşağıdaki forma işaretleyin.</p>
                                 </div>
                                 <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                             </CardContent>
@@ -916,3 +917,5 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
+    

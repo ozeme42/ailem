@@ -1,39 +1,28 @@
-
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { 
-  PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, 
-  BarChart3, CheckCircle, XCircle, MinusCircle, Award, Home, Ruler, TestTube2, BookCopy, 
-  Globe, MessageSquare, Gamepad2, ClipboardList, Send, ArrowRight, NotebookText, BookHeart, 
-  Sparkles, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, GraduationCap, Check, 
-  Library, LayoutGrid, AlertCircle 
+    PlusCircle, Clock, FileText, Settings, BarChart3, CheckCircle2, 
+    XCircle, MinusCircle, Ruler, TestTube2, BookCopy, Globe, 
+    MessageSquare, Gamepad2, ClipboardList, ArrowRight, BookHeart, 
+    Calendar as CalendarIcon, ChevronLeft, ChevronRight, Layers, 
+    CircleDashed, PieChart, GraduationCap, LayoutGrid, List, AlertCircle, Timer, BookOpen
 } from "lucide-react";
-import Image from "next/image";
 
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { QuestionBank, Test, PracticeExam, FamilyMember, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
+import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ManualGradeForm, ManualGradeData } from "@/components/manual-grade-form";
-import { onTestsUpdate, onQuestionBanksUpdate, onPracticeExamsUpdate, updateTest, addTest, deleteTask, onSubjectsUpdate, updateSubjects, checkAndAwardBadges, onStudyAssignmentsUpdate, onStudyPlansUpdate, updateStudyAssignment, onTrackedBooksUpdate, onBooksUpdate, onUserLibrariesUpdate, onGoalsUpdate, updateGoal, getGoal, addBook, onMemorizationItemsUpdate, onMemorizationProgressUpdate, onPrayerProgressUpdate, onVideosUpdate, onTransactionsUpdate, onAccountsUpdate, onReadingSessionsUpdate, addReadingSession, addBookToMemberLibrary } from "@/lib/dataService";
+import { onTestsUpdate, onStudyAssignmentsUpdate, onStudyPlansUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfMonth, endOfDay, isWithinInterval, startOfMonth, addMonths, subMonths, isPast, differenceInDays } from 'date-fns';
+import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfDay, isWithinInterval, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 
-
+// --- KATEGORİ AYARLARI ---
 const categoryIcons: { [key: string]: React.ElementType } = {
     'Genel Deneme Sınavları': ClipboardList,
     'Matematik': Ruler,
@@ -45,28 +34,15 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Diğer': FileText,
 };
 
-// Renkleri Glassmorphism temasına uyarladık
-const categoryCardColors: { [key: string]: string } = {
-    'Genel Deneme Sınavları': 'hover:shadow-yellow-500/20 hover:border-yellow-500/50',
-    'Matematik': 'hover:shadow-red-500/20 hover:border-red-500/50',
-    'Fen Bilimleri': 'hover:shadow-orange-500/20 hover:border-orange-500/50',
-    'Türkçe': 'hover:shadow-amber-500/20 hover:border-amber-500/50',
-    'Sosyal Bilgiler': 'hover:shadow-cyan-500/20 hover:border-cyan-500/50',
-    'İngilizce': 'hover:shadow-blue-500/20 hover:border-blue-500/50',
-    'Serbest Etkinlikler': 'hover:shadow-purple-500/20 hover:border-purple-500/50',
-    'Diğer': 'hover:shadow-slate-500/20 hover:border-slate-500/50',
+const categoryThemes: { [key: string]: { color: string, bg: string } } = {
+    'Matematik': { color: 'text-red-400', bg: 'bg-red-500/10' },
+    'Fen Bilimleri': { color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    'Türkçe': { color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    'Sosyal Bilgiler': { color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+    'İngilizce': { color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    'Genel Deneme Sınavları': { color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    'Diğer': { color: 'text-slate-400', bg: 'bg-slate-500/10' },
 };
-const categoryIconColors: { [key: string]: string } = {
-    'Genel Deneme Sınavları': 'text-yellow-400 bg-yellow-400/10',
-    'Matematik': 'text-red-400 bg-red-400/10',
-    'Fen Bilimleri': 'text-orange-400 bg-orange-400/10',
-    'Türkçe': 'text-amber-400 bg-amber-400/10',
-    'Sosyal Bilgiler': 'text-cyan-400 bg-cyan-400/10',
-    'İngilizce': 'text-blue-400 bg-blue-400/10',
-    'Serbest Etkinlikler': 'text-purple-400 bg-purple-400/10',
-    'Diğer': 'text-slate-400 bg-slate-400/10',
-};
-
 
 export const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
@@ -74,21 +50,16 @@ export const getCategoryName = (test: Test): string => {
     return test.subject || 'Diğer';
 };
 
-// --- DESIGN SYSTEM: Glassmorphism ---
+// --- MODERN TASARIM DEĞİŞKENLERİ ---
 const glassColors = {
-    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
-    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
-    CARD_HOVER: "hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
-    INPUT_BG: "bg-slate-950/50 border-white/10 text-slate-100",
-    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10",
-    ACTIVE_MEMBER: "bg-indigo-600 border-indigo-500/50 text-white shadow-lg shadow-indigo-500/20",
-    INACTIVE_MEMBER: "bg-white/5 border-transparent text-slate-400 hover:text-white hover:bg-white/10",
-    TEXT_MUTED: "text-slate-400",
+    PAGE_BG: "bg-slate-900", 
+    HEADER_BG: "bg-slate-900/80 backdrop-blur-xl border-b border-white/5",
+    CARD_BG: "bg-white/[0.04] border border-white/[0.08] shadow-sm hover:bg-white/[0.06] transition-all duration-300",
 };
 
 export default function EducationPage() {
   const { toast } = useToast();
-  const { familyMembers, familyId } = useAuth();
+  const { familyMembers } = useAuth();
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   
   const [allTests, setAllTests] = React.useState<Test[]>([]);
@@ -128,19 +99,64 @@ export default function EducationPage() {
     return allTests.filter(t => t.studentId === selectedStudent.id);
   }, [selectedStudent, allTests]);
   
-  const overallStats = React.useMemo(() => {
-    const evaluatedTests = tests.filter(t => t.status === 'Sonuçlandı');
-    const totalQuestions = evaluatedTests.reduce((sum, test) => sum + (test.questionCount || 0), 0);
-    const totalCorrect = evaluatedTests.reduce((sum, test) => sum + (test.correctAnswers || 0), 0);
+  // --- BEKLEYEN ÖDEVLERİ GRUPLAMA (Kategoriye Göre) ---
+  const groupedPendingAssignments = React.useMemo(() => {
+      const groups: { [key: string]: Test[] } = {};
+      
+      // 1. Gruplama
+      tests
+        .filter(t => t.status === 'Atandı')
+        .forEach(t => {
+            const category = getCategoryName(t);
+            if (!groups[category]) groups[category] = [];
+            groups[category].push(t);
+        });
+
+      // 2. Her grup içinde tarihe göre sıralama (En yakın tarih en üstte)
+      Object.keys(groups).forEach(key => {
+          groups[key].sort((a, b) => {
+            const dateA = parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+            const dateB = parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+            return dateA.getTime() - dateB.getTime();
+          });
+      });
+
+      // 3. Grupları öncelik sırasına göre dizme
+      const categoryOrder = ['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Genel Deneme Sınavları', 'Diğer'];
+      
+      return Object.entries(groups).sort(([a], [b]) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+      });
+  }, [tests]);
+
+  // --- İSTATİSTİKLER ---
+  const stats = React.useMemo(() => {
+    const completedTests = tests.filter(t => t.status === 'Sonuçlandı');
+    const totalCount = tests.length;
+    const completedCount = completedTests.length;
+    const pendingCount = totalCount - completedCount;
+
+    let totalQuestions = 0;
+    let totalCorrect = 0;
+    completedTests.forEach(test => {
+        totalQuestions += (test.questionCount || 0);
+        totalCorrect += (test.correctAnswers || 0);
+    });
     const successRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
 
     return {
-      testCount: evaluatedTests.length,
+      testCount: totalCount,
+      completedCount,
+      pendingCount,
       successRate: successRate,
     }
   }, [tests]);
   
-  // --- GÜNCELLENEN KISIM: İstatistik Hesaplama ---
   const testsByCategory = React.useMemo(() => {
     const categories: { [key: string]: { total: number, completed: number, correct: number, incorrectAnswers: number, questionCount: number } } = {};
 
@@ -159,7 +175,7 @@ export default function EducationPage() {
         }
     });
 
-    const categoryOrder = ['Genel Deneme Sınavları', 'Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Yanlışlarım', 'Diğer'];
+    const categoryOrder = ['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Genel Deneme Sınavları', 'Diğer'];
     
     return Object.entries(categories).sort(([a], [b]) => {
         const indexA = categoryOrder.indexOf(a);
@@ -172,53 +188,6 @@ export default function EducationPage() {
 
   }, [tests]);
   
-    const studyPlanStats = React.useMemo(() => {
-        if (!selectedStudent) return [];
-
-        const studentAssignments = studyAssignments.filter(sa => sa.studentId === selectedStudent.id);
-        const assignmentsByPlan = new Map<string, { completed: number, total: number }>();
-        
-        studentAssignments.forEach(sa => {
-            const current = assignmentsByPlan.get(sa.studyPlanId) || { completed: 0, total: 0 };
-            current.total++;
-            if (sa.status === 'completed') {
-                current.completed++;
-            }
-            assignmentsByPlan.set(sa.studyPlanId, current);
-        });
-
-        return studyPlans
-            .filter(plan => assignmentsByPlan.has(plan.id))
-            .map(plan => ({
-                plan,
-                progress: assignmentsByPlan.get(plan.id)!,
-            }));
-    }, [selectedStudent, studyPlans, studyAssignments]);
-
-
-  const handleStudyAssignmentStatusChange = async (assignment: StudyAssignment) => {
-    const newStatus = assignment.status === 'completed' ? 'assigned' : 'completed';
-    const updateData: Partial<StudyAssignment> = {
-      status: newStatus,
-      completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined,
-    };
-    try {
-      await updateStudyAssignment(assignment.id, updateData);
-      if (newStatus === 'completed') {
-        toast({
-          title: '✅ Harika İş!',
-          description: `"${assignment.topic}" konusunu tamamladın.`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Hata',
-        description: 'Görev durumu güncellenirken bir hata oluştu.',
-        variant: 'destructive',
-      });
-    }
-  };
-
     const allAssignments = React.useMemo(() => {
         const testAssignments = tests.map(t => ({
             id: t.id,
@@ -227,7 +196,7 @@ export default function EducationPage() {
             Icon: GraduationCap,
             startDate: parse(t.assignedDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
             endDate: parse(t.dueDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
-            isCompleted: t.status !== 'Atandı',
+            isCompleted: t.status !== 'Atandı' && t.status !== 'Değerlendirme Bekliyor',
         }));
         const studentStudyAssignments = studyAssignments.filter(sa => sa.studentId === selectedStudent?.id);
         const studyAssignmentsData = studentStudyAssignments.map(s => ({
@@ -251,524 +220,241 @@ export default function EducationPage() {
                 <div className={cn("border rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-7", glassColors.CARD_BG)}>
                     <div className="hidden md:grid md:grid-cols-7 col-span-full border-b border-white/5 bg-white/5">
                          {weekDays.map(day => (
-                            <div key={day.toISOString()} className="p-3 text-center border-r border-white/5 last:border-r-0">
-                                <p className="font-bold text-sm capitalize text-slate-300">{format(day, 'EEE', {locale: tr})}</p>
+                            <div key={day.toISOString()} className={cn("p-3 text-center border-r border-white/5 last:border-r-0", isToday(day) ? "bg-indigo-500/10 text-indigo-200" : "text-slate-400")}>
+                                <p className="font-bold text-sm capitalize">{format(day, 'EEE', {locale: tr})}</p>
+                                <p className={cn("text-xs mt-1 font-bold", isToday(day) ? "text-indigo-400" : "text-slate-500")}>{format(day, 'd MMM', {locale: tr})}</p>
                             </div>
                         ))}
                     </div>
-                     <div className="md:hidden col-span-full divide-y divide-white/5">
-                        {weekDays.map(day => (
-                           <div key={day.toISOString()} className="p-4 flex flex-row md:flex-col gap-4">
-                               <div className="w-20 text-center md:w-auto shrink-0 flex flex-col items-center justify-center bg-white/5 rounded-2xl p-2">
-                                    <p className="font-bold text-lg capitalize text-white">{format(day, 'd')}</p>
-                                    <p className="text-xs capitalize text-slate-400">{format(day, 'MMM', {locale: tr})}</p>
-                               </div>
-                               <div className="space-y-2 overflow-y-auto flex-grow">
-                                   {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
-                                       <div key={a.id} className={cn("p-3 rounded-xl text-sm border", a.type === 'test' ? 'bg-red-500/10 text-red-200 border-red-500/20' : 'bg-blue-500/10 text-blue-200 border-blue-500/20')}>
-                                           <p className="font-semibold truncate flex items-center gap-2"><a.Icon className="h-4 w-4 shrink-0"/>{a.title}</p>
-                                       </div>
-                                   ))}
-                                   {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).length === 0 && (
-                                       <p className="text-sm text-slate-500 italic">Plan yok.</p>
-                                   )}
-                               </div>
+                     <div className="hidden md:grid md:grid-cols-7 col-span-full min-h-[300px]">
+                         {weekDays.map(day => (
+                           <div key={day.toISOString()} className={cn("p-2 border-r border-white/5 last:border-r-0 flex flex-col gap-2 relative", isToday(day) && "bg-white/[0.02]")}>
+                               {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
+                                    <div key={a.id} className={cn("p-2 rounded-lg text-xs border backdrop-blur-sm transition-all hover:scale-105 cursor-default group", a.type === 'test' ? 'bg-red-500/10 text-red-200 border-red-500/20' : 'bg-blue-500/10 text-blue-200 border-blue-500/20')}>
+                                           <div className="flex items-center gap-1.5 mb-1">
+                                                <a.Icon className="h-3 w-3 shrink-0 opacity-70"/>
+                                                <span className="font-bold opacity-70 text-[10px] uppercase">{a.type === 'test' ? 'Test' : 'Ders'}</span>
+                                           </div>
+                                           <p className="font-medium truncate leading-tight">{a.title}</p>
+                                    </div>
+                               ))}
                            </div>
                         ))}
                      </div>
-                     <div className="hidden md:grid md:grid-cols-7 col-span-full">
-                         {weekDays.map(day => (
-                           <div key={day.toISOString()} className="p-3 border-r border-white/5 last:border-r-0 min-h-[12rem] flex flex-col gap-2 relative">
-                               {isToday(day) && <div className="absolute inset-0 bg-indigo-500/5 -z-10" />}
-                               <div className="w-full text-center mb-2">
-                                    <span className={cn("text-sm font-semibold px-2 py-1 rounded-md", isToday(day) ? "bg-indigo-500 text-white" : "text-slate-400")}>
-                                        {format(day, 'd MMM', { locale: tr })}
-                                    </span>
-                               </div>
-                               <div className="space-y-2 overflow-y-auto flex-grow custom-scrollbar">
-                                   {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
-                                       <div key={a.id} className={cn("p-2 rounded-lg text-xs border backdrop-blur-sm transition-all hover:scale-105 cursor-default", a.type === 'test' ? 'bg-red-500/10 text-red-200 border-red-500/20' : 'bg-blue-500/10 text-blue-200 border-blue-500/20')}>
-                                           <p className="font-semibold truncate flex items-center gap-1.5"><a.Icon className="h-3 w-3 shrink-0"/>{a.title}</p>
-                                       </div>
-                                   ))}
-                               </div>
-                           </div>
-                        ))}
-                    </div>
                  </div>
              )
         }
-        
-        if (viewMode === 'list') {
-            const now = new Date();
-            const pendingAssignments = allAssignments.filter(a => !a.isCompleted);
-            const completedAssignments = allAssignments.filter(a => a.isCompleted).sort((a,b) => compareDesc(a.endDate, b.endDate));
-
-            const pendingTestAssignments = pendingAssignments.filter(a => a.type === 'test');
-            const pendingStudyAssignments = pendingAssignments.filter(a => a.type === 'study');
-            
-            return (
-                 <div className="space-y-8">
-                    {pendingAssignments.length > 0 ? (
-                        <div>
-                             <h3 className="text-xl font-bold mb-4 text-slate-100 flex items-center gap-2"><Clock className="w-5 h-5 text-indigo-400"/> Devam Edenler ({pendingAssignments.length})</h3>
-                             <div className="grid md:grid-cols-2 gap-6">
-                                {pendingTestAssignments.length > 0 && (
-                                    <div className={cn("rounded-3xl p-5 space-y-4", glassColors.CARD_BG)}>
-                                            <h4 className="text-lg font-semibold text-slate-300 border-b border-white/5 pb-2">Testler ({pendingTestAssignments.length})</h4>
-                                            <div className="space-y-3">
-                                                {pendingTestAssignments.map(a => {
-                                                    const daysDiff = differenceInDays(a.endDate, now);
-                                                    const isDue = isPast(a.endDate) && !isToday(a.endDate);
-                                                    return (
-                                                        <div key={a.id} className="flex items-center p-3 gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                                            <div className="p-2 bg-red-500/20 rounded-lg text-red-400"><a.Icon className="h-4 w-4 shrink-0" /></div>
-                                                            <div className="flex-grow min-w-0">
-                                                                <p className="font-semibold text-slate-200 truncate">{a.title}</p>
-                                                                 <p className="text-xs text-slate-400">{format(a.endDate, 'dd MMMM yyyy', {locale: tr})}</p>
-                                                            </div>
-                                                            <div className="shrink-0">
-                                                                {isDue
-                                                                    ? <Badge variant="destructive" className="bg-red-500/20 text-red-300 border-red-500/50">Gecikti</Badge>
-                                                                    : isToday(a.endDate)
-                                                                    ? <Badge variant="outline" className="text-amber-400 border-amber-400 bg-amber-400/10">Bugün</Badge>
-                                                                    : <Badge variant="secondary" className="bg-slate-700 text-slate-300">{daysDiff + 1} gün</Badge>
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                    </div>
-                                )}
-                                {pendingStudyAssignments.length > 0 && (
-                                     <div className={cn("rounded-3xl p-5 space-y-4", glassColors.CARD_BG)}>
-                                            <h4 className="text-lg font-semibold text-slate-300 border-b border-white/5 pb-2">Konu Anlatımları ({pendingStudyAssignments.length})</h4>
-                                            <div className="space-y-3">
-                                            {pendingStudyAssignments.map(a => {
-                                                const daysDiff = differenceInDays(a.endDate, now);
-                                                const isDue = isPast(a.endDate) && !isToday(a.endDate);
-                                                return (
-                                                    <div key={a.id} className="flex items-center p-3 gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400"><a.Icon className="h-4 w-4 shrink-0" /></div>
-                                                        <div className="flex-grow min-w-0">
-                                                            <p className="font-semibold text-slate-200 truncate">{a.title}</p>
-                                                            <p className="text-xs text-slate-400">{format(a.endDate, 'dd MMMM yyyy', { locale: tr })}</p>
-                                                        </div>
-                                                        <div className="shrink-0">
-                                                            {isDue
-                                                                ? <Badge variant="destructive" className="bg-red-500/20 text-red-300 border-red-500/50">Gecikti</Badge>
-                                                                : isToday(a.endDate)
-                                                                ? <Badge variant="outline" className="text-amber-400 border-amber-400 bg-amber-400/10">Bugün</Badge>
-                                                                : <Badge variant="secondary" className="bg-slate-700 text-slate-300">{daysDiff + 1} gün</Badge>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
-                                            </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className={cn("p-10 text-center rounded-3xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center", glassColors.TEXT_MUTED)}>
-                            <CheckCircle className="w-12 h-12 mb-3 text-slate-600" />
-                            <p>Bekleyen görev yok. Harika!</p>
-                        </div>
-                    )}
-
-                     <div>
-                        <h3 className="text-xl font-bold mb-4 text-slate-100 flex items-center gap-2"><CheckSquare className="w-5 h-5 text-emerald-400"/> Tamamlananlar ({completedAssignments.length})</h3>
-                         <div className="space-y-2">
-                             {completedAssignments.length > 0 ? completedAssignments.map(a => (
-                                <div key={a.id} className="flex items-center p-3 gap-3 rounded-xl bg-slate-900/30 border border-white/5 opacity-60 hover:opacity-100 transition-opacity">
-                                    <div className="p-2 bg-white/5 rounded-lg text-slate-400"><a.Icon className="h-4 w-4 shrink-0" /></div>
-                                    <div className="flex-grow">
-                                        <p className="font-semibold text-slate-400 line-through decoration-slate-600">{a.title}</p>
-                                        <p className="text-xs text-slate-600">{format(a.endDate, 'dd MMMM yyyy', { locale: tr })}</p>
-                                    </div>
-                                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Tamamlandı</Badge>
-                                </div>
-                            )) : <div className={cn("p-6 text-center rounded-xl border border-dashed border-white/10 text-sm", glassColors.TEXT_MUTED)}>Henüz tamamlanan görev yok.</div>}
-                        </div>
-                    </div>
-                </div>
-            )
-        }
-        
         return null;
     }
 
-
-  const pendingTests = tests.filter(test => test.status === 'Atandı');
-
-  // Group Pending Tests by Category
-  const groupedPendingTests = React.useMemo(() => {
-    const groups: { [key: string]: Test[] } = {};
-    pendingTests.forEach(test => {
-        const category = getCategoryName(test);
-        if (!groups[category]) groups[category] = [];
-        groups[category].push(test);
-    });
-    return groups;
-  }, [pendingTests]);
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
+    <div className={cn("min-h-screen text-slate-100 font-sans relative overflow-hidden flex flex-col", glassColors.PAGE_BG)}>
         
-        {/* FIXED BACKGROUND */}
-        <div className="fixed inset-0 bg-slate-950 -z-50" />
-        
-        {/* AMBIENT BACKGROUND */}
+        {/* BACKGROUND ACCENTS */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-900/20 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-blue-900/20 rounded-full blur-[120px]" />
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[130px]" />
+            <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[130px]" />
         </div>
 
         {/* HEADER */}
-        <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
-            <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+        <div className={cn("sticky top-0 z-40 w-full", glassColors.HEADER_BG)}>
+            <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
-                         <GraduationCap className="w-6 h-6" />
+                    <div className="p-2 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/20">
+                         <GraduationCap className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                        <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">
-                            Eğitim & Sınav
-                        </h1>
-                        <p className="text-xs font-medium text-slate-400 mt-0.5">Akademik Takip</p>
-                    </div>
+                    <span className="font-bold text-lg tracking-tight hidden sm:inline-block">Eğitim Paneli</span>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Link href="/education/management" className="hidden sm:block">
-                        <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/10 rounded-xl">
-                            <Settings className="mr-2 h-4 w-4" />
-                            Yönetim
-                        </Button>
-                    </Link>
-                    <Link href="/education/management/questions">
-                        <Button className="rounded-xl px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20 border border-indigo-400/20 h-10">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            <span className="hidden sm:inline">Ödev Ata</span>
+                    {/* ÖĞRENCİ SEÇİMİ */}
+                    <div className="flex bg-white/5 p-1 rounded-full border border-white/10">
+                        {studentMembers.map((student) => {
+                            const isSelected = selectedStudent?.id === student.id;
+                            return (
+                                <button
+                                    key={student.id}
+                                    onClick={() => setSelectedStudent(student)}
+                                    className={cn(
+                                        "px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2",
+                                        isSelected 
+                                            ? "bg-indigo-600 text-white shadow-md" 
+                                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>
+                                    {student.name}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <Link href="/education/management" className="hidden md:block">
+                        <Button variant="ghost" size="icon" className="rounded-full text-slate-400 hover:text-white hover:bg-white/10">
+                            <Settings className="h-5 w-5" />
                         </Button>
                     </Link>
                 </div>
             </div>
         </div>
 
-        <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
+        <div className="flex-1 max-w-6xl mx-auto w-full p-4 space-y-8 relative z-10">
             
-            {/* Student Selector */}
-            <div className="flex items-center gap-3 overflow-x-auto pb-6 scrollbar-hide mb-2">
-                {studentMembers.map((student) => {
-                    const isSelected = selectedStudent?.id === student.id;
-                    return (
-                        <button
-                            key={student.id}
-                            onClick={() => setSelectedStudent(student)}
-                            className={cn(
-                                "relative flex items-center gap-2 px-1 pr-4 py-1 rounded-full transition-all duration-300 border select-none shrink-0",
-                                isSelected 
-                                    ? glassColors.ACTIVE_MEMBER
-                                    : glassColors.INACTIVE_MEMBER
-                            )}
-                        >
-                            <div 
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md ring-2 ring-white/10" 
-                                style={{ backgroundColor: student.color }}
-                            >
-                                {student.name.charAt(0).toUpperCase()}
-                            </div>
-                            <span className={cn("text-sm font-bold", isSelected ? "text-white" : "text-slate-400")}>
-                                {student.name}
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* View Tabs */}
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full space-y-6">
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 h-12 p-1 rounded-2xl bg-slate-900/50 border border-white/10 backdrop-blur-md">
-                    <TabsTrigger value="cards" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Genel Bakış</TabsTrigger>
-                    <TabsTrigger value="weekly" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Takvim</TabsTrigger>
-                    <TabsTrigger value="list" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Liste</TabsTrigger>
-                </TabsList>
+            {/* 1. HERO STATS (ÖZET KARTLAR) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
-                {(viewMode === 'weekly') && (
-                    <div className="flex items-center justify-center gap-4 mb-4 bg-white/5 w-fit mx-auto px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm">
-                        <Button variant="ghost" size="icon" onClick={() => setCurrentDate(d => addDays(d, -7))} className="text-slate-400 hover:text-white rounded-full hover:bg-white/10 h-8 w-8"><ChevronLeft className="h-4 w-4"/></Button>
-                        <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())} className="text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">Bugün</Button>
-                        <p className="font-bold text-center text-sm min-w-[140px] text-slate-200">
-                            {format(currentDate, 'dd MMMM yyyy', { locale: tr })}
-                        </p>
-                        <Button variant="ghost" size="icon" onClick={() => setCurrentDate(d => addDays(d, 7))} className="text-slate-400 hover:text-white rounded-full hover:bg-white/10 h-8 w-8"><ChevronRight className="h-4 w-4"/></Button>
-                    </div>
-                )}
-
-                {viewMode === 'cards' ? (
-                    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-                        
-                        {/* Overall Stats Card */}
-                        {selectedStudent && (
-                            <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl group">
-                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-700 opacity-90 transition-opacity group-hover:opacity-100" />
-                                <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all" />
-                                
-                                <div className="relative p-6 md:p-8 text-white">
-                                    <div className="flex flex-col md:flex-row justify-between gap-6">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                                    <BarChart3 className="w-6 h-6" />
-                                                </div>
-                                                <h2 className="text-2xl font-black tracking-tight">{selectedStudent.name}</h2>
-                                            </div>
-                                            <p className="text-indigo-100 max-w-md text-sm leading-relaxed opacity-90">
-                                                Genel başarı durumu ve tamamlanan testlerin özeti. İstatistiklerin detaylarına göz atın.
-                                            </p>
-                                            
-                                            <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="inline-block mt-2">
-                                                <Button variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 rounded-xl h-10 mt-2">
-                                                    Detaylı Analiz <ArrowRight className="h-4 w-4 ml-2"/>
-                                                </Button>
-                                            </Link>
-                                        </div>
-
-                                        <div className="flex gap-6 items-center bg-black/20 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                                            <div className="text-center px-4 border-r border-white/10">
-                                                <div className="text-4xl font-black">{overallStats.testCount}</div>
-                                                <div className="text-xs uppercase tracking-wider font-bold text-indigo-200 mt-1">Test</div>
-                                            </div>
-                                            <div className="text-center px-2">
-                                                <div className="flex items-baseline gap-1 justify-center">
-                                                    <span className="text-4xl font-black">%{overallStats.successRate.toFixed(0)}</span>
-                                                </div>
-                                                <div className="text-xs uppercase tracking-wider font-bold text-indigo-200 mt-1">Başarı</div>
-                                                <Progress value={overallStats.successRate} className="mt-2 h-1.5 w-24 bg-black/30" indicatorClassName="bg-emerald-400" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Categories Grid - GÜNCELLENMİŞ TASARIM */}
+                {/* TOPLAM KARTI (Tıklanabilir) */}
+                <Link href="/education/all-tests" className="block group">
+                    <div className={cn("p-5 rounded-3xl relative overflow-hidden group flex flex-col justify-between h-32 transition-all hover:bg-white/[0.07]", glassColors.CARD_BG)}>
+                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Layers className="w-24 h-24" /></div>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-300"><Layers className="w-6 h-6"/></div>
+                            <Badge variant="outline" className="border-indigo-500/30 text-indigo-300 bg-indigo-500/10">Toplam</Badge>
+                        </div>
                         <div>
-                            <h2 className="text-xl font-bold mb-5 flex items-center gap-2 text-slate-200">
-                                <LayoutGrid className="w-5 h-5 text-indigo-400" />
-                                Test Kategorileri
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                                <Link href="/education/all-tests" className="block h-full group">
-                                    <div className={cn("relative flex flex-col items-center justify-center h-full p-6 rounded-3xl transition-all border border-dashed border-slate-700 hover:border-slate-500 bg-slate-900/50 hover:bg-slate-800/50 group-hover:-translate-y-1")}>
-                                        <Library className="w-10 h-10 mb-3 text-slate-500 group-hover:text-slate-300 transition-colors" />
-                                        <span className="font-bold text-slate-400 group-hover:text-slate-200">Tümünü Gör</span>
-                                    </div>
-                                </Link>
-                                {testsByCategory.map(([category, data]) => {
-                                    const Icon = categoryIcons[category] || FileText;
-                                    const hoverColor = categoryCardColors[category] || 'hover:shadow-slate-500/20 hover:border-slate-500/50';
-                                    const iconStyle = categoryIconColors[category] || 'text-slate-400 bg-slate-400/10';
-                                    const pending = data.total - data.completed;
+                            <div className="text-3xl font-black text-white tracking-tighter">{stats.testCount}</div>
+                            <div className="text-xs text-slate-400 font-medium mt-1">Atanan Tüm Ödevler</div>
+                        </div>
+                    </div>
+                </Link>
 
-                                    // --- Yeni Hesaplamalar ---
-                                    const successRate = data.questionCount > 0 ? (data.correct / data.questionCount) * 100 : 0;
-                                    const emptyCount = Math.max(0, data.questionCount - (data.correct + data.incorrectAnswers));
-                                    
-                                    let progressColor = "bg-slate-500";
-                                    if (successRate >= 80) progressColor = "bg-emerald-500";
-                                    else if (successRate >= 50) progressColor = "bg-amber-500";
-                                    else if (data.completed > 0) progressColor = "bg-rose-500";
+                {/* BAŞARI KARTI (Tıklanabilir) */}
+                <Link href={`/education/stats?studentId=${selectedStudent?.id}`} className="block group">
+                    <div className={cn("p-5 rounded-3xl relative overflow-hidden group flex flex-col justify-between h-32 transition-all hover:bg-emerald-500/5 hover:border-emerald-500/20", glassColors.CARD_BG)}>
+                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><PieChart className="w-24 h-24 text-emerald-400" /></div>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-300"><CheckCircle2 className="w-6 h-6"/></div>
+                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-300 bg-emerald-500/10">Başarı</Badge>
+                        </div>
+                        <div>
+                            <div className="text-3xl font-black text-white tracking-tighter flex items-end gap-2">
+                                %{stats.successRate.toFixed(0)}
+                                <span className="text-sm text-slate-400 font-medium mb-1.5 group-hover:text-emerald-300/70 transition-colors">Ortalama</span>
+                            </div>
+                            <Progress value={stats.successRate} className="h-1.5 bg-slate-800 mt-2" indicatorClassName="bg-emerald-500" />
+                        </div>
+                    </div>
+                </Link>
 
-                                    return (
-                                        <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group h-full">
-                                            <div className={cn(
-                                                "relative flex flex-col h-full p-5 rounded-3xl transition-all border border-white/5 bg-white/5 backdrop-blur-md group-hover:-translate-y-1 overflow-hidden",
-                                                hoverColor
-                                            )}>
-                                                {/* Background Glow Efekti */}
-                                                <div className={cn("absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none", iconStyle.split(' ')[0].replace('text-', 'bg-'))} />
-
-                                                {pending > 0 && (
-                                                    <Badge className="absolute top-3 right-3 bg-rose-500 text-white border-0 h-5 px-1.5 text-[10px] font-bold shadow-lg shadow-rose-500/40 animate-pulse z-10">
-                                                        {pending} YENİ
-                                                    </Badge>
-                                                )}
-                                                
-                                                <div className="flex items-start justify-between mb-3 z-10 relative">
-                                                    <div className={cn("p-2 rounded-xl flex items-center justify-center", "bg-white/5")}>
-                                                        <div className={cn("p-1.5 rounded-lg", iconStyle)}>
-                                                            <Icon className="h-4 w-4" />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <h3 className="text-lg font-bold text-slate-200 mb-4 leading-tight group-hover:text-white transition-colors z-10 relative truncate">
-                                                    {category}
-                                                </h3>
-
-                                                {/* İstatistikler */}
-                                                <div className="mt-auto space-y-3 z-10 relative">
-                                                    
-                                                    {/* Başarı Çubuğu */}
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex justify-between items-end text-xs">
-                                                            <span className="text-slate-500 font-medium">Başarı</span>
-                                                            <span className={cn("font-bold", successRate >= 50 ? "text-slate-200" : "text-slate-400")}>
-                                                                %{successRate.toFixed(0)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-1.5 w-full bg-slate-950/50 rounded-full overflow-hidden">
-                                                            <div 
-                                                                className={cn("h-full rounded-full transition-all duration-500", progressColor)} 
-                                                                style={{ width: `${successRate}%` }} 
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Kompakt İstatistik Izgarası */}
-                                                    <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/5">
-                                                        {/* Doğru */}
-                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/10">
-                                                            <span className="text-[10px] text-emerald-500/70 font-bold uppercase">D</span>
-                                                            <span className="text-sm font-bold text-emerald-400">{data.correct}</span>
-                                                        </div>
-                                                        
-                                                        {/* Yanlış */}
-                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-rose-500/10 border border-rose-500/10">
-                                                            <span className="text-[10px] text-rose-500/70 font-bold uppercase">Y</span>
-                                                            <span className="text-sm font-bold text-rose-400">{data.incorrectAnswers}</span>
-                                                        </div>
-
-                                                        {/* Boş */}
-                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-slate-500/10 border border-slate-500/10">
-                                                            <span className="text-[10px] text-slate-500/70 font-bold uppercase">B</span>
-                                                            <span className="text-sm font-bold text-slate-400">{emptyCount}</span>
-                                                        </div>
-
-                                                        {/* Test */}
-                                                        <div className="flex flex-col items-center p-1 rounded-lg bg-indigo-500/10 border border-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors">
-                                                            <span className="text-[10px] text-indigo-400/70 font-bold uppercase">Test</span>
-                                                            <span className="text-sm font-bold text-indigo-300">{data.completed}</span>
-                                                        </div>
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    )
-                                })}
+                {/* BEKLEYEN KARTI (Tıklanabilir) */}
+                <Link href="/education/all-tests" className="block group">
+                    <div className={cn("p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between h-32 transition-all hover:border-amber-500/30 hover:bg-amber-500/5", glassColors.CARD_BG)}>
+                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><CircleDashed className="w-24 h-24 text-amber-400" /></div>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-300"><CircleDashed className="w-6 h-6"/></div>
+                            <div className="flex items-center gap-1 text-xs font-bold text-amber-300 group-hover:translate-x-1 transition-transform">
+                                Listeyi Gör <ArrowRight className="w-3 h-3"/>
                             </div>
                         </div>
+                        <div>
+                            <div className="text-3xl font-black text-white tracking-tighter">{stats.pendingCount}</div>
+                            <div className="text-xs text-slate-400 font-medium mt-1 group-hover:text-amber-200/70 transition-colors">Bekleyen Ödevler</div>
+                        </div>
+                    </div>
+                </Link>
+            </div>
 
-                        {/* Study Plans */}
-                        {studyPlanStats.length > 0 && (
-                            <div>
-                                <h2 className="text-xl font-bold mb-5 flex items-center gap-2 text-slate-200">
-                                    <BookHeart className="w-5 h-5 text-pink-400" />
-                                    Konu Anlatım Planları
-                                </h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {studyPlanStats.map(({ plan, progress }) => (
-                                        <Link key={plan.id} href={`/education/study`} className="block group">
-                                            <div className={cn("rounded-3xl p-6 transition-all border border-pink-500/20 bg-pink-500/5 hover:bg-pink-500/10 hover:border-pink-500/40 hover:-translate-y-1 group relative overflow-hidden")}>
-                                                <div className="absolute -right-4 -top-4 w-24 h-24 bg-pink-500/10 rounded-full blur-2xl group-hover:bg-pink-500/20 transition-all" />
-                                                
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    <div className="p-3 bg-pink-500/20 rounded-2xl text-pink-400">
-                                                        <BookOpen className="w-6 h-6" />
-                                                    </div>
-                                                    <h3 className="text-lg font-bold text-pink-100">{plan.title}</h3>
-                                                </div>
-                                                
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between text-xs font-bold text-pink-300 uppercase tracking-wider">
-                                                        <span>İlerleme</span>
-                                                        <span>{Math.round((progress.completed / progress.total) * 100)}%</span>
-                                                    </div>
-                                                    <Progress value={(progress.completed / progress.total) * 100} className="h-2 bg-pink-900/20" indicatorClassName="bg-pink-500" />
-                                                    <p className="text-xs text-pink-400/60 text-right pt-1">{progress.completed} / {progress.total} Konu</p>
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+            {/* 2. ANA İÇERİK (Tabs) */}
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full space-y-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-slate-200">Genel Bakış</h2>
+                    <TabsList className="bg-white/5 border border-white/5 p-1 h-10 rounded-full">
+                        <TabsTrigger value="cards" className="rounded-full px-4 text-xs h-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Dersler</TabsTrigger>
+                        <TabsTrigger value="weekly" className="rounded-full px-4 text-xs h-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Takvim</TabsTrigger>
+                    </TabsList>
+                </div>
+
+                {viewMode === 'cards' && (
+                    <div className="animate-in fade-in zoom-in-95 duration-500 space-y-8">
                         
-                        {/* Pending Tests - GROUPED BY CATEGORY */}
-                        {pendingTests.length > 0 && (
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400">
-                                        <Clock className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-200">Bekleyen Ödevler</h2>
-                                        <p className="text-xs text-slate-400">Derslere göre gruplandırılmış çözülecek testler.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-4">
-                                    {Object.entries(groupedPendingTests).sort().map(([category, categoryTests]) => {
+                        {/* --- YENİ: BEKLEYEN ÖDEVLER (GRUPLANMIŞ) --- */}
+                        {groupedPendingAssignments.length > 0 && (
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-1 flex items-center gap-2">
+                                    <Clock className="w-4 h-4"/> Sıradaki Görevler
+                                </h3>
+                                
+                                <div className="space-y-6">
+                                    {groupedPendingAssignments.map(([category, categoryTests]) => {
                                         const Icon = categoryIcons[category] || FileText;
-                                        const iconStyle = categoryIconColors[category] || 'text-slate-400 bg-slate-400/10';
+                                        const theme = categoryThemes[category] || categoryThemes['Diğer'];
 
                                         return (
-                                            <div key={category} className={cn("rounded-3xl p-5 border border-white/5", glassColors.CARD_BG)}>
-                                                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/5">
-                                                     <div className={cn("p-2 rounded-lg", iconStyle)}>
-                                                        <Icon className="w-5 h-5" />
+                                            <div key={category} className="space-y-3">
+                                                {/* Kategori Başlığı */}
+                                                <div className="flex items-center gap-2 px-1">
+                                                    <div className={cn("p-1.5 rounded-lg", theme.bg, theme.color)}>
+                                                        <Icon className="w-4 h-4" />
                                                     </div>
-                                                    <h3 className="font-bold text-slate-200 text-lg">{category}</h3>
-                                                    <Badge variant="secondary" className="ml-auto bg-white/10 text-white/80">{categoryTests.length}</Badge>
+                                                    <h4 className={cn("text-sm font-bold", theme.color.split(' ')[0])}>{category}</h4>
+                                                    <div className="h-px flex-1 bg-white/5 ml-2" />
                                                 </div>
 
-                                                <div className="grid gap-3">
+                                                {/* Test Kartları Grid */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                                     {categoryTests.map(test => {
                                                         const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                                                         const now = new Date();
                                                         const daysDiff = differenceInDays(dueDate, now);
-                                                        const isTestDue = isPast(dueDate) && !isToday(dueDate);
-                                                        
-                                                        // Ensure topic name is found if exists
+                                                        const isOverdue = isPast(dueDate) && !isToday(dueDate);
+                                                        const isDueToday = isToday(dueDate);
+
+                                                        // --- KONU ADINI BULMA ---
                                                         const allTopics = trackedBooks.flatMap(book => 
-                                                            (book.subjects || []).flatMap(subject => 
-                                                                (subject.topics || []).map(topic => ({...topic, subjectName: subject.name}))
-                                                            )
-                                                        ) || [];
+                                                            (book.subjects || []).flatMap(subject => subject.topics || [])
+                                                        );
                                                         const topicName = allTopics.find(t => t.id === test.topicId)?.name;
-                                                        
-                                                        // Don't repeat category name in title if it's redundant
-                                                        const displayName = topicName ? `${topicName} - ${test.title}` : test.title;
 
                                                         return (
-                                                            <div key={test.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                                                                <div className="flex-grow min-w-0">
-                                                                    <div className="flex items-start justify-between md:block">
-                                                                        <h3 className="font-semibold text-slate-200 text-sm md:text-base break-words min-w-0 pr-2">
-                                                                                {displayName}
-                                                                        </h3>
-                                                                        {isTestDue && <Badge variant="destructive" className="md:hidden h-5 text-[10px] shrink-0">Gecikti</Badge>}
+                                                            <Link key={test.id} href={`/education/${test.id}`} className="block group">
+                                                                <div className={cn(
+                                                                    "flex items-center gap-4 p-4 rounded-2xl border transition-all bg-white/[0.03] hover:bg-white/[0.06] hover:-translate-y-0.5",
+                                                                    isOverdue ? "border-rose-500/20 hover:border-rose-500/40" : "border-white/5 hover:border-white/10"
+                                                                )}>
+                                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5", theme.bg, theme.color)}>
+                                                                        <Icon className="w-5 h-5" />
                                                                     </div>
                                                                     
-                                                                    <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-500">
-                                                                        <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3"/> {test.dueDate}</span>
-                                                                        {!isTestDue && <span className="text-emerald-500 font-medium hidden md:inline-block">{daysDiff + 1} gün kaldı</span>}
-                                                                         {isTestDue && <Badge variant="destructive" className="hidden md:inline-flex h-5 text-[10px]">Gecikti</Badge>}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h4 className="font-bold text-sm text-slate-200 truncate group-hover:text-white transition-colors">
+                                                                            {test.title}
+                                                                        </h4>
+                                                                        
+                                                                        {/* --- YENİ EKLENEN KONU GÖSTERİMİ --- */}
+                                                                        {topicName && (
+                                                                            <div className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 w-fit">
+                                                                                <BookOpen className="w-3 h-3 mr-1.5 opacity-70"/>
+                                                                                {topicName}
+                                                                            </div>
+                                                                        )}
+
+                                                                        <div className="flex items-center gap-2 mt-2">
+                                                                            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">{category}</span>
+                                                                            <div className="h-1 w-1 rounded-full bg-slate-700"/>
+                                                                            
+                                                                            {isOverdue ? (
+                                                                                <div className="flex items-center gap-1 text-[10px] font-bold text-rose-400">
+                                                                                    <AlertCircle className="w-3 h-3"/>
+                                                                                    {Math.abs(daysDiff)} gün gecikti
+                                                                                </div>
+                                                                            ) : isDueToday ? (
+                                                                                <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
+                                                                                    <Timer className="w-3 h-3"/>
+                                                                                    Bugün son
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="text-[10px] font-medium text-emerald-400">
+                                                                                    {daysDiff} gün kaldı
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="p-2 rounded-full bg-white/5 text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                                                        <ArrowRight className="w-4 h-4"/>
                                                                     </div>
                                                                 </div>
-                                                                
-                                                                <Link href={`/education/${test.id}`} className="w-full md:w-auto shrink-0 mt-1 md:mt-0">
-                                                                    <Button size="sm" className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-500/20 text-xs md:text-sm h-9">
-                                                                        Teste Git <ArrowRight className="h-3.5 w-3.5 ml-2"/>
-                                                                    </Button>
-                                                                </Link>
-                                                            </div>
-                                                        );
+                                                            </Link>
+                                                        )
                                                     })}
                                                 </div>
                                             </div>
@@ -776,11 +462,58 @@ export default function EducationPage() {
                                     })}
                                 </div>
                             </div>
-                         )}
+                        )}
 
+                        {/* --- DERS KARTLARI (KOMPAKT) --- */}
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-1">Dersler ve İlerleme</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {testsByCategory.map(([category, data]) => {
+                                    const Icon = categoryIcons[category] || FileText;
+                                    const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                                    const pending = data.total - data.completed;
+                                    const successRate = data.questionCount > 0 ? (data.correct / data.questionCount) * 100 : 0;
+
+                                    return (
+                                        <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
+                                            <div className={cn("p-4 rounded-2xl flex items-center gap-4 transition-all h-full bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 group-hover:-translate-y-1")}>
+                                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 border border-white/5", theme.bg, theme.color)}>
+                                                    <Icon className="w-6 h-6" />
+                                                </div>
+                                                
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-center mb-1.5">
+                                                        <h3 className="font-bold text-sm text-slate-200 truncate">{category}</h3>
+                                                        {pending > 0 && <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold border border-white/5">{pending}</span>}
+                                                    </div>
+                                                    
+                                                    <div className="space-y-1">
+                                                        <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                            <div 
+                                                                className={cn("h-full rounded-full opacity-80", theme.bg.replace('/10','').replace('bg-', 'bg-'))} 
+                                                                style={{ width: `${successRate}%`, backgroundColor: 'currentColor' }} 
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-between text-[10px] text-slate-500 font-medium">
+                                                            <span>%{successRate.toFixed(0)} Başarı</span>
+                                                            <span>{data.completed}/{data.total}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
-                ) : renderCalendarView() }
+                )}
 
+                {viewMode === 'weekly' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {renderCalendarView()}
+                    </div>
+                )}
             </Tabs>
         </div>
     </div>
