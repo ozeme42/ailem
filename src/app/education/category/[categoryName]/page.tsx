@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -14,6 +15,8 @@ import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { getCategoryName } from "@/app/education/page";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parse, compareDesc } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -67,7 +70,17 @@ export default function CategoryDetailPage() {
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
 
   const pendingTests = filteredTests.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
-  const completedTests = filteredTests.filter(t => t.status === 'Sonuçlandı');
+  const completedTests = React.useMemo(() => {
+    return filteredTests
+      .filter(t => t.status === 'Sonuçlandı')
+      .sort((a, b) => {
+        // Assuming there will be an 'updatedAt' or similar field marking completion.
+        // For now, using dueDate as a fallback for sorting.
+        const dateA = a.updatedAt ? new Date(a.updatedAt) : parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        const dateB = b.updatedAt ? new Date(b.updatedAt) : parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        return compareDesc(dateA, dateB);
+      });
+  }, [filteredTests]);
 
 
   if (loading) {
@@ -245,7 +258,3 @@ function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: st
     );
 }
 
-
-    
-
-    
