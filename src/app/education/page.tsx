@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as React from "react";
+import * * as React from "react";
 import Link from "next/link";
 import { 
   PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, 
@@ -259,7 +259,7 @@ export default function EducationPage() {
                      <div className="md:hidden col-span-full divide-y divide-white/5">
                         {weekDays.map(day => (
                            <div key={day.toISOString()} className="p-4 flex flex-row md:flex-col gap-4">
-                               <div className="w-20 text-center md:text-left md:w-auto shrink-0 flex flex-col items-center justify-center bg-white/5 rounded-2xl p-2">
+                               <div className="w-20 text-center md:w-auto shrink-0 flex flex-col items-center justify-center bg-white/5 rounded-2xl p-2">
                                     <p className="font-bold text-lg capitalize text-white">{format(day, 'd')}</p>
                                     <p className="text-xs capitalize text-slate-400">{format(day, 'MMM', {locale: tr})}</p>
                                </div>
@@ -430,7 +430,7 @@ export default function EducationPage() {
         <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-xl flex items-center justify-center", "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20")}>
+                    <div className="p-2 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
                          <GraduationCap className="w-6 h-6" />
                     </div>
                     <div>
@@ -576,7 +576,7 @@ export default function EducationPage() {
 
                                     // --- Yeni Hesaplamalar ---
                                     const successRate = data.questionCount > 0 ? (data.correct / data.questionCount) * 100 : 0;
-                                    const emptyCount = Math.max(0, data.questionCount - (data.correct + data.wrong));
+                                    const emptyCount = Math.max(0, data.questionCount - (data.correct + data.incorrectAnswers));
                                     
                                     let progressColor = "bg-slate-500";
                                     if (successRate >= 80) progressColor = "bg-emerald-500";
@@ -599,8 +599,10 @@ export default function EducationPage() {
                                                 )}
                                                 
                                                 <div className="flex items-start justify-between mb-3 z-10 relative">
-                                                    <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110", iconStyle)}>
-                                                        <Icon className="w-6 h-6" />
+                                                    <div className={cn("p-2 rounded-xl flex items-center justify-center", "bg-white/5")}>
+                                                        <div className={cn("p-1.5 rounded-lg", iconStyle)}>
+                                                            <Icon className="h-4 w-4" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 
@@ -638,7 +640,7 @@ export default function EducationPage() {
                                                         {/* Yanlış */}
                                                         <div className="flex flex-col items-center p-1 rounded-lg bg-rose-500/10 border border-rose-500/10">
                                                             <span className="text-[10px] text-rose-500/70 font-bold uppercase">Y</span>
-                                                            <span className="text-sm font-bold text-rose-400">{data.wrong}</span>
+                                                            <span className="text-sm font-bold text-rose-400">{data.incorrectAnswers}</span>
                                                         </div>
 
                                                         {/* Boş */}
@@ -784,3 +786,5 @@ export default function EducationPage() {
     </div>
   );
 }
+
+    

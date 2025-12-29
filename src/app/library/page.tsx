@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SetReadingGoalForm } from '@/components/reading-goal-form';
-import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, endOfYear, eachMonthOfInterval, getYear, subMonths, endOfMonth } from 'date-fns';
+import { format, parseISO, subDays, isFuture, isPast, isToday, startOfWeek, endOfWeek, addDays, isSameDay, isWithinInterval, startOfMonth, endOfMonth, eachMonthOfInterval, getYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/page-header';
@@ -46,6 +46,8 @@ const glassColors = {
 const progressFormSchema = z.object({
   currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
 });
+
+// --- HELPER COMPONENTS ---
 
 function ProgressDialog({ open, onOpenChange, book, onSaveSession }: { 
     open: boolean,
@@ -78,7 +80,6 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
         }
 
         onSaveSession(book, { pagesRead: newPagesReadThisSession });
-        
         onOpenChange(false);
     };
 
@@ -114,6 +115,8 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
         </Dialog>
     );
 }
+
+// --- MAIN COMPONENT ---
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -230,7 +233,7 @@ export default function LibraryPage() {
   
   const readingGoals = selectedMember?.readingGoals;
   
-    const readingStatsByPeriod = React.useMemo(() => {
+  const readingStatsByPeriod = React.useMemo(() => {
     if (!selectedMember) return { weeklyChartData: [], monthlyPageData: [] };
   
     const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
@@ -260,7 +263,7 @@ export default function LibraryPage() {
       pagesRead: dailyPages.get(dayKey) || 0,
     }));
   
-    // Monthly Stats for Boxes
+    // Monthly Stats for Chart
     const currentYear = getYear(today);
     const monthsOfYear = eachMonthOfInterval({
         start: new Date(currentYear, 0, 1),
@@ -287,7 +290,6 @@ export default function LibraryPage() {
 
     return { weeklyChartData, monthlyPageData };
   }, [readingSessions, selectedMember]);
-
 
   const monthlyGoalProgress = React.useMemo(() => {
     if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0, pagesRead: 0, booksRead: 0 };
@@ -326,7 +328,7 @@ export default function LibraryPage() {
             <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-yellow-900/10 rounded-full blur-[100px]" />
         </div>
 
-        {/* HEADER (Dynamic Glass) */}
+        {/* HEADER */}
         <div className={cn("sticky top-0 z-40 py-4 sm:px-6 transition-all duration-300", glassColors.HEADER_BG)}>
             <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -368,7 +370,7 @@ export default function LibraryPage() {
                           : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-slate-200"
                       )}
                     >
-                         <div 
+                          <div 
                             className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm" 
                             style={{ backgroundColor: member.color }}
                         >
@@ -450,35 +452,32 @@ export default function LibraryPage() {
                             </Tabs>
                         </CardHeader>
                          <CardContent>
-                             {readingStatsPeriod === 'weekly' ? (
-                                <div className="h-40 w-full mt-4">
-                                     <ChartContainer config={{ pages: { label: "Sayfa", color: "#f59e0b" } }} className="h-full w-full">
-                                        <BarChart data={readingStatsByPeriod.weeklyChartData} margin={{ top: 20 }}>
-                                            <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                                            <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} content={<ChartTooltipContent hideLabel className="bg-slate-900 border-white/10 text-slate-100"/>} />
-                                            <Bar dataKey="pagesRead" fill="var(--color-pages)" radius={[4, 4, 4, 4]}>
-                                                 <LabelList 
-                                                    dataKey="pagesRead" 
-                                                    position="top" 
-                                                    offset={8} 
-                                                    className="fill-slate-400 font-bold" 
-                                                    fontSize={10} 
-                                                    formatter={(value: any) => value > 0 ? value : ""}
-                                                />
-                                            </Bar>
-                                        </BarChart>
-                                     </ChartContainer>
-                                </div>
-                             ) : (
-                                 <div className="grid grid-cols-4 gap-2 mt-4">
-                                     {readingStatsByPeriod.monthlyPageData.slice(0, 8).map((data, i) => (
-                                         <div key={i} className="bg-white/5 rounded-lg p-2 text-center border border-white/5">
-                                             <p className="text-[10px] font-bold text-slate-500 uppercase">{data.month}</p>
-                                             <p className="text-sm font-bold text-slate-200">{data.pagesRead}</p>
-                                         </div>
-                                     ))}
-                                 </div>
-                             )}
+                             <div className="h-40 w-full mt-4">
+                                <ChartContainer config={{ pages: { label: "Sayfa", color: "#f59e0b" } }} className="h-full w-full">
+                                    <BarChart 
+                                        data={readingStatsPeriod === 'weekly' ? readingStatsByPeriod.weeklyChartData : readingStatsByPeriod.monthlyPageData} 
+                                        margin={{ top: 20 }}
+                                    >
+                                        <XAxis 
+                                            dataKey={readingStatsPeriod === 'weekly' ? "day" : "month"} 
+                                            tickLine={false} 
+                                            axisLine={false} 
+                                            tick={{fill: '#94a3b8', fontSize: 10}} 
+                                        />
+                                        <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} content={<ChartTooltipContent hideLabel className="bg-slate-900 border-white/10 text-slate-100"/>} />
+                                        <Bar dataKey="pagesRead" fill="var(--color-pages)" radius={[4, 4, 4, 4]}>
+                                             <LabelList 
+                                                dataKey="pagesRead" 
+                                                position="top" 
+                                                offset={8} 
+                                                className="fill-slate-400 font-bold" 
+                                                fontSize={10} 
+                                                formatter={(value: any) => value > 0 ? value : ""}
+                                            />
+                                        </Bar>
+                                    </BarChart>
+                                </ChartContainer>
+                             </div>
                          </CardContent>
                     </Card>
                 </div>
@@ -575,76 +574,89 @@ export default function LibraryPage() {
   );
 }
 
+// --- SUB COMPONENTS ---
+
 function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpenProgressDialog }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onOpenProgressDialog: () => void }) {
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
-        <div className={cn("p-4 rounded-2xl flex flex-col sm:flex-row gap-5 transition-all group relative overflow-hidden", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
+        <div className={cn("p-4 rounded-2xl flex flex-col sm:flex-row gap-4 sm:gap-5 transition-all group relative overflow-hidden", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
              {/* Progress Bar Background */}
              <div className="absolute bottom-0 left-0 h-1 bg-amber-500/20 w-full">
                  <div className="h-full bg-amber-500 transition-all duration-1000" style={{ width: `${book.progress || 0}%` }}></div>
              </div>
 
-            <Image 
-                src={book.image} 
-                alt={book.title} 
-                width={100} 
-                height={150} 
-                className="w-24 sm:w-28 h-auto rounded-lg aspect-[2/3] object-cover shadow-lg mx-auto sm:mx-0 cursor-pointer hover:scale-105 transition-transform" 
-                onClick={onViewDetails}
-                data-ai-hint="book cover"
-            />
+            {/* Kitap Resmi */}
+            <div className="relative shrink-0 mx-auto sm:mx-0">
+                <Image 
+                    src={book.image} 
+                    alt={book.title} 
+                    width={100} 
+                    height={150} 
+                    className="w-24 sm:w-28 h-auto rounded-lg aspect-[2/3] object-cover shadow-lg cursor-pointer hover:scale-105 transition-transform" 
+                    onClick={onViewDetails}
+                    data-ai-hint="book cover"
+                />
+            </div>
+
+            {/* İçerik Alanı */}
             <div className="flex-grow flex flex-col min-w-0 py-1">
-                <div className="flex justify-between items-start">
-                    <div className="cursor-pointer" onClick={onViewDetails}>
-                        <h3 className={cn("font-bold text-lg leading-tight truncate text-slate-100 group-hover:text-amber-400 transition-colors")}>{book.title}</h3>
-                        <p className="text-sm text-slate-400 truncate">{book.author}</p>
+                {/* Üst Kısım: Başlık ve Yazar */}
+                <div className="mb-2 cursor-pointer" onClick={onViewDetails}>
+                    <h3 className={cn("font-bold text-lg leading-tight text-slate-100 group-hover:text-amber-400 transition-colors line-clamp-2")}>
+                        {book.title}
+                    </h3>
+                    <p className="text-sm text-slate-400 truncate mt-1">{book.author}</p>
+                </div>
+                
+                {/* Alt Kısım: İstatistikler ve Butonlar */}
+                <div className="mt-auto pt-2 space-y-3">
+                    
+                    {/* İlerleme Bilgisi */}
+                    <div>
+                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">İlerleme</p>
+                         <div className="flex items-baseline gap-1">
+                             <span className="text-2xl font-black text-amber-500">{book.progress || 0}%</span>
+                             <span className="text-sm text-slate-400 font-medium">({pagesRead} / {book.pageCount || '?'} syf)</span>
+                         </div>
                     </div>
-                    <div className="flex gap-1">
-                        <DropdownMenu>
+
+                    {/* Aksiyon Butonları Grubu */}
+                    <div className="flex flex-wrap items-center gap-2">
+                         {/* Oynat / Devam Et */}
+                         <Link href={`/library/session/${book.id}`} className="flex-1 sm:flex-none">
+                            <Button className="w-full sm:w-auto rounded-xl bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/20 h-10 px-4">
+                                <Play className="h-4 w-4 fill-current mr-2"/> Oku
+                            </Button>
+                        </Link>
+
+                        {/* Güncelle Butonu */}
+                         <Button size="icon" variant="outline" className={cn("h-10 w-10 rounded-xl border-white/10 text-slate-300 hover:text-white", glassColors.BUTTON_GLASS)} onClick={onOpenProgressDialog}>
+                             <Edit className="w-4 h-4"/>
+                         </Button>
+
+                         {/* Diğer İşlemler Menüsü (Mobilde kolay erişim için burada) */}
+                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-full">
+                                <Button variant="outline" size="icon" className={cn("h-10 w-10 rounded-xl border-white/10 text-slate-300 hover:text-white", glassColors.BUTTON_GLASS)}>
                                     <MoreVertical className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="bg-slate-900 border-white/10 text-slate-100" align="end">
-                                <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)} className="hover:bg-white/10 cursor-pointer">
+                            <DropdownMenuContent className="bg-slate-900 border-white/10 text-slate-100 mb-2" align="end">
+                                <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)} className="hover:bg-white/10 cursor-pointer h-10">
                                     <BookCheck className="mr-2 h-4 w-4 text-emerald-400"/> Kitabı Bitir
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-rose-400 focus:text-rose-300 hover:bg-white/10 cursor-pointer" onClick={() => onRemove(book.id)}>
+                                <DropdownMenuItem className="text-rose-400 focus:text-rose-300 hover:bg-white/10 cursor-pointer h-10" onClick={() => onRemove(book.id)}>
                                     <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
                 </div>
-                
-                <div className="mt-auto space-y-4 pt-4">
-                    <div className="flex items-end justify-between">
-                         <div>
-                             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">İlerleme</p>
-                             <div className="flex items-baseline gap-1">
-                                 <span className="text-2xl font-black text-amber-500">{book.progress || 0}%</span>
-                                 <span className="text-sm text-slate-400 font-medium">({pagesRead} / {book.pageCount || '?'} syf)</span>
-                             </div>
-                         </div>
-                         <div className="flex gap-2">
-                             <Button size="sm" variant="outline" className={cn("rounded-xl border-white/10 text-slate-300 hover:text-white", glassColors.BUTTON_GLASS)} onClick={onOpenProgressDialog}>
-                                 <Edit className="w-3 h-3 mr-2"/> Güncelle
-                             </Button>
-                             <Link href={`/library/session/${book.id}`}>
-                                <Button size="icon" className="rounded-xl bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/20">
-                                    <Play className="h-4 w-4 fill-current"/>
-                                </Button>
-                            </Link>
-                         </div>
-                    </div>
-                </div>
             </div>
         </div>
     )
 }
-
 
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     const [isOpen, setIsOpen] = React.useState(false);

@@ -1,6 +1,7 @@
+
 "use client";
 
-import * as React from "react";
+import * * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { onTestsUpdate, deleteTest, onTrackedBooksUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
@@ -31,7 +32,7 @@ export default function CategoryDetailPage() {
   const categoryName = decodeURIComponent(params.categoryName as string);
   const studentId = searchParams.get('studentId');
 
-  const { familyMembers } = useAuth();
+  const { familyMembers } } = useAuth();
   const [allTests, setAllTests] = React.useState<Test[]>([]);
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -243,3 +244,6 @@ function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: st
         </Card>
     );
 }
+
+
+    
