@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-// --- DESIGN SYSTEM: Glassmorphism ---
+// --- DESIGN SYSTEM: Glassmorphism Colors ---
 const glassColors = {
     HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
     CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
@@ -277,12 +278,22 @@ export default function StatsClient() {
                 <CardContent className="flex-1 min-h-[300px]">
                     {/*  - Replaced by Recharts BarChart */}
                     <ChartContainer config={barChartConfig} className="w-full h-[300px]">
-                        <BarChart data={stats.subjectStats} layout="vertical" margin={{ left: 0, right: 30, top: 10, bottom: 10 }}>
+                        <BarChart 
+                          data={stats.subjectStats} 
+                          layout="vertical" 
+                          margin={{ left: 0, right: 30, top: 10, bottom: 10 }}
+                          onClick={(data) => {
+                            if (data && data.activePayload && data.activePayload[0]) {
+                                const subjectName = data.activePayload[0].payload.name;
+                                router.push(`/education/category/${encodeURIComponent(subjectName)}?studentId=${studentId}`);
+                            }
+                          }}
+                        >
                             <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.1)" />
                             <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={100} tick={{fill: '#94a3b8', fontSize: 12}} />
                             <XAxis type="number" hide domain={[0, 100]} />
                             <ChartTooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} content={<ChartTooltipContent indicator="line" />} />
-                            <Bar dataKey="successRate" name="Başarı %" radius={[0, 4, 4, 0]} barSize={32}>
+                            <Bar dataKey="successRate" name="Başarı %" radius={[0, 4, 4, 0]} barSize={32} className="cursor-pointer">
                                 {stats.subjectStats.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={`hsl(${220 + (index * 20)}, 70%, 60%)`} />
                                 ))}
