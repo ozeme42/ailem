@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import * as React from "react";
@@ -8,7 +6,7 @@ import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { Test, TrackedBook } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, CalendarClock, CheckCircle, X as XIcon, MinusCircle, LayoutGrid, BarChart3, TrendingDown, TrendingUp, List, ChevronRight, Filter } from "lucide-react";
+import { ArrowLeft, Clock, CalendarClock, CheckCircle, X as XIcon, MinusCircle, LayoutGrid, BarChart3, TrendingDown, TrendingUp, List, ChevronRight, Filter, Book, Library, FileText, PenTool } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from 'next/link';
@@ -35,6 +33,17 @@ const glassColors = {
 type TestTypeFilter = 'all' | 'bank' | 'trackedBook' | 'exam' | 'json';
 type ViewMode = 'grid' | 'list';
 
+// Yardımcı: Test tipine göre ikon ve etiket döner
+const getSourceTypeInfo = (type: string) => {
+    switch (type) {
+        case 'trackedBook': return { icon: Book, label: 'Kitap' };
+        case 'bank': return { icon: Library, label: 'S. Bankası' };
+        case 'exam': return { icon: PenTool, label: 'Deneme' };
+        case 'json': return { icon: FileText, label: 'Yazılı' };
+        default: return { icon:  LayoutGrid, label: 'Diğer' };
+    }
+}
+
 export default function CategoryDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -50,7 +59,8 @@ export default function CategoryDetailPage() {
   
   const [activeTestType, setActiveTestType] = React.useState<TestTypeFilter>('all');
   const [selectedSubCategory, setSelectedSubCategory] = React.useState<string>('all');
-  const [viewMode, setViewMode] = React.useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = React.useState<ViewMode>('list');
+  const [selectedTopicId, setSelectedTopicId] = React.useState<string | null>(null);
 
   const student = React.useMemo(() => 
     studentId ? familyMembers.find(m => m.id === studentId) : null,
@@ -70,94 +80,163 @@ export default function CategoryDetailPage() {
     };
   }, []);
 
-  const { pendingTests, completedTests, topicStats } = React.useMemo(() => {
-    const filteredByCategory = allTests.filter(test => {
-        const testCategory = getCategoryName(test);
-        return testCategory === categoryName;
-    });
+  // Tip değiştiğinde alt filtreleri sıfırla
+  React.useEffect(() => {
+      setSelectedSubCategory('all');
+      setSelectedTopicId(null);
+  }, [activeTestType]);
 
+  // Alt kategori (Kaynak) değiştiğinde konu filtresini sıfırla
+  React.useEffect(() => {
+      setSelectedTopicId(null);
+  }, [selectedSubCategory]);
+
+
+  // --- VERİ İŞLEME VE ANALİZ ---
+  const { pendingTests, completedTests, displayStats, sourceOptions, isSourceViewMode } = React.useMemo(() => {
+    
+    // 1. Temel Filtreleme (Kategori ve Öğrenci)
+    const filteredByCategory = allTests.filter(test => getCategoryName(test) === categoryName);
     const filteredByStudent = studentId 
         ? filteredByCategory.filter(test => test.studentId === studentId)
         : filteredByCategory;
 
     const pending = filteredByStudent.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
-    
     const completedRaw = filteredByStudent.filter(t => t.status === 'Sonuçlandı');
 
-    const filteredCompleted = completedRaw.filter(test => {
-        if (activeTestType === 'all') return true;
+    // 2. KAYNAK BİLGİSİNİ TESTLERE EKLEME (Helper Logic)
+    // Her testin bir "Kaynağı" (Kitap adı, Banka adı, Deneme adı) ve "Konusu" vardır.
+    // Bunu standardize ediyoruz.
+    const enrichedTests = completedRaw.map(test => {
+        let sourceId = 'unknown';
+        let sourceName = 'Bilinmeyen Kaynak';
 
-        if (activeTestType === 'trackedBook') {
-            if (test.sourceType !== 'trackedBook') return false;
-            if (selectedSubCategory === 'all') return true;
-
-            // This is the corrected logic
-            const book = trackedBooks.find(b => b.id === selectedSubCategory);
-            if (!book) return false;
-
-            // Check if the test's sourceId matches the selected book
-            return test.sourceId === book.id;
-        }
-        
-        return test.sourceType === activeTestType;
-    });
-      
-    const completedSorted = filteredCompleted.sort((a, b) => {
-        const dateA = (a as any).updatedAt ? new Date((a as any).updatedAt) : parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-        const dateB = (b as any).updatedAt ? new Date((b as any).updatedAt) : parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-        return compareDesc(dateA, dateB);
-    });
-      
-    const statsByTopic: { [topicId: string]: { name: string, correct: number, incorrect: number, empty: number, total: number } } = {};
-    
-    const allTopicsFromBooks = trackedBooks.flatMap(book => 
-      (book.subjects || []).flatMap(s => 
-        (s.topics || []).map(t => ({...t, subjectName: s.name}))
-      )
-    );
-
-    filteredCompleted.forEach(test => {
-        if (test.topicId) {
-            if (!statsByTopic[test.topicId]) {
-                const topicInfo = allTopicsFromBooks.find(t => t.id === test.topicId);
-                statsByTopic[test.topicId] = { 
-                    name: topicInfo?.name || "Bilinmeyen Konu", 
-                    correct: 0, 
-                    incorrect: 0, 
-                    empty: 0, 
-                    total: 0 
-                };
+        if (test.sourceType === 'trackedBook') {
+            // Kitaplarda konu üzerinden kitabı buluyoruz
+            const book = trackedBooks.find(b => b.subjects.some(s => s.topics.some(t => t.id === test.topicId)));
+            if (book) {
+                sourceId = book.id;
+                sourceName = book.title;
             }
-            statsByTopic[test.topicId].correct += (test.correctAnswers || 0);
-            statsByTopic[test.topicId].incorrect += (test.incorrectAnswers || 0);
-            statsByTopic[test.topicId].empty += (test.emptyAnswers || 0);
-            statsByTopic[test.topicId].total += (test.questionCount || 0);
+        } else {
+            // Diğer tiplerde (Bank, Exam, Json) sourceId veya sourceName'i kullanıyoruz.
+            // Eğer sourceName yoksa title'ı kullan (Denemeler için genelde title kullanılır)
+            sourceId = test.sourceId || test.title; 
+            sourceName = (test as any).sourceName || test.title; 
         }
+
+        // Konu adını bul
+        let topicName = "Genel";
+        if (test.topicId) {
+            const allTopics = trackedBooks.flatMap(b => b.subjects.flatMap(s => s.topics));
+            const foundTopic = allTopics.find(t => t.id === test.topicId);
+            if (foundTopic) topicName = foundTopic.name;
+        }
+
+        return { ...test, _sourceId: sourceId, _sourceName: sourceName, _topicName: topicName };
     });
 
-    const calculatedTopicStats = Object.values(statsByTopic)
+    // 3. FİLTRE SEÇENEKLERİNİ OLUŞTURMA (Dropdown İçin)
+    // Sadece mevcut sekmedeki testlerin kaynaklarını topla
+    const uniqueSources = Array.from(new Set(
+        enrichedTests
+            .filter(t => activeTestType === 'all' || t.sourceType === activeTestType)
+            .map(t => JSON.stringify({ id: t._sourceId, name: t._sourceName }))
+    )).map(s => JSON.parse(s));
+
+
+    // 4. TESTLERİ FİLTRELEME
+    const filteredTests = enrichedTests.filter(test => {
+        // Tip Filtresi
+        if (activeTestType !== 'all' && test.sourceType !== activeTestType) return false;
+        
+        // Kaynak (SubCategory) Filtresi
+        if (selectedSubCategory !== 'all' && test._sourceId !== selectedSubCategory) return false;
+
+        return true;
+    });
+
+
+    // 5. İSTATİSTİK HESAPLAMA MODU
+    // Eğer belirli bir kaynak seçilmediyse (selectedSubCategory === 'all') -> KAYNAKLARI Listele
+    // Eğer bir kaynak seçildiyse -> KONULARI Listele
+    const isSourceMode = selectedSubCategory === 'all';
+    
+    const statsMap: { [key: string]: { id: string, name: string, type: string, correct: number, incorrect: number, empty: number, total: number } } = {};
+
+    filteredTests.forEach(test => {
+        let groupKey: string;
+        let groupName: string;
+        let groupType = isSourceMode ? 'source' : 'topic'; // Kartın tipini belirle
+
+        if (isSourceMode) {
+            // Kaynak Modu: Gruplama ID'si Kaynak ID'si
+            groupKey = test._sourceId;
+            groupName = test._sourceName;
+        } else {
+            // Konu Modu: Gruplama ID'si Topic ID (yoksa 'unknown')
+            groupKey = test.topicId || 'unknown';
+            groupName = test._topicName;
+        }
+
+        if (!statsMap[groupKey]) {
+            statsMap[groupKey] = { 
+                id: groupKey,
+                name: groupName,
+                type: groupType,
+                correct: 0, 
+                incorrect: 0, 
+                empty: 0, 
+                total: 0 
+            };
+        }
+        statsMap[groupKey].correct += (test.correctAnswers || 0);
+        statsMap[groupKey].incorrect += (test.incorrectAnswers || 0);
+        statsMap[groupKey].empty += (test.emptyAnswers || 0);
+        statsMap[groupKey].total += (test.questionCount || 0);
+    });
+
+    const calculatedStats = Object.values(statsMap)
         .map(stat => ({
             ...stat,
             successRate: stat.total > 0 ? (stat.correct / stat.total) * 100 : 0
         }))
         .sort((a, b) => b.successRate - a.successRate);
 
+
+    // 6. SON LİSTE FİLTRESİ (Konu Seçimi Varsa)
+    // Aşağıdaki tablo/liste, yukarıdaki "Konu" kartına tıklanırsa daha da filtrelenir.
+    const finalTestsList = filteredTests.filter(test => {
+        if (!isSourceMode && selectedTopicId) {
+            // Sadece konu modundaysak konu filtresini uygula
+            return (test.topicId || 'unknown') === selectedTopicId;
+        }
+        return true;
+    });
+
+    // Sıralama
+    const sortedFinalTests = finalTestsList.sort((a, b) => {
+        const dateA = (a as any).updatedAt ? new Date((a as any).updatedAt) : parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        const dateB = (b as any).updatedAt ? new Date((b as any).updatedAt) : parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        return compareDesc(dateA, dateB);
+    });
+
     return {
         pendingTests: pending,
-        completedTests: completedSorted,
-        topicStats: calculatedTopicStats
+        completedTests: sortedFinalTests,
+        displayStats: calculatedStats,
+        sourceOptions: uniqueSources,
+        isSourceViewMode: isSourceMode
     };
-  }, [allTests, categoryName, studentId, trackedBooks, activeTestType, selectedSubCategory]);
-
-  const subCategoryOptions = React.useMemo(() => {
-    if (activeTestType === 'trackedBook') {
-        return trackedBooks;
-    }
-    return [];
-  }, [activeTestType, trackedBooks]);
+  }, [allTests, categoryName, studentId, trackedBooks, activeTestType, selectedSubCategory, selectedTopicId]); // Dependencies
 
 
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
+  const getTopicName = (topicId?: string) => { // Table display helper
+      if(!topicId) return undefined;
+      const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+      return allTopics.find(t => t.id === topicId)?.name;
+  }
 
 
   if (loading) {
@@ -175,12 +254,6 @@ export default function CategoryDetailPage() {
              <Button variant="link" onClick={() => router.back()}>Geri Dön</Button>
         </div>
     );
-  }
-
-  const getTopicName = (topicId?: string) => {
-      if(!topicId) return undefined;
-      const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
-      return allTopics.find(t => t.id === topicId)?.name;
   }
 
   return (
@@ -252,12 +325,40 @@ export default function CategoryDetailPage() {
                      {/* ÜST İSTATİSTİK VE FİLTRE KARTI */}
                     <div className={cn("p-4 sm:p-6 rounded-3xl", glassColors.CARD_BG)}>
                         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-5">
-                            <h3 className="text-xl font-bold text-slate-200 flex items-center gap-3">
-                                <BarChart3 className="w-6 h-6 text-indigo-400"/>
-                                Konu Analizi
-                            </h3>
+                            <div className="flex flex-col gap-1">
+                                <h3 className="text-xl font-bold text-slate-200 flex items-center gap-3">
+                                    <BarChart3 className="w-6 h-6 text-indigo-400"/>
+                                    {isSourceViewMode ? "Kaynak Başarısı" : "Konu Analizi"}
+                                </h3>
+                                
+                                {/* Breadcrumb Navigasyonu */}
+                                {!isSourceViewMode && (
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <button 
+                                            onClick={() => setSelectedSubCategory('all')} 
+                                            className="text-slate-400 hover:text-white hover:underline flex items-center gap-1"
+                                        >
+                                            <ArrowLeft className="w-3 h-3"/> Tüm Kaynaklar
+                                        </button>
+                                        <span className="text-slate-600">/</span>
+                                        <span className="text-indigo-400 font-medium">
+                                            {sourceOptions.find(s => s.id === selectedSubCategory)?.name || "Seçili Kaynak"}
+                                        </span>
+                                        
+                                        {selectedTopicId && (
+                                           <>
+                                             <span className="text-slate-600">/</span>
+                                             <button onClick={() => setSelectedTopicId(null)} className="flex items-center gap-1 text-rose-400 hover:underline">
+                                                 <XIcon className="w-3 h-3"/> Temizle
+                                             </button>
+                                           </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="flex gap-2 items-center flex-wrap">
-                                <Tabs value={activeTestType} onValueChange={(value) => { setActiveTestType(value as TestTypeFilter); setSelectedSubCategory('all'); }} className="w-full sm:w-auto">
+                                <Tabs value={activeTestType} onValueChange={(value) => setActiveTestType(value as TestTypeFilter)} className="w-full sm:w-auto">
                                     <TabsList className="p-1 h-9 bg-white/5 border border-white/10 rounded-lg">
                                         <TabsTrigger value="all" className="text-xs h-7 px-3 rounded-md">Tümü</TabsTrigger>
                                         <TabsTrigger value="bank" className="text-xs h-7 px-3 rounded-md">S. Bankası</TabsTrigger>
@@ -266,40 +367,79 @@ export default function CategoryDetailPage() {
                                         <TabsTrigger value="json" className="text-xs h-7 px-3 rounded-md">Yazılı</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
-                                {activeTestType === 'trackedBook' && subCategoryOptions.length > 0 && (
+                                
+                                {/* Dinamik Kaynak Seçici */}
+                                {sourceOptions.length > 0 && (
                                     <Select value={selectedSubCategory} onValueChange={setSelectedSubCategory}>
                                         <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-lg bg-white/5 border-white/10 text-xs">
-                                            <SelectValue placeholder="Kitap Seçin" />
+                                            <SelectValue placeholder="Kaynak Seçin" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
-                                            <SelectItem value="all">Tüm Kitaplar</SelectItem>
-                                            {subCategoryOptions.map(book => (
-                                                <SelectItem key={book.id} value={book.id}>{book.title}</SelectItem>
+                                            <SelectItem value="all">Tüm Kaynaklar</SelectItem>
+                                            {sourceOptions.map(source => (
+                                                <SelectItem key={source.id} value={source.id}>{source.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 )}
                             </div>
                         </div>
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {topicStats.length > 0 ? topicStats.map(stat => {
+                            {displayStats.length > 0 ? displayStats.map(stat => {
                                 const TrendIcon = stat.successRate >= 75 ? TrendingUp : TrendingDown;
                                 const trendColor = stat.successRate >= 75 ? 'text-emerald-400' : 'text-rose-400';
+                                
+                                // Seçili durumu: Kaynak modunda seçim yok (drill-down var), Konu modunda toggle var.
+                                const isSelected = !isSourceViewMode && selectedTopicId === stat.id;
+                                const Icon = isSourceViewMode ? (activeTestType === 'all' ? LayoutGrid : getSourceTypeInfo(activeTestType).icon) : LayoutGrid;
+
                                 return (
-                                        <div key={stat.name} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                                        <div className="flex justify-between items-start mb-2">
-                                                <p className="font-bold text-slate-100 pr-4">{stat.name}</p>
-                                                <div className={cn("flex items-center text-sm font-bold gap-1", trendColor)}>
-                                                <TrendIcon className="w-4 h-4" />
-                                                %{stat.successRate.toFixed(0)}
+                                        <div 
+                                            key={stat.id} 
+                                            onClick={() => {
+                                                if (isSourceViewMode) {
+                                                    // Kaynak modundaysak -> İçine Gir (SubCategory'i set et)
+                                                    setSelectedSubCategory(stat.id);
+                                                } else {
+                                                    // Konu modundaysak -> Filtrele (Topic'i set et)
+                                                    setSelectedTopicId(prev => prev === stat.id ? null : stat.id);
+                                                }
+                                            }}
+                                            className={cn(
+                                                "p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group",
+                                                isSelected 
+                                                    ? "bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]" 
+                                                    : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                                            )}
+                                        >
+                                            {isSelected && <div className="absolute inset-0 bg-indigo-500/5 pointer-events-none" />}
+                                            <div className="flex justify-between items-start mb-2 relative z-10">
+                                                    <div className="flex items-center gap-2 pr-4">
+                                                        {isSourceViewMode && <Icon className="w-4 h-4 text-indigo-400 shrink-0"/>}
+                                                        <p className={cn("font-bold transition-colors line-clamp-1", isSelected ? "text-indigo-200" : "text-slate-100")}>{stat.name}</p>
+                                                    </div>
+                                                    <div className={cn("flex items-center text-sm font-bold gap-1", trendColor)}>
+                                                    <TrendIcon className="w-4 h-4" />
+                                                    %{stat.successRate.toFixed(0)}
+                                                    </div>
+                                            </div>
+                                            <Progress 
+                                                value={stat.successRate} 
+                                                className={cn("h-2", isSelected ? "bg-slate-900/60" : "bg-slate-800")} 
+                                                indicatorClassName={cn(stat.successRate >= 75 ? 'bg-emerald-500' : 'bg-rose-500')}
+                                            />
+                                            <div className="flex justify-end gap-3 text-xs font-medium mt-2 text-slate-400 relative z-10">
+                                                    <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500"/> {stat.correct}D</span>
+                                                    <span className="flex items-center gap-1"><XIcon className="w-3 h-3 text-rose-500"/> {stat.incorrect}Y</span>
+                                                    <span className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-slate-500"/> {stat.empty}B</span>
+                                            </div>
+                                            {/* Drill-down göstergesi (Sadece Kaynak modunda) */}
+                                            {isSourceViewMode && (
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <ChevronRight className="w-5 h-5 text-slate-400" />
                                                 </div>
-                                        </div>
-                                        <Progress value={stat.successRate} className="h-2 bg-slate-800" indicatorClassName={cn(stat.successRate >= 75 ? 'bg-emerald-500' : 'bg-rose-500')}/>
-                                        <div className="flex justify-end gap-3 text-xs font-medium mt-2 text-slate-400">
-                                                <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500"/> {stat.correct}D</span>
-                                                <span className="flex items-center gap-1"><XIcon className="w-3 h-3 text-rose-500"/> {stat.incorrect}Y</span>
-                                                <span className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-slate-500"/> {stat.empty}B</span>
-                                        </div>
+                                            )}
                                         </div>
                                 )
                             }) : (
@@ -313,7 +453,22 @@ export default function CategoryDetailPage() {
                     {/* LİSTE / GRID GÖRÜNÜMÜ ALANI */}
                     <div className="space-y-4">
                     <div className="flex items-center justify-between px-2">
-                        <h3 className="text-xl font-bold text-slate-200">Tamamlanan Testler ({completedTests.length})</h3>
+                        <div className="flex flex-col">
+                            <h3 className="text-xl font-bold text-slate-200">Tamamlanan Testler ({completedTests.length})</h3>
+                            {/* Filtre Bilgisi Gösterimi */}
+                            <div className="flex gap-2 text-[10px] text-indigo-400 mt-1">
+                                {selectedSubCategory !== 'all' && (
+                                    <span className="bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                        Kaynak: {sourceOptions.find(s => s.id === selectedSubCategory)?.name}
+                                    </span>
+                                )}
+                                {selectedTopicId && (
+                                    <span className="bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                        Konu: {displayStats.find(s => s.id === selectedTopicId)?.name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                         
                         <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/10">
                             <Button 
@@ -340,8 +495,7 @@ export default function CategoryDetailPage() {
                             /* GRID VIEW */
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {completedTests.map((test) => {
-                                    const topicName = getTopicName(test.topicId);
-                                    return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                                    return <SingleStudentTestCard key={test.id} test={test} topicName={(test as any)._topicName} />
                                 })}
                             </div>
                         ) : (
@@ -351,7 +505,7 @@ export default function CategoryDetailPage() {
                                     <table className="w-full text-left border-collapse">
                                         <thead>
                                             <tr>
-                                                <th className={cn("p-4 font-semibold", glassColors.TABLE_HEADER)}>Test Adı &amp; Konu</th>
+                                                <th className={cn("p-4 font-semibold", glassColors.TABLE_HEADER)}>Test Adı & Konu</th>
                                                 <th className={cn("p-4 text-center font-semibold", glassColors.TABLE_HEADER)}>Tarih</th>
                                                 <th className={cn("p-4 text-center font-semibold", glassColors.TABLE_HEADER)}>Soru</th>
                                                 <th className={cn("p-4 text-center font-semibold text-emerald-500", glassColors.TABLE_HEADER)}>Doğru</th>
@@ -362,7 +516,6 @@ export default function CategoryDetailPage() {
                                         </thead>
                                         <tbody>
                                             {completedTests.map((test) => {
-                                                const topicName = getTopicName(test.topicId);
                                                 const dateStr = (test as any).updatedAt 
                                                     ? new Date((test as any).updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) 
                                                     : test.dueDate;
@@ -372,7 +525,14 @@ export default function CategoryDetailPage() {
                                                         <td className="p-4">
                                                             <div className="flex flex-col">
                                                                 <span className="font-bold text-slate-200 group-hover:text-white transition-colors text-sm sm:text-base">{test.title}</span>
-                                                                {topicName && <span className="text-xs text-slate-500 mt-0.5">{topicName}</span>}
+                                                                <div className="flex gap-2 items-center mt-0.5">
+                                                                     {selectedSubCategory === 'all' && (
+                                                                        <span className="text-[10px] text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 truncate max-w-[100px]">
+                                                                            {(test as any)._sourceName}
+                                                                        </span>
+                                                                     )}
+                                                                     <span className="text-xs text-slate-500">{(test as any)._topicName}</span>
+                                                                </div>
                                                             </div>
                                                         </td>
                                                         <td className="p-4 text-center text-sm text-slate-400 whitespace-nowrap">
@@ -485,6 +645,3 @@ function SingleStudentTestCard({ test, topicName }: { test: Test, topicName?: st
         </Card>
     );
 }
-
-
-    
