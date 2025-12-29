@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -6,7 +7,7 @@ import {
     PlusCircle, ArrowLeft, BookCopy, ClipboardList, 
     Settings, CheckCircle2, CircleDashed, PieChart, 
     FileText, BookMarked, Library, Ruler, TestTube2, Globe, 
-    MessageSquare, Gamepad2, FileJson, Layers 
+    MessageSquare, Gamepad2, FileJson, Layers, BookHeart 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Test } from "@/lib/data";
@@ -145,20 +146,12 @@ export default function EducationManagementPage() {
             </div>
 
             {/* 2. ARAÇLAR (Tek Satır - Kompakt Grid) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                {/* Tüm Ödevler - Küçültülmüş */}
-                <Link href="/education/all-tests" className="block group">
-                    <div className="h-24 flex flex-col items-center justify-center rounded-2xl border border-indigo-500/30 bg-indigo-600/10 hover:bg-indigo-600/20 transition-all cursor-pointer">
-                        <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                            <Library className="w-4 h-4 text-indigo-300" />
-                        </div>
-                        <span className="text-xs font-bold text-indigo-100">Tüm Ödevler</span>
-                    </div>
-                </Link>
-
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <QuickActionCard href="/education/all-tests" icon={Library} label="Tüm Ödevler" color="indigo" />
                 <QuickActionCard href="/education/management/questions" icon={PlusCircle} label="Soru Bankası" color="emerald" />
                 <QuickActionCard href="/education/management/practice-exams" icon={ClipboardList} label="Denemeler" color="amber" />
                 <QuickActionCard href="/education/books" icon={BookMarked} label="Kitap Takibi" color="blue" />
+                <QuickActionCard href="/education/management/study-plans" icon={BookHeart} label="Yol Haritaları" color="rose" />
                 <QuickActionCard href="/education/management/json-tests" icon={FileJson} label="Yazılılar" color="purple" />
             </div>
 
@@ -221,9 +214,10 @@ function QuickActionCard({ href, icon: Icon, label, color }: { href: string, ico
     const colorClasses: {[key:string]: string} = {
         emerald: "group-hover:text-emerald-400 group-hover:bg-emerald-500/10 text-emerald-500/50 bg-emerald-500/10",
         amber: "group-hover:text-amber-400 group-hover:bg-amber-500/10 text-amber-500/50 bg-amber-500/10",
-        pink: "group-hover:text-pink-400 group-hover:bg-pink-500/10 text-pink-500/50 bg-pink-500/10",
+        rose: "group-hover:text-rose-400 group-hover:bg-rose-500/10 text-rose-500/50 bg-rose-500/10",
         blue: "group-hover:text-blue-400 group-hover:bg-blue-500/10 text-blue-500/50 bg-blue-500/10",
         purple: "group-hover:text-purple-400 group-hover:bg-purple-500/10 text-purple-500/50 bg-purple-500/10",
+        indigo: "group-hover:text-indigo-400 group-hover:bg-indigo-500/10 text-indigo-500/50 bg-indigo-500/10",
     };
 
     return (
