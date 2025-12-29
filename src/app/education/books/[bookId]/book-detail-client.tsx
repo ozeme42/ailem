@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput, MinusCircle, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject, onTestsUpdate } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic, Test } from "@/lib/data";
@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 // --- DESIGN SYSTEM: Glassmorphism ---
@@ -34,6 +35,9 @@ const glassColors = {
     ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
     BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
     INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
+    TABLE_HEADER: "bg-white/5 text-slate-400 text-xs uppercase tracking-wider font-medium hover:bg-white/10 transition-colors select-none",
+    TABLE_ROW: "hover:bg-white/5 transition-colors border-b border-white/5 last:border-0",
+    FILTER_SELECT: "w-full sm:w-[180px] h-9 rounded-lg bg-white/5 border-white/10 text-xs text-slate-200 focus:ring-indigo-500/50"
 };
 
 type MistakeInfo = {
@@ -50,10 +54,14 @@ export default function BookDetailClient() {
   const { familyMembers } = useAuth();
 
   const [book, setBook] = useState<TrackedBook | null>(null);
-  const [bookTests, setBookTests] = useState<TrackedBookTest[]>([]); // Test definitions for the book
-  const [allAssignedTests, setAllAssignedTests] = useState<Test[]>([]); // Solved instances of tests
+  const [bookTests, setBookTests] = useState<TrackedBookTest[]>([]); 
+  const [allAssignedTests, setAllAssignedTests] = useState<Test[]>([]); 
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("contents");
+
+  // --- YENİ FİLTRE STATE'LERİ ---
+  const [mistakeFilterSubject, setMistakeFilterSubject] = useState<string>("all");
+  const [mistakeFilterTopic, setMistakeFilterTopic] = useState<string>("all");
 
   // Dialog states
   const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
@@ -89,6 +97,11 @@ export default function BookDetailClient() {
       unsubAllTests();
     };
   }, [bookId, bookTests]);
+
+  // Ders değişince Konu filtresini sıfırla
+  useEffect(() => {
+      setMistakeFilterTopic("all");
+  }, [mistakeFilterSubject]);
   
   const mistakeList = useMemo(() => {
     const mistakesBySubject: Record<string, Record<string, MistakeInfo[]>> = {};
@@ -123,6 +136,40 @@ export default function BookDetailClient() {
     }
     return mistakesBySubject;
   }, [allAssignedTests, bookTests, book]);
+
+  // --- TABLO VERİSİ VE FİLTRELEME ---
+  const { filteredMistakes, subjectOptions, topicOptions } = useMemo(() => {
+    // 1. Veriyi Düzleştir
+    const flatList: (MistakeInfo & { subjectName: string, topicName: string })[] = [];
+    Object.entries(mistakeList).forEach(([subjectName, topics]) => {
+        Object.entries(topics).forEach(([topicName, mistakes]) => {
+            mistakes.forEach(mistake => {
+                flatList.push({
+                    subjectName,
+                    topicName,
+                    ...mistake
+                });
+            });
+        });
+    });
+
+    // 2. Filtrele
+    const filtered = flatList.filter(m => {
+        if (mistakeFilterSubject !== 'all' && m.subjectName !== mistakeFilterSubject) return false;
+        if (mistakeFilterTopic !== 'all' && m.topicName !== mistakeFilterTopic) return false;
+        return true;
+    });
+
+    // 3. Dropdown Seçenekleri
+    const subjects = Array.from(new Set(flatList.map(m => m.subjectName))).sort();
+    const topics = Array.from(new Set(
+        flatList
+            .filter(m => mistakeFilterSubject === 'all' || m.subjectName === mistakeFilterSubject)
+            .map(m => m.topicName)
+    )).sort();
+
+    return { filteredMistakes: filtered, subjectOptions: subjects, topicOptions: topics };
+  }, [mistakeList, mistakeFilterSubject, mistakeFilterTopic]);
   
   const handleOpenTestDialog = (test: TrackedBookTest | null) => {
       setCurrentTest(test);
@@ -456,17 +503,38 @@ export default function BookDetailClient() {
                                                         <AccordionContent className="px-3 pb-3 pt-1 bg-black/20">
                                                             <div className="space-y-2 mt-2">
                                                                 {topicTests.map(test => {
+                                                                    const completedTests = allAssignedTests.filter(t => t.sourceType === 'trackedBook' && t.sourceId === test.id && t.status === 'Sonuçlandı');
+                                                                    const lastResult = completedTests.length > 0 ? completedTests[completedTests.length - 1] : null;
                                                                     const assignedCount = allAssignedTests.filter(t => t.sourceType === 'trackedBook' && t.sourceId === test.id).length;
+
+                                                                    let successRate = 0;
+                                                                    if (lastResult) {
+                                                                        const total = (lastResult.correctAnswers || 0) + (lastResult.incorrectAnswers || 0) + (lastResult.emptyAnswers || 0);
+                                                                        successRate = total > 0 ? ((lastResult.correctAnswers || 0) / total) * 100 : 0;
+                                                                    }
+
                                                                     return (
-                                                                        <div key={test.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-colors ml-2 group/test">
+                                                                        <div key={test.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-colors ml-2 group/test gap-3">
                                                                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                                                                 <Checkbox checked={selectedTests.includes(test.id)} onCheckedChange={() => toggleTestSelection(test.id)} className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500" />
                                                                                 <div className="flex flex-col min-w-0">
                                                                                     <p className="text-sm font-medium text-slate-200 truncate">{test.name}</p>
-                                                                                    <span className="text-[10px] text-slate-500">{test.questionCount} Soru {assignedCount > 0 && `• ${assignedCount} kişiye atandı`}</span>
+                                                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                                                        <span className="text-[10px] text-slate-500">{test.questionCount} Soru {assignedCount > 0 && `• ${assignedCount} kişiye atandı`}</span>
+                                                                                        {lastResult && (
+                                                                                            <Badge variant="outline" className={cn(
+                                                                                                "h-4 text-[9px] px-1.5 border-0 font-bold",
+                                                                                                successRate >= 80 ? "bg-emerald-500/20 text-emerald-400" :
+                                                                                                successRate >= 50 ? "bg-yellow-500/20 text-yellow-400" :
+                                                                                                "bg-rose-500/20 text-rose-400"
+                                                                                            )}>
+                                                                                                %{successRate.toFixed(0)} ({lastResult.correctAnswers}D - {lastResult.incorrectAnswers}Y)
+                                                                                            </Badge>
+                                                                                        )}
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
-                                                                            <div className="flex items-center gap-1 opacity-0 group-hover/test:opacity-100 transition-opacity">
+                                                                            <div className="flex items-center gap-1 opacity-0 group-hover/test:opacity-100 transition-opacity self-end sm:self-center">
                                                                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-white" onClick={() => { setCurrentSubject(subject); setCurrentTopic(topic); handleOpenTestDialog(test); }}><Edit className="h-3.5 w-3.5" /></Button>
                                                                                 <AlertDialog>
                                                                                     <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-rose-400"><Trash2 className="h-3.5 w-3.5" /></Button></AlertDialogTrigger>
@@ -497,9 +565,12 @@ export default function BookDetailClient() {
                     </Accordion>
                  </TabsContent>
                  
+                 {/* --- TABLO GÖRÜNÜMLÜ YANLIŞ ANALİZİ --- */}
                  <TabsContent value="mistakes" className="animate-in fade-in zoom-in-95 duration-300">
                       <div className={cn("rounded-2xl p-6 space-y-4", glassColors.CARD_BG)}>
-                          <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                          
+                          {/* HEAD & FILTERS */}
+                          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center pb-4 border-b border-white/10">
                             <div className="flex items-center gap-3">
                                 <ListX className="w-6 h-6 text-rose-400"/>
                                 <div>
@@ -507,50 +578,99 @@ export default function BookDetailClient() {
                                     <p className="text-sm text-slate-400">Çözülen testlerdeki yanlış cevapların dökümü.</p>
                                 </div>
                             </div>
-                            {Object.keys(mistakeList).length > 0 && (
-                                <Button variant="outline" className={glassColors.BUTTON_GLASS} onClick={handleDownloadMistakes}>
-                                    <FileOutput className="mr-2 h-4 w-4" /> İndir
-                                </Button>
-                            )}
+                            
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                {/* DERS FİLTRESİ */}
+                                {subjectOptions.length > 0 && (
+                                    <Select value={mistakeFilterSubject} onValueChange={setMistakeFilterSubject}>
+                                        <SelectTrigger className={glassColors.FILTER_SELECT}>
+                                            <div className="flex items-center gap-2">
+                                                <Filter className="w-3 h-3 text-slate-400" />
+                                                <span className="truncate">{mistakeFilterSubject === 'all' ? 'Tüm Dersler' : mistakeFilterSubject}</span>
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                            <SelectItem value="all">Tüm Dersler</SelectItem>
+                                            {subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+
+                                {/* KONU FİLTRESİ */}
+                                <Select value={mistakeFilterTopic} onValueChange={setMistakeFilterTopic} disabled={mistakeFilterSubject === 'all' && topicOptions.length === 0}>
+                                    <SelectTrigger className={cn(glassColors.FILTER_SELECT, mistakeFilterTopic === 'all' && "text-slate-400")}>
+                                        <span className="truncate">{mistakeFilterTopic === 'all' ? 'Tüm Konular' : mistakeFilterTopic}</span>
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                        <SelectItem value="all">Tüm Konular</SelectItem>
+                                        {topicOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+
+                                {Object.keys(mistakeList).length > 0 && (
+                                    <Button variant="outline" size="sm" className={cn("h-9", glassColors.BUTTON_GLASS)} onClick={handleDownloadMistakes}>
+                                        <FileOutput className="mr-2 h-4 w-4" /> İndir
+                                    </Button>
+                                )}
+                            </div>
                           </div>
-                           {Object.keys(mistakeList).length > 0 ? (
-                            <Accordion type="multiple" className="w-full space-y-3">
-                                {Object.entries(mistakeList).map(([subjectName, topics]) => (
-                                    <AccordionItem key={subjectName} value={subjectName} className="border-none rounded-xl bg-white/5 overflow-hidden">
-                                        <AccordionTrigger className="px-4 py-3 text-slate-200 hover:no-underline hover:bg-white/5">
-                                            {subjectName}
-                                        </AccordionTrigger>
-                                        <AccordionContent className="px-4 pb-4 pt-2">
-                                            <Accordion type="multiple" className="space-y-2">
-                                                {Object.entries(topics).map(([topicName, mistakes]) => (
-                                                    <AccordionItem key={topicName} value={topicName} className="border-none rounded-lg bg-black/20 overflow-hidden">
-                                                        <AccordionTrigger className="px-3 py-2 text-sm font-semibold text-slate-300 hover:no-underline hover:bg-black/20">
-                                                            {topicName}
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="px-3 pb-3 pt-1">
-                                                             <div className="pl-4 space-y-1">
-                                                                {mistakes.map((mistake, i) => {
-                                                                    const student = familyMembers.find(m => m.id === mistake.test.studentId);
-                                                                    return (
-                                                                    <div key={i} className="flex items-center justify-between text-xs p-2 rounded-md bg-rose-900/30">
-                                                                        <span className="font-medium text-slate-300">{mistake.testDefinition.name}, Soru: {mistake.questionNumber}</span>
-                                                                        {student && <Badge variant="destructive" className="bg-transparent border border-rose-400/30 text-rose-400">{student.name}</Badge>}
-                                                                    </div>
-                                                                )})}
-                                                             </div>
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                ))}
-                                            </Accordion>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
+
+                           {filteredMistakes.length > 0 ? (
+                            <div className="rounded-xl border border-white/10 overflow-hidden">
+                                <Table>
+                                    <TableHeader className="bg-white/5">
+                                        <TableRow className="border-white/5 hover:bg-transparent">
+                                            <TableHead className={glassColors.TABLE_HEADER}>Ders</TableHead>
+                                            <TableHead className={glassColors.TABLE_HEADER}>Konu</TableHead>
+                                            <TableHead className={glassColors.TABLE_HEADER}>Test Adı</TableHead>
+                                            <TableHead className={cn("text-center", glassColors.TABLE_HEADER)}>Soru No</TableHead>
+                                            <TableHead className={glassColors.TABLE_HEADER}>Öğrenci</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredMistakes.map((mistake, index) => {
+                                            const student = familyMembers.find(m => m.id === mistake.test.studentId);
+                                            return (
+                                                <TableRow key={index} className={glassColors.TABLE_ROW}>
+                                                    <TableCell className="font-medium text-slate-200">
+                                                        <Badge variant="outline" className="bg-slate-900/50 border-slate-700 text-slate-400">
+                                                            {mistake.subjectName}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-300 text-sm">
+                                                        <span className="text-indigo-400 font-medium">{mistake.topicName}</span>
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-400 text-sm">
+                                                        {mistake.testDefinition.name}
+                                                    </TableCell>
+                                                    <TableCell className="text-center font-bold text-white">
+                                                        {mistake.questionNumber}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {student && (
+                                                            <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                                                                <div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: student.color}}/>
+                                                                {student.name}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
                           ) : (
                              <div className="flex flex-col items-center justify-center py-10 text-center text-slate-500 space-y-3">
-                                <CheckCircle className="w-12 h-12 text-emerald-500"/>
-                                <p className="font-semibold text-lg text-slate-300">Harika!</p>
-                                <p>Bu kitaptan hiç yanlış soru bulunamadı.</p>
+                                {Object.keys(mistakeList).length > 0 ? (
+                                    <p>Seçilen kriterlere uygun yanlış bulunamadı.</p>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="w-12 h-12 text-emerald-500"/>
+                                        <p className="font-semibold text-lg text-slate-300">Harika!</p>
+                                        <p>Bu kitaptan hiç yanlış soru bulunamadı.</p>
+                                    </>
+                                )}
                             </div>
                           )}
                       </div>
