@@ -58,7 +58,6 @@ export default function CategoryDetailPage() {
         setLoading(false);
     }, false, 'assignedDate', 'desc');
     
-    // Only fetch trackedBooks if we might need them for filtering
     const unsubscribeTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
     
     return () => {
@@ -82,26 +81,37 @@ export default function CategoryDetailPage() {
     const completedRaw = filteredByStudent
       .filter(t => t.status === 'Sonuçlandı');
 
-    // Sub-filtering for topic analysis
     const analysisTests = completedRaw.filter(test => {
         if (activeTestType === 'all') return true;
         if (activeTestType === 'trackedBook' && selectedSubCategory !== 'all') {
-            return test.sourceType === 'trackedBook' && test.sourceId === selectedSubCategory;
+            const testBook = trackedBooks.find(b => b.subjects.some(s => s.topics.some(t => t.id === test.topicId)));
+            return testBook?.id === selectedSubCategory;
         }
+         // Fallback for other types or if 'all' books are selected
         return test.sourceType === activeTestType;
     });
       
     const completed = completedRaw.sort((a, b) => {
-        const dateA = a.updatedAt ? new Date(a.updatedAt) : parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-        const dateB = b.updatedAt ? new Date(b.updatedAt) : parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        const dateA = (a as any).updatedAt ? new Date((a as any).updatedAt) : parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        const dateB = (b as any).updatedAt ? new Date((b as any).updatedAt) : parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
         return compareDesc(dateA, dateB);
       });
       
-    // Konu Analizi
     const statsByTopic: { [topicId: string]: { name: string, correct: number, incorrect: number, empty: number, total: number } } = {};
-    const allTopicsFromBooks = trackedBooks.flatMap(book => book.subjects.flatMap(s => s.topics.map(t => ({...t, subjectName: s.name}))));
+    const allTopicsFromBooks = trackedBooks.flatMap(book => 
+      (book.subjects || []).flatMap(s => 
+        (s.topics || []).map(t => ({...t, subjectName: s.name}))
+      )
+    );
 
     analysisTests.forEach(test => {
+        const testBook = trackedBooks.find(b => b.subjects.some(s => s.topics.some(t => t.id === test.topicId)));
+        
+        // Ensure that for tracked books, we only consider tests from the selected book
+        if (activeTestType === 'trackedBook' && selectedSubCategory !== 'all' && testBook?.id !== selectedSubCategory) {
+            return;
+        }
+
         if (test.topicId) {
             if (!statsByTopic[test.topicId]) {
                 const topicInfo = allTopicsFromBooks.find(t => t.id === test.topicId);
@@ -136,12 +146,12 @@ export default function CategoryDetailPage() {
 
   const subCategoryOptions = React.useMemo(() => {
     if (activeTestType === 'trackedBook') {
-        const bookIdsInTests = new Set(allTests.filter(t => t.sourceType === 'trackedBook').map(t => t.sourceId));
-        return trackedBooks.filter(book => bookIdsInTests.has(book.id));
+        // Return all tracked books, not just those with tests.
+        return trackedBooks;
     }
     // Add other types like 'exam' here if needed
     return [];
-  }, [activeTestType, allTests, trackedBooks]);
+  }, [activeTestType, trackedBooks]);
 
 
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
@@ -188,7 +198,7 @@ export default function CategoryDetailPage() {
                         <ArrowLeft className="h-6 w-6" />
                     </Button>
                     <div className={cn("from-purple-500 to-indigo-600", glassColors.ICON_BOX)}>
-                         <LayoutGrid className="w-6 w-6 text-white" />
+                         <LayoutGrid className="w-6 h-6 text-white" />
                     </div>
                     <div>
                         <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none truncate max-w-[200px] sm:max-w-md">
