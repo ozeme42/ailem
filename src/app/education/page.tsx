@@ -8,7 +8,8 @@ import {
     XCircle, MinusCircle, Ruler, TestTube2, BookCopy, Globe, 
     MessageSquare, Gamepad2, ClipboardList, ArrowRight, BookHeart, 
     Calendar as CalendarIcon, ChevronLeft, ChevronRight, Layers, 
-    CircleDashed, PieChart, GraduationCap, LayoutGrid, List, AlertCircle, Timer, BookOpen
+    CircleDashed, PieChart, GraduationCap, LayoutGrid, List, AlertCircle, 
+    Timer, BookOpen, Plus, ChevronDown, Check, Library
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,19 @@ import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { onTestsUpdate, onStudyAssignmentsUpdate, onStudyPlansUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onStudyAssignmentsUpdate, onStudyPlansUpdate, onTrackedBooksUpdate, addStudyAssignment, updateStudyAssignment } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfDay, isWithinInterval, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // --- KATEGORİ AYARLARI ---
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -56,6 +65,7 @@ const glassColors = {
     PAGE_BG: "bg-slate-900", 
     HEADER_BG: "bg-slate-900/80 backdrop-blur-xl border-b border-white/5",
     CARD_BG: "bg-white/[0.04] border border-white/[0.08] shadow-sm hover:bg-white/[0.06] transition-all duration-300",
+    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
 };
 
 export default function EducationPage() {
@@ -99,49 +109,53 @@ export default function EducationPage() {
     if (!selectedStudent) return [];
     return allTests.filter(t => t.studentId === selectedStudent.id);
   }, [selectedStudent, allTests]);
-  
-  // --- BEKLEYEN ÖDEVLERİ GRUPLAMA (Kategoriye Göre) ---
-  const groupedPendingAssignments = React.useMemo(() => {
-      const groups: { [key: string]: Test[] } = {};
+
+  const assignments = React.useMemo(() => {
+      if (!selectedStudent) return [];
+      return studyAssignments.filter(s => s.studentId === selectedStudent.id);
+  }, [selectedStudent, studyAssignments]);
+
+  // --- ÖDEVLERİ KİTABA (PLAN'A) GÖRE GRUPLAMA ---
+  const assignmentsByBook = React.useMemo(() => {
+      const grouped: Record<string, { title: string, assignments: StudyAssignment[], total: number, completed: number }> = {};
       
-      // 1. Gruplama
-      tests
-        .filter(t => t.status === 'Atandı')
-        .forEach(t => {
+      assignments.forEach(assign => {
+          const plan = studyPlans.find(p => p.id === assign.studyPlanId);
+          if (!plan) return; // Eğer plan bulunamazsa bu atamayı atla
+
+          const groupKey = plan.id;
+          const groupTitle = plan.title;
+
+          if (!grouped[groupKey]) {
+              grouped[groupKey] = { title: groupTitle, assignments: [], total: 0, completed: 0 };
+          }
+
+          grouped[groupKey].assignments.push(assign);
+          grouped[groupKey].total++;
+          if (assign.status === 'completed') {
+              grouped[groupKey].completed++;
+          }
+      });
+
+      return Object.values(grouped).filter(g => g.total > 0).sort((a,b) => {
+          return (b.total - b.completed) - (a.total - a.completed);
+      });
+  }, [assignments, studyPlans]);
+  
+  // --- TESTLERİ GRUPLAMA ---
+  const groupedPendingTests = React.useMemo(() => {
+      const groups: { [key: string]: Test[] } = {};
+      tests.filter(t => t.status === 'Atandı').forEach(t => {
             const category = getCategoryName(t);
             if (!groups[category]) groups[category] = [];
             groups[category].push(t);
-        });
-
-      // 2. Her grup içinde tarihe göre sıralama (En yakın tarih en üstte)
-      Object.keys(groups).forEach(key => {
-          groups[key].sort((a, b) => {
-            const dateA = parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-            const dateB = parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-            return dateA.getTime() - dateB.getTime();
-          });
       });
-
-      // 3. Grupları öncelik sırasına göre dizme
-      const categoryOrder = ['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Genel Deneme Sınavları', 'Diğer'];
-      
-      return Object.entries(groups).sort(([a], [b]) => {
-        const indexA = categoryOrder.indexOf(a);
-        const indexB = categoryOrder.indexOf(b);
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.localeCompare(b);
-      });
+      return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [tests]);
 
   // --- İSTATİSTİKLER ---
   const stats = React.useMemo(() => {
     const completedTests = tests.filter(t => t.status === 'Sonuçlandı');
-    const totalCount = tests.length;
-    const completedCount = completedTests.length;
-    const pendingCount = totalCount - completedCount;
-
     let totalQuestions = 0;
     let totalCorrect = 0;
     completedTests.forEach(test => {
@@ -151,13 +165,38 @@ export default function EducationPage() {
     const successRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
 
     return {
-      testCount: totalCount,
-      completedCount,
-      pendingCount,
+      testCount: tests.length,
+      studyCount: assignments.length,
+      pendingCount: tests.filter(t => t.status !== 'Sonuçlandı').length + assignments.filter(s => s.status !== 'completed').length,
       successRate: successRate,
     }
-  }, [tests]);
+  }, [tests, assignments]);
   
+  // --- ACTIONS ---
+  const handleCompleteStudy = async (id: string, currentStatus: string) => {
+      const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+      await updateStudyAssignment(id, { status: newStatus as any });
+      toast({ title: newStatus === 'completed' ? "Tamamlandı" : "Geri Alındı", description: "Çalışma durumu güncellendi." });
+  };
+
+  const getStatusBadge = (assignment: StudyAssignment) => {
+    const dueDate = parseISO(assignment.dueDate);
+    if (assignment.status === 'completed') {
+        return <Badge variant="default" className="bg-green-600">Tamamlandı</Badge>
+    }
+    if (isPast(dueDate) && !isToday(dueDate)) {
+        return <Badge variant="destructive">Süresi Geçti</Badge>
+    }
+    if (isToday(dueDate)) {
+        return <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
+    }
+    return <Badge variant="secondary">Devam Ediyor</Badge>
+  }
+
+  // --- DERS LİSTESİ (Dropdown için) ---
+  const subjects = ['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Genel Deneme Sınavları', 'Diğer'];
+
+  // --- İSTATİSTİKLER (KATEGORİ BAZLI) ---
   const testsByCategory = React.useMemo(() => {
     const categories: { [key: string]: { total: number, completed: number, correct: number, incorrectAnswers: number, questionCount: number } } = {};
 
@@ -188,65 +227,65 @@ export default function EducationPage() {
     });
 
   }, [tests]);
-  
-    const allAssignments = React.useMemo(() => {
-        const testAssignments = tests.map(t => ({
-            id: t.id,
-            title: t.title,
-            type: 'test' as const,
-            Icon: GraduationCap,
-            startDate: parse(t.assignedDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
-            endDate: parse(t.dueDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
-            isCompleted: t.status !== 'Atandı' && t.status !== 'Değerlendirme Bekliyor',
-        }));
-        const studentStudyAssignments = studyAssignments.filter(sa => sa.studentId === selectedStudent?.id);
-        const studyAssignmentsData = studentStudyAssignments.map(s => ({
-            id: s.id,
-            title: s.topic,
-            type: 'study' as const,
-            Icon: BookHeart,
-            startDate: parseISO(s.startDate),
-            endDate: parseISO(s.dueDate),
-            isCompleted: s.status === 'completed',
-        }));
-        return [...testAssignments, ...studyAssignmentsData].sort((a,b) => compareAsc(a.startDate, b.startDate));
-    }, [tests, studyAssignments, selectedStudent]);
-    
-    const renderCalendarView = () => {
-        if (viewMode === 'weekly') {
-             const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-             const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
-             
-             return (
-                <div className={cn("border rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-7", glassColors.CARD_BG)}>
-                    <div className="hidden md:grid md:grid-cols-7 col-span-full border-b border-white/5 bg-white/5">
-                         {weekDays.map(day => (
-                            <div key={day.toISOString()} className={cn("p-3 text-center border-r border-white/5 last:border-r-0", isToday(day) ? "bg-indigo-500/10 text-indigo-200" : "text-slate-400")}>
-                                <p className="font-bold text-sm capitalize">{format(day, 'EEE', {locale: tr})}</p>
-                                <p className={cn("text-xs mt-1 font-bold", isToday(day) ? "text-indigo-400" : "text-slate-500")}>{format(day, 'd MMM', {locale: tr})}</p>
-                            </div>
-                        ))}
-                    </div>
-                     <div className="hidden md:grid md:grid-cols-7 col-span-full min-h-[300px]">
-                         {weekDays.map(day => (
-                           <div key={day.toISOString()} className={cn("p-2 border-r border-white/5 last:border-r-0 flex flex-col gap-2 relative", isToday(day) && "bg-white/[0.02]")}>
-                               {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
-                                    <div key={a.id} className={cn("p-2 rounded-lg text-xs border backdrop-blur-sm transition-all hover:scale-105 cursor-default group", a.type === 'test' ? 'bg-red-500/10 text-red-200 border-red-500/20' : 'bg-blue-500/10 text-blue-200 border-blue-500/20')}>
-                                           <div className="flex items-center gap-1.5 mb-1">
-                                                <a.Icon className="h-3 w-3 shrink-0 opacity-70"/>
-                                                <span className="font-bold opacity-70 text-[10px] uppercase">{a.type === 'test' ? 'Test' : 'Ders'}</span>
-                                           </div>
-                                           <p className="font-medium truncate leading-tight">{a.title}</p>
-                                    </div>
-                               ))}
-                           </div>
-                        ))}
-                     </div>
+
+  const allAssignments = React.useMemo(() => {
+    const testAssignments = tests.map(t => ({
+        id: t.id,
+        title: t.title,
+        type: 'test' as const,
+        Icon: GraduationCap,
+        startDate: parse(t.assignedDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
+        endDate: parse(t.dueDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
+        isCompleted: t.status !== 'Atandı' && t.status !== 'Değerlendirme Bekliyor',
+    }));
+    const studentStudyAssignments = studyAssignments.filter(sa => sa.studentId === selectedStudent?.id);
+    const studyAssignmentsData = studentStudyAssignments.map(s => ({
+        id: s.id,
+        title: s.topic,
+        type: 'study' as const,
+        Icon: BookHeart,
+        startDate: parseISO(s.startDate),
+        endDate: parseISO(s.dueDate),
+        isCompleted: s.status === 'completed',
+    }));
+    return [...testAssignments, ...studyAssignmentsData].sort((a,b) => compareAsc(a.startDate, b.startDate));
+  }, [tests, studyAssignments, selectedStudent]);
+
+  const renderCalendarView = () => {
+    if (viewMode === 'weekly') {
+         const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+         const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
+         
+         return (
+            <div className={cn("border rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-7", glassColors.CARD_BG)}>
+                <div className="hidden md:grid md:grid-cols-7 col-span-full border-b border-white/5 bg-white/5">
+                     {weekDays.map(day => (
+                        <div key={day.toISOString()} className={cn("p-3 text-center border-r border-white/5 last:border-r-0", isToday(day) ? "bg-indigo-500/10 text-indigo-200" : "text-slate-400")}>
+                            <p className="font-bold text-sm capitalize">{format(day, 'EEE', {locale: tr})}</p>
+                            <p className={cn("text-xs mt-1 font-bold", isToday(day) ? "text-indigo-400" : "text-slate-500")}>{format(day, 'd MMM', {locale: tr})}</p>
+                        </div>
+                    ))}
+                </div>
+                 <div className="hidden md:grid md:grid-cols-7 col-span-full min-h-[300px]">
+                     {weekDays.map(day => (
+                       <div key={day.toISOString()} className={cn("p-2 border-r border-white/5 last:border-r-0 flex flex-col gap-2 relative", isToday(day) && "bg-white/[0.02]")}>
+                           {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
+                                <div key={a.id} className={cn("p-2 rounded-lg text-xs border backdrop-blur-sm transition-all hover:scale-105 cursor-default group", a.type === 'test' ? 'bg-red-500/10 text-red-200 border-red-500/20' : 'bg-blue-500/10 text-blue-200 border-blue-500/20')}>
+                                       <div className="flex items-center gap-1.5 mb-1">
+                                            <a.Icon className="h-3 w-3 shrink-0 opacity-70"/>
+                                            <span className="font-bold opacity-70 text-[10px] uppercase">{a.type === 'test' ? 'Test' : 'Ders'}</span>
+                                       </div>
+                                       <p className="font-medium truncate leading-tight">{a.title}</p>
+                               </div>
+                           ))}
+                       </div>
+                    ))}
                  </div>
-             )
-        }
-        return null;
+             </div>
+         )
     }
+    return null;
+}
 
   return (
     <div className={cn("min-h-screen text-slate-100 font-sans relative overflow-hidden flex flex-col", glassColors.PAGE_BG)}>
@@ -268,7 +307,6 @@ export default function EducationPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* ÖĞRENCİ SEÇİMİ */}
                     <div className="flex bg-white/5 p-1 rounded-full border border-white/10">
                         {studentMembers.map((student) => {
                             const isSelected = selectedStudent?.id === student.id;
@@ -291,8 +329,8 @@ export default function EducationPage() {
                     </div>
 
                     <Link href="/education/management" className="hidden md:block">
-                        <Button variant="outline" className="rounded-full text-slate-300 hover:text-white hover:bg-white/10 border-white/10 bg-white/5">
-                            <Settings className="h-4 w-4 mr-2" /> Yönetim
+                        <Button variant="ghost" size="icon" className="rounded-full text-slate-400 hover:text-white hover:bg-white/10">
+                            <Settings className="h-5 w-5" />
                         </Button>
                     </Link>
                 </div>
@@ -301,10 +339,8 @@ export default function EducationPage() {
 
         <div className="flex-1 max-w-6xl mx-auto w-full p-4 space-y-8 relative z-10">
             
-            {/* 1. HERO STATS (ÖZET KARTLAR) */}
+            {/* 1. HERO STATS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* TOPLAM KARTI (Tıklanabilir) */}
                 <Link href="/education/all-tests" className="block group">
                     <div className={cn("p-5 rounded-3xl relative overflow-hidden group flex flex-col justify-between h-32 transition-all hover:bg-white/[0.07]", glassColors.CARD_BG)}>
                         <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Layers className="w-24 h-24" /></div>
@@ -319,7 +355,6 @@ export default function EducationPage() {
                     </div>
                 </Link>
 
-                {/* BAŞARI KARTI (Tıklanabilir) */}
                 <Link href={`/education/stats?studentId=${selectedStudent?.id}`} className="block group">
                     <div className={cn("p-5 rounded-3xl relative overflow-hidden group flex flex-col justify-between h-32 transition-all hover:bg-emerald-500/5 hover:border-emerald-500/20", glassColors.CARD_BG)}>
                         <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><PieChart className="w-24 h-24 text-emerald-400" /></div>
@@ -337,22 +372,18 @@ export default function EducationPage() {
                     </div>
                 </Link>
 
-                {/* BEKLEYEN KARTI (Tıklanabilir) */}
-                <Link href="/education/all-tests" className="block group">
-                    <div className={cn("p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between h-32 transition-all hover:border-amber-500/30 hover:bg-amber-500/5", glassColors.CARD_BG)}>
-                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><CircleDashed className="w-24 h-24 text-amber-400" /></div>
+                {/* BEKLEYEN ÖDEVLER KARTI (YENİ) */}
+                <div className={cn("p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between h-32 transition-all hover:border-amber-500/30 hover:bg-amber-500/5", glassColors.CARD_BG)}>
+                        <div className="absolute right-0 top-0 p-4 opacity-5"><CircleDashed className="w-24 h-24 text-amber-400" /></div>
                         <div className="flex justify-between items-start">
                             <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-300"><CircleDashed className="w-6 h-6"/></div>
-                            <div className="flex items-center gap-1 text-xs font-bold text-amber-300 group-hover:translate-x-1 transition-transform">
-                                Listeyi Gör <ArrowRight className="w-3 h-3"/>
-                            </div>
+                            <Badge variant="outline" className="border-amber-500/30 text-amber-300 bg-amber-500/10">Durum</Badge>
                         </div>
                         <div>
                             <div className="text-3xl font-black text-white tracking-tighter">{stats.pendingCount}</div>
-                            <div className="text-xs text-slate-400 font-medium mt-1 group-hover:text-amber-200/70 transition-colors">Bekleyen Ödevler</div>
+                            <div className="text-xs text-slate-400 font-medium mt-1">Bekleyen Ödevler</div>
                         </div>
                     </div>
-                </Link>
             </div>
 
             {/* 2. ANA İÇERİK (Tabs) */}
@@ -369,14 +400,14 @@ export default function EducationPage() {
                     <div className="animate-in fade-in zoom-in-95 duration-500 space-y-8">
                         
                         {/* --- YENİ: BEKLEYEN ÖDEVLER (GRUPLANMIŞ) --- */}
-                        {groupedPendingAssignments.length > 0 && (
+                        {groupedPendingTests.length > 0 && (
                             <div>
                                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-1 flex items-center gap-2">
                                     <Clock className="w-4 h-4"/> Sıradaki Görevler
                                 </h3>
                                 
                                 <div className="space-y-6">
-                                    {groupedPendingAssignments.map(([category, categoryTests]) => {
+                                    {groupedPendingTests.map(([category, categoryTests]) => {
                                         const Icon = categoryIcons[category] || FileText;
                                         const theme = categoryThemes[category] || categoryThemes['Diğer'];
 
@@ -507,6 +538,72 @@ export default function EducationPage() {
                                 })}
                             </div>
                         </div>
+
+                        {/* --- KONU ÇALIŞMALARI (KİTAP KARTI ŞEKLİNDE GRUPLU) - EN ALTA TAŞINDI --- */}
+                        {assignmentsByBook.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-2">
+                                    <BookHeart className="w-4 h-4"/> Konu Çalışmaları
+                                </h3>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {assignmentsByBook.map((bookGroup, idx) => {
+                                        const progress = (bookGroup.completed / bookGroup.total) * 100;
+                                        const isAllCompleted = bookGroup.completed === bookGroup.total;
+
+                                        return (
+                                            <div key={idx} className={cn("rounded-3xl border overflow-hidden transition-all bg-white/[0.03] border-white/5")}>
+                                                {/* KART BAŞLIĞI */}
+                                                <div className="p-5 border-b border-white/5 bg-white/[0.02]">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 rounded-xl bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                                                                <BookOpen className="w-6 h-6" />
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="font-bold text-lg text-slate-200">{bookGroup.title}</h3>
+                                                                <p className="text-xs text-slate-500">{bookGroup.completed} / {bookGroup.total} Tamamlandı</p>
+                                                            </div>
+                                                        </div>
+                                                        <Badge variant="outline" className={cn("border-0 font-bold", isAllCompleted ? "bg-emerald-500/10 text-emerald-400" : "bg-pink-500/10 text-pink-400")}>
+                                                            %{progress.toFixed(0)}
+                                                        </Badge>
+                                                    </div>
+                                                    <Progress value={progress} className="h-1.5 bg-slate-800" indicatorClassName={isAllCompleted ? "bg-emerald-500" : "bg-pink-500"} />
+                                                </div>
+
+                                                {/* ACCORDION LİSTESİ */}
+                                                <Accordion type="single" collapsible className="w-full">
+                                                    <AccordionItem value="items" className="border-none">
+                                                        <AccordionTrigger className="px-5 py-3 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-wider hover:no-underline hover:bg-white/5 transition-colors">
+                                                            Konuları Göster ({bookGroup.assignments.length})
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="px-3 pb-3 bg-black/20">
+                                                            <div className="space-y-1 mt-2">
+                                                                {bookGroup.assignments.map(assign => (
+                                                                    <div key={assign.id} className={cn("flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer hover:bg-white/5", assign.status === 'completed' ? "opacity-60" : "")} onClick={() => handleCompleteStudy(assign.id, assign.status)}>
+                                                                        <Checkbox checked={assign.status === 'completed'} className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className={cn("text-sm font-medium truncate", assign.status === 'completed' ? "text-emerald-200 line-through" : "text-slate-200")}>{assign.topic}</p>
+                                                                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">
+                                                                                <span className="font-medium">{assign.subject}</span>
+                                                                                <span>•</span>
+                                                                                <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> {assign.durationMinutes} dk</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        {assign.status === 'completed' && <Check className="w-4 h-4 text-emerald-500" />}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                </Accordion>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
