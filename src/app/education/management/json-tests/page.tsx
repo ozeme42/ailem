@@ -30,10 +30,11 @@ function JsonTestsSkeleton() {
           <Skeleton className="h-9 w-32 rounded-xl bg-white/10" />
        </div>
        <div className="flex-1 max-w-5xl mx-auto w-full p-6 space-y-4">
-          {[...Array(3)].map(i => (
+          {[...Array(3)].map((_, i) => (
              <Skeleton key={i} className="h-24 w-full rounded-2xl bg-white/5" />
           ))}
        </div>
     </div>
   );
 }
+
