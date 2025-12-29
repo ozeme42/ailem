@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -8,7 +7,7 @@ import { onTestsUpdate, deleteTest, onTrackedBooksUpdate } from "@/lib/dataServi
 import { useAuth } from "@/components/auth-provider";
 import { Test, TrackedBook } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, CalendarClock, Hourglass, CheckCircle, X as XIcon, MinusCircle, BookOpen, GraduationCap, LayoutGrid, BarChart3, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, Clock, CalendarClock, Hourglass, CheckCircle, X as XIcon, MinusCircle, BookOpen, GraduationCap, LayoutGrid, BarChart3, TrendingDown, TrendingUp, Filter } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from 'next/link';
@@ -18,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parse, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 // --- DESIGN SYSTEM: Glassmorphism ---
@@ -28,6 +28,9 @@ const glassColors = {
     BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
     INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
 };
+
+type TestTypeFilter = 'all' | 'bank' | 'trackedBook' | 'exam' | 'json';
+
 
 export default function CategoryDetailPage() {
   const router = useRouter();
@@ -42,6 +45,9 @@ export default function CategoryDetailPage() {
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [loading, setLoading] = React.useState(true);
   
+  const [activeTestType, setActiveTestType] = React.useState<TestTypeFilter>('all');
+  const [selectedSubCategory, setSelectedSubCategory] = React.useState<string>('all');
+
   const student = React.useMemo(() => 
     studentId ? familyMembers.find(m => m.id === studentId) : null,
   [familyMembers, studentId]);
@@ -51,11 +57,13 @@ export default function CategoryDetailPage() {
         setAllTests(tests);
         setLoading(false);
     }, false, 'assignedDate', 'desc');
-    const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
+    
+    // Only fetch trackedBooks if we might need them for filtering
+    const unsubscribeTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
     
     return () => {
         unsubscribeTests();
-        unsubTrackedBooks();
+        unsubscribeTrackedBooks();
     };
   }, []);
 
@@ -70,9 +78,20 @@ export default function CategoryDetailPage() {
         : filteredByCategory;
 
     const pending = filteredByStudent.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
-    const completed = filteredByStudent
-      .filter(t => t.status === 'Sonuçlandı')
-      .sort((a, b) => {
+    
+    const completedRaw = filteredByStudent
+      .filter(t => t.status === 'Sonuçlandı');
+
+    // Sub-filtering for topic analysis
+    const analysisTests = completedRaw.filter(test => {
+        if (activeTestType === 'all') return true;
+        if (activeTestType === 'trackedBook' && selectedSubCategory !== 'all') {
+            return test.sourceType === 'trackedBook' && test.sourceId === selectedSubCategory;
+        }
+        return test.sourceType === activeTestType;
+    });
+      
+    const completed = completedRaw.sort((a, b) => {
         const dateA = a.updatedAt ? new Date(a.updatedAt) : parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
         const dateB = b.updatedAt ? new Date(b.updatedAt) : parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
         return compareDesc(dateA, dateB);
@@ -82,7 +101,7 @@ export default function CategoryDetailPage() {
     const statsByTopic: { [topicId: string]: { name: string, correct: number, incorrect: number, empty: number, total: number } } = {};
     const allTopicsFromBooks = trackedBooks.flatMap(book => book.subjects.flatMap(s => s.topics.map(t => ({...t, subjectName: s.name}))));
 
-    completed.forEach(test => {
+    analysisTests.forEach(test => {
         if (test.topicId) {
             if (!statsByTopic[test.topicId]) {
                 const topicInfo = allTopicsFromBooks.find(t => t.id === test.topicId);
@@ -113,7 +132,16 @@ export default function CategoryDetailPage() {
         completedTests: completed,
         topicStats: calculatedTopicStats
     };
-  }, [allTests, categoryName, studentId, trackedBooks]);
+  }, [allTests, categoryName, studentId, trackedBooks, activeTestType, selectedSubCategory]);
+
+  const subCategoryOptions = React.useMemo(() => {
+    if (activeTestType === 'trackedBook') {
+        const bookIdsInTests = new Set(allTests.filter(t => t.sourceType === 'trackedBook').map(t => t.sourceId));
+        return trackedBooks.filter(book => bookIdsInTests.has(book.id));
+    }
+    // Add other types like 'exam' here if needed
+    return [];
+  }, [activeTestType, allTests, trackedBooks]);
 
 
   const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
@@ -160,7 +188,7 @@ export default function CategoryDetailPage() {
                         <ArrowLeft className="h-6 w-6" />
                     </Button>
                     <div className={cn("from-purple-500 to-indigo-600", glassColors.ICON_BOX)}>
-                         <LayoutGrid className="w-6 h-6 text-white" />
+                         <LayoutGrid className="w-6 w-6 text-white" />
                     </div>
                     <div>
                         <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none truncate max-w-[200px] sm:max-w-md">
@@ -204,37 +232,65 @@ export default function CategoryDetailPage() {
                 <TabsContent value="completed" className="mt-0 animate-in fade-in zoom-in-95 duration-300 space-y-8">
                      {completedTests.length > 0 ? (
                         <>
-                            {topicStats.length > 0 && (
-                                <div className={cn("p-6 rounded-3xl", glassColors.CARD_BG)}>
-                                     <h3 className="text-xl font-bold mb-5 text-slate-200 flex items-center gap-3">
-                                         <BarChart3 className="w-6 h-6 text-indigo-400"/>
-                                         Konu Analizi
-                                     </h3>
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                         {topicStats.map(stat => {
-                                            const TrendIcon = stat.successRate >= 75 ? TrendingUp : TrendingDown;
-                                            const trendColor = stat.successRate >= 75 ? 'text-emerald-400' : 'text-rose-400';
-                                            return (
-                                                 <div key={stat.name} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                         <p className="font-bold text-slate-100 pr-4">{stat.name}</p>
-                                                         <div className={cn("flex items-center text-sm font-bold gap-1", trendColor)}>
-                                                            <TrendIcon className="w-4 h-4" />
-                                                            %{stat.successRate.toFixed(0)}
-                                                         </div>
-                                                    </div>
-                                                    <Progress value={stat.successRate} className="h-2 bg-slate-800" indicatorClassName={cn(stat.successRate >= 75 ? 'bg-emerald-500' : 'bg-rose-500')}/>
-                                                    <div className="flex justify-end gap-3 text-xs font-medium mt-2 text-slate-400">
-                                                         <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500"/> {stat.correct}D</span>
-                                                         <span className="flex items-center gap-1"><XIcon className="w-3 h-3 text-rose-500"/> {stat.incorrect}Y</span>
-                                                         <span className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-slate-500"/> {stat.empty}B</span>
-                                                    </div>
-                                                 </div>
-                                            )
-                                         })}
-                                     </div>
-                                 </div>
-                            )}
+                            <div className={cn("p-4 sm:p-6 rounded-3xl", glassColors.CARD_BG)}>
+                                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-5">
+                                    <h3 className="text-xl font-bold text-slate-200 flex items-center gap-3">
+                                        <BarChart3 className="w-6 h-6 text-indigo-400"/>
+                                        Konu Analizi
+                                    </h3>
+                                    <div className="flex gap-2 items-center flex-wrap">
+                                        <Tabs value={activeTestType} onValueChange={(value) => { setActiveTestType(value as TestTypeFilter); setSelectedSubCategory('all'); }} className="w-full sm:w-auto">
+                                            <TabsList className="p-1 h-9 bg-white/5 border border-white/10 rounded-lg">
+                                                <TabsTrigger value="all" className="text-xs h-7 px-3 rounded-md">Tümü</TabsTrigger>
+                                                <TabsTrigger value="bank" className="text-xs h-7 px-3 rounded-md">S. Bankası</TabsTrigger>
+                                                <TabsTrigger value="trackedBook" className="text-xs h-7 px-3 rounded-md">Kitap</TabsTrigger>
+                                                <TabsTrigger value="exam" className="text-xs h-7 px-3 rounded-md">Deneme</TabsTrigger>
+                                                <TabsTrigger value="json" className="text-xs h-7 px-3 rounded-md">Yazılı</TabsTrigger>
+                                            </TabsList>
+                                        </Tabs>
+                                        {activeTestType === 'trackedBook' && subCategoryOptions.length > 0 && (
+                                            <Select value={selectedSubCategory} onValueChange={setSelectedSubCategory}>
+                                                <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-lg bg-white/5 border-white/10 text-xs">
+                                                    <SelectValue placeholder="Kitap Seçin" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                                    <SelectItem value="all">Tüm Kitaplar</SelectItem>
+                                                    {subCategoryOptions.map(book => (
+                                                        <SelectItem key={book.id} value={book.id}>{book.title}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {topicStats.length > 0 ? topicStats.map(stat => {
+                                        const TrendIcon = stat.successRate >= 75 ? TrendingUp : TrendingDown;
+                                        const trendColor = stat.successRate >= 75 ? 'text-emerald-400' : 'text-rose-400';
+                                        return (
+                                                <div key={stat.name} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                                                <div className="flex justify-between items-start mb-2">
+                                                        <p className="font-bold text-slate-100 pr-4">{stat.name}</p>
+                                                        <div className={cn("flex items-center text-sm font-bold gap-1", trendColor)}>
+                                                        <TrendIcon className="w-4 h-4" />
+                                                        %{stat.successRate.toFixed(0)}
+                                                        </div>
+                                                </div>
+                                                <Progress value={stat.successRate} className="h-2 bg-slate-800" indicatorClassName={cn(stat.successRate >= 75 ? 'bg-emerald-500' : 'bg-rose-500')}/>
+                                                <div className="flex justify-end gap-3 text-xs font-medium mt-2 text-slate-400">
+                                                        <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500"/> {stat.correct}D</span>
+                                                        <span className="flex items-center gap-1"><XIcon className="w-3 h-3 text-rose-500"/> {stat.incorrect}Y</span>
+                                                        <span className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-slate-500"/> {stat.empty}B</span>
+                                                </div>
+                                                </div>
+                                        )
+                                    }) : (
+                                        <div className="md:col-span-2 text-center py-10 text-slate-500 text-sm">
+                                            Bu filtre için analiz edilecek konu verisi bulunamadı.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
                              <div className="space-y-4">
                                 <h3 className="text-xl font-bold text-slate-200 px-2">Tamamlanan Testler</h3>
