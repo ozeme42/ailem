@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -290,8 +291,8 @@ export default function EducationPage() {
                     </div>
 
                     <Link href="/education/management" className="hidden md:block">
-                        <Button variant="ghost" size="icon" className="rounded-full text-slate-400 hover:text-white hover:bg-white/10">
-                            <Settings className="h-5 w-5" />
+                        <Button variant="outline" className="rounded-full text-slate-300 hover:text-white hover:bg-white/10 border-white/10 bg-white/5">
+                            <Settings className="h-4 w-4 mr-2" /> Yönetim
                         </Button>
                     </Link>
                 </div>
