@@ -8,7 +8,7 @@ import { onTestsUpdate, deleteTest, onTrackedBooksUpdate } from "@/lib/dataServi
 import { useAuth } from "@/components/auth-provider";
 import { Test, TrackedBook } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, CalendarClock, Hourglass, CheckCircle, X as XIcon, MinusCircle, BookOpen, GraduationCap, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Clock, CalendarClock, Hourglass, CheckCircle, X as XIcon, MinusCircle, BookOpen, GraduationCap, LayoutGrid, BarChart3, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from 'next/link';
@@ -17,6 +17,8 @@ import { getCategoryName } from "@/app/education/page";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parse, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { Progress } from "@/components/ui/progress";
+
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -57,30 +59,64 @@ export default function CategoryDetailPage() {
     };
   }, []);
 
-  const filteredTests = React.useMemo(() => {
-    return allTests.filter(test => {
+  const { pendingTests, completedTests, topicStats } = React.useMemo(() => {
+    const filteredByCategory = allTests.filter(test => {
         const testCategory = getCategoryName(test);
-        const categoryMatch = testCategory === categoryName;
-        const studentMatch = !studentId || test.studentId === studentId;
-        return categoryMatch && studentMatch;
+        return testCategory === categoryName;
     });
-  }, [allTests, categoryName, studentId]);
 
+    const filteredByStudent = studentId 
+        ? filteredByCategory.filter(test => test.studentId === studentId)
+        : filteredByCategory;
 
-  const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
-
-  const pendingTests = filteredTests.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
-  const completedTests = React.useMemo(() => {
-    return filteredTests
+    const pending = filteredByStudent.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
+    const completed = filteredByStudent
       .filter(t => t.status === 'Sonuçlandı')
       .sort((a, b) => {
-        // Assuming there will be an 'updatedAt' or similar field marking completion.
-        // For now, using dueDate as a fallback for sorting.
         const dateA = a.updatedAt ? new Date(a.updatedAt) : parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
         const dateB = b.updatedAt ? new Date(b.updatedAt) : parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
         return compareDesc(dateA, dateB);
       });
-  }, [filteredTests]);
+      
+    // Konu Analizi
+    const statsByTopic: { [topicId: string]: { name: string, correct: number, incorrect: number, empty: number, total: number } } = {};
+    const allTopicsFromBooks = trackedBooks.flatMap(book => book.subjects.flatMap(s => s.topics.map(t => ({...t, subjectName: s.name}))));
+
+    completed.forEach(test => {
+        if (test.topicId) {
+            if (!statsByTopic[test.topicId]) {
+                const topicInfo = allTopicsFromBooks.find(t => t.id === test.topicId);
+                statsByTopic[test.topicId] = { 
+                    name: topicInfo?.name || "Bilinmeyen Konu", 
+                    correct: 0, 
+                    incorrect: 0, 
+                    empty: 0, 
+                    total: 0 
+                };
+            }
+            statsByTopic[test.topicId].correct += (test.correctAnswers || 0);
+            statsByTopic[test.topicId].incorrect += (test.incorrectAnswers || 0);
+            statsByTopic[test.topicId].empty += (test.emptyAnswers || 0);
+            statsByTopic[test.topicId].total += (test.questionCount || 0);
+        }
+    });
+
+    const calculatedTopicStats = Object.values(statsByTopic)
+        .map(stat => ({
+            ...stat,
+            successRate: stat.total > 0 ? (stat.correct / stat.total) * 100 : 0
+        }))
+        .sort((a, b) => b.successRate - a.successRate);
+
+    return {
+        pendingTests: pending,
+        completedTests: completed,
+        topicStats: calculatedTopicStats
+    };
+  }, [allTests, categoryName, studentId, trackedBooks]);
+
+
+  const pageTitle = student ? `${student.name} - ${categoryName}` : `${categoryName} Testleri`;
 
 
   if (loading) {
@@ -165,15 +201,52 @@ export default function CategoryDetailPage() {
                     )}
                 </TabsContent>
                 
-                <TabsContent value="completed" className="mt-0 animate-in fade-in zoom-in-95 duration-300">
+                <TabsContent value="completed" className="mt-0 animate-in fade-in zoom-in-95 duration-300 space-y-8">
                      {completedTests.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {completedTests.map((test) => {
-                                const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
-                                const topicName = allTopics.find(t => t.id === test.topicId)?.name;
-                                return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
-                            })}
-                        </div>
+                        <>
+                            {topicStats.length > 0 && (
+                                <div className={cn("p-6 rounded-3xl", glassColors.CARD_BG)}>
+                                     <h3 className="text-xl font-bold mb-5 text-slate-200 flex items-center gap-3">
+                                         <BarChart3 className="w-6 h-6 text-indigo-400"/>
+                                         Konu Analizi
+                                     </h3>
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                         {topicStats.map(stat => {
+                                            const TrendIcon = stat.successRate >= 75 ? TrendingUp : TrendingDown;
+                                            const trendColor = stat.successRate >= 75 ? 'text-emerald-400' : 'text-rose-400';
+                                            return (
+                                                 <div key={stat.name} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                         <p className="font-bold text-slate-100 pr-4">{stat.name}</p>
+                                                         <div className={cn("flex items-center text-sm font-bold gap-1", trendColor)}>
+                                                            <TrendIcon className="w-4 h-4" />
+                                                            %{stat.successRate.toFixed(0)}
+                                                         </div>
+                                                    </div>
+                                                    <Progress value={stat.successRate} className="h-2 bg-slate-800" indicatorClassName={cn(stat.successRate >= 75 ? 'bg-emerald-500' : 'bg-rose-500')}/>
+                                                    <div className="flex justify-end gap-3 text-xs font-medium mt-2 text-slate-400">
+                                                         <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500"/> {stat.correct}D</span>
+                                                         <span className="flex items-center gap-1"><XIcon className="w-3 h-3 text-rose-500"/> {stat.incorrect}Y</span>
+                                                         <span className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-slate-500"/> {stat.empty}B</span>
+                                                    </div>
+                                                 </div>
+                                            )
+                                         })}
+                                     </div>
+                                 </div>
+                            )}
+
+                             <div className="space-y-4">
+                                <h3 className="text-xl font-bold text-slate-200 px-2">Tamamlanan Testler</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {completedTests.map((test) => {
+                                        const allTopics = trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+                                        const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                                        return <SingleStudentTestCard key={test.id} test={test} topicName={topicName} />
+                                    })}
+                                </div>
+                            </div>
+                        </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 m-auto max-w-lg w-full">
                             <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
