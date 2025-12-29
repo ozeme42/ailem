@@ -1,7 +1,7 @@
 
 "use client";
 
-import * * as React from "react";
+import * as React from "react";
 import Link from "next/link";
 import { 
   PlusCircle, BookOpen, Clock, FileText, Target, Trash2, Edit, CheckSquare, Settings, 
@@ -142,19 +142,19 @@ export default function EducationPage() {
   
   // --- GÜNCELLENEN KISIM: İstatistik Hesaplama ---
   const testsByCategory = React.useMemo(() => {
-    const categories: { [key: string]: { total: number, completed: number, correct: number, wrong: number, questionCount: number } } = {};
+    const categories: { [key: string]: { total: number, completed: number, correct: number, incorrectAnswers: number, questionCount: number } } = {};
 
     tests.forEach(test => {
         const categoryName = getCategoryName(test);
         if (!categories[categoryName]) {
-            categories[categoryName] = { total: 0, completed: 0, correct: 0, wrong: 0, questionCount: 0 };
+            categories[categoryName] = { total: 0, completed: 0, correct: 0, incorrectAnswers: 0, questionCount: 0 };
         }
         categories[categoryName].total++;
         
         if (test.status === 'Sonuçlandı') {
             categories[categoryName].completed++;
             categories[categoryName].correct += (test.correctAnswers || 0);
-            categories[categoryName].wrong += (test.incorrectAnswers || 0);
+            categories[categoryName].incorrectAnswers += (test.incorrectAnswers || 0);
             categories[categoryName].questionCount += (test.questionCount || 0);
         }
     });
@@ -786,5 +786,3 @@ export default function EducationPage() {
     </div>
   );
 }
-
-    
