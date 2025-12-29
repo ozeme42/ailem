@@ -17,26 +17,32 @@ import { useAuth } from "./auth-provider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-// --- DESIGN SYSTEM: FORCED DARK THEME ---
-// Not: Shadcn varsayılanlarını ezmek için '!' işaretini (important) ve text renklerini spesifik kullandık.
+// --- DESIGN SYSTEM: FORCE GLASS THEME ---
 const sidebarStyles = {
-    // !bg-slate-950 ile light modu eziyoruz.
-    BASE: "!bg-slate-950 border-r border-white/10 text-slate-200 transition-all duration-300",
-    HEADER: "border-b border-white/10 pb-4",
+    // !bg-slate-900/50: Rengi zorla yarı saydam yap
+    // backdrop-blur-xl: Arkasını bulanıklaştır (Buzlu cam)
+    // border-white/10: Kenarlıkları belirginleştir
+    BASE: "!bg-slate-900/80 backdrop-blur-2xl border-r border-white/10 shadow-2xl transition-all duration-300",
     
-    // Buton stilleri
-    ITEM_DEFAULT: "text-slate-400 hover:text-white hover:bg-white/10 data-[active=true]:bg-indigo-600 data-[active=true]:text-white transition-all duration-200",
-    ITEM_ACTIVE: "!bg-indigo-600 !text-white font-bold shadow-lg shadow-indigo-500/20 hover:!bg-indigo-500",
+    HEADER: "border-b border-white/5 pb-4",
     
-    // İkon kutusu
-    ICON_BOX: "bg-gradient-to-br from-indigo-600 to-violet-700 shadow-lg shadow-indigo-500/20",
+    // Menü öğeleri: Üzerine gelince hafif beyazlat
+    ITEM_DEFAULT: "text-slate-400 hover:text-white hover:bg-white/[0.08] transition-all duration-200",
     
-    // Alt menü stilleri
-    SUB_ITEM_DEFAULT: "text-slate-500 hover:text-slate-200 hover:bg-white/5",
+    // Aktif öğe: Parlak İndigo
+    ITEM_ACTIVE: "bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/20 hover:bg-indigo-500",
+    
+    // Logo Kutusu
+    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20",
+    
+    // Alt menü aktif
     SUB_ITEM_ACTIVE: "text-indigo-300 font-medium bg-indigo-500/10 border-l-2 border-indigo-500 pl-2",
     
-    // Bölüm Başlığı
-    SECTION_LABEL: "text-slate-600 font-bold text-[10px] uppercase tracking-wider px-3 py-2 mt-4 group-data-[collapsible=icon]:hidden transition-all"
+    // Alt menü pasif
+    SUB_ITEM_DEFAULT: "text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] border-l-2 border-transparent pl-2",
+
+    // Bölüm başlıkları
+    SECTION_LABEL: "text-slate-500 font-bold text-[10px] uppercase tracking-wider px-3 py-2 mt-4 opacity-80 group-data-[collapsible=icon]:hidden transition-all"
 };
 
 const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -99,22 +105,32 @@ export function AppSidebar() {
   const profileLink = user ? `/profile/${user.uid}` : `/login`;
 
   return (
-    <Sidebar collapsible="icon" className={cn("border-r-0 shadow-2xl group", sidebarStyles.BASE)}>
+    <Sidebar 
+        collapsible="icon" 
+        className={cn("border-r-0", sidebarStyles.BASE)}
+        // style override ile globals.css'i eziyoruz
+        style={
+            {
+                "--sidebar-background": "transparent",
+                backgroundColor: "rgba(15, 23, 42, 0.75)" // Slate 900 but transparent
+            } as React.CSSProperties
+        }
+    >
       
       {/* --- HEADER --- */}
       <SidebarHeader className={cn("px-4 py-5 h-[72px] flex justify-center", sidebarStyles.HEADER)}>
         <div className="flex items-center w-full justify-between group-data-[collapsible=icon]:justify-center">
             
-            {/* LOGO ALANI (Sadece açıkken görünür) */}
-            <div className={cn("flex items-center gap-3 transition-all duration-200", isCollapsed ? "hidden w-0 opacity-0" : "flex w-auto opacity-100")}>
+            {/* LOGO ALANI */}
+            <div className={cn("flex items-center gap-3 transition-all duration-300", isCollapsed ? "hidden w-0 opacity-0" : "flex w-auto opacity-100")}>
                 <div className={cn("p-2 rounded-xl flex items-center justify-center shrink-0", sidebarStyles.ICON_BOX)}>
                     <ChevronsRight className="text-white w-5 h-5" />
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                    <h2 className="text-lg font-black tracking-tight text-slate-100 leading-none whitespace-nowrap">
+                    <h2 className="text-lg font-black tracking-tight text-white leading-none whitespace-nowrap">
                         Ailem
                     </h2>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
                 </div>
             </div>
 
@@ -125,10 +141,10 @@ export function AppSidebar() {
                 size="icon" 
                 className={cn(
                     "h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all",
-                    isCollapsed && "h-10 w-10 bg-white/5 text-white hover:bg-indigo-600 fixed left-3 top-4 z-50 shadow-lg" // Kapalıyken sabit ve belirgin
+                    isCollapsed && "h-9 w-9 bg-white/10 text-white hover:bg-indigo-600 fixed left-4 top-5 z-50 shadow-lg border border-white/10 backdrop-blur-md"
                 )}
             >
-                {isCollapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
+                <PanelLeft className="w-5 h-5" />
                 <span className="sr-only">Menüyü Aç/Kapat</span>
             </Button>
         </div>
@@ -138,7 +154,6 @@ export function AppSidebar() {
       <SidebarContent className="px-3 py-4 custom-scrollbar">
         <SidebarMenu>
           {menuItems.map((item, index) => {
-            // Bölüm Başlıkları
             if (item.section) {
                 return (
                     <div key={index} className={sidebarStyles.SECTION_LABEL}>
@@ -147,7 +162,6 @@ export function AppSidebar() {
                 );
             }
 
-            // Normal Menü Öğeleri
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href || '') && !item.subItems);
             
             return (
@@ -169,7 +183,7 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                     </Link>
 
-                    {/* Alt Menüler (Sadece açıkken görünür) */}
+                    {/* Alt Menüler */}
                     {item.subItems && (
                         <SidebarMenuSub className="border-l-white/10 ml-5 pl-2 my-1 space-y-1 group-data-[collapsible=icon]:hidden">
                             {item.subItems.map(subItem => {
@@ -204,7 +218,6 @@ export function AppSidebar() {
       {/* --- FOOTER --- */}
       <SidebarFooter className="border-t border-white/5 p-4 bg-black/20 group-data-[collapsible=icon]:p-2">
         <SidebarMenu>
-            {/* Profil Linki */}
             <SidebarMenuItem>
                 <Link href={profileLink} legacyBehavior={false} passHref>
                     <SidebarMenuButton
@@ -231,7 +244,6 @@ export function AppSidebar() {
                 </Link>
             </SidebarMenuItem>
 
-            {/* Çıkış Yap */}
             <SidebarMenuItem>
                 <SidebarMenuButton 
                     onClick={logout}
