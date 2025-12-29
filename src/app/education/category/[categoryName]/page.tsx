@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -89,10 +90,13 @@ export default function CategoryDetailPage() {
         if (activeTestType === 'trackedBook') {
             if (test.sourceType !== 'trackedBook') return false;
             if (selectedSubCategory === 'all') return true;
-            
+
+            // This is the corrected logic
             const book = trackedBooks.find(b => b.id === selectedSubCategory);
-            const bookTestIds = book ? new Set(book.subjects.flatMap(s => s.topics.flatMap(t => t.id === test.topicId))) : new Set();
-            return bookTestIds.has(test.topicId);
+            if (!book) return false;
+
+            // Check if the test's sourceId matches the selected book
+            return test.sourceId === book.id;
         }
         
         return test.sourceType === activeTestType;
