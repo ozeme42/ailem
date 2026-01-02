@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -55,6 +56,9 @@ const categoryIconColors: { [key: string]: string } = {
 type TestTypeFilter = 'all' | 'bank' | 'trackedBook' | 'exam' | 'json';
 type ViewMode = 'grid' | 'list';
 type SortKey = 'title' | '_date' | 'status' | 'score' | 'studentId' | 'questionCount'; 
+type PaginationState = { [key in 'all' | 'pending' | 'completed']: number };
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AllTestsPage() {
     const { toast } = useToast();
@@ -65,6 +69,7 @@ export default function AllTestsPage() {
     const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
     
     // --- FİLTRELER ---
+    const [activeTab, setActiveTab] = React.useState<'all'|'pending'|'completed'>('all');
     const [activeTestType, setActiveTestType] = React.useState<TestTypeFilter>('all');
     const [selectedSubCategory, setSelectedSubCategory] = React.useState<string>('all'); // Kaynak (Source)
     const [selectedSubject, setSelectedSubject] = React.useState<string>('all'); // Ders (Subject)
@@ -73,6 +78,9 @@ export default function AllTestsPage() {
     const [viewMode, setViewMode] = React.useState<ViewMode>('list');
     const [sortKey, setSortKey] = React.useState<SortKey>('_date');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
+
+    const [pagination, setPagination] = React.useState<PaginationState>({ all: 1, pending: 1, completed: 1 });
+    const currentPage = pagination[activeTab];
 
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -123,7 +131,8 @@ export default function AllTestsPage() {
         allFilteredTests, 
         sourceOptions,
         subjectOptions,
-        topicOptions
+        topicOptions,
+        totalPages
     } = React.useMemo(() => {
         
         // 1. Veriyi Zenginleştir
@@ -225,9 +234,37 @@ export default function AllTestsPage() {
             allFilteredTests: sorted,
             sourceOptions: uniqueSources,
             subjectOptions: uniqueSubjects,
-            topicOptions: uniqueTopics
+            topicOptions: uniqueTopics,
+            totalPages: {
+                all: Math.ceil(sorted.length / ITEMS_PER_PAGE),
+                pending: Math.ceil(pending.length / ITEMS_PER_PAGE),
+                completed: Math.ceil(completed.length / ITEMS_PER_PAGE),
+            }
         };
     }, [tests, selectedStudents, activeTestType, selectedSubCategory, selectedSubject, selectedTopic, trackedBooks, sortKey, sortDirection]);
+
+    const handlePageChange = (direction: 'next' | 'prev') => {
+        setPagination(prev => {
+            const current = prev[activeTab];
+            const total = totalPages[activeTab];
+            if (direction === 'next' && current < total) {
+                return { ...prev, [activeTab]: current + 1 };
+            }
+            if (direction === 'prev' && current > 1) {
+                return { ...prev, [activeTab]: current - 1 };
+            }
+            return prev;
+        });
+    };
+    
+    // Filtre veya sekme değiştiğinde sayfayı sıfırla
+    React.useEffect(() => {
+        setPagination(prev => ({...prev, [activeTab]: 1}));
+    }, [activeTab, selectedStudents, activeTestType, selectedSubCategory, selectedSubject, selectedTopic]);
+    
+    const paginatedAll = allFilteredTests.slice((pagination.all - 1) * ITEMS_PER_PAGE, pagination.all * ITEMS_PER_PAGE);
+    const paginatedPending = pendingTests.slice((pagination.pending - 1) * ITEMS_PER_PAGE, pagination.pending * ITEMS_PER_PAGE);
+    const paginatedCompleted = completedTests.slice((pagination.completed - 1) * ITEMS_PER_PAGE, pagination.completed * ITEMS_PER_PAGE);
 
 
     return (
@@ -309,7 +346,7 @@ export default function AllTestsPage() {
 
             <div className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
                 
-                <Tabs defaultValue="all" className="w-full space-y-6">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full space-y-6">
                     {/* DURUM TABS */}
                     <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 h-12 p-1 rounded-2xl bg-slate-900/50 border border-white/10 backdrop-blur-md">
                         <TabsTrigger value="all" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Tümü ({allFilteredTests.length})</TabsTrigger>
@@ -418,7 +455,7 @@ export default function AllTestsPage() {
 
                     <TabsContent value="all" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                         <TestsListOrGrid 
-                            tests={allFilteredTests} 
+                            tests={paginatedAll} 
                             viewMode={viewMode} 
                             familyMembers={familyMembers} 
                             onDelete={handleDeleteTest}
@@ -426,11 +463,12 @@ export default function AllTestsPage() {
                             sortDirection={sortDirection}
                             onSort={handleSort}
                         />
+                         <PaginationControls currentPage={pagination.all} totalPages={totalPages.all} onPageChange={handlePageChange} />
                     </TabsContent>
                     
                     <TabsContent value="pending" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                         <TestsListOrGrid 
-                            tests={pendingTests} 
+                            tests={paginatedPending} 
                             viewMode={viewMode} 
                             familyMembers={familyMembers} 
                             onDelete={handleDeleteTest} 
@@ -439,11 +477,12 @@ export default function AllTestsPage() {
                             onSort={handleSort}
                             emptyMessage="Bekleyen ödev bulunamadı." 
                         />
+                         <PaginationControls currentPage={pagination.pending} totalPages={totalPages.pending} onPageChange={handlePageChange} />
                     </TabsContent>
                     
                     <TabsContent value="completed" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                         <TestsListOrGrid 
-                            tests={completedTests} 
+                            tests={paginatedCompleted} 
                             viewMode={viewMode} 
                             familyMembers={familyMembers} 
                             onDelete={handleDeleteTest} 
@@ -452,6 +491,7 @@ export default function AllTestsPage() {
                             onSort={handleSort}
                             emptyMessage="Tamamlanmış ödev bulunamadı." 
                         />
+                        <PaginationControls currentPage={pagination.completed} totalPages={totalPages.completed} onPageChange={handlePageChange} />
                     </TabsContent>
                 </Tabs>
             </div>
@@ -460,6 +500,21 @@ export default function AllTestsPage() {
 }
 
 // --- SUB COMPONENTS ---
+
+function PaginationControls({ currentPage, totalPages, onPageChange }: { currentPage: number, totalPages: number, onPageChange: (direction: 'next' | 'prev') => void }) {
+    if (totalPages <= 1) return null;
+    return (
+        <div className="flex items-center justify-center gap-4 mt-6">
+            <Button variant="outline" size="sm" className={glassColors.BUTTON_GLASS} onClick={() => onPageChange('prev')} disabled={currentPage === 1}>
+                <ChevronLeft className="mr-2 h-4 w-4" /> Önceki
+            </Button>
+            <span className="font-bold text-sm text-slate-400">Sayfa {currentPage} / {totalPages}</span>
+            <Button variant="outline" size="sm" className={glassColors.BUTTON_GLASS} onClick={() => onPageChange('next')} disabled={currentPage === totalPages}>
+                Sonraki <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+        </div>
+    );
+}
 
 function TestsListOrGrid({ 
     tests, 
@@ -486,7 +541,7 @@ function TestsListOrGrid({
 
     if (viewMode === 'grid') {
         return (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {tests.map(test => {
                     const student = familyMembers.find(m => m.id === test.studentId);
                     return <TestCard key={test.id} test={test} student={student} onDelete={onDelete} />;
