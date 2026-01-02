@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,7 +8,7 @@ import {
     MessageSquare, Gamepad2, ClipboardList, ArrowRight, BookHeart, 
     Calendar as CalendarIcon, ChevronLeft, ChevronRight, Layers, 
     CircleDashed, PieChart, GraduationCap, LayoutGrid, List, AlertCircle, 
-    Timer, BookOpen, Plus, ChevronDown, Check, Library
+    Timer, BookOpen, Plus, ChevronDown, Check, Library, Flame, Sparkles
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,14 +22,8 @@ import { useAuth } from "@/components/auth-provider";
 import { format, parseISO, parse, compareDesc, compareAsc, isToday, startOfWeek, addDays, endOfDay, isWithinInterval, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // --- KATEGORİ AYARLARI ---
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -44,14 +37,14 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Diğer': FileText,
 };
 
-const categoryThemes: { [key: string]: { color: string, bg: string } } = {
-    'Matematik': { color: 'text-red-400', bg: 'bg-red-500/10' },
-    'Fen Bilimleri': { color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    'Türkçe': { color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    'Sosyal Bilgiler': { color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-    'İngilizce': { color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    'Genel Deneme Sınavları': { color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-    'Diğer': { color: 'text-slate-400', bg: 'bg-slate-500/10' },
+const categoryThemes: { [key: string]: { color: string, bg: string, border: string, glow: string } } = {
+    'Matematik': { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500', glow: 'shadow-red-500/20' },
+    'Fen Bilimleri': { color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500', glow: 'shadow-orange-500/20' },
+    'Türkçe': { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500', glow: 'shadow-amber-500/20' },
+    'Sosyal Bilgiler': { color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500', glow: 'shadow-cyan-500/20' },
+    'İngilizce': { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500', glow: 'shadow-blue-500/20' },
+    'Genel Deneme Sınavları': { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500', glow: 'shadow-purple-500/20' },
+    'Diğer': { color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500', glow: 'shadow-slate-500/20' },
 };
 
 export const getCategoryName = (test: Test): string => {
@@ -60,12 +53,11 @@ export const getCategoryName = (test: Test): string => {
     return test.subject || 'Diğer';
 };
 
-// --- MODERN TASARIM DEĞİŞKENLERİ ---
 const glassColors = {
-    PAGE_BG: "bg-slate-900", 
-    HEADER_BG: "bg-slate-900/80 backdrop-blur-xl border-b border-white/5",
-    CARD_BG: "bg-white/[0.04] border border-white/[0.08] shadow-sm hover:bg-white/[0.06] transition-all duration-300",
-    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
+    PAGE_BG: "bg-[#0B1120]",
+    HEADER_BG: "bg-[#0B1120]/80 backdrop-blur-xl border-b border-white/5",
+    CARD_BG: "bg-slate-900/50 border border-white/10",
+    HIGHLIGHT_CARD_BG: "bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 shadow-lg",
 };
 
 export default function EducationPage() {
@@ -115,13 +107,17 @@ export default function EducationPage() {
       return studyAssignments.filter(s => s.studentId === selectedStudent.id);
   }, [selectedStudent, studyAssignments]);
 
-  // --- ÖDEVLERİ KİTABA (PLAN'A) GÖRE GRUPLAMA ---
+  // --- KONU ADLARINI BULMAK İÇİN YARDIMCI MEMO ---
+  const allTopics = React.useMemo(() => {
+      return trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => subject.topics || []));
+  }, [trackedBooks]);
+
   const assignmentsByBook = React.useMemo(() => {
       const grouped: Record<string, { title: string, assignments: StudyAssignment[], total: number, completed: number }> = {};
       
       assignments.forEach(assign => {
           const plan = studyPlans.find(p => p.id === assign.studyPlanId);
-          if (!plan) return; // Eğer plan bulunamazsa bu atamayı atla
+          if (!plan) return; 
 
           const groupKey = plan.id;
           const groupTitle = plan.title;
@@ -142,7 +138,6 @@ export default function EducationPage() {
       });
   }, [assignments, studyPlans]);
   
-  // --- TESTLERİ GRUPLAMA ---
   const groupedPendingTests = React.useMemo(() => {
       const groups: { [key: string]: Test[] } = {};
       tests.filter(t => t.status === 'Atandı').forEach(t => {
@@ -153,7 +148,6 @@ export default function EducationPage() {
       return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [tests]);
 
-  // --- İSTATİSTİKLER ---
   const stats = React.useMemo(() => {
     const completedTests = tests.filter(t => t.status === 'Sonuçlandı');
     let totalQuestions = 0;
@@ -172,142 +166,33 @@ export default function EducationPage() {
     }
   }, [tests, assignments]);
   
-  // --- ACTIONS ---
   const handleCompleteStudy = async (id: string, currentStatus: string) => {
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
       await updateStudyAssignment(id, { status: newStatus as any });
       toast({ title: newStatus === 'completed' ? "Tamamlandı" : "Geri Alındı", description: "Çalışma durumu güncellendi." });
   };
 
-  const getStatusBadge = (assignment: StudyAssignment) => {
-    const dueDate = parseISO(assignment.dueDate);
-    if (assignment.status === 'completed') {
-        return <Badge variant="default" className="bg-green-600">Tamamlandı</Badge>
-    }
-    if (isPast(dueDate) && !isToday(dueDate)) {
-        return <Badge variant="destructive">Süresi Geçti</Badge>
-    }
-    if (isToday(dueDate)) {
-        return <Badge variant="outline" className="text-orange-500 border-orange-500">Bugün Bitiyor</Badge>
-    }
-    return <Badge variant="secondary">Devam Ediyor</Badge>
-  }
-
-  // --- DERS LİSTESİ (Dropdown için) ---
-  const subjects = ['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Genel Deneme Sınavları', 'Diğer'];
-
-  // --- İSTATİSTİKLER (KATEGORİ BAZLI) ---
-  const testsByCategory = React.useMemo(() => {
-    const categories: { [key: string]: { total: number, completed: number, correct: number, incorrectAnswers: number, questionCount: number } } = {};
-
-    tests.forEach(test => {
-        const categoryName = getCategoryName(test);
-        if (!categories[categoryName]) {
-            categories[categoryName] = { total: 0, completed: 0, correct: 0, incorrectAnswers: 0, questionCount: 0 };
-        }
-        categories[categoryName].total++;
-        
-        if (test.status === 'Sonuçlandı') {
-            categories[categoryName].completed++;
-            categories[categoryName].correct += (test.correctAnswers || 0);
-            categories[categoryName].incorrectAnswers += (test.incorrectAnswers || 0);
-            categories[categoryName].questionCount += (test.questionCount || 0);
-        }
-    });
-
-    const categoryOrder = ['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'İngilizce', 'Genel Deneme Sınavları', 'Diğer'];
-    
-    return Object.entries(categories).sort(([a], [b]) => {
-        const indexA = categoryOrder.indexOf(a);
-        const indexB = categoryOrder.indexOf(b);
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.localeCompare(b);
-    });
-
-  }, [tests]);
-
-  const allAssignments = React.useMemo(() => {
-    const testAssignments = tests.map(t => ({
-        id: t.id,
-        title: t.title,
-        type: 'test' as const,
-        Icon: GraduationCap,
-        startDate: parse(t.assignedDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
-        endDate: parse(t.dueDate, 'dd MMMM yyyy', new Date(), {locale: tr}),
-        isCompleted: t.status !== 'Atandı' && t.status !== 'Değerlendirme Bekliyor',
-    }));
-    const studentStudyAssignments = studyAssignments.filter(sa => sa.studentId === selectedStudent?.id);
-    const studyAssignmentsData = studentStudyAssignments.map(s => ({
-        id: s.id,
-        title: s.topic,
-        type: 'study' as const,
-        Icon: BookHeart,
-        startDate: parseISO(s.startDate),
-        endDate: parseISO(s.dueDate),
-        isCompleted: s.status === 'completed',
-    }));
-    return [...testAssignments, ...studyAssignmentsData].sort((a,b) => compareAsc(a.startDate, b.startDate));
-  }, [tests, studyAssignments, selectedStudent]);
-
-  const renderCalendarView = () => {
-    if (viewMode === 'weekly') {
-         const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-         const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
-         
-         return (
-            <div className={cn("border rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-7", glassColors.CARD_BG)}>
-                <div className="hidden md:grid md:grid-cols-7 col-span-full border-b border-white/5 bg-white/5">
-                     {weekDays.map(day => (
-                        <div key={day.toISOString()} className={cn("p-3 text-center border-r border-white/5 last:border-r-0", isToday(day) ? "bg-indigo-500/10 text-indigo-200" : "text-slate-400")}>
-                            <p className="font-bold text-sm capitalize">{format(day, 'EEE', {locale: tr})}</p>
-                            <p className={cn("text-xs mt-1 font-bold", isToday(day) ? "text-indigo-400" : "text-slate-500")}>{format(day, 'd MMM', {locale: tr})}</p>
-                        </div>
-                    ))}
-                </div>
-                 <div className="hidden md:grid md:grid-cols-7 col-span-full min-h-[300px]">
-                     {weekDays.map(day => (
-                       <div key={day.toISOString()} className={cn("p-2 border-r border-white/5 last:border-r-0 flex flex-col gap-2 relative", isToday(day) && "bg-white/[0.02]")}>
-                           {allAssignments.filter(a => isWithinInterval(day, { start: a.startDate, end: endOfDay(a.endDate) })).map(a => (
-                                <div key={a.id} className={cn("p-2 rounded-lg text-xs border backdrop-blur-sm transition-all hover:scale-105 cursor-default group", a.type === 'test' ? 'bg-red-500/10 text-red-200 border-red-500/20' : 'bg-blue-500/10 text-blue-200 border-blue-500/20')}>
-                                       <div className="flex items-center gap-1.5 mb-1">
-                                            <a.Icon className="h-3 w-3 shrink-0 opacity-70"/>
-                                            <span className="font-bold opacity-70 text-[10px] uppercase">{a.type === 'test' ? 'Test' : 'Ders'}</span>
-                                       </div>
-                                       <p className="font-medium truncate leading-tight">{a.title}</p>
-                               </div>
-                           ))}
-                       </div>
-                    ))}
-                 </div>
-             </div>
-         )
-    }
-    return null;
-}
-
   return (
     <div className={cn("min-h-screen text-slate-100 font-sans relative overflow-hidden flex flex-col", glassColors.PAGE_BG)}>
         
-        {/* BACKGROUND ACCENTS */}
+        {/* BACKGROUND */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[130px]" />
-            <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[130px]" />
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-indigo-900/20 rounded-full blur-[130px]" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[130px]" />
         </div>
 
         {/* HEADER */}
         <div className={cn("sticky top-0 z-40 w-full", glassColors.HEADER_BG)}>
-            <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/20">
+                    <div className="p-2 rounded-xl flex items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-500/20">
                          <GraduationCap className="w-5 h-5 text-white" />
                     </div>
-                    <span className="font-bold text-lg tracking-tight hidden sm:inline-block">Eğitim Paneli</span>
+                    <span className="font-bold text-lg tracking-tight hidden sm:inline-block text-white">Eğitim Paneli</span>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-white/5 p-1 rounded-full border border-white/10">
+                    <div className="flex bg-slate-900/50 p-1 rounded-full border border-white/10 backdrop-blur-md">
                         {studentMembers.map((student) => {
                             const isSelected = selectedStudent?.id === student.id;
                             return (
@@ -317,302 +202,246 @@ export default function EducationPage() {
                                     className={cn(
                                         "px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2",
                                         isSelected 
-                                            ? "bg-indigo-600 text-white shadow-md" 
+                                            ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25" 
                                             : "text-slate-400 hover:text-white hover:bg-white/5"
                                     )}
                                 >
-                                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>
+                                    <div className="w-2 h-2 rounded-full ring-2 ring-white/20" style={{backgroundColor: student.color}}/>
                                     {student.name}
                                 </button>
                             );
                         })}
                     </div>
-
-                    <Link href="/education/management" className="hidden md:block">
-                        <Button variant="ghost" size="icon" className="rounded-full text-slate-400 hover:text-white hover:bg-white/10">
-                            <Settings className="h-5 w-5" />
-                        </Button>
-                    </Link>
                 </div>
             </div>
         </div>
 
-        <div className="flex-1 max-w-6xl mx-auto w-full p-4 space-y-8 relative z-10">
+        <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-8 relative z-10">
             
-            {/* 1. HERO STATS */}
+            {/* 1. HERO İSTATİSTİKLER */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Link href="/education/all-tests" className="block group">
-                    <div className={cn("p-5 rounded-3xl relative overflow-hidden group flex flex-col justify-between h-32 transition-all hover:bg-white/[0.07]", glassColors.CARD_BG)}>
-                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Layers className="w-24 h-24" /></div>
-                        <div className="flex justify-between items-start">
-                            <div className="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-300"><Layers className="w-6 h-6"/></div>
-                            <Badge variant="outline" className="border-indigo-500/30 text-indigo-300 bg-indigo-500/10">Toplam</Badge>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-black text-white tracking-tighter">{stats.testCount}</div>
-                            <div className="text-xs text-slate-400 font-medium mt-1">Atanan Tüm Ödevler</div>
-                        </div>
-                    </div>
-                </Link>
-
-                <Link href={`/education/stats?studentId=${selectedStudent?.id}`} className="block group">
-                    <div className={cn("p-5 rounded-3xl relative overflow-hidden group flex flex-col justify-between h-32 transition-all hover:bg-emerald-500/5 hover:border-emerald-500/20", glassColors.CARD_BG)}>
-                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><PieChart className="w-24 h-24 text-emerald-400" /></div>
-                        <div className="flex justify-between items-start">
-                            <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-300"><CheckCircle2 className="w-6 h-6"/></div>
-                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-300 bg-emerald-500/10">Başarı</Badge>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-black text-white tracking-tighter flex items-end gap-2">
-                                %{stats.successRate.toFixed(0)}
-                                <span className="text-sm text-slate-400 font-medium mb-1.5 group-hover:text-emerald-300/70 transition-colors">Ortalama</span>
+                <div className="md:col-span-1">
+                    <div className="p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between h-36 bg-gradient-to-br from-amber-500 to-orange-600 shadow-xl shadow-orange-900/20 border border-white/10 group transition-transform hover:scale-[1.02]">
+                        <div className="absolute right-[-20px] top-[-20px] p-4 opacity-20"><CircleDashed className="w-32 h-32 text-white rotate-12" /></div>
+                        
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className="border-white/30 text-white bg-white/10 backdrop-blur-md px-3">Dikkat</Badge>
                             </div>
-                            <Progress value={stats.successRate} className="h-1.5 bg-slate-800 mt-2" indicatorClassName="bg-emerald-500" />
+                            <div className="text-5xl font-black text-white tracking-tighter drop-shadow-sm">{stats.pendingCount}</div>
+                            <div className="text-sm text-orange-50 font-bold mt-1 uppercase tracking-wide opacity-90">Bekleyen Ödev & Görev</div>
                         </div>
                     </div>
-                </Link>
-
-                {/* BEKLEYEN ÖDEVLER KARTI (YENİ) */}
-                <div className={cn("p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between h-32 transition-all hover:border-amber-500/30 hover:bg-amber-500/5", glassColors.CARD_BG)}>
-                        <div className="absolute right-0 top-0 p-4 opacity-5"><CircleDashed className="w-24 h-24 text-amber-400" /></div>
-                        <div className="flex justify-between items-start">
-                            <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-300"><CircleDashed className="w-6 h-6"/></div>
-                            <Badge variant="outline" className="border-amber-500/30 text-amber-300 bg-amber-500/10">Durum</Badge>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-black text-white tracking-tighter">{stats.pendingCount}</div>
-                            <div className="text-xs text-slate-400 font-medium mt-1">Bekleyen Ödevler</div>
-                        </div>
-                    </div>
-            </div>
-
-            {/* 2. ANA İÇERİK (Tabs) */}
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full space-y-6">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-slate-200">Genel Bakış</h2>
-                    <TabsList className="bg-white/5 border border-white/5 p-1 h-10 rounded-full">
-                        <TabsTrigger value="cards" className="rounded-full px-4 text-xs h-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Dersler</TabsTrigger>
-                        <TabsTrigger value="weekly" className="rounded-full px-4 text-xs h-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">Takvim</TabsTrigger>
-                    </TabsList>
                 </div>
 
-                {viewMode === 'cards' && (
-                    <div className="animate-in fade-in zoom-in-95 duration-500 space-y-8">
-                        
-                        {/* --- YENİ: BEKLEYEN ÖDEVLER (GRUPLANMIŞ) --- */}
-                        {groupedPendingTests.length > 0 && (
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-1 flex items-center gap-2">
-                                    <Clock className="w-4 h-4"/> Sıradaki Görevler
-                                </h3>
-                                
-                                <div className="space-y-6">
-                                    {groupedPendingTests.map(([category, categoryTests]) => {
-                                        const Icon = categoryIcons[category] || FileText;
-                                        const theme = categoryThemes[category] || categoryThemes['Diğer'];
-
-                                        return (
-                                            <div key={category} className="space-y-3">
-                                                {/* Kategori Başlığı */}
-                                                <div className="flex items-center gap-2 px-1">
-                                                    <div className={cn("p-1.5 rounded-lg", theme.bg, theme.color)}>
-                                                        <Icon className="w-4 h-4" />
-                                                    </div>
-                                                    <h4 className={cn("text-sm font-bold", theme.color.split(' ')[0])}>{category}</h4>
-                                                    <div className="h-px flex-1 bg-white/5 ml-2" />
-                                                </div>
-
-                                                {/* Test Kartları Grid */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                    {categoryTests.map(test => {
-                                                        const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                                                        const now = new Date();
-                                                        const daysDiff = differenceInDays(dueDate, now);
-                                                        const isOverdue = isPast(dueDate) && !isToday(dueDate);
-                                                        const isDueToday = isToday(dueDate);
-
-                                                        // --- KONU ADINI BULMA ---
-                                                        const allTopics = trackedBooks.flatMap(book => 
-                                                            (book.subjects || []).flatMap(subject => subject.topics || [])
-                                                        );
-                                                        const topicName = allTopics.find(t => t.id === test.topicId)?.name;
-
-                                                        return (
-                                                            <Link key={test.id} href={`/education/${test.id}`} className="block group">
-                                                                <div className={cn(
-                                                                    "flex items-center gap-4 p-4 rounded-2xl border transition-all bg-white/[0.03] hover:bg-white/[0.06] hover:-translate-y-0.5",
-                                                                    isOverdue ? "border-rose-500/20 hover:border-rose-500/40" : "border-white/5 hover:border-white/10"
-                                                                )}>
-                                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5", theme.bg, theme.color)}>
-                                                                        <Icon className="w-5 h-5" />
-                                                                    </div>
-                                                                    
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <h4 className="font-bold text-sm text-slate-200 truncate group-hover:text-white transition-colors">
-                                                                            {test.title}
-                                                                        </h4>
-                                                                        
-                                                                        {/* --- YENİ EKLENEN KONU GÖSTERİMİ --- */}
-                                                                        {topicName && (
-                                                                            <div className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 w-fit">
-                                                                                <BookOpen className="w-3 h-3 mr-1.5 opacity-70"/>
-                                                                                {topicName}
-                                                                            </div>
-                                                                        )}
-
-                                                                        <div className="flex items-center gap-2 mt-2">
-                                                                            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">{category}</span>
-                                                                            <div className="h-1 w-1 rounded-full bg-slate-700"/>
-                                                                            
-                                                                            {isOverdue ? (
-                                                                                <div className="flex items-center gap-1 text-[10px] font-bold text-rose-400">
-                                                                                    <AlertCircle className="w-3 h-3"/>
-                                                                                    {Math.abs(daysDiff)} gün gecikti
-                                                                                </div>
-                                                                            ) : isDueToday ? (
-                                                                                <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
-                                                                                    <Timer className="w-3 h-3"/>
-                                                                                    Bugün son
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="text-[10px] font-medium text-emerald-400">
-                                                                                    {daysDiff} gün kaldı
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="p-2 rounded-full bg-white/5 text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                                                        <ArrowRight className="w-4 h-4"/>
-                                                                    </div>
-                                                                </div>
-                                                            </Link>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                     <Link href="/education/all-tests" className="block group">
+                        <div className={cn("p-6 rounded-3xl flex flex-col justify-between h-36", glassColors.CARD_BG)}>
+                            <div className="flex justify-between items-start">
+                                <div className="p-3 bg-slate-800 rounded-2xl text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors"><Layers className="w-6 h-6"/></div>
                             </div>
-                        )}
+                            <div>
+                                <div className="text-3xl font-bold text-white">{stats.testCount}</div>
+                                <div className="text-xs text-slate-500 font-bold uppercase mt-1">Toplam Atanan</div>
+                            </div>
+                        </div>
+                    </Link>
 
-                        {/* --- DERS KARTLARI (KOMPAKT) --- */}
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-1">Dersler ve İlerleme</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {testsByCategory.map(([category, data]) => {
-                                    const Icon = categoryIcons[category] || FileText;
-                                    const theme = categoryThemes[category] || categoryThemes['Diğer'];
-                                    const pending = data.total - data.completed;
-                                    const successRate = data.questionCount > 0 ? (data.correct / data.questionCount) * 100 : 0;
+                    <Link href={`/education/stats?studentId=${selectedStudent?.id}`} className="block group">
+                        <div className={cn("p-6 rounded-3xl flex flex-col justify-between h-36", glassColors.CARD_BG)}>
+                            <div className="flex justify-between items-start">
+                                <div className="p-3 bg-slate-800 rounded-2xl text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors"><PieChart className="w-6 h-6" /></div>
+                            </div>
+                            <div>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-3xl font-bold text-white">%{stats.successRate.toFixed(0)}</span>
+                                    <span className="text-xs text-emerald-400 font-bold mb-1.5">Başarı</span>
+                                </div>
+                                <Progress value={stats.successRate} className="h-1.5 bg-slate-800 mt-2" indicatorClassName="bg-emerald-500" />
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+
+            {/* 2. GÖREVLER & DERSLER */}
+            <div className="space-y-6">
+                
+                {/* --- ACİL GÖREVLER --- */}
+                {groupedPendingTests.length > 0 && (
+                    <div className="animate-in slide-in-from-bottom-5 duration-500">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-1.5 bg-rose-500/10 rounded-lg"><Flame className="w-5 h-5 text-rose-500" /></div>
+                            <h3 className="text-lg font-bold text-white">Yapılacaklar Listesi</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {groupedPendingTests.map(([category, categoryTests]) => {
+                                const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                                return categoryTests.map(test => {
+                                    const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                                    const isOverdue = isPast(dueDate) && !isToday(dueDate);
+                                    const isDueToday = isToday(dueDate);
+                                    
+                                    // KONU ADINI BULMA
+                                    const topicName = allTopics.find(t => t.id === test.topicId)?.name;
 
                                     return (
-                                        <Link key={category} href={`/education/category/${encodeURIComponent(category)}?studentId=${selectedStudent?.id}`} className="block group">
-                                            <div className={cn("p-4 rounded-2xl flex items-center gap-4 transition-all h-full bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 group-hover:-translate-y-1")}>
-                                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 border border-white/5", theme.bg, theme.color)}>
-                                                    <Icon className="w-6 h-6" />
-                                                </div>
-                                                
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex justify-between items-center mb-1.5">
-                                                        <h3 className="font-bold text-sm text-slate-200 truncate">{category}</h3>
-                                                        {pending > 0 && <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold border border-white/5">{pending}</span>}
-                                                    </div>
+                                        <Link key={test.id} href={`/education/${test.id}`} className="block group">
+                                            <div className={cn(
+                                                "relative overflow-hidden rounded-2xl border-l-4 p-5 transition-all shadow-lg hover:-translate-y-1",
+                                                glassColors.HIGHLIGHT_CARD_BG,
+                                                theme.border,
+                                                isOverdue ? "border-rose-500/50 shadow-rose-900/20" : "hover:shadow-indigo-500/10"
+                                            )}>
+                                                <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] opacity-10 pointer-events-none -mr-10 -mt-10", theme.bg.replace('bg-', 'bg-'))} />
+
+                                                <div className="flex justify-between items-start mb-3 relative z-10">
+                                                    <Badge variant="outline" className={cn("bg-black/40 border-0 text-[10px] font-bold uppercase tracking-wider px-2 py-1", theme.color)}>
+                                                        {category}
+                                                    </Badge>
                                                     
-                                                    <div className="space-y-1">
-                                                        <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                                            <div 
-                                                                className={cn("h-full rounded-full opacity-80", theme.bg.replace('/10','').replace('bg-', 'bg-'))} 
-                                                                style={{ width: `${successRate}%`, backgroundColor: 'currentColor' }} 
-                                                            />
+                                                    {isOverdue ? (
+                                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-500/20 border border-rose-500/30 text-rose-200 text-xs font-bold animate-pulse">
+                                                            <AlertCircle className="w-3.5 h-3.5" /> Gecikti!
                                                         </div>
-                                                        <div className="flex justify-between text-[10px] text-slate-500 font-medium">
-                                                            <span>%{successRate.toFixed(0)} Başarı</span>
-                                                            <span>{data.completed}/{data.total}</span>
+                                                    ) : isDueToday ? (
+                                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-200 text-xs font-bold">
+                                                            <Timer className="w-3.5 h-3.5" /> Bugün Son
                                                         </div>
+                                                    ) : (
+                                                        <div className="text-xs font-medium text-slate-400 bg-slate-800/50 px-2 py-1 rounded-md">
+                                                            {differenceInDays(dueDate, new Date())} gün var
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* KONU ROZETİ (BURASI EKLENDİ) */}
+                                                {topicName && (
+                                                    <div className="mb-2">
+                                                        <Badge variant="secondary" className="bg-white/5 text-slate-300 hover:bg-white/10 border-0 text-[10px] px-2 py-0.5 backdrop-blur-sm">
+                                                            <BookOpen className="w-3 h-3 mr-1.5 opacity-70" />
+                                                            {topicName}
+                                                        </Badge>
+                                                    </div>
+                                                )}
+
+                                                <h4 className="text-lg font-bold text-white mb-1 leading-tight group-hover:text-indigo-300 transition-colors">
+                                                    {test.title}
+                                                </h4>
+                                                
+                                                <div className="flex items-center gap-4 mt-4 text-xs font-medium text-slate-400">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Clock className="w-3.5 h-3.5" />
+                                                        {test.durationMinutes ? `${test.durationMinutes} dk` : 'Süre Yok'}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                        {test.questionCount} Soru
                                                     </div>
                                                 </div>
                                             </div>
                                         </Link>
                                     );
-                                })}
-                            </div>
+                                })
+                            })}
                         </div>
+                    </div>
+                )}
 
-                        {/* --- KONU ÇALIŞMALARI (KİTAP KARTI ŞEKLİNDE GRUPLU) - EN ALTA TAŞINDI --- */}
-                        {assignmentsByBook.length > 0 && (
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-2">
-                                    <BookHeart className="w-4 h-4"/> Konu Çalışmaları
-                                </h3>
+                {/* --- KONU ANLATIMI (VARSAYILAN KAPALI) --- */}
+                {assignmentsByBook.length > 0 && (
+                    <div className="pt-4">
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="konu-anlatimi" className="border-none bg-slate-900/20 rounded-2xl overflow-hidden">
+                                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-white/5 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-pink-500/10 rounded-lg">
+                                            <BookHeart className="w-5 h-5 text-pink-500" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-white">Konu Anlatımı</h3>
+                                    </div>
+                                </AccordionTrigger>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {assignmentsByBook.map((bookGroup, idx) => {
-                                        const progress = (bookGroup.completed / bookGroup.total) * 100;
-                                        const isAllCompleted = bookGroup.completed === bookGroup.total;
+                                <AccordionContent className="px-5 pb-5 pt-2">
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-2">
+                                        {assignmentsByBook.map((bookGroup, idx) => {
+                                            const progress = (bookGroup.completed / bookGroup.total) * 100;
+                                            const isAllCompleted = bookGroup.completed === bookGroup.total;
 
-                                        return (
-                                            <div key={idx} className={cn("rounded-3xl border overflow-hidden transition-all bg-white/[0.03] border-white/5")}>
-                                                {/* KART BAŞLIĞI */}
-                                                <div className="p-5 border-b border-white/5 bg-white/[0.02]">
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="p-2 rounded-xl bg-pink-500/10 text-pink-400 border border-pink-500/20">
-                                                                <BookOpen className="w-6 h-6" />
+                                            return (
+                                                <div key={idx} className="rounded-2xl border border-white/10 bg-slate-900/40 overflow-hidden">
+                                                    <div className="p-5 flex items-start gap-4 border-b border-white/5 bg-white/[0.02]">
+                                                        <div className="w-12 h-16 rounded-md bg-slate-800 shadow-lg shrink-0 flex items-center justify-center border border-white/5">
+                                                            <BookOpen className="w-6 h-6 text-slate-500" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex justify-between items-start">
+                                                                <h3 className="font-bold text-base text-slate-100 truncate pr-4">{bookGroup.title}</h3>
+                                                                <Badge variant="secondary" className={cn("text-[10px]", isAllCompleted ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-400")}>
+                                                                    {bookGroup.completed}/{bookGroup.total}
+                                                                </Badge>
                                                             </div>
-                                                            <div>
-                                                                <h3 className="font-bold text-lg text-slate-200">{bookGroup.title}</h3>
-                                                                <p className="text-xs text-slate-500">{bookGroup.completed} / {bookGroup.total} Tamamlandı</p>
+                                                            
+                                                            <div className="mt-3 flex items-center gap-3">
+                                                                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                                                                    <div 
+                                                                        className={cn("h-full rounded-full transition-all duration-500", isAllCompleted ? "bg-emerald-500" : "bg-pink-500")} 
+                                                                        style={{width: `${progress}%`}}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-xs font-bold text-slate-400">%{progress.toFixed(0)}</span>
                                                             </div>
                                                         </div>
-                                                        <Badge variant="outline" className={cn("border-0 font-bold", isAllCompleted ? "bg-emerald-500/10 text-emerald-400" : "bg-pink-500/10 text-pink-400")}>
-                                                            %{progress.toFixed(0)}
-                                                        </Badge>
                                                     </div>
-                                                    <Progress value={progress} className="h-1.5 bg-slate-800" indicatorClassName={isAllCompleted ? "bg-emerald-500" : "bg-pink-500"} />
-                                                </div>
 
-                                                {/* ACCORDION LİSTESİ */}
-                                                <Accordion type="single" collapsible className="w-full">
-                                                    <AccordionItem value="items" className="border-none">
-                                                        <AccordionTrigger className="px-5 py-3 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-wider hover:no-underline hover:bg-white/5 transition-colors">
-                                                            Konuları Göster ({bookGroup.assignments.length})
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="px-3 pb-3 bg-black/20">
-                                                            <div className="space-y-1 mt-2">
-                                                                {bookGroup.assignments.map(assign => (
-                                                                    <div key={assign.id} className={cn("flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer hover:bg-white/5", assign.status === 'completed' ? "opacity-60" : "")} onClick={() => handleCompleteStudy(assign.id, assign.status)}>
-                                                                        <Checkbox checked={assign.status === 'completed'} className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className={cn("text-sm font-medium truncate", assign.status === 'completed' ? "text-emerald-200 line-through" : "text-slate-200")}>{assign.topic}</p>
-                                                                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">
-                                                                                <span className="font-medium">{assign.subject}</span>
-                                                                                <span>•</span>
-                                                                                <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> {assign.durationMinutes} dk</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        {assign.status === 'completed' && <Check className="w-4 h-4 text-emerald-500" />}
+                                                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-2 bg-black/20">
+                                                        {bookGroup.assignments.map(assign => (
+                                                            <div 
+                                                                key={assign.id} 
+                                                                className={cn(
+                                                                    "flex items-center gap-3 p-3 rounded-lg transition-all mb-1 cursor-pointer group hover:bg-white/5",
+                                                                    assign.status === 'completed' ? "opacity-50 grayscale-[0.5]" : "bg-slate-800/30"
+                                                                )}
+                                                                onClick={() => handleCompleteStudy(assign.id, assign.status)}
+                                                            >
+                                                                <div className={cn(
+                                                                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
+                                                                    assign.status === 'completed' 
+                                                                        ? "bg-emerald-500 border-emerald-500" 
+                                                                        : "border-slate-600 group-hover:border-indigo-400"
+                                                                )}>
+                                                                    {assign.status === 'completed' && <Check className="w-3 h-3 text-white" />}
+                                                                </div>
+                                                                
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className={cn("text-sm font-medium truncate transition-colors", assign.status === 'completed' ? "text-slate-400 line-through" : "text-slate-200 group-hover:text-white")}>
+                                                                        {assign.topic}
+                                                                    </p>
+                                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                                        <Badge variant="outline" className="text-[10px] h-4 px-1 border-white/10 text-slate-500">
+                                                                            {assign.subject}
+                                                                        </Badge>
+                                                                        {assign.durationMinutes > 0 && (
+                                                                            <span className="text-[10px] text-slate-600 flex items-center gap-1">
+                                                                                <Clock className="w-2.5 h-2.5" /> {assign.durationMinutes}dk
+                                                                            </span>
+                                                                        )}
                                                                     </div>
-                                                                ))}
+                                                                </div>
                                                             </div>
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                </Accordion>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </div>
                 )}
-
-                {viewMode === 'weekly' && (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {renderCalendarView()}
-                    </div>
-                )}
-            </Tabs>
+            </div>
         </div>
     </div>
   );

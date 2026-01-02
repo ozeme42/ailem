@@ -114,11 +114,17 @@ export default function OpticalFormPage() {
             };
 
             if (isMcqTest) {
+                let studentAnswersToSave = mcqAnswers;
+                 if (isFinishedByTimer) {
+                    // Use the state at the moment timer runs out
+                    studentAnswersToSave = mcqAnswers;
+                }
+                
                 let allStudentMcqAnswers: McqAnswers = {};
                 const questionCount = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
                 for (let i = 1; i <= questionCount; i++) {
                     const qNumStr = i.toString();
-                    allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
+                    allStudentMcqAnswers[qNumStr] = studentAnswersToSave[qNumStr] || null;
                 }
                 updatedData.studentAnswers = allStudentMcqAnswers;
 
@@ -818,7 +824,6 @@ export default function OpticalFormPage() {
                             <CardContent className="flex items-center justify-between p-6">
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-200">Süreniz İşliyor</h3>
-                                    <p className="text-slate-400 text-sm">Cevap kağıdını doldurmayı unutmayın.</p>
                                 </div>
                                 <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                             </CardContent>

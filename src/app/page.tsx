@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -259,6 +258,16 @@ export default function Home() {
                     <div className="flex items-center justify-between py-4">
                         <div className="flex items-center gap-3">
                             
+                            {/* --- DEĞİŞİKLİK: MOBİL İÇİN MENÜ BUTONU --- */}
+                            <SidebarTrigger className="md:hidden -ml-2 mr-1 text-slate-300 hover:text-white hover:bg-white/10 p-2 rounded-lg">
+                                <Menu className="w-6 h-6" />
+                            </SidebarTrigger>
+
+                            {/* DESKTOP İÇİN LOGO */}
+                            <SidebarTrigger className={cn("hidden md:flex p-2 rounded-xl", "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20", "text-white")}>
+                                 <GraduationCap className="w-6 h-6" />
+                            </SidebarTrigger>
+                            
                             <div className="flex flex-col">
                                 <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent leading-none">
                                     Özgürdere
@@ -474,7 +483,7 @@ export default function Home() {
 
                 {/* --- ORTA BÖLÜM: Hedefler ve Kitaplar --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-2 md:px-4">
-                     <div className="lg:col-span-2 space-y-6">
+                      <div className="lg:col-span-2 space-y-6">
                         {/* Kitaplar */}
                         <section className={cn("rounded-[2rem] p-6", glassColors.CARD_BG)}>
                             <div className="flex items-center justify-between mb-6">
@@ -557,10 +566,10 @@ export default function Home() {
                                 )}
                             </div>
                         </section>
-                     </div>
+                      </div>
 
-                     {/* Sağ Kolon: Liderlik Tablosu */}
-                     <div className="space-y-6">
+                      {/* Sağ Kolon: Liderlik Tablosu */}
+                      <div className="space-y-6">
                         <div className={cn("rounded-[2rem] p-6 overflow-hidden relative", glassColors.CARD_BG)}>
                             {/* Dekoratif daireler */}
                             <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
@@ -599,7 +608,7 @@ export default function Home() {
                                 </div>
                             </div>
                         </div>
-                     </div>
+                      </div>
                 </div>
 
                 {/* --- KİŞİSEL PANOLAR --- */}
@@ -738,5 +747,3 @@ export default function Home() {
         </div>
     );
 }
-
-    
