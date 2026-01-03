@@ -9,7 +9,7 @@ import { onNotebookDetailsUpdate, updateNotebook, addNoteToSection, updateNoteIn
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen, Check, MoreHorizontal } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -301,7 +301,7 @@ export default function NotebookClient() {
                  <ScrollArea className="flex-1 w-full">
                     {activeSectionId ? (
                         <div className="p-4 md:p-6 space-y-8 pb-20">
-                            <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-800">
+                             <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-800">
                                  <div className="flex gap-3 items-stretch min-w-max">
                                      {folderOrder.map((folderName) => {
                                         if (folderName === 'Genel' && generalCount === 0 && folderOrder.length > 2) return null;
@@ -392,7 +392,7 @@ function SectionCard({ section, noteCount, isSelected, onClick, onEdit, onDelete
                     : "bg-slate-50 dark:bg-slate-800/60 border-transparent hover:border-slate-300 dark:hover:border-slate-700"
             )}
         >
-             <div className={cn("absolute h-full w-2 left-0 top-0 rounded-l-xl bg-gradient-to-b", section.color)}></div>
+             <div className={cn("absolute h-full w-1.5 left-0 top-0 rounded-l-xl bg-gradient-to-b", section.color)}></div>
              
             <div onClick={(e) => e.stopPropagation()} className={cn("transition-opacity absolute top-2 right-2", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                 <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5" ><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
@@ -402,16 +402,7 @@ function SectionCard({ section, noteCount, isSelected, onClick, onEdit, onDelete
                         <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 dark:text-red-500 dark:focus:text-red-400 cursor-pointer focus:bg-red-50 dark:focus:bg-red-500/10"><Trash2 className="w-3 h-3 mr-2" /> Sil</DropdownMenuItem>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Bölümü Sil?</AlertDialogTitle>
-                                <AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Vazgeç</AlertDialogCancel>
-                                <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
+                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Bölümü Sil?</AlertDialogTitle><AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                     </AlertDialog>
                 </DropdownMenuContent>
                 </DropdownMenu>
