@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder, deleteNotebook } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, ChevronDown, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book } from 'lucide-react';
+import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, PenLine, Book, FolderOpen, Sparkles, X, Palette, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -112,7 +112,7 @@ export default function NotebookClient() {
             }
         });
         return () => unsubscribe();
-    }, [notebookId, user, router]); // activeSectionId removed from deps to avoid loop
+    }, [notebookId, user, router, activeSectionId]);
 
     // --- ACTIONS ---
 
@@ -417,7 +417,7 @@ export default function NotebookClient() {
             {/* --- DIALOGS --- */}
             {/* Section Edit Dialog */}
             <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl">
+                <DialogContent className="sm:max-w-md bg-white border-slate-200 rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm"}</DialogTitle>
                     </DialogHeader>
@@ -427,7 +427,7 @@ export default function NotebookClient() {
                             value={sectionTitle} 
                             onChange={(e) => setSectionTitle(e.target.value)} 
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveSection()}
-                            className="bg-slate-50 border-slate-200 text-slate-900"
+                            className="bg-slate-50 border-slate-200"
                         />
                     </div>
                     <DialogFooter>
@@ -474,7 +474,7 @@ export default function NotebookClient() {
 // --- SUB-COMPONENTS ---
 
 function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => void, onDelete: () => void }) {
-     const getNoteColors = (colorClass: string | undefined) => {
+    const getNoteColors = (colorClass: string | undefined) => {
         if (!colorClass) return "bg-white border-slate-200 text-slate-600 hover:border-indigo-300";
         return colorClass; // Uses the full class string stored in DB
     };
@@ -563,19 +563,17 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
                         {/* Header */}
-                        <div className={cn("flex items-center justify-between px-6 py-4 border-b shrink-0 bg-white/40 backdrop-blur-md", activeColorObj.accent)}>
-                             <div className="flex items-center gap-2 opacity-70">
+                        <DialogHeader className={cn("flex-row items-center justify-between px-6 py-4 border-b shrink-0 bg-white/40 backdrop-blur-md", activeColorObj.accent)}>
+                            <DialogTitle className="flex items-center gap-2 opacity-70">
                                  <StickyNote className="w-5 h-5" />
                                  <span className="text-sm font-bold uppercase tracking-wider">{note.id ? 'Notu Düzenle' : 'Yeni Not'}</span>
-                             </div>
-                             <div className="flex items-center gap-2">
-                                <DialogClose asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/10 rounded-full">
-                                        <X className="h-5 w-5" />
-                                    </Button>
-                                </DialogClose>
-                             </div>
-                        </div>
+                            </DialogTitle>
+                             <DialogClose asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/10 rounded-full">
+                                    <X className="h-5 w-5" />
+                                </Button>
+                            </DialogClose>
+                        </DialogHeader>
 
                         {/* Content Area */}
                         <ScrollArea className="flex-1">
