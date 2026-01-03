@@ -14,9 +14,7 @@ import { NewNotebookForm } from '@/components/new-notebook-form';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-
 
 // --- TASARIM SABİTLERİ ---
 const notebookColors = [
@@ -27,6 +25,16 @@ const notebookColors = [
     { bg: "bg-violet-100", hover: "hover:bg-violet-200", text: "text-violet-700", border: "border-violet-200", icon: "text-violet-500", ring: "ring-violet-200" },
     { bg: "bg-slate-100", hover: "hover:bg-slate-200", text: "text-slate-700", border: "border-slate-200", icon: "text-slate-500", ring: "ring-slate-200" },
 ];
+
+const darkNotebookColors = [
+    { bg: "bg-rose-900/40", hover: "hover:bg-rose-900/60", text: "text-rose-200", border: "border-rose-800/50", icon: "text-rose-400", ring: "ring-rose-700" },
+    { bg: "bg-blue-900/40", hover: "hover:bg-blue-900/60", text: "text-blue-200", border: "border-blue-800/50", icon: "text-blue-400", ring: "ring-blue-700" },
+    { bg: "bg-emerald-900/40", hover: "hover:bg-emerald-900/60", text: "text-emerald-200", border: "border-emerald-800/50", icon: "text-emerald-400", ring: "ring-emerald-700" },
+    { bg: "bg-amber-900/40", hover: "hover:bg-amber-900/60", text: "text-amber-200", border: "border-amber-800/50", icon: "text-amber-400", ring: "ring-amber-700" },
+    { bg: "bg-violet-900/40", hover: "hover:bg-violet-900/60", text: "text-violet-200", border: "border-violet-800/50", icon: "text-violet-400", ring: "ring-violet-700" },
+    { bg: "bg-slate-800/70", hover: "hover:bg-slate-800/90", text: "text-slate-200", border: "border-slate-700", icon: "text-slate-400", ring: "ring-slate-600" },
+];
+
 
 export function NotesClient() {
     const { user } = useAuth();
@@ -69,7 +77,12 @@ export function NotesClient() {
         catch (error) { toast({ title: 'Hata', variant: 'destructive' }); }
     };
 
-    const getNotebookStyle = (index: number) => notebookColors[index % notebookColors.length];
+    const getNotebookStyle = (index: number) => {
+        // Simple way to alternate, you can use a more sophisticated check for dark mode if needed
+        // For now, let's assume we can use dark: prefixes in the color definitions.
+        return { light: notebookColors[index % notebookColors.length], dark: darkNotebookColors[index % darkNotebookColors.length] }
+    };
+    
     const getNoteCount = (notebookId: string) => allNotes.filter(n => n.notebookId === notebookId).length;
 
     const displayedNotebooks = useMemo(() => {
@@ -79,24 +92,24 @@ export function NotesClient() {
     }, [notebooks, searchTerm]);
 
     return (
-        <div className="flex h-[100dvh] flex-col bg-slate-50 font-sans text-slate-900 overflow-hidden">
+        <div className="flex h-full min-h-screen flex-col bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-50 overflow-hidden">
             {/* Header */}
-            <div className="p-4 md:px-8 md:py-6 border-b border-slate-200 bg-white sticky top-0 z-20 shadow-sm flex-shrink-0">
+            <div className="p-4 md:px-8 md:py-6 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl sticky top-0 z-20 shadow-sm flex-shrink-0">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-md">
                             <Book className="w-6 h-6" />
                         </div>
-                        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800">Dosyalarım</h1>
+                        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Dosyalarım</h1>
                     </div>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-3">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                         <Input
                             placeholder="Defter ara..."
-                            className="pl-9 h-11 bg-slate-100 border-transparent focus:bg-white focus:border-indigo-500 transition-all rounded-xl"
+                            className="pl-9 h-11 bg-slate-100 dark:bg-slate-800/50 border-transparent focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 transition-all rounded-xl text-slate-900 dark:text-slate-50"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -108,7 +121,7 @@ export function NotesClient() {
             </div>
 
             {/* Content - Grid View */}
-            <ScrollArea className="flex-1 px-4 md:px-8 py-6">
+            <div className="flex-1 px-4 md:px-8 py-6 overflow-y-auto">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-20">
                     {displayedNotebooks.map((notebook, index) => {
                         const style = getNotebookStyle(index);
@@ -120,26 +133,27 @@ export function NotesClient() {
                                 href={`/notes/${notebook.id}`}
                                 className={cn(
                                     "group relative flex flex-col justify-between h-40 md:h-48 rounded-2xl border p-5 cursor-pointer transition-all shadow-sm hover:shadow-md hover:-translate-y-1 active:scale-95",
-                                    style.bg, style.border, style.hover
+                                    style.light.bg, style.light.border, style.light.hover,
+                                    `dark:${style.dark.bg}`, `dark:${style.dark.border}`, `dark:${style.dark.hover}`
                                 )}
                             >
                                 <div className="flex justify-between items-start">
-                                    <Folder className={cn("w-10 h-10 md:w-12 md:h-12", style.icon)} strokeWidth={1.5} />
+                                    <Folder className={cn("w-10 h-10 md:w-12 md:h-12", style.light.icon, `dark:${style.dark.icon}`)} strokeWidth={1.5} />
                                     
                                     <div onClick={(e) => e.preventDefault()}>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className={cn("h-8 w-8 -mr-2 -mt-2 text-slate-600/60 hover:bg-black/5 hover:text-slate-800 opacity-0 group-hover:opacity-100 transition-opacity", style.text)}>
+                                                <Button variant="ghost" size="icon" className={cn("h-8 w-8 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity", style.light.text, `dark:${style.dark.text}`, "hover:bg-black/5 dark:hover:bg-white/5")}>
                                                     <MoreVertical className="w-5 h-5" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48 rounded-xl">
-                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenDialog(notebook); }} className="py-2.5 cursor-pointer">
+                                            <DropdownMenuContent align="end" className="w-48 rounded-xl bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800">
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenDialog(notebook); }} className="py-2.5 cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-800">
                                                     <Edit className="w-4 h-4 mr-2" /> Düzenle
                                                 </DropdownMenuItem>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 py-2.5 cursor-pointer focus:bg-red-50 focus:text-red-700">
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 py-2.5 cursor-pointer focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-900/50 dark:focus:text-red-400">
                                                             <Trash2 className="w-4 h-4 mr-2" /> Sil
                                                         </DropdownMenuItem>
                                                     </AlertDialogTrigger>
@@ -161,10 +175,10 @@ export function NotesClient() {
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 className={cn("font-bold text-lg leading-tight mb-1", style.text)}>
+                                    <h3 className={cn("font-bold text-lg leading-tight mb-1", style.light.text, `dark:${style.dark.text}`)}>
                                         {notebook.title}
                                     </h3>
-                                    <p className="text-sm text-slate-600/80 font-medium">
+                                    <p className={cn("text-sm font-medium", style.light.text, `dark:${style.dark.text}`, "opacity-60 dark:opacity-50")}>
                                         {count} Not
                                     </p>
                                 </div>
@@ -172,20 +186,16 @@ export function NotesClient() {
                         )
                     })}
                     {displayedNotebooks.length === 0 && (
-                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-400">
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
                             <p className="text-lg font-medium">Defter bulunamadı.</p>
                         </div>
                     )}
                 </div>
-            </ScrollArea>
+            </div>
 
             {/* Dialogs */}
             <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) setEditingNotebook(null); setIsFormOpen(open); }}>
-                <DialogContent className="sm:max-w-md bg-white border-slate-200 rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle>{editingNotebook ? 'Defteri Düzenle' : 'Yeni Defter'}</DialogTitle>
-                        <DialogDescription>Defterlerinizi düzenlemek için bir klasör yapısı oluşturun.</DialogDescription>
-                    </DialogHeader>
+                <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-2xl">
                     <NewNotebookForm onSubmit={handleFormSubmit} initialData={editingNotebook} />
                 </DialogContent>
             </Dialog>

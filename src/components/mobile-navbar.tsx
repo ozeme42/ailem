@@ -7,47 +7,43 @@ import { Users, ShoppingCart, GraduationCap, Wallet, Library } from "lucide-reac
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
-// Her menü öğesi için özel renk temaları
+// Renk konfigürasyonunu daha yumuşak (pastel/light) tonlara göre güncelledik
 const navConfig = [
   { 
     href: "/", 
     label: "Ailem", 
     icon: Users,
-    color: "from-indigo-500 to-purple-500",
-    shadow: "shadow-indigo-500/50",
-    textColor: "text-indigo-400"
+    // Aktif olduğunda kullanılacak arka plan ve ikon renkleri
+    activeBg: "bg-indigo-50", 
+    activeText: "text-indigo-600"
   },
   { 
     href: "/education", 
     label: "Eğitim", 
     icon: GraduationCap,
-    color: "from-blue-500 to-cyan-500",
-    shadow: "shadow-blue-500/50",
-    textColor: "text-blue-400"
+    activeBg: "bg-blue-50",
+    activeText: "text-blue-600"
   },
   { 
     href: "/library", 
     label: "Kitaplık", 
     icon: Library,
-    color: "from-amber-500 to-orange-500",
-    shadow: "shadow-amber-500/50",
-    textColor: "text-amber-400"
+    activeBg: "bg-amber-50",
+    activeText: "text-amber-600"
   },
   { 
     href: "/shopping", 
     label: "Alışveriş", 
     icon: ShoppingCart,
-    color: "from-emerald-500 to-teal-500",
-    shadow: "shadow-emerald-500/50",
-    textColor: "text-emerald-400"
+    activeBg: "bg-emerald-50",
+    activeText: "text-emerald-600"
   },
   { 
     href: "/budget", 
     label: "Bütçe", 
     icon: Wallet,
-    color: "from-rose-500 to-pink-500",
-    shadow: "shadow-rose-500/50",
-    textColor: "text-rose-400"
+    activeBg: "bg-rose-50",
+    activeText: "text-rose-600"
   },
 ];
 
@@ -61,55 +57,51 @@ export function MobileNavbar() {
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
-      {/* Arka plan blur ve gradient çizgisi */}
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl border-t border-white/10 rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.4)]"></div>
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+      {/* ARKA PLAN:
+         - bg-white/80: Hafif şeffaf beyaz (Ne koyu, ne çok parlak)
+         - backdrop-blur-md: Arkadaki içeriği buzlu gösterir (Şıklık katar)
+         - border-t: Üstte çok ince bir çizgi ile içeriği ayırır
+      */}
+      <div className="absolute inset-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] pb-[env(safe-area-inset-bottom)]"></div>
       
-      <div className="relative flex justify-around items-center h-20 px-2">
+      {/* İÇERİK KONTEYNERİ: Yüksekliği azalttık (h-16) */}
+      <div className="relative flex justify-around items-center h-16 px-1 pb-[env(safe-area-inset-bottom)]">
         {navConfig.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           
           return (
-            <Link key={item.href} href={item.href} className="group flex-1 flex flex-col items-center justify-end h-full pb-3 cursor-pointer select-none touch-manipulation">
-              <div className="relative flex flex-col items-center justify-center w-full">
-                
-                {/* İkon Kutusu - Aktifken yukarı çıkar ve parlar */}
-                <div 
+            <Link 
+              key={item.href} 
+              href={item.href} 
+              className="flex-1 flex justify-center items-center h-full cursor-pointer select-none touch-manipulation"
+            >
+              <div 
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-300",
+                  // Aktif ise arka plan rengini ver, değilse şeffaf
+                  isActive ? item.activeBg : "bg-transparent hover:bg-slate-50"
+                )}
+              >
+                {/* İkon */}
+                <item.icon 
                   className={cn(
-                    "flex items-center justify-center rounded-2xl transition-all duration-500 ease-out",
-                    isActive 
-                      ? cn("w-12 h-12 -translate-y-5 bg-gradient-to-br shadow-lg border border-white/20", item.color, item.shadow)
-                      : "w-10 h-10 bg-transparent text-slate-500 group-hover:text-slate-300"
-                  )}
-                >
-                  <item.icon 
-                    className={cn(
-                      "transition-all duration-300",
-                      isActive ? "w-6 h-6 text-white" : "w-6 h-6"
-                    )} 
-                  />
-                  
-                  {/* Aktif İkonun Altındaki Küçük Işık Hüzmesi */}
-                  {isActive && (
-                     <div className={cn("absolute -bottom-2 w-8 h-8 rounded-full blur-xl opacity-60 -z-10", item.color)}></div>
-                  )}
-                </div>
-
-                {/* Etiket Metni */}
+                    "w-5 h-5 transition-colors duration-300",
+                    // Aktif ise özel rengini al, değilse gri (slate-400)
+                    isActive ? item.activeText : "text-slate-400"
+                  )} 
+                  strokeWidth={isActive ? 2.5 : 2} // Aktifken biraz daha kalın
+                />
+                
+                {/* Etiket */}
                 <span 
                   className={cn(
-                    "text-[10px] font-bold tracking-wide transition-all duration-300 absolute bottom-0 translate-y-full",
-                    isActive 
-                      ? cn("opacity-100 translate-y-1", item.textColor)
-                      : "opacity-60 text-slate-500 translate-y-0 group-hover:text-slate-400"
+                    "text-[10px] font-semibold transition-colors duration-300",
+                    isActive ? item.activeText : "text-slate-400"
                   )}
                 >
                   {item.label}
                 </span>
-
-                {/* Aktif Gösterge Noktası (Opsiyonel, metin yerine nokta istenirse) */}
-                {/* {isActive && <div className={cn("mt-1 w-1 h-1 rounded-full bg-current", item.textColor)} />} */}
-              
               </div>
             </Link>
           );
