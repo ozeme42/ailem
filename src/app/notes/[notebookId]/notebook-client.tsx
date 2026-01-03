@@ -9,7 +9,7 @@ import { onNotebookDetailsUpdate, updateNotebook, addNoteToSection, updateNoteIn
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -31,11 +31,11 @@ const sectionGradients = [
 ];
 
 const noteParchmentColors = [
-    { name: 'Saman', class: 'bg-[#fefce8] border-[#fde047] text-amber-900', accent: 'border-amber-300' },
-    { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd] text-sky-900', accent: 'border-sky-300' },
-    { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0] text-green-900', accent: 'border-emerald-300' },
-    { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3] text-rose-900', accent: 'border-rose-300' },
-    { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe] text-violet-900', accent: 'border-violet-300' },
+    { name: 'Saman', class: 'bg-[#fefae0] border-[#faedcd] text-[#bc6c25]', accent: 'border-amber-200' },
+    { name: 'Gökyüzü', class: 'bg-[#e0f2fe] border-[#bae6fd] text-[#075985]', accent: 'border-sky-200' },
+    { name: 'Nane', class: 'bg-[#ecfdf5] border-[#d1fae5] text-[#065f46]', accent: 'border-emerald-200' },
+    { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3] text-[#9f1239]', accent: 'border-rose-200' },
+    { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe] text-[#5b21b6]', accent: 'border-violet-200' },
     { name: 'Taş', class: 'bg-slate-100 border-slate-200 text-slate-800', accent: 'border-slate-300' },
 ];
 
@@ -228,8 +228,7 @@ export default function NotebookClient() {
     if (!details) return <div className="flex h-screen items-center justify-center text-slate-500 dark:text-slate-400">Yükleniyor...</div>;
 
     const activeSectionIndex = details.notebook.sections.findIndex(s => s.id === activeSectionId);
-    const activeSectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
-
+    
     return (
         <div className={cn("flex h-[100dvh] overflow-hidden font-sans", "bg-slate-50 text-slate-900", "dark:bg-slate-950 dark:text-slate-100")}>
             
@@ -252,7 +251,7 @@ export default function NotebookClient() {
 
                 <ScrollArea className="flex-1 p-3">
                     <div className="flex flex-col gap-2">
-                        {details.notebook.sections.map((section) => (
+                        {details.notebook.sections.map((section, index) => (
                             <SectionCard
                                 key={section.id}
                                 section={section}
@@ -317,7 +316,7 @@ export default function NotebookClient() {
                                                 name={folderName}
                                                 count={count}
                                                 isActive={activeFolderFilter === folderName}
-                                                gradient={activeSectionGradient}
+                                                color={activeSection?.color}
                                                 onClick={() => setActiveFolderFilter(folderName)}
                                                 onEdit={folderName !== 'Tümü' && folderName !== 'Genel' ? () => { setNewFolderName(folderName); setEditingFolder({oldName: folderName, sectionId: activeSectionId}); setIsFolderDialogOpen(true); } : undefined}
                                                 onDelete={folderName !== 'Tümü' && folderName !== 'Genel' ? () => handleDeleteFolder(folderName, activeSectionId) : undefined}
@@ -383,8 +382,11 @@ function SectionCard({ section, noteCount, isSelected, onClick, onEdit, onDelete
                 <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5" ><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40 rounded-xl bg-white dark:bg-slate-900">
                     <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-slate-100 dark:focus:bg-slate-800"><Edit className="w-3 h-3 mr-2" /> Düzenle</DropdownMenuItem>
-                    <AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 dark:text-red-500 dark:focus:text-red-400 cursor-pointer focus:bg-red-50 dark:focus:bg-red-500/10"><Trash2 className="w-3 h-3 mr-2" /> Sil</DropdownMenuItem></AlertDialogTrigger>
-                    <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil?</AlertDialogTitleComponent><AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 dark:text-red-500 dark:focus:text-red-400 cursor-pointer focus:bg-red-50 dark:focus:bg-red-500/10"><Trash2 className="w-3 h-3 mr-2" /> Sil</DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil?</AlertDialogTitleComponent><AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
                     </AlertDialog>
                 </DropdownMenuContent>
                 </DropdownMenu>
@@ -399,8 +401,8 @@ function SectionCard({ section, noteCount, isSelected, onClick, onEdit, onDelete
     );
 }
 
-function FolderCard({ name, count, isActive, gradient, onClick, onEdit, onDelete, icon: Icon }: any) {
-    const activeClass = `bg-gradient-to-br ${gradient} text-white shadow-lg border-transparent`;
+function FolderCard({ name, count, isActive, color, onClick, onEdit, onDelete, icon: Icon }: any) {
+    const activeClass = `bg-gradient-to-br ${color} text-white shadow-lg border-transparent`;
     const inactiveClass = "bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600";
 
     return (
