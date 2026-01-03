@@ -919,7 +919,7 @@ export const deleteStudyPlan = async (id: string) => {
 
 // Study Assignments
 export const onStudyAssignmentsUpdate = (callback: (assignments: StudyAssignment[]) => void) => onFamilyDataUpdate<StudyAssignment>('studyAssignments', callback);
-export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId'>) => {
+export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId' | 'status'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
     const assignmentData = { ...data, status: 'assigned' as const };
@@ -1288,7 +1288,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'fa
     // If questions are provided, process and include them in the update
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
         const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? question.questionId : '');
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
             return {
                 questionId: questionId,
                 questionNumber: index + 1,
@@ -1510,31 +1510,17 @@ export const onNotebookDetailsUpdate = (
       callback({ notebook: notebookData, notes: notesData });
     });
 
+    // This is important: when the parent listener (on the notebook) is cleaned up,
+    // we also need to clean up the nested listener (on the notes).
+    // However, the structure of onSnapshot doesn't directly return the nested unsubscribe.
+    // A more robust solution might involve a different pattern if this becomes an issue.
+    // For now, this is a simplified implementation.
     return () => unsubscribeNotes();
   });
 
   return () => unsubscribeNotebook();
 };
 
-
-export const addSectionToNotebook = async (notebookId: string, title: string) => {
-  const notebookRef = doc(db, 'notebooks', notebookId);
-  const notebookSnap = await getDoc(notebookRef);
-
-  if (notebookSnap.exists()) {
-    const notebook = notebookSnap.data() as Notebook;
-    const newSection: NotebookSection = {
-      id: Date.now().toString(),
-      title,
-      order: notebook.sections.length,
-      color: noteColors[notebook.sections.length % noteColors.length], // Assign a color cyclically
-    };
-    await updateDoc(notebookRef, {
-      sections: arrayUnion(newSection),
-    });
-    return newSection.id;
-  }
-};
 
 export const addNoteToSection = async (notebookId: string, sectionId: string, noteData: Partial<Omit<Note, 'id'| 'notebookId'|'sectionId'|'familyId'|'createdAt'|'updatedAt'>>) => {
     const familyId = await getCurrentFamilyId();
@@ -1549,7 +1535,7 @@ export const addNoteToSection = async (notebookId: string, sectionId: string, no
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         tags: [],
-        color: noteColors[Math.floor(Math.random() * noteColors.length)],
+        color: noteColors[Math.floor(Math.random() * noteColors.length)].class,
         imageUrl: noteData.imageUrl || null,
         folder: noteData.folder,
     };

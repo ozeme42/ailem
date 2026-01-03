@@ -1,10 +1,11 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder, deleteNotebookSection } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, ChevronDown, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -117,7 +118,7 @@ export default function NotebookClient() {
             }
         });
         return () => unsubscribe();
-    }, [notebookId, user, router]);
+    }, [notebookId, user, router, activeSectionId]);
 
     // Bölüm değişince klasör filtresini sıfırla
     useEffect(() => {
@@ -149,8 +150,10 @@ export default function NotebookClient() {
     };
 
     const handleDeleteSection = async (sectionId: string) => {
+        if (!details) return;
+        const updatedSections = details.notebook.sections.filter(s => s.id !== sectionId);
         try {
-            await deleteNotebookSection(notebookId, sectionId);
+            await updateNotebook(notebookId, { sections: updatedSections });
             toast({ title: 'Bölüm Silindi', variant: 'destructive' });
             if (activeSectionId === sectionId) setActiveSectionId(null);
         } catch (e) { toast({ title: 'Hata', variant: 'destructive' }); }
@@ -224,7 +227,17 @@ export default function NotebookClient() {
     const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
     const activeSectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
 
-    // Filtreleme Mantığı
+    const notesByFolder = allNotesInSection.reduce((acc, note) => {
+        const folderName = note.folder || 'Genel';
+        if (!acc[folderName]) {
+            acc[folderName] = [];
+        }
+        acc[folderName].push(note);
+        return acc;
+    }, {} as Record<string, Note[]>);
+    
+    const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a,b) => a.localeCompare(b, 'tr'))];
+    
     const allNotesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a,b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
     
     const displayedNotes = activeFolderFilter === 'Tümü' 
@@ -344,67 +357,60 @@ export default function NotebookClient() {
                  </div>
                  
                  {/* Content */}
-                 <ScrollArea className="flex-1 p-4 md:p-6 w-full">
-                    {!activeSectionId ? (
+                 <ScrollArea className="flex-1 w-full">
+                    {activeSectionId ? (
+                        <div className="p-4 md:p-6 space-y-8 pb-20">
+                            {/* Folder Shelf */}
+                            <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200" style={{background: 'linear-gradient(to bottom, white, #f8fafc)'}}>
+                                 <div className="flex gap-3 items-stretch min-w-max">
+                                     {folderOrder.map((folderName, index) => {
+                                         const count = folderName === 'Tümü' 
+                                            ? allNotesInSection.length 
+                                            : folderName === 'Genel'
+                                                ? generalCount
+                                                : folderStats[folderName] || 0;
+                                        
+                                        return (
+                                            <FolderCard 
+                                                key={folderName}
+                                                name={folderName}
+                                                count={count}
+                                                isActive={activeFolderFilter === folderName}
+                                                onClick={() => setActiveFolderFilter(folderName)}
+                                                onEdit={folderName !== 'Tümü' && folderName !== 'Genel' ? () => { setNewFolderName(folderName); setEditingFolder({oldName: folderName, sectionId: activeSectionId}); setIsFolderDialogOpen(true); } : undefined}
+                                                onDelete={folderName !== 'Tümü' && folderName !== 'Genel' ? () => handleDeleteFolder(folderName, activeSectionId) : undefined}
+                                                icon={folderName === 'Tümü' ? LayoutGrid : folderName === 'Genel' ? Sparkles : Folder}
+                                                gradient={activeSectionGradient}
+                                            />
+                                        )
+                                     })}
+                                 </div>
+                            </div>
+                            
+                            {/* Notes Grid */}
+                            {displayedNotes.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {displayedNotes.map(note => (
+                                    <StickyNoteCard 
+                                        key={note.id} 
+                                        note={note} 
+                                        onEdit={() => setEditingNote(note)} 
+                                        onDelete={() => handleDeleteNote(note.id)} 
+                                    />
+                                ))}
+                                </div>
+                            ) : (
+                                 <div className="col-span-full flex flex-col items-center justify-center h-[30vh] text-slate-400">
+                                     <FileText className="w-12 h-12 text-slate-300 mb-4" />
+                                    <p className="text-lg font-medium text-slate-500">Not bulunamadı</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
                         <div className="flex flex-col items-center justify-center h-[50vh] text-center opacity-60 px-4">
                             <Book className="w-16 h-16 text-slate-300 mb-4" />
                             <p className="text-lg font-medium text-slate-500">Bir bölüm seçin.</p>
                         </div>
-                    ) : (
-                         <div className="space-y-8 pb-20">
-                             {folderOrder.map((folderName) => {
-                                 const folderNotes = notesByFolder[folderName];
-                                 if ((!folderNotes || folderNotes.length === 0) && folderName === 'Genel' && folderOrder.length > 1) return null; // Don't show empty General if others exist
-                                 
-                                 return (
-                                     <div key={folderName} className="space-y-3">
-                                         {/* Folder Header */}
-                                         <div className="flex items-center justify-between group">
-                                             <div className="flex items-center gap-2 text-slate-500">
-                                                 {folderName === 'Genel' ? <Sparkles className="w-4 h-4" /> : <Folder className="w-4 h-4 text-amber-500" />}
-                                                 <span className="text-sm font-bold uppercase tracking-wider">{folderName}</span>
-                                                 <span className="text-xs bg-slate-200 px-1.5 py-0.5 rounded-full text-slate-600 font-mono">{folderNotes?.length || 0}</span>
-                                             </div>
-                                             {folderName !== 'Genel' && (
-                                                 <DropdownMenu>
-                                                     <DropdownMenuTrigger asChild>
-                                                         <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                             <MoreVertical className="w-3 h-3" />
-                                                         </Button>
-                                                     </DropdownMenuTrigger>
-                                                     <DropdownMenuContent align="end">
-                                                         <DropdownMenuItem onClick={() => { setNewFolderName(folderName); setEditingFolder({oldName: folderName, sectionId: activeSectionId}); setIsFolderDialogOpen(true); }}>
-                                                             <Edit className="w-3 h-3 mr-2" /> Adlandır
-                                                         </DropdownMenuItem>
-                                                         <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteFolder(folderName, activeSectionId)}>
-                                                             <Trash2 className="w-3 h-3 mr-2" /> Sil
-                                                         </DropdownMenuItem>
-                                                     </DropdownMenuContent>
-                                                 </DropdownMenu>
-                                             )}
-                                         </div>
-                                         
-                                         {/* Notes Grid */}
-                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                             {folderNotes?.map(note => (
-                                                 <StickyNoteCard 
-                                                     key={note.id} 
-                                                     note={note} 
-                                                     onEdit={() => setEditingNote(note)} 
-                                                     onDelete={() => handleDeleteNote(note.id)} 
-                                                 />
-                                             ))}
-                                             {/* Empty State for Folder */}
-                                             {(!folderNotes || folderNotes.length === 0) && (
-                                                 <div className="col-span-full border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 text-sm">
-                                                     Bu klasör boş.
-                                                 </div>
-                                             )}
-                                         </div>
-                                     </div>
-                                 )
-                             })}
-                         </div>
                     )}
                  </ScrollArea>
             </div>
@@ -412,7 +418,7 @@ export default function NotebookClient() {
             {/* --- DIALOGS --- */}
             {/* Section Edit Dialog */}
             <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl">
+                <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm"}</DialogTitle>
                     </DialogHeader>
@@ -422,11 +428,11 @@ export default function NotebookClient() {
                             value={sectionTitle} 
                             onChange={(e) => setSectionTitle(e.target.value)} 
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveSection()}
-                            className="bg-slate-50 border-slate-200 text-slate-900"
+                            className="bg-slate-800 border-slate-700 focus:border-indigo-500"
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
+                        <Button variant="ghost" className="hover:bg-slate-800" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
                         <Button onClick={handleSaveSection} className="bg-indigo-600 text-white hover:bg-indigo-700">Kaydet</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -468,25 +474,25 @@ export default function NotebookClient() {
 
 // --- SUB-COMPONENTS ---
 
-function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, color = "blue", icon }: any) {
+function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, icon: Icon, gradient }: any) {
     return (
         <div 
             onClick={onClick}
             className={cn(
                 "group relative h-28 w-44 shrink-0 cursor-pointer rounded-2xl border p-4 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1",
                 isActive 
-                    ? "bg-white border-slate-300 shadow-md ring-2 ring-indigo-500/50" 
-                    : "bg-white/50 border-slate-200 hover:bg-white hover:border-slate-300"
+                    ? `bg-gradient-to-br ${gradient} shadow-md border-transparent text-white` 
+                    : "bg-white/50 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-700"
             )}
         >
              <div className="flex w-full justify-between items-start">
-                 <div className={cn("p-2 rounded-lg transition-colors text-slate-500", isActive ? "bg-indigo-50 text-indigo-600" : "bg-slate-100 group-hover:bg-white")}>
-                    {icon || <Folder className="w-5 h-5" />}
+                 <div className={cn("p-2 rounded-lg transition-colors", isActive ? "bg-white/10" : "bg-slate-100 group-hover:bg-white")}>
+                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "")} />
                  </div>
                  {(onEdit || onDelete) && (
                      <DropdownMenu>
                          <DropdownMenuTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-7 w-7 -mr-2 -mt-1 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Button variant="ghost" size="icon" className={cn("h-7 w-7 -mr-2 -mt-1 hover:bg-black/5 transition-opacity", isActive ? "text-white/60 hover:text-white" : "text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100")}>
                                  <MoreVertical className="w-4 h-4" />
                              </Button>
                          </DropdownMenuTrigger>
@@ -499,8 +505,8 @@ function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, color = 
             </div>
             
             <div>
-                <p className={cn("font-bold text-base truncate transition-colors", isActive ? "text-indigo-800" : "text-slate-700")}>{name}</p>
-                <p className="text-xs text-slate-500 font-medium">{count} not</p>
+                <p className={cn("font-bold text-base truncate transition-colors", isActive && "text-white")}>{name}</p>
+                <p className={cn("text-xs font-medium", isActive ? "text-white/70" : "text-slate-500")}>{count} not</p>
             </div>
         </div>
     )
@@ -583,7 +589,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
 
     return (
         <Dialog open={!!note} onOpenChange={onOpenChange}>
-            <DialogContent className={cn(
+             <DialogContent className={cn(
                 "w-[100vw] h-[100dvh] md:w-full md:max-w-2xl md:h-auto md:max-h-[85vh] p-0 border-none shadow-2xl flex flex-col md:rounded-xl overflow-hidden transition-colors duration-500",
                 activeColorObj.class
             )}>
