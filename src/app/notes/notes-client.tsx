@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 // --- TASARIM SABİTLERİ ---
@@ -73,8 +73,9 @@ export function NotesClient() {
     const getNoteCount = (notebookId: string) => allNotes.filter(n => n.notebookId === notebookId).length;
 
     const displayedNotebooks = useMemo(() => {
-        if (!searchTerm) return notebooks;
-        return notebooks.filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        const sorted = [...notebooks].sort((a,b) => (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0));
+        if (!searchTerm) return sorted;
+        return sorted.filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [notebooks, searchTerm]);
 
     return (
@@ -191,4 +192,3 @@ export function NotesClient() {
         </div>
     );
 }
-
