@@ -35,12 +35,12 @@ const themeColors = {
 
 // --- YENİ CANLI RENK PALETİ ---
 const noteColors = [
-    { name: 'Parchment', class: 'bg-amber-100/50 border-amber-200/80 text-amber-900/80 hover:bg-amber-100/70', accent: 'border-amber-400/80' },
-    { name: 'Sky', class: 'bg-sky-100/50 border-sky-200/80 text-sky-900/80 hover:bg-sky-100/70', accent: 'border-sky-400/80' },
-    { name: 'Mint', class: 'bg-emerald-100/50 border-emerald-200/80 text-emerald-900/80 hover:bg-emerald-100/70', accent: 'border-emerald-400/80' },
-    { name: 'Rose', class: 'bg-rose-100/50 border-rose-200/80 text-rose-900/80 hover:bg-rose-100/70', accent: 'border-rose-400/80' },
-    { name: 'Lavender', class: 'bg-violet-100/50 border-violet-200/80 text-violet-900/80 hover:bg-violet-100/70', accent: 'border-violet-400/80' },
-    { name: 'Stone', class: 'bg-slate-100/50 border-slate-200/80 text-slate-900/80 hover:bg-slate-100/70', accent: 'border-slate-400/80' },
+    { name: 'Parchment', class: 'bg-[#fffbeb] border-[#fde68a]', accent: 'border-amber-300' },
+    { name: 'Sky', class: 'bg-[#f0f9ff] border-[#bae6fd]', accent: 'border-sky-300' },
+    { name: 'Mint', class: 'bg-[#f0fdf4] border-[#bbf7d0]', accent: 'border-emerald-300' },
+    { name: 'Rose', class: 'bg-[#fff1f2] border-[#fecdd3]', accent: 'border-rose-300' },
+    { name: 'Lavender', class: 'bg-[#f5f3ff] border-[#ddd6fe]', accent: 'border-violet-300' },
+    { name: 'Stone', class: 'bg-slate-100/50 border-slate-200', accent: 'border-slate-300' },
 ];
 
 const sectionGradients = [
@@ -109,13 +109,12 @@ export default function NotebookClient() {
                 setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
                 setSections(sortedSections);
                 
-                // Masaüstünde otomatik ilk bölümü seç
                 if (!activeSectionId && sortedSections.length > 0 && window.innerWidth >= 768) {
                     setActiveSectionId(sortedSections[0].id);
                 }
             } else {
                 setDetails(null);
-                router.push('/notes'); // Defter silindiyse geri dön
+                router.push('/notes');
             }
         });
         return () => unsubscribe();
@@ -149,7 +148,7 @@ export default function NotebookClient() {
             setIsSectionDialogOpen(false); setSectionTitle(""); setEditingSection(null);
         } catch (e) { toast({ title: 'Hata', variant: 'destructive' }); }
     };
-
+    
     const handleDeleteSection = async (sectionId: string) => {
         if (!details) return;
         const updatedSections = details.notebook.sections.filter(s => s.id !== sectionId);
@@ -221,7 +220,10 @@ export default function NotebookClient() {
     }
 
     if (!details) return <div className="flex h-screen items-center justify-center text-slate-500">Yükleniyor...</div>;
-
+    
+    const activeSection = sections.find(s => s.id === activeSectionId);
+    const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
+    
     const allNotesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a,b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
     
     const notesByFolder = allNotesInSection.reduce((acc, note) => {
@@ -239,8 +241,6 @@ export default function NotebookClient() {
     }, {} as Record<string, number>);
 
     const generalCount = folderStats['Genel'] || 0;
-    
-    const activeSection = sections.find(s => s.id === activeSectionId);
     
     const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a,b) => a.localeCompare(b, 'tr'))];
     
@@ -270,19 +270,20 @@ export default function NotebookClient() {
                 </div>
 
                 <ScrollArea className="flex-1 p-3">
-                    <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                         {sections.map((section, index) => {
                              const isSelected = activeSectionId === section.id;
                              const gradientClass = section.color || sectionGradients[index % sectionGradients.length];
                              const noteCount = details.notes.filter(n => n.sectionId === section.id).length;
 
                              return (
-                                <div key={section.id} 
+                                <div 
+                                    key={section.id} 
                                     onClick={() => setActiveSectionId(section.id)}
                                     className={cn(
-                                        "group relative flex flex-col justify-between p-4 h-32 md:h-28 rounded-2xl cursor-pointer transition-all border-2",
+                                        "group relative flex flex-col justify-between p-4 h-28 rounded-2xl cursor-pointer transition-all border-2",
                                         isSelected 
-                                            ? `ring-4 ring-offset-2 ring-indigo-500 border-transparent shadow-lg` 
+                                            ? `ring-4 ring-offset-2 ring-indigo-500 border-transparent shadow-lg bg-white` 
                                             : "border-slate-200 bg-white hover:border-slate-300 text-slate-600 hover:shadow-md"
                                     )}
                                 >
@@ -331,7 +332,7 @@ export default function NotebookClient() {
                              )
                         })}
                         {sections.length === 0 && (
-                            <div className="text-center py-10 text-slate-400 text-sm px-4 col-span-2 md:col-span-1">
+                            <div className="text-center py-10 text-slate-400 text-sm px-4 col-span-1">
                                 <p>Bu defter boş.</p>
                                 <p className="text-xs mt-1">Bölüm ekleyerek düzenlemeye başla.</p>
                             </div>
@@ -357,7 +358,7 @@ export default function NotebookClient() {
                     </div>
                     {activeSectionId && (
                          <div className="flex gap-2">
-                             <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => { setNewFolderName(""); setEditingFolder(null); setIsFolderDialogOpen(true); }}>
+                             <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => { setNewFolderName(""); setEditingFolder({oldName: '', sectionId: activeSectionId}); setIsFolderDialogOpen(true); }}>
                                  <FolderPlus className="w-4 h-4 mr-2" /> Klasör
                              </Button>
                              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm rounded-lg h-9 text-sm font-medium px-3 md:px-4" onClick={() => {
@@ -376,12 +377,14 @@ export default function NotebookClient() {
                             {/* Folder Shelf */}
                             <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200" style={{background: 'linear-gradient(to bottom, white, #f8fafc)'}}>
                                  <div className="flex gap-3 items-stretch min-w-max">
-                                     {folderOrder.map((folderName, index) => {
+                                     {folderOrder.map((folderName) => {
                                         if (folderName === 'Genel' && generalCount === 0) return null;
                                         if (folderName !== 'Tümü' && folderName !== 'Genel' && !folderStats[folderName]) return null;
-
-                                        const count = folderName === 'Tümü' ? allNotesInSection.length : folderStats[folderName] || 0;
                                         
+                                        const count = folderName === 'Tümü' ? allNotesInSection.length : folderStats[folderName] || 0;
+                                        const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
+                                        const activeSectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
+
                                         return (
                                             <FolderCard 
                                                 key={folderName}
@@ -621,6 +624,10 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
             )}>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
+                        <DialogHeader>
+                            <DialogTitle className="sr-only">{note.title || "Yeni Not"}</DialogTitle>
+                        </DialogHeader>
+
                         <div className="absolute top-0 left-0 w-full z-20 p-4 md:p-6 flex justify-end">
                             <DialogClose asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/10 text-black/40 hover:text-black/70 rounded-full">
