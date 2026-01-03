@@ -81,6 +81,7 @@ export interface CalendarEvent {
     startDate: string; // ISO 8601 format
     endDate?: string; // ISO 8601 format
     recurrence: 'one-time' | 'monthly' | 'yearly';
+    location?: string;
 }
 
 export interface Book {
@@ -135,7 +136,7 @@ export interface Recipe {
     id: string;
     familyId: string;
     title: string;
-    category: 'Kahvaltı' | 'Akşam Yemeği';
+    category: string;
     rating: number;
     instructions?: string;
 }
@@ -472,6 +473,7 @@ export interface ShoppingList {
   items: ShoppingItem[];
   boughtItems?: ShoppingItem[];
   createdAt?: string;
+  colorId?: string;
 }
 
 // Separate data structure for Needs page
@@ -504,7 +506,7 @@ export interface Mistake {
     topic: string;
     createdAt: string; // ISO date string
     status: 'active' | 'corrected';
-    type: 'mcq' | 'open_ended'; // Type of the original question
+    type: 'mcq' | 'open_ended';
 }
 export interface AmbientSound {
     id: string;
@@ -579,10 +581,9 @@ export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
     { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
 ];
 
-// This is a duplicate, will remove it.
-// export const initialRecipes: Omit<Recipe, 'id'|'familyId'>[] = [
-//     ...
-// ];
+export const initialRecipes: Omit<Recipe, 'id'|'familyId'>[] = [
+    ...
+];
 
 export const initialMealPlan: MealPlan = {
   "2024-08-12": { // This key needs to be dynamic based on current week, but for initial setup it's fine
@@ -694,8 +695,5 @@ export interface StudyAssignment {
   startDate: string;
   dueDate: string;
   completedAt?: string;
+  durationMinutes?: number;
 }
-
-  
-
-    
