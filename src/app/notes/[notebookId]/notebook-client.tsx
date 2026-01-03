@@ -33,13 +33,13 @@ const sectionGradients = [
     'from-violet-500 to-purple-500',
 ];
 
-const noteColors = [
-    { name: 'Saman', class: 'bg-[#fffbeb] border-[#fde68a]', accent: 'border-amber-300' },
-    { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd]', accent: 'border-sky-300' },
-    { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0]', accent: 'border-emerald-300' },
-    { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3]', accent: 'border-rose-300' },
-    { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe]', accent: 'border-violet-300' },
-    { name: 'Taş', class: 'bg-slate-100/50 border-slate-200', accent: 'border-slate-300' },
+const noteParchmentColors = [
+    { name: 'Saman', class: 'bg-[#fffbeb] border-[#fde68a] text-amber-900', accent: 'border-amber-300' },
+    { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd] text-sky-900', accent: 'border-sky-300' },
+    { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0] text-green-900', accent: 'border-emerald-300' },
+    { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3] text-rose-900', accent: 'border-rose-300' },
+    { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe] text-violet-900', accent: 'border-violet-300' },
+    { name: 'Taş', class: 'bg-slate-100 border-slate-200 text-slate-800', accent: 'border-slate-300' },
 ];
 
 
@@ -278,53 +278,50 @@ export default function NotebookClient() {
                                     key={section.id} 
                                     onClick={() => setActiveSectionId(section.id)}
                                     className={cn(
-                                        "group relative w-full h-24 rounded-2xl cursor-pointer transition-all duration-200 p-4 flex flex-col justify-end border-2",
+                                        "group relative w-full rounded-2xl cursor-pointer transition-all duration-200 p-4 flex flex-col justify-between border-2",
                                         isSelected 
                                             ? `border-indigo-500 bg-indigo-50 shadow-md` 
                                             : "border-transparent bg-slate-100 hover:border-slate-200"
                                     )}
                                 >
-                                     <div className={cn("absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r", gradientClass)}></div>
-                                     
-                                     <div className="flex w-full justify-between items-start absolute top-4 left-4 right-4">
-                                        <div className={cn("flex-1 overflow-hidden pr-8")}>
-                                            <p className={cn("font-bold text-base truncate", isSelected ? "text-indigo-800" : "text-slate-700")}>{section.title}</p>
+                                    <div className="flex w-full justify-between items-start">
+                                        <p className={cn("font-bold text-base truncate pr-8", isSelected ? "text-indigo-800" : "text-slate-700")}>{section.title}</p>
+                                        <div onClick={(e) => e.stopPropagation()} className={cn("transition-opacity absolute top-3 right-3", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-full hover:bg-black/5", isSelected ? "text-slate-500" : "text-slate-400")}>
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingSection(section); setSectionTitle(section.title); setIsSectionDialogOpen(true); }}>
+                                                        <Edit className="w-3 h-3 mr-2" /> Düzenle
+                                                    </DropdownMenuItem>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700">
+                                                                <Trash2 className="w-3 h-3 mr-2" /> Sil
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
+                                                                <AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek. Emin misiniz?</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooterComponent>
+                                                                <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}>Evet, Sil</AlertDialogAction>
+                                                            </AlertDialogFooterComponent>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
-                                         <div onClick={(e) => e.stopPropagation()} className={cn("transition-opacity", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-                                             <DropdownMenu>
-                                                 <DropdownMenuTrigger asChild>
-                                                      <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-full hover:bg-black/5", isSelected ? "text-slate-500" : "text-slate-400")}>
-                                                         <MoreVertical className="w-4 h-4" />
-                                                     </Button>
-                                                 </DropdownMenuTrigger>
-                                                 <DropdownMenuContent align="end" className="w-40 rounded-xl">
-                                                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingSection(section); setSectionTitle(section.title); setIsSectionDialogOpen(true); }}>
-                                                         <Edit className="w-3 h-3 mr-2" /> Düzenle
-                                                     </DropdownMenuItem>
-                                                     <AlertDialog>
-                                                         <AlertDialogTrigger asChild>
-                                                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700">
-                                                                 <Trash2 className="w-3 h-3 mr-2" /> Sil
-                                                             </DropdownMenuItem>
-                                                         </AlertDialogTrigger>
-                                                         <AlertDialogContent>
-                                                             <AlertDialogHeader>
-                                                                 <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
-                                                                 <AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek. Emin misiniz?</AlertDialogDescription>
-                                                             </AlertDialogHeader>
-                                                             <AlertDialogFooterComponent>
-                                                                 <AlertDialogCancel>Vazgeç</AlertDialogCancel>
-                                                                 <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}>Evet, Sil</AlertDialogAction>
-                                                             </AlertDialogFooterComponent>
-                                                         </AlertDialogContent>
-                                                     </AlertDialog>
-                                                 </DropdownMenuContent>
-                                             </DropdownMenu>
-                                         </div>
-                                     </div>
-                                    <div className="mt-auto">
+                                    </div>
+                                    <div className="mt-auto pt-2">
                                         <p className="text-xs font-medium text-slate-400">{noteCount} not</p>
                                     </div>
+                                    <div className={cn("absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r rounded-b-xl", gradientClass)}></div>
                                 </div>
                              )
                         })}
@@ -539,7 +536,7 @@ function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, icon: Ic
 }
 
 function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => void, onDelete: () => void }) {
-    const colorObj = noteColors.find(c => c.class === note.color) || noteColors[5]; // Default Stone
+    const colorObj = noteParchmentColors.find(c => c.class === note.color) || noteParchmentColors[5]; // Default Stone
     
     const contentText = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
     const plainText = typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '') : '';
@@ -549,12 +546,10 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
             onClick={onEdit}
             className={cn(
                 "group relative flex flex-col h-52 p-5 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer overflow-hidden",
-                colorObj.class, 'text-slate-800'
+                colorObj.class, colorObj.text
             )}
         >
-             {/* Kağıt Dokusu */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(transparent_19px,#000_20px)] bg-[length:100%_20px]" />
-            {/* Top Tape Effect (Visual) */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-white/40 backdrop-blur-sm shadow-sm rotate-1" />
 
             <div className="relative z-10 flex flex-col h-full">
@@ -597,7 +592,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
             form.reset({
                 title: note.title,
                 content: Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '',
-                color: note.color || noteColors[5].class,
+                color: note.color || noteParchmentColors[5].class,
                 folder: note.folder || ''
             });
         }
@@ -606,7 +601,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
     if (!note) return null;
 
     const watchedColor = form.watch('color');
-    const activeColorObj = noteColors.find(c => c.class === watchedColor) || noteColors[5]; // Default Stone
+    const activeColorObj = noteParchmentColors.find(c => c.class === watchedColor) || noteParchmentColors[5]; // Default Stone
 
     const handleFormSubmit = (data: NoteFormData) => {
         const updatedContent: NoteContentBlock[] = [{ id: note.content?.[0]?.id || Date.now().toString(), type: 'text', data: data.content || '' }];
@@ -617,7 +612,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         <Dialog open={!!note} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
                 "w-[100vw] h-[100dvh] md:w-full md:max-w-2xl md:h-auto md:max-h-[85vh] p-0 border-none shadow-2xl flex flex-col md:rounded-xl overflow-hidden transition-colors duration-500",
-                activeColorObj.class, 'text-slate-800'
+                activeColorObj.class, activeColorObj.text
             )}>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
@@ -662,7 +657,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
                                  <div className="flex items-center gap-2">
                                      <Palette className="w-4 h-4 text-black/40" />
                                      <div className="flex gap-1.5">
-                                         {noteColors.map(color => (
+                                         {noteParchmentColors.map(color => (
                                              <button
                                                 key={color.name}
                                                 type="button"

@@ -20,11 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" suppressHydrationWarning>
-      {/* DÜZELTME BURADA: 
-          1. "bg-background": globals.css'teki arka plan rengini tüm sayfaya yayar.
-          2. "text-foreground": Yazı rengini varsayılan olarak ayarlar.
-      */}
-      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="light"
