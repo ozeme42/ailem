@@ -9,7 +9,7 @@ import { onNotebookDetailsUpdate, updateNotebook, addNoteToSection, updateNoteIn
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen, Check, MoreHorizontal } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { z } from 'zod';
 import Image from 'next/image';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const sectionGradients = [
     { name: 'Gül', class: 'from-rose-500 to-pink-500' },
@@ -249,7 +250,7 @@ export default function NotebookClient() {
 
                 <ScrollArea className="flex-1 p-3">
                     <div className="flex flex-col gap-2">
-                        {details.notebook.sections.map((section, index) => (
+                        {details.notebook.sections.map((section) => (
                             <SectionCard
                                 key={section.id}
                                 section={section}
@@ -302,7 +303,7 @@ export default function NotebookClient() {
                         <div className="p-4 md:p-6 space-y-8 pb-20">
                             <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-800">
                                  <div className="flex gap-3 items-stretch min-w-max">
-                                     {folderOrder.map((folderName, index) => {
+                                     {folderOrder.map((folderName) => {
                                         if (folderName === 'Genel' && generalCount === 0 && folderOrder.length > 2) return null;
                                         if (folderName !== 'Tümü' && folderName !== 'Genel' && !folderStats[folderName]) return null;
                                         
@@ -406,10 +407,10 @@ function SectionCard({ section, noteCount, isSelected, onClick, onEdit, onDelete
                                 <AlertDialogTitle>Bölümü Sil?</AlertDialogTitle>
                                 <AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooterComponent>
+                            <AlertDialogFooter>
                                 <AlertDialogCancel>Vazgeç</AlertDialogCancel>
                                 <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
-                            </AlertDialogFooterComponent>
+                            </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </DropdownMenuContent>
@@ -446,7 +447,7 @@ function FolderCard({ name, count, isActive, colorClass, onClick, onEdit, onDele
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50 dark:focus:bg-red-500/10">Sil</DropdownMenuItem>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Klasörü Sil</AlertDialogTitle><AlertDialogDescription>İçindeki notlar 'Genel' klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Klasörü Sil</AlertDialogTitle><AlertDialogDescription>İçindeki notlar 'Genel' klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                             </AlertDialog>
                         </DropdownMenuContent>
                      </DropdownMenu>
@@ -538,3 +539,5 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         </Dialog>
     )
 }
+
+    
