@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder, deleteTag } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -19,7 +19,6 @@ import { Combobox } from '@/components/ui/combobox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { z } from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,13 +41,11 @@ const noteParchmentColors = [
     { name: 'Taş', class: 'bg-slate-100 border-slate-200 text-slate-800', accent: 'border-slate-300' },
 ];
 
-
 interface NotebookDetails {
     notebook: NotebookType;
     notes: Note[];
 }
 
-// NOTE FORM SCHEMA
 const noteFormSchema = z.object({
     title: z.string().min(1, "Başlık gereklidir.").default(""),
     content: z.string().optional().default(""),
@@ -64,26 +61,21 @@ export default function NotebookClient() {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    // Data State
     const [details, setDetails] = useState<NotebookDetails | null>(null);
-    
-    // UI State
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
-    const [activeFolderFilter, setActiveFolderFilter] = useState<string>('Tümü'); 
+    const [activeFolderFilter, setActiveFolderFilter] = useState<string>('Tümü');
     const [isMobile, setIsMobile] = useState(false);
-    
-    // Dialog States
+
     const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
     const [editingSection, setEditingSection] = useState<NotebookSection | null>(null);
     const [sectionTitle, setSectionTitle] = useState("");
-    
+
     const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
     const [editingFolder, setEditingFolder] = useState<{ oldName: string; sectionId: string } | null>(null);
     const [newFolderName, setNewFolderName] = useState('');
-    
+
     const [editingNote, setEditingNote] = useState<Note | null>(null);
 
-    // Responsive Check
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
@@ -91,7 +83,6 @@ export default function NotebookClient() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Data Fetching
     useEffect(() => {
         if (!notebookId || !user) return;
         const unsubscribe = onNotebookDetailsUpdate(notebookId, (data) => {
@@ -110,29 +101,22 @@ export default function NotebookClient() {
         return () => unsubscribe();
     }, [notebookId, user, router, activeSectionId]);
 
-    // Bölüm değişince klasör filtresini sıfırla
     useEffect(() => {
         setActiveFolderFilter('Tümü');
     }, [activeSectionId]);
-    
+
     const activeSection = useMemo(() => details?.notebook.sections.find(s => s.id === activeSectionId), [details, activeSectionId]);
-    
-    const { notesByFolder, folderStats, displayedNotes } = React.useMemo(() => {
+
+    const { displayedNotes, folderStats } = React.useMemo(() => {
         if (!details || !activeSectionId) {
-            return { notesByFolder: {}, folderStats: {}, displayedNotes: [] };
+            return { displayedNotes: [], folderStats: {} };
         }
 
         const notesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a, b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
         
-        const byFolder = notesInSection.reduce((acc, note) => {
+        const stats = notesInSection.reduce((acc, note) => {
             const folderName = note.folder || 'Genel';
-            if (!acc[folderName]) acc[folderName] = [];
-            acc[folderName].push(note);
-            return acc;
-        }, {} as Record<string, Note[]>);
-
-        const stats = Object.keys(byFolder).reduce((acc, folder) => {
-            acc[folder] = byFolder[folder].length;
+            acc[folderName] = (acc[folderName] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
 
@@ -142,14 +126,13 @@ export default function NotebookClient() {
                 ? notesInSection.filter(n => !n.folder || n.folder === '')
                 : notesInSection.filter(n => n.folder === activeFolderFilter);
 
-        return { notesByFolder: byFolder, folderStats: stats, displayedNotes: notesToDisplay };
+        return { displayedNotes: notesToDisplay, folderStats: stats };
     }, [details, activeSectionId, activeFolderFilter]);
-
+    
     const generalCount = folderStats['Genel'] || 0;
     const allNotesInSectionCount = Object.values(folderStats).reduce((sum, count) => sum + count, 0);
     const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a, b) => a.localeCompare(b, 'tr'))];
 
-    // --- ACTION HANDLERS ---
     const handleSaveSection = async () => {
         if (!sectionTitle.trim() || !details) return;
         const currentSections = details.notebook.sections || [];
@@ -244,30 +227,31 @@ export default function NotebookClient() {
         } catch(e) { toast({ title: 'Hata', variant: 'destructive' }); }
     }
 
-    if (!details) return <div className="flex h-screen items-center justify-center text-slate-500">Yükleniyor...</div>;
+    if (!details) return <div className="flex h-screen items-center justify-center text-slate-500 dark:text-slate-400">Yükleniyor...</div>;
 
     return (
-        <div className={cn("flex h-[100dvh] overflow-hidden font-sans text-slate-900 bg-slate-50")}>
+        <div className={cn("flex h-[100dvh] overflow-hidden font-sans", "bg-slate-50 text-slate-900", "dark:bg-slate-950 dark:text-slate-100")}>
             
             <div className={cn(
-                "flex-col border-r border-slate-200 bg-white w-full md:w-72 flex-shrink-0 transition-all duration-300 z-20",
+                "flex-col border-r bg-white dark:bg-slate-900 w-full md:w-72 flex-shrink-0 transition-all duration-300 z-20",
+                "dark:border-slate-800",
                 activeSectionId && isMobile ? "hidden" : "flex"
             )}>
-                 <div className="p-4 border-b border-slate-200 bg-white sticky top-0">
+                 <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0">
                      <div className="flex items-center gap-3 mb-4">
-                        <Button variant="ghost" size="icon" className="-ml-2 text-slate-500" onClick={() => router.push('/notes')}>
+                        <Button variant="ghost" size="icon" className="-ml-2 text-slate-500 dark:text-slate-400" onClick={() => router.push('/notes')}>
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <h1 className="text-lg font-bold text-slate-800 truncate">{details.notebook.title}</h1>
+                        <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">{details.notebook.title}</h1>
                     </div>
-                    <Button onClick={() => { setEditingSection(null); setSectionTitle(""); setIsSectionDialogOpen(true); }} className="w-full justify-start bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 shadow-sm h-10">
+                    <Button onClick={() => { setEditingSection(null); setSectionTitle(""); setIsSectionDialogOpen(true); }} className="w-full justify-start bg-white dark:bg-slate-800 border dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-500/50 shadow-sm h-10">
                         <Plus className="w-4 h-4 mr-2" /> Yeni Bölüm
                     </Button>
                 </div>
 
                 <ScrollArea className="flex-1 p-3">
                     <div className="flex flex-col gap-2">
-                        {details.notebook.sections.map((section, index) => {
+                        {details.notebook.sections.map((section) => {
                              const isSelected = activeSectionId === section.id;
                              const noteCount = details.notes.filter(n => n.sectionId === section.id).length;
 
@@ -294,24 +278,22 @@ export default function NotebookClient() {
                 </ScrollArea>
             </div>
 
-            {/* --- SAĞ PANEL: NOTLAR --- */}
             <div className={cn(
-                "flex-col bg-slate-50 overflow-hidden relative w-full h-full",
+                "flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden relative w-full h-full",
                 !activeSectionId && isMobile ? "hidden" : "flex"
             )}>
-                 {/* Header */}
-                 <div className="h-16 px-4 md:px-6 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10 shrink-0">
+                 <div className="h-16 px-4 md:px-6 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/70 backdrop-blur-md flex items-center justify-between sticky top-0 z-10 shrink-0">
                     <div className="flex items-center gap-2 overflow-hidden">
-                        <Button variant="ghost" size="icon" className="md:hidden mr-1 text-slate-500" onClick={() => setActiveSectionId(null)}>
+                        <Button variant="ghost" size="icon" className="md:hidden mr-1 text-slate-500 dark:text-slate-400" onClick={() => setActiveSectionId(null)}>
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <h2 className="text-lg md:text-xl font-bold text-slate-800 truncate">
+                        <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 truncate">
                             {activeSection?.title || "Bölüm Seçin"}
                         </h2>
                     </div>
                     {activeSectionId && (
                          <div className="flex gap-2">
-                             <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => { setNewFolderName(""); setEditingFolder(null); setIsFolderDialogOpen(true); }}>
+                             <Button variant="outline" size="sm" className="hidden sm:flex bg-background" onClick={() => { setNewFolderName(""); setEditingFolder(null); setIsFolderDialogOpen(true); }}>
                                  <FolderPlus className="w-4 h-4 mr-2" /> Klasör
                              </Button>
                              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm rounded-lg h-9 text-sm font-medium px-3 md:px-4" onClick={() => {
@@ -323,12 +305,10 @@ export default function NotebookClient() {
                     )}
                  </div>
                  
-                 {/* Content */}
                  <ScrollArea className="flex-1 w-full">
                     {activeSectionId ? (
                         <div className="p-4 md:p-6 space-y-8 pb-20">
-                            {/* Folder Shelf */}
-                            <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200" style={{background: 'linear-gradient(to bottom, white, #f8fafc)'}}>
+                            <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-800" style={{background: 'linear-gradient(to bottom, var(--background-start-rgb), var(--background-end-rgb))'}}>
                                  <div className="flex gap-3 items-stretch min-w-max">
                                      {folderOrder.map((folderName) => {
                                         if (folderName === 'Genel' && generalCount === 0) return null;
@@ -353,7 +333,6 @@ export default function NotebookClient() {
                                  </div>
                             </div>
                             
-                            {/* Notes Grid */}
                             {displayedNotes.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 {displayedNotes.map(note => (
@@ -366,211 +345,102 @@ export default function NotebookClient() {
                                 ))}
                                 </div>
                             ) : (
-                                 <div className="col-span-full flex flex-col items-center justify-center h-[30vh] text-slate-400">
-                                     <FileText className="w-12 h-12 text-slate-300 mb-4" />
-                                    <p className="text-lg font-medium text-slate-500">Not bulunamadı</p>
+                                 <div className="col-span-full flex flex-col items-center justify-center h-[30vh] text-slate-400 dark:text-slate-500">
+                                     <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                                    <p className="text-lg font-medium text-slate-500 dark:text-slate-400">Not bulunamadı</p>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-[50vh] text-center opacity-60 px-4">
-                            <Book className="w-16 h-16 text-slate-300 mb-4" />
-                            <p className="text-lg font-medium text-slate-500">Bir bölüm seçin.</p>
+                            <Book className="w-16 h-16 text-slate-300 dark:text-slate-600 mb-4" />
+                            <p className="text-lg font-medium text-slate-500 dark:text-slate-400">Bir bölüm seçin.</p>
                         </div>
                     )}
                  </ScrollArea>
             </div>
 
-            {/* --- DIALOGS --- */}
-            {/* Section Edit Dialog */}
             <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm"}</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input 
-                            placeholder="Bölüm Adı" 
-                            value={sectionTitle} 
-                            onChange={(e) => setSectionTitle(e.target.value)} 
-                            onKeyDown={(e) => e.key === 'Enter' && handleSaveSection()}
-                            className="bg-slate-50 border-slate-200 text-slate-900"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)} className="text-slate-500">İptal</Button>
-                        <Button onClick={handleSaveSection} className="bg-indigo-600 text-white hover:bg-indigo-700">Kaydet</Button>
-                    </DialogFooter>
-                </DialogContent>
+                <DialogContent className="sm:max-w-md rounded-3xl bg-white dark:bg-slate-900"><DialogHeader><DialogTitle>Bölüm</DialogTitle></DialogHeader><Input value={sectionTitle} onChange={(e) => setSectionTitle(e.target.value)} /><DialogFooter><Button onClick={handleSaveSection}>Kaydet</Button></DialogFooter></DialogContent>
             </Dialog>
-            
-            {/* Folder Dialog */}
-             <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle>{editingFolder ? "Klasörü Düzenle" : "Yeni Klasör"}</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input 
-                            placeholder="Klasör Adı" 
-                            value={newFolderName} 
-                            onChange={(e) => setNewFolderName(e.target.value)} 
-                            onKeyDown={(e) => e.key === 'Enter' && (editingFolder ? handleUpdateFolder() : handleAddNewFolder())}
-                            className="bg-slate-50 border-slate-200 text-slate-900"
-                        />
-                    </div>
-                    <DialogFooter>
-                         <Button variant="ghost" onClick={() => setIsFolderDialogOpen(false)}>İptal</Button>
-                        <Button onClick={editingFolder ? handleUpdateFolder : handleAddNewFolder} className="bg-indigo-600 text-white hover:bg-indigo-700">{editingFolder ? "Güncelle" : "Oluştur"}</Button>
-                    </DialogFooter>
-                </DialogContent>
+            <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+                <DialogContent className="sm:max-w-md rounded-3xl bg-white dark:bg-slate-900"><DialogHeader><DialogTitle>Klasör</DialogTitle></DialogHeader><Input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} /><DialogFooter><Button onClick={editingFolder ? handleUpdateFolder : handleAddNewFolder}>Kaydet</Button></DialogFooter></DialogContent>
             </Dialog>
-
-            {/* MODERN NOTE EDITOR */}
-            <NoteEditDialog 
-                note={editingNote} 
-                sectionFolders={activeSection?.folders || []} 
-                onOpenChange={(open) => { if(!open) setEditingNote(null) }} 
-                onSave={handleSaveNote}
-            />
-
+            <NoteEditDialog note={editingNote} sectionFolders={activeSection?.folders || []} onOpenChange={(open) => { if(!open) setEditingNote(null) }} onSave={handleSaveNote} />
         </div>
     );
 }
-
-// --- SUB-COMPONENTS ---
 
 function SectionFolderCard({ title, noteCount, isSelected, gradient, onClick, onEdit, onDelete }: any) {
     return (
         <div 
             onClick={onClick}
             className={cn(
-                "group relative w-full rounded-2xl cursor-pointer transition-all duration-200 p-4 flex flex-col justify-between border-2 min-h-[110px]",
+                "group relative w-full rounded-xl cursor-pointer transition-all duration-200 p-4 flex flex-col justify-between border min-h-[100px]",
                 isSelected 
-                    ? `border-indigo-500 bg-indigo-50 shadow-md` 
-                    : "border-transparent bg-slate-100 hover:border-slate-200 hover:shadow-sm"
+                    ? `border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-md` 
+                    : "bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
             )}
         >
              <div onClick={(e) => e.stopPropagation()} className={cn("transition-opacity absolute top-2 right-2", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-full hover:bg-black/5", isSelected ? "text-slate-500" : "text-slate-400")}>
-                            <MoreVertical className="w-4 h-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 rounded-xl">
-                        <DropdownMenuItem onClick={onEdit}>
-                            <Edit className="w-3 h-3 mr-2" /> Düzenle
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700">
-                                    <Trash2 className="w-3 h-3 mr-2" /> Sil
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
-                                    <AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek. Emin misiniz?</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooterComponent>
-                                    <AlertDialogCancel>Vazgeç</AlertDialogCancel>
-                                    <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
-                                </AlertDialogFooterComponent>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </DropdownMenuContent>
+                <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5" ><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 rounded-xl bg-white dark:bg-slate-900">
+                    <DropdownMenuItem onClick={onEdit}><Edit className="w-3 h-3 mr-2" /> Düzenle</DropdownMenuItem>
+                    <AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 dark:text-red-500 dark:focus:text-red-400"><Trash2 className="w-3 h-3 mr-2" /> Sil</DropdownMenuItem></AlertDialogTrigger>
+                    <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil?</AlertDialogTitleComponent><AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                    </AlertDialog>
+                </DropdownMenuContent>
                 </DropdownMenu>
             </div>
             <div className="flex-grow">
-                <p className={cn("font-bold text-base truncate pr-8", isSelected ? "text-indigo-800" : "text-slate-700")}>{title}</p>
+                <p className={cn("font-bold text-sm truncate pr-8", isSelected ? "text-indigo-800 dark:text-indigo-200" : "text-slate-700 dark:text-slate-200")}>{title}</p>
             </div>
             <div className="mt-auto pt-2">
-                <p className="text-xs font-medium text-slate-400">{noteCount} not</p>
+                <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{noteCount} not</p>
             </div>
-            <div className={cn("absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r rounded-b-[14px]", gradient)}></div>
+            {isSelected && <div className={cn("absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r rounded-b-xl", gradient)}></div>}
         </div>
     );
 }
 
-
 function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, icon: Icon, gradient }: any) {
     const activeClass = `bg-gradient-to-br ${gradient} text-white shadow-lg border-transparent`;
-    const inactiveClass = "bg-white/50 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300";
+    const inactiveClass = "bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600";
 
     return (
-        <div 
-            onClick={onClick}
-            className={cn(
-                "group relative h-28 w-44 shrink-0 cursor-pointer rounded-2xl border p-4 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1",
-                isActive ? activeClass : inactiveClass
-            )}
-        >
+        <div onClick={onClick} className={cn("group relative h-28 w-44 shrink-0 cursor-pointer rounded-2xl border p-4 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1", isActive ? activeClass : inactiveClass)}>
              <div className="flex w-full justify-between items-start">
-                 <div className={cn("p-2 rounded-lg transition-colors", isActive ? "bg-white/10" : "bg-slate-100 group-hover:bg-white")}>
-                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-slate-500")} />
+                 <div className={cn("p-2 rounded-lg transition-colors", isActive ? "bg-white/10" : "bg-slate-100 dark:bg-slate-800 group-hover:bg-white dark:group-hover:bg-slate-700")}>
+                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-slate-500 dark:text-slate-400")} />
                  </div>
                  {(onEdit || onDelete) && (
-                     <DropdownMenu>
-                         <DropdownMenuTrigger asChild>
-                             <Button variant="ghost" size="icon" className={cn("h-7 w-7 -mr-2 -mt-1 transition-opacity", isActive ? "text-white/60 hover:text-white hover:bg-white/20" : "text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100")} onClick={(e) => e.stopPropagation()}>
-                                 <MoreVertical className="w-4 h-4" />
-                             </Button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                             <DropdownMenuItem onClick={onEdit}>Düzenle</DropdownMenuItem>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700">Sil</DropdownMenuItem></AlertDialogTrigger>
-                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>Klasörü silmek içindeki notları silmez, notlar "Genel" klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
-                            </AlertDialog>
-                         </DropdownMenuContent>
-                     </DropdownMenu>
+                     <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className={cn("h-7 w-7 -mr-2 -mt-1 transition-opacity", isActive ? "text-white/60 hover:text-white hover:bg-white/20" : "text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100")} onClick={(e) => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                     <DropdownMenuContent onClick={(e) => e.stopPropagation()}><DropdownMenuItem onClick={onEdit}>Düzenle</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700">Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent><AlertDialogDescription>İçindeki notlar 'Genel' klasörüne taşınır.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent></AlertDialog></DropdownMenuContent></DropdownMenu>
                  )}
             </div>
-            
             <div>
                 <p className={cn("font-bold text-base truncate transition-colors", isActive && "text-white")}>{name}</p>
-                <p className={cn("text-xs font-medium", isActive ? "text-white/70" : "text-slate-500")}>{count} not</p>
+                <p className={cn("text-xs font-medium", isActive ? "text-white/70" : "text-slate-500 dark:text-slate-400")}>{count} not</p>
             </div>
         </div>
     )
 }
 
 function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => void, onDelete: () => void }) {
-    const colorObj = noteParchmentColors.find(c => c.class === note.color) || noteParchmentColors[5]; // Default Stone
-    
+    const colorObj = noteParchmentColors.find(c => c.class === note.color) || noteParchmentColors[5];
     const contentText = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
     const plainText = typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '') : '';
     
     return (
-        <div 
-            onClick={onEdit}
-            className={cn(
-                "group relative flex flex-col h-52 p-5 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer overflow-hidden",
-                colorObj.class
-            )}
-        >
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(transparent_19px,#000_20px)] bg-[length:100%_20px]" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-white/40 backdrop-blur-sm shadow-sm rotate-1" />
-
+        <div onClick={onEdit} className={cn("group relative flex flex-col h-52 p-5 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer overflow-hidden", colorObj.class)}>
+            <div className={cn("absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(transparent_19px,#000_20px)] bg-[length:100%_20px]", colorObj.text)} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm shadow-sm rotate-1" />
             <div className="relative z-10 flex flex-col h-full">
-                <h3 className={cn("font-bold text-lg leading-tight mb-2 line-clamp-2", colorObj.text, "opacity-80")}>
-                    {note.title || "İsimsiz Not"}
-                </h3>
-                
-                <div className="flex-1 overflow-hidden">
-                     <p className={cn("text-sm leading-relaxed font-normal whitespace-pre-wrap line-clamp-6 font-serif", colorObj.text, "opacity-70")}>
-                        {plainText || "İçerik yok..."}
-                    </p>
-                </div>
-
+                <h3 className={cn("font-bold text-lg leading-tight mb-2 line-clamp-2", colorObj.text, "opacity-80")}>{note.title || "İsimsiz Not"}</h3>
+                <div className="flex-1 overflow-hidden"><p className={cn("text-sm leading-relaxed font-normal whitespace-pre-wrap line-clamp-6 font-serif", colorObj.text, "opacity-70")}>{plainText || "İçerik yok..."}</p></div>
                 <div className={cn("mt-auto pt-3 border-t flex items-center justify-between text-xs font-semibold", colorObj.accent)}>
                      <span className={cn(colorObj.text, "opacity-60")}>{note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : ''}</span>
-                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-black/10 rounded-full" onClick={(e) => {e.stopPropagation(); onDelete();}}>
-                             <Trash2 className="w-3.5 h-3.5 text-red-500/70" />
-                         </Button>
-                     </div>
+                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-black/10 rounded-full" onClick={(e) => {e.stopPropagation(); onDelete();}}><Trash2 className="w-3.5 h-3.5 text-red-500/70" /></Button></div>
                 </div>
             </div>
         </div>
@@ -602,7 +472,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
     if (!note) return null;
 
     const watchedColor = form.watch('color');
-    const activeColorObj = noteParchmentColors.find(c => c.class === watchedColor) || noteParchmentColors[5]; // Default Stone
+    const activeColorObj = noteParchmentColors.find(c => c.class === watchedColor) || noteParchmentColors[5];
 
     const handleFormSubmit = (data: NoteFormData) => {
         const updatedContent: NoteContentBlock[] = [{ id: note.content?.[0]?.id || Date.now().toString(), type: 'text', data: data.content || '' }];
@@ -611,86 +481,22 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
 
     return (
         <Dialog open={!!note} onOpenChange={onOpenChange}>
-            <DialogContent className={cn(
-                "w-[100vw] h-[100dvh] md:w-full md:max-w-2xl md:h-auto md:max-h-[85vh] p-0 border-none shadow-2xl flex flex-col md:rounded-xl overflow-hidden transition-colors duration-500",
-                activeColorObj.class
-            )}>
+            <DialogContent className={cn("w-[100vw] h-[100dvh] md:w-full md:max-w-2xl md:h-auto md:max-h-[85vh] p-0 border-none shadow-2xl flex flex-col md:rounded-xl overflow-hidden transition-colors duration-500", activeColorObj.class)}>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
-                        
-                        <div className="absolute top-0 left-0 w-full z-20 p-4 md:p-6 flex justify-end">
-                            <DialogClose asChild>
-                                <Button variant="ghost" size="icon" className={cn("h-8 w-8 hover:bg-black/10 rounded-full", activeColorObj.text, "opacity-40 hover:opacity-70")}>
-                                    <X className="h-5 h-5" />
-                                </Button>
-                            </DialogClose>
-                        </div>
-                        <ScrollArea className="flex-1">
-                            <div className="max-w-2xl mx-auto p-6 md:p-12 min-h-[60vh] space-y-6 pt-20">
-                                 <div className={cn("absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(transparent_23px,#000_24px)] bg-[length:100%_24px]", activeColorObj.text)} />
-                                 <FormField name="title" control={form.control} render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Input 
-                                                {...field} 
-                                                placeholder="Başlık" 
-                                                className={cn("text-3xl md:text-4xl font-black bg-transparent border-none p-0 focus-visible:ring-0 tracking-tight", activeColorObj.text, "placeholder:opacity-20 opacity-80")}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                 )}/>
-                                 <FormField name="content" control={form.control} render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Textarea 
-                                                {...field} 
-                                                ref={textareaRef}
-                                                placeholder="Buraya yazmaya başla..." 
-                                                className={cn("bg-transparent border-none resize-none p-0 text-base md:text-lg leading-relaxed focus-visible:ring-0 font-serif", activeColorObj.text, "placeholder:opacity-30 opacity-70 min-h-[300px]")}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                 )}/>
-                            </div>
-                        </ScrollArea>
-                        <div className={cn("p-4 border-t bg-white/60 backdrop-blur-md flex flex-col gap-4", activeColorObj.accent)}>
+                        <div className="absolute top-0 left-0 w-full z-20 p-4 md:p-6 flex justify-end"><DialogClose asChild><Button variant="ghost" size="icon" className={cn("h-8 w-8 hover:bg-black/10 rounded-full", activeColorObj.text, "opacity-40 hover:opacity-70")}><X className="h-5 h-5" /></Button></DialogClose></div>
+                        <ScrollArea className="flex-1"><div className="max-w-2xl mx-auto p-6 md:p-12 min-h-[60vh] space-y-6 pt-20">
+                             <div className={cn("absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(transparent_23px,#000_24px)] bg-[length:100%_24px]", activeColorObj.text)} />
+                             <FormField name="title" control={form.control} render={({ field }) => (<FormItem><FormControl><Input {...field} placeholder="Başlık" className={cn("text-3xl md:text-4xl font-black bg-transparent border-none p-0 focus-visible:ring-0 tracking-tight", activeColorObj.text, "placeholder:opacity-20 opacity-80")} /></FormControl></FormItem>)}/>
+                             <FormField name="content" control={form.control} render={({ field }) => (<FormItem><FormControl><Textarea {...field} ref={textareaRef} placeholder="Buraya yazmaya başla..." className={cn("bg-transparent border-none resize-none p-0 text-base md:text-lg leading-relaxed focus-visible:ring-0 font-serif", activeColorObj.text, "placeholder:opacity-30 opacity-70 min-h-[300px]")} /></FormControl></FormItem>)}/>
+                        </div></ScrollArea>
+                        <div className={cn("p-4 border-t bg-white/60 dark:bg-slate-800/20 backdrop-blur-md flex flex-col gap-4", activeColorObj.accent)}>
                             <div className="flex items-center gap-4">
-                                 <div className="flex items-center gap-2">
-                                     <Palette className={cn("w-4 h-4", activeColorObj.text, "opacity-40")} />
-                                     <div className="flex gap-1.5">
-                                         {noteParchmentColors.map(color => (
-                                             <button
-                                                key={color.name}
-                                                type="button"
-                                                onClick={() => form.setValue('color', color.class)}
-                                                className={cn(
-                                                    "w-6 h-6 rounded-full border shadow-sm transition-transform hover:scale-110",
-                                                    color.class.replace('bg-','').replace(' text-', ' text-'),
-                                                    watchedColor === color.class && "ring-2 ring-slate-800 ring-offset-1 scale-110"
-                                                )}
-                                                title={color.name}
-                                             />
-                                         ))}
-                                     </div>
-                                 </div>
-                                 <div className={cn("h-6 w-px", activeColorObj.accent, "bg-opacity-50 mx-2")} />
-                                 <FormField name="folder" control={form.control} render={({ field }) => (
-                                     <FormItem className="flex-1 mb-0 space-y-0">
-                                         <FormControl>
-                                             <Combobox 
-                                                options={[{label: 'Genel', value: ''}, ...sectionFolders.map(f => ({ label: f, value: f }))]}
-                                                value={field.value || ''}
-                                                onChange={field.onChange}
-                                                placeholder="Klasör seç..."
-                                                className={cn("h-9 bg-white/50 border-black/10 text-sm", activeColorObj.text)}
-                                             />
-                                         </FormControl>
-                                     </FormItem>
-                                 )} />
+                                 <div className="flex items-center gap-2"><Palette className={cn("w-4 h-4", activeColorObj.text, "opacity-40")} /><div className="flex gap-1.5">{noteParchmentColors.map(color => (<button key={color.name} type="button" onClick={() => form.setValue('color', color.class)} className={cn("w-6 h-6 rounded-full border shadow-sm transition-transform hover:scale-110", color.class.replace('bg-','').replace(' text-', ' text-'), watchedColor === color.class && "ring-2 ring-slate-800 dark:ring-white ring-offset-1 scale-110")} title={color.name} />))}</div></div>
+                                 <div className={cn("h-6 w-px mx-2", activeColorObj.accent, "bg-opacity-50")} />
+                                 <FormField name="folder" control={form.control} render={({ field }) => (<FormItem className="flex-1 mb-0 space-y-0"><FormControl><Combobox options={[{label: 'Genel', value: ''}, ...sectionFolders.map(f => ({ label: f, value: f }))]} value={field.value || ''} onChange={field.onChange} placeholder="Klasör seç..." className={cn("h-9 bg-white/50 dark:bg-black/20 border-black/10 dark:border-white/10 text-sm", activeColorObj.text)}/></FormControl></FormItem>)}/>
                             </div>
-                            <Button type="submit" className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-xl h-11 font-bold shadow-lg">
-                                Kaydet
-                            </Button>
+                            <Button type="submit" className="w-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200 rounded-xl h-11 font-bold shadow-lg">Kaydet</Button>
                         </div>
                     </form>
                 </Form>
