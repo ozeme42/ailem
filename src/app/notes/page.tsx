@@ -3,7 +3,6 @@
 
 import { Suspense } from 'react';
 import { NotesClient } from './notes-client';
-import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NotesPage() {
@@ -18,17 +17,18 @@ export default function NotesPage() {
 function NotesSkeleton() {
   return (
     <div className="space-y-6">
-       <PageHeader title="Not Defterleri">
-          <Skeleton className="h-10 w-44" />
-       </PageHeader>
-        <div className="relative w-full sm:max-w-md">
-            <Skeleton className="h-10 w-full" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
+       <div className="p-4 md:px-8 md:py-6 border-b border-slate-200 bg-white sticky top-0 z-20 shadow-sm">
+           <Skeleton className="h-8 w-48 mb-4"/>
+           <Skeleton className="h-11 w-full"/>
+       </div>
+        <div className="px-4 md:px-8 py-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+            <Skeleton className="h-48 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
         </div>
     </div>
   );
 }
+

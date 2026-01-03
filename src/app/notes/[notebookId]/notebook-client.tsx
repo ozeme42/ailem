@@ -1,13 +1,13 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder, deleteTag } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, ChevronDown, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen } from 'lucide-react';
+import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,7 @@ interface NotebookDetails {
 
 // NOTE FORM SCHEMA
 const noteFormSchema = z.object({
-    title: z.string().min(1, "Başlık gereklidir").default(""),
+    title: z.string().min(1, "Başlık gereklidir.").default(""),
     content: z.string().optional().default(""),
     color: z.string().optional(),
     folder: z.string().optional(),
@@ -66,7 +66,6 @@ export default function NotebookClient() {
 
     // Data State
     const [details, setDetails] = useState<NotebookDetails | null>(null);
-    const [sections, setSections] = useState<NotebookSection[]>([]);
     
     // UI State
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -99,7 +98,6 @@ export default function NotebookClient() {
             if (data) {
                 const sortedSections = (data.notebook.sections || []).sort((a, b) => a.order - b.order);
                 setDetails({ ...data, notebook: { ...data.notebook, sections: sortedSections } });
-                setSections(sortedSections);
                 
                 if (!activeSectionId && sortedSections.length > 0 && window.innerWidth >= 768) {
                     setActiveSectionId(sortedSections[0].id);
@@ -117,11 +115,11 @@ export default function NotebookClient() {
         setActiveFolderFilter('Tümü');
     }, [activeSectionId]);
     
-    const activeSection = sections.find(s => s.id === activeSectionId);
+    const activeSection = useMemo(() => details?.notebook.sections.find(s => s.id === activeSectionId), [details, activeSectionId]);
     
-    const { allNotesInSection, notesByFolder, folderStats, displayedNotes } = React.useMemo(() => {
+    const { notesByFolder, folderStats, displayedNotes } = React.useMemo(() => {
         if (!details || !activeSectionId) {
-            return { allNotesInSection: [], notesByFolder: {}, folderStats: {}, displayedNotes: [] };
+            return { notesByFolder: {}, folderStats: {}, displayedNotes: [] };
         }
 
         const notesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a, b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
@@ -144,28 +142,29 @@ export default function NotebookClient() {
                 ? notesInSection.filter(n => !n.folder || n.folder === '')
                 : notesInSection.filter(n => n.folder === activeFolderFilter);
 
-        return { allNotesInSection: notesInSection, notesByFolder: byFolder, folderStats: stats, displayedNotes: notesToDisplay };
+        return { notesByFolder: byFolder, folderStats: stats, displayedNotes: notesToDisplay };
     }, [details, activeSectionId, activeFolderFilter]);
 
-
     const generalCount = folderStats['Genel'] || 0;
+    const allNotesInSectionCount = Object.values(folderStats).reduce((sum, count) => sum + count, 0);
     const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a, b) => a.localeCompare(b, 'tr'))];
 
     // --- ACTION HANDLERS ---
     const handleSaveSection = async () => {
         if (!sectionTitle.trim() || !details) return;
+        const currentSections = details.notebook.sections || [];
         let newSections: NotebookSection[];
         if (editingSection) {
-            newSections = details.notebook.sections.map(s => s.id === editingSection.id ? { ...s, title: sectionTitle.trim() } : s);
+            newSections = currentSections.map(s => s.id === editingSection.id ? { ...s, title: sectionTitle.trim() } : s);
         } else {
             const newSection: NotebookSection = {
                 id: Date.now().toString(),
                 title: sectionTitle.trim(),
-                color: sectionGradients[details.notebook.sections.length % sectionGradients.length],
-                order: details.notebook.sections.length,
+                color: sectionGradients[currentSections.length % sectionGradients.length],
+                order: currentSections.length,
                 folders: [],
             }
-            newSections = [...(details.notebook.sections || []), newSection];
+            newSections = [...currentSections, newSection];
             if(!activeSectionId) setActiveSectionId(newSection.id);
         }
         try {
@@ -177,17 +176,17 @@ export default function NotebookClient() {
     
     const handleDeleteSection = async (sectionId: string) => {
         if (!details) return;
-        const updatedSections = sections.filter(s => s.id !== sectionId);
+        const updatedSections = details.notebook.sections.filter(s => s.id !== sectionId);
         try {
             await updateNotebook(notebookId, { sections: updatedSections });
             toast({ title: 'Bölüm Silindi', variant: 'destructive' });
-            if (activeSectionId === sectionId) setActiveSectionId(sections[0]?.id || null);
+            if (activeSectionId === sectionId) setActiveSectionId(details.notebook.sections[0]?.id || null);
         } catch (e) { toast({ title: 'Hata', variant: 'destructive' }); }
     };
 
     const handleSaveNote = async (noteData: Partial<Note>) => {
         try {
-            if (editingNote?.id) {
+            if (editingNote?.id && editingNote.notebookId) {
                 await updateNoteInSection(notebookId, editingNote.id, noteData);
                 toast({ title: "Not Güncellendi" });
             } else {
@@ -268,9 +267,8 @@ export default function NotebookClient() {
 
                 <ScrollArea className="flex-1 p-3">
                     <div className="flex flex-col gap-2">
-                        {sections.map((section, index) => {
+                        {details.notebook.sections.map((section, index) => {
                              const isSelected = activeSectionId === section.id;
-                             const gradientClass = section.color || sectionGradients[index % sectionGradients.length];
                              const noteCount = details.notes.filter(n => n.sectionId === section.id).length;
 
                              return (
@@ -279,14 +277,14 @@ export default function NotebookClient() {
                                     title={section.title}
                                     noteCount={noteCount}
                                     isSelected={isSelected}
-                                    gradient={gradientClass}
+                                    gradient={section.color}
                                     onClick={() => setActiveSectionId(section.id)}
                                     onEdit={(e) => { e.stopPropagation(); setEditingSection(section); setSectionTitle(section.title); setIsSectionDialogOpen(true); }}
                                     onDelete={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}
                                 />
                              )
                         })}
-                        {sections.length === 0 && (
+                        {details.notebook.sections.length === 0 && (
                             <div className="text-center py-10 text-slate-400 text-sm px-4 col-span-1">
                                 <p>Bu defter boş.</p>
                                 <p className="text-xs mt-1">Bölüm ekleyerek düzenlemeye başla.</p>
@@ -332,11 +330,11 @@ export default function NotebookClient() {
                             {/* Folder Shelf */}
                             <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200" style={{background: 'linear-gradient(to bottom, white, #f8fafc)'}}>
                                  <div className="flex gap-3 items-stretch min-w-max">
-                                     {folderOrder.map((folderName, index) => {
+                                     {folderOrder.map((folderName) => {
                                         if (folderName === 'Genel' && generalCount === 0) return null;
                                         if (folderName !== 'Tümü' && folderName !== 'Genel' && !folderStats[folderName]) return null;
                                         
-                                        const count = folderName === 'Tümü' ? allNotesInSection.length : folderStats[folderName] || 0;
+                                        const count = folderName === 'Tümü' ? allNotesInSectionCount : folderStats[folderName] || 0;
                                         
                                         return (
                                             <FolderCard 
@@ -344,7 +342,7 @@ export default function NotebookClient() {
                                                 name={folderName}
                                                 count={count}
                                                 isActive={activeFolderFilter === folderName}
-                                                gradient={activeSection?.color || sectionGradients[sections.findIndex(s=>s.id===activeSectionId)%sectionGradients.length]}
+                                                gradient={activeSection?.color || sectionGradients[0]}
                                                 onClick={() => setActiveFolderFilter(folderName)}
                                                 onEdit={folderName !== 'Tümü' && folderName !== 'Genel' ? () => { setNewFolderName(folderName); setEditingFolder({oldName: folderName, sectionId: activeSectionId}); setIsFolderDialogOpen(true); } : undefined}
                                                 onDelete={folderName !== 'Tümü' && folderName !== 'Genel' ? () => handleDeleteFolder(folderName, activeSectionId) : undefined}
@@ -515,7 +513,7 @@ function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, icon: Ic
                  {(onEdit || onDelete) && (
                      <DropdownMenu>
                          <DropdownMenuTrigger asChild>
-                             <Button variant="ghost" size="icon" className={cn("h-7 w-7 -mr-2 -mt-1 transition-opacity", isActive ? "text-white/60 hover:text-white hover:bg-white/20" : "text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100")}>
+                             <Button variant="ghost" size="icon" className={cn("h-7 w-7 -mr-2 -mt-1 transition-opacity", isActive ? "text-white/60 hover:text-white hover:bg-white/20" : "text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100")} onClick={(e) => e.stopPropagation()}>
                                  <MoreVertical className="w-4 h-4" />
                              </Button>
                          </DropdownMenuTrigger>
@@ -581,9 +579,9 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
 
 function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: Note | null, onOpenChange: (o: boolean) => void, onSave: (d: any) => void, sectionFolders: string[] }) {
     const form = useForm<NoteFormData>();
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
     
-    useLayoutEffect(() => {
+    React.useLayoutEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
