@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -15,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// --- RENK SABİTLERİ ---
+// --- TASARIM SABİTLERİ ---
 const notebookColors = [
     { bg: "bg-rose-100", hover: "hover:bg-rose-200", text: "text-rose-700", border: "border-rose-200", icon: "text-rose-500", ring: "ring-rose-200" },
     { bg: "bg-blue-100", hover: "hover:bg-blue-200", text: "text-blue-700", border: "border-blue-200", icon: "text-blue-500", ring: "ring-blue-200" },
