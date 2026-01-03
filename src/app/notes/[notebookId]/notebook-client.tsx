@@ -5,11 +5,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder, deleteTag } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, updateNotebook, addNoteToSection, updateNoteInSection, deleteNoteFromSection, updateNotebookFolder, deleteTag } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen } from 'lucide-react';
+import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -31,11 +31,11 @@ const sectionGradients = [
 ];
 
 const noteParchmentColors = [
-    { name: 'Saman', class: 'bg-amber-50 border-amber-200 text-amber-900', accent: 'border-amber-200' },
-    { name: 'Gökyüzü', class: 'bg-sky-50 border-sky-200 text-sky-900', accent: 'border-sky-200' },
-    { name: 'Nane', class: 'bg-emerald-50 border-emerald-200 text-emerald-900', accent: 'border-emerald-200' },
-    { name: 'Gül', class: 'bg-rose-50 border-rose-200 text-rose-900', accent: 'border-rose-200' },
-    { name: 'Lavanta', class: 'bg-violet-50 border-violet-200 text-violet-900', accent: 'border-violet-200' },
+    { name: 'Saman', class: 'bg-[#fefce8] border-[#fde047] text-amber-900', accent: 'border-amber-300' },
+    { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd] text-sky-900', accent: 'border-sky-300' },
+    { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0] text-green-900', accent: 'border-emerald-300' },
+    { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3] text-rose-900', accent: 'border-rose-300' },
+    { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe] text-violet-900', accent: 'border-violet-300' },
     { name: 'Taş', class: 'bg-slate-100 border-slate-200 text-slate-800', accent: 'border-slate-300' },
 ];
 
@@ -228,6 +228,7 @@ export default function NotebookClient() {
     if (!details) return <div className="flex h-screen items-center justify-center text-slate-500 dark:text-slate-400">Yükleniyor...</div>;
 
     const activeSectionIndex = details.notebook.sections.findIndex(s => s.id === activeSectionId);
+    const activeSectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
 
     return (
         <div className={cn("flex h-[100dvh] overflow-hidden font-sans", "bg-slate-50 text-slate-900", "dark:bg-slate-950 dark:text-slate-100")}>
@@ -251,23 +252,17 @@ export default function NotebookClient() {
 
                 <ScrollArea className="flex-1 p-3">
                     <div className="flex flex-col gap-2">
-                        {details.notebook.sections.map((section) => {
-                             const isSelected = activeSectionId === section.id;
-                             const noteCount = details.notes.filter(n => n.sectionId === section.id).length;
-
-                             return (
-                                <SectionFolderCard
-                                    key={section.id}
-                                    title={section.title}
-                                    noteCount={noteCount}
-                                    isSelected={isSelected}
-                                    gradient={section.color}
-                                    onClick={() => setActiveSectionId(section.id)}
-                                    onEdit={(e) => { e.stopPropagation(); setEditingSection(section); setSectionTitle(section.title); setIsSectionDialogOpen(true); }}
-                                    onDelete={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}
-                                />
-                             )
-                        })}
+                        {details.notebook.sections.map((section) => (
+                            <SectionCard
+                                key={section.id}
+                                section={section}
+                                noteCount={details.notes.filter(n => n.sectionId === section.id).length}
+                                isSelected={activeSectionId === section.id}
+                                onClick={() => setActiveSectionId(section.id)}
+                                onEdit={(e) => { e.stopPropagation(); setEditingSection(section); setSectionTitle(section.title); setIsSectionDialogOpen(true); }}
+                                onDelete={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}
+                            />
+                        ))}
                         {details.notebook.sections.length === 0 && (
                             <div className="text-center py-10 text-slate-400 text-sm px-4 col-span-1">
                                 <p>Bu defter boş.</p>
@@ -293,7 +288,7 @@ export default function NotebookClient() {
                     </div>
                     {activeSectionId && (
                          <div className="flex gap-2">
-                             <Button variant="outline" size="sm" className="hidden sm:flex bg-background" onClick={() => { setNewFolderName(""); setEditingFolder(null); setIsFolderDialogOpen(true); }}>
+                             <Button variant="outline" size="sm" className="hidden sm:flex bg-background border-slate-200 dark:border-slate-700" onClick={() => { setNewFolderName(""); setEditingFolder(null); setIsFolderDialogOpen(true); }}>
                                  <FolderPlus className="w-4 h-4 mr-2" /> Klasör
                              </Button>
                              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm rounded-lg h-9 text-sm font-medium px-3 md:px-4" onClick={() => {
@@ -322,7 +317,7 @@ export default function NotebookClient() {
                                                 name={folderName}
                                                 count={count}
                                                 isActive={activeFolderFilter === folderName}
-                                                gradient={activeSection?.color || sectionGradients[0]}
+                                                gradient={activeSectionGradient}
                                                 onClick={() => setActiveFolderFilter(folderName)}
                                                 onEdit={folderName !== 'Tümü' && folderName !== 'Genel' ? () => { setNewFolderName(folderName); setEditingFolder({oldName: folderName, sectionId: activeSectionId}); setIsFolderDialogOpen(true); } : undefined}
                                                 onDelete={folderName !== 'Tümü' && folderName !== 'Genel' ? () => handleDeleteFolder(folderName, activeSectionId) : undefined}
@@ -371,39 +366,40 @@ export default function NotebookClient() {
     );
 }
 
-function SectionFolderCard({ title, noteCount, isSelected, gradient, onClick, onEdit, onDelete }: any) {
+function SectionCard({ section, noteCount, isSelected, onClick, onEdit, onDelete }: { section: NotebookSection; noteCount: number; isSelected: boolean; onClick: () => void; onEdit: (e: React.MouseEvent) => void; onDelete: (e: React.MouseEvent) => void; }) {
     return (
         <div 
             onClick={onClick}
             className={cn(
-                "group relative w-full rounded-xl cursor-pointer transition-all duration-200 p-4 flex flex-col justify-between border min-h-[100px]",
+                "group relative w-full rounded-2xl cursor-pointer transition-all duration-200 p-4 flex flex-col justify-between border-2 min-h-[100px]",
                 isSelected 
-                    ? `border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-md` 
-                    : "bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
+                    ? `border-indigo-500 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/40 shadow-lg scale-[1.02]` 
+                    : "bg-slate-50 dark:bg-slate-800/60 border-transparent hover:border-slate-300 dark:hover:border-slate-700"
             )}
         >
-             <div onClick={(e) => e.stopPropagation()} className={cn("transition-opacity absolute top-2 right-2", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+             <div className={cn("absolute h-full w-2 left-0 top-0 rounded-l-xl bg-gradient-to-b", section.color)}></div>
+             
+            <div onClick={(e) => e.stopPropagation()} className={cn("transition-opacity absolute top-2 right-2", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                 <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5" ><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40 rounded-xl bg-white dark:bg-slate-900">
-                    <DropdownMenuItem onClick={onEdit}><Edit className="w-3 h-3 mr-2" /> Düzenle</DropdownMenuItem>
-                    <AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 dark:text-red-500 dark:focus:text-red-400"><Trash2 className="w-3 h-3 mr-2" /> Sil</DropdownMenuItem></AlertDialogTrigger>
+                    <DropdownMenuItem onClick={onEdit} className="cursor-pointer focus:bg-slate-100 dark:focus:bg-slate-800"><Edit className="w-3 h-3 mr-2" /> Düzenle</DropdownMenuItem>
+                    <AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 dark:text-red-500 dark:focus:text-red-400 cursor-pointer focus:bg-red-50 dark:focus:bg-red-500/10"><Trash2 className="w-3 h-3 mr-2" /> Sil</DropdownMenuItem></AlertDialogTrigger>
                     <AlertDialogContent><AlertDialogHeader><AlertDialogTitleComponent>Bölümü Sil?</AlertDialogTitleComponent><AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
                     </AlertDialog>
                 </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-            <div className="flex-grow">
-                <p className={cn("font-bold text-sm truncate pr-8", isSelected ? "text-indigo-800 dark:text-indigo-200" : "text-slate-700 dark:text-slate-200")}>{title}</p>
+            <div className="flex-grow pl-3">
+                <p className={cn("font-bold text-base truncate pr-8", isSelected ? "text-indigo-800 dark:text-indigo-200" : "text-slate-700 dark:text-slate-200")}>{section.title}</p>
             </div>
-            <div className="mt-auto pt-2">
+            <div className="mt-auto pt-2 pl-3">
                 <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{noteCount} not</p>
             </div>
-            {isSelected && <div className={cn("absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r rounded-b-xl", gradient)}></div>}
         </div>
     );
 }
 
-function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, icon: Icon, gradient }: any) {
+function FolderCard({ name, count, isActive, gradient, onClick, onEdit, onDelete, icon: Icon }: any) {
     const activeClass = `bg-gradient-to-br ${gradient} text-white shadow-lg border-transparent`;
     const inactiveClass = "bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600";
 

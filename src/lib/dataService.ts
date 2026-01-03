@@ -1288,7 +1288,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'fa
     // If questions are provided, process and include them in the update
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
         const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? question.questionId : '');
             return {
                 questionId: questionId,
                 questionNumber: index + 1,
@@ -1527,7 +1527,7 @@ export const addNoteToSection = async (notebookId: string, sectionId: string, no
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not authenticated");
     const noteColors = [
-        { name: 'Saman', class: 'bg-[#fffbeb] border-[#fde68a] text-amber-900', accent: 'border-amber-300' },
+        { name: 'Saman', class: 'bg-[#fefce8] border-[#fde047] text-amber-900', accent: 'border-amber-300' },
         { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd] text-sky-900', accent: 'border-sky-300' },
         { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0] text-green-900', accent: 'border-emerald-300' },
         { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3] text-rose-900', accent: 'border-rose-300' },
@@ -2154,3 +2154,4 @@ export const addPomodoroSession = async (data: Omit<PomodoroSession, 'id' | 'fam
 
 
     
+
