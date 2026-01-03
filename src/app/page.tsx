@@ -5,8 +5,9 @@ import {
   CheckSquare, Calendar, BookOpen, ShoppingCart, UtensilsCrossed, 
   PlusCircle, ListChecks, Check, Users, Target, User, Flame, 
   BarChart2, BookCheck, Wallet, ChevronRight, LayoutDashboard, 
-  Settings2, Pencil, Sparkles, Trophy, Star, Bell, Menu, ArrowLeft, GraduationCap 
+  Settings2, Pencil, Sparkles, Trophy, Star, Bell, Menu, ArrowLeft, GraduationCap, Sun, Moon 
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/components/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { FamilyMember, ShoppingList, MealPlan, CalendarEvent, Task, UserLibrary, Book, Test, StudyAssignment, Goal, GoalSection, StudyPlan, MemorizationProgress, MemorizationItem, PrayerProgress, Video, Transaction, Account, ReadingSession, TrackedBook } from "@/lib/data";
@@ -33,6 +34,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 
 // --- TASARIM SİSTEMİ: AÇIK TEMA (LIGHT GLASS) ---
 const themeColors = {
@@ -52,6 +55,7 @@ const progressFormSchema = z.object({
 });
 
 export default function Home() {
+  const { setTheme } = useTheme();
   const { user, familyId, familyMembers, loading } = useAuth();
   const { toast } = useToast();
   
@@ -247,7 +251,7 @@ export default function Home() {
     <div className={cn("min-h-screen font-sans pb-32 md:pb-10 relative overflow-hidden", themeColors.PAGE_BG, themeColors.TEXT_MAIN)}>
            
            {/* AMBIENT BACKGROUND (Light Mode için Opacity Düşürüldü) */}
-           <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
+           <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
               <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-200/60 rounded-full blur-[120px]" />
               <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-fuchsia-200/60 rounded-full blur-[120px]" />
               <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-blue-200/60 rounded-full blur-[100px]" />
@@ -278,6 +282,27 @@ export default function Home() {
                       </div>
 
                       <div className="flex items-center gap-3">
+                           <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-slate-100 text-slate-500">
+                                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                                  <span className="sr-only">Toggle theme</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setTheme("light")}>
+                                  Açık
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                                  Koyu
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("system")}>
+                                  Sistem
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+
                           <Link href="/education">
                               <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-slate-100 text-slate-500 relative">
                                   <GraduationCap className="h-5 w-5" />
