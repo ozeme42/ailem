@@ -9,12 +9,11 @@ import { onNotebookDetailsUpdate, updateNotebook, addNoteToSection, updateNoteIn
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen, Check, MoreHorizontal } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Combobox } from '@/components/ui/combobox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm } from 'react-hook-form';
@@ -304,11 +303,10 @@ export default function NotebookClient() {
                             <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-800">
                                  <div className="flex gap-3 items-stretch min-w-max">
                                      {folderOrder.map((folderName, index) => {
-                                        if (folderName === 'Genel' && generalCount === 0) return null;
+                                        if (folderName === 'Genel' && generalCount === 0 && folderOrder.length > 2) return null;
                                         if (folderName !== 'Tümü' && folderName !== 'Genel' && !folderStats[folderName]) return null;
                                         
                                         const count = folderName === 'Tümü' ? allNotesInSectionCount : folderStats[folderName] || 0;
-                                        const color = sectionGradients[index % sectionGradients.length];
                                         
                                         return (
                                             <FolderCard 
@@ -316,7 +314,7 @@ export default function NotebookClient() {
                                                 name={folderName}
                                                 count={count}
                                                 isActive={activeFolderFilter === folderName}
-                                                colorClass={activeSection?.color || color.class}
+                                                colorClass={activeSection?.color || sectionGradients[0].class}
                                                 onClick={() => setActiveFolderFilter(folderName)}
                                                 onEdit={folderName !== 'Tümü' && folderName !== 'Genel' ? () => { setNewFolderName(folderName); setEditingFolder({oldName: folderName, sectionId: activeSectionId}); setIsFolderDialogOpen(true); } : undefined}
                                                 onDelete={folderName !== 'Tümü' && folderName !== 'Genel' ? () => handleDeleteFolder(folderName, activeSectionId) : undefined}
@@ -403,7 +401,16 @@ function SectionCard({ section, noteCount, isSelected, onClick, onEdit, onDelete
                         <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 dark:text-red-500 dark:focus:text-red-400 cursor-pointer focus:bg-red-50 dark:focus:bg-red-500/10"><Trash2 className="w-3 h-3 mr-2" /> Sil</DropdownMenuItem>
                         </AlertDialogTrigger>
-                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Bölümü Sil?</AlertDialogTitle><AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooterComponent><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction></AlertDialogFooterComponent></AlertDialogContent>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Bölümü Sil?</AlertDialogTitle>
+                                <AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooterComponent>
+                                <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                                <AlertDialogAction onClick={onDelete}>Evet, Sil</AlertDialogAction>
+                            </AlertDialogFooterComponent>
+                        </AlertDialogContent>
                     </AlertDialog>
                 </DropdownMenuContent>
                 </DropdownMenu>
@@ -531,5 +538,3 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         </Dialog>
     )
 }
-
-    
