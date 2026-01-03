@@ -2,11 +2,11 @@
 import { Suspense } from 'react';
 import NotebookClient from './notebook-client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/page-header';
+import { cn } from '@/lib/utils';
 
 export default function NotebookDetailPage() {
   return (
-    <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className={cn("h-full flex flex-col", "bg-slate-50 dark:bg-slate-950")}>
       <Suspense fallback={<NotebookSkeleton />}>
         <NotebookClient />
       </Suspense>
@@ -19,7 +19,7 @@ function NotebookSkeleton() {
   return (
     <div className="flex h-screen w-full">
         {/* Left Sidebar Skeleton */}
-        <div className="w-72 border-r p-4 space-y-4 hidden md:flex flex-col">
+        <div className="w-72 border-r p-4 space-y-4 hidden md:flex flex-col bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <div className="space-y-2">
                 <Skeleton className="h-8 w-48" />
                 <Skeleton className="h-10 w-full" />
@@ -32,8 +32,8 @@ function NotebookSkeleton() {
         </div>
 
         {/* Right Content Skeleton */}
-        <div className="flex-1 flex flex-col">
-            <div className="h-16 border-b px-6 flex items-center justify-between">
+        <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
+            <div className="h-16 border-b px-6 flex items-center justify-between bg-white/80 dark:bg-slate-950/70 backdrop-blur-md border-slate-200 dark:border-slate-800">
                 <Skeleton className="h-8 w-64" />
                 <Skeleton className="h-9 w-32" />
             </div>

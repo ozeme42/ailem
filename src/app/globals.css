@@ -8,7 +8,8 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* --background: 0 0% 100%; */
+    --background: 240 5.2% 97.5%; /* Hafif kırık beyaz */
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -99,6 +100,8 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Bu genel arkaplan ve metin rengi kaldırıldı, çünkü diğer stilleri eziyordu.
+       Artık her sayfa/layout kendi arkaplanını belirleyebilir. */
+    /* @apply bg-background text-foreground; */
   }
 }

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -19,9 +20,8 @@ import { Button } from "@/components/ui/button";
 
 // --- DESIGN SYSTEM: LIGHT GLASS THEME ---
 const sidebarStyles = {
-    // !bg-white/90: Yarı saydam beyaz arka plan
-    // border-slate-200: İnce gri kenarlık
-    BASE: "!bg-white/90 backdrop-blur-2xl border-r border-slate-200 shadow-xl transition-all duration-300",
+    // !bg-white/90 kaldırıldı. Bu, diğer sayfa stillerini ezmesini engeller.
+    BASE: "backdrop-blur-2xl border-r border-slate-200 shadow-xl transition-all duration-300",
     
     HEADER: "border-b border-slate-100 pb-4",
     
@@ -108,11 +108,10 @@ export function AppSidebar() {
     <Sidebar 
         collapsible="icon" 
         className={cn("border-r-0", sidebarStyles.BASE)}
-        // Inline style ile arka planı override ediyoruz (Saydam beyaz)
         style={
             {
-                "--sidebar-background": "transparent",
-                backgroundColor: "rgba(255, 255, 255, 0.85)" 
+                "--sidebar-background": "rgba(255, 255, 255, 0.85)", // Açık tema için arkaplan
+                // Koyu tema stilleri `globals.css` içinde `.dark` seçicisi ile ezilir.
             } as React.CSSProperties
         }
     >
@@ -127,10 +126,10 @@ export function AppSidebar() {
                     <ChevronsRight className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                    <h2 className="text-lg font-black tracking-tight text-slate-800 leading-none whitespace-nowrap">
+                    <h2 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">
                         Ailem
                     </h2>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
                 </div>
             </div>
 
@@ -140,8 +139,8 @@ export function AppSidebar() {
                 variant="ghost" 
                 size="icon" 
                 className={cn(
-                    "h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all",
-                    isCollapsed && "h-9 w-9 bg-white text-indigo-600 hover:bg-indigo-50 fixed left-4 top-5 z-50 shadow-md border border-slate-200"
+                    "h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all",
+                    isCollapsed && "h-9 w-9 bg-white text-indigo-600 hover:bg-indigo-50 fixed left-4 top-5 z-50 shadow-md border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-slate-800"
                 )}
             >
                 <PanelLeft className="w-5 h-5" />
@@ -156,13 +155,12 @@ export function AppSidebar() {
           {menuItems.map((item, index) => {
             if (item.section) {
                 return (
-                    <div key={index} className={sidebarStyles.SECTION_LABEL}>
+                    <div key={index} className={cn(sidebarStyles.SECTION_LABEL, "dark:text-slate-500")}>
                         {item.section}
                     </div>
                 );
             }
 
-            // isActive logic: Eğer ana link ise veya alt menülerden biri aktif değilse ve path uyuyorsa
             const isSubItemActive = item.subItems?.some(sub => pathname === sub.href);
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href || '') && !item.subItems) || isSubItemActive;
             
@@ -175,11 +173,11 @@ export function AppSidebar() {
                             tooltip={item.label}
                             className={cn(
                                 "rounded-xl py-2.5 h-auto mb-1 group-data-[collapsible=icon]:justify-center transition-all duration-200", 
-                                isActive ? sidebarStyles.ITEM_ACTIVE : sidebarStyles.ITEM_DEFAULT
+                                isActive ? sidebarStyles.ITEM_ACTIVE : cn(sidebarStyles.ITEM_DEFAULT, "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800")
                             )}
                         >
                             <span>
-                                {item.icon && <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : "opacity-60 group-hover:opacity-100 text-slate-500")} />}
+                                {item.icon && <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : "opacity-60 group-hover:opacity-100 text-slate-500 dark:text-slate-400")} />}
                                 <span className="text-sm font-medium ml-3 group-data-[collapsible=icon]:hidden transition-all duration-300">{item.label}</span>
                             </span>
                         </SidebarMenuButton>
@@ -187,7 +185,7 @@ export function AppSidebar() {
 
                     {/* Alt Menüler */}
                     {item.subItems && (
-                        <SidebarMenuSub className="border-l-slate-200 ml-5 pl-2 my-1 space-y-1 group-data-[collapsible=icon]:hidden">
+                        <SidebarMenuSub className="border-l-slate-200 dark:border-l-slate-800 ml-5 pl-2 my-1 space-y-1 group-data-[collapsible=icon]:hidden">
                             {item.subItems.map(subItem => {
                                 const isSubActive = pathname === subItem.href;
                                 return (
@@ -200,7 +198,7 @@ export function AppSidebar() {
                                                     "rounded-lg transition-colors h-9",
                                                     isSubActive 
                                                         ? sidebarStyles.SUB_ITEM_ACTIVE 
-                                                        : sidebarStyles.SUB_ITEM_DEFAULT
+                                                        : cn(sidebarStyles.SUB_ITEM_DEFAULT, "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/50 dark:border-transparent")
                                                 )}
                                             >
                                                 <span>{subItem.label}</span>
@@ -218,7 +216,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* --- FOOTER --- */}
-      <SidebarFooter className="border-t border-slate-100 p-4 bg-slate-50/50 group-data-[collapsible=icon]:p-2">
+      <SidebarFooter className="border-t border-slate-100 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-900/50 group-data-[collapsible=icon]:p-2">
         <SidebarMenu>
             <SidebarMenuItem>
                 <Link href={profileLink} legacyBehavior={false} passHref>
@@ -228,18 +226,18 @@ export function AppSidebar() {
                         tooltip="Profilim"
                         className={cn(
                             "rounded-xl h-12 mb-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center border border-transparent", 
-                            pathname.startsWith('/profile/') ? sidebarStyles.ITEM_ACTIVE : "hover:bg-white hover:border-slate-200 hover:shadow-sm"
+                            pathname.startsWith('/profile/') ? sidebarStyles.ITEM_ACTIVE : "hover:bg-white dark:hover:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-sm"
                         )}
                     >
                         <span>
                             <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-tr from-indigo-500 to-fuchsia-500 p-[1.5px] mr-2 group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 transition-all">
-                                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                                    <User className="w-4 h-4 text-slate-600 group-data-[collapsible=icon]:w-3 group-data-[collapsible=icon]:h-3" />
+                                <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
+                                    <User className="w-4 h-4 text-slate-600 dark:text-slate-300 group-data-[collapsible=icon]:w-3 group-data-[collapsible=icon]:h-3" />
                                 </div>
                             </div>
                             <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                                <span className={cn("font-bold text-sm leading-none", pathname.startsWith('/profile/') ? "text-white" : "text-slate-700")}>Profilim</span>
-                                <span className={cn("text-[10px] mt-0.5 font-normal", pathname.startsWith('/profile/') ? "text-indigo-100" : "text-slate-400")}>Hesap Ayarları</span>
+                                <span className={cn("font-bold text-sm leading-none", pathname.startsWith('/profile/') ? "text-white" : "text-slate-700 dark:text-slate-200")}>Profilim</span>
+                                <span className={cn("text-[10px] mt-0.5 font-normal", pathname.startsWith('/profile/') ? "text-indigo-100" : "text-slate-400 dark:text-slate-500")}>Hesap Ayarları</span>
                             </div>
                         </span>
                     </SidebarMenuButton>
@@ -250,7 +248,7 @@ export function AppSidebar() {
                 <SidebarMenuButton 
                     onClick={logout}
                     tooltip="Çıkış Yap"
-                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl h-10 transition-colors justify-center font-medium group-data-[collapsible=icon]:h-10"
+                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:text-rose-500 dark:hover:text-rose-400 rounded-xl h-10 transition-colors justify-center font-medium group-data-[collapsible=icon]:h-10"
                 >
                     <LogOut className="w-4 h-4 mr-2 group-data-[collapsible=icon]:mr-0" />
                     <span className="group-data-[collapsible=icon]:hidden">Çıkış Yap</span>
@@ -258,7 +256,7 @@ export function AppSidebar() {
             </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail className="hover:after:bg-indigo-500/50" />
+      <SidebarRail className="hover:after:bg-indigo-500/50 dark:hover:after:bg-indigo-500/50" />
     </Sidebar>
   );
 }

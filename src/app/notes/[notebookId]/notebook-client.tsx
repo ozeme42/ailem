@@ -19,9 +19,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { z } from 'zod';
-import { zodResolver } from "@hookform/resolvers/zod";
 import Image from 'next/image';
 
 const sectionGradients = [
@@ -33,11 +31,11 @@ const sectionGradients = [
 ];
 
 const noteParchmentColors = [
-    { name: 'Saman', class: 'bg-[#fffbeb] border-[#fde68a] text-amber-900', accent: 'border-amber-300' },
-    { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd] text-sky-900', accent: 'border-sky-300' },
-    { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0] text-green-900', accent: 'border-emerald-300' },
-    { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3] text-rose-900', accent: 'border-rose-300' },
-    { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe] text-violet-900', accent: 'border-violet-300' },
+    { name: 'Saman', class: 'bg-amber-50 border-amber-200 text-amber-900', accent: 'border-amber-200' },
+    { name: 'Gökyüzü', class: 'bg-sky-50 border-sky-200 text-sky-900', accent: 'border-sky-200' },
+    { name: 'Nane', class: 'bg-emerald-50 border-emerald-200 text-emerald-900', accent: 'border-emerald-200' },
+    { name: 'Gül', class: 'bg-rose-50 border-rose-200 text-rose-900', accent: 'border-rose-200' },
+    { name: 'Lavanta', class: 'bg-violet-50 border-violet-200 text-violet-900', accent: 'border-violet-200' },
     { name: 'Taş', class: 'bg-slate-100 border-slate-200 text-slate-800', accent: 'border-slate-300' },
 ];
 
@@ -107,9 +105,9 @@ export default function NotebookClient() {
 
     const activeSection = useMemo(() => details?.notebook.sections.find(s => s.id === activeSectionId), [details, activeSectionId]);
 
-    const { displayedNotes, folderStats } = React.useMemo(() => {
+    const { allNotesInSection, displayedNotes, folderStats } = React.useMemo(() => {
         if (!details || !activeSectionId) {
-            return { displayedNotes: [], folderStats: {} };
+            return { allNotesInSection: [], displayedNotes: [], folderStats: {} };
         }
 
         const notesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a, b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
@@ -126,11 +124,11 @@ export default function NotebookClient() {
                 ? notesInSection.filter(n => !n.folder || n.folder === '')
                 : notesInSection.filter(n => n.folder === activeFolderFilter);
 
-        return { displayedNotes: notesToDisplay, folderStats: stats };
+        return { allNotesInSection: notesInSection, displayedNotes: notesToDisplay, folderStats: stats };
     }, [details, activeSectionId, activeFolderFilter]);
     
     const generalCount = folderStats['Genel'] || 0;
-    const allNotesInSectionCount = Object.values(folderStats).reduce((sum, count) => sum + count, 0);
+    const allNotesInSectionCount = allNotesInSection.length;
     const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a, b) => a.localeCompare(b, 'tr'))];
 
     const handleSaveSection = async () => {
@@ -143,8 +141,8 @@ export default function NotebookClient() {
             const newSection: NotebookSection = {
                 id: Date.now().toString(),
                 title: sectionTitle.trim(),
-                color: sectionGradients[currentSections.length % sectionGradients.length],
                 order: currentSections.length,
+                color: sectionGradients[currentSections.length % sectionGradients.length],
                 folders: [],
             }
             newSections = [...currentSections, newSection];
@@ -229,6 +227,8 @@ export default function NotebookClient() {
 
     if (!details) return <div className="flex h-screen items-center justify-center text-slate-500 dark:text-slate-400">Yükleniyor...</div>;
 
+    const activeSectionIndex = details.notebook.sections.findIndex(s => s.id === activeSectionId);
+
     return (
         <div className={cn("flex h-[100dvh] overflow-hidden font-sans", "bg-slate-50 text-slate-900", "dark:bg-slate-950 dark:text-slate-100")}>
             
@@ -308,7 +308,7 @@ export default function NotebookClient() {
                  <ScrollArea className="flex-1 w-full">
                     {activeSectionId ? (
                         <div className="p-4 md:p-6 space-y-8 pb-20">
-                            <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-800" style={{background: 'linear-gradient(to bottom, var(--background-start-rgb), var(--background-end-rgb))'}}>
+                            <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200 dark:border-slate-800">
                                  <div className="flex gap-3 items-stretch min-w-max">
                                      {folderOrder.map((folderName) => {
                                         if (folderName === 'Genel' && generalCount === 0) return null;
@@ -434,7 +434,7 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
     return (
         <div onClick={onEdit} className={cn("group relative flex flex-col h-52 p-5 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer overflow-hidden", colorObj.class)}>
             <div className={cn("absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(transparent_19px,#000_20px)] bg-[length:100%_20px]", colorObj.text)} />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm shadow-sm rotate-1" />
+            <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3 rotate-1", colorObj.class, "bg-opacity-40 shadow-sm")} />
             <div className="relative z-10 flex flex-col h-full">
                 <h3 className={cn("font-bold text-lg leading-tight mb-2 line-clamp-2", colorObj.text, "opacity-80")}>{note.title || "İsimsiz Not"}</h3>
                 <div className="flex-1 overflow-hidden"><p className={cn("text-sm leading-relaxed font-normal whitespace-pre-wrap line-clamp-6 font-serif", colorObj.text, "opacity-70")}>{plainText || "İçerik yok..."}</p></div>
