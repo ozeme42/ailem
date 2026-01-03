@@ -33,13 +33,14 @@ const themeColors = {
     HEADER_BG: "bg-white/80 backdrop-blur-md border-b border-slate-200",
 };
 
+// --- YENİ CANLI RENK PALETİ ---
 const noteColors = [
-    { name: 'Sarı', class: 'bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100', accent: 'border-amber-400' },
-    { name: 'Mavi', class: 'bg-blue-50 border-blue-200 text-blue-900 hover:bg-blue-100', accent: 'border-blue-400' },
-    { name: 'Yeşil', class: 'bg-emerald-50 border-emerald-200 text-emerald-900 hover:bg-emerald-100', accent: 'border-emerald-400' },
-    { name: 'Pembe', class: 'bg-pink-50 border-pink-200 text-pink-900 hover:bg-pink-100', accent: 'border-pink-400' },
-    { name: 'Mor', class: 'bg-violet-50 border-violet-200 text-violet-900 hover:bg-violet-100', accent: 'border-violet-400' },
-    { name: 'Gri', class: 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50', accent: 'border-slate-300' },
+    { name: 'Parchment', class: 'bg-amber-100/50 border-amber-200/80 text-amber-900/80 hover:bg-amber-100/70', accent: 'border-amber-400/80' },
+    { name: 'Sky', class: 'bg-sky-100/50 border-sky-200/80 text-sky-900/80 hover:bg-sky-100/70', accent: 'border-sky-400/80' },
+    { name: 'Mint', class: 'bg-emerald-100/50 border-emerald-200/80 text-emerald-900/80 hover:bg-emerald-100/70', accent: 'border-emerald-400/80' },
+    { name: 'Rose', class: 'bg-rose-100/50 border-rose-200/80 text-rose-900/80 hover:bg-rose-100/70', accent: 'border-rose-400/80' },
+    { name: 'Lavender', class: 'bg-violet-100/50 border-violet-200/80 text-violet-900/80 hover:bg-violet-100/70', accent: 'border-violet-400/80' },
+    { name: 'Stone', class: 'bg-slate-100/50 border-slate-200/80 text-slate-900/80 hover:bg-slate-100/70', accent: 'border-slate-400/80' },
 ];
 
 const sectionGradients = [
@@ -221,18 +222,25 @@ export default function NotebookClient() {
 
     if (!details) return <div className="flex h-screen items-center justify-center text-slate-500">Yükleniyor...</div>;
 
-    const activeSection = sections.find(s => s.id === activeSectionId);
-    
-    const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
-    const activeSectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
-    
     const allNotesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a,b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
     
-    const folderStats = (activeSection?.folders || []).reduce((acc, folder) => {
-        acc[folder] = allNotesInSection.filter(n => n.folder === folder).length;
+    const notesByFolder = allNotesInSection.reduce((acc, note) => {
+        const folderName = note.folder || 'Genel';
+        if (!acc[folderName]) {
+            acc[folderName] = [];
+        }
+        acc[folderName].push(note);
+        return acc;
+    }, {} as Record<string, Note[]>);
+
+    const folderStats = Object.keys(notesByFolder).reduce((acc, folder) => {
+        acc[folder] = notesByFolder[folder].length;
         return acc;
     }, {} as Record<string, number>);
-    const generalCount = allNotesInSection.filter(n => !n.folder || n.folder === '').length;
+
+    const generalCount = folderStats['Genel'] || 0;
+    
+    const activeSection = sections.find(s => s.id === activeSectionId);
     
     const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a,b) => a.localeCompare(b, 'tr'))];
     
@@ -369,11 +377,10 @@ export default function NotebookClient() {
                             <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200" style={{background: 'linear-gradient(to bottom, white, #f8fafc)'}}>
                                  <div className="flex gap-3 items-stretch min-w-max">
                                      {folderOrder.map((folderName, index) => {
-                                         const count = folderName === 'Tümü' 
-                                            ? allNotesInSection.length 
-                                            : folderName === 'Genel'
-                                                ? generalCount
-                                                : folderStats[folderName] || 0;
+                                        if (folderName === 'Genel' && generalCount === 0) return null;
+                                        if (folderName !== 'Tümü' && folderName !== 'Genel' && !folderStats[folderName]) return null;
+
+                                        const count = folderName === 'Tümü' ? allNotesInSection.length : folderStats[folderName] || 0;
                                         
                                         return (
                                             <FolderCard 
@@ -423,7 +430,7 @@ export default function NotebookClient() {
             {/* --- DIALOGS --- */}
             {/* Section Edit Dialog */}
             <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
+                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm"}</DialogTitle>
                     </DialogHeader>
@@ -433,11 +440,11 @@ export default function NotebookClient() {
                             value={sectionTitle} 
                             onChange={(e) => setSectionTitle(e.target.value)} 
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveSection()}
-                            className="bg-slate-800 border-slate-700"
+                            className="bg-slate-50 border-slate-200 text-slate-900"
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)} className="text-slate-300 hover:text-white">İptal</Button>
+                        <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)} className="text-slate-500">İptal</Button>
                         <Button onClick={handleSaveSection} className="bg-indigo-600 text-white hover:bg-indigo-700">Kaydet</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -532,7 +539,7 @@ function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, icon: Ic
 }
 
 function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => void, onDelete: () => void }) {
-    const colorObj = noteColors.find(c => c.class === note.color) || noteColors[5]; // Default Gray
+    const colorObj = noteColors.find(c => c.class === note.color) || noteColors[5]; // Default Stone
     
     const contentText = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
     const plainText = typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '') : '';
@@ -542,7 +549,7 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
             onClick={onEdit}
             className={cn(
                 "group relative flex flex-col h-52 p-5 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer overflow-hidden",
-                colorObj.class
+                colorObj.class, 'text-opacity-80'
             )}
         >
              {/* Kağıt Dokusu */}
@@ -565,7 +572,7 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
                      <span>{note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : ''}</span>
                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-black/10 rounded-full" onClick={(e) => {e.stopPropagation(); onDelete();}}>
-                             <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                             <Trash2 className="w-3.5 h-3.5 text-red-500/70" />
                          </Button>
                      </div>
                 </div>
@@ -590,7 +597,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
             form.reset({
                 title: note.title,
                 content: Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '',
-                color: note.color,
+                color: note.color || noteColors[5].class,
                 folder: note.folder || ''
             });
         }
@@ -599,7 +606,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
     if (!note) return null;
 
     const watchedColor = form.watch('color');
-    const activeColorObj = noteColors.find(c => c.class === watchedColor) || noteColors[5]; // Default Gray
+    const activeColorObj = noteColors.find(c => c.class === watchedColor) || noteColors[5]; // Default Stone
 
     const handleFormSubmit = (data: NoteFormData) => {
         const updatedContent: NoteContentBlock[] = [{ id: note.content?.[0]?.id || Date.now().toString(), type: 'text', data: data.content || '' }];
@@ -610,7 +617,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         <Dialog open={!!note} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
                 "w-[100vw] h-[100dvh] md:w-full md:max-w-2xl md:h-auto md:max-h-[85vh] p-0 border-none shadow-2xl flex flex-col md:rounded-xl overflow-hidden transition-colors duration-500",
-                activeColorObj.class
+                activeColorObj.class, 'text-opacity-100'
             )}>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
@@ -661,7 +668,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
                                                 onClick={() => form.setValue('color', color.class)}
                                                 className={cn(
                                                     "w-6 h-6 rounded-full border shadow-sm transition-transform hover:scale-110",
-                                                    color.class.replace('bg-', 'bg-').replace('-50', '-200'),
+                                                    color.class.replace('bg-', 'bg-').replace('-100/50', '-200'),
                                                     watchedColor === color.class && "ring-2 ring-slate-800 ring-offset-1 scale-110"
                                                 )}
                                                 title={color.name}
@@ -694,3 +701,5 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         </Dialog>
     )
 }
+
+    
