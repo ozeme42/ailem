@@ -8,7 +8,7 @@ import { Notebook as NotebookType, Note } from '@/lib/data';
 import { onNotebookDetailsUpdate, updateNotebook, addNoteToSection, updateNoteInSection, deleteNoteFromSection } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, MoreHorizontal, Trash2, Edit } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,9 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 // --- SABİTLER ---
 const noteColors = [
@@ -82,14 +84,7 @@ export default function NotebookClient() {
                 await updateNoteInSection(notebookId, editingNote.id, notePayload);
                 toast({ title: "Not Güncellendi" });
             } else {
-                if (!details?.notebook.sections[0]?.id) {
-                    // Fallback in case there are no sections
-                    const newSection: NotebookSection = { id: Date.now().toString(), title: 'Genel', order: 0, color: 'from-slate-500 to-slate-600', folders: [] };
-                    await updateNotebook(notebookId, { sections: [newSection] });
-                    await addNoteToSection(notebookId, newSection.id, notePayload);
-                } else {
-                    await addNoteToSection(notebookId, details.notebook.sections[0].id, notePayload);
-                }
+                await addNoteToSection(notebookId, details!.notebook.sections[0].id, notePayload);
                 toast({ title: "Not Eklendi" });
             }
             setIsFormOpen(false);
@@ -198,7 +193,7 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
                             <MoreHorizontal className="w-5 h-5 opacity-60" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-800 rounded-xl border-slate-100 dark:border-slate-700">
+                    <DropdownMenuContent align="end" className="w-40 rounded-xl bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-red-500 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/50">
                             <Trash2 className="w-4 h-4 mr-2" /> Notu Sil
                         </DropdownMenuItem>
