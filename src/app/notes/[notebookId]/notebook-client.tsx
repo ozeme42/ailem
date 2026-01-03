@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
@@ -327,7 +328,7 @@ export default function NotebookClient() {
                  {/* Header */}
                  <div className="h-16 px-4 md:px-6 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10 shrink-0">
                     <div className="flex items-center gap-2 overflow-hidden">
-                        <Button variant="ghost" size="icon" className="md:hidden mr-1 text-slate-500" onClick={() => setActiveSectionId(null)}>
+                        <Button variant="ghost" size="icon" className="md:hidden mr-1 text-slate-500" onClick={()={() => setActiveSectionId(null)}>
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <h2 className="text-lg md:text-xl font-bold text-slate-800 truncate">
@@ -417,7 +418,7 @@ export default function NotebookClient() {
             {/* --- DIALOGS --- */}
             {/* Section Edit Dialog */}
             <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-white border-slate-200 rounded-2xl">
+                <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm"}</DialogTitle>
                     </DialogHeader>
@@ -427,11 +428,11 @@ export default function NotebookClient() {
                             value={sectionTitle} 
                             onChange={(e) => setSectionTitle(e.target.value)} 
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveSection()}
-                            className="bg-slate-50 border-slate-200"
+                            className="bg-slate-950 border-slate-700 text-slate-200"
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
+                        <Button variant="ghost" className="hover:bg-slate-800" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
                         <Button onClick={handleSaveSection} className="bg-indigo-600 text-white hover:bg-indigo-700">Kaydet</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -439,7 +440,7 @@ export default function NotebookClient() {
             
             {/* Folder Dialog */}
              <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl">
+                <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingFolder ? "Klasörü Düzenle" : "Yeni Klasör"}</DialogTitle>
                     </DialogHeader>
@@ -449,11 +450,11 @@ export default function NotebookClient() {
                             value={newFolderName} 
                             onChange={(e) => setNewFolderName(e.target.value)} 
                             onKeyDown={(e) => e.key === 'Enter' && (editingFolder ? handleUpdateFolder() : handleAddNewFolder())}
-                            className="bg-slate-50 border-slate-200 text-slate-900"
+                            className="bg-slate-950 border-slate-700 text-slate-200"
                         />
                     </div>
                     <DialogFooter>
-                         <Button variant="ghost" onClick={() => setIsFolderDialogOpen(false)}>İptal</Button>
+                         <Button variant="ghost" className="hover:bg-slate-800" onClick={() => setIsFolderDialogOpen(false)}>İptal</Button>
                         <Button onClick={editingFolder ? handleUpdateFolder : handleAddNewFolder} className="bg-indigo-600 text-white hover:bg-indigo-700">{editingFolder ? "Güncelle" : "Oluştur"}</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -474,7 +475,7 @@ export default function NotebookClient() {
 // --- SUB-COMPONENTS ---
 
 function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => void, onDelete: () => void }) {
-    const getNoteColors = (colorClass: string | undefined) => {
+     const getNoteColors = (colorClass: string | undefined) => {
         if (!colorClass) return "bg-white border-slate-200 text-slate-600 hover:border-indigo-300";
         return colorClass; // Uses the full class string stored in DB
     };
@@ -563,17 +564,19 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
                         {/* Header */}
-                        <DialogHeader className={cn("flex-row items-center justify-between px-6 py-4 border-b shrink-0 bg-white/40 backdrop-blur-md", activeColorObj.accent)}>
-                            <DialogTitle className="flex items-center gap-2 opacity-70">
+                        <div className={cn("flex-row items-center justify-between px-6 py-4 border-b shrink-0 bg-white/40 backdrop-blur-md flex", activeColorObj.accent)}>
+                             <div className="flex items-center gap-2 opacity-70">
                                  <StickyNote className="w-5 h-5" />
                                  <span className="text-sm font-bold uppercase tracking-wider">{note.id ? 'Notu Düzenle' : 'Yeni Not'}</span>
-                            </DialogTitle>
-                             <DialogClose asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/10 rounded-full">
-                                    <X className="h-5 w-5" />
-                                </Button>
-                            </DialogClose>
-                        </DialogHeader>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <DialogClose asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/10 rounded-full">
+                                        <X className="h-5 w-5" />
+                                    </Button>
+                                </DialogClose>
+                             </div>
+                        </div>
 
                         {/* Content Area */}
                         <ScrollArea className="flex-1">
@@ -660,3 +663,4 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         </Dialog>
     )
 }
+
