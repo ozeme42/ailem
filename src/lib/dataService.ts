@@ -552,10 +552,10 @@ export const upsertCalorieLog = async (logData: Omit<CalorieLog, 'familyId'>) =>
 
 // Shopping Lists
 export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback);
-export const addShoppingList = async (name: string, icon: string) => {
+export const addShoppingList = async (name: string, icon: string, colorId?: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'shoppingLists'), { name, icon, items: [], boughtItems: [], familyId, createdAt: new Date().toISOString() });
+    return addDoc(collection(db, 'shoppingLists'), { name, icon, items: [], boughtItems: [], familyId, createdAt: new Date().toISOString(), colorId: colorId || 'ocean' });
 };
 export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
 export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
@@ -579,13 +579,13 @@ export const addShoppingListItemToList = async (listId: string, itemData: { name
 };
 
 
-export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string) => {
+export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string, isBought: boolean) => {
     const listRef = doc(db, "shoppingLists", listId);
     const listSnap = await getDoc(listRef);
     if (listSnap.exists()) {
         const list = listSnap.data() as ShoppingList;
         const newItems = (list.items || []).map(item =>
-            item.id === itemId ? { ...item, isBought: !item.isBought } : item
+            item.id === itemId ? { ...item, isBought } : item
         );
         await updateDoc(listRef, { items: newItems });
     }
@@ -800,7 +800,8 @@ export const updateTopics = async (topics: string[]) => {
 };
 
 
-export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false) => onFamilyDataUpdate<Test>('tests', callback, runOnce);
+export const onTestsUpdate = (callback: (tests: Test[]) => void, runOnce = false, orderByField = 'assignedDate', orderByDirection: 'asc' | 'desc' = 'desc') => 
+    onFamilyDataUpdate<Test>('tests', callback, runOnce, orderByField, orderByDirection);
 
 export const addTest = async (data: Omit<Test, 'id' | 'familyId' | 'questions'>, questionsForSubcollection?: (BankQuestion | QuickTestQuestion)[]) => {
     const familyId = await getCurrentFamilyId();
@@ -1287,7 +1288,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'fa
     // If questions are provided, process and include them in the update
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
         const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? question.questionId : '');
             return {
                 questionId: questionId,
                 questionNumber: index + 1,
@@ -1463,14 +1464,7 @@ export const updateHabitCompletion = async (taskId: string, day: Date, isComplet
 
 
 // Notes Feature
-const noteColors = [
-    'bg-yellow-100 border-yellow-200 text-yellow-900',
-    'bg-blue-100 border-blue-200 text-blue-900',
-    'bg-green-100 border-green-200 text-green-900',
-    'bg-pink-100 border-pink-200 text-pink-900',
-    'bg-purple-100 border-purple-200 text-purple-900',
-];
-export const onNotebooksUpdate = (callback: (notebooks: Notebook[]) => void) => onFamilyDataUpdate<Notebook>('notebooks', callback);
+export const onNotebooksUpdate = (callback: (notebooks: Notebook[]) => void) => onFamilyDataUpdate<Notebook>('notebooks', callback, false, 'createdAt', 'desc');
 export const onNotesUpdate = (callback: (notes: Note[]) => void) => onFamilyDataUpdate<Note>('notes', callback);
 export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
     const familyId = await getCurrentFamilyId();
@@ -2103,14 +2097,7 @@ export const onTransactionStatsUpdate = (callback: (stats: { [month: string]: { 
                         }
                     });
                     
-                    const formattedStats: { [month: string]: { income: number, expense: number } } = {};
-                    Object.keys(stats).sort().forEach(monthKey => {
-                        const [year, month] = monthKey.split('-');
-                        const monthName = format(new Date(Number(year), Number(month) - 1), 'MMM', {locale: tr});
-                        formattedStats[monthName] = stats[monthKey];
-                    });
-
-                    callback(formattedStats);
+                    callback(stats);
                 });
             } else {
                 callback({});

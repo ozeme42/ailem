@@ -7,7 +7,7 @@ import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, Note } from '@/lib/data';
 import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook, onNotesUpdate } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Edit, Search, MoreVertical, Book, Folder, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Edit, Search, MoreVertical, Book, Folder } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { NewNotebookForm } from '@/components/new-notebook-form';
@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+
 
 // --- TASARIM SABİTLERİ ---
 const notebookColors = [
@@ -33,15 +35,7 @@ export function NotesClient() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingNotebook, setEditingNotebook] = useState<NotebookType | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [isMobile, setIsMobile] = useState(false);
     const { toast } = useToast();
-
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     useEffect(() => {
         if (!user) return;
@@ -134,7 +128,7 @@ export function NotesClient() {
                                     <div onClick={(e) => e.preventDefault()}>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2 text-slate-600/60 hover:bg-black/5 hover:text-slate-800">
+                                                <Button variant="ghost" size="icon" className={cn("h-8 w-8 -mr-2 -mt-2 text-slate-600/60 hover:bg-black/5 hover:text-slate-800 opacity-0 group-hover:opacity-100 transition-opacity", style.text)}>
                                                     <MoreVertical className="w-5 h-5" />
                                                 </Button>
                                             </DropdownMenuTrigger>
@@ -142,9 +136,25 @@ export function NotesClient() {
                                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenDialog(notebook); }} className="py-2.5 cursor-pointer">
                                                     <Edit className="w-4 h-4 mr-2" /> Düzenle
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-600 py-2.5 cursor-pointer focus:bg-red-50 focus:text-red-700" onClick={(e) => { e.stopPropagation(); handleDeleteNotebook(notebook.id); }}>
-                                                    <Trash2 className="w-4 h-4 mr-2" /> Sil
-                                                </DropdownMenuItem>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 py-2.5 cursor-pointer focus:bg-red-50 focus:text-red-700">
+                                                            <Trash2 className="w-4 h-4 mr-2" /> Sil
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Defteri Sil?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                "{notebook.title}" defterini ve içindeki tüm notları silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteNotebook(notebook.id)}>Evet, Sil</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -162,9 +172,7 @@ export function NotesClient() {
                     })}
                     {displayedNotebooks.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-400">
-                            <FolderOpen className="w-16 h-16 mb-4 opacity-50" />
                             <p className="text-lg font-medium">Defter bulunamadı.</p>
-                            <p className="text-sm">Yeni bir tane oluşturarak başla.</p>
                         </div>
                     )}
                 </div>
@@ -183,3 +191,4 @@ export function NotesClient() {
         </div>
     );
 }
+
