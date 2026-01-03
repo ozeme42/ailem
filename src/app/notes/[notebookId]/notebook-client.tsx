@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, NotebookSection, Note, NoteContentBlock } from '@/lib/data';
-import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder } from '@/lib/dataService';
+import { onNotebookDetailsUpdate, deleteNoteFromSection, updateNotebook, addNoteToSection, updateNoteInSection, updateNotebookFolder, deleteTag } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Edit, Trash2, StickyNote, FolderPlus, Folder, ChevronDown, MoreVertical, LayoutGrid, FileText, Sparkles, Palette, X, PenLine, ChevronRight, Book, FolderOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -226,6 +226,8 @@ export default function NotebookClient() {
     // Aktif Bölüm Rengini Bul (Klasör Rafı İçin)
     const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
     const activeSectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
+    
+    const allNotesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a,b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
 
     const notesByFolder = allNotesInSection.reduce((acc, note) => {
         const folderName = note.folder || 'Genel';
@@ -237,8 +239,6 @@ export default function NotebookClient() {
     }, {} as Record<string, Note[]>);
     
     const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a,b) => a.localeCompare(b, 'tr'))];
-    
-    const allNotesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a,b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
     
     const displayedNotes = activeFolderFilter === 'Tümü' 
         ? allNotesInSection 
@@ -307,9 +307,23 @@ export default function NotebookClient() {
                                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingSection(section); setSectionTitle(section.title); setIsSectionDialogOpen(true); }}>
                                                     <Edit className="w-3 h-3 mr-2" /> Düzenle
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-600 focus:text-red-700" onClick={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}>
-                                                    <Trash2 className="w-3 h-3 mr-2" /> Sil
-                                                </DropdownMenuItem>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700">
+                                                            <Trash2 className="w-3 h-3 mr-2" /> Sil
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitleComponent>Bölümü Sil</AlertDialogTitleComponent>
+                                                            <AlertDialogDescription>Bu bölüm ve içindeki tüm notlar silinecek. Emin misiniz?</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooterComponent>
+                                                            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}>Evet, Sil</AlertDialogAction>
+                                                        </AlertDialogFooterComponent>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <ChevronRight className={cn("w-4 h-4 ml-1 sm:hidden", isSelected ? "text-white" : "text-slate-300")} />
@@ -418,7 +432,7 @@ export default function NotebookClient() {
             {/* --- DIALOGS --- */}
             {/* Section Edit Dialog */}
             <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
-                <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-2xl">
+                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl">
                     <DialogHeader>
                         <DialogTitle>{editingSection ? "Bölümü Düzenle" : "Yeni Bölüm"}</DialogTitle>
                     </DialogHeader>
@@ -428,11 +442,11 @@ export default function NotebookClient() {
                             value={sectionTitle} 
                             onChange={(e) => setSectionTitle(e.target.value)} 
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveSection()}
-                            className="bg-slate-800 border-slate-700 focus:border-indigo-500"
+                            className="bg-slate-50 border-slate-200"
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" className="hover:bg-slate-800" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
+                        <Button variant="ghost" onClick={() => setIsSectionDialogOpen(false)}>İptal</Button>
                         <Button onClick={handleSaveSection} className="bg-indigo-600 text-white hover:bg-indigo-700">Kaydet</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -496,9 +510,23 @@ function FolderCard({ name, count, isActive, onClick, onEdit, onDelete, icon: Ic
                                  <MoreVertical className="w-4 h-4" />
                              </Button>
                          </DropdownMenuTrigger>
-                         <DropdownMenuContent>
+                         <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                              <DropdownMenuItem onClick={(e) => {e.stopPropagation(); onEdit()}}>Düzenle</DropdownMenuItem>
-                             <DropdownMenuItem className="text-red-600" onClick={(e) => {e.stopPropagation(); onDelete()}}>Sil</DropdownMenuItem>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700">Sil</DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitleComponent>Klasörü Sil</AlertDialogTitleComponent>
+                                        <AlertDialogDescription>Klasörü silmek içindeki notları silmez, notlar "Genel" klasörüne taşınır.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooterComponent>
+                                        <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                                        <AlertDialogAction onClick={(e) => { e.stopPropagation(); onDelete(); }}>Evet, Sil</AlertDialogAction>
+                                    </AlertDialogFooterComponent>
+                                </AlertDialogContent>
+                            </AlertDialog>
                          </DropdownMenuContent>
                      </DropdownMenu>
                  )}
@@ -596,19 +624,19 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
                         
-                        <div className={cn("flex items-center justify-between px-6 py-4 border-b shrink-0 bg-white/40 backdrop-blur-md", activeColorObj.accent)}>
-                             <div className="flex items-center gap-2 opacity-70">
+                         <DialogHeader className={cn("flex-row items-center justify-between px-6 py-4 border-b shrink-0 bg-white/40 backdrop-blur-md", activeColorObj.accent)}>
+                            <DialogTitle className="flex items-center gap-2 opacity-70">
                                  <StickyNote className="w-5 h-5" />
                                  <span className="text-sm font-bold uppercase tracking-wider">{note.id ? 'Notu Düzenle' : 'Yeni Not'}</span>
-                             </div>
+                             </DialogTitle>
                              <div className="flex items-center gap-2">
                                 <DialogClose asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/10 rounded-full">
-                                        <X className="h-5 w-5" />
+                                        <X className="h-5 h-5" />
                                     </Button>
                                 </DialogClose>
                              </div>
-                        </div>
+                        </DialogHeader>
 
                         <ScrollArea className="flex-1">
                             <div className="max-w-2xl mx-auto p-6 md:p-12 min-h-[60vh] space-y-6">
