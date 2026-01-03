@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Combobox } from '@/components/ui/combobox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm } from 'react-hook-form';
@@ -34,12 +34,12 @@ const sectionGradients = [
 ];
 
 const noteColors = [
-    { name: 'Parchment', class: 'bg-[#fffbeb] border-[#fde68a]', accent: 'border-amber-300' },
-    { name: 'Sky', class: 'bg-[#f0f9ff] border-[#bae6fd]', accent: 'border-sky-300' },
-    { name: 'Mint', class: 'bg-[#f0fdf4] border-[#bbf7d0]', accent: 'border-emerald-300' },
-    { name: 'Rose', class: 'bg-[#fff1f2] border-[#fecdd3]', accent: 'border-rose-300' },
-    { name: 'Lavender', class: 'bg-[#f5f3ff] border-[#ddd6fe]', accent: 'border-violet-300' },
-    { name: 'Stone', class: 'bg-slate-100/50 border-slate-200', accent: 'border-slate-300' },
+    { name: 'Saman', class: 'bg-[#fffbeb] border-[#fde68a]', accent: 'border-amber-300' },
+    { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd]', accent: 'border-sky-300' },
+    { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0]', accent: 'border-emerald-300' },
+    { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3]', accent: 'border-rose-300' },
+    { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe]', accent: 'border-violet-300' },
+    { name: 'Taş', class: 'bg-slate-100/50 border-slate-200', accent: 'border-slate-300' },
 ];
 
 
@@ -116,6 +116,40 @@ export default function NotebookClient() {
     useEffect(() => {
         setActiveFolderFilter('Tümü');
     }, [activeSectionId]);
+    
+    const activeSection = sections.find(s => s.id === activeSectionId);
+    
+    const { allNotesInSection, notesByFolder, folderStats, displayedNotes } = React.useMemo(() => {
+        if (!details || !activeSectionId) {
+            return { allNotesInSection: [], notesByFolder: {}, folderStats: {}, displayedNotes: [] };
+        }
+
+        const notesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a, b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
+        
+        const byFolder = notesInSection.reduce((acc, note) => {
+            const folderName = note.folder || 'Genel';
+            if (!acc[folderName]) acc[folderName] = [];
+            acc[folderName].push(note);
+            return acc;
+        }, {} as Record<string, Note[]>);
+
+        const stats = Object.keys(byFolder).reduce((acc, folder) => {
+            acc[folder] = byFolder[folder].length;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const notesToDisplay = activeFolderFilter === 'Tümü'
+            ? notesInSection
+            : activeFolderFilter === 'Genel'
+                ? notesInSection.filter(n => !n.folder || n.folder === '')
+                : notesInSection.filter(n => n.folder === activeFolderFilter);
+
+        return { allNotesInSection: notesInSection, notesByFolder: byFolder, folderStats: stats, displayedNotes: notesToDisplay };
+    }, [details, activeSectionId, activeFolderFilter]);
+
+
+    const generalCount = folderStats['Genel'] || 0;
+    const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a, b) => a.localeCompare(b, 'tr'))];
 
     // --- ACTION HANDLERS ---
     const handleSaveSection = async () => {
@@ -212,34 +246,6 @@ export default function NotebookClient() {
     }
 
     if (!details) return <div className="flex h-screen items-center justify-center text-slate-500">Yükleniyor...</div>;
-    
-    const activeSection = sections.find(s => s.id === activeSectionId);
-    
-    const allNotesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a,b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
-    
-    const notesByFolder = allNotesInSection.reduce((acc, note) => {
-        const folderName = note.folder || 'Genel';
-        if (!acc[folderName]) {
-            acc[folderName] = [];
-        }
-        acc[folderName].push(note);
-        return acc;
-    }, {} as Record<string, Note[]>);
-
-    const folderStats = Object.keys(notesByFolder).reduce((acc, folder) => {
-        acc[folder] = notesByFolder[folder].length;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const generalCount = folderStats['Genel'] || 0;
-    
-    const folderOrder = ['Tümü', 'Genel', ...(activeSection?.folders || []).sort((a,b) => a.localeCompare(b, 'tr'))];
-    
-    const displayedNotes = activeFolderFilter === 'Tümü' 
-        ? allNotesInSection 
-        : activeFolderFilter === 'Genel'
-            ? allNotesInSection.filter(n => !n.folder || n.folder === '')
-            : allNotesInSection.filter(n => n.folder === activeFolderFilter);
 
     return (
         <div className={cn("flex h-[100dvh] overflow-hidden font-sans text-slate-900 bg-slate-50")}>
@@ -261,7 +267,7 @@ export default function NotebookClient() {
                 </div>
 
                 <ScrollArea className="flex-1 p-3">
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="flex flex-col gap-2">
                         {sections.map((section, index) => {
                              const isSelected = activeSectionId === section.id;
                              const gradientClass = section.color || sectionGradients[index % sectionGradients.length];
@@ -272,16 +278,17 @@ export default function NotebookClient() {
                                     key={section.id} 
                                     onClick={() => setActiveSectionId(section.id)}
                                     className={cn(
-                                        "group relative flex flex-col justify-between p-4 h-28 rounded-2xl cursor-pointer transition-all border-2",
+                                        "group relative w-full h-24 rounded-2xl cursor-pointer transition-all duration-200 p-4 flex flex-col justify-end border-2",
                                         isSelected 
-                                            ? `ring-4 ring-offset-2 ring-indigo-500 border-transparent shadow-lg bg-white` 
-                                            : "border-slate-200 bg-white hover:border-slate-300 text-slate-600 hover:shadow-md"
+                                            ? `border-indigo-500 bg-indigo-50 shadow-md` 
+                                            : "border-transparent bg-slate-100 hover:border-slate-200"
                                     )}
                                 >
-                                     <div className={cn("absolute top-0 left-0 right-0 h-2 bg-gradient-to-r", gradientClass)}></div>
-                                     <div className="flex w-full justify-between items-start pt-2">
-                                        <div className={cn("p-1.5 rounded-lg text-white", `bg-gradient-to-br ${gradientClass}`)}>
-                                             <FolderOpen className="w-4 h-4" />
+                                     <div className={cn("absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r", gradientClass)}></div>
+                                     
+                                     <div className="flex w-full justify-between items-start absolute top-4 left-4 right-4">
+                                        <div className={cn("flex-1 overflow-hidden pr-8")}>
+                                            <p className={cn("font-bold text-base truncate", isSelected ? "text-indigo-800" : "text-slate-700")}>{section.title}</p>
                                         </div>
                                          <div onClick={(e) => e.stopPropagation()} className={cn("transition-opacity", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                                              <DropdownMenu>
@@ -316,7 +323,6 @@ export default function NotebookClient() {
                                          </div>
                                      </div>
                                     <div className="mt-auto">
-                                        <p className={cn("font-bold text-sm truncate", isSelected ? "text-slate-800" : "text-slate-600")}>{section.title}</p>
                                         <p className="text-xs font-medium text-slate-400">{noteCount} not</p>
                                     </div>
                                 </div>
@@ -368,13 +374,13 @@ export default function NotebookClient() {
                             {/* Folder Shelf */}
                             <div className="relative -mx-4 md:-mx-6 px-4 md:px-6 py-4 overflow-x-auto scrollbar-hide border-b border-slate-200" style={{background: 'linear-gradient(to bottom, white, #f8fafc)'}}>
                                  <div className="flex gap-3 items-stretch min-w-max">
-                                     {folderOrder.map((folderName) => {
+                                     {folderOrder.map((folderName, index) => {
                                         if (folderName === 'Genel' && generalCount === 0) return null;
                                         if (folderName !== 'Tümü' && folderName !== 'Genel' && !folderStats[folderName]) return null;
                                         
                                         const count = folderName === 'Tümü' ? allNotesInSection.length : folderStats[folderName] || 0;
-                                        const sectionIndex = sections.findIndex(s => s.id === activeSectionId);
-                                        const activeSectionGradient = activeSection?.color || sectionGradients[sectionIndex >= 0 ? sectionIndex % sectionGradients.length : 0];
+                                        const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
+                                        const sectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
 
                                         return (
                                             <FolderCard 
@@ -386,7 +392,7 @@ export default function NotebookClient() {
                                                 onEdit={folderName !== 'Tümü' && folderName !== 'Genel' ? () => { setNewFolderName(folderName); setEditingFolder({oldName: folderName, sectionId: activeSectionId}); setIsFolderDialogOpen(true); } : undefined}
                                                 onDelete={folderName !== 'Tümü' && folderName !== 'Genel' ? () => handleDeleteFolder(folderName, activeSectionId) : undefined}
                                                 icon={folderName === 'Tümü' ? LayoutGrid : folderName === 'Genel' ? Sparkles : Folder}
-                                                gradient={activeSectionGradient}
+                                                gradient={sectionGradient}
                                             />
                                         )
                                      })}
@@ -543,7 +549,7 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
             onClick={onEdit}
             className={cn(
                 "group relative flex flex-col h-52 p-5 rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer overflow-hidden",
-                colorObj.class, 'text-opacity-80'
+                colorObj.class, 'text-slate-800'
             )}
         >
              {/* Kağıt Dokusu */}
@@ -611,7 +617,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         <Dialog open={!!note} onOpenChange={onOpenChange}>
             <DialogContent className={cn(
                 "w-[100vw] h-[100dvh] md:w-full md:max-w-2xl md:h-auto md:max-h-[85vh] p-0 border-none shadow-2xl flex flex-col md:rounded-xl overflow-hidden transition-colors duration-500",
-                activeColorObj.class, 'text-opacity-100'
+                activeColorObj.class, 'text-slate-800'
             )}>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">

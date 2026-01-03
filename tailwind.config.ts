@@ -1,4 +1,5 @@
 import type {Config} from 'tailwindcss';
+import colors from 'tailwindcss/colors';
 
 const config = {
   darkMode: ['class'],
@@ -17,11 +18,8 @@ const config = {
         "2xl": "1400px",
       },
     },
-    extend: {
-      fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'],
-      },
-      colors: {
+    colors: {
+        ...colors,
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -72,6 +70,10 @@ const config = {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+    },
+    extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
