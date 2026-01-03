@@ -25,15 +25,14 @@ import { z } from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from 'next/image';
 
-// --- TASARIM: AÇIK TEMA (LIGHT NOTEBOOK) ---
-const themeColors = {
-    PAGE_BG: "bg-slate-50",
-    SIDEBAR_BG: "bg-white border-r border-slate-200",
-    NOTE_BG: "bg-white border-slate-200", // Default note color
-    HEADER_BG: "bg-white/80 backdrop-blur-md border-b border-slate-200",
-};
+const sectionGradients = [
+    'from-rose-500 to-pink-500',
+    'from-blue-500 to-indigo-500',
+    'from-emerald-500 to-teal-500',
+    'from-amber-500 to-orange-500',
+    'from-violet-500 to-purple-500',
+];
 
-// --- YENİ CANLI RENK PALETİ ---
 const noteColors = [
     { name: 'Parchment', class: 'bg-[#fffbeb] border-[#fde68a]', accent: 'border-amber-300' },
     { name: 'Sky', class: 'bg-[#f0f9ff] border-[#bae6fd]', accent: 'border-sky-300' },
@@ -43,13 +42,6 @@ const noteColors = [
     { name: 'Stone', class: 'bg-slate-100/50 border-slate-200', accent: 'border-slate-300' },
 ];
 
-const sectionGradients = [
-    'from-rose-500 to-pink-500',
-    'from-blue-500 to-indigo-500',
-    'from-emerald-500 to-teal-500',
-    'from-amber-500 to-orange-500',
-    'from-violet-500 to-purple-500',
-];
 
 interface NotebookDetails {
     notebook: NotebookType;
@@ -222,7 +214,6 @@ export default function NotebookClient() {
     if (!details) return <div className="flex h-screen items-center justify-center text-slate-500">Yükleniyor...</div>;
     
     const activeSection = sections.find(s => s.id === activeSectionId);
-    const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
     
     const allNotesInSection = details.notes.filter(n => n.sectionId === activeSectionId).sort((a,b) => (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) - (a.updatedAt ? new Date(a.updatedAt).getTime() : 0));
     
@@ -358,7 +349,7 @@ export default function NotebookClient() {
                     </div>
                     {activeSectionId && (
                          <div className="flex gap-2">
-                             <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => { setNewFolderName(""); setEditingFolder({oldName: '', sectionId: activeSectionId}); setIsFolderDialogOpen(true); }}>
+                             <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => { setNewFolderName(""); setEditingFolder(null); setIsFolderDialogOpen(true); }}>
                                  <FolderPlus className="w-4 h-4 mr-2" /> Klasör
                              </Button>
                              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm rounded-lg h-9 text-sm font-medium px-3 md:px-4" onClick={() => {
@@ -382,8 +373,8 @@ export default function NotebookClient() {
                                         if (folderName !== 'Tümü' && folderName !== 'Genel' && !folderStats[folderName]) return null;
                                         
                                         const count = folderName === 'Tümü' ? allNotesInSection.length : folderStats[folderName] || 0;
-                                        const activeSectionIndex = sections.findIndex(s => s.id === activeSectionId);
-                                        const activeSectionGradient = activeSection?.color || sectionGradients[activeSectionIndex >= 0 ? activeSectionIndex % sectionGradients.length : 0];
+                                        const sectionIndex = sections.findIndex(s => s.id === activeSectionId);
+                                        const activeSectionGradient = activeSection?.color || sectionGradients[sectionIndex >= 0 ? sectionIndex % sectionGradients.length : 0];
 
                                         return (
                                             <FolderCard 
@@ -624,10 +615,7 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
             )}>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full relative">
-                        <DialogHeader>
-                            <DialogTitle className="sr-only">{note.title || "Yeni Not"}</DialogTitle>
-                        </DialogHeader>
-
+                        
                         <div className="absolute top-0 left-0 w-full z-20 p-4 md:p-6 flex justify-end">
                             <DialogClose asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/10 text-black/40 hover:text-black/70 rounded-full">
@@ -708,5 +696,3 @@ function NoteEditDialog({ note, onOpenChange, onSave, sectionFolders }: { note: 
         </Dialog>
     )
 }
-
-    
