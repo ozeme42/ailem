@@ -49,22 +49,20 @@ export function NotesClient() {
         if (!user) return;
         const unsubscribeNotebooks = onNotebooksUpdate((data) => {
             setNotebooks(data);
-            // Masaüstünde otomatik ilk defteri seç, mobilde seçme (listeyi görsünler)
-            if (!selectedNotebookId && data.length > 0 && window.innerWidth >= 768) {
-                setSelectedNotebookId(data[0].id);
-            }
         });
         const unsubscribeNotes = onNotesUpdate(setAllNotes);
         return () => {
             unsubscribeNotebooks();
             unsubscribeNotes();
         };
-    }, [user]); // selectedNotebookId bağımlılığını kaldırdım loop olmaması için
+    }, [user]);
     
     // Eğer seçili defter silindiyse başkasına geç
     useEffect(() => {
         if (selectedNotebookId && notebooks.length > 0 && !notebooks.find(n => n.id === selectedNotebookId)) {
             setSelectedNotebookId(notebooks[0].id);
+        } else if (selectedNotebookId && notebooks.length === 0) {
+            setSelectedNotebookId(null);
         }
     }, [notebooks, selectedNotebookId]);
 
