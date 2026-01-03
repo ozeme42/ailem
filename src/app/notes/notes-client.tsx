@@ -57,10 +57,10 @@ export function NotesClient() {
         };
     }, [user]);
     
-    // Eğer seçili defter silindiyse başkasına geç
+    // Eğer seçili defter silindiyse seçimi temizle
     useEffect(() => {
         if (selectedNotebookId && notebooks.length > 0 && !notebooks.find(n => n.id === selectedNotebookId)) {
-            setSelectedNotebookId(notebooks[0].id);
+            setSelectedNotebookId(null);
         } else if (selectedNotebookId && notebooks.length === 0) {
             setSelectedNotebookId(null);
         }
