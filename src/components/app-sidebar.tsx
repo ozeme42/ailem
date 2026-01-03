@@ -17,34 +17,34 @@ import { useAuth } from "./auth-provider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-// --- DESIGN SYSTEM: FORCE GLASS THEME ---
+// --- DESIGN SYSTEM: LIGHT GLASS THEME ---
 const sidebarStyles = {
-    // !bg-slate-900/50: Rengi zorla yarı saydam yap
-    // backdrop-blur-xl: Arkasını bulanıklaştır (Buzlu cam)
-    // border-white/10: Kenarlıkları belirginleştir
-    BASE: "!bg-slate-900/80 backdrop-blur-2xl border-r border-white/10 shadow-2xl transition-all duration-300",
+    // !bg-white/90: Yarı saydam beyaz arka plan
+    // border-slate-200: İnce gri kenarlık
+    BASE: "!bg-white/90 backdrop-blur-2xl border-r border-slate-200 shadow-xl transition-all duration-300",
     
-    HEADER: "border-b border-white/5 pb-4",
+    HEADER: "border-b border-slate-100 pb-4",
     
-    // Menü öğeleri: Üzerine gelince hafif beyazlat
-    ITEM_DEFAULT: "text-slate-400 hover:text-white hover:bg-white/[0.08] transition-all duration-200",
+    // Menü öğeleri: Koyu gri metin, hover olunca açık gri zemin
+    ITEM_DEFAULT: "text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200",
     
-    // Aktif öğe: Parlak İndigo
-    ITEM_ACTIVE: "bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/20 hover:bg-indigo-500",
+    // Aktif öğe: İndigo zemin, beyaz yazı (Beyaz üzerinde kontrast sağlar)
+    ITEM_ACTIVE: "bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20 hover:bg-indigo-700",
     
     // Logo Kutusu
-    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20",
+    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/20 text-white",
     
-    // Alt menü aktif
-    SUB_ITEM_ACTIVE: "text-indigo-300 font-medium bg-indigo-500/10 border-l-2 border-indigo-500 pl-2",
+    // Alt menü aktif: Hafif indigo zemin, koyu indigo yazı
+    SUB_ITEM_ACTIVE: "text-indigo-700 font-medium bg-indigo-50 border-l-2 border-indigo-600 pl-2",
     
     // Alt menü pasif
-    SUB_ITEM_DEFAULT: "text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] border-l-2 border-transparent pl-2",
+    SUB_ITEM_DEFAULT: "text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-l-2 border-transparent pl-2",
 
     // Bölüm başlıkları
-    SECTION_LABEL: "text-slate-500 font-bold text-[10px] uppercase tracking-wider px-3 py-2 mt-4 opacity-80 group-data-[collapsible=icon]:hidden transition-all"
+    SECTION_LABEL: "text-slate-400 font-bold text-[10px] uppercase tracking-wider px-3 py-2 mt-4 opacity-100 group-data-[collapsible=icon]:hidden transition-all"
 };
 
+// Cami İkonu (Renkleri currentcolor ile otomatik alacak)
 const MosqueIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg width="24" height="24" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
         <g stroke="currentColor">
@@ -108,11 +108,11 @@ export function AppSidebar() {
     <Sidebar 
         collapsible="icon" 
         className={cn("border-r-0", sidebarStyles.BASE)}
-        // style override ile globals.css'i eziyoruz
+        // Inline style ile arka planı override ediyoruz (Saydam beyaz)
         style={
             {
                 "--sidebar-background": "transparent",
-                backgroundColor: "rgba(15, 23, 42, 0.75)" // Slate 900 but transparent
+                backgroundColor: "rgba(255, 255, 255, 0.85)" 
             } as React.CSSProperties
         }
     >
@@ -124,13 +124,13 @@ export function AppSidebar() {
             {/* LOGO ALANI */}
             <div className={cn("flex items-center gap-3 transition-all duration-300", isCollapsed ? "hidden w-0 opacity-0" : "flex w-auto opacity-100")}>
                 <div className={cn("p-2 rounded-xl flex items-center justify-center shrink-0", sidebarStyles.ICON_BOX)}>
-                    <ChevronsRight className="text-white w-5 h-5" />
+                    <ChevronsRight className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                    <h2 className="text-lg font-black tracking-tight text-white leading-none whitespace-nowrap">
+                    <h2 className="text-lg font-black tracking-tight text-slate-800 leading-none whitespace-nowrap">
                         Ailem
                     </h2>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
                 </div>
             </div>
 
@@ -140,8 +140,8 @@ export function AppSidebar() {
                 variant="ghost" 
                 size="icon" 
                 className={cn(
-                    "h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all",
-                    isCollapsed && "h-9 w-9 bg-white/10 text-white hover:bg-indigo-600 fixed left-4 top-5 z-50 shadow-lg border border-white/10 backdrop-blur-md"
+                    "h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all",
+                    isCollapsed && "h-9 w-9 bg-white text-indigo-600 hover:bg-indigo-50 fixed left-4 top-5 z-50 shadow-md border border-slate-200"
                 )}
             >
                 <PanelLeft className="w-5 h-5" />
@@ -162,7 +162,9 @@ export function AppSidebar() {
                 );
             }
 
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href || '') && !item.subItems);
+            // isActive logic: Eğer ana link ise veya alt menülerden biri aktif değilse ve path uyuyorsa
+            const isSubItemActive = item.subItems?.some(sub => pathname === sub.href);
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href || '') && !item.subItems) || isSubItemActive;
             
             return (
                 <SidebarMenuItem key={item.href}>
@@ -177,7 +179,7 @@ export function AppSidebar() {
                             )}
                         >
                             <span>
-                                {item.icon && <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : "opacity-60 group-hover:opacity-100")} />}
+                                {item.icon && <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : "opacity-60 group-hover:opacity-100 text-slate-500")} />}
                                 <span className="text-sm font-medium ml-3 group-data-[collapsible=icon]:hidden transition-all duration-300">{item.label}</span>
                             </span>
                         </SidebarMenuButton>
@@ -185,7 +187,7 @@ export function AppSidebar() {
 
                     {/* Alt Menüler */}
                     {item.subItems && (
-                        <SidebarMenuSub className="border-l-white/10 ml-5 pl-2 my-1 space-y-1 group-data-[collapsible=icon]:hidden">
+                        <SidebarMenuSub className="border-l-slate-200 ml-5 pl-2 my-1 space-y-1 group-data-[collapsible=icon]:hidden">
                             {item.subItems.map(subItem => {
                                 const isSubActive = pathname === subItem.href;
                                 return (
@@ -216,7 +218,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* --- FOOTER --- */}
-      <SidebarFooter className="border-t border-white/5 p-4 bg-black/20 group-data-[collapsible=icon]:p-2">
+      <SidebarFooter className="border-t border-slate-100 p-4 bg-slate-50/50 group-data-[collapsible=icon]:p-2">
         <SidebarMenu>
             <SidebarMenuItem>
                 <Link href={profileLink} legacyBehavior={false} passHref>
@@ -225,19 +227,19 @@ export function AppSidebar() {
                         isActive={pathname.startsWith('/profile/')}
                         tooltip="Profilim"
                         className={cn(
-                            "rounded-xl h-12 mb-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center", 
-                            pathname.startsWith('/profile/') ? sidebarStyles.ITEM_ACTIVE : sidebarStyles.ITEM_DEFAULT
+                            "rounded-xl h-12 mb-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center border border-transparent", 
+                            pathname.startsWith('/profile/') ? sidebarStyles.ITEM_ACTIVE : "hover:bg-white hover:border-slate-200 hover:shadow-sm"
                         )}
                     >
                         <span>
                             <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-tr from-indigo-500 to-fuchsia-500 p-[1.5px] mr-2 group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 transition-all">
-                                <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
-                                    <User className="w-4 h-4 text-slate-300 group-data-[collapsible=icon]:w-3 group-data-[collapsible=icon]:h-3" />
+                                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                    <User className="w-4 h-4 text-slate-600 group-data-[collapsible=icon]:w-3 group-data-[collapsible=icon]:h-3" />
                                 </div>
                             </div>
                             <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                                <span className="font-bold text-sm leading-none text-slate-200">Profilim</span>
-                                <span className="text-[10px] opacity-60 mt-0.5 font-normal text-slate-400">Hesap Ayarları</span>
+                                <span className={cn("font-bold text-sm leading-none", pathname.startsWith('/profile/') ? "text-white" : "text-slate-700")}>Profilim</span>
+                                <span className={cn("text-[10px] mt-0.5 font-normal", pathname.startsWith('/profile/') ? "text-indigo-100" : "text-slate-400")}>Hesap Ayarları</span>
                             </div>
                         </span>
                     </SidebarMenuButton>
@@ -248,7 +250,7 @@ export function AppSidebar() {
                 <SidebarMenuButton 
                     onClick={logout}
                     tooltip="Çıkış Yap"
-                    className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl h-10 transition-colors justify-center font-medium group-data-[collapsible=icon]:h-10"
+                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl h-10 transition-colors justify-center font-medium group-data-[collapsible=icon]:h-10"
                 >
                     <LogOut className="w-4 h-4 mr-2 group-data-[collapsible=icon]:mr-0" />
                     <span className="group-data-[collapsible=icon]:hidden">Çıkış Yap</span>
