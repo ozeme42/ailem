@@ -44,7 +44,7 @@ const themeColors = {
 };
 
 const progressFormSchema = z.object({
-  currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
+    currentPage: z.coerce.number().min(0, "Sayfa numarası negatif olamaz."),
 });
 
 // --- HELPER COMPONENTS ---
@@ -130,6 +130,9 @@ export default function LibraryPage() {
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
   const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
   
+  // YENİ STATE: Grafik referans tarihi (Varsayılan: Bugün)
+  const [chartReferenceDate, setChartReferenceDate] = React.useState(new Date());
+
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -201,6 +204,19 @@ export default function LibraryPage() {
      }
   };
 
+  // Grafikte haftalar arası geçiş fonksiyonları
+  const handlePrevWeek = () => {
+      setChartReferenceDate(prev => subDays(prev, 7));
+  };
+
+  const handleNextWeek = () => {
+      setChartReferenceDate(prev => addDays(prev, 7));
+  };
+  
+  const handleResetDate = () => {
+      setChartReferenceDate(new Date());
+  };
+
   const { readingBooks, toReadBooks, finishedBooks, stats } = React.useMemo(() => {
     if (!selectedMember) {
         return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, toRead: 0, percentage: 0 }};
@@ -234,10 +250,11 @@ export default function LibraryPage() {
   const readingGoals = selectedMember?.readingGoals;
   
   const readingStatsByPeriod = React.useMemo(() => {
-    if (!selectedMember) return { weeklyChartData: [], monthlyPageData: [] };
+    if (!selectedMember) return { weeklyChartData: [], monthlyPageData: [], weekLabel: "" };
   
     const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
-    const today = new Date();
+    // GÜNCELLEME: `today` artık referans tarihini kullanıyor.
+    const today = chartReferenceDate; 
   
     // Weekly Stats
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -260,6 +277,7 @@ export default function LibraryPage() {
   
     const weeklyChartData = weekDaysKeys.map(dayKey => ({
       day: format(parseISO(dayKey), 'EEE', { locale: tr }),
+      fullDate: format(parseISO(dayKey), 'd MMM', { locale: tr }),
       pagesRead: dailyPages.get(dayKey) || 0,
     }));
   
@@ -288,8 +306,10 @@ export default function LibraryPage() {
         };
     });
 
-    return { weeklyChartData, monthlyPageData };
-  }, [readingSessions, selectedMember]);
+    const weekLabel = `${format(weekStart, 'd MMM', { locale: tr })} - ${format(weekEnd, 'd MMM', { locale: tr })}`;
+
+    return { weeklyChartData, monthlyPageData, weekLabel };
+  }, [readingSessions, selectedMember, chartReferenceDate]); // chartReferenceDate dependency eklendi
 
   const monthlyGoalProgress = React.useMemo(() => {
     if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0, pagesRead: 0, booksRead: 0 };
@@ -441,14 +461,36 @@ export default function LibraryPage() {
 
                     {/* Okuma İstatistikleri Grafik */}
                     <Card className={cn(themeColors.CARD_BG)}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-400">Okuma Grafiği</CardTitle>
-                             <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)}>
-                                <TabsList className="bg-slate-100 border border-slate-200 h-8 p-0.5">
-                                    <TabsTrigger value="weekly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>
-                                    <TabsTrigger value="monthly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
+                        <CardHeader className="flex flex-col gap-2 pb-2">
+                            <div className="flex flex-row items-center justify-between w-full">
+                                <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-400">Okuma Grafiği</CardTitle>
+                                <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)}>
+                                    <TabsList className="bg-slate-100 border border-slate-200 h-8 p-0.5">
+                                        <TabsTrigger value="weekly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>
+                                        <TabsTrigger value="monthly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </div>
+                            
+                            {/* Haftalık Gezinme Kontrolleri */}
+                            {readingStatsPeriod === 'weekly' && (
+                                <div className="flex items-center justify-between bg-slate-50 rounded-lg p-1 px-2 border border-slate-100">
+                                    <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-7 w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <div className="flex items-center gap-2 cursor-pointer" onClick={handleResetDate} title="Bugüne Dön">
+                                        <span className="text-xs font-bold text-slate-700">{readingStatsByPeriod.weekLabel}</span>
+                                        {!isSameDay(new Date(), chartReferenceDate) && (
+                                            <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">Arşiv</span>
+                                        )}
+                                    </div>
+
+                                    <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-7 w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )}
                         </CardHeader>
                          <CardContent>
                              <div className="h-40 w-full mt-4">
@@ -463,7 +505,21 @@ export default function LibraryPage() {
                                             axisLine={false} 
                                             tick={{fill: '#64748b', fontSize: 10}} 
                                         />
-                                        <Tooltip cursor={{fill: 'rgba(0,0,0,0.05)'}} content={<ChartTooltipContent hideLabel className="bg-white border-slate-200 text-slate-700 shadow-lg"/>} />
+                                        <Tooltip 
+                                            cursor={{fill: 'rgba(0,0,0,0.05)'}} 
+                                            content={({ active, payload, label }) => {
+                                                if (active && payload && payload.length) {
+                                                    const data = payload[0].payload;
+                                                    return (
+                                                        <div className="bg-white border border-slate-200 p-2 rounded-lg shadow-lg text-xs">
+                                                            <p className="font-bold text-slate-800 mb-1">{data.fullDate || data.month}</p>
+                                                            <p className="text-amber-600 font-semibold">{payload[0].value} Sayfa</p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                        />
                                         <Bar dataKey="pagesRead" fill="var(--color-pages)" radius={[4, 4, 4, 4]}>
                                              <LabelList 
                                                 dataKey="pagesRead" 
@@ -477,7 +533,7 @@ export default function LibraryPage() {
                                     </BarChart>
                                 </ChartContainer>
                              </div>
-                         </CardContent>
+                          </CardContent>
                     </Card>
                 </div>
 
@@ -519,7 +575,7 @@ export default function LibraryPage() {
 
                     {/* Bitirilenler */}
                     {finishedBooks.length > 0 && (
-                         <div className={cn("p-6 rounded-[2rem] relative overflow-hidden", themeColors.CARD_BG)}>
+                          <div className={cn("p-6 rounded-[2rem] relative overflow-hidden", themeColors.CARD_BG)}>
                              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-green-500"></div>
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4">
                                 <BookCheck className="w-5 h-5 text-emerald-500" /> Bitirdiklerim
