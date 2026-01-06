@@ -7,7 +7,7 @@ import {
     PlusCircle, ArrowLeft, BookCopy, ClipboardList, 
     Settings, CheckCircle2, CircleDashed, PieChart, 
     FileText, BookMarked, Library, Ruler, TestTube2, Globe, 
-    MessageSquare, Gamepad2, FileJson, Layers, BookHeart 
+    MessageSquare, Gamepad2, FileJson, Layers, BookHeart, AlertTriangle, Lock, KeyRound 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Test } from "@/lib/data";
@@ -15,6 +15,9 @@ import { onTestsUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { getCategoryName } from "@/app/education/page";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // --- ICONS & THEMES ---
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -46,11 +49,27 @@ const categoryThemes: { [key: string]: { color: string, bg: string } } = {
 export default function EducationManagementPage() {
   const { familyMembers } = useAuth();
   const [tests, setTests] = React.useState<Test[]>([]);
+  const { toast } = useToast();
+
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [password, setPassword] = React.useState("");
+  const [error, setError] = React.useState("");
   
   React.useEffect(() => {
     const unsubTests = onTestsUpdate(setTests);
     return () => unsubTests();
   }, []);
+  
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === "159753") {
+      setIsAuthenticated(true);
+      setError("");
+      toast({ title: "Giriş Başarılı", description: "Yönetim paneline hoş geldiniz." });
+    } else {
+      setError("Hatalı şifre. Lütfen tekrar deneyin.");
+    }
+  };
   
   // İstatistik Hesaplamaları
   const stats = React.useMemo(() => {
@@ -80,6 +99,48 @@ export default function EducationManagementPage() {
     });
     return grouped;
   }, [tests]);
+
+  if (!isAuthenticated) {
+    return (
+        <div className="flex h-screen w-screen items-center justify-center bg-slate-900 p-4">
+             <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 via-slate-900 to-purple-900/40 -z-10"></div>
+             <Card className="w-full max-w-sm bg-slate-950/50 border-white/10 text-white backdrop-blur-xl shadow-2xl shadow-black/50">
+                 <CardHeader className="text-center">
+                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border-2 border-indigo-400/50 shadow-lg shadow-indigo-500/30">
+                        <Lock className="text-white h-8 w-8" />
+                     </div>
+                     <CardTitle className="text-2xl font-black">Erişim Korumalı</CardTitle>
+                     <CardDescription className="text-slate-400">
+                         Bu alanı görüntülemek için lütfen şifreyi girin.
+                     </CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                        <div className="relative">
+                             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500"/>
+                             <Input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••"
+                                className="pl-10 h-12 bg-white/5 border-white/10 focus:border-indigo-400 text-lg tracking-widest text-center"
+                                required
+                             />
+                        </div>
+                        {error && (
+                            <div className="flex items-center justify-center gap-2 text-sm text-rose-400 font-semibold">
+                                <AlertTriangle className="h-4 w-4" /> {error}
+                            </div>
+                        )}
+                        <Button type="submit" className="w-full h-12 text-base font-bold bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20">
+                            Giriş Yap
+                        </Button>
+                     </form>
+                 </CardContent>
+             </Card>
+        </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
