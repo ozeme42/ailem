@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -13,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Account, FamilyMember, Transaction, BudgetCategory } from "@/lib/data";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Import düzeltildi
-import { ScrollArea } from "@/components/ui/scroll-area"; // <--- EKSİK OLAN BU SATIR EKLENDİ
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { onBudgetCategoriesUpdate } from "@/lib/dataService";
 import { BudgetCategoryForm } from "@/components/budget-category-form";
@@ -78,8 +79,8 @@ function CustomEmbeddedCalendar({ selected, onSelect }: { selected: Date, onSele
 const formSchema = z.object({
   amount: z.coerce.number().positive("Tutar giriniz"),
   type: z.enum(['income', 'expense']).default('expense'),
-  accountId: z.string({ required_error: "Hesap seçiniz" }),
-  category: z.string().min(1, "Kategori seçiniz"),
+  accountId: z.string({ required_error: "Hesap seçimi zorunludur." }).min(1, "Hesap seçimi zorunludur."),
+  category: z.string().optional(),
   date: z.date({ required_error: "Tarih seçiniz" }),
   isInstallment: z.boolean().default(false),
   installmentCount: z.coerce.number().optional(),
@@ -92,7 +93,7 @@ type NewTransactionFormProps = {
   initialData?: Transaction | null;
 };
 
-const accountIcons: { [key: string]: React.ElementType } = { 'cash': Banknote, 'bank': Landmark, 'credit-card': CreditCard, 'other': Wallet };
+const accountIcons: { [key: string]: React.ElementType } = { 'cash': Banknote, 'bank': Landmark, 'credit-card': CreditCard, 'other': Wallet, 'debt': Wallet };
 
 export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData }: NewTransactionFormProps) {
   const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
@@ -140,6 +141,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
     const dataToSend = {
       ...values,
+      category: values.category || 'Diğer',
       date: format(values.date, 'yyyy-MM-dd'),
       ...(values.isInstallment && { installmentDetails: { total: values.installmentCount || 1, current: 1 } })
     };
@@ -233,11 +235,10 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                 <span className="text-base font-medium">{selectedCategory.name}</span>
                             </div>
                         ) : (
-                            <span className="text-slate-400 text-base">Kategori seçin</span>
+                            <span className="text-slate-400 text-base">Kategori seçin (Opsiyonel)</span>
                         )}
                         <ChevronRight className="h-5 w-5 text-slate-400" />
                     </Button>
-                    {errors.category && <p className="text-xs font-medium text-rose-500 ml-1">{errors.category.message}</p>}
                 </div>
 
                 {/* Hesap */}
@@ -327,3 +328,4 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
     </div>
   );
 }
+
