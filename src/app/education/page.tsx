@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,7 +8,8 @@ import {
   MessageSquare, Gamepad2, ClipboardList, ArrowRight, BookHeart, 
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Layers, 
   CircleDashed, PieChart, GraduationCap, LayoutGrid, List, AlertCircle, 
-  Timer, BookOpen, Plus, ChevronDown, Check, Library, Flame, Sparkles
+  Timer, BookOpen, Plus, ChevronDown, Check, Library, Flame, Sparkles,
+  TrendingUp, TrendingDown, Minus, PlayCircle, CalendarClock 
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,14 +38,51 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Diğer': FileText,
 };
 
-const categoryThemes: { [key: string]: { color: string, bg: string, border: string, glow: string } } = {
-    'Matematik': { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500', glow: 'shadow-red-500/20' },
-    'Fen Bilimleri': { color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500', glow: 'shadow-orange-500/20' },
-    'Türkçe': { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500', glow: 'shadow-amber-500/20' },
-    'Sosyal Bilgiler': { color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500', glow: 'shadow-cyan-500/20' },
-    'İngilizce': { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500', glow: 'shadow-blue-500/20' },
-    'Genel Deneme Sınavları': { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500', glow: 'shadow-purple-500/20' },
-    'Diğer': { color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500', glow: 'shadow-slate-500/20' },
+// --- YENİLENMİŞ CANLI RENK TEMALARI ---
+// Artık tam arka plan gradientleri kullanıyoruz. Textler genelde beyaz olacak.
+const categoryThemes: { [key: string]: { bgGradient: string, shadow: string, iconColor: string, badgeBg: string } } = {
+    'Matematik': { 
+        bgGradient: 'from-rose-500 to-pink-600', 
+        shadow: 'shadow-rose-500/30',
+        iconColor: 'text-rose-100',
+        badgeBg: 'bg-rose-400/30'
+    },
+    'Fen Bilimleri': { 
+        bgGradient: 'from-orange-500 to-amber-600',
+        shadow: 'shadow-orange-500/30',
+        iconColor: 'text-orange-100',
+        badgeBg: 'bg-orange-400/30'
+    },
+    'Türkçe': { 
+        bgGradient: 'from-amber-500 to-yellow-600',
+        shadow: 'shadow-amber-500/30',
+        iconColor: 'text-amber-100',
+        badgeBg: 'bg-amber-400/30'
+    },
+    'Sosyal Bilgiler': { 
+        bgGradient: 'from-cyan-500 to-blue-600',
+        shadow: 'shadow-cyan-500/30',
+        iconColor: 'text-cyan-100',
+        badgeBg: 'bg-cyan-400/30'
+    },
+    'İngilizce': { 
+        bgGradient: 'from-blue-500 to-indigo-600',
+        shadow: 'shadow-blue-500/30',
+        iconColor: 'text-blue-100',
+        badgeBg: 'bg-blue-400/30'
+    },
+    'Genel Deneme Sınavları': { 
+        bgGradient: 'from-purple-500 to-violet-600',
+        shadow: 'shadow-purple-500/30',
+        iconColor: 'text-purple-100',
+        badgeBg: 'bg-purple-400/30'
+    },
+    'Diğer': { 
+        bgGradient: 'from-slate-500 to-slate-600',
+        shadow: 'shadow-slate-500/30',
+        iconColor: 'text-slate-100',
+        badgeBg: 'bg-slate-400/30'
+    },
 };
 
 export const getCategoryName = (test: Test): string => {
@@ -55,10 +92,8 @@ export const getCategoryName = (test: Test): string => {
 };
 
 const glassColors = {
-    PAGE_BG: "bg-[#0B1120]",
-    HEADER_BG: "bg-[#0B1120]/80 backdrop-blur-xl border-b border-white/5",
-    CARD_BG: "bg-slate-900/50 border border-white/10",
-    HIGHLIGHT_CARD_BG: "bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 shadow-lg",
+    PAGE_BG: "bg-slate-50/50 dark:bg-[#0B1120]",
+    HEADER_BG: "bg-white/70 dark:bg-[#0B1120]/70 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5",
 };
 
 export default function EducationPage() {
@@ -70,9 +105,6 @@ export default function EducationPage() {
   const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
-
-  const [viewMode, setViewMode] = React.useState<'cards' | 'weekly' | 'list'>('cards');
-  const [currentDate, setCurrentDate] = React.useState(new Date());
 
   const studentMembers = React.useMemo(() => 
     familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -108,7 +140,6 @@ export default function EducationPage() {
       return studyAssignments.filter(s => s.studentId === selectedStudent.id);
   }, [selectedStudent, studyAssignments]);
 
-  // --- KONU ADLARINI BULMAK İÇİN YARDIMCI MEMO ---
   const allTopics = React.useMemo(() => {
       return trackedBooks.flatMap(book => (book.subjects || []).flatMap(subject => 
                 (subject.topics || []).map(topic => ({...topic, subjectName: subject.name}))
@@ -152,21 +183,46 @@ export default function EducationPage() {
       return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [tests]);
 
+  // --- İSTATİSTİK VE TREND HESAPLAMA ---
   const stats = React.useMemo(() => {
     const completedTests = tests.filter(t => t.status === 'Sonuçlandı');
+    const sortedCompleted = [...completedTests].sort((a, b) => 
+        new Date(b.assignedDate || '').getTime() - new Date(a.assignedDate || '').getTime()
+    );
+
+    // 1. GÜNCEL ORTALAMA
     let totalQuestions = 0;
     let totalCorrect = 0;
-    completedTests.forEach(test => {
+    sortedCompleted.forEach(test => {
         totalQuestions += (test.questionCount || 0);
         totalCorrect += (test.correctAnswers || 0);
     });
-    const successRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+    const currentSuccessRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+
+    // 2. ÖNCEKİ ORTALAMA (Trend Hesabı)
+    let trendValue = 0;
+    let hasTrend = false;
+
+    if (sortedCompleted.length > 1) {
+        const previousTests = sortedCompleted.slice(1);
+        let prevQuestions = 0;
+        let prevCorrect = 0;
+        previousTests.forEach(test => {
+            prevQuestions += (test.questionCount || 0);
+            prevCorrect += (test.correctAnswers || 0);
+        });
+        const prevRate = prevQuestions > 0 ? (prevCorrect / prevQuestions) * 100 : 0;
+        trendValue = currentSuccessRate - prevRate;
+        hasTrend = true;
+    }
 
     return {
       testCount: tests.length,
       studyCount: assignments.length,
       pendingCount: tests.filter(t => t.status !== 'Sonuçlandı').length + assignments.filter(s => s.status !== 'completed').length,
-      successRate: successRate,
+      successRate: currentSuccessRate,
+      trend: trendValue,
+      hasTrend: hasTrend
     }
   }, [tests, assignments]);
   
@@ -177,26 +233,27 @@ export default function EducationPage() {
   };
 
   return (
-    <div className={cn("min-h-screen text-slate-100 font-sans relative overflow-hidden flex flex-col", glassColors.PAGE_BG, "text-slate-900 dark:text-slate-50")}>
+    <div className={cn("min-h-screen font-sans relative overflow-hidden flex flex-col transition-colors duration-300", glassColors.PAGE_BG, "text-slate-900 dark:text-slate-50")}>
         
-        {/* BACKGROUND */}
+        {/* BACKGROUND BLOBS - DAHA CANLI */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-indigo-900/10 rounded-full blur-[150px]" />
-            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[150px]" />
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/20 dark:bg-indigo-600/10 rounded-full blur-[150px] mix-blend-multiply dark:mix-blend-normal" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/20 dark:bg-blue-600/10 rounded-full blur-[150px] mix-blend-multiply dark:mix-blend-normal" />
+            <div className="absolute top-[40%] left-[30%] w-[400px] h-[400px] bg-pink-500/20 dark:bg-pink-600/10 rounded-full blur-[150px] mix-blend-multiply dark:mix-blend-normal" />
         </div>
 
         {/* HEADER */}
-        <div className={cn("sticky top-0 z-40 w-full", glassColors.HEADER_BG)}>
+        <div className={cn("sticky top-0 z-40 w-full transition-colors duration-300", glassColors.HEADER_BG)}>
             <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl flex items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-500/20">
+                    <div className="p-2 rounded-xl flex items-center justify-center bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg shadow-indigo-500/20">
                           <GraduationCap className="w-5 h-5 text-white" />
                     </div>
-                    <span className="font-bold text-lg tracking-tight text-slate-800 dark:text-slate-100">Eğitim Paneli</span>
+                    <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-slate-100">Eğitim Paneli</span>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1 rounded-full border border-slate-200 dark:border-slate-700">
+                    <div className="flex bg-white/50 dark:bg-slate-800/50 p-1 rounded-full border border-slate-200/50 dark:border-slate-700 backdrop-blur-sm">
                         {studentMembers.map((student) => {
                             const isSelected = selectedStudent?.id === student.id;
                             return (
@@ -206,11 +263,11 @@ export default function EducationPage() {
                                     className={cn(
                                         "px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2",
                                         isSelected 
-                                            ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-white shadow-md" 
+                                            ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-white shadow-sm" 
                                             : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50"
                                     )}
                                 >
-                                    <div className="w-2 h-2 rounded-full ring-2 ring-white/20 dark:ring-black/20" style={{backgroundColor: student.color}}/>
+                                    <div className="w-2 h-2 rounded-full ring-2 ring-slate-200 dark:ring-white/20" style={{backgroundColor: student.color}}/>
                                     {student.name}
                                 </button>
                             );
@@ -222,15 +279,16 @@ export default function EducationPage() {
 
         <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-8 relative z-10">
             
-            {/* 1. HERO İSTATİSTİKLER */}
+            {/* 1. HERO İSTATİSTİKLER - DAHA CANLI */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* KART 1: Bekleyen */}
                 <div className="md:col-span-1">
-                    <div className="p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between h-36 bg-gradient-to-br from-amber-500 to-orange-600 shadow-xl shadow-orange-900/20 border border-white/10 group transition-transform hover:scale-[1.02]">
+                    <div className="p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between h-36 bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-orange-500/30 border border-white/10 group transition-transform hover:scale-[1.02]">
                         <div className="absolute right-[-20px] top-[-20px] p-4 opacity-20"><CircleDashed className="w-32 h-32 text-white rotate-12" /></div>
                         
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline" className="border-white/30 text-white bg-white/10 backdrop-blur-md px-3">Dikkat</Badge>
+                                <Badge variant="outline" className="border-white/30 text-white bg-white/20 backdrop-blur-md px-3">Dikkat</Badge>
                             </div>
                             <div className="text-5xl font-black text-white tracking-tighter drop-shadow-sm">{stats.pendingCount}</div>
                             <div className="text-sm text-orange-50 font-bold mt-1 uppercase tracking-wide opacity-90">Bekleyen Ödev & Görev</div>
@@ -239,29 +297,71 @@ export default function EducationPage() {
                 </div>
 
                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                    {/* KART 2: Toplam Atanan (RENKLENDİRİLDİ) */}
                       <Link href="/education/management" className="block group">
-                        <div className={cn("p-6 rounded-3xl flex flex-col justify-between h-36", "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm", "hover:shadow-md hover:-translate-y-1 transition-all duration-300 dark:hover:shadow-slate-800/50")}>
-                            <div className="flex justify-between items-start">
-                                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"><Layers className="w-6 h-6"/></div>
+                        <div className={cn("p-6 rounded-3xl flex flex-col justify-between h-36 relative overflow-hidden", "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 border border-white/10", "hover:scale-[1.02] transition-all duration-300")}>
+                            <div className="absolute right-[-20px] bottom-[-20px] p-4 opacity-20"><Layers className="w-32 h-32 text-white -rotate-12" /></div>
+                            <div className="flex justify-between items-start relative z-10">
+                                <div className="p-3 bg-white/20 rounded-2xl text-white backdrop-blur-md"><Layers className="w-6 h-6"/></div>
                             </div>
-                            <div>
-                                <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{stats.testCount}</div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase mt-1">Toplam Atanan</div>
+                            <div className="relative z-10">
+                                <div className="text-3xl font-bold text-white">{stats.testCount}</div>
+                                <div className="text-sm text-blue-50 font-bold uppercase mt-1 opacity-90">Toplam Atanan</div>
                             </div>
                         </div>
                     </Link>
 
-                    <Link href={`/education/stats?studentId=${selectedStudent?.id}`} className="block group">
-                        <div className={cn("p-6 rounded-3xl flex flex-col justify-between h-36", "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm", "hover:shadow-md hover:-translate-y-1 transition-all duration-300 dark:hover:shadow-slate-800/50")}>
-                            <div className="flex justify-between items-start">
-                                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-500 dark:text-slate-400 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/50 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"><PieChart className="w-6 h-6" /></div>
-                            </div>
-                            <div>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-3xl font-bold text-slate-800 dark:text-slate-100">%{stats.successRate.toFixed(2)}</span>
-                                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1.5">Başarı</span>
+                    {/* KART 3: BAŞARI (RENKLENDİRİLDİ) */}
+                    <Link href={`/education/stats?studentId=${selectedStudent?.id}`} className="block group md:col-span-1">
+                        <div className={cn("relative p-6 rounded-3xl h-36 flex items-center justify-between overflow-hidden", "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 border border-white/10", "hover:scale-[1.02] transition-all duration-300")}>
+                            
+                            <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 blur-[50px] rounded-full pointer-events-none" />
+
+                            <div className="flex flex-col justify-between h-full z-10 text-white">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md">
+                                        <PieChart className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-sm font-bold text-emerald-50 uppercase tracking-wide opacity-90">Başarı</span>
                                 </div>
-                                <Progress value={stats.successRate} className="h-1.5 bg-slate-100 dark:bg-slate-800 mt-2" indicatorClassName="bg-emerald-500" />
+
+                                <div>
+                                    {stats.hasTrend && (
+                                        <div className={cn("inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md mb-1 backdrop-blur-md",
+                                            stats.trend > 0 ? "bg-white/20 text-white" : "bg-rose-500/30 text-white"
+                                        )}>
+                                            {stats.trend > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                            <span>%{Math.abs(stats.trend).toFixed(1)}</span>
+                                        </div>
+                                    )}
+                                    <div className="text-3xl font-black text-white tracking-tight drop-shadow-sm">
+                                        %{stats.successRate.toFixed(1)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                                <svg className="w-full h-full transform -rotate-90">
+                                    <circle
+                                        cx="48" cy="48" r="40"
+                                        stroke="currentColor" strokeWidth="8" fill="transparent"
+                                        className="text-white/20"
+                                    />
+                                    <circle
+                                        cx="48" cy="48" r="40"
+                                        stroke="currentColor" strokeWidth="8" fill="transparent"
+                                        strokeDasharray={251.2}
+                                        strokeDashoffset={251.2 - (251.2 * stats.successRate) / 100}
+                                        strokeLinecap="round"
+                                        className={cn("transition-all duration-1000 ease-out text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]")}
+                                    />
+                                </svg>
+                                
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className={cn("w-16 h-16 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-md text-white")}>
+                                        {stats.successRate >= 90 ? <Sparkles className="w-6 h-6 animate-pulse" /> : <CheckCircle2 className="w-6 h-6" />}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </Link>
@@ -271,15 +371,15 @@ export default function EducationPage() {
             {/* 2. GÖREVLER & DERSLER */}
             <div className="space-y-6">
                 
-                {/* --- ACİL GÖREVLER --- */}
+                {/* --- YENİLENMİŞ, ÇOK DAHA RENKLİ YAPILACAKLAR LİSTESİ --- */}
                 {groupedPendingTests.length > 0 && (
                     <div className="animate-in slide-in-from-bottom-5 duration-500">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="p-1.5 bg-rose-100 dark:bg-rose-500/10 rounded-lg"><Flame className="w-5 h-5 text-rose-500" /></div>
+                            <div className="p-1.5 bg-rose-100 dark:bg-rose-500/20 rounded-lg"><Flame className="w-5 h-5 text-rose-600 dark:text-rose-400" /></div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Yapılacaklar Listesi</h3>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                             {groupedPendingTests.map(([category, categoryTests]) => {
                                 const theme = categoryThemes[category] || categoryThemes['Diğer'];
                                 return categoryTests.map(test => {
@@ -290,56 +390,65 @@ export default function EducationPage() {
                                     const topicName = allTopics.find(t => t.id === test.topicId)?.name;
 
                                     return (
-                                        <Link key={test.id} href={`/education/${test.id}`} className="block group">
+                                        <Link key={test.id} href={`/education/${test.id}`} className="block group relative">
                                             <div className={cn(
-                                                "relative overflow-hidden rounded-2xl border-l-4 p-5 transition-all shadow-md hover:-translate-y-1",
-                                                "bg-white dark:bg-slate-900",
-                                                theme.border,
-                                                isOverdue ? "border-rose-500/50 shadow-rose-100 dark:shadow-rose-900/20" : "hover:shadow-indigo-100 dark:hover:shadow-indigo-500/10"
+                                                "relative overflow-hidden rounded-[2rem] p-6 transition-all duration-300 h-full flex flex-col justify-between",
+                                                "bg-gradient-to-br", theme.bgGradient, theme.shadow,
+                                                "hover:shadow-xl hover:-translate-y-1 border border-white/10"
                                             )}>
-                                                <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] opacity-10 pointer-events-none -mr-10 -mt-10", theme.bg.replace('bg-', 'bg-'))} />
-
-                                                <div className="flex justify-between items-start mb-3 relative z-10">
-                                                    <Badge variant="outline" className={cn("border-0 text-[10px] font-bold uppercase tracking-wider px-2 py-1", theme.bg, theme.color)}>
+                                                
+                                                {/* Üst Kısım: Kategori ve Durum */}
+                                                <div className="relative z-10 flex justify-between items-start mb-4">
+                                                    <div className={cn("px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md text-white", theme.badgeBg)}>
                                                         {category}
-                                                    </Badge>
+                                                    </div>
                                                     
                                                     {isOverdue ? (
-                                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-50 dark:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-200 text-xs font-bold animate-pulse">
-                                                            <AlertCircle className="w-3.5 h-3.5" /> Gecikti!
+                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 text-rose-600 text-xs font-bold shadow-sm animate-pulse">
+                                                            <AlertCircle className="w-3.5 h-3.5" /> Gecikti
                                                         </div>
                                                     ) : isDueToday ? (
-                                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-200 text-xs font-bold">
-                                                            <Timer className="w-3.5 h-3.5" /> Bugün Son
+                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 text-amber-600 text-xs font-bold shadow-sm">
+                                                            <Timer className="w-3.5 h-3.5" /> Bugün
                                                         </div>
                                                     ) : (
-                                                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/50 px-2 py-1 rounded-md">
-                                                            {differenceInDays(dueDate, new Date())} gün var
+                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/20 text-white text-[10px] font-bold backdrop-blur-md">
+                                                            <CalendarClock className="w-3 h-3" />
+                                                            {differenceInDays(dueDate, new Date())} gün kaldı
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {topicName && (
-                                                    <div className="mb-2">
-                                                        <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 border-0 text-[10px] px-2 py-0.5 backdrop-blur-sm">
-                                                            <BookOpen className="w-3 h-3 mr-1.5 opacity-70" />
-                                                            {topicName}
-                                                        </Badge>
-                                                    </div>
-                                                )}
-
-                                                <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                                                    {test.title}
-                                                </h4>
+                                                {/* Orta Kısım: Başlık ve Konu */}
+                                                <div className="relative z-10 mb-6">
+                                                     <h4 className="text-xl font-black text-white leading-tight mb-3 drop-shadow-sm">
+                                                        {test.title}
+                                                    </h4>
+                                                    {topicName && (
+                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/20 border border-white/30 text-white text-xs font-semibold backdrop-blur-md">
+                                                            <BookOpen className="w-3.5 h-3.5 opacity-80" />
+                                                            <span className="truncate max-w-[200px]">{topicName}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 
-                                                <div className="flex items-center gap-4 mt-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Clock className="w-3.5 h-3.5" />
-                                                        {test.durationMinutes ? `${test.durationMinutes} dk` : 'Süre Yok'}
+                                                {/* Alt Kısım: Metadata ve Action */}
+                                                <div className="relative z-10 flex items-center justify-between pt-4 mt-auto border-t border-white/20">
+                                                    <div className="flex items-center gap-3 text-xs font-bold text-white/80">
+                                                        <div className="flex items-center gap-1.5 bg-black/10 px-2 py-1 rounded-md backdrop-blur-sm">
+                                                            <Clock className="w-3.5 h-3.5" />
+                                                            {test.durationMinutes ? `${test.durationMinutes} dk` : '-'}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 bg-black/10 px-2 py-1 rounded-md backdrop-blur-sm">
+                                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                                            {test.questionCount} Soru
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                                        {test.questionCount} Soru
+
+                                                    {/* Play Button Effect */}
+                                                    <div className={cn("transform translate-x-2 group-hover:translate-x-0 transition-all duration-300 flex items-center gap-1 text-white font-bold bg-white/20 pl-3 pr-2 py-1.5 rounded-full backdrop-blur-md hover:bg-white hover:text-slate-900")}>
+                                                        <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">Başla</span>
+                                                        <ArrowRight className="w-5 h-5" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -351,29 +460,32 @@ export default function EducationPage() {
                     </div>
                 )}
 
-                {/* --- KONU ANLATIMI (VARSAYILAN KAPALI) --- */}
+                {/* --- KONU ANLATIMI --- */}
                 {assignmentsByBook.length > 0 && (
                     <div className="pt-4">
                         <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="konu-anlatimi" className="border-none bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm">
-                                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 bg-pink-100 dark:bg-pink-500/10 rounded-lg">
-                                            <BookHeart className="w-5 h-5 text-pink-500" />
+                            <AccordionItem value="konu-anlatimi" className="border-none bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-3xl overflow-hidden shadow-sm border border-slate-200/50 dark:border-slate-800/50">
+                                <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-pink-100 dark:bg-pink-500/20 rounded-xl">
+                                            <BookHeart className="w-5 h-5 text-pink-600 dark:text-pink-400" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Konu Anlatımı</h3>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-none">Konu Anlatımı</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Kitap bazlı çalışma takibi</p>
+                                        </div>
                                     </div>
                                 </AccordionTrigger>
                                 
-                                <AccordionContent className="px-5 pb-5 pt-2">
+                                <AccordionContent className="px-6 pb-6 pt-2">
                                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-2">
                                         {assignmentsByBook.map((bookGroup, idx) => {
                                             const progress = (bookGroup.completed / bookGroup.total) * 100;
                                             const isAllCompleted = bookGroup.completed === bookGroup.total;
 
                                             return (
-                                                <div key={idx} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 overflow-hidden">
-                                                    <div className="p-5 flex items-start gap-4 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30">
+                                                <div key={idx} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 overflow-hidden">
+                                                    <div className="p-5 flex items-start gap-4 border-b border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/30">
                                                         <div className="w-12 h-16 rounded-md bg-slate-100 dark:bg-slate-800 shadow-sm shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
                                                             <BookOpen className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                                                         </div>
@@ -397,13 +509,13 @@ export default function EducationPage() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-2 bg-slate-50 dark:bg-slate-800/30">
+                                                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-2 bg-slate-50/30 dark:bg-slate-800/30">
                                                         {bookGroup.assignments.map(assign => (
                                                             <div 
                                                                 key={assign.id} 
                                                                 className={cn(
-                                                                    "flex items-center gap-3 p-3 rounded-lg transition-all mb-1 cursor-pointer group hover:bg-white dark:hover:bg-slate-700/50",
-                                                                    assign.status === 'completed' ? "opacity-50 grayscale" : "bg-white/50 dark:bg-slate-800/50"
+                                                                    "flex items-center gap-3 p-3 rounded-lg transition-all mb-1 cursor-pointer group hover:bg-white dark:hover:bg-slate-700/50 border border-transparent",
+                                                                    assign.status === 'completed' ? "opacity-50 grayscale" : "bg-white/70 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700/50"
                                                                 )}
                                                                 onClick={() => handleCompleteStudy(assign.id, assign.status)}
                                                             >
@@ -448,4 +560,3 @@ export default function EducationPage() {
     </div>
   );
 }
-

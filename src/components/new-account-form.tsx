@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -15,7 +14,7 @@ import { Switch } from "./ui/switch";
 
 const formSchema = z.object({
   name: z.string().min(2, "Hesap adı en az 2 karakter olmalıdır."),
-  type: z.enum(['cash', 'bank', 'credit-card', 'other']),
+  type: z.enum(['cash', 'bank', 'credit-card', 'other', 'debt']),
   ownerId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   balance: z.coerce.number().default(0),
   statementDate: z.coerce.number().min(1).max(31).optional(),
@@ -26,14 +25,15 @@ type NewAccountFormProps = {
   familyMembers: FamilyMember[];
   onSubmit: (data: Omit<Account, 'id' | 'familyId'>) => void;
   initialData?: Account | null;
+  initialType?: Account['type'];
 };
 
-export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAccountFormProps) {
+export function NewAccountForm({ familyMembers, onSubmit, initialData, initialType }: NewAccountFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || "",
-      type: initialData?.type || "bank",
+      type: initialData?.type || initialType || "bank",
       ownerId: initialData?.ownerId || undefined,
       balance: initialData?.balance || 0,
       statementDate: initialData?.statementDate || undefined,
@@ -44,23 +44,15 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
   const accountType = form.watch("type");
   
   React.useEffect(() => {
-    if(initialData) {
-      form.reset({
-        name: initialData.name,
-        type: initialData.type,
-        ownerId: initialData.ownerId,
-        balance: initialData.balance,
-        statementDate: initialData.statementDate,
-        dueDate: initialData.dueDate,
-      });
-    } else {
-        form.reset({
-            name: "",
-            type: "bank",
-            balance: 0,
-        });
-    }
-  }, [initialData, form]);
+    form.reset({
+      name: initialData?.name || "",
+      type: initialData?.type || initialType || "bank",
+      ownerId: initialData?.ownerId || undefined,
+      balance: initialData?.balance || 0,
+      statementDate: initialData?.statementDate,
+      dueDate: initialData?.dueDate,
+    });
+  }, [initialData, initialType, form]);
 
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
     onSubmit(values as Omit<Account, 'id' | 'familyId'>);
@@ -96,6 +88,7 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData }: NewAcco
                   <SelectItem value="bank">Banka Hesabı</SelectItem>
                   <SelectItem value="credit-card">Kredi Kartı</SelectItem>
                   <SelectItem value="cash">Nakit</SelectItem>
+                  <SelectItem value="debt">Borç</SelectItem>
                   <SelectItem value="other">Diğer</SelectItem>
                 </SelectContent>
               </Select>

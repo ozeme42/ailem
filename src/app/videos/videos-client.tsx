@@ -17,7 +17,7 @@ import {
   PlusCircle, Search, Trash2, Edit, Settings, Youtube, 
   Folder, Plus, ArrowLeft, PlayCircle, FolderOpen, 
   ExternalLink, CheckCircle2, Trophy, MoreVertical, FileText,
-  CalendarDays, Target, CalendarClock, ListTodo
+  CalendarDays, Target, CalendarClock, ListTodo, ChevronDown
 } from 'lucide-react';
 import { onVideosUpdate, onTagsUpdate, addVideo, updateVideo, deleteVideo, updateTags, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-// --- TİPLER VE RENKLER (AÇIK TEMA) ---
+// --- TİPLER VE RENKLER ---
 
 interface StudyPlan {
     videoId: string;
@@ -36,6 +36,20 @@ interface StudyPlan {
     targetCount: number; // Kaç video izlenecek
     completedToday: number; // Bugün kaç tane izlendi
 }
+
+// Tema tipi tanımı
+type ThemeColor = {
+    gradient: string;
+    border: string;
+    text: string;
+    subtext: string;
+    icon: string;
+    iconBg: string;
+    bar: string;
+    barBg: string;
+    hover: string;
+    rowBg: string;
+};
 
 const themeColors = {
     PAGE_BG: "bg-slate-50",
@@ -47,11 +61,80 @@ const themeColors = {
     BUTTON_GLASS: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm",
 };
 
-const brightColors = [
-    { id: 'blue', gradient: 'from-blue-50 to-indigo-50 border-blue-200 text-blue-700' },
-    { id: 'teal', gradient: 'from-teal-50 to-green-50 border-teal-200 text-teal-700' },
-    { id: 'amber', gradient: 'from-amber-50 to-orange-50 border-amber-200 text-amber-700' },
-    { id: 'rose', gradient: 'from-rose-50 to-red-50 border-rose-200 text-rose-700' },
+// Kategoriler için genişletilmiş renk paleti
+const shelfColors: ThemeColor[] = [
+    { 
+        gradient: 'from-blue-50 to-indigo-50', 
+        border: 'border-blue-200', 
+        text: 'text-blue-900', 
+        subtext: 'text-blue-600', 
+        icon: 'text-blue-600', 
+        iconBg: 'bg-blue-100',
+        bar: 'bg-blue-500', 
+        barBg: 'bg-blue-100',
+        hover: 'hover:border-blue-300',
+        rowBg: 'bg-blue-50/40'
+    },
+    { 
+        gradient: 'from-emerald-50 to-teal-50', 
+        border: 'border-emerald-200', 
+        text: 'text-emerald-900', 
+        subtext: 'text-emerald-600', 
+        icon: 'text-emerald-600', 
+        iconBg: 'bg-emerald-100',
+        bar: 'bg-emerald-500', 
+        barBg: 'bg-emerald-100',
+        hover: 'hover:border-emerald-300',
+        rowBg: 'bg-emerald-50/40'
+    },
+    { 
+        gradient: 'from-amber-50 to-orange-50', 
+        border: 'border-amber-200', 
+        text: 'text-amber-900', 
+        subtext: 'text-amber-600', 
+        icon: 'text-amber-600', 
+        iconBg: 'bg-amber-100',
+        bar: 'bg-amber-500', 
+        barBg: 'bg-amber-100',
+        hover: 'hover:border-amber-300',
+        rowBg: 'bg-amber-50/40'
+    },
+    { 
+        gradient: 'from-rose-50 to-pink-50', 
+        border: 'border-rose-200', 
+        text: 'text-rose-900', 
+        subtext: 'text-rose-600', 
+        icon: 'text-rose-600', 
+        iconBg: 'bg-rose-100',
+        bar: 'bg-rose-500', 
+        barBg: 'bg-rose-100',
+        hover: 'hover:border-rose-300',
+        rowBg: 'bg-rose-50/40'
+    },
+    { 
+        gradient: 'from-violet-50 to-purple-50', 
+        border: 'border-violet-200', 
+        text: 'text-violet-900', 
+        subtext: 'text-violet-600', 
+        icon: 'text-violet-600', 
+        iconBg: 'bg-violet-100',
+        bar: 'bg-violet-500', 
+        barBg: 'bg-violet-100',
+        hover: 'hover:border-violet-300',
+        rowBg: 'bg-violet-50/40'
+    },
+    { 
+        gradient: 'from-cyan-50 to-sky-50', 
+        border: 'border-cyan-200', 
+        text: 'text-cyan-900', 
+        subtext: 'text-cyan-600', 
+        icon: 'text-cyan-600', 
+        iconBg: 'bg-cyan-100',
+        bar: 'bg-cyan-500', 
+        barBg: 'bg-cyan-100',
+        hover: 'hover:border-cyan-300',
+        rowBg: 'bg-cyan-50/40'
+    },
 ];
 
 const shelfFormSchema = z.object({
@@ -86,7 +169,7 @@ const QuickSelectGrid = ({ total, current, onSelect }: { total: number, current:
 };
 
 // --- ALT BİLEŞEN: ARŞİV LİSTE SATIRI ---
-function VideoRow({ video, onEdit, onDelete }: { video: Video, onEdit: (video: Video) => void, onDelete: (id: string) => void }) {
+function VideoRow({ video, onEdit, onDelete, theme }: { video: Video, onEdit: (video: Video) => void, onDelete: (id: string) => void, theme: ThemeColor }) {
     const [completed, setCompleted] = useState(video.completedVideos || 0);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     
@@ -123,22 +206,31 @@ function VideoRow({ video, onEdit, onDelete }: { video: Video, onEdit: (video: V
 
     return (
         <div className={cn(
-            "group relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 pl-4 rounded-xl border transition-all duration-300",
+            "group relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 pl-4 rounded-xl transition-all duration-300 shadow-sm border",
             isCompleted 
-                ? "bg-emerald-50 border-emerald-200 shadow-sm" 
-                : "bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                ? "bg-emerald-50/80 border-emerald-200" 
+                : cn("hover:shadow-md", theme.rowBg, theme.border, theme.hover)
         )}>
+            {/* İlerleme Çizgisi: Tamamlandıysa Yeşil, Değilse Temanın Gradienti */}
             <div 
-                className={cn("absolute bottom-0 left-0 h-[3px] transition-all duration-700 rounded-b-xl", isCompleted ? "bg-emerald-500" : "bg-gradient-to-r from-rose-500 to-pink-500")} 
+                className={cn("absolute bottom-0 left-0 h-[3px] transition-all duration-700 rounded-b-xl", 
+                    isCompleted ? "bg-emerald-500" : cn("bg-gradient-to-r", theme.gradient.replace("from-", "from-").replace("to-", "to-").replace("50", "500"))) // Basitçe gradienti koyulaştırıyoruz veya manuel class kullanıyoruz
+                }
                 style={{ width: `${progress}%` }} 
-            />
+            >
+                {/* Gradient düzeltmesi: Tailwind classlarını string manipülasyonu yerine doğrudan theme üzerinden alalım. 
+                    Daha temiz çözüm: Progress bar rengini theme'den al.
+                */}
+                 <div className={cn("w-full h-full", isCompleted ? "bg-emerald-500" : theme.bar)} />
+            </div>
 
             <div className="flex items-center gap-4 flex-1 min-w-0 w-full pb-2 sm:pb-0">
+                {/* İkon Kutusu */}
                 <div className={cn(
                     "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border transition-colors",
                     isCompleted 
                         ? "bg-emerald-100 border-emerald-200 text-emerald-600" 
-                        : "bg-slate-100 border-slate-200 text-slate-500 group-hover:text-slate-700"
+                        : cn(theme.iconBg, theme.border, theme.icon)
                 )}>
                     {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
                 </div>
@@ -156,14 +248,14 @@ function VideoRow({ video, onEdit, onDelete }: { video: Video, onEdit: (video: V
                     </div>
                     <div className="flex gap-2 mt-1">
                         {video.tags?.map(tag => (
-                            <span key={tag} className="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">#{tag}</span>
+                            <span key={tag} className="text-[10px] text-slate-500 font-mono bg-white/50 px-1.5 py-0.5 rounded border border-slate-200/50">#{tag}</span>
                         ))}
                     </div>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between w-full sm:w-auto gap-3 pl-2 sm:border-l sm:border-slate-100">
-                <div className="flex items-center gap-0.5 bg-slate-50 rounded-lg p-0.5 border border-slate-200">
+            <div className="flex items-center justify-between w-full sm:w-auto gap-3 pl-2 sm:border-l sm:border-slate-200/50">
+                <div className="flex items-center gap-0.5 bg-white/50 rounded-lg p-0.5 border border-slate-200/50">
                     <Button 
                         variant="ghost" 
                         size="icon" 
@@ -176,8 +268,8 @@ function VideoRow({ video, onEdit, onDelete }: { video: Video, onEdit: (video: V
 
                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button className="h-8 min-w-[70px] px-1 flex flex-col items-center justify-center cursor-pointer hover:bg-white rounded transition-colors group/counter border border-transparent hover:border-slate-200">
-                                <span className={cn("font-mono text-base font-bold leading-none mt-0.5", isCompleted ? "text-emerald-600" : "text-slate-800")}>
+                            <button className="h-8 min-w-[70px] px-1 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 rounded transition-colors group/counter border border-transparent hover:border-slate-200">
+                                <span className={cn("font-mono text-base font-bold leading-none mt-0.5", isCompleted ? "text-emerald-600" : theme.text)}>
                                     {completed} <span className="text-slate-400 text-[10px] font-normal">/ {video.totalVideos}</span>
                                 </span>
                             </button>
@@ -207,7 +299,7 @@ function VideoRow({ video, onEdit, onDelete }: { video: Video, onEdit: (video: V
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-white/50 rounded-full">
                             <MoreVertical className="w-4 h-4" />
                         </Button>
                     </PopoverTrigger>
@@ -234,7 +326,69 @@ function VideoRow({ video, onEdit, onDelete }: { video: Video, onEdit: (video: V
     );
 }
 
-// --- DOSYA RAFI (Video Shelf) ---
+// --- YENİ BİLEŞEN: AÇILIR KAPANIR RAF (CollapsibleShelf) ---
+function CollapsibleShelf({ name, videos, onEdit, onDelete, colorIndex }: { name: string, videos: Video[], onEdit: (v: Video) => void, onDelete: (id: string) => void, colorIndex: number }) {
+    // Varsayılan olarak kapalı (isOpen: false)
+    const [isOpen, setIsOpen] = useState(false);
+
+    const theme = shelfColors[colorIndex % shelfColors.length];
+
+    const totalVids = videos.reduce((acc, v) => acc + v.totalVideos, 0);
+    const completedVids = videos.reduce((acc, v) => acc + (v.completedVideos || 0), 0);
+    const shelfProgress = totalVids > 0 ? Math.round((completedVids / totalVids) * 100) : 0;
+    const isAllDone = shelfProgress === 100 && totalVids > 0;
+
+    return (
+        <div className={cn("border rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md bg-gradient-to-br", theme.gradient, theme.border, theme.hover)}>
+            {/* Header Kısmı - Tıklanabilir */}
+            <div 
+                onClick={() => setIsOpen(!isOpen)} 
+                className="p-4 cursor-pointer flex flex-col gap-3 select-none"
+            >
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {/* Ok İkonu */}
+                        <div className={cn("transition-transform duration-300", isOpen && "rotate-180", theme.subtext)}>
+                            <ChevronDown className="w-5 h-5" />
+                        </div>
+
+                        <FolderOpen className={cn("h-6 w-6 transition-colors", isAllDone ? "text-emerald-600" : theme.icon)} />
+                        
+                        <div>
+                            <h3 className={cn("text-lg font-bold tracking-tight leading-none", theme.text)}>{name}</h3>
+                            <span className={cn("text-[10px] font-bold uppercase tracking-widest opacity-80", theme.subtext)}>
+                                {videos.length} Dosya • {totalVids} Video
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div className="text-right">
+                         <span className={cn("text-base font-mono font-bold", isAllDone ? "text-emerald-600" : theme.icon)}>
+                            %{shelfProgress}
+                         </span>
+                    </div>
+                </div>
+
+                {/* Header içindeki ilerleme çubuğu */}
+                <div className="w-full flex items-center gap-3">
+                     <Progress value={shelfProgress} className={cn("h-2 flex-1", theme.barBg)} indicatorClassName={isAllDone ? "bg-emerald-500" : theme.bar} />
+                     <span className={cn("text-xs font-medium whitespace-nowrap", theme.subtext)}>{completedVids} / {totalVids}</span>
+                </div>
+            </div>
+
+            {/* İçerik Kısmı - Sadece açıksa göster */}
+            {isOpen && (
+                <div className="bg-white/40 p-3 border-t border-white/20 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-300">
+                     {videos.map((video) => (
+                        <VideoRow key={video.id} video={video} onEdit={onEdit} onDelete={onDelete} theme={theme} />
+                     ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// --- DOSYA RAFI (Video Shelf Wrapper) ---
 function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (video: Video) => void, onDelete: (id: string) => void }) {
   const shelves = useMemo(() => {
     const grouped: Record<string, Video[]> = {};
@@ -262,39 +416,17 @@ function VideoShelf({ videos, onEdit, onDelete }: { videos: Video[], onEdit: (vi
   }
 
   return (
-    <div className="space-y-10 pb-10">
-      {shelves.map(([shelfName, shelfVideos]) => {
-          const totalVids = shelfVideos.reduce((acc, v) => acc + v.totalVideos, 0);
-          const completedVids = shelfVideos.reduce((acc, v) => acc + (v.completedVideos || 0), 0);
-          const shelfProgress = totalVids > 0 ? Math.round((completedVids / totalVids) * 100) : 0;
-          const isAllDone = shelfProgress === 100 && totalVids > 0;
-
-          return (
-             <div key={shelfName} className="space-y-4">
-                <div className="flex items-end justify-between px-2 pb-2 border-b border-slate-200 group">
-                    <div className="flex items-center gap-3">
-                        <FolderOpen className={cn("h-6 w-6 transition-colors", isAllDone ? "text-emerald-500" : "text-rose-500")} />
-                        <div>
-                            <h3 className="text-xl font-bold text-slate-800 tracking-tight leading-none">{shelfName}</h3>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                {shelfVideos.length} Dosya • {totalVids} Video
-                            </span>
-                        </div>
-                    </div>
-                    <div className="text-right hidden sm:block">
-                         <span className={cn("text-base font-mono font-bold", isAllDone ? "text-emerald-500" : "text-rose-500")}>
-                            %{shelfProgress}
-                         </span>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-3">
-                     {shelfVideos.map((video) => (
-                        <VideoRow key={video.id} video={video} onEdit={onEdit} onDelete={onDelete} />
-                     ))}
-                </div>
-            </div>
-          )
-      })}
+    <div className="space-y-4 pb-10">
+      {shelves.map(([shelfName, shelfVideos], index) => (
+          <CollapsibleShelf 
+            key={shelfName} 
+            name={shelfName} 
+            videos={shelfVideos} 
+            onEdit={onEdit} 
+            onDelete={onDelete}
+            colorIndex={index}
+          />
+      ))}
     </div>
   );
 }
@@ -619,6 +751,13 @@ export function VideosClient() {
     return { totalAssigned, totalCompleted, percentage };
   }, [filteredVideos]);
 
+  const brightColors = [
+    { id: 'blue', gradient: 'from-blue-50 to-indigo-50 border-blue-200 text-blue-700' },
+    { id: 'teal', gradient: 'from-teal-50 to-green-50 border-teal-200 text-teal-700' },
+    { id: 'amber', gradient: 'from-amber-50 to-orange-50 border-amber-200 text-amber-700' },
+    { id: 'rose', gradient: 'from-rose-50 to-red-50 border-rose-200 text-rose-700' },
+  ];
+
   return (
     <div className={cn("min-h-screen font-sans pb-24 relative overflow-hidden selection:bg-rose-100", themeColors.PAGE_BG, themeColors.TEXT_MAIN)}>
       {/* Light Background Ambience */}
@@ -645,7 +784,7 @@ export function VideosClient() {
               </div>
 
               <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
-                   {view === 'videos' && (
+                    {view === 'videos' && (
                         <div className="relative flex-1 md:w-56">
                             <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400")} />
                             <Input 
@@ -655,9 +794,9 @@ export function VideosClient() {
                                 className={cn("pl-9 rounded-xl border-slate-200 h-10 bg-white focus:ring-rose-500", themeColors.TEXT_MAIN)} 
                             />
                         </div>
-                   )}
-                   
-                   <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                    )}
+                    
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
                         <Button 
                             variant="ghost" 
                             size="sm" 
@@ -682,7 +821,7 @@ export function VideosClient() {
                         >
                             <Settings className="w-4 h-4" />
                         </Button>
-                   </div>
+                    </div>
               </div>
           </div>
       </div>
@@ -727,6 +866,11 @@ export function VideosClient() {
                                 %{stats.percentage}
                                 <span className="text-sm font-medium text-slate-400">Tamamlandı</span>
                             </div>
+                            <div className="text-sm font-medium text-slate-500 mt-1">
+                                <span className="text-emerald-600 font-bold">{stats.totalCompleted}</span>
+                                <span className="mx-1">/</span>
+                                <span className="text-slate-900 font-bold">{stats.totalAssigned}</span> Video
+                            </div>
                         </div>
                     </div>
                     <div className="text-right hidden sm:block">
@@ -736,7 +880,7 @@ export function VideosClient() {
                 </div>
             )}
             <VideoShelf videos={filteredVideos} onEdit={handleOpenForm} onDelete={handleDeleteVideo} />
-            <div className="fixed bottom-8 right-6 z-50">
+            <div className="fixed bottom-24 right-6 md:bottom-8 z-50">
                 <Button 
                     className="rounded-full h-14 px-6 bg-rose-600 text-white shadow-2xl shadow-rose-900/30 hover:bg-rose-700 hover:scale-105 transition-all border-2 border-white font-bold"
                     onClick={() => handleOpenForm(null)}

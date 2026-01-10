@@ -635,7 +635,7 @@ export interface Account {
     id: string;
     familyId: string;
     name: string;
-    type: 'cash' | 'bank' | 'credit-card' | 'other';
+    type: 'cash' | 'bank' | 'credit-card' | 'other' | 'debt';
     balance: number;
     ownerId: string;
     // For credit cards
