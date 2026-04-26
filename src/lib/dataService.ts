@@ -1,5 +1,4 @@
 
-
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -626,15 +625,11 @@ export const deleteShoppingListItemFromList = async (listId: string, itemId: str
     if (listSnap.exists()) {
         const list = listSnap.data() as ShoppingList;
         if (fromBought) {
-            const itemToRemove = (list.boughtItems || []).find(item => item.id === itemId);
-            if (itemToRemove) {
-                await updateDoc(listRef, { boughtItems: arrayRemove(itemToRemove) });
-            }
+            const newBoughtItems = (list.boughtItems || []).filter(item => item.id !== itemId);
+            await updateDoc(listRef, { boughtItems: newBoughtItems });
         } else {
-             const itemToRemove = list.items.find(item => item.id === itemId);
-             if (itemToRemove) {
-                await updateDoc(listRef, { items: arrayRemove(itemToRemove) });
-            }
+            const newItems = (list.items || []).filter(item => item.id !== itemId);
+            await updateDoc(listRef, { items: newItems });
         }
     }
 };
@@ -2151,7 +2146,3 @@ export const addPomodoroSession = async (data: Omit<PomodoroSession, 'id' | 'fam
 
     await batch.commit();
 }
-
-
-    
-

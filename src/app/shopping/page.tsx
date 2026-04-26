@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -421,6 +422,15 @@ export default function ShoppingPage() {
     await moveItemToPending(listId, item.id);
   }
 
+  const handleDeleteItem = async (listId: string, itemId: string, fromBought: boolean) => {
+    try {
+        await deleteShoppingListItemFromList(listId, itemId, fromBought);
+        toast({ title: "Ürün Silindi" });
+    } catch(e) {
+        toast({ title: "Hata", variant: "destructive" });
+    }
+  }
+
   if (!isLoaded) {
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -430,7 +440,6 @@ export default function ShoppingPage() {
     );
   }
 
-  // --- DETAY GÖRÜNÜMÜ (LIGHT THEME) ---
   if (selectedList) {
     const theme = themeColors.find(c => c.id === (selectedList.colorId || 'ocean')) || themeColors[0];
     const pendingItems = (selectedList.items || []).sort((a,b) => (new Date(b.createdAt||0).getTime()) - (new Date(a.createdAt||0).getTime()));
@@ -549,19 +558,35 @@ export default function ShoppingPage() {
                                                     {item.name}
                                                 </label>
 
-                                                {item.isBought && (
+                                                <div className="flex items-center gap-1">
+                                                    {item.isBought ? (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-10 w-10 rounded-full text-emerald-600 hover:bg-emerald-50 transition-all" 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                moveItemToHistory(selectedList!.id, item);
+                                                            }}
+                                                            title="Sepete At"
+                                                        >
+                                                            <Check className="h-5 w-5" />
+                                                        </Button>
+                                                    ) : null}
+                                                    
                                                     <Button 
                                                         variant="ghost" 
                                                         size="icon" 
-                                                        className="h-10 w-10 rounded-full text-rose-500 hover:bg-rose-50 transition-all" 
+                                                        className="h-10 w-10 rounded-full text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100" 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            moveItemToHistory(selectedList!.id, item);
+                                                            handleDeleteItem(selectedList!.id, item.id, false);
                                                         }}
+                                                        title="Kalıcı Olarak Sil"
                                                     >
                                                         <Trash2 className="h-5 w-5" />
                                                     </Button>
-                                                )}
+                                                </div>
                                             </div>
                                         ))}
                                         </div>
@@ -587,7 +612,7 @@ export default function ShoppingPage() {
                                             <CheckCircle2 className="h-4 w-4" />
                                         </div>
                                         <span className="flex-grow font-medium text-base line-through text-slate-400">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full" onClick={() => handleDeleteItem(selectedList.id, item.id, true)}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>

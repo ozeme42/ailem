@@ -38,10 +38,9 @@ const accountIcons: { [key: string]: React.ElementType } = {
     'bank': Landmark,
     'credit-card': CreditCard,
     'other': Wallet,
-    'debt': Wallet // Borç hesabı tipi için ikon eklendi (varsa)
+    'debt': Wallet
 };
 
-// --- Kategori Renkleri (Geliştirilmiş Kontrast) ---
 const categoryColors: {[key: string]: string} = {
     'Market': 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30',
     'Yemek': 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-300 dark:border-yellow-500/30',
@@ -92,9 +91,6 @@ export function BudgetClient() {
     const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
 
     const accountStats = React.useMemo(() => {
-        const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const totalExpense = allTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-
         const assetsTotal = accounts.filter(a => a.type === 'cash' || a.type === 'bank').reduce((sum, a) => sum + a.balance, 0);
         const debtsTotal = accounts.filter(a => a.type === 'credit-card' || a.type === 'other' || a.type === 'debt').reduce((sum, a) => sum + a.balance, 0);
 
@@ -105,7 +101,7 @@ export function BudgetClient() {
             totalDebts: debtsTotal,
             netWorth: assetsTotal + debtsTotal 
         };
-    }, [accounts, allTransactions]);
+    }, [accounts]);
 
     const { monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense, monthlySummaries, dailyGroups } = React.useMemo(() => {
         const yearInterval = eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) });
@@ -166,9 +162,34 @@ export function BudgetClient() {
         };
     }, [allTransactions, currentDate]);
 
-    const headerIncome = mainTab === 'day' ? monthlyIncome : yearlyIncome;
-    const headerExpense = mainTab === 'day' ? monthlyExpense : yearlyExpense;
-    const headerTotal = headerIncome - headerExpense;
+    // --- DİNAMİK HEADER MANTIĞI (GÜNCELLENDİ) ---
+    // Eğer 'accounts' sekmesindeysek Varlıklar/Borçlar/Net Durum gösteriyoruz.
+    // Değilse seçili tarihe göre Gelir/Gider/Kalan gösteriyoruz.
+    let headerIncome = 0;
+    let headerExpense = 0;
+    let headerTotal = 0;
+    let labelIncome = 'Gelir';
+    let labelExpense = 'Gider';
+    let labelTotal = 'Toplam Net Durum';
+
+    if (mainTab === 'accounts') {
+        headerIncome = accountStats.totalAssets;
+        headerExpense = accountStats.totalDebts;
+        // Hesaplar sekmesinde Net Durum: Varlıklar - Borçlar (Borçları pozitif girildiğini varsayarak çıkarıyoruz)
+        headerTotal = headerIncome - headerExpense; 
+        labelIncome = 'Varlıklar';
+        labelExpense = 'Borçlar';
+        labelTotal = 'Net Varlık';
+    } else if (mainTab === 'month') {
+        headerIncome = yearlyIncome;
+        headerExpense = yearlyExpense;
+        headerTotal = headerIncome - headerExpense;
+    } else {
+        // default: day
+        headerIncome = monthlyIncome;
+        headerExpense = monthlyExpense;
+        headerTotal = headerIncome - headerExpense;
+    }
 
     const handleAccountSubmit = async (data: Omit<Account, 'id' | 'familyId'>) => {
         try {
@@ -236,7 +257,7 @@ export function BudgetClient() {
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                        {/* GELİŞMİŞ TARİH NAVİGASYONU (Takvimli) */}
+                        {/* GELİŞMİŞ TARİH NAVİGASYONU (Takvimli) - Sadece Day/Month sekmelerinde anlamlı ama şimdilik kalsın */}
                         <div className={cn("flex items-center p-1 rounded-full border border-slate-200 dark:border-white/10 w-full md:w-auto justify-between md:justify-start", themeClasses.CARD_BG)}>
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400" onClick={() => handleNavDate('prev')}><ChevronLeft className="h-4 w-4"/></Button>
                             
@@ -273,48 +294,47 @@ export function BudgetClient() {
 
             <div className="max-w-7xl mx-auto md:p-6 p-3 relative z-10 space-y-6">
                 
-                {/* --- ÖZET KARTI --- */}
-                {mainTab !== 'accounts' && (
-                    <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 shadow-2xl group transition-all duration-500 hover:scale-[1.01]">
-                        {/* Card Background Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-700 z-0"></div>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none"></div>
-                        
-                        <div className="relative z-10">
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                                <div className="text-center md:text-left">
-                                    <p className="text-indigo-200 text-sm font-medium mb-1 uppercase tracking-widest opacity-80">Toplam Net Varlık</p>
-                                    <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-white flex items-center justify-center md:justify-start gap-3 drop-shadow-sm">
-                                        {headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                        {headerTotal >= 0 ? <TrendingUp className="h-8 w-8 text-emerald-300 animate-pulse" /> : <TrendingDown className="h-8 w-8 text-rose-300 animate-pulse" />}
-                                    </h2>
-                                </div>
-                                
-                                <div className="flex gap-4 w-full md:w-auto">
-                                    <div className="flex-1 bg-white/10 dark:bg-black/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 dark:border-white/10 flex items-center gap-3 sm:gap-4 hover:bg-white/20 dark:hover:bg-black/30 transition-colors">
-                                        <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-200 dark:text-emerald-300 shadow-inner border border-emerald-500/30">
-                                            <ArrowDownLeft className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] sm:text-xs text-emerald-100 dark:text-emerald-200 uppercase font-bold tracking-wider opacity-80">Gelir</p>
-                                            <p className="text-base sm:text-lg font-bold text-white">{headerIncome.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
-                                        </div>
+                {/* --- ÖZET KARTI (GÜNCELLENMİŞ) --- */}
+                {/* Artık her sekmede görünüyor ve başlıkları dinamik */}
+                <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 shadow-2xl group transition-all duration-500 hover:scale-[1.01]">
+                    {/* Card Background Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-700 z-0"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/20 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none"></div>
+                    
+                    <div className="relative z-10">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="text-center md:text-left">
+                                <p className="text-indigo-200 text-sm font-medium mb-1 uppercase tracking-widest opacity-80">{labelTotal}</p>
+                                <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-white flex items-center justify-center md:justify-start gap-3 drop-shadow-sm">
+                                    {headerTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    {headerTotal >= 0 ? <TrendingUp className="h-8 w-8 text-emerald-300 animate-pulse" /> : <TrendingDown className="h-8 w-8 text-rose-300 animate-pulse" />}
+                                </h2>
+                            </div>
+                            
+                            <div className="flex gap-4 w-full md:w-auto">
+                                <div className="flex-1 bg-white/10 dark:bg-black/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 dark:border-white/10 flex items-center gap-3 sm:gap-4 hover:bg-white/20 dark:hover:bg-black/30 transition-colors">
+                                    <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-200 dark:text-emerald-300 shadow-inner border border-emerald-500/30">
+                                        <ArrowDownLeft className="h-6 w-6" />
                                     </div>
-                                    <div className="flex-1 bg-white/10 dark:bg-black/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 dark:border-white/10 flex items-center gap-3 sm:gap-4 hover:bg-white/20 dark:hover:bg-black/30 transition-colors">
-                                        <div className="h-10 w-10 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-200 dark:text-rose-300 shadow-inner border border-rose-500/30">
-                                            <ArrowUpRight className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] sm:text-xs text-rose-100 dark:text-rose-200 uppercase font-bold tracking-wider opacity-80">Gider</p>
-                                            <p className="text-base sm:text-lg font-bold text-white">{headerExpense.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
-                                        </div>
+                                    <div>
+                                        <p className="text-[10px] sm:text-xs text-emerald-100 dark:text-emerald-200 uppercase font-bold tracking-wider opacity-80">{labelIncome}</p>
+                                        <p className="text-base sm:text-lg font-bold text-white">{headerIncome.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
+                                    </div>
+                                </div>
+                                <div className="flex-1 bg-white/10 dark:bg-black/20 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 dark:border-white/10 flex items-center gap-3 sm:gap-4 hover:bg-white/20 dark:hover:bg-black/30 transition-colors">
+                                    <div className="h-10 w-10 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-200 dark:text-rose-300 shadow-inner border border-rose-500/30">
+                                        <ArrowUpRight className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] sm:text-xs text-rose-100 dark:text-rose-200 uppercase font-bold tracking-wider opacity-80">{labelExpense}</p>
+                                        <p className="text-base sm:text-lg font-bold text-white">{headerExpense.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ₺</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                )}
+                </div>
 
                 {/* --- SEKMELER --- */}
                 <div className={cn("p-1 rounded-2xl flex relative overflow-x-auto", themeClasses.CARD_BG)}>
@@ -489,7 +509,6 @@ export function BudgetClient() {
                                             </div>
                                         </div>
                                     ))}
-                                    {/* BURASI EKLENDİ: Borç Ekleme Butonu */}
                                     <Button 
                                         variant="outline" 
                                         className={cn("w-full rounded-[1.5rem] h-14 border-dashed border-slate-300 dark:border-white/10 hover:border-rose-500/50 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10", themeClasses.TEXT_MUTED)} 
