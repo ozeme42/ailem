@@ -1,4 +1,3 @@
-
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -418,7 +417,7 @@ export const deleteTag = async (tagType: TagType, tagToDelete: string, itemType:
 
     // 1. Get all tags and filter out the one to delete
     const tagsDocRef = doc(db, 'familyManagement', familyId);
-    const tagsDoc = await getDoc(tagsDocRef);
+    const tagsDoc = await getGetDoc(tagsDocRef);
     const allTags: string[] = tagsDoc.exists() ? (tagsDoc.data()[tagType] || []) : [];
     const newTags = allTags.filter(tag => !tag.startsWith(tagToDelete));
     await setDoc(tagsDocRef, { [tagType]: newTags }, { merge: true });
@@ -554,7 +553,22 @@ export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void)
 export const addShoppingList = async (name: string, icon: string, colorId?: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    return addDoc(collection(db, 'shoppingLists'), { name, icon, items: [], boughtItems: [], familyId, createdAt: new Date().toISOString(), colorId: colorId || 'ocean' });
+
+    // Calculate initial order (append to end)
+    const q = query(collection(db, 'shoppingLists'), where("familyId", "==", familyId), orderBy("order", "desc"), limit(1));
+    const snap = await getDocs(q);
+    const maxOrder = snap.empty ? 0 : (snap.docs[0].data().order || 0);
+
+    return addDoc(collection(db, 'shoppingLists'), { 
+        name, 
+        icon, 
+        items: [], 
+        boughtItems: [], 
+        familyId, 
+        createdAt: new Date().toISOString(), 
+        colorId: colorId || 'ocean',
+        order: maxOrder + 1
+    });
 };
 export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
 export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
@@ -1204,7 +1218,7 @@ export const checkAndAwardBadges = async (
             if (finishedBooksCount >= 10) newBadges.add('📚');
             if (finishedBooksCount >= 25) newBadges.add('🏛️');
         }
-        if ((triggerEvent.book?.pageCount || 0) >= 500) newBadges.add(' marathon');
+        if ((triggerEvent.book?.pageCount || 0) >= 500) newBadges.add('marathon');
     }
 
     if (triggerEvent.type === 'habit_streak_update') {
@@ -1216,7 +1230,7 @@ export const checkAndAwardBadges = async (
         const prayerProgressSnap = await getDoc(doc(db, 'prayerProgress', `${familyId}_${memberId}`));
         if(prayerProgressSnap.exists()) {
             const completions = prayerProgressSnap.data().completions || {};
-            if(Object.keys(completions).length >= 1) newBadges.add('🕌');
+            if(Object.keys(completions).length >= 1) newBadges.add('Mosque');
             if(Object.keys(completions).length >= 7) newBadges.add('🌙');
         }
         if (triggerEvent.prayerCount === 5) newBadges.add('🌟');
@@ -1283,7 +1297,7 @@ export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'fa
     // If questions are provided, process and include them in the update
     if (questionsForSubcollection && questionsForSubcollection.length > 0) {
         const questionsForTestDoc = questionsForSubcollection.map((q, index) => {
-            const questionId = 'id' in q ? q.id : ('questionId' in q ? question.questionId : '');
+            const questionId = 'id' in q ? q.id : ('questionId' in q ? q.questionId : '');
             return {
                 questionId: questionId,
                 questionNumber: index + 1,

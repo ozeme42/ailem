@@ -1,5 +1,3 @@
-
-
 import { GraduationCap, ShoppingCart, BookOpen, Calendar, CheckSquare, Timer } from 'lucide-react';
 import { z } from 'zod';
 
@@ -446,10 +444,10 @@ export interface Test {
   emptyAnswers?: number;
   studentAnswers?: AnswerKey;
   answerKey?: AnswerKey;
-  timeSpentSeconds?: timeSpentSeconds;
+  timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   questions?: QuickTestQuestion[]; 
-  openEnded?: openEnded; // New flag for open-ended tests
+  openEnded?: boolean; // New flag for open-ended tests
   studentTextAnswers?: { [key: string]: string }; // For open-ended questions
   studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
   topicId?: string;
@@ -474,6 +472,7 @@ export interface ShoppingList {
   boughtItems?: ShoppingItem[];
   createdAt?: string;
   colorId?: string;
+  order?: number;
 }
 
 // Separate data structure for Needs page
@@ -579,10 +578,6 @@ export const initialShoppingLists: Omit<ShoppingNoteList, 'id' | 'familyId'>[] =
 export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
     { title: 'Doktor Randevusu', startDate: '2024-08-20', recurrence: 'one-time' },
     { title: 'Elif\'in Doğum Günü', startDate: '2024-09-05', recurrence: 'yearly' },
-];
-
-export const initialRecipes: Omit<Recipe, 'id'|'familyId'>[] = [
-    ...
 ];
 
 export const initialMealPlan: MealPlan = {

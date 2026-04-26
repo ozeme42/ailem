@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft, ListChecks, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Search, Sparkles, Home, Cake, Notebook, Edit, Check } from "lucide-react";
+import { Plus, ArrowLeft, ListChecks, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Search, Sparkles, Home, Cake, Notebook, Edit, Check, ChevronUp, ChevronDown } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -222,11 +221,14 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, initialData }: {
     );
 };
 
-const ListCard = ({ list, onClick, onEdit, onDelete }: { 
+const ListCard = ({ list, onClick, onEdit, onDelete, onMove, isFirst, isLast }: { 
     list: ShoppingList; 
     onClick: () => void;
     onEdit: () => void;
     onDelete: (id: string) => void;
+    onMove: (direction: 'up' | 'down') => void;
+    isFirst: boolean;
+    isLast: boolean;
 }) => {
     const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
     const items = list.items || [];
@@ -257,6 +259,17 @@ const ListCard = ({ list, onClick, onEdit, onDelete }: {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white border-slate-200 text-slate-700 rounded-xl shadow-xl">
+                        {!isFirst && (
+                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove('up'); }} className="cursor-pointer hover:bg-slate-50">
+                                <ChevronUp className="mr-2 h-4 w-4 text-indigo-500"/> Yukarı Taşı
+                            </DropdownMenuItem>
+                        )}
+                        {!isLast && (
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove('down'); }} className="cursor-pointer hover:bg-slate-50">
+                                <ChevronDown className="mr-2 h-4 w-4 text-indigo-500"/> Aşağı Taşı
+                            </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator className="bg-slate-100" />
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} className="cursor-pointer hover:bg-slate-50">
                             <Edit className="mr-2 h-4 w-4 text-slate-500"/> Düzenle
                         </DropdownMenuItem>
@@ -311,7 +324,13 @@ export default function ShoppingPage() {
 
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate((lists) => {
-        const sortedLists = lists.sort((a, b) => (new Date(b.createdAt || 0).getTime()) - (new Date(a.createdAt || 0).getTime()));
+        // Sort by order first, then fallback to createdAt
+        const sortedLists = lists.sort((a, b) => {
+            const orderA = a.order ?? 0;
+            const orderB = b.order ?? 0;
+            if (orderA !== orderB) return orderA - orderB;
+            return (new Date(b.createdAt || 0).getTime()) - (new Date(a.createdAt || 0).getTime());
+        });
         setShoppingLists(sortedLists);
         setIsLoaded(true);
     });
@@ -405,10 +424,31 @@ export default function ShoppingPage() {
           await deleteShoppingList(id);
           toast({ title: "Liste Silindi" });
       } catch (error) {
-          toast({ title: "Hata", variant: "destructive" });
+          toast({ title: "Hata", description: "Liste silinirken bir sorun oluştu.", variant: "destructive" });
       }
   };
   
+  const handleMoveList = async (list: ShoppingList, direction: 'up' | 'down') => {
+    const currentIndex = shoppingLists.findIndex(l => l.id === list.id);
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= shoppingLists.length) return;
+
+    const targetList = shoppingLists[targetIndex];
+    
+    // If lists don't have order yet (legacy data), assign them based on their current indices
+    const currentOrder = list.order ?? currentIndex;
+    const targetOrder = targetList.order ?? targetIndex;
+
+    try {
+        // Swap orders
+        await updateShoppingList(list.id, { order: targetOrder });
+        await updateShoppingList(targetList.id, { order: currentOrder });
+    } catch (error) {
+        toast({ title: "Hata", description: "Sıralama güncellenemedi.", variant: "destructive" });
+    }
+  };
+
   const toggleItemCheck = async (listId: string, item: ShoppingListItemType) => {
     await toggleShoppingListItemStatusInList(listId, item.id, !item.isBought);
   }
@@ -623,7 +663,7 @@ export default function ShoppingPage() {
                 </Tabs>
             </div>
             
-             {/* MOBİL UYUMLU DÜZENLEME: md:bottom-8 (masaüstü normal), bottom-24 (mobil yukarıda) */}
+             {/* MOBİL UYUMLU DÜZENLEME */}
              <div className="fixed bottom-24 md:bottom-8 right-6 z-50">
                 <Button className={cn("rounded-full w-16 h-16 shadow-xl transition-transform hover:scale-105 active:scale-95 border-4 border-white text-white", theme.accent)} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
                     <Plus className="h-8 w-8"/>
@@ -710,13 +750,16 @@ export default function ShoppingPage() {
 
             {shoppingLists.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {shoppingLists.map((list) => (
+                    {shoppingLists.map((list, index) => (
                         <ListCard 
                             key={list.id} 
                             list={list} 
                             onClick={() => setSelectedList(list)}
                             onEdit={() => { setEditingList(list); setListDialogOpen(true); }}
                             onDelete={handleDeleteList}
+                            onMove={(dir) => handleMoveList(list, dir)}
+                            isFirst={index === 0}
+                            isLast={index === shoppingLists.length - 1}
                         />
                     ))}
                     
