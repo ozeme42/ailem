@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand, Shrink, Home } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, Save, ArrowRight, Play, Pause, Check, X, MinusCircle, ListX, Sparkles, Loader2, UploadCloud, XCircle, Expand, Shrink, Home, LayoutGrid, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -25,8 +25,8 @@ import { useAuth } from "@/components/auth-provider";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { Progress } from "@/components/ui/progress";
-import { motion } from "framer-motion";
-
+import { motion, AnimatePresence } from "framer-motion";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 // --- DESIGN SYSTEM: Fixed Light Theme for Test Solving ---
 const glassColors = {
@@ -41,7 +41,6 @@ const glassColors = {
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
-type AnswerKey = { [key: string]: string };
 type EvaluationStatus = "correct" | "incorrect" | "unevaluated" | "empty";
 type ManualEvaluation = { [key: string]: EvaluationStatus };
 
@@ -84,11 +83,48 @@ function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeU
   );
 }
 
+// --- SUBCOMPONENT: Question Palette ---
+const QuestionPalette = ({ 
+    total, 
+    currentIndex, 
+    onNavigate, 
+    isAnswered 
+}: { 
+    total: number; 
+    currentIndex: number; 
+    onNavigate: (index: number) => void;
+    isAnswered: (index: number) => boolean;
+}) => {
+    return (
+        <div className="grid grid-cols-5 gap-2 p-2">
+            {Array.from({ length: total }).map((_, i) => {
+                const answered = isAnswered(i);
+                const active = currentIndex === i;
+                
+                return (
+                    <Button
+                        key={i}
+                        variant={active ? "default" : answered ? "secondary" : "outline"}
+                        className={cn(
+                            "h-10 w-10 p-0 font-bold rounded-lg text-xs transition-all",
+                            active && "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-1",
+                            answered && !active && "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200"
+                        )}
+                        onClick={() => onNavigate(i)}
+                    >
+                        {i + 1}
+                    </Button>
+                );
+            })}
+        </div>
+    );
+};
+
 export default function OpticalFormPage() {
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
-    const { user, familyMembers } = useAuth();
+    const { user } = useAuth();
     const testId = params.testId as string;
 
     const [test, setTest] = React.useState<TestType | null>(null);
@@ -114,16 +150,11 @@ export default function OpticalFormPage() {
             };
 
             if (isMcqTest) {
-                let studentAnswersToSave = mcqAnswers;
-                 if (isFinishedByTimer) {
-                    studentAnswersToSave = mcqAnswers;
-                }
-                
                 let allStudentMcqAnswers: McqAnswers = {};
                 const questionCount = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
                 for (let i = 1; i <= questionCount; i++) {
                     const qNumStr = i.toString();
-                    allStudentMcqAnswers[qNumStr] = studentAnswersToSave[qNumStr] || null;
+                    allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
                 }
                 updatedData.studentAnswers = allStudentMcqAnswers;
 
@@ -540,7 +571,7 @@ export default function OpticalFormPage() {
                             })}
                         </CardContent>
                     </Card>
-                      <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-14 shadow-lg shadow-indigo-500/20">Değerlendirmeyi Kaydet</Button>
+                    <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-14 shadow-lg shadow-indigo-500/20">Değerlendirmeyi Kaydet</Button>
                 </div>
             </div>
         )
@@ -554,11 +585,20 @@ export default function OpticalFormPage() {
         setTextAnswers(prev => ({...prev, [questionNumber]: value}));
     };
     
-    const hasImages = (test.sourceType === 'quick' || test.sourceType === 'bank' || test.sourceType === 'mistake') && test.questions && test.questions.length > 0;
+    const hasImages = (test.sourceType === 'quick' || test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'trackedBook') && test.questions && test.questions.length > 0;
     const isJsonTest = test.sourceType === 'json' && test.jsonQuestions && test.jsonQuestions.length > 0;
     const currentJsonQuestion = isJsonTest ? test.jsonQuestions![currentQuestionIndex] : null;
     const options = ['A', 'B', 'C', 'D', 'E'];
     const testDurationMinutes = test.durationMinutes || (isJsonTest ? test.jsonQuestions!.length * 1.5 : test.questionCount * 2);
+
+    const isQuestionAnswered = (index: number): boolean => {
+        const qNumStr = (index + 1).toString();
+        if (test.openEnded) {
+            return !!textAnswers[qNumStr];
+        } else {
+            return !!mcqAnswers[qNumStr];
+        }
+    };
     
     // --- VIEW: IMAGE-BASED TEST (MCQ or Open-Ended) ---
     if (hasImages) {
@@ -589,94 +629,145 @@ export default function OpticalFormPage() {
                            {fullscreen ? <Shrink /> : <Expand />}
                         </Button>
                         
-                        <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col", fullscreen && "justify-center")}>
-                            <Card className={cn("border-l-4 border-l-indigo-600 mb-8", glassColors.CARD_BG)}>
-                                <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
-                                            <div className="flex-grow w-full">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <h3 className="font-bold text-lg text-slate-800">Soru {currentQuestionIndex + 1} / {totalQuestions}</h3>
-                                                <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
-                                            </div>
-                                            <Progress value={((currentQuestionIndex + 1) / totalQuestions) * 100} className="h-2 bg-slate-100" indicatorClassName="bg-indigo-600" />
-                                    </div>
-                                </CardContent>
-                            </Card>
+                        <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col lg:flex-row gap-8", fullscreen && "justify-center")}>
+                            
+                            {/* Question Navigator (Desktop) */}
+                            <div className="hidden lg:block w-64 shrink-0">
+                                <Card className={glassColors.CARD_BG}>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                                            <LayoutGrid className="w-4 h-4" /> Sorular
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <QuestionPalette 
+                                            total={totalQuestions} 
+                                            currentIndex={currentQuestionIndex} 
+                                            onNavigate={setCurrentQuestionIndex}
+                                            isAnswered={isQuestionAnswered}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                            <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
-                                <CardContent className="p-4 flex-grow flex items-center justify-center bg-slate-50/50">
-                                    <div className="w-full relative aspect-[4/3] bg-white rounded-lg shadow-inner flex items-center justify-center p-2">
-                                    <Dialog open={!!fullscreenImage} onOpenChange={() => setFullscreenImage(null)}>
-                                            <DialogTrigger asChild>
-                                                <Image 
-                                                        src={currentQuestion.imageUrl}
-                                                        alt={`Soru ${currentQuestionIndex + 1}`}
-                                                        layout="fill"
-                                                        objectFit="contain"
-                                                        className="cursor-pointer"
-                                                        unoptimized
-                                                />
-                                            </DialogTrigger>
-                                            <DialogContent className="max-w-[90vw] max-h-[90vh] h-auto w-auto bg-transparent border-none shadow-none flex items-center justify-center p-0">
-                                                <Image src={fullscreenImage || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
-                                            </DialogContent>
-                                    </Dialog>
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="p-6 bg-slate-50 border-t border-slate-200 mt-auto">
-                                    <div className="w-full flex flex-col gap-6">
-                                            {test.openEnded ? (
-                                                <Textarea 
-                                                    placeholder="Cevabınızı buraya yazın..."
-                                                    value={textAnswers[currentQNumStr] || ""}
-                                                    onChange={(e) => handleTextAnswerChange(parseInt(currentQNumStr), e.target.value)}
-                                                    className={cn("h-24 text-base", glassColors.INPUT_BG)}
-                                                />
-                                            ) : (
-                                                <RadioGroup 
-                                                    value={mcqAnswers[currentQNumStr] || ""} 
-                                                    onValueChange={(value) => handleMcqAnswerChange(currentQNumStr, value)}
-                                                    className="flex justify-center gap-4"
-                                                >
-                                                    {options.slice(0, 5).map(option => (
-                                                        <div key={option}>
-                                                            <RadioGroupItem value={option} id={`q${currentQNumStr}-${option}`} className="peer sr-only" />
-                                                            <Label htmlFor={`q${currentQNumStr}-${option}`} className={glassColors.OPTION_BUTTON}>{option}</Label>
-                                                        </div>
-                                                    ))}
-                                                </RadioGroup>
-                                            )}
-                                            <div className="flex justify-between w-full">
-                                                <Button type="button" variant="outline" className={glassColors.BUTTON_GLASS} onClick={() => setCurrentQuestionIndex(p => p - 1)} disabled={currentQuestionIndex === 0}>
-                                                    <ArrowLeft className="mr-2 h-4 w-4"/> Önceki
-                                                </Button>
-                                                {currentQuestionIndex === totalQuestions - 1 ? (
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-lg shadow-emerald-500/20">
-                                                                Testi Tamamla <Check className="ml-2 h-5 w-5" />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                                <AlertDialogDescription className="text-slate-500">Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700">İptal</AlertDialogCancel>
-                                                                <AlertDialogAction type="button" onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
+                            <div className="flex-grow flex flex-col">
+                                <Card className={cn("border-l-4 border-l-indigo-600 mb-8", glassColors.CARD_BG)}>
+                                    <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
+                                                <div className="flex-grow w-full">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <h3 className="font-bold text-lg text-slate-800">Soru {currentQuestionIndex + 1} / {totalQuestions}</h3>
+                                                    <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                                                </div>
+                                                <Progress value={((currentQuestionIndex + 1) / totalQuestions) * 100} className="h-2 bg-slate-100" indicatorClassName="bg-indigo-600" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
+                                    <CardContent className="p-4 flex-grow flex items-center justify-center bg-slate-50/50">
+                                        <div className="w-full relative aspect-[4/3] bg-white rounded-lg shadow-inner flex items-center justify-center p-2">
+                                        <Dialog open={!!fullscreenImage} onOpenChange={() => setFullscreenImage(null)}>
+                                                <DialogTrigger asChild>
+                                                    <Image 
+                                                            src={currentQuestion.imageUrl}
+                                                            alt={`Soru ${currentQuestionIndex + 1}`}
+                                                            layout="fill"
+                                                            objectFit="contain"
+                                                            className="cursor-pointer"
+                                                            unoptimized
+                                                    />
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-[90vw] max-h-[90vh] h-auto w-auto bg-transparent border-none shadow-none flex items-center justify-center p-0">
+                                                    <Image src={fullscreenImage || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
+                                                </DialogContent>
+                                        </Dialog>
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="p-6 bg-slate-50 border-t border-slate-200 mt-auto">
+                                        <div className="w-full flex flex-col gap-6">
+                                                {test.openEnded ? (
+                                                    <Textarea 
+                                                        placeholder="Cevabınızı buraya yazın..."
+                                                        value={textAnswers[currentQNumStr] || ""}
+                                                        onChange={(e) => handleTextAnswerChange(parseInt(currentQNumStr), e.target.value)}
+                                                        className={cn("h-24 text-base", glassColors.INPUT_BG)}
+                                                    />
                                                 ) : (
-                                                    <Button type="button" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-md" onClick={() => setCurrentQuestionIndex(p => p + 1)}>
-                                                        Sonraki <ArrowRight className="ml-2 h-4 w-4"/>
-                                                    </Button>
+                                                    <RadioGroup 
+                                                        value={mcqAnswers[currentQNumStr] || ""} 
+                                                        onValueChange={(value) => handleMcqAnswerChange(currentQNumStr, value)}
+                                                        className="flex justify-center gap-4"
+                                                    >
+                                                        {options.slice(0, 5).map(option => (
+                                                            <div key={option}>
+                                                                <RadioGroupItem value={option} id={`q${currentQNumStr}-${option}`} className="peer sr-only" />
+                                                                <Label htmlFor={`q${currentQNumStr}-${option}`} className={glassColors.OPTION_BUTTON}>{option}</Label>
+                                                            </div>
+                                                        ))}
+                                                    </RadioGroup>
                                                 )}
-                                            </div>
-                                    </div>
-                                </CardFooter>
-                            </Card>
+                                                <div className="flex justify-between w-full">
+                                                    <Button type="button" variant="outline" className={glassColors.BUTTON_GLASS} onClick={() => setCurrentQuestionIndex(p => p - 1)} disabled={currentQuestionIndex === 0}>
+                                                        <ArrowLeft className="mr-2 h-4 w-4"/> Önceki
+                                                    </Button>
+                                                    {currentQuestionIndex === totalQuestions - 1 ? (
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-lg shadow-emerald-500/20">
+                                                                    Testi Tamamla <Check className="ml-2 h-5 w-5" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                                    <AlertDialogDescription className="text-slate-500">Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.</AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700">İptal</AlertDialogCancel>
+                                                                    <AlertDialogAction type="button" onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    ) : (
+                                                        <Button type="button" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-md" onClick={() => setCurrentQuestionIndex(p => p + 1)}>
+                                                            Sonraki <ArrowRight className="ml-2 h-4 w-4"/>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                        </div>
+                                    </CardFooter>
+                                </Card>
+                            </div>
                         </main>
+                        
+                        {/* Mobile Navigator (Sheet) */}
+                        <div className="lg:hidden fixed bottom-6 left-6 z-50">
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button size="icon" className="h-14 w-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-500/20 border-2 border-white">
+                                        <LayoutGrid className="w-6 h-6" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 pt-10 border-t-4 border-t-indigo-500 h-[60vh] max-h-[500px]">
+                                    <SheetHeader className="mb-6">
+                                        <SheetTitle className="text-xl font-black text-slate-900 flex items-center justify-center gap-3">
+                                            <LayoutGrid className="w-6 h-6 text-indigo-500" />
+                                            Soru Gezgini
+                                        </SheetTitle>
+                                    </SheetHeader>
+                                    <ScrollArea className="h-full">
+                                        <div className="pb-20">
+                                            <QuestionPalette 
+                                                total={totalQuestions} 
+                                                currentIndex={currentQuestionIndex} 
+                                                onNavigate={(idx) => { setCurrentQuestionIndex(idx); }}
+                                                isAnswered={isQuestionAnswered}
+                                            />
+                                        </div>
+                                    </ScrollArea>
+                                </SheetContent>
+                            </Sheet>
+                        </div>
                     </motion.div>
                 </form>
              </Form>
@@ -685,6 +776,8 @@ export default function OpticalFormPage() {
 
     // --- VIEW: JSON-BASED TEST (MCQ) ---
     if (isJsonTest && !test.openEnded && currentJsonQuestion) {
+        const totalQuestions = test.jsonQuestions!.length;
+
         return (
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
@@ -708,88 +801,138 @@ export default function OpticalFormPage() {
                            {fullscreen ? <Shrink /> : <Expand />}
                         </Button>
 
-                        <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col", fullscreen && "justify-center")}>
+                        <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col lg:flex-row gap-8", fullscreen && "justify-center")}>
                             
-                            {/* TIMER & PROGRESS */}
-                            <Card className={cn("border-l-4 border-l-indigo-600 mb-8", glassColors.CARD_BG)}>
-                                <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
-                                     <div className="flex-grow w-full">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h3 className="font-bold text-lg text-slate-800">Soru {currentQuestionIndex + 1} / {test.jsonQuestions!.length}</h3>
-                                            <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
-                                        </div>
-                                        <Progress value={((currentQuestionIndex + 1) / test.jsonQuestions!.length) * 100} className="h-2 bg-slate-100" indicatorClassName="bg-indigo-600" />
-                                    </div>
-                                </CardContent>
-                            </Card>
+                             {/* Question Navigator (Desktop) */}
+                             <div className="hidden lg:block w-64 shrink-0">
+                                <Card className={glassColors.CARD_BG}>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                                            <LayoutGrid className="w-4 h-4" /> Sorular
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <QuestionPalette 
+                                            total={totalQuestions} 
+                                            currentIndex={currentQuestionIndex} 
+                                            onNavigate={setCurrentQuestionIndex}
+                                            isAnswered={isQuestionAnswered}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                            {/* QUESTION CARD */}
-                            <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
-                                <CardHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                                    <CardTitle className="text-slate-900 text-2xl leading-relaxed whitespace-pre-wrap">{currentJsonQuestion.text}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-6 space-y-4 flex-grow">
-                                    <RadioGroup 
-                                        value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
-                                        onValueChange={(value) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), value)}
-                                        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                                    >
-                                        {currentJsonQuestion.options.map((option, optIndex) => (
-                                            <FormItem key={optIndex} className="flex items-center space-x-3 space-y-0 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-500 shadow-sm">
-                                                <FormControl>
-                                                    <RadioGroupItem value={option} className="text-indigo-600 border-indigo-600"/>
-                                                </FormControl>
-                                                <FormLabel className="font-bold text-base text-slate-700 cursor-pointer w-full leading-tight">
-                                                    {option}
-                                                </FormLabel>
-                                            </FormItem>
-                                        ))}
-                                    </RadioGroup>
-                                </CardContent>
-                                <CardFooter className="p-6 bg-slate-50 border-t border-slate-200 mt-auto">
-                                    <div className="flex justify-between w-full">
-                                        <Button 
-                                            type="button"
-                                            variant="outline" 
-                                            className={glassColors.BUTTON_GLASS}
-                                            onClick={() => setCurrentQuestionIndex(p => p - 1)} 
-                                            disabled={currentQuestionIndex === 0}
+                            <div className="flex-grow flex flex-col">
+                                {/* TIMER & PROGRESS */}
+                                <Card className={cn("border-l-4 border-l-indigo-600 mb-8", glassColors.CARD_BG)}>
+                                    <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
+                                         <div className="flex-grow w-full">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className="font-bold text-lg text-slate-800">Soru {currentQuestionIndex + 1} / {totalQuestions}</h3>
+                                                <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                                            </div>
+                                            <Progress value={((currentQuestionIndex + 1) / totalQuestions) * 100} className="h-2 bg-slate-100" indicatorClassName="bg-indigo-600" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* QUESTION CARD */}
+                                <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
+                                    <CardHeader className="bg-slate-50 border-b border-slate-200 p-6">
+                                        <CardTitle className="text-slate-900 text-2xl leading-relaxed whitespace-pre-wrap">{currentJsonQuestion.text}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 space-y-4 flex-grow">
+                                        <RadioGroup 
+                                            value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
+                                            onValueChange={(value) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), value)}
+                                            className="grid grid-cols-1 md:grid-cols-2 gap-4"
                                         >
-                                            <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
-                                        </Button>
-                                        {currentQuestionIndex === test.jsonQuestions!.length - 1 ? (
-                                             <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-lg shadow-emerald-500/20">
-                                                        Testi Tamamla <Check className="ml-2 h-5 w-5" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                        <AlertDialogDescription className="text-slate-500">
-                                                            Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700">İptal</AlertDialogCancel>
-                                                        <AlertDialogAction type="button" onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        ) : (
+                                            {currentJsonQuestion.options.map((option, optIndex) => (
+                                                <FormItem key={optIndex} className="flex items-center space-x-3 space-y-0 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-500 shadow-sm">
+                                                    <FormControl>
+                                                        <RadioGroupItem value={option} className="text-indigo-600 border-indigo-600"/>
+                                                    </FormControl>
+                                                    <FormLabel className="font-bold text-base text-slate-700 cursor-pointer w-full leading-tight">
+                                                        {option}
+                                                    </FormLabel>
+                                                </FormItem>
+                                            ))}
+                                        </RadioGroup>
+                                    </CardContent>
+                                    <CardFooter className="p-6 bg-slate-50 border-t border-slate-200 mt-auto">
+                                        <div className="flex justify-between w-full">
                                             <Button 
                                                 type="button"
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-md"
-                                                onClick={() => setCurrentQuestionIndex(p => p + 1)}
+                                                variant="outline" 
+                                                className={glassColors.BUTTON_GLASS}
+                                                onClick={() => setCurrentQuestionIndex(p => p - 1)} 
+                                                disabled={currentQuestionIndex === 0}
                                             >
-                                                Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
+                                                <ArrowLeft className="mr-2 h-4 w-4"/> Önceki Soru
                                             </Button>
-                                        )}
-                                    </div>
-                                </CardFooter>
-                            </Card>
+                                            {currentQuestionIndex === totalQuestions - 1 ? (
+                                                 <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-lg shadow-emerald-500/20">
+                                                            Testi Tamamla <Check className="ml-2 h-5 w-5" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-slate-500">
+                                                                Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700">İptal</AlertDialogCancel>
+                                                            <AlertDialogAction type="button" onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            ) : (
+                                                <Button 
+                                                    type="button"
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-md"
+                                                    onClick={() => setCurrentQuestionIndex(p => p + 1)}
+                                                >
+                                                    Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </CardFooter>
+                                </Card>
+                            </div>
                         </main>
+                        
+                        {/* Mobile Navigator (Sheet) */}
+                        <div className="lg:hidden fixed bottom-6 left-6 z-50">
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button size="icon" className="h-14 w-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-500/20 border-2 border-white">
+                                        <LayoutGrid className="w-6 h-6" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 pt-10 border-t-4 border-t-indigo-500 h-[60vh] max-h-[500px]">
+                                    <SheetHeader className="mb-6">
+                                        <SheetTitle className="text-xl font-black text-slate-900 flex items-center justify-center gap-3">
+                                            <LayoutGrid className="w-6 h-6 text-indigo-500" />
+                                            Soru Gezgini
+                                        </SheetTitle>
+                                    </SheetHeader>
+                                    <ScrollArea className="h-full">
+                                        <div className="pb-20">
+                                            <QuestionPalette 
+                                                total={totalQuestions} 
+                                                currentIndex={currentQuestionIndex} 
+                                                onNavigate={(idx) => { setCurrentQuestionIndex(idx); }}
+                                                isAnswered={isQuestionAnswered}
+                                            />
+                                        </div>
+                                    </ScrollArea>
+                                </SheetContent>
+                            </Sheet>
+                        </div>
                     </motion.div>
                 </form>
              </Form>
@@ -899,3 +1042,4 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
