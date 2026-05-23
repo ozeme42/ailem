@@ -34,7 +34,7 @@ const glassColors = {
     HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
     CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
     ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
-    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
+    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/20",
     INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
 };
 
@@ -385,34 +385,38 @@ function AssignExamForm({ isOpen, onOpenChange, exam, students }: {isOpen: boole
                          <FormField
                             control={form.control}
                             name="studentIds"
-                            render={({ field }) => (
+                            render={() => (
                                 <FormItem>
                                     <FormLabel className="text-xs font-semibold text-slate-300 uppercase">Öğrenci(ler)</FormLabel>
                                     <div className="space-y-2 p-3 bg-black/20 rounded-xl border border-white/5 max-h-40 overflow-y-auto custom-scrollbar">
                                         {students.map((student) => (
-                                            <FormItem
+                                            <FormField
                                                 key={student.id}
-                                                className="flex flex-row items-center space-x-3 space-y-0 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                                            >
-                                                <FormControl>
-                                                    <Checkbox
-                                                        checked={field.value?.includes(student.id)}
-                                                        onCheckedChange={(checked) => {
-                                                            return checked
-                                                                ? field.onChange([...field.value, student.id])
-                                                                : field.onChange(
-                                                                    field.value?.filter(
-                                                                        (value) => value !== student.id
-                                                                    )
-                                                                )
-                                                        }}
-                                                        className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
-                                                    />
-                                                </FormControl>
-                                                <FormLabel className="font-medium text-slate-200 cursor-pointer w-full text-sm font-normal">
-                                                    {student.name}
-                                                </FormLabel>
-                                            </FormItem>
+                                                control={form.control}
+                                                name="studentIds"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value?.includes(student.id)}
+                                                                onCheckedChange={(checked) => {
+                                                                    return checked
+                                                                        ? field.onChange([...field.value, student.id])
+                                                                        : field.onChange(
+                                                                            field.value?.filter(
+                                                                                (value) => value !== student.id
+                                                                            )
+                                                                        )
+                                                                }}
+                                                                className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                                            />
+                                                        </FormControl>
+                                                        <FormLabel className="font-medium text-slate-200 cursor-pointer w-full text-sm font-normal">
+                                                            {student.name}
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
                                         ))}
                                     </div>
                                     <FormMessage />

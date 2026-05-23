@@ -235,7 +235,7 @@ export function StudyPlanClient() {
             </DialogHeader>
             <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(assignSelectedTopics)} className="space-y-6 pt-2">
-                 <FormField
+                <FormField
                     control={form.control}
                     name="studentIds"
                     render={() => (
@@ -276,7 +276,7 @@ export function StudyPlanClient() {
                 <div className="grid grid-cols-2 gap-4">
                      <FormField
                         control={form.control}
-                        name="dateRange.from" // Using dot notation for nested object access via react-hook-form might need manual handling or separate fields if not using a date-range picker component directly. For simplicity, keeping manual popovers but ensuring form state updates correctly.
+                        name="dateRange.from"
                         render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <Label className="text-xs font-semibold text-slate-300 uppercase mb-2">Başlangıç</Label>
