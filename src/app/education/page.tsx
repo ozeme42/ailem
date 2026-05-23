@@ -229,11 +229,11 @@ export default function EducationPage() {
   const handleCompleteStudy = async (id: string, currentStatus: string) => {
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
       await updateStudyAssignment(id, { status: newStatus as any });
-      toast({ title: newStatus === 'completed' ? "Tamamlandı" : "Geri Alındı", description: "Çalışma durumu güncellendi." });
+      toast({ title: currentStatus === 'completed' ? "Geri Alındı" : "Tamamlandı", description: "Çalışma durumu güncellendi." });
   };
 
   return (
-    <div className={cn("min-h-screen font-sans relative overflow-hidden flex flex-col transition-colors duration-300", glassColors.PAGE_BG, "text-slate-900 dark:text-slate-50")}>
+    <div className={cn("min-h-screen font-sans pb-32 md:pb-10 relative overflow-hidden transition-colors duration-300", glassColors.PAGE_BG, "text-slate-900 dark:text-slate-50")}>
         
         {/* BACKGROUND BLOBS - DAHA CANLI */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
@@ -392,63 +392,63 @@ export default function EducationPage() {
                                     return (
                                         <Link key={test.id} href={`/education/${test.id}`} className="block group relative">
                                             <div className={cn(
-                                                "relative overflow-hidden rounded-[2rem] p-6 transition-all duration-300 h-full flex flex-col justify-between",
+                                                "relative overflow-hidden rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 transition-all duration-300 h-full flex flex-col justify-between",
                                                 "bg-gradient-to-br", theme.bgGradient, theme.shadow,
                                                 "hover:shadow-xl hover:-translate-y-1 border border-white/10"
                                             )}>
                                                 
                                                 {/* Üst Kısım: Kategori ve Durum */}
-                                                <div className="relative z-10 flex justify-between items-start mb-4">
-                                                    <div className={cn("px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md text-white", theme.badgeBg)}>
+                                                <div className="relative z-10 flex justify-between items-start mb-3 sm:mb-4">
+                                                    <div className={cn("px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md text-white", theme.badgeBg)}>
                                                         {category}
                                                     </div>
                                                     
                                                     {isOverdue ? (
-                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 text-rose-600 text-xs font-bold shadow-sm animate-pulse">
-                                                            <AlertCircle className="w-3.5 h-3.5" /> Gecikti
+                                                        <div className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-white/90 text-rose-600 text-[10px] sm:text-xs font-bold shadow-sm animate-pulse">
+                                                            <AlertCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> Gecikti
                                                         </div>
                                                     ) : isDueToday ? (
-                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 text-amber-600 text-xs font-bold shadow-sm">
-                                                            <Timer className="w-3.5 h-3.5" /> Bugün
+                                                        <div className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-white/90 text-amber-600 text-[10px] sm:text-xs font-bold shadow-sm">
+                                                            <Timer className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> Bugün
                                                         </div>
                                                     ) : (
-                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/20 text-white text-[10px] font-bold backdrop-blur-md">
-                                                            <CalendarClock className="w-3 h-3" />
-                                                            {differenceInDays(dueDate, new Date())} gün kaldı
+                                                        <div className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-black/20 text-white text-[9px] sm:text-[10px] font-bold backdrop-blur-md">
+                                                            <CalendarClock className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
+                                                            {differenceInDays(dueDate, new Date())} gün
                                                         </div>
                                                     )}
                                                 </div>
 
                                                 {/* Orta Kısım: Başlık ve Konu */}
-                                                <div className="relative z-10 mb-6">
-                                                     <h4 className="text-xl font-black text-white leading-tight mb-3 drop-shadow-sm">
+                                                <div className="relative z-10 mb-4 sm:mb-6">
+                                                     <h4 className="text-lg sm:text-xl font-black text-white leading-tight mb-2 sm:mb-3 drop-shadow-sm line-clamp-2">
                                                         {test.title}
                                                     </h4>
                                                     {topicName && (
-                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/20 border border-white/30 text-white text-xs font-semibold backdrop-blur-md">
-                                                            <BookOpen className="w-3.5 h-3.5 opacity-80" />
-                                                            <span className="truncate max-w-[200px]">{topicName}</span>
+                                                        <div className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-white/20 border border-white/30 text-white text-[10px] sm:text-xs font-semibold backdrop-blur-md">
+                                                            <BookOpen className="w-3 sm:w-3.5 h-3 sm:h-3.5 opacity-80" />
+                                                            <span className="truncate max-w-[150px] sm:max-w-[200px]">{topicName}</span>
                                                         </div>
                                                     )}
                                                 </div>
                                                 
                                                 {/* Alt Kısım: Metadata ve Action */}
-                                                <div className="relative z-10 flex items-center justify-between pt-4 mt-auto border-t border-white/20">
-                                                    <div className="flex items-center gap-3 text-xs font-bold text-white/80">
-                                                        <div className="flex items-center gap-1.5 bg-black/10 px-2 py-1 rounded-md backdrop-blur-sm">
-                                                            <Clock className="w-3.5 h-3.5" />
-                                                            {test.durationMinutes ? `${test.durationMinutes} dk` : '-'}
+                                                <div className="relative z-10 flex items-center justify-between pt-3 sm:pt-4 mt-auto border-t border-white/20">
+                                                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold text-white/80">
+                                                        <div className="flex items-center gap-1 bg-black/10 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md backdrop-blur-sm">
+                                                            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                            {test.durationMinutes ? `${test.durationMinutes}dk` : '-'}
                                                         </div>
-                                                        <div className="flex items-center gap-1.5 bg-black/10 px-2 py-1 rounded-md backdrop-blur-sm">
-                                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                                            {test.questionCount} Soru
+                                                        <div className="flex items-center gap-1 bg-black/10 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md backdrop-blur-sm">
+                                                            <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                            {test.questionCount}S
                                                         </div>
                                                     </div>
 
                                                     {/* Play Button Effect */}
-                                                    <div className={cn("transform translate-x-2 group-hover:translate-x-0 transition-all duration-300 flex items-center gap-1 text-white font-bold bg-white/20 pl-3 pr-2 py-1.5 rounded-full backdrop-blur-md hover:bg-white hover:text-slate-900")}>
-                                                        <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">Başla</span>
-                                                        <ArrowRight className="w-5 h-5" />
+                                                    <div className={cn("transform translate-x-2 group-hover:translate-x-0 transition-all duration-300 flex items-center gap-1 text-white font-bold bg-white/20 pl-2 sm:pl-3 pr-1.5 sm:pr-2 py-1 sm:py-1.5 rounded-full backdrop-blur-md hover:bg-white hover:text-slate-900")}>
+                                                        <span className="text-[10px] sm:text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">Başla</span>
+                                                        <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5" />
                                                     </div>
                                                 </div>
                                             </div>

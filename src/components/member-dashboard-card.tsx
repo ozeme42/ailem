@@ -284,38 +284,38 @@ export function MemberDashboardCard({
         <Card className="shadow-none border-0 bg-transparent flex flex-col gap-6 relative z-10">
             
             {/* --- HEADER --- */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-6 rounded-[2rem] bg-white border border-slate-100 shadow-md relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 sm:p-6 rounded-[2rem] bg-white border border-slate-100 shadow-md relative overflow-hidden">
                  <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
                  
                  <div className="relative shrink-0 z-10">
-                    <div className={cn("w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-lg ring-4 ring-offset-2 ring-offset-white", theme.bgRing)} style={{ backgroundColor: member.color }}>
+                    <div className={cn("w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-lg ring-4 ring-offset-2 ring-offset-white", theme.bgRing)} style={{ backgroundColor: member.color }}>
                         {member.name.charAt(0).toUpperCase()}
                     </div>
                     {['Baba', 'Anne'].includes(member.role) && (
-                        <div className="absolute -bottom-2 -right-2 bg-amber-400 text-white rounded-full p-1.5 shadow-md border-2 border-white">
-                            <Trophy className="w-4 h-4 fill-current" />
+                        <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 bg-amber-400 text-white rounded-full p-1 sm:p-1.5 shadow-md border-2 border-white">
+                            <Trophy className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
                         </div>
                     )}
                 </div>
                 <div className="text-center sm:text-left flex-grow z-10">
-                    <h3 className={cn("text-3xl font-black tracking-tight", theme.text)}>{member.name}</h3>
+                    <h3 className={cn("text-2xl sm:text-3xl font-black tracking-tight", theme.text)}>{member.name}</h3>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
-                        <Badge variant="outline" className={cn("text-xs uppercase font-extrabold tracking-wider px-3 py-1 rounded-full", theme.badge)}>
+                        <Badge variant="outline" className={cn("text-[10px] sm:text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 sm:px-3 sm:py-1 rounded-full", theme.badge)}>
                             {member.role}
                         </Badge>
-                        {member.xp ? <span className="text-sm text-slate-500 font-bold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500"/> {member.xp.toLocaleString()} XP</span> : null}
+                        {member.xp ? <span className="text-xs sm:text-sm text-slate-500 font-bold flex items-center gap-1"><Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-amber-500 fill-amber-500"/> {member.xp.toLocaleString()} XP</span> : null}
                     </div>
                 </div>
 
                 {/* Serbest Zaman */}
                 {member.role.includes('Çocuk') && (
-                    <div className="sm:ml-auto mt-3 sm:mt-0 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm min-w-[160px] z-10">
-                        <div className="p-3 bg-white rounded-xl text-emerald-500 shadow-sm border border-emerald-100">
-                             <Gamepad2 className="w-6 h-6" />
+                    <div className="sm:ml-auto mt-3 sm:mt-0 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-sm min-w-[140px] sm:min-w-[160px] z-10">
+                        <div className="p-2 sm:p-3 bg-white rounded-xl text-emerald-500 shadow-sm border border-emerald-100">
+                             <Gamepad2 className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                             <p className="text-[10px] text-emerald-600/80 font-extrabold uppercase tracking-wider">Serbest Zaman</p>
-                             <p className="text-2xl font-black text-emerald-600 leading-none mt-0.5">{earnedFreeTimeMinutes}<span className="text-sm font-bold ml-0.5 opacity-80">dk</span></p>
+                             <p className="text-[9px] sm:text-[10px] text-emerald-600/80 font-extrabold uppercase tracking-wider">Serbest Zaman</p>
+                             <p className="text-xl sm:text-2xl font-black text-emerald-600 leading-none mt-0.5">{earnedFreeTimeMinutes}<span className="text-xs sm:text-sm font-bold ml-0.5 opacity-80">dk</span></p>
                         </div>
                     </div>
                 )}
@@ -329,22 +329,22 @@ export function MemberDashboardCard({
                       
                       {/* 1. NAMAZ TAKİBİ */}
                     {member.role.includes('Çocuk') && (todaysPrayers.filter(p=>!p.completed).length > 0) && (
-                        <div className={cn("rounded-[2rem] p-6 border transition-all hover:shadow-md", sectionThemes.prayer.container)}>
-                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.prayer.title)}>
-                                <Clock className={cn("h-4 w-4", sectionThemes.prayer.icon)}/> Namaz Takibi
+                        <div className={cn("rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 border transition-all hover:shadow-md", sectionThemes.prayer.container)}>
+                            <h4 className={cn("font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-4 sm:mb-5 flex items-center gap-2", sectionThemes.prayer.title)}>
+                                <Clock className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", sectionThemes.prayer.icon)}/> Namaz Takibi
                             </h4>
-                            <div className="flex justify-between items-center gap-2 p-3 bg-white rounded-2xl border border-teal-100 shadow-sm">
+                            <div className="flex justify-between items-center gap-1 sm:gap-2 p-2 sm:p-3 bg-white rounded-2xl border border-teal-100 shadow-sm">
                                 {todaysPrayers.map(prayer => (
-                                    <div key={prayer.name} className="flex flex-col items-center gap-2 group">
+                                    <div key={prayer.name} className="flex flex-col items-center gap-1.5 sm:gap-2 group">
                                                  <div className={cn(
-                                                "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-2",
+                                                "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-2",
                                                 prayer.completed 
                                                     ? `${sectionThemes.prayer.activeItem} border-teal-500 scale-110` 
                                                     : "bg-teal-50 border-teal-100 text-slate-400 group-hover:border-teal-200 group-hover:text-teal-500"
                                             )}>
-                                                <Heart className={cn("w-5 h-5 transition-all", prayer.completed ? "fill-white" : "fill-none")} />
+                                                <Heart className={cn("w-4 h-4 sm:w-5 sm:h-5 transition-all", prayer.completed ? "fill-white" : "fill-none")} />
                                              </div>
-                                            <p className={cn("text-[10px] font-bold transition-colors", prayer.completed ? "text-teal-600" : "text-slate-400 group-hover:text-teal-500")}>{prayer.name}</p>
+                                            <p className={cn("text-[9px] sm:text-[10px] font-bold transition-colors", prayer.completed ? "text-teal-600" : "text-slate-400 group-hover:text-teal-500")}>{prayer.name}</p>
                                     </div>
                                 ))}
                             </div>
@@ -353,35 +353,35 @@ export function MemberDashboardCard({
 
                     {/* 2. ALIŞKANLIKLAR */}
                     {habits.length > 0 && (
-                          <div className={cn("rounded-[2rem] p-6 border transition-all hover:shadow-md", sectionThemes.habits.container)}>
-                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.habits.title)}>
-                                <Flame className={cn("h-4 w-4", sectionThemes.habits.icon)}/> Alışkanlık Zinciri
+                          <div className={cn("rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 border transition-all hover:shadow-md", sectionThemes.habits.container)}>
+                            <h4 className={cn("font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-4 sm:mb-5 flex items-center gap-2", sectionThemes.habits.title)}>
+                                <Flame className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", sectionThemes.habits.icon)}/> Alışkanlık Zinciri
                             </h4>
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                  {habits.map(habit => {
                                     return (
-                                              <div key={habit.id} className={cn("rounded-2xl p-4 border shadow-sm", sectionThemes.habits.itemBg)}>
-                                                <div className="flex justify-between items-center mb-4">
-                                                  <p className="font-bold text-sm text-slate-700 line-clamp-1">{habit.title}</p>
-                                                  <Badge variant="secondary" className="bg-orange-100 text-orange-600 text-[9px] border border-orange-200 font-bold px-2">Haftalık</Badge>
+                                              <div key={habit.id} className={cn("rounded-2xl p-3 sm:p-4 border shadow-sm", sectionThemes.habits.itemBg)}>
+                                                <div className="flex justify-between items-center mb-3 sm:mb-4">
+                                                  <p className="font-bold text-xs sm:text-sm text-slate-700 line-clamp-1">{habit.title}</p>
+                                                  <Badge variant="secondary" className="bg-orange-100 text-orange-600 text-[8px] sm:text-[9px] border border-orange-200 font-bold px-1.5 sm:px-2">Haftalık</Badge>
                                                 </div>
-                                                <div className="flex justify-between items-center bg-white p-2 rounded-xl border border-orange-100 shadow-inner">
+                                                <div className="flex justify-between items-center bg-white p-1.5 sm:p-2 rounded-xl border border-orange-100 shadow-inner">
                                                   {lastSevenDays.map(day => {
                                                     const dayKey = format(day, 'yyyy-MM-dd');
                                                     const isCompleted = habit.completedDates?.includes(dayKey) || false;
                                                     const isTodayDate = isToday(day);
                                                     return (
-                                                        <div key={dayKey} className="flex flex-col items-center gap-1.5 cursor-pointer group" onClick={() => handleHabitCompletion(habit.id, day)}>
+                                                        <div key={dayKey} className="flex flex-col items-center gap-1 sm:gap-1.5 cursor-pointer group" onClick={() => handleHabitCompletion(habit.id, day)}>
                                                               <div className={cn(
-                                                                "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 border-2",
+                                                                "w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all duration-300 border-2",
                                                                 isCompleted 
                                                                   ? `${sectionThemes.habits.progressCheck} border-orange-600 text-white shadow-md scale-105` 
                                                                   : "bg-orange-50 border-orange-100 text-transparent hover:border-orange-300 hover:bg-orange-100",
                                                                 isTodayDate && !isCompleted && "ring-2 ring-orange-200 ring-offset-1 ring-offset-white border-orange-300"
                                                               )}>
-                                                                  <Check className="w-4 h-4" strokeWidth={3} />
+                                                                  <Check className="w-3 h-3 sm:w-4 sm:h-4" strokeWidth={3} />
                                                               </div>
-                                                              <p className={cn("text-[9px] font-bold uppercase", isTodayDate ? "text-orange-600" : "text-slate-400 group-hover:text-orange-500")}>{format(day, 'EEE', { locale: tr }).slice(0,1)}</p>
+                                                              <p className={cn("text-[8px] sm:text-[9px] font-bold uppercase", isTodayDate ? "text-orange-600" : "text-slate-400 group-hover:text-orange-500")}>{format(day, 'EEE', { locale: tr }).slice(0,1)}</p>
                                                         </div>
                                                     )
                                                   })}
@@ -395,16 +395,16 @@ export function MemberDashboardCard({
 
                     {/* 3. EZBERLER */}
                     {pendingMemorization.length > 0 && (
-                        <div className={cn("rounded-[2rem] p-6 border transition-all hover:shadow-md", sectionThemes.memorization.container)}>
-                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.memorization.title)}>
-                                <BrainCircuit className={cn("h-4 w-4", sectionThemes.memorization.icon)}/> Ezberler
+                        <div className={cn("rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 border transition-all hover:shadow-md", sectionThemes.memorization.container)}>
+                            <h4 className={cn("font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-4 sm:mb-5 flex items-center gap-2", sectionThemes.memorization.title)}>
+                                <BrainCircuit className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", sectionThemes.memorization.icon)}/> Ezberler
                             </h4>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                 {pendingMemorization.slice(0,2).map(item => (
                                     <Link href="/memorization" key={item.id} className="block group">
-                                              <div className={cn("p-4 rounded-2xl transition-all text-center shadow-sm", sectionThemes.memorization.itemHover)}>
-                                                  <p className="font-bold text-sm text-slate-700 truncate">{item.title}</p>
-                                                  <span className={cn("text-[10px] font-bold mt-2 inline-block px-2.5 py-0.5 rounded-full", sectionThemes.memorization.badge)}>Çalışılıyor</span>
+                                              <div className={cn("p-3 sm:p-4 rounded-2xl transition-all text-center shadow-sm", sectionThemes.memorization.itemHover)}>
+                                                  <p className="font-bold text-xs sm:text-sm text-slate-700 truncate">{item.title}</p>
+                                                  <span className={cn("text-[9px] sm:text-[10px] font-bold mt-1.5 sm:mt-2 inline-block px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full", sectionThemes.memorization.badge)}>Çalışılıyor</span>
                                               </div>
                                     </Link>
                                 ))}
@@ -418,21 +418,21 @@ export function MemberDashboardCard({
                     
                     {/* 4. VIDEO DERSLER */}
                     {pendingVideos.length > 0 && (
-                          <div className={cn("rounded-[2rem] p-6 border transition-all hover:shadow-md", sectionThemes.videos.container)}>
-                            <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.videos.title)}>
-                                <Youtube className={cn("h-4 w-4", sectionThemes.videos.icon)}/> Video Dersler
+                          <div className={cn("rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 border transition-all hover:shadow-md", sectionThemes.videos.container)}>
+                            <h4 className={cn("font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-4 sm:mb-5 flex items-center gap-2", sectionThemes.videos.title)}>
+                                <Youtube className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", sectionThemes.videos.icon)}/> Video Dersler
                             </h4>
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {pendingVideos.slice(0, 2).map(video => (
                                      <Link href="/videos" key={video.id} className="block group">
-                                              <div className={cn("p-4 rounded-2xl shadow-sm", sectionThemes.videos.itemHover)}>
-                                                  <div className="flex justify-between items-start mb-3">
-                                                      <p className="font-bold text-sm text-slate-700 line-clamp-1 pr-2">{video.title}</p>
-                                                      <div className="bg-rose-100 p-1.5 rounded-lg shadow-sm shrink-0 border border-rose-200"><Youtube className="w-4 h-4 text-rose-500"/></div>
+                                              <div className={cn("p-3 sm:p-4 rounded-2xl shadow-sm", sectionThemes.videos.itemHover)}>
+                                                  <div className="flex justify-between items-start mb-2 sm:mb-3">
+                                                      <p className="font-bold text-xs sm:text-sm text-slate-700 line-clamp-1 pr-2">{video.title}</p>
+                                                      <div className="bg-rose-100 p-1 rounded-lg shadow-sm shrink-0 border border-rose-200"><Youtube className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-500"/></div>
                                                   </div>
-                                                  <div className="space-y-2">
-                                                      <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-2 bg-rose-100 rounded-full" indicatorClassName={sectionThemes.videos.progressIndicator}/>
-                                                      <p className="text-[10px] text-rose-500 text-right font-bold">{video.completedVideos || 0} / {video.totalVideos} izlendi</p>
+                                                  <div className="space-y-1.5 sm:space-y-2">
+                                                      <Progress value={((video.completedVideos || 0) / video.totalVideos) * 100} className="h-1.5 sm:h-2 bg-rose-100 rounded-full" indicatorClassName={sectionThemes.videos.progressIndicator}/>
+                                                      <p className="text-[9px] sm:text-[10px] text-rose-500 text-right font-bold">{video.completedVideos || 0} / {video.totalVideos} izlendi</p>
                                                   </div>
                                               </div>
                                       </Link>
@@ -443,29 +443,29 @@ export function MemberDashboardCard({
 
                     {/* 5. OKUMA KÖŞESİ */}
                     {readingBooks.length > 0 && (
-                        <div className={cn("rounded-[2rem] p-6 border transition-all hover:shadow-md", sectionThemes.reading.container)}>
-                             <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.reading.title)}>
-                                <BookOpen className={cn("h-4 w-4", sectionThemes.reading.icon)}/> Okuma Köşesi
+                        <div className={cn("rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 border transition-all hover:shadow-md", sectionThemes.reading.container)}>
+                             <h4 className={cn("font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-4 sm:mb-5 flex items-center gap-2", sectionThemes.reading.title)}>
+                                <BookOpen className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", sectionThemes.reading.icon)}/> Okuma Köşesi
                             </h4>
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {readingBooks.slice(0, 2).map(book => (
                                     <Link href="/library" key={book.id} className="block group">
-                                              <div className={cn("flex items-center gap-4 p-4 rounded-2xl shadow-sm", sectionThemes.reading.itemHover)}>
-                                                  <div className={cn("w-12 h-16 rounded-lg shadow-sm border flex items-center justify-center shrink-0", sectionThemes.reading.bookCover)}>
-                                                      <BookOpen className="w-6 h-6"/>
+                                              <div className={cn("flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl shadow-sm", sectionThemes.reading.itemHover)}>
+                                                  <div className={cn("w-10 h-14 sm:w-12 sm:h-16 rounded-lg shadow-sm border flex items-center justify-center shrink-0", sectionThemes.reading.bookCover)}>
+                                                      <BookOpen className="w-5 h-5 sm:w-6 sm:h-6"/>
                                                   </div>
                                                   <div className="flex-grow min-w-0">
                                                       <div>
-                                                          <p className="font-bold text-sm text-slate-700 truncate">{book.title}</p>
-                                                          <p className="text-xs text-slate-500 truncate font-medium">{book.author}</p>
+                                                          <p className="font-bold text-xs sm:text-sm text-slate-700 truncate">{book.title}</p>
+                                                          <p className="text-[10px] sm:text-xs text-slate-500 truncate font-medium">{book.author}</p>
                                                       </div>
                                                       {book.libraryStatus === 'reading' && book.progress !== undefined && (
-                                                          <div className="space-y-1.5 mt-2">
-                                                              <div className="flex justify-between items-center text-[10px] font-bold text-amber-600">
+                                                          <div className="space-y-1 mt-1.5 sm:mt-2">
+                                                              <div className="flex justify-between items-center text-[9px] sm:text-[10px] font-bold text-amber-600">
                                                                   <span>%{book.progress.toFixed(0)}</span>
                                                                   <span>{Math.round((book.progress / 100) * (book.pageCount || 0))} / {book.pageCount} sayfa</span>
                                                               </div>
-                                                              <div className="w-full bg-amber-100 rounded-full h-2 overflow-hidden">
+                                                              <div className="w-full bg-amber-100 rounded-full h-1.5 sm:h-2 overflow-hidden">
                                                                   <div className={cn("h-full rounded-full transition-all", sectionThemes.reading.progressIndicator)} style={{ width: `${book.progress}%` }}></div>
                                                               </div>
                                                           </div>
@@ -480,24 +480,24 @@ export function MemberDashboardCard({
 
                     {/* 6. YAPILACAKLAR */}
                     {(pendingTests.length > 0 || pendingStudies.length > 0 || pendingTasks.length > 0 || completedStudies.length > 0) && (
-                        <div className={cn("rounded-[2rem] p-6 border transition-all hover:shadow-md", sectionThemes.todo.container)}>
-                             <h4 className={cn("font-extrabold text-xs uppercase tracking-widest mb-5 flex items-center gap-2", sectionThemes.todo.title)}>
-                                <ListChecks className={cn("h-4 w-4", sectionThemes.todo.icon)}/> Yapılacaklar
+                        <div className={cn("rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 border transition-all hover:shadow-md", sectionThemes.todo.container)}>
+                             <h4 className={cn("font-extrabold text-[10px] sm:text-xs uppercase tracking-widest mb-4 sm:mb-5 flex items-center gap-2", sectionThemes.todo.title)}>
+                                <ListChecks className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", sectionThemes.todo.icon)}/> Yapılacaklar
                             </h4>
-                            <div className="space-y-3">
+                            <div className="space-y-2.5 sm:space-y-3">
                                 {/* Testler */}
                                 {pendingTests.map(test => (
                                     <Link href={`/education/${test.id}`} key={test.id} className="block group">
-                                              <div className={cn("flex items-center gap-4 p-3 rounded-2xl relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
-                                                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
-                                                  <div className="bg-indigo-100 p-2 rounded-xl text-indigo-500 shadow-sm shrink-0 border border-indigo-200">
-                                                      <GraduationCap className="w-4 h-4" />
+                                              <div className={cn("flex items-center gap-3 p-2.5 sm:p-3 rounded-2xl relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
+                                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
+                                                  <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-500 shadow-sm shrink-0 border border-indigo-200">
+                                                      <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                   </div>
                                                   <div className="truncate flex-grow">
-                                                       <p className="font-bold text-sm text-slate-700 truncate">{test.displayName}</p>
-                                                       <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">Sınav • {test.subject}</p>
+                                                       <p className="font-bold text-xs sm:text-sm text-slate-700 truncate">{test.displayName}</p>
+                                                       <p className="text-[9px] sm:text-[10px] text-indigo-600 font-bold uppercase tracking-wider">Sınav • {test.subject}</p>
                                                   </div>
-                                                  <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-500 transition-colors"/>
+                                                  <ChevronRight className="w-3.5 h-3.5 text-indigo-300 group-hover:text-indigo-500 transition-colors"/>
                                               </div>
                                       </Link>
                                 ))}
@@ -505,16 +505,16 @@ export function MemberDashboardCard({
                                 {/* Çalışmalar/Ödevler */}
                                 {pendingStudies.map(study => (
                                     <Link href="/education/study" key={study.id} className="block group">
-                                              <div className={cn("flex items-center gap-4 p-3 rounded-2xl relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
-                                                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
-                                                   <div className="bg-blue-100 p-2 rounded-xl text-blue-500 shadow-sm shrink-0 border border-blue-200">
-                                                      <BookOpen className="w-4 h-4" />
+                                              <div className={cn("flex items-center gap-3 p-2.5 sm:p-3 rounded-2xl relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
+                                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                                                   <div className="bg-blue-100 p-1.5 rounded-lg text-blue-500 shadow-sm shrink-0 border border-blue-200">
+                                                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                   </div>
                                                   <div className="truncate flex-grow">
-                                                       <p className="font-bold text-sm text-slate-700 truncate">{study.topic}</p>
-                                                       <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Çalışma • {study.subject}</p>
+                                                       <p className="font-bold text-xs sm:text-sm text-slate-700 truncate">{study.topic}</p>
+                                                       <p className="text-[9px] sm:text-[10px] text-blue-600 font-bold uppercase tracking-wider">Çalışma • {study.subject}</p>
                                                   </div>
-                                                  <ChevronRight className="w-4 h-4 text-blue-300 group-hover:text-blue-500 transition-colors"/>
+                                                  <ChevronRight className="w-3.5 h-3.5 text-blue-300 group-hover:text-blue-500 transition-colors"/>
                                               </div>
                                       </Link>
                                 ))}
@@ -523,14 +523,14 @@ export function MemberDashboardCard({
                                 {completedStudies.length > 0 && (
                                     <Accordion type="single" collapsible className="w-full border border-indigo-100 rounded-2xl bg-indigo-50 shadow-sm overflow-hidden">
                                                 <AccordionItem value="item-1" className="border-0">
-                                                    <AccordionTrigger className="text-xs font-bold text-slate-500 hover:text-slate-700 justify-start gap-2 py-3 px-4 no-underline hover:bg-white transition-colors">
-                                                        <CheckCircle2 className="w-4 h-4 text-emerald-500"/> {completedStudies.length} tamamlanan çalışma
+                                                    <AccordionTrigger className="text-[10px] sm:text-xs font-bold text-slate-500 hover:text-slate-700 justify-start gap-2 py-2 px-3 sm:py-3 sm:px-4 no-underline hover:bg-white transition-colors">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500"/> {completedStudies.length} tamamlanan çalışma
                                                     </AccordionTrigger>
-                                                    <AccordionContent className="space-y-1 px-4 pb-4 bg-white">
+                                                    <AccordionContent className="space-y-1 px-3 pb-3 sm:px-4 sm:pb-4 bg-white">
                                                         {completedStudies.map(study => (
-                                                            <div key={study.id} className="flex items-center gap-3 pl-2 py-1">
-                                                                <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></div>
-                                                                <p className="text-xs font-medium text-slate-400 line-through truncate">{study.topic}</p>
+                                                            <div key={study.id} className="flex items-center gap-2 pl-2 py-0.5">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+                                                                <p className="text-[10px] sm:text-xs font-medium text-slate-400 line-through truncate">{study.topic}</p>
                                                             </div>
                                                         ))}
                                                     </AccordionContent>
@@ -540,15 +540,15 @@ export function MemberDashboardCard({
 
                                 {/* Normal Görevler */}
                                 {pendingTasks.slice(0, 4).map(task => (
-                                    <div key={task.id} className={cn("flex items-start gap-3 p-3 rounded-2xl shadow-sm", sectionThemes.todo.itemHover)}>
+                                    <div key={task.id} className={cn("flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl shadow-sm", sectionThemes.todo.itemHover)}>
                                               <Checkbox
                                                   id={`personal-task-${task.id}-${member.id}`}
                                                   onCheckedChange={() => handleTaskCompletion(task)}
-                                                  className={cn("mt-0.5 rounded-full", sectionThemes.todo.checkbox)}
+                                                  className={cn("mt-0.5 rounded-full size-4 sm:size-4", sectionThemes.todo.checkbox)}
                                               />
                                               <div className="flex-grow">
-                                                  <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-sm font-bold text-slate-600 leading-tight cursor-pointer block hover:text-slate-800 transition-colors">{task.title}</label>
-                                                  {task.points > 0 && <span className="text-[10px] text-blue-600 font-bold mt-1 inline-block bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">+{task.points} XP</span>}
+                                                  <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-xs sm:text-sm font-bold text-slate-600 leading-tight cursor-pointer block hover:text-slate-800 transition-colors">{task.title}</label>
+                                                  {task.points > 0 && <span className="text-[8px] sm:text-[10px] text-blue-600 font-bold mt-0.5 sm:mt-1 inline-block bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded-full">+{task.points} XP</span>}
                                               </div>
                                       </div>
                                 ))}
