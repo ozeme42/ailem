@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Test as TestType, QuickTestQuestion, Mistake, JsonTestQuestion, PracticeExam } from "@/lib/data";
+import { Test as TestType, QuickTestQuestion, JsonTestQuestion, PracticeExam } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -28,6 +28,7 @@ import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // --- DESIGN SYSTEM: Fixed Light Theme for Test Solving ---
 const glassColors = {
@@ -97,14 +98,12 @@ const QuestionPalette = ({
     isAnswered: (index: number) => boolean;
     practiceExam?: PracticeExam | null;
 }) => {
-    // If it's a practice exam, we group by subjects in the palette too
     if (practiceExam && practiceExam.subjects) {
         let currentOffset = 0;
         return (
             <div className="space-y-4 p-4">
                 {practiceExam.subjects.map(subject => {
                     const rangeStart = currentOffset;
-                    const rangeEnd = currentOffset + subject.questionCount;
                     currentOffset += subject.questionCount;
                     
                     return (
@@ -127,7 +126,7 @@ const QuestionPalette = ({
                                             )}
                                             onClick={() => onNavigate(actualIndex)}
                                         >
-                                            {actualIndex + 1}
+                                            {i + 1}
                                         </Button>
                                     );
                                 })}
@@ -235,7 +234,7 @@ export default function OpticalFormPage() {
                      updatedData.status = 'Değerlendirme Bekliyor';
                 }
 
-            } else { // Open-ended test
+            } else { 
                 updatedData.studentTextAnswers = textAnswers;
                 updatedData.status = 'Değerlendirme Bekliyor';
             }
@@ -245,7 +244,7 @@ export default function OpticalFormPage() {
             if (updatedData.status === 'Sonuçlandı') {
                  toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
-                    description: "Cevapların başarıyla kaydedildi ve testin değerlendirildi.",
+                    description: "Cevapların başarıyla kaydedildi.",
                     className: "bg-emerald-600 border-none text-white"
                 });
                 if (test.familyId && test.studentId) {
@@ -254,7 +253,7 @@ export default function OpticalFormPage() {
             } else {
                  toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
-                    description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
+                    description: "Cevapların kaydedildi.",
                     className: "bg-indigo-600 border-none text-white"
                 });
                 router.push('/education');
@@ -289,7 +288,6 @@ export default function OpticalFormPage() {
                   currentTest.questions = questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
                 }
 
-                // If it's an exam, fetch the original practice exam template to get subject metadata
                 if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
                     const examDoc = await getDoc(doc(db, 'practiceExams', currentTest.sourceId));
                     if (examDoc.exists()) {
@@ -434,7 +432,6 @@ export default function OpticalFormPage() {
         )
     }
 
-    // --- VIEW: RESULTS SUMMARY (SONUÇ EKRANI) ---
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const studentAnswers = test.studentAnswers || {};
         const answerKey = test.sourceType === 'json' 
@@ -497,7 +494,7 @@ export default function OpticalFormPage() {
 
                                                 return (
                                                     <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
-                                                        <span className="font-bold text-slate-400 w-8">{qNum}</span>
+                                                        <span className="font-bold text-slate-400 w-8">{i + 1}</span>
                                                         <div className="flex gap-2">
                                                             <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
                                                             {evalStatus === 'incorrect' && <span className="font-bold text-emerald-600">{correctAns}</span>}
@@ -550,7 +547,6 @@ export default function OpticalFormPage() {
         );
     }
     
-    // --- VIEW: EVALUATION PENDING ---
     if (test.status === 'Değerlendirme Bekliyor') {
         if (currentUserIsStudent) {
             return (
@@ -569,7 +565,6 @@ export default function OpticalFormPage() {
             )
         }
 
-        // Teacher/Parent grading view
         if (test.openEnded && test.questions) {
             return (
                 <div className={cn("min-h-screen text-slate-900 p-4 sm:p-8", glassColors.PAGE_BG)}>
@@ -623,7 +618,6 @@ export default function OpticalFormPage() {
             );
         }
         
-         // Optical Form grading fallback
         return (
             <div className={cn("min-h-screen text-slate-900 p-4 sm:p-8", glassColors.PAGE_BG)}>
                  <header className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
@@ -692,7 +686,6 @@ export default function OpticalFormPage() {
         }
     };
     
-    // --- VIEW: IMAGE-BASED TEST (MCQ or Open-Ended) ---
     if (hasImages) {
         const currentQuestion = test.questions![currentQuestionIndex];
         const totalQuestions = test.questions!.length;
@@ -723,7 +716,6 @@ export default function OpticalFormPage() {
                         
                         <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col lg:flex-row gap-8", fullscreen && "justify-center")}>
                             
-                            {/* Question Navigator (Desktop) */}
                             <div className="hidden lg:block w-72 shrink-0">
                                 <Card className={glassColors.CARD_BG}>
                                     <CardHeader className="pb-2">
@@ -773,7 +765,7 @@ export default function OpticalFormPage() {
                                                     />
                                                 </DialogTrigger>
                                                 <DialogContent className="max-w-[90vw] max-h-[90vh] h-auto w-auto bg-transparent border-none shadow-none flex items-center justify-center p-0">
-                                                    <Image src={watchedImageUrl || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
+                                                    <Image src={currentQuestion.imageUrl || ""} alt="Tam Ekran Soru" layout="intrinsic" width={1000} height={800} objectFit="contain" />
                                                 </DialogContent>
                                         </Dialog>
                                         </div>
@@ -835,7 +827,6 @@ export default function OpticalFormPage() {
                             </div>
                         </main>
                         
-                        {/* Mobile Navigator (Sheet) */}
                         <div className="lg:hidden fixed bottom-6 left-6 z-50">
                             <Sheet>
                                 <SheetTrigger asChild>
@@ -870,7 +861,6 @@ export default function OpticalFormPage() {
         )
     }
 
-    // --- VIEW: JSON-BASED TEST (MCQ) ---
     if (isJsonTest && !test.openEnded && currentJsonQuestion) {
         const totalQuestions = test.jsonQuestions!.length;
 
@@ -899,7 +889,6 @@ export default function OpticalFormPage() {
 
                         <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col lg:flex-row gap-8", fullscreen && "justify-center")}>
                             
-                             {/* Question Navigator (Desktop) */}
                              <div className="hidden lg:block w-72 shrink-0">
                                 <Card className={glassColors.CARD_BG}>
                                     <CardHeader className="pb-2">
@@ -922,7 +911,6 @@ export default function OpticalFormPage() {
                             </div>
 
                             <div className="flex-grow flex flex-col">
-                                {/* TIMER & PROGRESS */}
                                 <Card className={cn("border-l-4 border-l-indigo-600 mb-8", glassColors.CARD_BG)}>
                                     <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
                                          <div className="flex-grow w-full">
@@ -935,7 +923,6 @@ export default function OpticalFormPage() {
                                     </CardContent>
                                 </Card>
 
-                                {/* QUESTION CARD */}
                                 <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
                                     <CardHeader className="bg-slate-50 border-b border-slate-200 p-6">
                                         <CardTitle className="text-slate-900 text-2xl leading-relaxed whitespace-pre-wrap">{currentJsonQuestion.text}</CardTitle>
@@ -1004,7 +991,6 @@ export default function OpticalFormPage() {
                             </div>
                         </main>
                         
-                        {/* Mobile Navigator (Sheet) */}
                         <div className="lg:hidden fixed bottom-6 left-6 z-50">
                             <Sheet>
                                 <SheetTrigger asChild>
@@ -1039,7 +1025,6 @@ export default function OpticalFormPage() {
         )
     }
     
-    // --- VIEW: Fallback (Manual Optical Form) ---
     let currentOffset = 0;
     const subjectsWithRanges = practiceExam?.subjects.map(s => {
         const range = { start: currentOffset + 1, end: currentOffset + s.questionCount };
@@ -1062,7 +1047,6 @@ export default function OpticalFormPage() {
                     </header>
 
                     <main className="max-w-3xl mx-auto w-full space-y-8">
-                        {/* Timer Card */}
                         <Card className={cn("border-l-4 border-l-indigo-600", glassColors.CARD_BG)}>
                             <CardContent className="flex items-center justify-between p-6">
                                 <div>
@@ -1072,46 +1056,57 @@ export default function OpticalFormPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Optical Form */}
                         <Card className={cn("overflow-hidden", glassColors.CARD_BG)}>
                             <CardHeader className="bg-slate-50 border-b border-slate-200">
                                 <CardTitle className="text-center text-slate-800">Cevap Kağıdı</CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 {practiceExam ? (
-                                    subjectsWithRanges.map(subject => (
-                                        <div key={subject.id} className="mb-0">
-                                            <div className="sticky top-0 z-10 bg-indigo-50 p-3 px-6 border-y border-indigo-100 flex items-center justify-between shadow-sm">
-                                                <h3 className="font-bold text-indigo-900 flex items-center gap-2">
-                                                    <BookOpen className="w-4 h-4" />
-                                                    {subject.name}
-                                                </h3>
-                                                <Badge variant="secondary" className="bg-white border-indigo-200 text-indigo-700 font-bold">{subject.questionCount} Soru</Badge>
-                                            </div>
-                                            <div className="divide-y divide-slate-100">
-                                                {Array.from({ length: subject.questionCount }).map((_, i) => {
-                                                    const qNum = subject.range.start + i;
-                                                    return (
-                                                        <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-slate-50 transition-colors group">
-                                                            <div className="w-12 text-center font-bold text-slate-400 text-lg">{qNum}</div>
-                                                            <RadioGroup 
-                                                                value={mcqAnswers[qNum.toString()] || ""} 
-                                                                onValueChange={(value) => handleMcqAnswerChange(qNum.toString(), value)}
-                                                                className="flex-1 flex justify-center sm:justify-start gap-2.5 sm:gap-6 ml-4"
-                                                            >
-                                                                {options.slice(0,4).map(option => (
-                                                                    <div key={option} className="relative">
-                                                                        <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
-                                                                        <Label htmlFor={`q${qNum}-${option}`} className={glassColors.OPTION_BUTTON}>{option}</Label>
-                                                                    </div>
-                                                                ))}
-                                                            </RadioGroup>
+                                    <Accordion type="multiple" defaultValue={subjectsWithRanges.map(s => s.id)} className="w-full">
+                                        {subjectsWithRanges.map(subject => (
+                                            <AccordionItem key={subject.id} value={subject.id} className="border-b last:border-0 border-slate-200">
+                                                <AccordionTrigger className="bg-indigo-50/80 hover:bg-indigo-50 px-6 py-4 transition-colors no-underline hover:no-underline">
+                                                    <div className="flex items-center justify-between w-full pr-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="bg-indigo-600 p-2 rounded-lg text-white">
+                                                                <BookOpen className="w-4 h-4" />
+                                                            </div>
+                                                            <h3 className="font-bold text-slate-800 text-lg">{subject.name}</h3>
                                                         </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-                                    ))
+                                                        <Badge variant="secondary" className="bg-white border-indigo-200 text-indigo-700 font-bold px-3 py-1 shadow-sm">
+                                                            {subject.questionCount} Soru
+                                                        </Badge>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="p-0">
+                                                    <div className="divide-y divide-slate-100 bg-white">
+                                                        {Array.from({ length: subject.questionCount }).map((_, i) => {
+                                                            const qNum = subject.range.start + i;
+                                                            return (
+                                                                <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-slate-50 transition-colors group">
+                                                                    <div className="w-12 text-center font-bold text-slate-400 text-lg">
+                                                                        {i + 1}
+                                                                    </div>
+                                                                    <RadioGroup 
+                                                                        value={mcqAnswers[qNum.toString()] || ""} 
+                                                                        onValueChange={(value) => handleMcqAnswerChange(qNum.toString(), value)}
+                                                                        className="flex-1 flex justify-center sm:justify-start gap-2.5 sm:gap-6 ml-4"
+                                                                    >
+                                                                        {options.slice(0,4).map(option => (
+                                                                            <div key={option} className="relative">
+                                                                                <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
+                                                                                <Label htmlFor={`q${qNum}-${option}`} className={glassColors.OPTION_BUTTON}>{option}</Label>
+                                                                            </div>
+                                                                        ))}
+                                                                    </RadioGroup>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        ))}
+                                    </Accordion>
                                 ) : (
                                     <div className="divide-y divide-slate-100">
                                         {Array.from({ length: test.questionCount }).map((_, index) => {
@@ -1185,4 +1180,3 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
-
