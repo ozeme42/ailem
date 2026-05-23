@@ -15,12 +15,12 @@ import { useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
-// --- DESIGN SYSTEM: Glassmorphism ---
-const glassColors = {
-    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
-    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
-    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
-    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
+// --- DESIGN SYSTEM: Modern Premium LMS Light Theme ---
+const themeColors = {
+    HEADER_BG: "bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40",
+    CARD_BG: "bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300",
+    ICON_BOX: "bg-gradient-to-br from-amber-500 to-orange-500 p-2.5 rounded-xl shadow-md shadow-orange-500/20 text-white",
+    BUTTON_GLASS: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm transition-all",
 };
 
 export function PracticeExamsClient() {
@@ -57,16 +57,16 @@ export function PracticeExamsClient() {
             setIsFormOpen(false);
             setEditingExam(null);
         } catch (error) {
-            toast({ title: "Hata", variant: "destructive" });
+            toast({ title: "Hata", description: "Bir sorun oluştu.", variant: "destructive" });
         }
     };
     
     const handleDeleteExam = async (examId: string) => {
         try {
             await deletePracticeExam(examId);
-            toast({ title: "Deneme Silindi", variant: "destructive" });
+            toast({ title: "Deneme Silindi", variant: "default" });
         } catch(e) {
-            toast({ title: "Hata", variant: "destructive" });
+            toast({ title: "Hata", description: "Silme işlemi başarısız.", variant: "destructive" });
         }
     }
     
@@ -75,78 +75,109 @@ export function PracticeExamsClient() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
-             {/* FIXED BACKGROUND */}
-            <div className="fixed inset-0 bg-slate-950 -z-50" />
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative overflow-hidden flex flex-col">
+             {/* Açık Tema Arka Plan */}
+            <div className="fixed inset-0 bg-slate-50 -z-50" />
             
             {/* AMBIENT BACKGROUND */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-900/20 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-orange-900/20 rounded-full blur-[120px]" />
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-200/40 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-orange-200/40 rounded-full blur-[120px]" />
             </div>
 
             {/* HEADER */}
-            <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
-                <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
+            <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", themeColors.HEADER_BG)}>
+                <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                          <Link href="/education/management">
-                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors -ml-2">
-                                <ArrowLeft className="h-6 w-6" />
+                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors -ml-2 h-9 w-9 sm:h-10 sm:w-10">
+                                <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                             </Button>
                         </Link>
-                        <div className={cn("from-amber-500 to-orange-600", glassColors.ICON_BOX)}>
-                             <ClipboardList className="w-6 h-6 text-white" />
+                        <div className={themeColors.ICON_BOX}>
+                             <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
-                        <div>
-                            <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 leading-none">
                                 Deneme Sınavları
                             </h1>
-                            <p className="text-xs font-medium text-slate-400 mt-0.5">Sınav Yönetimi</p>
+                            <p className="text-[10px] sm:text-xs font-medium text-slate-500 mt-1">Şablon ve Sınav Yönetimi</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Button 
                             onClick={() => handleOpenForm(null)}
-                            className="rounded-xl px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20 border border-indigo-400/20 h-9 text-sm"
+                            className="rounded-lg sm:rounded-xl px-3 sm:px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm h-9 text-xs sm:text-sm transition-all"
                         >
-                            <Plus className="mr-1.5 h-4 w-4" /> Yeni Deneme
+                            <Plus className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Yeni Deneme</span>
                         </Button>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                     {exams.length > 0 ? (
                         exams.map(exam => {
                             const totalSubjects = exam.subjects?.length || 0;
                             const totalQuestions = exam.subjects?.reduce((sum, s) => sum + s.questionCount, 0) || 0;
                             
                             return (
-                                <Card key={exam.id} className={cn("flex flex-col h-full group hover:-translate-y-1 transition-all duration-300", glassColors.CARD_BG)}>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg font-bold text-slate-200 group-hover:text-white transition-colors">{exam.name}</CardTitle>
-                                        <CardDescription className="text-slate-400">Genel deneme sınavı şablonu</CardDescription>
+                                <Card key={exam.id} className={cn("flex flex-col h-full group overflow-hidden", themeColors.CARD_BG)}>
+                                    <CardHeader className="pb-4">
+                                        <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-indigo-700 transition-colors line-clamp-1">{exam.name}</CardTitle>
+                                        <CardDescription className="text-slate-500">Genel deneme sınavı şablonu</CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex-grow space-y-3">
-                                        <div className="flex items-center gap-2 text-sm text-slate-300 bg-white/5 p-2 rounded-lg border border-white/5">
-                                            <FileText className="h-4 w-4 text-amber-400" />
-                                            <span>{totalSubjects} Ders</span>
+                                        <div className="flex items-center gap-3 text-sm text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                            <div className="bg-amber-100 p-1.5 rounded-lg text-amber-600">
+                                                <FileText className="h-4 w-4" />
+                                            </div>
+                                            <span className="font-medium">{totalSubjects} Ders Alanı</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-slate-300 bg-white/5 p-2 rounded-lg border border-white/5">
-                                            <HelpCircle className="h-4 w-4 text-indigo-400" />
-                                            <span>{totalQuestions} Soru</span>
+                                        <div className="flex items-center gap-3 text-sm text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                            <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600">
+                                                <HelpCircle className="h-4 w-4" />
+                                            </div>
+                                            <span className="font-medium">{totalQuestions} Toplam Soru</span>
                                         </div>
                                     </CardContent>
-                                    <CardFooter className="flex justify-end gap-2 pt-4 border-t border-white/5 bg-white/5 mt-auto">
-                                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20" onClick={() => handleManageExam(exam.id)}>Yönet</Button>
-                                        <Button size="icon" variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/10" onClick={() => handleOpenForm(exam)}><Edit className="h-4 w-4"/></Button>
+                                    <CardFooter className="flex justify-end items-center gap-1.5 pt-4 border-t border-slate-100 bg-slate-50/50 mt-auto">
+                                        <Button 
+                                            size="sm" 
+                                            className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-sm mr-auto" 
+                                            onClick={() => handleManageExam(exam.id)}
+                                        >
+                                            Yönet
+                                        </Button>
+                                        
+                                        <Button 
+                                            size="icon" 
+                                            variant="ghost" 
+                                            className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" 
+                                            onClick={() => handleOpenForm(exam)}
+                                        >
+                                            <Edit className="h-4 w-4"/>
+                                        </Button>
+                                        
                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild><Button size="icon" variant="ghost" className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                            <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
-                                                <AlertDialogHeader><AlertDialogTitle>Denemeyi Sil</AlertDialogTitle><AlertDialogDescription className="text-slate-400">"{exam.name}" denemesini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteExam(exam.id)} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                                            <AlertDialogTrigger asChild>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="text-xl">Denemeyi Sil</AlertDialogTitle>
+                                                    <AlertDialogDescription className="text-slate-500">
+                                                        <strong className="text-slate-800">{exam.name}</strong> denemesini kalıcı olarak silmek istediğinizden emin misiniz?
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter className="mt-4">
+                                                    <AlertDialogCancel className="bg-white border-slate-300 hover:bg-slate-50 text-slate-700">İptal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none shadow-sm">Evet, Sil</AlertDialogAction>
+                                                </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </CardFooter>
@@ -155,22 +186,22 @@ export function PracticeExamsClient() {
                         })
                     ) : (
                          <div className="md:col-span-2 lg:col-span-3">
-                            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 w-full">
-                                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
-                                    <BookCopy className="h-8 w-8 text-slate-500" />
+                            <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-300 w-full max-w-2xl mx-auto mt-10">
+                                <div className="w-16 h-16 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm">
+                                    <BookCopy className="h-8 w-8 text-slate-400" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-200">Deneme Sınavı Yok</h3>
-                                    <p className="text-slate-400 mt-1 text-sm">Başlamak için "Yeni Deneme" butonuna tıklayın.</p>
+                                    <h3 className="text-xl font-bold text-slate-800">Deneme Sınavı Yok</h3>
+                                    <p className="text-slate-500 mt-2 text-sm max-w-sm">Şablon oluşturmaya başlamak için yukarıdaki "Yeni Deneme" butonuna tıklayın.</p>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
-            </div>
+            </main>
             
              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
+                <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
                     <NewPracticeExamForm
                         onSubmit={handleFormSubmit}
                         initialData={editingExam}

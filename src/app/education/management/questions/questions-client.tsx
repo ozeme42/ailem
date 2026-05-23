@@ -13,7 +13,7 @@ import {
     MoreVertical, Edit, FileText, FilePlus, AlertTriangle, UploadCloud, Send, 
     Calendar as CalendarIcon, FileQuestion, BookCopy, Settings, Search, 
     CheckCircle2, ChevronRight, LayoutGrid, CheckSquare, Layers, Filter, 
-    Maximize2, RefreshCw, XCircle
+    Maximize2, RefreshCw, XCircle, Database
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -40,16 +40,16 @@ import { tr } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 
-// --- DESIGN SYSTEM: Glassmorphism ---
-const glassColors = {
-    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
-    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
-    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
-    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
-    INPUT_BG: "bg-slate-900/50 border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
-    TAB_LIST: "bg-slate-900/50 border border-white/10 p-1",
-    TAB_TRIGGER: "data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200",
-    FILTER_Select: "w-full sm:w-[180px] h-10 rounded-xl bg-white/5 border-white/10 text-sm text-slate-200 focus:ring-indigo-500/50"
+// --- DESIGN SYSTEM: Modern Premium LMS Light Theme ---
+const themeColors = {
+    HEADER_BG: "bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40",
+    CARD_BG: "bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300",
+    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-violet-600 p-2.5 rounded-xl shadow-md shadow-indigo-500/20 text-white",
+    BUTTON_GLASS: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm transition-all",
+    INPUT_BG: "bg-white border-slate-300 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm",
+    TAB_LIST: "bg-slate-100/80 border border-slate-200 p-1 rounded-xl",
+    TAB_TRIGGER: "data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm text-slate-500 hover:text-slate-700 font-semibold text-xs transition-all",
+    FILTER_SELECT: "w-full sm:w-[170px] h-9 rounded-lg bg-white border-slate-300 text-xs text-slate-700 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm"
 };
 
 export function QuestionsClient() {
@@ -59,27 +59,23 @@ export function QuestionsClient() {
   const [tests, setTests] = useState<Test[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // --- UI STATES ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [bulkDialogType, setBulkDialogType] = useState<'mcq' | 'open_ended'>('mcq');
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // --- FILTER STATES ---
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterTopic, setFilterTopic] = useState("all");
-  const [activeTab, setActiveTab] = useState("bank"); // 'bank' | 'mistakes'
-  const [activeSubTab, setActiveSubTab] = useState("mcq"); // 'mcq' | 'open_ended'
+  const [activeTab, setActiveTab] = useState("bank"); 
+  const [activeSubTab, setActiveSubTab] = useState("mcq"); 
 
-  // --- SELECTION & EDITING ---
   const [editingQuestion, setEditingQuestion] = useState<BankQuestion | null>(null);
   const [defaultQuestionType, setDefaultQuestionType] = useState<'mcq' | 'open_ended'>('mcq');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [assignmentType, setAssignmentType] = useState<'bank' | 'mistake'>('bank');
 
-  // --- DATA ---
   const [allSubjects, setAllSubjects] = useState<string[]>([]);
   const [allTopics, setAllTopics] = useState<string[]>([]);
 
@@ -106,14 +102,11 @@ export function QuestionsClient() {
     };
   }, []);
 
-  // Filter Logic
   const filteredData = useMemo(() => {
       let data: any[] = activeTab === 'bank' ? bankQuestions : mistakes;
       
-      // Filter by Type (MCQ / Open Ended)
       data = data.filter(item => item.type === activeSubTab);
 
-      // Filter by Search
       if (searchQuery) {
           const lowerQuery = searchQuery.toLowerCase();
           data = data.filter(item => 
@@ -123,12 +116,10 @@ export function QuestionsClient() {
           );
       }
 
-      // Filter by Subject
       if (filterSubject !== 'all') {
           data = data.filter(item => item.subject === filterSubject);
       }
 
-      // Filter by Topic
       if (filterTopic !== 'all') {
           data = data.filter(item => item.topic === filterTopic);
       }
@@ -136,7 +127,6 @@ export function QuestionsClient() {
       return data;
   }, [bankQuestions, mistakes, activeTab, activeSubTab, searchQuery, filterSubject, filterTopic]);
 
-  // Derived Options for Dropdowns
   const availableSubjects = useMemo(() => {
       const source = activeTab === 'bank' ? bankQuestions : mistakes;
       return Array.from(new Set(source.map(i => i.subject))).sort();
@@ -151,12 +141,10 @@ export function QuestionsClient() {
       return Array.from(new Set(filtered.map(i => i.topic))).sort();
   }, [activeTab, bankQuestions, mistakes, filterSubject]);
 
-  // Reset Topic when Subject changes
   useEffect(() => {
       setFilterTopic('all');
   }, [filterSubject]);
 
-  // Actions
   const handleCreateSubject = async (subjectName: string) => {
     const newSubjects = [...new Set([...allSubjects, subjectName])];
     await updateSubjects(newSubjects);
@@ -182,9 +170,9 @@ export function QuestionsClient() {
           } else {
               await deleteMistake(id);
           }
-          toast({ title: "Silindi", variant: "destructive"});
+          toast({ title: "Silindi", description: "Soru başarıyla silindi.", variant: "default"});
       } catch (error) {
-          toast({ title: "Hata", variant: "destructive" });
+          toast({ title: "Hata", description: "Silme işlemi başarısız.", variant: "destructive" });
       }
   }
 
@@ -195,7 +183,7 @@ export function QuestionsClient() {
         } else {
             for (const id of selectedIds) await deleteMistake(id);
         }
-        toast({ title: `${selectedIds.length} kayıt silindi`, variant: "destructive"});
+        toast({ title: `${selectedIds.length} kayıt silindi`, variant: "default"});
         setSelectedIds([]);
     } catch(error) {
         toast({ title: "Hata", description: "Silme işlemi sırasında hata oluştu.", variant: "destructive" });
@@ -231,121 +219,194 @@ export function QuestionsClient() {
       }
   };
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-950"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div></div>;
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin h-10 w-10 text-indigo-600" /></div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
-        {/* BG & Header (Same as previous) */}
-        <div className="fixed inset-0 bg-slate-950 -z-50" />
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative overflow-hidden flex flex-col">
+        {/* Açık Tema Arka Plan Efektleri */}
+        <div className="fixed inset-0 bg-slate-50 -z-50" />
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-900/20 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-emerald-900/20 rounded-full blur-[120px]" />
+            <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-200/40 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-violet-200/40 rounded-full blur-[120px]" />
         </div>
 
-        <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
-            <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white -ml-2"><ArrowLeft className="h-6 w-6" /></Button>
-                    <div className={cn("from-indigo-500 to-cyan-500", glassColors.ICON_BOX)}><BookCopy className="w-6 h-6 text-white" /></div>
-                    <div><h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">Soru Bankası</h1><p className="text-xs font-medium text-slate-400 mt-0.5">İçerik Yönetimi</p></div>
+        {/* Header */}
+        <header className={themeColors.HEADER_BG}>
+            <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <Button onClick={() => router.back()} variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors -ml-2 h-9 w-9 sm:h-10 sm:w-10">
+                        <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </Button>
+                    <div className={themeColors.ICON_BOX}>
+                        <Database className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                        <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 leading-none">Soru Bankası</h1>
+                        <p className="text-[10px] sm:text-xs font-medium text-slate-500 mt-1">Soru havuzu ve içerik yönetimi</p>
+                    </div>
                 </div>
                 {activeTab === 'bank' && (
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => { setBulkDialogType(activeSubTab as any); setIsBulkDialogOpen(true); }} className={glassColors.BUTTON_GLASS}><UploadCloud className="mr-2 h-4 w-4" /> Toplu</Button>
-                        <Button onClick={() => handleOpenForm(null, activeSubTab as any)} className="bg-emerald-600 hover:bg-emerald-500 text-white border-0"><Plus className="mr-2 h-4 w-4" /> Yeni</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setBulkDialogType(activeSubTab as any); setIsBulkDialogOpen(true); }} className={cn("hidden sm:flex h-9", themeColors.BUTTON_GLASS)}>
+                            <UploadCloud className="mr-2 h-4 w-4" /> Toplu Ekle
+                        </Button>
+                        <Button size="sm" onClick={() => handleOpenForm(null, activeSubTab as any)} className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 h-9 px-4 shadow-md shadow-indigo-600/20 font-semibold">
+                            <Plus className="mr-1.5 h-4 w-4" /> Yeni Soru
+                        </Button>
                     </div>
                 )}
             </div>
-        </div>
+        </header>
 
-      <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
           
           <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSelectedIds([]); }} className="space-y-6 flex flex-col h-full">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                 <TabsList className={cn("grid w-full md:w-auto grid-cols-2 h-12 rounded-2xl", glassColors.TAB_LIST)}>
-                    <TabsTrigger value="bank" className={cn("rounded-xl transition-all", glassColors.TAB_TRIGGER)}>Soru Bankası</TabsTrigger>
-                    <TabsTrigger value="mistakes" className={cn("rounded-xl transition-all", glassColors.TAB_TRIGGER)}>Yanlış Havuzu ({mistakes.length})</TabsTrigger>
-                </TabsList>
+            
+            {/* Kontrol ve Filtre Paneli */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-4">
                 
-                <Tabs value={activeSubTab} onValueChange={(v) => { setActiveSubTab(v); setSelectedIds([]); }} className="w-full md:w-auto">
-                    <TabsList className="bg-white/5 border border-white/10 p-1 h-10 rounded-lg w-full md:w-auto grid grid-cols-2">
-                         <TabsTrigger value="mcq" className="rounded-md text-xs">Çoktan Seçmeli</TabsTrigger>
-                         <TabsTrigger value="open_ended" className="rounded-md text-xs">Açık Uçlu</TabsTrigger>
+                {/* Üst Satır: Sekmeler */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+                    <TabsList className={themeColors.TAB_LIST}>
+                        <TabsTrigger value="bank" className={cn("rounded-lg", themeColors.TAB_TRIGGER)}>Soru Bankası</TabsTrigger>
+                        <TabsTrigger value="mistakes" className={cn("rounded-lg", themeColors.TAB_TRIGGER)}>
+                            Yanlış Havuzu <Badge variant="secondary" className="ml-1.5 bg-rose-100 text-rose-600 hover:bg-rose-200 border-rose-200 text-[9px] px-1">{mistakes.length}</Badge>
+                        </TabsTrigger>
                     </TabsList>
-                </Tabs>
+                    
+                    <Tabs value={activeSubTab} onValueChange={(v) => { setActiveSubTab(v); setSelectedIds([]); }} className="w-full md:w-auto">
+                        <TabsList className="bg-slate-100/80 border border-slate-200 p-1 h-9 rounded-lg w-full md:w-auto grid grid-cols-2">
+                            <TabsTrigger value="mcq" className="rounded-md text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm text-slate-500">Çoktan Seçmeli</TabsTrigger>
+                            <TabsTrigger value="open_ended" className="rounded-md text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm text-slate-500">Açık Uçlu</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+
+                {/* Alt Satır: Arama ve Filtreler */}
+                <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+                    <div className="relative w-full md:max-w-xs">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input 
+                            placeholder="İçerik, ders veya konu ara..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 h-9 bg-white border-slate-300 text-sm text-slate-900 focus:border-indigo-500 focus:ring-indigo-500/20 rounded-lg shadow-sm"
+                        />
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mr-1 hidden sm:flex">
+                            <Filter className="w-3.5 h-3.5" /> Filtrele:
+                        </div>
+
+                        <Select value={filterSubject} onValueChange={setFilterSubject}>
+                            <SelectTrigger className={themeColors.FILTER_SELECT}>
+                                <div className="flex items-center truncate">
+                                    <Layers className="w-3.5 h-3.5 text-slate-400 mr-2"/>
+                                    <span>{filterSubject === 'all' ? 'Tüm Dersler' : filterSubject}</span>
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-slate-200 text-slate-800 shadow-lg">
+                                <SelectItem value="all">Tüm Dersler</SelectItem>
+                                {availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={filterTopic} onValueChange={setFilterTopic} disabled={availableTopics.length === 0}>
+                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, availableTopics.length === 0 && "opacity-50 cursor-not-allowed")}>
+                                <div className="flex items-center truncate">
+                                    <BookCopy className="w-3.5 h-3.5 text-slate-400 mr-2"/>
+                                    <span>{filterTopic === 'all' ? 'Tüm Konular' : filterTopic}</span>
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-slate-200 text-slate-800 shadow-lg">
+                                <SelectItem value="all">Tüm Konular</SelectItem>
+                                {availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+
+                        {(filterSubject !== 'all' || filterTopic !== 'all' || searchQuery) && (
+                            <Button 
+                                variant="ghost" size="sm" 
+                                onClick={() => { setFilterSubject('all'); setFilterTopic('all'); setSearchQuery(''); }} 
+                                className="h-9 px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 text-xs rounded-lg ml-auto md:ml-0"
+                            >
+                                Temizle
+                            </Button>
+                        )}
+                    </div>
+                </div>
             </div>
 
-            {/* --- FILTER BAR --- */}
-            <div className={cn("p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between", glassColors.CARD_BG)}>
-                <div className="relative w-full md:w-1/3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input 
-                        placeholder="Soru ara..." 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 bg-slate-900/50 border-white/10 text-slate-200 focus:border-indigo-500 rounded-xl"
-                    />
-                </div>
-                
-                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                    <Select value={filterSubject} onValueChange={setFilterSubject}>
-                        <SelectTrigger className={glassColors.FILTER_Select}><div className="flex items-center gap-2"><Filter className="w-3 h-3 text-slate-400"/><span className="truncate">{filterSubject === 'all' ? 'Tüm Dersler' : filterSubject}</span></div></SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-white/10 text-slate-100"><SelectItem value="all">Tüm Dersler</SelectItem>{availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={filterTopic} onValueChange={setFilterTopic}>
-                        <SelectTrigger className={glassColors.FILTER_Select}><div className="flex items-center gap-2"><Layers className="w-3 h-3 text-slate-400"/><span className="truncate">{filterTopic === 'all' ? 'Tüm Konular' : filterTopic}</span></div></SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-white/10 text-slate-100"><SelectItem value="all">Tüm Konular</SelectItem>{availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                    </Select>
-                    {(filterSubject !== 'all' || filterTopic !== 'all' || searchQuery) && (
-                        <Button variant="ghost" size="icon" onClick={() => { setFilterSubject('all'); setFilterTopic('all'); setSearchQuery(''); }} className="text-slate-400 hover:text-white"><XCircle className="w-5 h-5" /></Button>
-                    )}
-                </div>
-            </div>
-
-            {/* --- CONTENT AREA --- */}
+            {/* İçerik Alanı (Grid) */}
             <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-24">
                 {filteredData.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-in fade-in zoom-in-95 duration-300">
                         {filteredData.map((item) => {
                             const isSelected = selectedIds.includes(item.id);
                             return (
                                 <div 
                                     key={item.id} 
                                     className={cn(
-                                        "group relative flex flex-col rounded-2xl border bg-white/5 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl",
-                                        isSelected ? "border-indigo-500 bg-indigo-500/10" : "border-white/5 hover:border-white/20"
+                                        "group relative flex flex-col rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden",
+                                        isSelected ? "border-indigo-500 bg-indigo-50/50 shadow-md ring-1 ring-indigo-500/20" : themeColors.CARD_BG
                                     )}
                                     onClick={() => toggleSelection(item.id)}
                                 >
-                                    <div className="flex justify-between items-start mb-3">
-                                        <Checkbox checked={isSelected} className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500" />
-                                        <div className="flex gap-1">
-                                            {activeTab === 'bank' && <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-white" onClick={(e) => { e.stopPropagation(); handleOpenForm(item, activeSubTab as any); }}><Edit className="h-3 w-3"/></Button>}
+                                    {/* Görsel ve Seçim Kutusu */}
+                                    <div className="relative aspect-video w-full bg-slate-100 border-b border-slate-200 overflow-hidden flex items-center justify-center">
+                                        <div className="absolute top-3 left-3 z-10">
+                                            <Checkbox 
+                                                checked={isSelected} 
+                                                className={cn("border-slate-400 bg-white shadow-sm data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity")} 
+                                            />
                                         </div>
-                                    </div>
-                                    
-                                    <div className="relative aspect-video w-full mb-3 bg-black/40 rounded-xl overflow-hidden border border-white/5 group-hover:border-white/20">
+
+                                        {activeTab === 'bank' && (
+                                            <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button 
+                                                    variant="ghost" size="icon" 
+                                                    className="h-8 w-8 bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 rounded-lg shadow-sm border border-slate-200" 
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenForm(item, activeSubTab as any); }}
+                                                >
+                                                    <Edit className="h-4 w-4"/>
+                                                </Button>
+                                            </div>
+                                        )}
+
                                         {item.imageUrl ? (
                                             <>
-                                                <NextImage src={item.imageUrl} alt="Soru" fill className="object-contain" />
-                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" onClick={(e) => { e.stopPropagation(); setImagePreview(item.imageUrl); }}>
-                                                    <Maximize2 className="text-white w-6 h-6 drop-shadow-md cursor-pointer" />
+                                                <NextImage src={item.imageUrl} alt="Soru" fill className="object-contain p-2" />
+                                                <div 
+                                                    className="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[1px]" 
+                                                    onClick={(e) => { e.stopPropagation(); setImagePreview(item.imageUrl); }}
+                                                >
+                                                    <div className="bg-white p-2 rounded-full border border-slate-200 shadow-md text-slate-700">
+                                                        <Maximize2 className="w-5 h-5" />
+                                                    </div>
                                                 </div>
                                             </>
                                         ) : (
-                                            <div className="flex items-center justify-center h-full text-slate-600"><FileQuestion className="w-8 h-8" /></div>
+                                            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                                                <FileQuestion className="w-8 h-8 opacity-60" />
+                                                <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Görsel Yok</span>
+                                            </div>
                                         )}
                                     </div>
                                     
-                                    <div className="mt-auto">
-                                        <div className="flex gap-2 mb-2 flex-wrap">
-                                            <Badge variant="secondary" className="bg-white/10 text-slate-300 hover:bg-white/20 text-[10px] h-5">{item.subject}</Badge>
-                                            <Badge variant="outline" className="border-white/10 text-slate-400 text-[10px] h-5">{item.topic}</Badge>
+                                    {/* Detaylar */}
+                                    <div className="p-4 flex flex-col flex-1 bg-white">
+                                        <div className="flex gap-1.5 mb-2 flex-wrap">
+                                            <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[9px] px-1.5 h-4.5 font-bold uppercase tracking-wider rounded-md">{item.subject}</Badge>
+                                            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-[9px] px-1.5 h-4.5 font-medium rounded-md line-clamp-1">{item.topic}</Badge>
                                         </div>
-                                        <p className="text-sm font-medium text-slate-200 truncate" title={item.title || item.originalFilename}>{item.title || item.originalFilename}</p>
+                                        <p className="text-sm font-semibold text-slate-800 line-clamp-2 mt-1 leading-snug group-hover:text-indigo-700 transition-colors" title={item.title || item.originalFilename}>
+                                            {item.title || item.originalFilename}
+                                        </p>
+                                        
                                         {activeTab === 'mistakes' && (
-                                            <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5 text-[10px] text-rose-400">
-                                                <AlertTriangle className="w-3 h-3"/>
+                                            <div className="mt-auto pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[10px] font-medium text-rose-500">
+                                                <AlertTriangle className="w-3.5 h-3.5"/>
                                                 {familyMembers.find(f => f.id === item.creatorId)?.name || 'Öğrenci'} Yanlışı
                                             </div>
                                         )}
@@ -355,52 +416,78 @@ export function QuestionsClient() {
                         })}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-64 text-slate-500 border border-dashed border-white/10 rounded-3xl bg-white/5">
-                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4"><Search className="w-8 h-8 text-slate-600"/></div>
-                        <p className="text-lg font-medium text-slate-300">Kayıt Bulunamadı</p>
-                        <p className="text-sm">Arama kriterlerinize uygun soru yok.</p>
-                        <Button variant="link" onClick={() => { setSearchQuery(''); setFilterSubject('all'); setFilterTopic('all'); }} className="text-indigo-400 mt-2">Filtreleri Temizle</Button>
+                    <div className="flex flex-col items-center justify-center h-64 text-slate-500 border border-dashed border-slate-300 rounded-3xl bg-slate-50/50 w-full max-w-2xl mx-auto mt-10">
+                        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm border border-slate-200">
+                            <Search className="w-8 h-8 text-slate-400"/>
+                        </div>
+                        <p className="text-lg font-bold text-slate-700">Kayıt Bulunamadı</p>
+                        <p className="text-sm mt-1 max-w-sm text-center text-slate-500">Arama kriterlerinize uygun soru bulunmuyor.</p>
+                        {(filterSubject !== 'all' || filterTopic !== 'all' || searchQuery) && (
+                            <Button variant="link" onClick={() => { setSearchQuery(''); setFilterSubject('all'); setFilterTopic('all'); }} className="text-indigo-600 mt-2 font-semibold">
+                                Filtreleri Temizle
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>
-
           </Tabs>
           
-          {/* --- FLOATING ACTION BAR --- */}
+          {/* Toplu İşlem Çubuğu (Floating Action Bar) */}
           {selectedIds.length > 0 && (
-             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-white/10 text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-5 w-[90%] max-w-md justify-between backdrop-blur-xl">
-                 <div className="flex items-center gap-3">
-                     <div className="bg-indigo-600 text-xs font-bold px-2 py-1 rounded-md min-w-[24px] text-center">{selectedIds.length}</div>
-                     <span className="text-sm font-medium text-slate-300 hidden sm:inline">Seçildi</span>
+             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border border-slate-200 text-slate-800 px-4 py-3 rounded-2xl shadow-2xl shadow-slate-200 flex items-center gap-4 animate-in slide-in-from-bottom-5 w-[90%] sm:w-auto max-w-md justify-between">
+                 <div className="flex items-center gap-3 pl-2">
+                     <div className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg min-w-[28px] text-center shadow-sm">{selectedIds.length}</div>
+                     <span className="text-sm font-semibold text-slate-700 hidden sm:inline whitespace-nowrap">Soru Seçildi</span>
                  </div>
-                 <div className="flex items-center gap-2">
-                     <Button size="sm" onClick={() => toggleSelectAll()} variant="ghost" className="text-xs h-8 text-slate-400 hover:text-white">Tümü</Button>
-                     <div className="h-4 w-px bg-white/10 mx-1"></div>
-                     <Button size="sm" onClick={() => { setAssignmentType(activeTab === 'bank' ? 'bank' : 'mistake'); setIsAssignDialogOpen(true); }} className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white border-0"><Send className="w-3 h-3 mr-1.5"/> Ata</Button>
+                 <div className="flex items-center gap-2 border-l border-slate-200 pl-3 ml-2">
+                     <Button size="sm" onClick={() => toggleSelectAll()} variant="ghost" className="text-xs h-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-2 rounded-lg font-medium">Tümü</Button>
+                     <Button size="sm" onClick={() => { setAssignmentType(activeTab === 'bank' ? 'bank' : 'mistake'); setIsAssignDialogOpen(true); }} className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white border-0 rounded-lg px-3 shadow-sm">
+                         <Send className="w-3.5 h-3.5 mr-1.5"/> Ata
+                     </Button>
                      <AlertDialog>
-                        <AlertDialogTrigger asChild><Button size="sm" variant="destructive" className="h-8 bg-rose-600 hover:bg-rose-700 border-0"><Trash2 className="w-3 h-3"/></Button></AlertDialogTrigger>
-                        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
-                            <AlertDialogHeader><AlertDialogTitle>Siliniyor</AlertDialogTitle><AlertDialogDescription className="text-slate-400">{selectedIds.length} kayıt silinecek. Emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction></AlertDialogFooter>
+                        <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive" className="h-8 w-8 p-0 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-100 rounded-lg transition-colors">
+                                <Trash2 className="w-4 h-4"/>
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="text-xl">Toplu Silme İşlemi</AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-500">Seçili <strong className="text-slate-800">{selectedIds.length}</strong> kayıt kalıcı olarak silinecek. Emin misiniz?</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-4">
+                                <AlertDialogCancel className="bg-white border-slate-300 hover:bg-slate-50 text-slate-700">İptal</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700 text-white border-none shadow-sm">Evet, Sil</AlertDialogAction>
+                            </AlertDialogFooter>
                         </AlertDialogContent>
                      </AlertDialog>
-                     <Button size="icon" variant="ghost" onClick={() => setSelectedIds([])} className="h-8 w-8 rounded-full hover:bg-white/10"><X className="w-4 h-4"/></Button>
+                     <Button size="icon" variant="ghost" onClick={() => setSelectedIds([])} className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-500 ml-1">
+                         <X className="w-4 h-4"/>
+                     </Button>
                  </div>
              </div>
           )}
           
-          {/* --- DIALOGS --- */}
+          {/* Form & Dialogs */}
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="sm:max-w-lg bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
-              <NewQuestionBankForm
-                availableSubjects={allSubjects}
-                onSubjectCreated={handleCreateSubject}
-                availableTopics={allTopics}
-                onTopicCreated={handleCreateTopic}
-                onQuestionProcessed={() => setIsFormOpen(false)}
-                initialData={editingQuestion}
-                defaultType={defaultQuestionType}
-              />
+            <DialogContent className="sm:max-w-xl bg-white border-slate-200 text-slate-900 rounded-2xl shadow-2xl p-0 overflow-hidden">
+              <ScrollArea className="max-h-[85vh]">
+                <div className="p-6">
+                    <DialogHeader className="mb-6">
+                        <DialogTitle className="text-xl font-bold">{editingQuestion ? 'Soruyu Düzenle' : 'Yeni Soru Ekle'}</DialogTitle>
+                    </DialogHeader>
+                    {/* NewQuestionBankForm içindeki bileşenlerin açık tema desteği varsayılarak */}
+                    <NewQuestionBankForm
+                        availableSubjects={allSubjects}
+                        onSubjectCreated={handleCreateSubject}
+                        availableTopics={allTopics}
+                        onTopicCreated={handleCreateTopic}
+                        onQuestionProcessed={() => setIsFormOpen(false)}
+                        initialData={editingQuestion}
+                        defaultType={defaultQuestionType}
+                    />
+                </div>
+              </ScrollArea>
             </DialogContent>
           </Dialog>
 
@@ -425,21 +512,24 @@ export function QuestionsClient() {
             onAssignmentComplete={() => setSelectedIds([])}
           />
 
-          {/* Image Lightbox */}
+          {/* Görsel Önizleme (Lightbox) - Odak için koyu arka plan bırakıldı */}
           {imagePreview && (
-              <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setImagePreview(null)}>
-                  <div className="relative w-full max-w-4xl h-[80vh]">
-                      <NextImage src={imagePreview} alt="Preview" fill className="object-contain" />
-                      <button onClick={() => setImagePreview(null)} className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white hover:bg-white/20"><X className="w-6 h-6"/></button>
+              <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setImagePreview(null)}>
+                  <div className="relative w-full max-w-5xl h-[85vh] bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-2xl flex items-center justify-center">
+                      <NextImage src={imagePreview} alt="Preview" fill className="object-contain p-4" />
+                      <button 
+                          onClick={() => setImagePreview(null)} 
+                          className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 p-2.5 rounded-full text-slate-700 border border-slate-300 transition-all shadow-md"
+                      >
+                          <X className="w-5 h-5"/>
+                      </button>
                   </div>
               </div>
           )}
-        </div>
+        </main>
     </div>
   );
 }
-
-// ... (Sub-components: BulkAddImagesDialog, AssignTestDialog same as before, ensuring imports match)
 
 const bulkAddSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
@@ -480,25 +570,54 @@ function BulkAddImagesDialog({
     
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
-            <DialogContent className="sm:max-w-2xl bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
-                <DialogHeader><DialogTitle>Toplu Soru Ekle ({type === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'})</DialogTitle></DialogHeader>
+            <DialogContent className="sm:max-w-2xl bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
+                <DialogHeader>
+                    <DialogTitle className="text-xl text-slate-900">Toplu Soru Ekle <span className="text-sm font-normal text-slate-500 ml-2">({type === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'})</span></DialogTitle>
+                </DialogHeader>
                 <RhfForm {...form}>
-                    <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-4">
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-6 mt-2">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <FormField control={form.control} name="subject" render={({field}) => (
-                                <FormItem><FormLabel className="text-slate-300">Ders</FormLabel><Combobox options={existingSubjects.map(s=>({label:s,value:s}))} value={field.value} onChange={field.onChange} onCreate={onSubjectCreate} className={glassColors.INPUT_BG}/><FormMessage/></FormItem>
+                                <FormItem>
+                                    <FormLabel className="text-slate-700 font-semibold">Ders</FormLabel>
+                                    <Combobox options={existingSubjects.map(s=>({label:s,value:s}))} value={field.value} onChange={field.onChange} onCreate={onSubjectCreate} className={themeColors.INPUT_BG}/>
+                                    <FormMessage/>
+                                </FormItem>
                             )}/>
                             <FormField control={form.control} name="topic" render={({field}) => (
-                                <FormItem><FormLabel className="text-slate-300">Konu</FormLabel><Combobox options={existingTopics.map(s=>({label:s,value:s}))} value={field.value} onChange={field.onChange} onCreate={onTopicCreate} className={glassColors.INPUT_BG}/><FormMessage/></FormItem>
+                                <FormItem>
+                                    <FormLabel className="text-slate-700 font-semibold">Konu</FormLabel>
+                                    <Combobox options={existingTopics.map(s=>({label:s,value:s}))} value={field.value} onChange={field.onChange} onCreate={onTopicCreate} className={themeColors.INPUT_BG}/>
+                                    <FormMessage/>
+                                </FormItem>
                             )}/>
                          </div>
-                         <div {...getRootProps()} className={`w-full aspect-video border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-indigo-500 hover:bg-indigo-500/5 transition-all cursor-pointer ${isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'bg-black/20'}`}>
+                         
+                         <div {...getRootProps()} className={cn(
+                             "w-full aspect-video border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer bg-slate-50",
+                             isDragActive ? "border-indigo-500 bg-indigo-50 text-indigo-600" : "border-slate-300 text-slate-500 hover:border-indigo-400 hover:bg-slate-100"
+                         )}>
                               <input {...getInputProps()} />
-                              <UploadCloud className="h-10 w-10 mb-2 opacity-50"/>
-                              <p className="text-sm">Resimleri sürükleyin veya tıklayın</p>
+                              <div className="p-4 bg-white rounded-full mb-3 shadow-sm border border-slate-100">
+                                  <UploadCloud className="h-8 w-8 text-slate-400"/>
+                              </div>
+                              <p className="text-sm font-medium text-slate-700">Soru görsellerini buraya sürükleyin</p>
+                              <p className="text-xs text-slate-500 mt-1">veya seçmek için tıklayın (.jpg, .png)</p>
                          </div>
-                         {form.watch('images')?.length > 0 && <p className="text-xs text-emerald-400 font-bold">{form.watch('images').length} resim seçildi.</p>}
-                        <DialogFooter><Button type="submit" disabled={isImporting} className="bg-indigo-600 hover:bg-indigo-500 text-white">{isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Yükle</Button></DialogFooter>
+
+                         {form.watch('images')?.length > 0 && (
+                             <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700">
+                                 <CheckCircle2 className="w-5 h-5"/>
+                                 <span className="text-sm font-semibold">{form.watch('images').length} resim yüklendi.</span>
+                             </div>
+                         )}
+
+                        <DialogFooter className="border-t border-slate-100 pt-4 mt-2">
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-600 hover:text-slate-900 hover:bg-slate-100">İptal</Button>
+                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 shadow-sm">
+                                {isImporting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Yükleniyor...</> : 'İçe Aktar'}
+                            </Button>
+                        </DialogFooter>
                     </form>
                 </RhfForm>
             </DialogContent>
@@ -525,12 +644,11 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
     const source = type === 'bank' ? allQuestions : allMistakes;
     const selectedItems = source.filter((q:any) => selectedIds.includes(q.id));
     
-    // Basit map işlemi
     const questionsForTest = selectedItems.map((item:any) => ({
         questionId: item.id,
         imageUrl: item.imageUrl!,
         type: item.type,
-        correctAnswer: item.correctAnswer // open_ended için undefined olabilir
+        correctAnswer: item.correctAnswer 
     }));
     
     const isTestOpenEnded = questionsForTest.some((q:any) => q.type === 'open_ended');
@@ -557,32 +675,92 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
             };
             await addTest(testData as any, questionsForTest);
         }
-        toast({ title: "✅ Başarılı", description: "Ödev atandı." });
+        toast({ title: "✅ Başarılı", description: "Ödev başarıyla atandı.", variant: "default" });
         onAssignmentComplete();
         onOpenChange(false);
-    } catch (e) { toast({ title: "Hata", variant: "destructive" }); } finally { setLoading(false); }
+    } catch (e) { 
+        toast({ title: "Hata", description: "Ödev atanırken bir sorun oluştu.", variant: "destructive" }); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
-        <DialogHeader><DialogTitle>Ödev Ata ({selectedIds.length} Soru)</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
+        <DialogHeader>
+            <DialogTitle className="text-xl">Ödev Ata <Badge className="ml-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200">{selectedIds.length} Soru</Badge></DialogTitle>
+        </DialogHeader>
         <RhfForm {...form}>
-            <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-4">
-                <FormField control={form.control} name="title" render={({field}) => (<FormItem><FormLabel>Başlık</FormLabel><Input {...field} className={glassColors.INPUT_BG}/></FormItem>)}/>
-                <FormField control={form.control} name="studentIds" render={() => (
-                    <FormItem><FormLabel>Öğrenciler</FormLabel>
-                    <div className="space-y-2 p-3 bg-black/20 rounded-xl border border-white/5">{students.map((s:any) => (
-                        <FormField key={s.id} control={form.control} name="studentIds" render={({ field }) => (
-                            <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(s.id)} onCheckedChange={(c) => c ? field.onChange([...(field.value||[]), s.id]) : field.onChange(field.value?.filter((v)=>v!==s.id))} className="border-white/30 data-[state=checked]:bg-indigo-500"/></FormControl><FormLabel className="font-normal cursor-pointer w-full">{s.name}</FormLabel></FormItem>
-                        )}/>
-                    ))}</div></FormItem>
+            <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-5 mt-2">
+                <FormField control={form.control} name="title" render={({field}) => (
+                    <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold">Ödev Başlığı</FormLabel>
+                        <Input {...field} placeholder="Örn: 1. Ünite Tekrarı" className={themeColors.INPUT_BG}/>
+                    </FormItem>
                 )}/>
+                
+                <FormField control={form.control} name="studentIds" render={() => (
+                    <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold">Öğrenciler</FormLabel>
+                        <div className="space-y-1.5 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            {students.map((s:any) => (
+                                <FormField key={s.id} control={form.control} name="studentIds" render={({ field }) => (
+                                    <FormItem className="flex items-center space-x-3 space-y-0 hover:bg-white p-2 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-200 hover:shadow-sm">
+                                        <FormControl>
+                                            <Checkbox 
+                                                checked={field.value?.includes(s.id)} 
+                                                onCheckedChange={(c) => c ? field.onChange([...(field.value||[]), s.id]) : field.onChange(field.value?.filter((v)=>v!==s.id))} 
+                                                className="border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="font-medium cursor-pointer w-full text-slate-800 flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{backgroundColor: s.color || '#6366f1'}}/>
+                                            {s.name}
+                                        </FormLabel>
+                                    </FormItem>
+                                )}/>
+                            ))}
+                        </div>
+                    </FormItem>
+                )}/>
+
                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="dateRange" render={({field}) => (<FormItem><FormLabel>Tarih</FormLabel><Popover><PopoverTrigger asChild><Button variant="outline" className={cn("w-full justify-start text-left border-white/10 hover:bg-white/5 hover:text-white")}>{format(field.value.from, "d MMM", {locale:tr})}</Button></PopoverTrigger><PopoverContent className="bg-slate-900 border-white/10"><Calendar mode="range" selected={field.value} onSelect={field.onChange} className="bg-slate-900 text-slate-100"/></PopoverContent></Popover></FormItem>)}/>
-                    <FormField control={form.control} name="durationMinutes" render={({field}) => (<FormItem><FormLabel>Süre (dk)</FormLabel><Input type="number" {...field} className={glassColors.INPUT_BG}/></FormItem>)}/>
+                    <FormField control={form.control} name="dateRange" render={({field}) => (
+                        <FormItem>
+                            <FormLabel className="text-slate-700 font-semibold">Tarih Aralığı</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className={cn("w-full justify-start text-left bg-white border-slate-300 hover:bg-slate-50 hover:text-slate-900 shadow-sm font-medium")}>
+                                        <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
+                                        {format(field.value.from, "d MMM", {locale:tr})} - {format(field.value.to, "d MMM", {locale:tr})}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="bg-white border-slate-200 shadow-xl w-auto p-0 rounded-xl" align="start">
+                                    <Calendar 
+                                        mode="range" 
+                                        selected={field.value} 
+                                        onSelect={(val) => { if(val?.from && val?.to) field.onChange(val); }} 
+                                        className="bg-white text-slate-900 p-3"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="durationMinutes" render={({field}) => (
+                        <FormItem>
+                            <FormLabel className="text-slate-700 font-semibold">Süre (Dk)</FormLabel>
+                            <Input type="number" placeholder="Süresiz" {...field} className={themeColors.INPUT_BG}/>
+                        </FormItem>
+                    )}/>
                  </div>
-                <DialogFooter><Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white">Ata</Button></DialogFooter>
+                 
+                <DialogFooter className="pt-4 border-t border-slate-100 mt-2">
+                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-600 hover:text-slate-900 hover:bg-slate-100">İptal</Button>
+                    <Button type="submit" disabled={loading || form.watch('studentIds').length === 0} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 shadow-sm">
+                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Atanıyor</> : 'Ödevi Ata'}
+                    </Button>
+                </DialogFooter>
             </form>
         </RhfForm>
       </DialogContent>

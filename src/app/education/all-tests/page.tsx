@@ -1,34 +1,46 @@
-
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, XCircle, Edit, ListFilter, MinusCircle, Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, LayoutGrid, List, Filter, Book, Library, PenTool, ArrowUpDown, BookOpen, ChevronLeft } from "lucide-react";
+import { 
+    ArrowLeft, CheckCircle, XCircle, Edit, ListFilter, MinusCircle, 
+    Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, 
+    MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, 
+    LayoutGrid, List, Filter, BookOpen, PenTool, ArrowUpDown, 
+    ChevronLeft, BarChart3, GraduationCap
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { 
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, 
+    AlertDialogTitle, AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+    DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, 
+    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, isToday, isPast, differenceInDays, parse } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 import { Test, FamilyMember, TrackedBook } from "@/lib/data";
 import { onTestsUpdate, deleteTest, onTrackedBooksUpdate } from "@/lib/dataService";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
 import { getCategoryName } from "@/app/education/page";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { format, isToday, isPast, differenceInDays, parse, compareDesc } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// --- DESIGN SYSTEM: Glassmorphism ---
-const glassColors = {
-    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
-    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
-    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
-    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
-    TABLE_HEADER: "bg-white/5 text-slate-400 text-xs uppercase tracking-wider font-medium cursor-pointer hover:bg-white/10 transition-colors select-none",
-    TABLE_ROW: "hover:bg-white/5 transition-colors border-b border-white/5 last:border-0",
-    FILTER_SELECT: "w-full sm:w-[160px] h-9 rounded-lg bg-white/5 border-white/10 text-xs text-slate-200 focus:ring-indigo-500/50"
+// --- DESIGN SYSTEM: Modern Premium LMS Dark Theme ---
+const themeColors = {
+    HEADER_BG: "bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-40",
+    CARD_BG: "bg-slate-900/40 border border-slate-800 shadow-xl backdrop-blur-md hover:bg-slate-900/60 hover:border-slate-700 transition-all duration-300",
+    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-violet-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
+    BUTTON_GLASS: "bg-slate-800/50 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-sm transition-all",
+    TABLE_HEADER: "bg-slate-900/80 text-slate-400 text-[11px] uppercase tracking-wider font-semibold cursor-pointer hover:text-slate-200 transition-colors select-none whitespace-nowrap",
+    TABLE_ROW: "hover:bg-slate-800/30 transition-colors border-b border-slate-800/50 last:border-0",
+    FILTER_SELECT: "w-full sm:w-[170px] h-9 rounded-lg bg-slate-900 border-slate-700 text-xs text-slate-300 focus:ring-indigo-500/50 focus:border-indigo-500/50"
 };
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -42,15 +54,15 @@ const categoryIcons: { [key: string]: React.ElementType } = {
     'Diğer': FileText,
 };
 
-const categoryIconColors: { [key: string]: string } = {
-    'Genel Deneme Sınavları': 'text-yellow-400 bg-yellow-400/10',
-    'Matematik': 'text-red-400 bg-red-400/10',
-    'Fen Bilimleri': 'text-orange-400 bg-orange-400/10',
-    'Türkçe': 'text-amber-400 bg-amber-400/10',
-    'Sosyal Bilgiler': 'text-cyan-400 bg-cyan-400/10',
-    'İngilizce': 'text-blue-400 bg-blue-400/10',
-    'Serbest Etkinlikler': 'text-purple-400 bg-purple-400/10',
-    'Diğer': 'text-slate-400 bg-slate-400/10',
+const categoryColors: { [key: string]: { text: string, bg: string, border: string } } = {
+    'Genel Deneme Sınavları': { text: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20' },
+    'Matematik': { text: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
+    'Fen Bilimleri': { text: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
+    'Türkçe': { text: 'text-rose-400', bg: 'bg-rose-400/10', border: 'border-rose-400/20' },
+    'Sosyal Bilgiler': { text: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20' },
+    'İngilizce': { text: 'text-violet-400', bg: 'bg-violet-400/10', border: 'border-violet-400/20' },
+    'Serbest Etkinlikler': { text: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10', border: 'border-fuchsia-400/20' },
+    'Diğer': { text: 'text-slate-400', bg: 'bg-slate-400/10', border: 'border-slate-400/20' },
 };
 
 type TestTypeFilter = 'all' | 'bank' | 'trackedBook' | 'exam' | 'json';
@@ -58,7 +70,7 @@ type ViewMode = 'grid' | 'list';
 type SortKey = 'title' | '_date' | 'status' | 'score' | 'studentId' | 'questionCount'; 
 type PaginationState = { [key in 'all' | 'pending' | 'completed']: number };
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 12;
 
 export default function AllTestsPage() {
     const { toast } = useToast();
@@ -68,19 +80,18 @@ export default function AllTestsPage() {
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
     const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
     
-    // --- FİLTRELER ---
+    // Filtreler
     const [activeTab, setActiveTab] = React.useState<'all'|'pending'|'completed'>('all');
     const [activeTestType, setActiveTestType] = React.useState<TestTypeFilter>('all');
-    const [selectedSubCategory, setSelectedSubCategory] = React.useState<string>('all'); // Kaynak (Source)
-    const [selectedSubject, setSelectedSubject] = React.useState<string>('all'); // Ders (Subject)
-    const [selectedTopic, setSelectedTopic] = React.useState<string>('all'); // Konu (Topic)
+    const [selectedSubCategory, setSelectedSubCategory] = React.useState<string>('all');
+    const [selectedSubject, setSelectedSubject] = React.useState<string>('all');
+    const [selectedTopic, setSelectedTopic] = React.useState<string>('all');
     
     const [viewMode, setViewMode] = React.useState<ViewMode>('list');
     const [sortKey, setSortKey] = React.useState<SortKey>('_date');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
 
     const [pagination, setPagination] = React.useState<PaginationState>({ all: 1, pending: 1, completed: 1 });
-    const currentPage = pagination[activeTab];
 
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -113,36 +124,26 @@ export default function AllTestsPage() {
         }
     };
 
-    // Tip değiştiğinde alt filtreleri sıfırla
     React.useEffect(() => {
         setSelectedSubCategory('all');
-        // Ders ve konu filtresini korumak isteyebilirsiniz, o yüzden onları sıfırlamıyorum.
     }, [activeTestType]);
 
-    // Ders değiştiğinde konuyu sıfırla
     React.useEffect(() => {
         setSelectedTopic('all');
     }, [selectedSubject]);
     
-    // --- VERİ İŞLEME VE FİLTRELEME ---
+    // Veri İşleme
     const { 
-        pendingTests, 
-        completedTests, 
-        allFilteredTests, 
-        sourceOptions,
-        subjectOptions,
-        topicOptions,
-        totalPages
+        pendingTests, completedTests, allFilteredTests, 
+        sourceOptions, subjectOptions, topicOptions, totalPages
     } = React.useMemo(() => {
         
-        // 1. Veriyi Zenginleştir
         const enrichedTests = tests.map(test => {
             let sourceId = 'unknown';
             let sourceName = 'Bilinmeyen Kaynak';
             let topicName = null;
             let subjectName = getCategoryName(test);
 
-            // Kaynak Adı Bulma
             if (test.sourceType === 'trackedBook') {
                 const book = trackedBooks.find(b => b.subjects.some(s => s.topics.some(t => t.id === test.topicId)));
                 if (book) {
@@ -154,14 +155,12 @@ export default function AllTestsPage() {
                 sourceName = (test as any).sourceName || test.title;
             }
 
-            // Konu Adı Bulma
             if (test.topicId) {
                 const allTopics = trackedBooks.flatMap(b => b.subjects.flatMap(s => s.topics));
                 const foundTopic = allTopics.find(t => t.id === test.topicId);
                 if (foundTopic) topicName = foundTopic.name;
             }
 
-            // Tarih Mantığı
             let sortableDate = new Date();
             if (test.status === 'Sonuçlandı' && (test as any).updatedAt) {
                 sortableDate = new Date((test as any).updatedAt);
@@ -179,38 +178,30 @@ export default function AllTestsPage() {
             };
         });
 
-        // 2. Ana Filtreleme
         const filtered = enrichedTests.filter(t => {
             if (selectedStudents.length > 0 && !selectedStudents.includes(t.studentId)) return false;
             if (activeTestType !== 'all' && t.sourceType !== activeTestType) return false;
             if (selectedSubCategory !== 'all' && t._sourceId !== selectedSubCategory) return false;
             if (selectedSubject !== 'all' && t._subjectName !== selectedSubject) return false;
-            // Konu filtresi: Eğer konu seçiliyse ve testin konusu yoksa veya uyuşmuyorsa gizle
             if (selectedTopic !== 'all' && t._topicName !== selectedTopic) return false;
-            
             return true;
         });
 
-        // 3. Dropdown Seçeneklerini Oluştur (Mevcut filtrelere göre daraltılmış liste)
-        // Kaynaklar: Sadece aktif Test Tipine göre
         const uniqueSources = Array.from(new Set(
             enrichedTests
                 .filter(t => activeTestType === 'all' || t.sourceType === activeTestType)
                 .map(t => JSON.stringify({ id: t._sourceId, name: t._sourceName }))
         )).map(s => JSON.parse(s));
 
-        // Dersler: Tüm testlerden çek
         const uniqueSubjects = Array.from(new Set(enrichedTests.map(t => t._subjectName))).sort();
 
-        // Konular: Seçili Derse göre filtrele
         const uniqueTopics = Array.from(new Set(
             enrichedTests
                 .filter(t => selectedSubject === 'all' || t._subjectName === selectedSubject)
                 .map(t => t._topicName)
-                .filter(Boolean) // null olmayanlar
+                .filter(Boolean)
         )).sort();
 
-        // 4. Sıralama
         const sorted = filtered.sort((a, b) => {
             let valA: any = a[sortKey as keyof typeof a];
             let valB: any = b[sortKey as keyof typeof b];
@@ -257,7 +248,6 @@ export default function AllTestsPage() {
         });
     };
     
-    // Filtre veya sekme değiştiğinde sayfayı sıfırla
     React.useEffect(() => {
         setPagination(prev => ({...prev, [activeTab]: 1}));
     }, [activeTab, selectedStudents, activeTestType, selectedSubCategory, selectedSubject, selectedTopic]);
@@ -266,56 +256,58 @@ export default function AllTestsPage() {
     const paginatedPending = pendingTests.slice((pagination.pending - 1) * ITEMS_PER_PAGE, pagination.pending * ITEMS_PER_PAGE);
     const paginatedCompleted = completedTests.slice((pagination.completed - 1) * ITEMS_PER_PAGE, pagination.completed * ITEMS_PER_PAGE);
 
-
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative flex flex-col">
             
-            {/* FIXED BACKGROUND */}
+            {/* Arka Plan Efektleri */}
             <div className="fixed inset-0 bg-slate-950 -z-50" />
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-900/20 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-emerald-900/20 rounded-full blur-[120px]" />
+                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-900/10 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[120px]" />
             </div>
 
-            {/* HEADER */}
-            <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
-                <div className="max-w-5xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
+            {/* Header */}
+            <header className={themeColors.HEADER_BG}>
+                <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                         <Button 
                             onClick={() => window.history.back()} 
                             variant="ghost" 
                             size="icon"
-                            className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors -ml-2"
+                            className="rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors -ml-2 h-9 w-9 sm:h-10 sm:w-10"
                         >
-                            <ArrowLeft className="h-6 w-6" />
+                            <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                         </Button>
-                        <div className={cn("from-indigo-500 to-purple-600", glassColors.ICON_BOX)}>
-                             <ClipboardList className="w-6 h-6 text-white" />
+                        <div className={themeColors.ICON_BOX}>
+                             <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
-                        <div>
-                            <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">
-                                Tüm Ödevler
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-100 leading-none">
+                                Ödev Yönetimi
                             </h1>
-                            <p className="text-xs font-medium text-slate-400 mt-0.5">Ödev Takip ve Analiz</p>
+                            <p className="text-[10px] sm:text-xs font-medium text-slate-400 mt-1">Öğrenci ödev takibi ve sonuç analizi</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* ÖĞRENCİ FİLTRESİ */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className={cn("rounded-xl h-9 text-xs font-semibold whitespace-nowrap border-white/10 bg-white/5 hover:bg-white/10 text-slate-300", selectedStudents.length > 0 && "bg-indigo-600 border-indigo-500 text-white")}>
-                                    <ListFilter className="mr-1.5 h-3.5 w-3.5" />
-                                    <span className="hidden sm:inline">Öğrenci</span> {selectedStudents.length > 0 && `(${selectedStudents.length})`}
+                                <Button variant="outline" className={cn(
+                                    "rounded-xl h-9 sm:h-10 px-3 sm:px-4 text-xs font-semibold whitespace-nowrap border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition-colors", 
+                                    selectedStudents.length > 0 && "bg-indigo-600/10 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/20"
+                                )}>
+                                    <ListFilter className="mr-2 h-4 w-4" />
+                                    <span className="hidden sm:inline">Öğrenci Filtresi</span> 
+                                    {selectedStudents.length > 0 && <Badge className="ml-2 bg-indigo-500 text-white px-1.5 py-0.5 h-5 rounded-md text-[10px]">{selectedStudents.length}</Badge>}
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-white/10 text-slate-100">
-                                <DropdownMenuLabel>Öğrenci Seçin</DropdownMenuLabel>
-                                <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-100 rounded-xl shadow-2xl">
+                                <DropdownMenuLabel className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Öğrenci Seçin</DropdownMenuLabel>
+                                <DropdownMenuSeparator className="bg-slate-800" />
                                 <DropdownMenuCheckboxItem
                                     checked={selectedStudents.length === 0}
                                     onCheckedChange={() => setSelectedStudents([])}
-                                    className="focus:bg-white/10 focus:text-white"
+                                    className="focus:bg-slate-800 focus:text-white cursor-pointer"
                                 >
                                     Tümü
                                 </DropdownMenuCheckboxItem>
@@ -325,15 +317,13 @@ export default function AllTestsPage() {
                                         checked={selectedStudents.includes(student.id)}
                                         onCheckedChange={(checked) => {
                                             setSelectedStudents(prev => 
-                                                checked 
-                                                ? [...prev, student.id] 
-                                                : prev.filter(id => id !== student.id)
+                                                checked ? [...prev, student.id] : prev.filter(id => id !== student.id)
                                             );
                                         }}
-                                        className="focus:bg-white/10 focus:text-white"
+                                        className="focus:bg-slate-800 focus:text-white cursor-pointer"
                                     >
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>
+                                            <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{backgroundColor: student.color}}/>
                                             {student.name}
                                         </div>
                                     </DropdownMenuCheckboxItem>
@@ -342,59 +332,68 @@ export default function AllTestsPage() {
                         </DropdownMenu>
                     </div>
                 </div>
-            </div>
+            </header>
 
-            <div className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
+            <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
                 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full space-y-6">
-                    {/* DURUM TABS */}
-                    <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 h-12 p-1 rounded-2xl bg-slate-900/50 border border-white/10 backdrop-blur-md">
-                        <TabsTrigger value="all" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Tümü ({allFilteredTests.length})</TabsTrigger>
-                        <TabsTrigger value="pending" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Bekleyen ({pendingTests.length})</TabsTrigger>
-                        <TabsTrigger value="completed" className="rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200 transition-all">Biten ({completedTests.length})</TabsTrigger>
-                    </TabsList>
                     
-                    {/* DETAYLI FİLTRE ALANI */}
-                    <div className={cn("p-4 rounded-3xl mb-4 flex flex-col gap-4", glassColors.CARD_BG)}>
+                    {/* Filtre ve Kontrol Paneli */}
+                    <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 shadow-sm backdrop-blur-sm flex flex-col gap-4">
                         
-                        {/* Üst Satır: Tip Seçimi ve Görünüm Modu */}
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                            <Tabs value={activeTestType} onValueChange={(value) => setActiveTestType(value as TestTypeFilter)} className="w-full sm:w-auto">
-                                <TabsList className="p-1 h-9 bg-white/5 border border-white/10 rounded-lg w-full sm:w-auto grid grid-cols-5 sm:flex">
-                                    <TabsTrigger value="all" className="text-xs h-7 px-2 sm:px-3 rounded-md">Tümü</TabsTrigger>
-                                    <TabsTrigger value="bank" className="text-xs h-7 px-2 sm:px-3 rounded-md">Soru</TabsTrigger>
-                                    <TabsTrigger value="trackedBook" className="text-xs h-7 px-2 sm:px-3 rounded-md">Kitap</TabsTrigger>
-                                    <TabsTrigger value="exam" className="text-xs h-7 px-2 sm:px-3 rounded-md">Deneme</TabsTrigger>
-                                    <TabsTrigger value="json" className="text-xs h-7 px-2 sm:px-3 rounded-md">Yazılı</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
+                        {/* Üst Satır: Durum Sekmeleri ve Görünüm */}
+                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-800/60 pb-4">
+                            <TabsList className="h-10 p-1 rounded-xl bg-slate-950/50 border border-slate-800 w-full lg:w-auto grid grid-cols-3">
+                                <TabsTrigger value="all" className="rounded-lg text-xs font-semibold data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 transition-all">
+                                    Tümü <Badge variant="secondary" className="ml-1.5 bg-slate-700/50 text-slate-300 hover:bg-slate-700/50 text-[9px] px-1">{allFilteredTests.length}</Badge>
+                                </TabsTrigger>
+                                <TabsTrigger value="pending" className="rounded-lg text-xs font-semibold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400 text-slate-400 transition-all">
+                                    Bekleyen <Badge variant="secondary" className="ml-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/20 text-[9px] px-1">{pendingTests.length}</Badge>
+                                </TabsTrigger>
+                                <TabsTrigger value="completed" className="rounded-lg text-xs font-semibold data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-400 text-slate-400 transition-all">
+                                    Biten <Badge variant="secondary" className="ml-1.5 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 text-[9px] px-1">{completedTests.length}</Badge>
+                                </TabsTrigger>
+                            </TabsList>
 
-                            <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/10 ml-auto">
-                                <Button size="sm" variant="ghost" onClick={() => setViewMode('grid')} className={cn("h-8 w-8 p-0 rounded-md transition-all", viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300')}>
-                                    <LayoutGrid className="w-4 h-4" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => setViewMode('list')} className={cn("h-8 w-8 p-0 rounded-md transition-all", viewMode === 'list' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300')}>
-                                    <List className="w-4 h-4" />
-                                </Button>
+                            <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+                                {/* Tip Seçimi */}
+                                <Tabs value={activeTestType} onValueChange={(value) => setActiveTestType(value as TestTypeFilter)}>
+                                    <TabsList className="h-9 p-1 bg-slate-950/50 border border-slate-800 rounded-lg">
+                                        {['all', 'bank', 'trackedBook', 'exam', 'json'].map((type) => (
+                                            <TabsTrigger key={type} value={type} className="text-[11px] h-7 px-2.5 rounded-md data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 capitalize">
+                                                {type === 'all' ? 'Tümü' : type === 'bank' ? 'Soru' : type === 'trackedBook' ? 'Kitap' : type === 'exam' ? 'Deneme' : 'Yazılı'}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                </Tabs>
+
+                                {/* Görünüm Değiştirici */}
+                                <div className="flex bg-slate-950/50 p-1 rounded-lg border border-slate-800">
+                                    <Button size="sm" variant="ghost" onClick={() => setViewMode('grid')} className={cn("h-7 w-8 p-0 rounded-md transition-all", viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300')}>
+                                        <LayoutGrid className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => setViewMode('list')} className={cn("h-7 w-8 p-0 rounded-md transition-all", viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300')}>
+                                        <List className="w-4 h-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Alt Satır: Dropdown Filtreler (Kaynak, Ders, Konu) */}
-                        <div className="flex flex-wrap gap-2 items-center">
-                            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2 flex items-center gap-1">
-                                <Filter className="w-3 h-3" /> Filtrele:
+                        {/* Alt Satır: Detaylı Filtreler */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mr-1">
+                                <Filter className="w-3.5 h-3.5" /> Daralt:
                             </div>
 
-                            {/* KAYNAK SEÇİMİ */}
                             {sourceOptions.length > 0 && (
                                 <Select value={selectedSubCategory} onValueChange={setSelectedSubCategory}>
-                                    <SelectTrigger className={glassColors.FILTER_SELECT}>
+                                    <SelectTrigger className={themeColors.FILTER_SELECT}>
                                         <div className="flex items-center truncate">
-                                            <span className="text-slate-400 mr-2">Kaynak:</span>
+                                            <span className="text-slate-500 mr-2">Kaynak:</span>
                                             <SelectValue placeholder="Tümü" />
                                         </div>
                                     </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                    <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
                                         <SelectItem value="all">Tüm Kaynaklar</SelectItem>
                                         {sourceOptions.map(source => (
                                             <SelectItem key={source.id} value={source.id}>{source.name}</SelectItem>
@@ -403,15 +402,14 @@ export default function AllTestsPage() {
                                 </Select>
                             )}
 
-                            {/* DERS SEÇİMİ */}
                             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className={glassColors.FILTER_SELECT}>
+                                <SelectTrigger className={themeColors.FILTER_SELECT}>
                                     <div className="flex items-center truncate">
-                                        <span className="text-slate-400 mr-2">Ders:</span>
+                                        <span className="text-slate-500 mr-2">Ders:</span>
                                         <SelectValue placeholder="Tümü" />
                                     </div>
                                 </SelectTrigger>
-                                <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
                                     <SelectItem value="all">Tüm Dersler</SelectItem>
                                     {subjectOptions.map(subject => (
                                         <SelectItem key={subject} value={subject}>{subject}</SelectItem>
@@ -419,15 +417,14 @@ export default function AllTestsPage() {
                                 </SelectContent>
                             </Select>
 
-                            {/* KONU SEÇİMİ (Ders seçilince anlamlı olur) */}
                             <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={topicOptions.length === 0}>
-                                <SelectTrigger className={cn(glassColors.FILTER_SELECT, topicOptions.length === 0 && "opacity-50 cursor-not-allowed")}>
+                                <SelectTrigger className={cn(themeColors.FILTER_SELECT, topicOptions.length === 0 && "opacity-50 cursor-not-allowed")}>
                                     <div className="flex items-center truncate">
-                                        <span className="text-slate-400 mr-2">Konu:</span>
+                                        <span className="text-slate-500 mr-2">Konu:</span>
                                         <SelectValue placeholder="Tümü" />
                                     </div>
                                 </SelectTrigger>
-                                <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
                                     <SelectItem value="all">Tüm Konular</SelectItem>
                                     {topicOptions.map(topic => (
                                         <SelectItem key={topic} value={topic}>{topic}</SelectItem>
@@ -435,7 +432,6 @@ export default function AllTestsPage() {
                                 </SelectContent>
                             </Select>
                             
-                            {/* FİLTRE TEMİZLE */}
                             {(selectedSubCategory !== 'all' || selectedSubject !== 'all' || selectedTopic !== 'all') && (
                                 <Button 
                                     variant="ghost" 
@@ -445,56 +441,42 @@ export default function AllTestsPage() {
                                         setSelectedSubject('all');
                                         setSelectedTopic('all');
                                     }}
-                                    className="h-9 px-3 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs"
+                                    className="h-9 px-3 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs ml-auto sm:ml-0 rounded-lg"
                                 >
-                                    Temizle
+                                    Filtreyi Temizle
                                 </Button>
                             )}
                         </div>
                     </div>
 
-                    <TabsContent value="all" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-                        <TestsListOrGrid 
-                            tests={paginatedAll} 
-                            viewMode={viewMode} 
-                            familyMembers={familyMembers} 
-                            onDelete={handleDeleteTest}
-                            sortKey={sortKey}
-                            sortDirection={sortDirection}
-                            onSort={handleSort}
-                        />
-                         <PaginationControls currentPage={pagination.all} totalPages={totalPages.all} onPageChange={handlePageChange} />
-                    </TabsContent>
-                    
-                    <TabsContent value="pending" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-                        <TestsListOrGrid 
-                            tests={paginatedPending} 
-                            viewMode={viewMode} 
-                            familyMembers={familyMembers} 
-                            onDelete={handleDeleteTest} 
-                            sortKey={sortKey}
-                            sortDirection={sortDirection}
-                            onSort={handleSort}
-                            emptyMessage="Bekleyen ödev bulunamadı." 
-                        />
-                         <PaginationControls currentPage={pagination.pending} totalPages={totalPages.pending} onPageChange={handlePageChange} />
-                    </TabsContent>
-                    
-                    <TabsContent value="completed" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-                        <TestsListOrGrid 
-                            tests={paginatedCompleted} 
-                            viewMode={viewMode} 
-                            familyMembers={familyMembers} 
-                            onDelete={handleDeleteTest} 
-                            sortKey={sortKey}
-                            sortDirection={sortDirection}
-                            onSort={handleSort}
-                            emptyMessage="Tamamlanmış ödev bulunamadı." 
-                        />
-                        <PaginationControls currentPage={pagination.completed} totalPages={totalPages.completed} onPageChange={handlePageChange} />
-                    </TabsContent>
+                    {/* Veri Gösterim Alanı */}
+                    <div className="min-h-[400px]">
+                        <TabsContent value="all" className="m-0 animate-in fade-in duration-300">
+                            <TestsListOrGrid 
+                                tests={paginatedAll} viewMode={viewMode} familyMembers={familyMembers} 
+                                onDelete={handleDeleteTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort}
+                            />
+                             <PaginationControls currentPage={pagination.all} totalPages={totalPages.all} onPageChange={handlePageChange} />
+                        </TabsContent>
+                        
+                        <TabsContent value="pending" className="m-0 animate-in fade-in duration-300">
+                            <TestsListOrGrid 
+                                tests={paginatedPending} viewMode={viewMode} familyMembers={familyMembers} 
+                                onDelete={handleDeleteTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} emptyMessage="Bekleyen ödev bulunamadı. Harika!" 
+                            />
+                             <PaginationControls currentPage={pagination.pending} totalPages={totalPages.pending} onPageChange={handlePageChange} />
+                        </TabsContent>
+                        
+                        <TabsContent value="completed" className="m-0 animate-in fade-in duration-300">
+                            <TestsListOrGrid 
+                                tests={paginatedCompleted} viewMode={viewMode} familyMembers={familyMembers} 
+                                onDelete={handleDeleteTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} emptyMessage="Tamamlanmış ödev bulunamadı." 
+                            />
+                            <PaginationControls currentPage={pagination.completed} totalPages={totalPages.completed} onPageChange={handlePageChange} />
+                        </TabsContent>
+                    </div>
                 </Tabs>
-            </div>
+            </main>
         </div>
     );
 }
@@ -504,36 +486,24 @@ export default function AllTestsPage() {
 function PaginationControls({ currentPage, totalPages, onPageChange }: { currentPage: number, totalPages: number, onPageChange: (direction: 'next' | 'prev') => void }) {
     if (totalPages <= 1) return null;
     return (
-        <div className="flex items-center justify-center gap-4 mt-6">
-            <Button variant="outline" size="sm" className={glassColors.BUTTON_GLASS} onClick={() => onPageChange('prev')} disabled={currentPage === 1}>
-                <ChevronLeft className="mr-2 h-4 w-4" /> Önceki
+        <div className="flex items-center justify-center gap-4 mt-8 pb-8">
+            <Button variant="outline" size="sm" className={themeColors.BUTTON_GLASS} onClick={() => onPageChange('prev')} disabled={currentPage === 1}>
+                <ChevronLeft className="mr-1.5 h-4 w-4" /> Önceki
             </Button>
-            <span className="font-bold text-sm text-slate-400">Sayfa {currentPage} / {totalPages}</span>
-            <Button variant="outline" size="sm" className={glassColors.BUTTON_GLASS} onClick={() => onPageChange('next')} disabled={currentPage === totalPages}>
-                Sonraki <ChevronRight className="ml-2 h-4 w-4" />
+            <div className="flex items-center justify-center bg-slate-900 border border-slate-800 rounded-lg px-4 h-9 shadow-sm">
+                <span className="font-semibold text-xs text-slate-300">Sayfa <span className="text-white">{currentPage}</span> / {totalPages}</span>
+            </div>
+            <Button variant="outline" size="sm" className={themeColors.BUTTON_GLASS} onClick={() => onPageChange('next')} disabled={currentPage === totalPages}>
+                Sonraki <ChevronRight className="ml-1.5 h-4 w-4" />
             </Button>
         </div>
     );
 }
 
 function TestsListOrGrid({ 
-    tests, 
-    viewMode, 
-    familyMembers, 
-    onDelete, 
-    emptyMessage, 
-    sortKey, 
-    sortDirection, 
-    onSort 
+    tests, viewMode, familyMembers, onDelete, emptyMessage, sortKey, sortDirection, onSort 
 }: { 
-    tests: Test[], 
-    viewMode: ViewMode, 
-    familyMembers: FamilyMember[], 
-    onDelete: (id: string) => void, 
-    emptyMessage?: string,
-    sortKey?: SortKey,
-    sortDirection?: 'asc' | 'desc',
-    onSort?: (key: SortKey) => void
+    tests: Test[], viewMode: ViewMode, familyMembers: FamilyMember[], onDelete: (id: string) => void, emptyMessage?: string, sortKey?: SortKey, sortDirection?: 'asc' | 'desc', onSort?: (key: SortKey) => void
 }) {
     if (tests.length === 0) {
         return <EmptyState message={emptyMessage} />;
@@ -541,7 +511,7 @@ function TestsListOrGrid({
 
     if (viewMode === 'grid') {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {tests.map(test => {
                     const student = familyMembers.find(m => m.id === test.studentId);
                     return <TestCard key={test.id} test={test} student={student} onDelete={onDelete} />;
@@ -552,48 +522,27 @@ function TestsListOrGrid({
 
     // LIST VIEW (TABLE)
     return (
-        <div className="rounded-2xl border border-white/10 overflow-hidden bg-white/5 backdrop-blur-md">
+        <div className="rounded-2xl border border-slate-800/80 overflow-hidden bg-slate-900/40 backdrop-blur-md shadow-xl">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr>
-                            <th onClick={() => onSort && onSort('title')} className={cn("p-4 pl-6 group", glassColors.TABLE_HEADER)}>
-                                <div className="flex items-center gap-1">
-                                    ÖDEV / KONU
-                                    {sortKey === 'title' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}
-                                </div>
+                            <th onClick={() => onSort && onSort('title')} className={cn("p-4 pl-6 group w-[40%]", themeColors.TABLE_HEADER)}>
+                                <div className="flex items-center gap-1.5">ÖDEV & KONU {sortKey === 'title' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}</div>
                             </th>
-                            <th onClick={() => onSort && onSort('studentId')} className={cn("p-4 text-center hidden sm:table-cell group", glassColors.TABLE_HEADER)}>
-                                <div className="flex items-center justify-center gap-1">
-                                    ÖĞRENCİ
-                                    {sortKey === 'studentId' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}
-                                </div>
+                            <th onClick={() => onSort && onSort('studentId')} className={cn("p-4 text-center hidden sm:table-cell group", themeColors.TABLE_HEADER)}>
+                                <div className="flex items-center justify-center gap-1.5">ÖĞRENCİ {sortKey === 'studentId' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}</div>
                             </th>
-                            <th onClick={() => onSort && onSort('questionCount')} className={cn("p-4 text-center hidden md:table-cell group", glassColors.TABLE_HEADER)}>
-                                <div className="flex items-center justify-center gap-1">
-                                    TOPLAM
-                                    {sortKey === 'questionCount' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}
-                                </div>
+                            <th onClick={() => onSort && onSort('_date')} className={cn("p-4 text-center hidden lg:table-cell group", themeColors.TABLE_HEADER)}>
+                                <div className="flex items-center justify-center gap-1.5">TARİH {sortKey === '_date' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}</div>
                             </th>
-                            <th onClick={() => onSort && onSort('_date')} className={cn("p-4 text-center hidden md:table-cell group", glassColors.TABLE_HEADER)}>
-                                <div className="flex items-center justify-center gap-1">
-                                    TARİH
-                                    {sortKey === '_date' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}
-                                </div>
+                            <th onClick={() => onSort && onSort('status')} className={cn("p-4 text-center hidden md:table-cell group", themeColors.TABLE_HEADER)}>
+                                <div className="flex items-center justify-center gap-1.5">DURUM {sortKey === 'status' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}</div>
                             </th>
-                            <th onClick={() => onSort && onSort('status')} className={cn("p-4 text-center hidden sm:table-cell group", glassColors.TABLE_HEADER)}>
-                                <div className="flex items-center justify-center gap-1">
-                                    DURUM
-                                    {sortKey === 'status' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}
-                                </div>
+                            <th onClick={() => onSort && onSort('score')} className={cn("p-4 text-center group", themeColors.TABLE_HEADER)}>
+                                <div className="flex items-center justify-center gap-1.5">BAŞARI {sortKey === 'score' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}</div>
                             </th>
-                            <th onClick={() => onSort && onSort('score')} className={cn("p-4 text-center group", glassColors.TABLE_HEADER)}>
-                                <div className="flex items-center justify-center gap-1">
-                                    BAŞARI
-                                    {sortKey === 'score' && <ArrowUpDown className="w-3 h-3 text-indigo-400" />}
-                                </div>
-                            </th>
-                            <th className={cn("p-4 text-right pr-6 cursor-default", glassColors.TABLE_HEADER)}>İŞLEM</th>
+                            <th className={cn("p-4 text-right pr-6 cursor-default", themeColors.TABLE_HEADER)}>İŞLEM</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -601,99 +550,107 @@ function TestsListOrGrid({
                             const student = familyMembers.find(m => m.id === test.studentId);
                             const categoryName = getCategoryName(test);
                             const isCompleted = test.status === 'Sonuçlandı';
+                            const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
                             
-                            // TARİH GÖSTERİMİ DÜZELTİLDİ
                             const dateObj = (test as any)._date ? new Date((test as any)._date) : new Date();
                             const dateStr = dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
-                            const dateLabel = isCompleted ? "Çözüldü" : "Son Tarih";
                             
-                            // Başarı Hesabı
                             const totalQ = (test.correctAnswers || 0) + (test.incorrectAnswers || 0) + (test.emptyAnswers || 0);
                             const successRate = totalQ > 0 ? ((test.correctAnswers || 0) / totalQ) * 100 : 0;
+                            const colors = categoryColors[categoryName] || categoryColors['Diğer'];
 
                             return (
-                                <tr key={test.id} className={cn("group", glassColors.TABLE_ROW)}>
+                                <tr key={test.id} className={cn("group", themeColors.TABLE_ROW)}>
                                     <td className="p-4 pl-6">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-200 text-sm sm:text-base line-clamp-1">{test.title}</span>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant="outline" className="bg-slate-900/50 border-slate-700 text-slate-500 text-[9px] h-4 px-1.5 uppercase font-bold tracking-wider">
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="font-semibold text-slate-200 text-sm md:text-base line-clamp-1 group-hover:text-white transition-colors">{test.title}</span>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <Badge variant="outline" className={cn("text-[9px] h-4.5 px-1.5 uppercase font-bold tracking-wider border", colors.text, colors.bg, colors.border)}>
                                                     {categoryName}
                                                 </Badge>
                                                 {(test as any)._topicName && (
-                                                    <div className="flex items-center gap-1 text-[10px] text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
-                                                        <BookOpen className="w-3 h-3 opacity-70"/>
-                                                        <span className="truncate max-w-[100px] sm:max-w-xs">{(test as any)._topicName}</span>
-                                                    </div>
+                                                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                                                        <BookOpen className="w-3 h-3"/> {(test as any)._topicName}
+                                                    </span>
                                                 )}
                                             </div>
-                                            {/* Mobile only student name */}
-                                            {student && <div className="sm:hidden text-xs text-slate-500 mt-1 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: student.color}}/> {student.name}</div>}
+                                            {student && <div className="sm:hidden mt-1 text-xs text-slate-400 flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/> {student.name}</div>}
                                         </div>
                                     </td>
                                     <td className="p-4 text-center hidden sm:table-cell">
                                         {student && (
-                                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 text-xs font-medium text-slate-300">
-                                                <div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>
+                                            <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 text-xs font-medium text-slate-300">
+                                                <div className="w-2 h-2 rounded-full shadow-sm" style={{backgroundColor: student.color}}/>
                                                 {student.name}
                                             </div>
                                         )}
                                     </td>
-                                    <td className="p-4 text-center text-sm text-slate-300 hidden md:table-cell">
-                                        <span className="font-bold">{test.questionCount || 0}</span>
-                                    </td>
-                                    <td className="p-4 text-center hidden md:table-cell">
-                                        <div className="flex flex-col items-center">
+                                    <td className="p-4 text-center hidden lg:table-cell">
+                                        <div className="flex flex-col items-center gap-0.5">
                                             <span className="text-sm text-slate-300 font-medium">{dateStr}</span>
-                                            <span className={cn("text-[10px] uppercase font-bold", isCompleted ? "text-emerald-500" : "text-amber-500")}>
-                                                {dateLabel}
-                                            </span>
+                                            <span className="text-[10px] text-slate-500 font-medium">{isCompleted ? "Tamamlanma" : "Son Tarih"}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-center hidden sm:table-cell">
+                                    <td className="p-4 text-center hidden md:table-cell">
                                         {isCompleted ? (
-                                            <Badge variant="outline" className="text-emerald-400 bg-emerald-500/10 border-emerald-500/20">Tamamlandı</Badge>
+                                            <Badge variant="outline" className="text-emerald-400 bg-emerald-400/10 border-emerald-400/20 font-medium">Tamamlandı</Badge>
+                                        ) : isPendingGrade ? (
+                                            <Badge variant="outline" className="text-amber-400 bg-amber-400/10 border-amber-400/20 font-medium">Not Bekliyor</Badge>
                                         ) : (
-                                            <Badge variant="outline" className="text-amber-400 bg-amber-500/10 border-amber-500/20">Bekliyor</Badge>
+                                            <Badge variant="outline" className="text-indigo-400 bg-indigo-400/10 border-indigo-400/20 font-medium">Atandı</Badge>
                                         )}
                                     </td>
                                     <td className="p-4 text-center">
                                         {isCompleted ? (
-                                            <div className="flex flex-col items-center">
-                                                <span className={cn("font-bold text-sm", successRate >= 70 ? "text-emerald-400" : successRate >= 50 ? "text-yellow-400" : "text-rose-400")}>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className={cn("font-bold text-sm", successRate >= 70 ? "text-emerald-400" : successRate >= 50 ? "text-amber-400" : "text-rose-400")}>
                                                     %{successRate.toFixed(0)}
                                                 </span>
-                                                <span className="text-[10px] text-slate-500">{test.correctAnswers}D - {test.incorrectAnswers}Y</span>
+                                                <div className="flex gap-1.5 text-[10px] font-medium">
+                                                    <span className="text-emerald-500/80">{test.correctAnswers}D</span>
+                                                    <span className="text-rose-500/80">{test.incorrectAnswers}Y</span>
+                                                    <span className="text-slate-500">{test.emptyAnswers}B</span>
+                                                </div>
                                             </div>
                                         ) : (
-                                            <span className="text-xs text-slate-600">-</span>
+                                            <span className="text-slate-600 font-medium text-sm">--</span>
                                         )}
                                     </td>
                                     <td className="p-4 text-right pr-6">
-                                        <div className="flex items-center justify-end gap-2">
+                                        <div className="flex items-center justify-end gap-1.5">
                                             <Link href={`/education/${test.id}`}>
-                                                <Button size="sm" className={cn("h-8 w-8 p-0 rounded-lg", isCompleted ? "bg-white/5 hover:bg-white/10 text-slate-400" : "bg-indigo-600 hover:bg-indigo-500 text-white")}>
-                                                    {isCompleted ? <ChevronRight className="w-4 h-4"/> : <PenTool className="w-3.5 h-3.5" />}
+                                                <Button size="sm" className={cn("h-8 px-3 rounded-lg text-xs font-semibold shadow-sm transition-all", isCompleted ? "bg-slate-800 hover:bg-slate-700 text-slate-200" : "bg-indigo-600 hover:bg-indigo-500 text-white")}>
+                                                    {isCompleted ? 'İncele' : 'Çöz'}
                                                 </Button>
                                             </Link>
                                             
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg">
-                                                        <Trash2 className="w-4 h-4" />
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
+                                                        <span className="sr-only">Menü</span>
+                                                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4"><path d="M3.625 7.5C3.625 8.12132 3.12132 8.625 2.5 8.625C1.87868 8.625 1.375 8.12132 1.375 7.5C1.375 6.87868 1.87868 6.375 2.5 6.375C3.12132 6.375 3.625 6.87868 3.625 7.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM13.625 7.5C13.625 8.12132 13.12132 8.625 12.5 8.625C11.87868 8.625 11.375 8.12132 11.375 7.5C11.375 6.87868 11.87868 6.375 12.5 6.375C13.12132 6.375 13.625 6.87868 13.625 7.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
                                                     </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Ödevi Sil</AlertDialogTitle>
-                                                        <AlertDialogDescription className="text-slate-400">"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 text-white">Evet, Sil</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40 bg-slate-900 border-slate-800 rounded-xl p-1">
+                                                    <Link href={`/education/management/questions?edit=${test.id}`}>
+                                                        <DropdownMenuCheckboxItem className="text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer flex items-center">
+                                                            <Edit className="w-4 h-4 mr-2" /> Düzenle
+                                                        </DropdownMenuCheckboxItem>
+                                                    </Link>
+                                                    <DropdownMenuSeparator className="bg-slate-800" />
+                                                    <DropdownMenuCheckboxItem 
+                                                        className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg cursor-pointer flex items-center"
+                                                        onSelect={(e) => {
+                                                            e.preventDefault(); // Menünün kapanmasını engelle, alert açılsın
+                                                            if(window.confirm(`"${test.title}" ödevini silmek istediğinize emin misiniz?`)) {
+                                                                onDelete(test.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Trash2 className="w-4 h-4 mr-2" /> Sil
+                                                    </DropdownMenuCheckboxItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </td>
                                 </tr>
@@ -706,15 +663,15 @@ function TestsListOrGrid({
     );
 }
 
-function EmptyState({ message = "Bu filtreye uygun ödev bulunamadı." }: { message?: string }) {
+function EmptyState({ message = "Bu kriterlere uygun ödev bulunamadı." }: { message?: string }) {
     return (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 m-auto max-w-lg w-full">
-            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
-                <ClipboardList className="h-8 w-8 text-slate-500" />
+        <div className="flex flex-col items-center justify-center py-24 text-center space-y-5 bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 m-auto max-w-2xl w-full">
+            <div className="w-20 h-20 bg-slate-800/80 rounded-full flex items-center justify-center shadow-inner">
+                <BarChart3 className="h-10 w-10 text-slate-600" />
             </div>
             <div>
-                <h3 className="text-lg font-bold text-slate-200">Kayıt Yok</h3>
-                <p className="text-slate-400 mt-1 text-sm">{message}</p>
+                <h3 className="text-xl font-bold text-slate-200">Kayıt Bulunamadı</h3>
+                <p className="text-slate-400 mt-2 text-sm max-w-sm mx-auto leading-relaxed">{message}</p>
             </div>
         </div>
     );
@@ -722,136 +679,136 @@ function EmptyState({ message = "Bu filtreye uygun ödev bulunamadı." }: { mess
 
 function TestCard({ test, student, onDelete }: { test: Test, student?: FamilyMember, onDelete: (id: string) => void }) {
     const isCompleted = test.status === 'Sonuçlandı';
+    const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
     const categoryName = getCategoryName(test);
     const Icon = categoryIcons[categoryName] || FileText;
-    const iconStyle = categoryIconColors[categoryName] || 'text-slate-400 bg-slate-400/10';
+    const colors = categoryColors[categoryName] || categoryColors['Diğer'];
 
-    // TARİH GÖSTERİMİ DÜZELTİLDİ
     const dateObj = (test as any)._date ? new Date((test as any)._date) : new Date();
-    const dateStr = dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-    const dateLabel = isCompleted ? "Çözüldü" : "Son Tarih";
+    const dateStr = dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
 
     const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
     const now = new Date();
     const daysDiff = differenceInDays(dueDate, now);
     const isTestDue = isPast(dueDate) && !isToday(dueDate);
 
-    // Score Calculation
     const totalQuestions = (test.correctAnswers || 0) + (test.incorrectAnswers || 0) + (test.emptyAnswers || 0);
     const successRate = totalQuestions > 0 ? ((test.correctAnswers || 0) / totalQuestions) * 100 : 0;
 
     return (
         <div className={cn(
-            "group relative flex flex-col sm:flex-row gap-4 p-5 rounded-3xl transition-all border backdrop-blur-md",
-            isCompleted ? "bg-emerald-900/10 border-emerald-500/20 hover:border-emerald-500/40" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"
+            "group flex flex-col h-full rounded-2xl overflow-hidden",
+            themeColors.CARD_BG
         )}>
-            {/* Status Indicator Bar */}
-            <div className={cn(
-                "absolute left-0 top-6 bottom-6 w-1 rounded-r-full transition-all",
-                isCompleted ? "bg-emerald-500" : isTestDue ? "bg-rose-500" : "bg-indigo-500"
-            )} />
-
-            <div className="flex-grow min-w-0 pl-3">
-                <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline" className="bg-slate-900/50 border-slate-700 text-slate-400 text-[10px] h-5 rounded-md px-2 font-medium tracking-wide uppercase">
+            {/* Üst Kısım: Rozetler ve Öğrenci */}
+            <div className="p-5 pb-4 flex justify-between items-start gap-2 border-b border-slate-800/50 bg-slate-900/30">
+                <div className="flex flex-col gap-2">
+                    <Badge variant="outline" className={cn("w-fit text-[10px] h-5 px-2 font-bold tracking-wide uppercase border", colors.text, colors.bg, colors.border)}>
                         {categoryName}
                     </Badge>
-                    {(test as any)._topicName && (
-                        <div className="flex items-center gap-1 text-[10px] text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
-                            <BookOpen className="w-3 h-3 opacity-70"/>
-                            <span className="truncate max-w-[100px] sm:max-w-xs">{(test as any)._topicName}</span>
-                        </div>
-                    )}
                     {student && (
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 ml-auto sm:ml-0">
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: student.color }} />
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
+                            <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: student.color }} />
                             {student.name}
                         </div>
                     )}
                 </div>
-
-                <div className="flex items-start gap-3">
-                    <div className={cn("p-2.5 rounded-xl shrink-0 mt-0.5", iconStyle)}>
-                        <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h3 className={cn("text-lg font-bold leading-tight mb-1 text-slate-100 group-hover:text-white transition-colors")}>
-                            {test.title}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-medium">
-                            {/* GÜNCELLENMİŞ TARİH ALANI */}
-                            <span className="flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-indigo-400" /> 
-                                {dateLabel}: {dateStr}
-                            </span>
-                            {!isCompleted && (
-                                <span className={cn(
-                                    "flex items-center gap-1.5 px-2 py-0.5 rounded-md",
-                                    isTestDue ? "text-rose-300 bg-rose-500/10" : "text-emerald-300 bg-emerald-500/10"
-                                )}>
-                                    <Clock className="w-3.5 h-3.5" />
-                                    {isTestDue ? "Süresi Geçti" : `${daysDiff + 1} gün kaldı`}
-                                </span>
-                            )}
-                        </div>
-                    </div>
+                <div className={cn("p-2 rounded-xl shrink-0 shadow-inner", colors.bg, colors.text)}>
+                    <Icon className="w-5 h-5 opacity-90" />
                 </div>
+            </div>
+
+            {/* Orta Kısım: Başlık ve Detaylar */}
+            <div className="p-5 flex-1 flex flex-col">
+                <h3 className="text-base sm:text-lg font-bold leading-snug mb-2 text-slate-100 group-hover:text-white transition-colors line-clamp-2">
+                    {test.title}
+                </h3>
                 
-                {/* Score Summary for Completed Tests */}
-                {isCompleted && (
-                    <div className="mt-4 flex items-center gap-4 bg-black/20 p-3 rounded-xl border border-white/5 w-fit">
-                        <div className="text-center px-2 border-r border-white/10">
-                            <span className="block text-xl font-black text-emerald-400">%{successRate.toFixed(0)}</span>
-                            <span className="text-[10px] uppercase text-slate-500 font-bold">Başarı</span>
+                {(test as any)._topicName && (
+                    <p className="text-xs text-slate-400 mb-4 flex items-center gap-1.5 line-clamp-1">
+                        <BookOpen className="w-3.5 h-3.5" /> {(test as any)._topicName}
+                    </p>
+                )}
+
+                <div className="mt-auto space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                        <Calendar className="w-4 h-4 text-slate-500" />
+                        {isCompleted ? `Çözüldü: ${dateStr}` : `Son Teslim: ${dateStr}`}
+                    </div>
+
+                    {!isCompleted && !isPendingGrade && (
+                        <div className={cn(
+                            "flex items-center gap-2 text-xs font-semibold px-2.5 py-1.5 rounded-lg w-fit",
+                            isTestDue ? "text-rose-400 bg-rose-400/10 border border-rose-400/20" : "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20"
+                        )}>
+                            <Clock className="w-3.5 h-3.5" />
+                            {isTestDue ? "Süresi Geçti" : `${daysDiff + 1} gün kaldı`}
                         </div>
-                        <div className="flex gap-3 text-xs font-medium">
-                            <div className="text-emerald-400 flex flex-col items-center"><CheckCircle className="w-4 h-4 mb-0.5"/> <span>{test.correctAnswers} D</span></div>
-                            <div className="text-rose-400 flex flex-col items-center"><XCircle className="w-4 h-4 mb-0.5"/> <span>{test.incorrectAnswers} Y</span></div>
-                            <div className="text-slate-400 flex flex-col items-center"><MinusCircle className="w-4 h-4 mb-0.5"/> <span>{test.emptyAnswers} B</span></div>
+                    )}
+                </div>
+
+                {isCompleted && (
+                    <div className="mt-5 grid grid-cols-4 gap-2 bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                        <div className="col-span-1 border-r border-slate-800 flex flex-col items-center justify-center">
+                            <span className={cn("text-lg font-black", successRate >= 70 ? "text-emerald-400" : successRate >= 50 ? "text-amber-400" : "text-rose-400")}>
+                                %{successRate.toFixed(0)}
+                            </span>
+                        </div>
+                        <div className="col-span-3 flex justify-around items-center text-xs font-semibold">
+                            <div className="flex flex-col items-center gap-1 text-emerald-400"><CheckCircle className="w-4 h-4 opacity-70"/><span>{test.correctAnswers}</span></div>
+                            <div className="flex flex-col items-center gap-1 text-rose-400"><XCircle className="w-4 h-4 opacity-70"/><span>{test.incorrectAnswers}</span></div>
+                            <div className="flex flex-col items-center gap-1 text-slate-400"><MinusCircle className="w-4 h-4 opacity-70"/><span>{test.emptyAnswers}</span></div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-row sm:flex-col items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-white/5 pt-4 sm:pt-0 sm:pl-4 mt-2 sm:mt-0">
-                 {test.status === 'Değerlendirme Bekliyor' ? (
-                    <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                        <Button variant="secondary" size="sm" className="w-full bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border-amber-500/30">Not Ver</Button>
-                    </Link>
-                ) : isCompleted ? (
-                      <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                        <Button variant="secondary" size="sm" className="w-full bg-white/10 hover:bg-white/20 text-white border-white/10">Sonuç</Button>
-                    </Link>
-                ) : (
-                    <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                         <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
-                            Çöz <ChevronRight className="w-3.5 h-3.5 ml-1"/>
-                         </Button>
-                    </Link>
-                )}
-                
-                <div className="flex gap-1 w-full sm:w-auto justify-end">
+            {/* Alt Kısım: Aksiyonlar */}
+            <div className="p-4 pt-0 mt-auto flex items-center justify-between gap-3">
+                <div className="flex-1">
+                    {isPendingGrade ? (
+                        <Link href={`/education/${test.id}`} className="block w-full">
+                            <Button variant="secondary" className="w-full bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20 font-semibold shadow-sm">
+                                Not Ver
+                            </Button>
+                        </Link>
+                    ) : isCompleted ? (
+                        <Link href={`/education/${test.id}`} className="block w-full">
+                            <Button variant="secondary" className="w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 shadow-sm font-semibold">
+                                Sonucu İncele
+                            </Button>
+                        </Link>
+                    ) : (
+                        <Link href={`/education/${test.id}`} className="block w-full">
+                            <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20 font-semibold">
+                                Eğitime Başla <ChevronRight className="w-4 h-4 ml-1.5"/>
+                            </Button>
+                        </Link>
+                    )}
+                </div>
+
+                <div className="flex gap-1 shrink-0">
                     <Link href={`/education/management/questions?edit=${test.id}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
                             <Edit className="w-4 h-4" />
                         </Button>
                     </Link>
-                    
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg">
+                             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg">
                                 <Trash2 className="w-4 h-4" />
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                        <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Ödevi Sil</AlertDialogTitle>
-                                <AlertDialogDescription className="text-slate-400">"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</AlertDialogDescription>
+                                <AlertDialogTitle className="text-xl">Ödevi Sil</AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-400">
+                                    <span className="text-white font-semibold">{test.title}</span> başlıklı ödevi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                                </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 text-white">Evet, Sil</AlertDialogAction>
+                            <AlertDialogFooter className="mt-4">
+                                <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200">İptal</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none">Evet, Sil</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

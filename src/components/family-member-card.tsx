@@ -2,11 +2,8 @@
 
 import * as React from "react";
 import Link from 'next/link';
-import { Card, CardContent } from "@/components/ui/card";
 import type { FamilyMember } from "@/lib/data";
-import { Progress } from "@/components/ui/progress";
 import { Star, Flame, Crown, Zap, Edit } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface FamilyMemberCardProps {
@@ -21,114 +18,156 @@ const moodEmojis: { [key: string]: string } = {
   playful: '😄',
   tired: '😴',
   stressed: '😰',
-  neutral: '😐'
+  neutral: '😐',
 };
 
-// Koyu mod gradyanlarını daha belirgin (daha karanlık/derin) yaptık
-const gradientClasses: { [key: string]: string } = {
-    Baba: "from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-950",
-    Anne: "from-pink-500 to-purple-600 dark:from-pink-900 dark:to-purple-950",
-    'Kız Çocuk': "from-purple-400 to-violet-500 dark:from-purple-900 dark:to-violet-950",
-    'Erkek Çocuk': "from-teal-400 to-cyan-500 dark:from-teal-900 dark:to-cyan-950",
-    Bebek: "from-yellow-400 to-orange-500 dark:from-yellow-700 dark:to-orange-900",
+// Sabit HEX renkleri yerine uygulamanın genel temasına uygun Tailwind sınıfları kullanıldı
+const roleAccent: { [key: string]: { from: string; to: string; text: string; bgSoft: string; iconFill: string } } = {
+  'Baba':        { from: 'from-blue-500', to: 'to-indigo-500', text: 'text-blue-600 dark:text-blue-400', bgSoft: 'bg-blue-50 dark:bg-blue-900/30', iconFill: 'fill-blue-500' },
+  'Anne':        { from: 'from-pink-500', to: 'to-purple-500', text: 'text-pink-600 dark:text-pink-400', bgSoft: 'bg-pink-50 dark:bg-pink-900/30', iconFill: 'fill-pink-500' },
+  'Kız Çocuk':  { from: 'from-purple-500', to: 'to-pink-500', text: 'text-purple-600 dark:text-purple-400', bgSoft: 'bg-purple-50 dark:bg-purple-900/30', iconFill: 'fill-purple-500' },
+  'Erkek Çocuk':{ from: 'from-emerald-500', to: 'to-cyan-500', text: 'text-emerald-600 dark:text-emerald-400', bgSoft: 'bg-emerald-50 dark:bg-emerald-900/30', iconFill: 'fill-emerald-500' },
+  'Bebek':       { from: 'from-amber-500', to: 'to-orange-500', text: 'text-amber-600 dark:text-amber-400', bgSoft: 'bg-amber-50 dark:bg-amber-900/30', iconFill: 'fill-amber-500' },
 };
+
+const defaultAccent = { from: 'from-slate-500', to: 'to-slate-600', text: 'text-slate-600 dark:text-slate-400', bgSoft: 'bg-slate-50 dark:bg-slate-800/50', iconFill: 'fill-slate-500' };
 
 export function FamilyMemberCard({ member, onEdit }: FamilyMemberCardProps) {
-  // Varsayılan gri gradyan (Rol bulunamazsa)
-  const gradient = gradientClasses[member.role] || 'from-slate-400 to-slate-500 dark:from-slate-800 dark:to-slate-900';
-  
+  const accent = roleAccent[member.role] || defaultAccent;
+  const xpPct = (member.xp % 1000) / 10;
+
   return (
-    <Link href={`/profile/${member.id}`} className="group block h-full">
-        <Card className="overflow-hidden h-full border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-2xl dark:shadow-black/50 hover:-translate-y-1 transition-all duration-300 bg-white dark:bg-slate-950">
-            
-            {/* Üst Gradyan Bölümü */}
-            <div className={cn("relative p-4 text-white bg-gradient-to-br transition-colors duration-500", gradient)}>
-                
-                {/* Düzenle Butonu */}
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:text-white hover:bg-white/20 dark:hover:bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onEdit();
-                    }}
-                >
-                    <Edit className="h-4 w-4" />
-                </Button>
+    <Link href={`/profile/${member.id}`} className="block active:scale-[0.98] transition-transform duration-200">
+      <div className="relative overflow-hidden rounded-[1.5rem] bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+        
+        {/* ── ÜST RENK BANDI (Gradient) ── */}
+        <div className={cn("h-1.5 w-full bg-gradient-to-r", accent.from, accent.to)} />
 
-                {/* Avatar ve Mood */}
-                <div className="flex justify-between items-start mb-2">
-                    <div className="relative">
-                        <div 
-                            className="w-16 h-16 rounded-full border-4 border-white/30 dark:border-white/10 flex items-center justify-center bg-white/20 dark:bg-black/20 backdrop-blur-sm text-3xl font-bold shadow-inner"
-                            style={{ backgroundColor: member.color ? `${member.color}80` : undefined, color: 'white' }}
-                        >
-                            {member.name.charAt(0).toUpperCase()}
-                        </div>
-                        {/* Çevrimiçi Durum Noktası */}
-                        <div className={cn(
-                            "absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white/50 dark:border-slate-700",
-                            member.status === 'online' ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]' : 'bg-slate-400'
-                        )}/>
-                    </div>
-                    <div className="text-4xl drop-shadow-md transform group-hover:scale-110 transition-transform duration-300">
-                        {moodEmojis[member.mood] || '😐'}
-                    </div>
-                </div>
-                
-                {/* İsim ve Rol */}
-                <h3 className="text-xl font-bold tracking-tight drop-shadow-sm">{member.name}</h3>
-                <p className="text-sm opacity-90 font-medium text-white/80">{member.role}</p>
-                
-                {/* XP ve Level Bar */}
-                <div className="mt-5 space-y-1.5">
-                    <div className="flex justify-between items-center text-xs font-bold mb-1">
-                        <span className="flex items-center gap-1.5 bg-black/20 dark:bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
-                            <Crown className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" /> 
-                            Seviye {member.level}
-                        </span>
-                        <span className="flex items-center gap-1 text-white/90">
-                            {member.xp.toLocaleString('tr-TR')} XP 
-                            <Star className="w-3 h-3 text-yellow-300"/>
-                        </span>
-                    </div>
-                    <Progress 
-                        value={(member.xp % 1000) / 10} 
-                        className="h-2.5 bg-black/20 dark:bg-black/50 border border-white/10" 
-                        indicatorClassName="bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
-                    />
-                </div>
-
-                {/* İstatistikler (Streak & Tasks) */}
-                <div className="flex justify-between items-center mt-5 text-sm">
-                    <div className="flex items-center gap-2 bg-white/20 dark:bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-md hover:bg-white/30 dark:hover:bg-white/10 transition-colors">
-                        <Flame className="w-4 h-4 text-orange-200 fill-orange-500 animate-pulse"/>
-                        <span className="font-bold">{member.streak} Gün</span>
-                    </div>
-                    <div className="flex items-center gap-2 bg-white/20 dark:bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-md hover:bg-white/30 dark:hover:bg-white/10 transition-colors">
-                        <Zap className="w-4 h-4 text-yellow-200 fill-yellow-400"/>
-                        <span className="font-bold">{member.completedTasks} Görev</span>
-                    </div>
-                </div>
+        {/* ── ÜSTTE: Avatar + Mood + Düzenle ── */}
+        <div className="p-4 pb-3">
+          <div className="flex items-start justify-between">
+            {/* Sol: Avatar + online dot */}
+            <div className="relative">
+              <div className={cn("w-14 h-14 rounded-[1.2rem] flex items-center justify-center text-2xl font-black text-white shadow-sm bg-gradient-to-br", accent.from, accent.to)}>
+                {member.name.charAt(0).toUpperCase()}
+              </div>
+              {/* Online nokta */}
+              <div className={cn(
+                  "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900",
+                  member.status === 'online' ? 'bg-emerald-500' : 'bg-slate-400'
+                )}
+              />
             </div>
 
-            {/* Alt İçerik (Rozetler) */}
-            <CardContent className="p-0 bg-white dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 transition-colors duration-300">
-                <div className="flex justify-center items-center gap-2 h-12 w-full px-4 text-slate-700 dark:text-slate-300">
-                    {member.badges && member.badges.length > 0 ? (
-                        member.badges.slice(0, 4).map((badge, index) => (
-                            <div key={index} className="text-xl hover:scale-125 transition-transform cursor-help grayscale-[0.3] hover:grayscale-0" title={badge}>
-                                {badge}
-                            </div>
-                        ))
-                    ) : (
-                        <span className="text-xs text-slate-400 dark:text-slate-600 italic">Henüz rozet yok</span>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
+            {/* Orta: İsim + Rol */}
+            <div className="flex-1 mx-3 min-w-0 pt-1">
+              <p className="text-base font-black leading-tight text-slate-900 dark:text-slate-100 truncate">
+                {member.name}
+              </p>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 uppercase tracking-wider">
+                {member.role}
+              </p>
+            </div>
+
+            {/* Sağ: Mood emoji + Düzenle */}
+            <div className="flex flex-col items-end gap-2">
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(); }}
+                className={cn("w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform", accent.bgSoft)}
+              >
+                <Edit className={cn("w-3.5 h-3.5", accent.text)} />
+              </button>
+              <span className="text-2xl leading-none">
+                {moodEmojis[member.mood] || '😐'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── SEVİYE + XP BAR ── */}
+        <div className="px-4 pb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full", accent.bgSoft)}>
+              <Crown className={cn("w-3.5 h-3.5", accent.text, accent.iconFill)} />
+              <span className={cn("text-[11px] font-black", accent.text)}>
+                Seviye {member.level}
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+              {member.xp.toLocaleString('tr-TR')} XP
+            </span>
+          </div>
+
+          {/* XP Progress bar */}
+          <div className="w-full h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+            <div
+              className={cn("h-full rounded-full transition-all duration-700 bg-gradient-to-r", accent.from, accent.to)}
+              style={{ width: `${xpPct}%` }}
+            />
+          </div>
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 text-right">
+            %{Math.round(xpPct)} → Seviye {member.level + 1}
+          </p>
+        </div>
+
+        {/* ── İSTATİSTİKLER: Streak & Görev ── */}
+        <div className="px-4 pb-4 flex gap-2.5">
+          <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-[1rem] bg-orange-50 dark:bg-orange-950/30 border border-orange-100/50 dark:border-orange-900/50">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-500 shadow-sm">
+              <Flame className="w-4 h-4 fill-white text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-900 dark:text-slate-100 leading-tight">
+                {member.streak}
+              </p>
+              <p className="text-[9px] font-bold text-orange-600/70 dark:text-orange-400/70 uppercase tracking-widest mt-0.5">Gün</p>
+            </div>
+          </div>
+
+          <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-[1rem] bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100/50 dark:border-indigo-900/50">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-400 to-indigo-500 shadow-sm">
+              <Zap className="w-4 h-4 fill-white text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-900 dark:text-slate-100 leading-tight">
+                {member.completedTasks}
+              </p>
+              <p className="text-[9px] font-bold text-indigo-600/70 dark:text-indigo-400/70 uppercase tracking-widest mt-0.5">Görev</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── ROZETLER ── */}
+        <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/20">
+          {member.badges && member.badges.length > 0 ? (
+            <div className="flex items-center gap-2">
+              <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">
+                Rozetler
+              </p>
+              {member.badges.slice(0, 5).map((badge, i) => (
+                <span
+                  key={i}
+                  title={badge}
+                  className="text-lg leading-none active:scale-110 transition-transform cursor-default"
+                >
+                  {badge}
+                </span>
+              ))}
+              {member.badges.length > 5 && (
+                <span
+                  className={cn("text-[10px] font-black px-2 py-0.5 rounded-full", accent.bgSoft, accent.text)}
+                >
+                  +{member.badges.length - 5}
+                </span>
+              )}
+            </div>
+          ) : (
+            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 text-center py-0.5">
+              Henüz rozet kazanılmadı
+            </p>
+          )}
+        </div>
+      </div>
     </Link>
   );
 }

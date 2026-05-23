@@ -1,10 +1,11 @@
+
 "use client";
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
 import { CalendarIcon, Loader2, Code, FileJson, User, BookOpen, Calendar as CalendarLucide, Copy, Check } from "lucide-react";
 
@@ -78,10 +79,23 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       assigneeId: initialData?.studentId || undefined,
-      dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : new Date(),
+      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
       jsonContent: initialData?.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
     },
   });
+
+  // Re-sync when initialData changes (for editing)
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset({
+        title: initialData.title,
+        subject: initialData.subject,
+        assigneeId: initialData.studentId,
+        dueDate: initialData.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
+        jsonContent: initialData.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
+      });
+    }
+  }, [initialData, form]);
 
   const handleCopySample = () => {
     navigator.clipboard.writeText(sampleJsonPlaceholder);
@@ -92,7 +106,6 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
         className: "bg-slate-900 border-white/10 text-white"
     });
     
-    // Formu da dolduralım ki kullanıcı hemen görsün (opsiyonel)
     if (!form.getValues("jsonContent")) {
         form.setValue("jsonContent", sampleJsonPlaceholder);
     }
@@ -109,11 +122,11 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
         subject: values.subject,
         studentId: values.assigneeId,
         questionCount: parsedQuestions.length,
-        assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
+        assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy', { locale: tr }),
         dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
         sourceType: 'json' as const,
-        status: 'Atandı' as const,
-        isArchived: false,
+        status: initialData?.status || 'Atandı' as const,
+        isArchived: initialData?.isArchived || false,
         jsonQuestions: parsedQuestions,
       };
       onFormSubmit(testData);
@@ -184,7 +197,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                                         mode="single" 
                                         selected={field.value} 
                                         onSelect={field.onChange} 
-                                        disabled={(date) => date < new Date()} 
+                                        disabled={(date) => date < new Date() && !initialData} 
                                         initialFocus 
                                         className="bg-slate-950 text-slate-200 rounded-md border border-white/10"
                                     />
@@ -198,7 +211,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                 <FormField control={form.control} name="jsonContent" render={({ field }) => (
                     <FormItem className="flex-1 flex flex-col min-h-0">
                         <div className="flex items-center justify-between">
-                            <FormLabel className={glassColors.LABEL}><Code className="w-3.5 h-3.5 text-yellow-400"/> JSON Verisi</FormLabel>
+                            <FormLabel className={glassColors.LABEL}><Code className="w-3.5 h-3.5 text-yellow-400"/> Soru Verileri (JSON)</FormLabel>
                             <Button 
                                 type="button" 
                                 variant="ghost" 
@@ -214,14 +227,13 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                             <div className="relative group">
                                 <Textarea 
                                     placeholder={sampleJsonPlaceholder} 
-                                    className={cn("h-64 font-mono text-xs leading-relaxed resize-none custom-scrollbar", glassColors.CODE_AREA)} 
+                                    className={cn("h-72 font-mono text-xs leading-relaxed resize-none custom-scrollbar", glassColors.CODE_AREA)} 
                                     {...field} 
                                 />
-                                <div className="absolute bottom-2 right-2 text-[10px] text-slate-500 font-mono bg-black/60 px-2 py-1 rounded border border-white/5 opacity-50 group-hover:opacity-100 transition-opacity">JSON</div>
+                                <div className="absolute bottom-2 right-2 text-[10px] text-slate-500 font-mono bg-black/60 px-2 py-1 rounded border border-white/5 opacity-50 group-hover:opacity-100 transition-opacity">JSON EDITOR</div>
                             </div>
                         </FormControl>
                         <FormMessage />
-                        <p className="text-xs text-slate-500 mt-1">Soruları yukarıdaki örnek formata uygun bir JSON dizisi olarak yapıştırın.</p>
                     </FormItem>
                 )}/>
             </div>
@@ -231,7 +243,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
             <Button type="submit" className={cn("w-full h-12 text-base font-semibold", glassColors.BUTTON_PRIMARY)} disabled={loading}>
             {loading ? (
                 <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> İşleniyor...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Kaydediliyor...
                 </>
             ) : (
                 initialData ? 'Değişiklikleri Kaydet' : 'Testi Oluştur ve Ata'

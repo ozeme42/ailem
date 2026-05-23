@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from 'next/link';
 import { ArrowLeft, FileJson, PlusCircle, Trash2, Edit, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTestsUpdate, deleteTest, addTest } from "@/lib/dataService";
+import { onTestsUpdate, deleteTest, addTest, updateTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { Test, FamilyMember, JsonTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
@@ -45,13 +45,14 @@ export function JsonTestsClient() {
   const handleFormSubmit = async (data: Omit<Test, 'id' | 'familyId'>) => {
     try {
       if (editingTest) {
-        // Update logic not implemented as it's complex, focusing on add/delete
-        toast({ title: "Güncelleme henüz desteklenmiyor." });
+        await updateTest(editingTest.id, data);
+        toast({ title: "Yazılı Test Güncellendi" });
       } else {
         await addTest(data);
         toast({ title: "Yazılı Test Oluşturuldu" });
       }
       setIsFormOpen(false);
+      setEditingTest(null);
     } catch (e) {
       toast({ title: "Hata", variant: "destructive" });
     }
@@ -94,30 +95,35 @@ export function JsonTestsClient() {
             {jsonTests.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {jsonTests.map(test => (
-                        <Card key={test.id} className={cn("flex flex-col", glassColors.CARD_BG)}>
+                        <Card key={test.id} className={cn("flex flex-col h-full", glassColors.CARD_BG)}>
                             <CardHeader>
                                 <CardTitle className="text-lg text-slate-200">{test.title}</CardTitle>
                                 <CardDescription className="text-slate-400">{test.subject}</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-grow">
-                                <Badge variant="secondary">{test.questionCount} Soru</Badge>
-                                {test.studentId && (
-                                    <Badge variant="outline" className="ml-2">
-                                        Atanan: {familyMembers.find(m => m.id === test.studentId)?.name || 'Bilinmiyor'}
-                                    </Badge>
-                                )}
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge variant="secondary">{test.questionCount} Soru</Badge>
+                                    {test.studentId && (
+                                        <Badge variant="outline" className="border-indigo-500/30 text-indigo-400">
+                                            Atanan: {familyMembers.find(m => m.id === test.studentId)?.name || 'Bilinmiyor'}
+                                        </Badge>
+                                    )}
+                                </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2 pt-4 border-t border-white/5">
+                                <Button size="sm" variant="ghost" onClick={() => handleOpenForm(test)} className="hover:bg-white/10 text-slate-400">
+                                    <Edit className="mr-2 h-4 w-4"/> Düzenle
+                                </Button>
                                 <Link href={`/education/${test.id}`}>
-                                    <Button size="sm" variant="secondary">Çöz</Button>
+                                    <Button size="sm" variant="secondary" className="bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border-indigo-600/30">Çöz</Button>
                                 </Link>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button size="icon" variant="ghost" className="text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
                                     <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
                                         <AlertDialogHeader><AlertDialogTitle>Testi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" testini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>İptal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteTest(test.id)}>Sil</AlertDialogAction>
+                                            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10">İptal</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700">Sil</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -134,16 +140,21 @@ export function JsonTestsClient() {
             )}
         </div>
 
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="max-w-2xl h-[80vh] flex flex-col bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle>Yeni Yazılı Test Oluştur</DialogTitle>
+        <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) setEditingTest(null); setIsFormOpen(open); }}>
+            <DialogContent className="max-w-2xl h-[85vh] flex flex-col bg-slate-900 border-white/10 text-slate-100 rounded-3xl p-0 overflow-hidden shadow-2xl">
+                <DialogHeader className="p-6 pb-2">
+                    <DialogTitle className="text-xl font-bold">{editingTest ? 'Yazılı Testi Düzenle' : 'Yeni Yazılı Test Oluştur'}</DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        Test bilgilerini ve soruları güncelleyin.
+                    </DialogDescription>
                 </DialogHeader>
-                <NewJsonTestForm
-                    familyMembers={familyMembers}
-                    onFormSubmit={handleFormSubmit}
-                    initialData={editingTest}
-                />
+                <div className="flex-1 overflow-hidden p-6 pt-0">
+                    <NewJsonTestForm
+                        familyMembers={familyMembers}
+                        onFormSubmit={handleFormSubmit}
+                        initialData={editingTest}
+                    />
+                </div>
             </DialogContent>
         </Dialog>
     </div>
