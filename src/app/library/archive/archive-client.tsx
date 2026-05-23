@@ -9,37 +9,34 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 
 import { 
-  Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, 
-  Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, 
-  UserPlus, Music, ArrowLeft, FolderOpen, MoreVertical, Download 
+  Loader2, PlusCircle, Search, Trash2, Library, FilePlus, 
+  Edit, X, UploadCloud, ChevronRight, ChevronDown, Settings, 
+  Download, MoreVertical, FolderOpen, BookOpen
 } from 'lucide-react';
 
 import { Book, AmbientSound, FamilyMember } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, onAmbientSoundsUpdate, addAmbientSound, deleteAmbientSound, updateBookTags, deleteTag } from '@/lib/dataService';
+import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, onAmbientSoundsUpdate, updateBookTags, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
 import { BookForm, BookFormData } from '@/components/new-book-form';
-import { Combobox } from "@/components/ui/combobox";
 
-// --- DESIGN SYSTEM: Glassmorphism Colors ---
+// --- DESIGN SYSTEM ---
 const glassColors = {
     CARD_BG: "bg-white/5 backdrop-blur-md border border-white/10 shadow-lg",
     CARD_HOVER: "hover:bg-white/10 hover:border-white/20 transition-all duration-300",
@@ -58,11 +55,8 @@ const brightColors = [
     { id: 'rose-red', gradient: 'from-rose-400/20 to-red-500/20 border-rose-400/30 text-rose-200' },
     { id: 'cyan-sky', gradient: 'from-cyan-400/20 to-sky-500/20 border-cyan-400/30 text-cyan-200' },
     { id: 'violet-purple', gradient: 'from-violet-500/20 to-purple-600/20 border-violet-500/30 text-violet-200' },
-    { id: 'pink-fuchsia', gradient: 'from-pink-500/20 to-fuchsia-500/20 border-pink-500/30 text-pink-200' },
-    { id: 'lime-emerald', gradient: 'from-lime-400/20 to-emerald-500/20 border-lime-400/30 text-lime-200'},
 ];
 
-// SCHEMAS
 const bookFormSchema = z.object({
   title: z.string().min(2, "Kitap adı en az 2 karakter olmalıdır."),
   author: z.string().optional(),
@@ -97,13 +91,11 @@ export function ArchiveClient() {
   const { toast } = useToast();
 
   const [books, setBooks] = useState<Book[]>([]);
-  const [ambientSounds, setAmbientSounds] = useState<AmbientSound[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
-  const [isSoundFormOpen, setIsSoundFormOpen] = useState(false);
   
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [viewingBook, setViewingBook] = useState<Book | null>(null);
@@ -111,9 +103,6 @@ export function ArchiveClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [view, setView] = useState<'books' | 'management'>('books');
-  const [activeTab, setActiveTab] = useState("adults");
-  const [activeManagementTab, setActiveManagementTab] = useState("shelves");
-
   const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Partial<Book>[]>([]);
@@ -126,12 +115,9 @@ export function ArchiveClient() {
   useEffect(() => {
     const unsubscribeBooks = onBooksUpdate(setBooks);
     const unsubscribeTags = onTagsUpdate("libraryTags", setAllTags);
-    const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
-
     return () => {
         unsubscribeBooks();
         unsubscribeTags();
-        unsubscribeSounds();
     };
   }, []);
 
@@ -154,24 +140,16 @@ export function ArchiveClient() {
     setIsSubmitting(true);
     try {
         let finalImageUrl = formData.image;
-
         if (formData.image && formData.image.startsWith('data:image')) {
-             toast({ title: "Görsel Yükleniyor..." });
              const destinationPath = `book-covers/${(formData.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
              const migrationResult = await migrateImage({ imageDataUri: formData.image, destinationPath });
-
              if (migrationResult.success && migrationResult.newUrl) {
                 finalImageUrl = migrationResult.newUrl;
-             } else {
-                 throw new Error(migrationResult.error || 'Görsel yükleme hatası.');
              }
         }
         
         const bookData: any = { ...formData, image: finalImageUrl };
         if (bookData.pageCount === undefined) delete bookData.pageCount;
-
-        const newTags = new Set([...allTags, ...(bookData.tags || [])]);
-        await updateTags("libraryTags", Array.from(newTags));
         
         if (editingBook) {
             await updateBook(editingBook.id, bookData);
@@ -223,7 +201,6 @@ export function ArchiveClient() {
     try {
         const result = await searchBooks(query.trim());
         if (result.success && result.books) {
-            if (result.books.length === 0) setSearchError('Kitap bulunamadı.');
             setSearchResults(result.books);
         } else {
             setSearchError(result.error || 'Arama hatası.');
@@ -237,63 +214,7 @@ export function ArchiveClient() {
   
   const handleSelectSearchResult = async (book: Partial<Book>) => {
     setIsSearchDialogOpen(false);
-    let finalImageUrl = book.image;
-    if (book.image) {
-        try {
-            const destinationPath = `book-covers/${(book.title || 'untitled').replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
-            const migrationResult = await migrateImage({ sourceUrl: book.image, destinationPath });
-            if (migrationResult.success && migrationResult.newUrl) finalImageUrl = migrationResult.newUrl;
-        } catch (e) {
-            console.error("Görsel aktarılamadı");
-        }
-    }
-    handleOpenAddDialog({ ...book, image: finalImageUrl });
-  };
-  
-  const handleBulkImport = async (importedBooks: Partial<Book>[]) => {
-    toast({ title: "İçe Aktarma Başlatıldı" });
-    setIsBulkJsonDialogOpen(false);
-    try {
-      for (const book of importedBooks) {
-        let finalImageUrl = book.image;
-        if (book.image) {
-          const destinationPath = `book-covers/${(book.title || "untitled").replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.jpg`;
-          const migrationResult = await migrateImage({ sourceUrl: book.image, destinationPath });
-          if (migrationResult.success && migrationResult.newUrl) finalImageUrl = migrationResult.newUrl;
-        }
-        await addBook({
-          type: 'Kitap',
-          rating: 0,
-          description: '',
-          isForChildren: false,
-          readers: [],
-          ...book,
-          image: finalImageUrl || 'https://placehold.co/300x450.png',
-          tags: book.tags || [],
-        });
-      }
-      toast({ title: "✅ Tamamlandı" });
-    } catch (e) {
-      toast({ title: "❌ Hata", variant: 'destructive' });
-    }
-  };
-  
-  const handleShelfFormSubmit = async (data: ShelfFormData) => {
-      if (!editingShelf) return;
-      const newShelfName = data.name.trim();
-      try {
-        if (editingShelf.isNew) {
-            await updateTags("libraryTags", [...allTags, newShelfName]);
-        } else { 
-            await updateBookTags(editingShelf.originalName, newShelfName);
-            const newAllTags = allTags.map(tag => tag === editingShelf.originalName ? newShelfName : tag);
-            await updateTags("libraryTags", newAllTags);
-        }
-        toast({ title: "Raf Güncellendi" });
-      } catch (e) {
-          toast({ title: "❌ Hata", variant: 'destructive'});
-      }
-      setEditingShelf(null);
+    handleOpenAddDialog(book);
   };
 
   const handleDownloadList = () => {
@@ -318,7 +239,7 @@ export function ArchiveClient() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast({ title: "Başarılı", description: "CSV indirildi." });
+    toast({ title: "Başarılı", description: "CSV dosyası indirildi." });
   };
   
   const { adultBooks, childrenBooks } = useMemo(() => {
@@ -334,8 +255,7 @@ export function ArchiveClient() {
   }, [books, localSearchQuery]);
 
   return (
-    <div className="min-h-[100dvh] bg-slate-950 font-sans text-slate-100 pb-24 relative overflow-hidden">
-      {/* Ambient Background */}
+    <div className="min-h-[100dvh] bg-slate-950 font-sans text-slate-100 pb-24 relative overflow-hidden flex flex-col">
       <div className="fixed inset-0 z-0 pointer-events-none">
           <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-orange-900/30 rounded-full blur-[120px]" />
           <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-amber-900/20 rounded-full blur-[100px]" />
@@ -397,8 +317,7 @@ export function ArchiveClient() {
           </div>
       </div>
       
-      <div className="max-w-7xl mx-auto md:p-6 p-4 relative z-10 space-y-6">
-      
+      <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
       {view === 'books' ? (
         <Tabs defaultValue="adults" onValueChange={setActiveTab} className="flex flex-col flex-grow">
           <div className="flex items-center justify-center mb-6">
@@ -416,7 +335,6 @@ export function ArchiveClient() {
         <Card className={glassColors.CARD_BG}>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-xl font-bold">Raf Yönetimi</CardTitle>
-                <Button onClick={() => handleOpenShelfDialog(null)} className="rounded-full bg-orange-600"><PlusCircle className="mr-2 h-4 w-4"/> Yeni Raf</Button>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -457,7 +375,7 @@ export function ArchiveClient() {
             <DialogHeader><DialogTitle>İnternette Ara</DialogTitle></DialogHeader>
             <div className="flex gap-2 pt-4">
                 <Input placeholder="Kitap veya yazar..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)} className={glassColors.INPUT_BG}/>
-                <Button disabled={isSearching} onClick={() => handleSearch(searchQuery)} className="bg-orange-600">{isSearching ? <Loader2 className="animate-spin" /> : <Search />}</Button>
+                <Button disabled={isSearching} onClick={() => handleSearch(searchQuery)} className="bg-orange-600">{isSearching ? <Loader2 className="animate-spin" /> : <Search className="w-4 h-4" />}</Button>
             </div>
             <ScrollArea className="h-64 mt-4">
                 <div className="space-y-2 pr-4">
@@ -472,18 +390,6 @@ export function ArchiveClient() {
             </ScrollArea>
         </DialogContent>
       </Dialog>
-      
-      <BulkAddJsonDialog open={isBulkJsonDialogOpen} onOpenChange={setIsBulkJsonDialogOpen} onImport={handleBulkImport} />
-
-      <Dialog open={!!editingShelf} onOpenChange={(open) => !open && setEditingShelf(null)}>
-            <DialogContent className="sm:max-w-md bg-slate-900 text-slate-100">
-                <DialogHeader><DialogTitle>Raf Düzenle</DialogTitle></DialogHeader>
-                <Form {...shelfFormMethods}><form onSubmit={shelfFormMethods.handleSubmit(handleShelfFormSubmit)} id="shelf-form" className="space-y-4"><FormField control={shelfFormMethods.control} name="name" render={({ field }) => (<FormItem><FormLabel>Raf Adı</FormLabel><FormControl><Input {...field} className={glassColors.INPUT_BG}/></FormControl><FormMessage /></FormItem>)}/></form></Form>
-                <DialogFooter><Button variant="ghost" onClick={() => setEditingShelf(null)}>İptal</Button><Button type="submit" form="shelf-form">Kaydet</Button></DialogFooter>
-            </DialogContent>
-      </Dialog>
-
-      <NewSoundForm isOpen={isSoundFormOpen} onOpenChange={setIsSoundFormOpen} />
     </div>
   );
 }
@@ -523,54 +429,4 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
       ))}
     </div>
   );
-}
-
-function BulkAddJsonDialog({ open, onOpenChange, onImport }: { open: boolean, onOpenChange: (open: boolean) => void, onImport: (books: Partial<Book>[]) => void }) {
-    const [jsonInput, setJsonInput] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isImporting, setIsImporting] = useState(false);
-    const handleImportClick = () => {
-        try {
-            const result = bulkAddJsonSchema.safeParse(JSON.parse(jsonInput));
-            if (!result.success) return setError("Geçersiz JSON yapısı.");
-            setIsImporting(true);
-            onImport(result.data).finally(() => setIsImporting(false));
-            setJsonInput('');
-        } catch (e) { setError("Geçersiz JSON."); }
-    };
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl bg-slate-900 text-slate-100 rounded-[2rem]">
-                <DialogHeader><DialogTitle>Toplu Ekle (JSON)</DialogTitle></DialogHeader>
-                <Textarea value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} className="h-64 font-mono text-xs bg-white/5" disabled={isImporting} />
-                {error && <p className="text-rose-400 text-xs mt-1">{error}</p>}
-                <DialogFooter><Button onClick={handleImportClick} disabled={isImporting}>{isImporting && <Loader2 className="animate-spin" />}İçe Aktar</Button></DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-function NewSoundForm({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange: (open: boolean) => void }) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const form = useForm({ defaultValues: { name: "", loop: true, soundFile: null as File | null } });
-    const onSubmit = async (data: any) => {
-        setIsSubmitting(true);
-        try {
-            const reader = new FileReader();
-            reader.readAsDataURL(data.soundFile);
-            reader.onload = async () => {
-                const res = await migrateImage({ imageDataUri: reader.result as string, destinationPath: `sounds/${Date.now()}` });
-                if (res.newUrl) await addAmbientSound({ name: data.name, url: res.newUrl, loop: data.loop });
-                onOpenChange(false);
-            };
-        } finally { setIsSubmitting(false); }
-    };
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-slate-900 text-slate-100">
-                <DialogHeader><DialogTitle>Yeni Ses</DialogTitle></DialogHeader>
-                <Form {...form}><form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4"><FormField name="name" render={({field}) => (<FormItem><FormLabel>Ses Adı</FormLabel><FormControl><Input {...field} className={glassColors.INPUT_BG}/></FormControl></FormItem>)}/><FormField name="soundFile" render={({field: {onChange}}) => (<FormItem><FormLabel>Dosya</FormLabel><FormControl><Input type="file" accept="audio/*" onChange={e => onChange(e.target.files?.[0])} className="bg-white/5"/></FormControl></FormItem>)}/><Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="animate-spin" />}Ekle</Button></form></Form>
-            </DialogContent>
-        </Dialog>
-    );
 }

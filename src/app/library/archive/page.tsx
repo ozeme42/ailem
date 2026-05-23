@@ -1,4 +1,4 @@
-import ArchiveClient from './archive-client';
+import { ArchiveClient } from './archive-client';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
