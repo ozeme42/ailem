@@ -11,7 +11,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Check, Save, ListPlus, Type, FileJson } from "lucide-react";
+import { Check, Save, ListPlus, Type, FileJson, Copy } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
 
@@ -49,10 +49,21 @@ type AnswerKeyFormProps = {
   onSave: (newKey: AnswerKey) => void;
 };
 
+const sampleJsonPlaceholder = `[
+  {
+    "1": "A",
+    "2": "B",
+    "3": "C",
+    "4": "D",
+    "5": "E"
+  }
+]`;
+
 export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFormProps) {
   const { toast } = useToast();
   const [isBulkDialogOpen, setIsBulkDialogOpen] = React.useState(false);
   const [bulkInput, setBulkInput] = React.useState("");
+  const [copied, setCopied] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -93,6 +104,23 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
     });
   };
 
+  const handleCopySample = () => {
+    navigator.clipboard.writeText(sampleJsonPlaceholder);
+    setCopied(true);
+    toast({
+        title: "Kopyalandı",
+        description: "Örnek şablon panoya kopyalandı.",
+        className: "bg-slate-900 border-white/10 text-white"
+    });
+    
+    // Auto-fill if empty
+    if (!bulkInput.trim()) {
+        setBulkInput(sampleJsonPlaceholder);
+    }
+
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleBulkProcess = () => {
     if (!bulkInput.trim()) return;
 
@@ -102,9 +130,21 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
     try {
         const parsed = JSON.parse(bulkInput);
         if (Array.isArray(parsed)) {
-            detectedAnswers = parsed.map(String).map(s => s.toUpperCase());
+            // Case 1: Simple array ["A", "B", ...]
+            if (typeof parsed[0] === 'string') {
+                detectedAnswers = parsed.map(String).map(s => s.toUpperCase());
+            } 
+            // Case 2: Array of objects [{"1":"A"}, ...]
+            else if (typeof parsed[0] === 'object') {
+                parsed.forEach(obj => {
+                    Object.entries(obj).forEach(([key, val]) => {
+                        const idx = parseInt(key) - 1;
+                        if (!isNaN(idx)) detectedAnswers[idx] = String(val).toUpperCase();
+                    });
+                });
+            }
         } else if (typeof parsed === 'object') {
-            // Map object like {"1": "A", "2": "B"}
+            // Case 3: Single object {"1": "A", "2": "B"}
             Object.entries(parsed).forEach(([key, val]) => {
                 const idx = parseInt(key) - 1;
                 if (!isNaN(idx)) detectedAnswers[idx] = String(val).toUpperCase();
@@ -112,7 +152,6 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
         }
     } catch (e) {
         // Fallback to text parsing (Regex for A-E characters)
-        // This handles "ABCDE", "1.A 2.B", "A B C", etc.
         const cleanedInput = bulkInput.toUpperCase();
         
         // If it's a simple string like "ABCDA"
@@ -155,7 +194,6 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-        {/* Başlık Satırı */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02]">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Soru No / Seçenekler
@@ -181,8 +219,19 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
                                 <p>"ABCDE..." veya "1.A 2.B..." şeklinde yazabilirsiniz.</p>
                             </div>
                             <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] text-slate-400">
-                                <p className="font-bold text-pink-400 mb-1 flex items-center gap-1"><FileJson className="w-3 h-3"/> JSON Formatı</p>
-                                <p>["A", "B"...] veya &#123;"1":"A"...&#125; şeklinde yazabilirsiniz.</p>
+                                <div className="flex items-center justify-between mb-1">
+                                    <p className="font-bold text-pink-400 flex items-center gap-1"><FileJson className="w-3 h-3"/> JSON Formatı</p>
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        onClick={handleCopySample}
+                                        className="h-5 px-1.5 text-[9px] bg-white/5 hover:bg-white/10 text-slate-300"
+                                    >
+                                        {copied ? <Check className="w-2.5 h-2.5 mr-1 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 mr-1" />}
+                                        {copied ? "Kopyalandı" : "Şablonu Kopyala"}
+                                    </Button>
+                                </div>
+                                <p>&#123;"1":"A", "2":"B"...&#125; şeklinde yazabilirsiniz.</p>
                             </div>
                         </div>
                         <Textarea 
@@ -228,14 +277,11 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
                           >
                             <FormControl>
                               <div className="relative">
-                                  {/* Gizli Radio Input */}
                                   <RadioGroupItem 
                                     value={option} 
                                     id={`q${index}-${option}`} 
                                     className="peer sr-only" 
                                   />
-                                  
-                                  {/* Görsel Buton (Label) */}
                                   <Label 
                                     htmlFor={`q${index}-${option}`}
                                     className={glassColors.OPTION_BUTTON}
