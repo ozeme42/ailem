@@ -12,7 +12,7 @@ import { tr } from 'date-fns/locale';
 import { 
   Loader2, PlusCircle, Search, Trash2, Library, FilePlus, 
   Edit, X, UploadCloud, ChevronRight, ChevronDown, Settings, 
-  Download, MoreVertical, FolderOpen, BookOpen
+  Download, MoreVertical, FolderOpen, BookOpen, ArrowLeft
 } from 'lucide-react';
 
 import { Book, UserLibrary, FamilyMember } from '@/lib/data';
@@ -28,7 +28,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
