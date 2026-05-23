@@ -382,9 +382,10 @@ export default function OpticalFormPage() {
                             <div className="text-8xl font-black text-white tracking-tighter drop-shadow-2xl">
                                 {(test.score || 0).toFixed(0)}
                             </div>
-                            <div className="flex gap-2 mt-4">
+                            <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
                                 <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 text-lg px-4 py-1">{test.correctAnswers} Doğru</Badge>
                                 <Badge className="bg-rose-500 hover:bg-rose-600 text-white border-0 text-lg px-4 py-1">{test.incorrectAnswers} Yanlış</Badge>
+                                <Badge className="bg-slate-500 hover:bg-slate-600 text-white border-0 text-lg px-4 py-1">{test.emptyAnswers} Boş</Badge>
                             </div>
                         </Card>
                     </div>
@@ -896,8 +897,7 @@ export default function OpticalFormPage() {
                                                 Evet, Bitir
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                    </AlertDialog>
                             </CardFooter>
                         </Card>
                     </main>
