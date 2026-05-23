@@ -67,7 +67,7 @@ const bookFormSchema = z.object({
     z.coerce.number().min(1, "Sayfa sayısı pozitif bir sayı olmalı.").optional()
   ),
   isForChildren: z.boolean().default(false),
-  image: z.string().optional(), // Can be existing URL or new data URI for upload
+  image: z.string().optional(), 
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
   rating: z.number().optional(),
@@ -99,7 +99,7 @@ export default function ArchiveClient() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
   const [isSoundFormOpen, setIsSoundFormOpen] = useState(false);
-  const [editingBook, setEditingBook] = setEditingBook(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [viewingBook, setViewingBook] = useState<Book | null>(null);
   const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -478,7 +478,7 @@ export default function ArchiveClient() {
         <Tabs defaultValue="adults" onValueChange={setActiveTab} className="flex flex-col flex-grow min-h-0">
           <div className="flex items-center justify-center mb-6">
              <div className={cn("p-1 rounded-2xl flex relative bg-white/5 border border-white/10 backdrop-blur-md")}>
-                <TabsList className="bg-transparent h-auto p-0 gap-2">
+                <TabsList className="bg-transparent h-auto flex p-0 gap-2">
                     <TabsTrigger value="adults" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-400 font-bold transition-all">
                         Yetişkin ({adultBooks.length})
                     </TabsTrigger>
@@ -740,7 +740,6 @@ export default function ArchiveClient() {
 
         {/* Add Sound Dialog */}
         <NewSoundForm isOpen={isSoundFormOpen} onOpenChange={setIsSoundFormOpen} />
-    </div>
     </div>
   );
 }
