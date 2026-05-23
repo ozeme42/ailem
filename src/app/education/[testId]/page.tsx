@@ -76,9 +76,9 @@ function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeU
             <Clock className="h-5 w-5 text-indigo-400" />
             <span>{formatTime(timeLeft)}</span>
         </div>
-        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-indigo-300 hover:text-white hover:bg-indigo-500/20 rounded-lg" onClick={() => setIsRunning(!isRunning)}>
-            {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </Button>
+        <button type="button" onClick={() => setIsRunning(!isRunning)} className="p-1 rounded hover:bg-white/10 transition-colors">
+            {isRunning ? <Pause className="h-4 w-4 text-indigo-300" /> : <Play className="h-4 w-4 text-indigo-300" />}
+        </button>
     </div>
   );
 }
@@ -407,7 +407,7 @@ export default function OpticalFormPage() {
                                         <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
                                             <span className="font-bold text-slate-300 w-8">{qNumStr}</span>
                                             <div className="flex gap-3">
-                                                <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-400 line-through decoration-2' : 'text-white')}>{studentAns || '-'}</span>
+                                                <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-400' : 'text-white')}>{studentAns || '-'}</span>
                                                 {evalStatus === 'incorrect' && <span className="font-bold text-emerald-400">{correctAns}</span>}
                                             </div>
                                         </div>
