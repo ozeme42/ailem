@@ -7,6 +7,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 import { 
   Loader2, PlusCircle, Search, Trash2, Library, FilePlus, 
@@ -14,7 +15,7 @@ import {
   Download, MoreVertical, FolderOpen, BookOpen
 } from 'lucide-react';
 
-import { Book, AmbientSound, FamilyMember } from '@/lib/data';
+import { Book, UserLibrary, FamilyMember } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -31,10 +32,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, onAmbientSoundsUpdate, updateBookTags, deleteTag } from '@/lib/dataService';
+import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
 import { BookForm, BookFormData } from '@/components/new-book-form';
+import { cn } from "@/lib/utils";
 
 // --- DESIGN SYSTEM ---
 const glassColors = {
@@ -71,15 +73,6 @@ const bookFormSchema = z.object({
   rating: z.number().optional(),
 });
 
-const bulkAddJsonSchema = z.array(z.object({
-  title: z.string().min(2, "Kitap adı en az 2 karakter olmalıdır."),
-  author: z.string().optional(),
-  pageCount: z.coerce.number().min(1).optional(),
-  isForChildren: z.boolean().default(false),
-  image: z.string().url("Geçerli bir URL olmalı").optional().or(z.literal('')),
-  tags: z.array(z.string()).optional(),
-})).min(1, "En az bir kitap eklemelisiniz.");
-
 const shelfFormSchema = z.object({
     name: z.string().min(1, "Raf adı boş olamaz."),
 });
@@ -108,6 +101,7 @@ export function ArchiveClient() {
   const [searchResults, setSearchResults] = useState<Partial<Book>[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("adults");
 
   const formMethods = useForm<BookFormData>({ resolver: zodResolver(bookFormSchema) });
   const shelfFormMethods = useForm<ShelfFormData>({ resolver: zodResolver(shelfFormSchema) });
@@ -254,6 +248,26 @@ export function ArchiveClient() {
     return { adultBooks: adults, childrenBooks: children };
   }, [books, localSearchQuery]);
 
+  const handleShelfFormSubmit = async (data: ShelfFormData) => {
+      if (!editingShelf) return;
+      const newShelfName = data.name.trim();
+
+      if (allTags.includes(newShelfName) && newShelfName !== editingShelf.originalName) {
+          toast({ title: "Hata", description: "Bu kategori adı zaten mevcut.", variant: "destructive" });
+          return;
+      }
+      
+      try {
+        if (editingShelf.isNew) {
+            await updateTags("libraryTags", [...allTags, newShelfName]);
+            toast({ title: "Kategori Eklendi"});
+        }
+      } catch (e) {
+          toast({ title: "❌ Hata", variant: 'destructive'});
+      }
+      setEditingShelf(null);
+  };
+
   return (
     <div className="min-h-[100dvh] bg-slate-950 font-sans text-slate-100 pb-24 relative overflow-hidden flex flex-col">
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -290,7 +304,7 @@ export function ArchiveClient() {
                       <Settings className="w-4 h-4" />
                   </Button>
                   <div className="flex gap-2">
-                       <Button onClick={() => handleOpenAddDialog()} className="hidden md:flex rounded-full px-6 bg-orange-600 hover:bg-orange-700">
+                       <Button onClick={() => handleOpenAddDialog()} className="hidden md:flex rounded-full px-6 bg-orange-600 hover:bg-orange-700 shadow-md border-orange-500/50">
                            <PlusCircle className="w-4 h-4 mr-2" /> Yeni Kitap
                        </Button>
                         <DropdownMenu>
