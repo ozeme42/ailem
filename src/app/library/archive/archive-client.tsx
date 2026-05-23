@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -24,15 +24,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { searchBooks } from '@/ai/flows/search-books-flow';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
-import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, Music, BookUp, ArrowLeft, FolderOpen, MoreVertical } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Trash2, Library, FilePlus, AlertTriangle, Edit, X, UploadCloud, ChevronRight, BookPlus, ChevronDown, Settings, UserPlus, Music, BookUp, ArrowLeft, FolderOpen, MoreVertical, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { onBooksUpdate, onTagsUpdate, addBook, updateBook, deleteBook, updateTags, addBookToMemberLibrary, onAmbientSoundsUpdate, addAmbientSound, deleteAmbientSound, updateBookTags, deleteTag } from '@/lib/dataService';
 import { useAuth } from '@/components/auth-provider';
 import { BookDetailDialog } from '@/components/book-detail-dialog';
 import { BookForm, BookFormData } from '@/components/new-book-form';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 
 // --- DESIGN SYSTEM: Glassmorphism Colors ---
 const glassColors = {
@@ -66,7 +67,7 @@ const bookFormSchema = z.object({
     z.coerce.number().min(1, "Sayfa sayısı pozitif bir sayı olmalı.").optional()
   ),
   isForChildren: z.boolean().default(false),
-  image: z.string().optional(),
+  image: z.string().optional(), // Can be existing URL or new data URI for upload
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
   rating: z.number().optional(),
@@ -98,7 +99,7 @@ export default function ArchiveClient() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isBulkJsonDialogOpen, setIsBulkJsonDialogOpen] = useState(false);
   const [isSoundFormOpen, setIsSoundFormOpen] = useState(false);
-  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [editingBook, setEditingBook] = setEditingBook(null);
   const [viewingBook, setViewingBook] = useState<Book | null>(null);
   const [editingShelf, setEditingShelf] = useState<{ originalName: string; isNew: boolean } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -349,6 +350,38 @@ export default function ArchiveClient() {
     }
   };
   
+  const handleDownloadList = () => {
+    if (books.length === 0) {
+      toast({ title: "Hata", description: "İndirilecek kitap bulunamadı.", variant: "destructive" });
+      return;
+    }
+
+    // CSV Headers
+    const headers = ["Kitap Adı", "Yazar", "Sayfa Sayısı", "Raflar", "Çocuk Kitabı"];
+    const rows = books.map(book => [
+      `"${book.title.replace(/"/g, '""')}"`,
+      `"${(book.author || '').replace(/"/g, '""')}"`,
+      book.pageCount || 0,
+      `"${(book.tags || []).join(', ').replace(/"/g, '""')}"`,
+      book.isForChildren ? "Evet" : "Hayır"
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    
+    // Add BOM for Excel UTF-8 support
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `kutuphane-listesi-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({ title: "Başarılı", description: "Kitap listesi CSV olarak indirildi." });
+  };
+  
   const { adultBooks, childrenBooks } = useMemo(() => {
     const adults: Book[] = [];
     const children: Book[] = [];
@@ -412,7 +445,7 @@ export default function ArchiveClient() {
                       <Settings className="w-4 h-4" />
                   </Button>
                   <div className="flex gap-2">
-                       <Button onClick={() => handleOpenAddDialog()} className={cn("hidden md:flex rounded-full px-6 font-bold shadow-lg shadow-orange-900/20", glassColors.BUTTON_GLASS, "bg-orange-600 hover:bg-orange-500 border-orange-500/50")}>
+                       <Button onClick={() => handleOpenAddDialog()} className={cn("hidden md:flex rounded-full px-6 font-bold shadow-lg shadow-orange-900/20", glassColors.BUTTON_GLASS, "bg-orange-600 hover:bg-orange-50 border-orange-500/50")}>
                            <PlusCircle className="w-4 h-4 mr-2" /> Yeni Kitap
                        </Button>
                         <DropdownMenu>
@@ -427,6 +460,10 @@ export default function ArchiveClient() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setIsBulkJsonDialogOpen(true)} className="hover:bg-white/10 cursor-pointer">
                                 <FilePlus className="mr-2 h-4 w-4"/> Toplu Ekle (JSON)
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-white/10" />
+                              <DropdownMenuItem onClick={handleDownloadList} className="hover:bg-white/10 cursor-pointer">
+                                <Download className="mr-2 h-4 w-4 text-emerald-400"/> Listeyi İndir (CSV)
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
