@@ -96,7 +96,10 @@
   * {
     @apply border-border;
   }
-  body {
-    /* @apply bg-background text-foreground; */
+  
+  /* CRITICAL FIX: Ensures pointer events are always restored when modals close */
+  /* This prevents the "one click then stuck" issue in Next.js 15 apps */
+  body[style*="pointer-events: none"] {
+    pointer-events: auto !important;
   }
 }

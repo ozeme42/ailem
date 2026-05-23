@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -174,7 +173,7 @@ export default function OpticalFormPage() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [manualEvaluations, setManualEvaluations] = React.useState<ManualEvaluation>({});
     const [submittedSubjectIds, setSubmittedSubjectIds] = React.useState<string[]>([]);
-    const [fullscreen, setFullscreen] = React.useState(false);
+    const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     
     const form = useForm();
 
@@ -535,7 +534,7 @@ export default function OpticalFormPage() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle className="text-2xl font-black">Emin misin?</AlertDialogTitle>
+                                        <AlertDialogTitle className="text-2xl font-black">Emin misiniz?</AlertDialogTitle>
                                         <AlertDialogDescription className="text-slate-500 text-base">Testi bitirdikten sonra cevaplarını değiştiremezsin. Genel sonucun hesaplanacak.</AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter className="mt-6">
@@ -548,13 +547,27 @@ export default function OpticalFormPage() {
                     </main>
                     
                     <div className="lg:hidden fixed bottom-24 left-6 z-50">
-                        <Sheet>
+                        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                             <SheetTrigger asChild>
-                                <Button size="icon" className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-xl border-2 border-white"><LayoutGrid className="w-6 h-6" /></Button>
+                                <Button size="icon" className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-xl border-2 border-white" onClick={() => setIsSheetOpen(true)}><LayoutGrid className="w-6 h-6" /></Button>
                             </SheetTrigger>
                             <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 h-[60vh]">
                                 <SheetHeader className="mb-4"><SheetTitle className="flex items-center justify-center gap-3">Soru Gezgini</SheetTitle></SheetHeader>
-                                <ScrollArea className="h-full"><div className="pb-20"><QuestionPalette total={test.questionCount} currentIndex={currentQuestionIndex} onNavigate={setCurrentQuestionIndex} isAnswered={isQuestionAnswered} practiceExam={practiceExam} submittedSubjects={submittedSubjectIds}/></div></ScrollArea>
+                                <ScrollArea className="h-full">
+                                    <div className="pb-20">
+                                        <QuestionPalette 
+                                            total={test.questionCount} 
+                                            currentIndex={currentQuestionIndex} 
+                                            onNavigate={(idx) => {
+                                                setCurrentQuestionIndex(idx);
+                                                setIsSheetOpen(false);
+                                            }} 
+                                            isAnswered={isQuestionAnswered} 
+                                            practiceExam={practiceExam} 
+                                            submittedSubjects={submittedSubjectIds}
+                                        />
+                                    </div>
+                                </ScrollArea>
                             </SheetContent>
                         </Sheet>
                     </div>
