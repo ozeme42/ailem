@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -27,15 +28,15 @@ import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 
 
-// --- DESIGN SYSTEM: Modern Lighter Glassmorphism ---
+// --- DESIGN SYSTEM: Fixed Light Theme for Test Solving ---
 const glassColors = {
-    PAGE_BG: "bg-slate-900", 
-    HEADER_BG: "bg-slate-900/80 backdrop-blur-xl border-b border-white/10",
-    CARD_BG: "bg-white/[0.06] border border-white/[0.08] shadow-lg backdrop-blur-2xl", 
-    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
-    BUTTON_GLASS: "bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/10 shadow-sm",
-    OPTION_BUTTON: "flex items-center justify-center w-12 h-12 rounded-xl border border-white/10 bg-white/[0.03] cursor-pointer transition-all duration-200 font-bold text-lg text-slate-300 hover:bg-white/[0.1] hover:border-indigo-400/30 hover:text-white peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-500 peer-data-[state=checked]:shadow-[0_0_20px_rgba(99,102,241,0.5)] peer-data-[state=checked]:scale-110",
-    INPUT_BG: "bg-white/[0.05] border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
+    PAGE_BG: "bg-slate-50", 
+    HEADER_BG: "bg-white/80 backdrop-blur-xl border-b border-slate-200",
+    CARD_BG: "bg-white border border-slate-200 shadow-sm", 
+    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg text-white",
+    BUTTON_GLASS: "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-sm",
+    OPTION_BUTTON: "flex items-center justify-center w-12 h-12 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 font-bold text-lg text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:shadow-lg peer-data-[state=checked]:scale-110",
+    INPUT_BG: "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500",
 };
 
 type McqAnswers = { [key: string]: string | null };
@@ -71,13 +72,13 @@ function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeU
   }, [timeLeft, onTimeUp, isRunning]);
 
   return (
-    <div className="flex items-center gap-3 bg-indigo-950/40 backdrop-blur-md p-2 pl-4 pr-2 rounded-xl border border-indigo-500/20 shadow-lg">
-        <div className="flex items-center gap-2 font-mono text-xl font-bold text-indigo-100">
-            <Clock className="h-5 w-5 text-indigo-400" />
+    <div className="flex items-center gap-3 bg-indigo-50 p-2 pl-4 pr-2 rounded-xl border border-indigo-100 shadow-sm">
+        <div className="flex items-center gap-2 font-mono text-xl font-bold text-indigo-700">
+            <Clock className="h-5 w-5 text-indigo-600" />
             <span>{formatTime(timeLeft)}</span>
         </div>
-        <button type="button" onClick={() => setIsRunning(!isRunning)} className="p-1 rounded hover:bg-white/10 transition-colors">
-            {isRunning ? <Pause className="h-4 w-4 text-indigo-300" /> : <Play className="h-4 w-4 text-indigo-300" />}
+        <button type="button" onClick={() => setIsRunning(!isRunning)} className="p-1 rounded hover:bg-indigo-100 transition-colors">
+            {isRunning ? <Pause className="h-4 w-4 text-indigo-600" /> : <Play className="h-4 w-4 text-indigo-600" />}
         </button>
     </div>
   );
@@ -169,7 +170,7 @@ export default function OpticalFormPage() {
                  toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                     description: "Cevapların başarıyla kaydedildi ve testin değerlendirildi.",
-                    className: "bg-emerald-900 border-emerald-800 text-white"
+                    className: "bg-emerald-600 border-none text-white"
                 });
                 if (test.familyId && test.studentId) {
                      await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
@@ -178,7 +179,7 @@ export default function OpticalFormPage() {
                  toast({
                     title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!",
                     description: "Cevapların kaydedildi. Testin yakında değerlendirilecek.",
-                    className: "bg-indigo-900 border-indigo-800 text-white"
+                    className: "bg-indigo-600 border-none text-white"
                 });
                 router.push('/education');
             }
@@ -307,7 +308,7 @@ export default function OpticalFormPage() {
                 updatedData.studentTextAnswersEvaluation = manualEvaluations;
              }
             await updateTest(test.id, updatedData);
-            toast({ title: "Değerlendirme Kaydedildi!", description: "Test sonuçları başarıyla güncellendi.", className: "bg-emerald-900 text-white" });
+            toast({ title: "Değerlendirme Kaydedildi!", description: "Test sonuçları başarıyla güncellendi.", className: "bg-emerald-600 text-white" });
              if (test.familyId && test.studentId) {
                 await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
             }
@@ -325,20 +326,20 @@ export default function OpticalFormPage() {
     if (isLoading) {
          return (
              <div className={cn("flex h-screen items-center justify-center", glassColors.PAGE_BG)}>
-                <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mr-4" />
-                <p className="text-slate-400 font-medium animate-pulse">Test Yükleniyor...</p>
+                <Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" />
+                <p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p>
             </div>
         );
     }
 
     if (!test) {
         return (
-             <div className={cn("flex flex-col items-center justify-center h-screen text-slate-200", glassColors.PAGE_BG)}>
-                <div className="bg-rose-500/20 p-6 rounded-full mb-6 border border-rose-500/30">
-                    <FileQuestion className="w-16 h-16 text-rose-500" />
+             <div className={cn("flex flex-col items-center justify-center h-screen text-slate-900", glassColors.PAGE_BG)}>
+                <div className="bg-rose-100 p-6 rounded-full mb-6 border border-rose-200">
+                    <FileQuestion className="w-16 h-16 text-rose-600" />
                 </div>
                 <h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1>
-                <p className="text-slate-400 mb-8 max-w-md text-center">Aradığınız test mevcut değil veya silinmiş olabilir.</p>
+                <p className="text-slate-500 mb-8 max-w-md text-center">Aradığınız test mevcut değil veya silinmiş olabilir.</p>
                 <Link href="/education">
                     <Button size="lg" className={glassColors.BUTTON_GLASS}>
                         <ArrowLeft className="mr-2 h-5 w-5" />
@@ -358,30 +359,24 @@ export default function OpticalFormPage() {
         const questionCount = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
         
         return (
-            <div className={cn("min-h-screen text-slate-100 font-sans relative overflow-hidden flex flex-col p-4 sm:p-8", glassColors.PAGE_BG)}>
-                {/* Fixed Background */}
-                <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px]" />
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px]" />
-                </div>
-
+            <div className={cn("min-h-screen text-slate-900 font-sans relative overflow-hidden flex flex-col p-4 sm:p-8", glassColors.PAGE_BG)}>
                 <div className="max-w-4xl mx-auto w-full space-y-8 relative z-10 pb-20">
                     <header className="flex justify-between items-center">
-                        <Button variant="ghost" onClick={() => router.push('/education')} className="text-slate-400 hover:text-white">
+                        <Button variant="ghost" onClick={() => router.push('/education')} className="text-slate-500 hover:text-slate-900">
                             <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
                         </Button>
-                        <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1">Tamamlandı</Badge>
+                        <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 px-3 py-1 font-bold">Tamamlandı</Badge>
                     </header>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card className={cn("col-span-1 md:col-span-3 flex flex-col items-center justify-center py-10 border-emerald-500/30 bg-emerald-900/10 backdrop-blur-2xl")}>
-                            <p className="text-sm text-emerald-300 font-bold tracking-widest uppercase mb-2">Toplam Puan</p>
-                            <div className="text-8xl font-black text-white tracking-tighter drop-shadow-2xl">
+                        <Card className={cn("col-span-1 md:col-span-3 flex flex-col items-center justify-center py-10 border-emerald-200 bg-emerald-50/50 backdrop-blur-md")}>
+                            <p className="text-sm text-emerald-700 font-bold tracking-widest uppercase mb-2">Toplam Puan</p>
+                            <div className="text-8xl font-black text-emerald-700 tracking-tighter drop-shadow-sm">
                                 {(test.score || 0).toFixed(0)}
                             </div>
                             <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-                                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 text-lg px-4 py-1">{test.correctAnswers} Doğru</Badge>
-                                <Badge className="bg-rose-500 hover:bg-rose-600 text-white border-0 text-lg px-4 py-1">{test.incorrectAnswers} Yanlış</Badge>
+                                <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-lg px-4 py-1">{test.correctAnswers} Doğru</Badge>
+                                <Badge className="bg-rose-600 hover:bg-rose-700 text-white border-0 text-lg px-4 py-1">{test.incorrectAnswers} Yanlış</Badge>
                                 <Badge className="bg-slate-500 hover:bg-slate-600 text-white border-0 text-lg px-4 py-1">{test.emptyAnswers} Boş</Badge>
                             </div>
                         </Card>
@@ -389,7 +384,7 @@ export default function OpticalFormPage() {
 
                     <Card className={glassColors.CARD_BG}>
                         <CardHeader>
-                            <CardTitle>Cevap Anahtarı</CardTitle>
+                            <CardTitle className="text-slate-800">Cevap Anahtarı</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -399,16 +394,16 @@ export default function OpticalFormPage() {
                                     const correctAns = answerKey[qNumStr];
                                     const evalStatus = studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty');
                                     
-                                    let statusColor = "border-white/10 bg-white/5";
-                                    if (evalStatus === 'correct') statusColor = "border-emerald-500/50 bg-emerald-500/10";
-                                    else if (evalStatus === 'incorrect') statusColor = "border-rose-500/50 bg-rose-500/10";
+                                    let statusColor = "border-slate-100 bg-slate-50";
+                                    if (evalStatus === 'correct') statusColor = "border-emerald-200 bg-emerald-50";
+                                    else if (evalStatus === 'incorrect') statusColor = "border-rose-200 bg-rose-50";
 
                                     return (
                                         <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
-                                            <span className="font-bold text-slate-300 w-8">{qNumStr}</span>
+                                            <span className="font-bold text-slate-400 w-8">{qNumStr}</span>
                                             <div className="flex gap-3">
-                                                <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-400' : 'text-white')}>{studentAns || '-'}</span>
-                                                {evalStatus === 'incorrect' && <span className="font-bold text-emerald-400">{correctAns}</span>}
+                                                <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
+                                                {evalStatus === 'incorrect' && <span className="font-bold text-emerald-600">{correctAns}</span>}
                                             </div>
                                         </div>
                                     )
@@ -420,10 +415,10 @@ export default function OpticalFormPage() {
                       <div className="flex justify-center mt-8">
                         <Button 
                             size="lg" 
-                            className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg font-bold shadow-2xl"
+                            className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 px-8 py-6 text-lg font-bold shadow-md"
                             onClick={() => router.push('/education')}
                         >
-                            <Home className="mr-3 h-6 w-6" />
+                            <Home className="mr-3 h-6 w-6 text-indigo-600" />
                             Sonuç Ekranını Kapat / Eğitime Dön
                         </Button>
                     </div>
@@ -437,11 +432,11 @@ export default function OpticalFormPage() {
         if (currentUserIsStudent) {
             return (
                 <div className={cn("min-h-screen flex flex-col items-center justify-center p-4 text-center", glassColors.PAGE_BG)}>
-                    <div className="bg-yellow-500/20 p-6 rounded-full mb-6 border border-yellow-500/30 animate-pulse">
-                        <Clock className="w-16 h-16 text-yellow-500" />
+                    <div className="bg-yellow-100 p-6 rounded-full mb-6 border border-yellow-200 animate-pulse">
+                        <Clock className="w-16 h-16 text-yellow-600" />
                     </div>
-                    <h1 className="text-3xl font-black text-white mb-2">Değerlendirme Bekleniyor</h1>
-                    <p className="text-slate-400 mb-8 max-w-md">Testini başarıyla tamamladın! Sonuçların öğretmen/ebeveyn değerlendirmesinden sonra açıklanacak.</p>
+                    <h1 className="text-3xl font-black text-slate-900 mb-2">Değerlendirme Bekleniyor</h1>
+                    <p className="text-slate-500 mb-8 max-w-md">Testini başarıyla tamamladın! Sonuçların öğretmen/ebeveyn değerlendirmesinden sonra açıklanacak.</p>
                     <Link href="/education">
                         <Button size="lg" className={glassColors.BUTTON_GLASS}>
                             <ArrowLeft className="mr-2 h-5 w-5" /> Eğitim Sayfasına Dön
@@ -454,13 +449,13 @@ export default function OpticalFormPage() {
         // Teacher/Parent grading view
         if (test.openEnded && test.questions) {
             return (
-                <div className={cn("min-h-screen text-slate-100 p-4 sm:p-8", glassColors.PAGE_BG)}>
+                <div className={cn("min-h-screen text-slate-900 p-4 sm:p-8", glassColors.PAGE_BG)}>
                       <header className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
-                        <Button type="button" variant="ghost" onClick={() => router.back()}>
+                        <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900">
                             <ArrowLeft className="mr-2 h-5 w-5" /> Geri
                         </Button>
                         <h1 className="text-xl font-bold">{test.title} - Değerlendirme</h1>
-                        <Button type="button" onClick={handleFinalizeEvaluation} size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold">
+                        <Button type="button" onClick={handleFinalizeEvaluation} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md">
                             Değerlendirmeyi Tamamla
                         </Button>
                     </header>
@@ -471,18 +466,18 @@ export default function OpticalFormPage() {
                             const evalStatus = manualEvaluations[qNumStr];
                             return (
                                 <Card key={q.questionId} className={cn("overflow-hidden", glassColors.CARD_BG)}>
-                                    <CardHeader className="bg-white/5 border-b border-white/5 p-4 flex flex-row justify-between items-center">
-                                        <CardTitle className="text-lg">Soru {qNumStr}</CardTitle>
+                                    <CardHeader className="bg-slate-50 border-b border-slate-100 p-4 flex flex-row justify-between items-center">
+                                        <CardTitle className="text-lg text-slate-800">Soru {qNumStr}</CardTitle>
                                         <div className="flex gap-2">
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8", evalStatus === 'correct' ? "bg-emerald-600 hover:bg-emerald-500" : "bg-transparent border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10")}>Doğru</Button>
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8", evalStatus === 'incorrect' ? "bg-rose-600 hover:bg-rose-500" : "bg-transparent border border-rose-500/30 text-rose-400 hover:bg-rose-500/10")}>Yanlış</Button>
-                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'empty')} className={cn("h-8", evalStatus === 'empty' ? "bg-slate-600 hover:bg-slate-500" : "bg-transparent border border-slate-500/30 text-slate-400 hover:bg-slate-500/10")}>Boş</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8 font-bold", evalStatus === 'correct' ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-transparent border border-emerald-200 text-emerald-600 hover:bg-emerald-50")}>Doğru</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8 font-bold", evalStatus === 'incorrect' ? "bg-rose-600 hover:bg-rose-700 text-white" : "bg-transparent border border-rose-200 text-rose-600 hover:bg-rose-50")}>Yanlış</Button>
+                                            <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'empty')} className={cn("h-8 font-bold", evalStatus === 'empty' ? "bg-slate-600 hover:bg-slate-700 text-white" : "bg-transparent border border-slate-200 text-slate-600 hover:bg-slate-50")}>Boş</Button>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <Dialog>
                                                 <DialogTrigger asChild>
-                                                    <div className="relative aspect-video bg-black rounded-lg overflow-hidden cursor-pointer">
+                                                    <div className="relative aspect-video bg-white border border-slate-100 rounded-lg overflow-hidden cursor-pointer shadow-sm">
                                                         <Image src={q.imageUrl} alt={`Soru ${qNumStr}`} layout="fill" objectFit="contain" unoptimized />
                                                     </div>
                                                 </DialogTrigger>
@@ -491,8 +486,8 @@ export default function OpticalFormPage() {
                                                 </DialogContent>
                                             </Dialog>
                                             <div className="space-y-2">
-                                                <Label className="text-xs font-bold text-slate-400">Öğrenci Cevabı</Label>
-                                                <div className="p-3 rounded-lg bg-slate-900 border border-slate-700 min-h-[100px] text-sm text-slate-200 whitespace-pre-wrap">
+                                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Öğrenci Cevabı</Label>
+                                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 min-h-[120px] text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
                                                     {studentAnswer}
                                                 </div>
                                             </div>
@@ -507,17 +502,17 @@ export default function OpticalFormPage() {
         
          // Optical Form grading fallback
         return (
-            <div className={cn("min-h-screen text-slate-100 p-4 sm:p-8", glassColors.PAGE_BG)}>
+            <div className={cn("min-h-screen text-slate-900 p-4 sm:p-8", glassColors.PAGE_BG)}>
                  <header className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
-                    <Button type="button" variant="ghost" onClick={() => router.back()}>
+                    <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900">
                         <ArrowLeft className="mr-2 h-5 w-5" /> Geri
                     </Button>
                 </header>
                 <div className="max-w-4xl mx-auto space-y-6">
                     <Card className={glassColors.CARD_BG}>
                         <CardHeader>
-                            <CardTitle>Optik Form Kontrolü</CardTitle>
-                            <CardDescription>Cevap anahtarı eksik veya hatalı olabilir. Lütfen manuel kontrol edin.</CardDescription>
+                            <CardTitle className="text-slate-800">Optik Form Kontrolü</CardTitle>
+                            <CardDescription className="text-slate-500">Cevap anahtarı eksik veya hatalı olabilir. Lütfen manuel kontrol edin.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
                              {Array.from({ length: test.questionCount }).map((_, index) => {
@@ -529,23 +524,23 @@ export default function OpticalFormPage() {
                                 const evalStatus = manualEvaluations[qNumStr];
 
                                 return (
-                                    <div key={qNumStr} className="flex items-center gap-4 p-3 rounded-lg border border-white/5 bg-white/5">
-                                            <div className="w-8 h-8 flex items-center justify-center font-bold bg-indigo-500/20 text-indigo-300 rounded-lg">{qNumStr}</div>
-                                            <div className="flex gap-4 text-sm">
-                                                <span>Cevap: <span className="font-bold text-white">{studentAns || '-'}</span></span>
-                                                <span>Doğru: <span className="font-bold text-emerald-400">{correctAns || '?'}</span></span>
+                                    <div key={qNumStr} className="flex items-center gap-4 p-3 rounded-lg border border-slate-100 bg-slate-50">
+                                            <div className="w-8 h-8 flex items-center justify-center font-bold bg-indigo-100 text-indigo-700 rounded-lg">{qNumStr}</div>
+                                            <div className="flex gap-4 text-sm font-medium">
+                                                <span>Cevap: <span className="font-bold text-slate-900">{studentAns || '-'}</span></span>
+                                                <span>Doğru: <span className="font-bold text-emerald-600">{correctAns || '?'}</span></span>
                                             </div>
                                             <div className="ml-auto flex gap-2">
-                                                <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8", evalStatus === 'correct' ? "bg-emerald-600" : "bg-transparent border border-emerald-500/30 text-emerald-400")}>D</Button>
-                                                <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8", evalStatus === 'incorrect' ? "bg-rose-600" : "bg-transparent border border-rose-500/30 text-rose-400")}>Y</Button>
-                                                <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'empty')} className={cn("h-8", evalStatus === 'empty' ? "bg-slate-600" : "bg-transparent border border-slate-500/30 text-slate-400")}>B</Button>
+                                                <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'correct')} className={cn("h-8 w-8 p-0 font-bold", evalStatus === 'correct' ? "bg-emerald-600 text-white" : "bg-transparent border border-emerald-200 text-emerald-600")}>D</Button>
+                                                <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'incorrect')} className={cn("h-8 w-8 p-0 font-bold", evalStatus === 'incorrect' ? "bg-rose-600 text-white" : "bg-transparent border border-rose-200 text-rose-600")}>Y</Button>
+                                                <Button size="sm" onClick={() => handleEvaluationChange(qNumStr, 'empty')} className={cn("h-8 w-8 p-0 font-bold", evalStatus === 'empty' ? "bg-slate-600 text-white" : "bg-transparent border border-slate-200 text-slate-600")}>B</Button>
                                             </div>
                                     </div>
                                 )
                             })}
                         </CardContent>
                     </Card>
-                      <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-14">Kaydet</Button>
+                      <Button onClick={handleFinalizeEvaluation} size="lg" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-14 shadow-lg shadow-indigo-500/20">Değerlendirmeyi Kaydet</Button>
                 </div>
             </div>
         )
@@ -575,41 +570,41 @@ export default function OpticalFormPage() {
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
                     <motion.div
-                        className={cn("min-h-screen text-slate-100 font-sans flex flex-col transition-all duration-300", fullscreen ? "fixed inset-0 z-50 p-8" : "relative p-4 sm:p-8", glassColors.PAGE_BG)}
-                        animate={{ backgroundColor: fullscreen ? "rgba(15, 23, 42, 1)" : "" }}
+                        className={cn("min-h-screen text-slate-900 font-sans flex flex-col transition-all duration-300", fullscreen ? "fixed inset-0 z-50 p-8" : "relative p-4 sm:p-8", glassColors.PAGE_BG)}
+                        animate={{ backgroundColor: fullscreen ? "rgba(248, 250, 252, 1)" : "" }}
                     >
                          {!fullscreen && (
                             <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
-                                <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
+                                <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900">
                                     <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
                                 </Button>
                                 <div className="text-right">
-                                    <h1 className="text-xl font-bold text-white">{test.title}</h1>
-                                    <p className="text-sm text-slate-400">{test.subject}</p>
+                                    <h1 className="text-xl font-bold text-slate-900">{test.title}</h1>
+                                    <p className="text-sm text-slate-500">{test.subject}</p>
                                 </div>
                             </header>
                          )}
 
-                         <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 z-50 text-slate-400 hover:text-white" onClick={() => setFullscreen(!fullscreen)}>
+                         <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 z-50 text-slate-400 hover:text-indigo-600" onClick={() => setFullscreen(!fullscreen)}>
                            {fullscreen ? <Shrink /> : <Expand />}
                         </Button>
                         
                         <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col", fullscreen && "justify-center")}>
-                            <Card className={cn("border-l-4 border-l-indigo-500 mb-8", glassColors.CARD_BG)}>
+                            <Card className={cn("border-l-4 border-l-indigo-600 mb-8", glassColors.CARD_BG)}>
                                 <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
                                             <div className="flex-grow w-full">
                                             <div className="flex justify-between items-center mb-2">
-                                                <h3 className="font-bold text-lg text-slate-200">Soru {currentQuestionIndex + 1} / {totalQuestions}</h3>
+                                                <h3 className="font-bold text-lg text-slate-800">Soru {currentQuestionIndex + 1} / {totalQuestions}</h3>
                                                 <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                                             </div>
-                                            <Progress value={((currentQuestionIndex + 1) / totalQuestions) * 100} className="h-2 bg-slate-800" indicatorClassName="bg-indigo-500" />
+                                            <Progress value={((currentQuestionIndex + 1) / totalQuestions) * 100} className="h-2 bg-slate-100" indicatorClassName="bg-indigo-600" />
                                     </div>
                                 </CardContent>
                             </Card>
 
                             <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
-                                <CardContent className="p-4 flex-grow flex items-center justify-center">
-                                    <div className="w-full relative aspect-[4/3]">
+                                <CardContent className="p-4 flex-grow flex items-center justify-center bg-slate-50/50">
+                                    <div className="w-full relative aspect-[4/3] bg-white rounded-lg shadow-inner flex items-center justify-center p-2">
                                     <Dialog open={!!fullscreenImage} onOpenChange={() => setFullscreenImage(null)}>
                                             <DialogTrigger asChild>
                                                 <Image 
@@ -627,14 +622,14 @@ export default function OpticalFormPage() {
                                     </Dialog>
                                     </div>
                                 </CardContent>
-                                <CardFooter className="p-6 bg-black/20 border-t border-white/5 mt-auto">
+                                <CardFooter className="p-6 bg-slate-50 border-t border-slate-200 mt-auto">
                                     <div className="w-full flex flex-col gap-6">
                                             {test.openEnded ? (
                                                 <Textarea 
                                                     placeholder="Cevabınızı buraya yazın..."
                                                     value={textAnswers[currentQNumStr] || ""}
                                                     onChange={(e) => handleTextAnswerChange(parseInt(currentQNumStr), e.target.value)}
-                                                    className={cn("h-12 text-base", glassColors.INPUT_BG)}
+                                                    className={cn("h-24 text-base", glassColors.INPUT_BG)}
                                                 />
                                             ) : (
                                                 <RadioGroup 
@@ -657,23 +652,23 @@ export default function OpticalFormPage() {
                                                 {currentQuestionIndex === totalQuestions - 1 ? (
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
-                                                            <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11 shadow-lg shadow-emerald-600/20">
+                                                            <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-lg shadow-emerald-500/20">
                                                                 Testi Tamamla <Check className="ml-2 h-5 w-5" />
                                                             </Button>
                                                         </AlertDialogTrigger>
-                                                        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                                        <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
                                                             <AlertDialogHeader>
                                                                 <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                                <AlertDialogDescription className="text-slate-400">Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.</AlertDialogDescription>
+                                                                <AlertDialogDescription className="text-slate-500">Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.</AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
-                                                                <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                                                <AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700">İptal</AlertDialogCancel>
                                                                 <AlertDialogAction type="button" onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
                                                 ) : (
-                                                    <Button type="button" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11" onClick={() => setCurrentQuestionIndex(p => p + 1)}>
+                                                    <Button type="button" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-md" onClick={() => setCurrentQuestionIndex(p => p + 1)}>
                                                         Sonraki <ArrowRight className="ml-2 h-4 w-4"/>
                                                     </Button>
                                                 )}
@@ -694,44 +689,44 @@ export default function OpticalFormPage() {
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
                     <motion.div
-                        className={cn("min-h-screen text-slate-100 font-sans flex flex-col transition-all duration-300", fullscreen ? "fixed inset-0 z-50 p-8" : "relative p-4 sm:p-8", glassColors.PAGE_BG)}
-                        animate={{ backgroundColor: fullscreen ? "rgba(15, 23, 42, 1)" : "" }}
+                        className={cn("min-h-screen text-slate-900 font-sans flex flex-col transition-all duration-300", fullscreen ? "fixed inset-0 z-50 p-8" : "relative p-4 sm:p-8", glassColors.PAGE_BG)}
+                        animate={{ backgroundColor: fullscreen ? "rgba(248, 250, 252, 1)" : "" }}
                     >
                         {!fullscreen && (
                             <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
-                                <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
+                                <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900">
                                     <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
                                 </Button>
                                 <div className="text-right">
-                                    <h1 className="text-xl font-bold text-white">{test.title}</h1>
-                                    <p className="text-sm text-slate-400">{test.subject}</p>
+                                    <h1 className="text-xl font-bold text-slate-900">{test.title}</h1>
+                                    <p className="text-sm text-slate-500">{test.subject}</p>
                                 </div>
                             </header>
                         )}
                         
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 z-50 text-slate-400 hover:text-white" onClick={() => setFullscreen(!fullscreen)}>
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-4 right-4 z-50 text-slate-400 hover:text-indigo-600" onClick={() => setFullscreen(!fullscreen)}>
                            {fullscreen ? <Shrink /> : <Expand />}
                         </Button>
 
                         <main className={cn("max-w-4xl mx-auto w-full flex-grow flex flex-col", fullscreen && "justify-center")}>
                             
                             {/* TIMER & PROGRESS */}
-                            <Card className={cn("border-l-4 border-l-indigo-500 mb-8", glassColors.CARD_BG)}>
+                            <Card className={cn("border-l-4 border-l-indigo-600 mb-8", glassColors.CARD_BG)}>
                                 <CardContent className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
                                      <div className="flex-grow w-full">
                                         <div className="flex justify-between items-center mb-2">
-                                            <h3 className="font-bold text-lg text-slate-200">Soru {currentQuestionIndex + 1} / {test.jsonQuestions!.length}</h3>
+                                            <h3 className="font-bold text-lg text-slate-800">Soru {currentQuestionIndex + 1} / {test.jsonQuestions!.length}</h3>
                                             <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                                         </div>
-                                        <Progress value={((currentQuestionIndex + 1) / test.jsonQuestions!.length) * 100} className="h-2 bg-slate-800" indicatorClassName="bg-indigo-500" />
+                                        <Progress value={((currentQuestionIndex + 1) / test.jsonQuestions!.length) * 100} className="h-2 bg-slate-100" indicatorClassName="bg-indigo-600" />
                                     </div>
                                 </CardContent>
                             </Card>
 
                             {/* QUESTION CARD */}
                             <Card className={cn("flex-grow flex flex-col overflow-hidden", glassColors.CARD_BG)}>
-                                <CardHeader className="bg-white/5 border-b border-white/5 p-6">
-                                    <CardTitle className="text-slate-100 text-2xl leading-relaxed whitespace-pre-wrap">{currentJsonQuestion.text}</CardTitle>
+                                <CardHeader className="bg-slate-50 border-b border-slate-200 p-6">
+                                    <CardTitle className="text-slate-900 text-2xl leading-relaxed whitespace-pre-wrap">{currentJsonQuestion.text}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-4 flex-grow">
                                     <RadioGroup 
@@ -740,18 +735,18 @@ export default function OpticalFormPage() {
                                         className="grid grid-cols-1 md:grid-cols-2 gap-4"
                                     >
                                         {currentJsonQuestion.options.map((option, optIndex) => (
-                                            <FormItem key={optIndex} className="flex items-center space-x-3 space-y-0 p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500/50">
+                                            <FormItem key={optIndex} className="flex items-center space-x-3 space-y-0 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-500 shadow-sm">
                                                 <FormControl>
-                                                    <RadioGroupItem value={option} className="text-indigo-500 border-indigo-500/50"/>
+                                                    <RadioGroupItem value={option} className="text-indigo-600 border-indigo-600"/>
                                                 </FormControl>
-                                                <FormLabel className="font-medium text-base text-slate-200 cursor-pointer w-full">
+                                                <FormLabel className="font-bold text-base text-slate-700 cursor-pointer w-full leading-tight">
                                                     {option}
                                                 </FormLabel>
                                             </FormItem>
                                         ))}
                                     </RadioGroup>
                                 </CardContent>
-                                <CardFooter className="p-6 bg-black/20 border-t border-white/5 mt-auto">
+                                <CardFooter className="p-6 bg-slate-50 border-t border-slate-200 mt-auto">
                                     <div className="flex justify-between w-full">
                                         <Button 
                                             type="button"
@@ -765,19 +760,19 @@ export default function OpticalFormPage() {
                                         {currentQuestionIndex === test.jsonQuestions!.length - 1 ? (
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11 shadow-lg shadow-emerald-600/20">
+                                                    <Button type="button" size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-lg shadow-emerald-500/20">
                                                         Testi Tamamla <Check className="ml-2 h-5 w-5" />
                                                     </Button>
                                                 </AlertDialogTrigger>
-                                                <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                                <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
                                                     <AlertDialogHeader>
                                                         <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                                        <AlertDialogDescription className="text-slate-400">
+                                                        <AlertDialogDescription className="text-slate-500">
                                                             Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                                        <AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700">İptal</AlertDialogCancel>
                                                         <AlertDialogAction type="button" onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Evet, Bitir</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
@@ -785,7 +780,7 @@ export default function OpticalFormPage() {
                                         ) : (
                                             <Button 
                                                 type="button"
-                                                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11"
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-md"
                                                 onClick={() => setCurrentQuestionIndex(p => p + 1)}
                                             >
                                                 Sonraki Soru <ArrowRight className="ml-2 h-4 w-4"/>
@@ -805,23 +800,23 @@ export default function OpticalFormPage() {
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
-                <div className={cn("min-h-screen text-slate-100 font-sans flex flex-col p-4 sm:p-8", glassColors.PAGE_BG)}>
+                <div className={cn("min-h-screen text-slate-900 font-sans flex flex-col p-4 sm:p-8", glassColors.PAGE_BG)}>
                     <header className="max-w-3xl mx-auto w-full mb-8 flex justify-between items-center">
-                        <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-400 hover:text-white">
+                        <Button type="button" variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900">
                             <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış
                         </Button>
                         <div className="text-right">
-                            <h1 className="text-xl font-bold text-white">{test.title}</h1>
-                            <p className="text-sm text-slate-400">{test.subject}</p>
+                            <h1 className="text-xl font-bold text-slate-900">{test.title}</h1>
+                            <p className="text-sm text-slate-500">{test.subject}</p>
                         </div>
                     </header>
 
                     <main className="max-w-3xl mx-auto w-full space-y-8">
                         {/* Timer Card */}
-                        <Card className={cn("border-l-4 border-l-indigo-500", glassColors.CARD_BG)}>
+                        <Card className={cn("border-l-4 border-l-indigo-600", glassColors.CARD_BG)}>
                             <CardContent className="flex items-center justify-between p-6">
                                 <div>
-                                    <h3 className="font-bold text-lg text-slate-200">Süreniz İşliyor</h3>
+                                    <h3 className="font-bold text-lg text-slate-800">Süreniz İşliyor</h3>
                                 </div>
                                 <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                             </CardContent>
@@ -829,15 +824,15 @@ export default function OpticalFormPage() {
 
                         {/* Optical Form */}
                         <Card className={cn("overflow-hidden", glassColors.CARD_BG)}>
-                            <CardHeader className="bg-white/5 border-b border-white/5">
-                                <CardTitle className="text-center text-slate-200">Cevap Kağıdı</CardTitle>
+                            <CardHeader className="bg-slate-50 border-b border-slate-200">
+                                <CardTitle className="text-center text-slate-800">Cevap Kağıdı</CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="divide-y divide-white/5">
+                                <div className="divide-y divide-slate-100">
                                     {Array.from({ length: test.questionCount }).map((_, index) => {
                                         const qNum = index + 1;
                                         return (
-                                            <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-white/5 transition-colors group">
+                                            <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-slate-50 transition-colors group">
                                                 <div className="w-12 text-center font-bold text-slate-400 text-lg">{qNum}</div>
                                                 {test.openEnded ? (
                                                     <Textarea 
@@ -870,22 +865,22 @@ export default function OpticalFormPage() {
                                     })}
                                 </div>
                             </CardContent>
-                            <CardFooter className="p-6 bg-white/5 border-t border-white/5">
+                            <CardFooter className="p-6 bg-slate-50 border-t border-slate-200">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 shadow-lg shadow-emerald-600/20">
+                                        <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 shadow-lg shadow-emerald-500/20">
                                             Testi Tamamla <Check className="ml-2 h-5 w-5" />
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                                    <AlertDialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-slate-400">
+                                            <AlertDialogDescription className="text-slate-500">
                                                 Testi bitirdikten sonra cevaplarınızda değişiklik yapamazsınız.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                            <AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700">İptal</AlertDialogCancel>
                                             <AlertDialogAction 
                                                 type="button" 
                                                 onClick={() => handleSubmit(false)} 
