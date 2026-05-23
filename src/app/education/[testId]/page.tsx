@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -27,6 +26,7 @@ import { useForm } from "react-hook-form";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // --- DESIGN SYSTEM: Fixed Light Theme for Test Solving ---
 const glassColors = {
@@ -1042,4 +1042,3 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
-
