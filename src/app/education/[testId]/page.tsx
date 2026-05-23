@@ -29,12 +29,11 @@ import { motion } from "framer-motion";
 
 // --- DESIGN SYSTEM: Modern Lighter Glassmorphism ---
 const glassColors = {
-    PAGE_BG: "bg-slate-900", // 950 yerine 900 (Daha açık koyu)
+    PAGE_BG: "bg-slate-900", 
     HEADER_BG: "bg-slate-900/80 backdrop-blur-xl border-b border-white/10",
-    CARD_BG: "bg-white/[0.06] border border-white/[0.08] shadow-lg backdrop-blur-2xl", // Daha aydınlık kartlar
+    CARD_BG: "bg-white/[0.06] border border-white/[0.08] shadow-lg backdrop-blur-2xl", 
     ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
     BUTTON_GLASS: "bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/10 shadow-sm",
-    // Seçenek butonları için daha parlak ve belirgin stil
     OPTION_BUTTON: "flex items-center justify-center w-12 h-12 rounded-xl border border-white/10 bg-white/[0.03] cursor-pointer transition-all duration-200 font-bold text-lg text-slate-300 hover:bg-white/[0.1] hover:border-indigo-400/30 hover:text-white peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-500 peer-data-[state=checked]:shadow-[0_0_20px_rgba(99,102,241,0.5)] peer-data-[state=checked]:scale-110",
     INPUT_BG: "bg-white/[0.05] border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50",
 };
@@ -116,7 +115,6 @@ export default function OpticalFormPage() {
             if (isMcqTest) {
                 let studentAnswersToSave = mcqAnswers;
                  if (isFinishedByTimer) {
-                    // Use the state at the moment timer runs out
                     studentAnswersToSave = mcqAnswers;
                 }
                 
@@ -140,7 +138,6 @@ export default function OpticalFormPage() {
                     for (let i = 1; i <= questionCount; i++) {
                         const qNumStr = i.toString();
                         const studentAns = allStudentMcqAnswers[qNumStr];
-                        const question = test.sourceType === 'json' ? test.jsonQuestions![i-1] : test.questions?.find(q => q.questionNumber === i);
                         
                         if (!studentAns || studentAns === null) {
                             empty++;
@@ -897,7 +894,8 @@ export default function OpticalFormPage() {
                                                 Evet, Bitir
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
-                                    </AlertDialog>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </CardFooter>
                         </Card>
                     </main>
