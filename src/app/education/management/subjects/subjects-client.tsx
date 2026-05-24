@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { 
     ArrowLeft, BookOpen, Plus, Search, Trash2, Edit, Save, X, 
-    Layers, BookCopy, ChevronRight, GraduationCap, Check, HelpCircle
+    Layers, BookCopy, ChevronRight, GraduationCap, Check, HelpCircle,
+    Loader2
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics } from "@/lib/dataService";
