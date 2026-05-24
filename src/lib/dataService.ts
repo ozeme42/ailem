@@ -1486,12 +1486,17 @@ export const addNotebook = async (data: Omit<Notebook, 'id' | 'familyId' | 'crea
     const user = auth.currentUser;
     if (!familyId || !user) throw new Error("User not authenticated or not in a family");
 
+    // Ensure at least one section exists
+    const sections = (data.sections && data.sections.length > 0) 
+        ? data.sections 
+        : [{ id: 'default', title: 'Genel', order: 0, color: 'indigo' }];
+
     const newNotebook: Omit<Notebook, 'id'> = {
         ...data,
         familyId,
         ownerId: user.uid,
         createdAt: new Date().toISOString(),
-        sections: data.sections || [],
+        sections: sections,
     };
     return addDoc(collection(db, 'notebooks'), newNotebook);
 };

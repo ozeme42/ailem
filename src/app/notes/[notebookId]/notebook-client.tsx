@@ -1,33 +1,31 @@
-
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, Note } from '@/lib/data';
 import { onNotebookDetailsUpdate, updateNotebook, addNoteToSection, updateNoteInSection, deleteNoteFromSection } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowLeft, MoreHorizontal, Trash2, Edit } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
+import { Plus, ChevronLeft, MoreHorizontal, Trash2, CalendarClock, Check, PenLine } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 
-// --- SABİTLER ---
+// --- TASARIM SABİTLERİ (Gerçekçi Kağıt / Pastel Renkler) ---
+// Bu renkler karanlık modda bile notun kağıt rengini korumasını sağlayacak şekilde ayarlandı.
 const noteColors = [
-    { name: 'Saman', class: 'bg-[#fffbeb] border-amber-200 text-amber-900/90 dark:bg-amber-900/20 dark:border-amber-800/50 dark:text-amber-100' },
-    { name: 'Gökyüzü', class: 'bg-sky-50 border-sky-200 text-sky-900/90 dark:bg-sky-900/20 dark:border-sky-800/50 dark:text-sky-100' },
-    { name: 'Nane', class: 'bg-emerald-50 border-emerald-200 text-emerald-900/90 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-100' },
-    { name: 'Gül', class: 'bg-rose-50 border-rose-200 text-rose-900/90 dark:bg-rose-900/20 dark:border-rose-800/50 dark:text-rose-100' },
-    { name: 'Lavanta', class: 'bg-violet-50 border-violet-200 text-violet-900/90 dark:bg-violet-900/20 dark:border-violet-800/50 dark:text-violet-100' },
-    { name: 'Gri', class: 'bg-slate-100 border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200' },
+    { id: 'yellow', class: 'bg-[#FFF9C4] text-[#78600C]', preview: 'bg-[#FFF9C4]', ring: 'ring-[#FDE047]' },
+    { id: 'blue',   class: 'bg-[#E0F2FE] text-[#0C4A6E]', preview: 'bg-[#E0F2FE]', ring: 'ring-[#7DD3FC]' },
+    { id: 'green',  class: 'bg-[#DCFCE7] text-[#064E3B]', preview: 'bg-[#DCFCE7]', ring: 'ring-[#6EE7B7]' },
+    { id: 'pink',   class: 'bg-[#FCE7F3] text-[#831843]', preview: 'bg-[#FCE7F3]', ring: 'ring-[#F472B6]' },
+    { id: 'purple', class: 'bg-[#F3E8FF] text-[#4C1D95]', preview: 'bg-[#F3E8FF]', ring: 'ring-[#D8B4FE]' },
+    { id: 'gray',   class: 'bg-[#F1F5F9] text-[#0F172A]', preview: 'bg-[#F1F5F9]', ring: 'ring-[#CBD5E1]' },
 ];
 
 interface NotebookDetails {
@@ -64,7 +62,7 @@ export default function NotebookClient() {
     useEffect(() => {
         if (editingNote) {
             form.reset({
-                title: editingNote.title,
+                title: editingNote.title || '',
                 content: (editingNote.content?.[0]?.data || ''),
                 color: editingNote.color || noteColors[0].class,
             });
@@ -75,95 +73,165 @@ export default function NotebookClient() {
     const handleSaveNote = async (data: NoteFormData) => {
         try {
             const notePayload = {
-                title: data.title || 'İsimsiz Not',
+                title: data.title.trim() || 'İsimsiz Not',
                 content: [{ id: '1', type: 'text' as const, data: data.content || '' }],
                 color: data.color || noteColors[0].class,
             };
 
             if (editingNote && editingNote.id) {
                 await updateNoteInSection(notebookId, editingNote.id, notePayload);
-                toast({ title: "Not Güncellendi" });
+                toast({ title: "Not kaydedildi", className: "bg-slate-900 text-white border-none rounded-2xl" });
             } else {
-                await addNoteToSection(notebookId, details!.notebook.sections[0].id, notePayload);
-                toast({ title: "Not Eklendi" });
+                // Ensure we have a section to add the note to
+                const sectionId = details?.notebook?.sections?.[0]?.id || 'default';
+                await addNoteToSection(notebookId, sectionId, notePayload);
+                toast({ title: "Not oluşturuldu", className: "bg-slate-900 text-white border-none rounded-2xl" });
             }
             setIsFormOpen(false);
             setEditingNote(null);
-        } catch (error) { toast({ title: 'Hata', variant: 'destructive' }); }
+        } catch (error) { toast({ title: 'Kayıt başarısız oldu', variant: 'destructive' }); }
     };
 
     const handleDeleteNote = async (noteId: string) => {
         try {
             await deleteNoteFromSection(noteId);
-            toast({ title: 'Not Silindi', variant: 'destructive' });
-        } catch (error) { toast({ title: 'Hata', variant: 'destructive' }); }
+            toast({ title: 'Not silindi', className: "bg-rose-500 text-white border-none rounded-2xl" });
+        } catch (error) { toast({ title: 'Silme başarısız', variant: 'destructive' }); }
     };
 
-    if (!details) return <div className="flex h-full items-center justify-center text-slate-500 dark:text-slate-400">Yükleniyor...</div>;
+    if (!details) return (
+        <div className="flex h-[100dvh] items-center justify-center bg-[#F8FAFC]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+        </div>
+    );
 
     return (
-        <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-950">
-             {/* Header */}
-             <div className="p-4 md:px-8 md:py-6 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl sticky top-0 z-20 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="-ml-2 text-slate-500 dark:text-slate-400" onClick={() => router.push('/notes')}>
-                             <ArrowLeft className="w-5 h-5" />
-                        </Button>
-                        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 truncate">{details.notebook.title}</h1>
-                    </div>
-                    <Button onClick={() => { setEditingNote({} as Note); setIsFormOpen(true); }} className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm rounded-xl px-5">
-                        <Plus className="w-5 h-5 mr-2" /> Not Ekle
-                    </Button>
+        <div className="flex h-full min-h-[100dvh] flex-col bg-[#F8FAFC] font-sans selection:bg-indigo-200 relative overflow-x-hidden pb-24">
+             
+             {/* --- NATIVE APP BAR --- */}
+             <div className="px-3 py-2 md:px-6 md:py-4 border-b border-black/5 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 sticky top-0 z-20 flex-shrink-0 flex items-center justify-between">
+                <Button variant="ghost" size="icon" className="text-indigo-600 hover:bg-indigo-50 active:bg-indigo-100 rounded-full active:scale-90 transition-all w-10 h-10" onClick={() => router.push('/notes')}>
+                    <ChevronLeft className="w-8 h-8" />
+                </Button>
+                
+                <div className="absolute left-1/2 -translate-x-1/2 text-center flex flex-col items-center">
+                    <h1 className="text-[17px] font-bold tracking-tight text-slate-900 truncate max-w-[150px] md:max-w-xs">{details.notebook.title}</h1>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{details.notes.length} Not</span>
+                </div>
+
+                <div className="w-10 h-10 flex items-center justify-center">
+                    {/* Placeholder for symmetry */}
                 </div>
             </div>
 
-            {/* Notes Grid */}
-            <div className="flex-1 px-4 md:px-8 py-6 overflow-y-auto">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {/* --- NOTES GRID --- */}
+            <div className="flex-1 p-3 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full relative z-10">
+                <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
                     {details.notes.map(note => (
-                         <StickyNoteCard 
-                            key={note.id} 
-                            note={note} 
-                            onEdit={() => setEditingNote(note)}
-                            onDelete={() => handleDeleteNote(note.id)}
-                         />
-                    ))}
-                    {details.notes.length === 0 && (
-                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
-                             <p className="text-lg font-medium">Bu defter boş.</p>
+                         <div key={note.id} className="break-inside-avoid">
+                             <StickyNoteCard 
+                                note={note} 
+                                onEdit={() => setEditingNote(note)}
+                                onDelete={() => handleDeleteNote(note.id)}
+                             />
                          </div>
-                    )}
+                    ))}
                 </div>
+
+                {details.notes.length === 0 && (
+                     <div className="flex flex-col items-center justify-center h-[50vh] text-center px-4">
+                         <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-4 border border-indigo-100/50 shadow-inner">
+                             <PenLine className="w-8 h-8 text-indigo-400" />
+                         </div>
+                         <p className="text-xl font-bold text-slate-800 mb-2">Henüz not yok</p>
+                         <p className="text-sm font-medium text-slate-500 max-w-[250px]">Aklına gelenleri hemen not almaya başla.</p>
+                     </div>
+                )}
+            </div>
+
+            {/* --- FLOATING ACTION BUTTON (FAB) --- */}
+            {/* FIXED: Z-index ve mobil alt menü çakışması için bottom değeri güncellendi */}
+            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8 z-30">
+                <Button 
+                    className="rounded-full w-14 h-14 md:w-16 md:h-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white active:scale-90 transition-transform flex items-center justify-center border border-white/20" 
+                    size="icon" 
+                    onClick={() => { setEditingNote({} as Note); setIsFormOpen(true); }}
+                >
+                    <Plus className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2.5}/>
+                </Button>
             </div>
             
+            {/* --- FULL SCREEN NATIVE EDITOR MODAL --- */}
             <Dialog open={isFormOpen} onOpenChange={(open) => {if (!open) setEditingNote(null); setIsFormOpen(open);}}>
-                <DialogContent className={cn("w-[100vw] h-[100dvh] md:w-full md:max-w-2xl md:h-auto md:max-h-[90vh] p-0 border-none shadow-2xl flex flex-col md:rounded-3xl overflow-hidden transition-colors duration-500", form.watch('color'))}>
-                    <DialogTitle className="sr-only">Not</DialogTitle>
+                <DialogContent className="w-full h-[100dvh] max-w-none m-0 p-0 border-none flex flex-col z-50 animate-in slide-in-from-bottom-full duration-300 md:rounded-none bg-transparent">
+                    <DialogTitle className="sr-only">Not Düzenleyici</DialogTitle>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleSaveNote)} className="flex flex-col h-full">
-                           <div className="flex-1 overflow-y-auto">
-                                <div className="max-w-3xl mx-auto p-6 md:p-12 space-y-6">
+                        <form onSubmit={form.handleSubmit(handleSaveNote)} className={cn("flex flex-col h-full w-full transition-colors duration-500 shadow-2xl", form.watch('color') || noteColors[0].class)}>
+                            
+                            {/* Toolbar (App Bar) */}
+                            <div className="h-14 px-3 flex items-center justify-between border-b border-black/5 bg-white/20 backdrop-blur-md shrink-0">
+                                <DialogClose asChild>
+                                    <Button variant="ghost" className="text-black/60 hover:bg-black/5 font-bold text-[15px] rounded-full px-4 active:scale-95 transition-all">İptal</Button>
+                                </DialogClose>
+                                <span className="font-bold text-black/30 text-[11px] uppercase tracking-[0.2em]">
+                                    {editingNote?.id ? "Düzenleniyor" : "Yeni Not"}
+                                </span>
+                                <Button type="submit" variant="ghost" className="text-indigo-600 hover:bg-black/5 font-black text-[15px] rounded-full px-4 active:scale-95 transition-all">Bitti</Button>
+                            </div>
+
+                            {/* Editor Area */}
+                           <div className="flex-1 overflow-y-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                <div className="max-w-3xl mx-auto p-5 md:p-8 flex flex-col min-h-full">
                                      <FormField name="title" control={form.control} render={({ field }) => (
-                                        <FormItem><FormControl><Input {...field} placeholder="Başlık" className="text-3xl md:text-4xl font-bold bg-transparent border-none p-0 focus-visible:ring-0 placeholder:opacity-40 tracking-tight" /></FormControl></FormItem>)}/>
+                                        <FormItem className="mb-4">
+                                            <FormControl>
+                                                <input 
+                                                    {...field} 
+                                                    autoFocus={!editingNote?.id}
+                                                    placeholder="Başlık" 
+                                                    className="w-full text-2xl md:text-3xl font-black bg-transparent outline-none border-none p-0 placeholder:text-black/30 text-black/90 tracking-tight" 
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}/>
                                     <FormField name="content" control={form.control} render={({ field }) => (
-                                        <FormItem><FormControl><Textarea {...field} placeholder="Notunu buraya yaz..." className="bg-transparent border-none resize-none p-0 text-base md:text-lg leading-relaxed focus-visible:ring-0 placeholder:opacity-50 min-h-[300px]" /></FormControl></FormItem>)}/>
+                                        <FormItem className="flex-1">
+                                            <FormControl>
+                                                <textarea 
+                                                    {...field} 
+                                                    placeholder="Not yazmaya başla..." 
+                                                    className="w-full h-full min-h-[50vh] bg-transparent outline-none border-none resize-none p-0 text-base md:text-lg font-medium leading-relaxed placeholder:text-black/30 text-black/80" 
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}/>
                                 </div>
                             </div>
-                            <div className="p-4 md:p-5 border-t border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-xl flex items-center justify-between gap-4 z-20">
+
+                            {/* Color Picker (Sticky Bottom) */}
+                            <div className="h-16 px-4 border-t border-black/5 bg-white/20 backdrop-blur-xl flex items-center justify-center shrink-0 overflow-x-auto pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
                                 <FormField name="color" control={form.control} render={({field}) => (
-                                    <FormItem><FormControl>
-                                        <div className="flex items-center gap-2">
-                                        {noteColors.map(color => (
-                                            <button key={color.name} type="button" onClick={() => form.setValue('color', color.class)} className={cn("w-7 h-7 rounded-full border border-black/10 dark:border-white/20 transition-all", color.class, form.watch('color') === color.class && "ring-2 ring-offset-2 ring-slate-900 dark:ring-white ring-offset-slate-800")}/>
-                                        ))}
-                                        </div>
-                                    </FormControl></FormItem>
+                                    <FormItem>
+                                        <FormControl>
+                                            <div className="flex items-center gap-4">
+                                                {noteColors.map(color => (
+                                                    <button 
+                                                        key={color.id} 
+                                                        type="button" 
+                                                        onClick={() => form.setValue('color', color.class)} 
+                                                        className={cn(
+                                                            "w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center active:scale-90", 
+                                                            color.preview,
+                                                            form.watch('color') === color.class ? cn(color.ring, "border-white ring-2 ring-offset-2 ring-offset-black/5 scale-110") : "border-black/5 hover:scale-105 shadow-sm"
+                                                        )}
+                                                    >
+                                                        {form.watch('color') === color.class && <Check className="w-4 h-4 text-black/50" strokeWidth={3} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </FormControl>
+                                    </FormItem>
                                 )}/>
-                                <div className="flex gap-2">
-                                    <DialogClose asChild><Button variant="ghost">Kapat</Button></DialogClose>
-                                    <Button type="submit">Kaydet</Button>
-                                </div>
                             </div>
                         </form>
                     </Form>
@@ -173,8 +241,9 @@ export default function NotebookClient() {
     );
 }
 
+// --- STICKY NOTE CARD ---
 function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => void, onDelete: () => void }) {
-    const colorClass = note.color || noteColors[5].class;
+    const colorClass = note.color || noteColors[0].class;
     const contentText = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
     const plainText = typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '') : '';
     
@@ -182,32 +251,65 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
         <div 
             onClick={onEdit}
             className={cn(
-                "group relative flex flex-col h-60 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl cursor-pointer overflow-hidden p-5",
+                "group relative flex flex-col rounded-[1.25rem] transition-all duration-200 active:scale-95 cursor-pointer overflow-hidden p-4 shadow-sm hover:shadow-md border border-black/5",
                 colorClass,
             )}
         >
-             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+             <div className="absolute top-2 right-2">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-black/5 dark:hover:bg-white/10" onClick={(e) => e.stopPropagation()}>
-                            <MoreHorizontal className="w-5 h-5 opacity-60" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-black/5 active:scale-90 transition-transform" onClick={(e) => e.stopPropagation()}>
+                            <MoreHorizontal className="w-5 h-5 opacity-40" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 rounded-xl bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-red-500 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/50">
-                            <Trash2 className="w-4 h-4 mr-2" /> Notu Sil
+                    <DropdownMenuContent align="end" className="w-40 rounded-2xl bg-white border-slate-100 p-1.5 shadow-xl">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} className="cursor-pointer font-bold text-slate-700 py-2.5 px-3 rounded-xl hover:bg-slate-50">
+                            Düzenle
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-slate-100 my-1" />
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 font-bold cursor-pointer focus:bg-rose-50 rounded-xl py-2.5 px-3">
+                                    <Trash2 className="w-4 h-4 mr-2" /> Sil
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="w-[85%] max-w-sm rounded-[2rem] bg-white border-none shadow-2xl p-6">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-xl font-black text-slate-900">Notu Sil?</AlertDialogTitle>
+                                    <AlertDialogDescription className="text-slate-500 font-medium text-sm">
+                                        Bu not kalıcı olarak silinecektir. Emin misiniz?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="mt-6 flex-row gap-2">
+                                    <AlertDialogCancel className="flex-1 rounded-xl h-12 bg-slate-100 border-none hover:bg-slate-200 text-slate-700 font-bold m-0 active:scale-95 transition-transform">Vazgeç</AlertDialogCancel>
+                                    <AlertDialogAction onClick={(e) => { e.stopPropagation(); onDelete(); }} className="flex-1 rounded-xl h-12 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white font-bold m-0 active:scale-95 transition-transform">Sil</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </DropdownMenuContent>
                 </DropdownMenu>
              </div>
             
-            <h3 className="font-bold text-lg leading-tight line-clamp-2 pr-8">{note.title || "İsimsiz Not"}</h3>
-            <div className="flex-1 mt-2 overflow-hidden relative">
-                <p className="text-sm leading-relaxed font-medium line-clamp-5 whitespace-pre-wrap opacity-70">{plainText || "İçerik yok..."}</p>
-                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-current to-transparent pointer-events-none" />
+            {note.title && (
+                <h3 className="font-black text-[15px] leading-tight mb-2 pr-6 tracking-tight opacity-90">{note.title}</h3>
+            )}
+            
+            <div className="flex-1 overflow-hidden relative">
+                <p className={cn(
+                    "text-[13px] leading-relaxed font-medium whitespace-pre-wrap opacity-75",
+                    note.title ? "line-clamp-4" : "line-clamp-6"
+                )}>
+                    {plainText || "Boş not..."}
+                </p>
+                {/* Fade out bottom text effect to mimic paper cutoff */}
+                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[var(--tw-gradient-from)] to-transparent pointer-events-none" />
             </div>
-            <div className="mt-auto text-xs font-medium opacity-50 pt-2">
-                {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : ''}
+            
+            <div className="mt-3 pt-3 border-t border-black/5 flex items-center gap-1.5 opacity-50">
+                <CalendarClock className="w-3 h-3" />
+                <span className="text-[9px] font-black tracking-widest uppercase">
+                    {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : ''}
+                </span>
             </div>
         </div>
     )
