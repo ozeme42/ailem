@@ -384,7 +384,7 @@ export default function OpticalFormPage() {
                             const status = manualEvaluation[qNum.toString()];
 
                             return (
-                                <Card key={qNum} className={cn("rounded-3xl border transition-all", status === 'correct' ? 'border-emerald-200 bg-emerald-50/30' : status === 'incorrect' ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-white')}>
+                                <Card key={qNum} className={cn("rounded-3xl border transition-all", status === 'correct' ? 'border-emerald-200 bg-emerald-50/30' : status === 'incorrect' ? 'border-rose-200 bg-rose-50/30' : status === 'empty' ? 'border-slate-300 bg-slate-100/50' : 'border-slate-200 bg-white')}>
                                     <CardHeader className="pb-2 border-b flex flex-row justify-between items-center bg-slate-50/50 rounded-t-3xl">
                                         <Badge className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center p-0 text-sm font-bold">{qNum}</Badge>
                                         <div className="flex gap-2">
@@ -403,6 +403,14 @@ export default function OpticalFormPage() {
                                                 className={cn("h-9 rounded-xl gap-2", status === 'incorrect' ? "bg-rose-600 text-white border-rose-600" : "bg-white border-slate-200 text-slate-500")}
                                             >
                                                 <XCircle className="w-4 h-4" /> Yanlış
+                                            </Button>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={() => handleEvaluate(qNum, 'empty')}
+                                                className={cn("h-9 rounded-xl gap-2", status === 'empty' ? "bg-slate-600 text-white border-slate-600" : "bg-white border-slate-200 text-slate-500")}
+                                            >
+                                                <MinusCircle className="w-4 h-4" /> Boş
                                             </Button>
                                         </div>
                                     </CardHeader>
