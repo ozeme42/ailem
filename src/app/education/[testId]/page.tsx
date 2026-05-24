@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -184,6 +185,7 @@ export default function OpticalFormPage() {
         return questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
     }, []);
 
+    // --- VERİ ÇEKME VE İLK DURUM ---
     React.useEffect(() => {
         if (!testId) return;
         const testDocRef = doc(db, 'tests', testId);
@@ -198,32 +200,69 @@ export default function OpticalFormPage() {
                     if (examDoc.exists()) setPracticeExam({ id: examDoc.id, ...examDoc.data() } as PracticeExam);
                 }
                 setTest(currentTest);
-                if (currentTest.openEnded) setTextAnswers(currentTest.studentTextAnswers || {});
-                else setMcqAnswers(currentTest.studentAnswers || {});
+                
+                // Sadece mcqAnswers boşken veya ilk yüklemede eşitle.
+                // Aksi takdirde kullanıcının seçimini (local state) veritabanı yanıtı gelene kadar korumak gerekir.
+                setMcqAnswers(prev => {
+                    const dbAnswers = currentTest.studentAnswers || {};
+                    // Eğer yerel state'de henüz hiç veri yoksa (ilk yükleme) db'yi al
+                    if (Object.keys(prev).length === 0) return dbAnswers;
+                    return prev;
+                });
+                setTextAnswers(prev => {
+                    const dbAnswers = currentTest.studentTextAnswers || {};
+                    if (Object.keys(prev).length === 0) return dbAnswers;
+                    return prev;
+                });
+
             } else setTest(null);
             setIsLoading(false);
         });
         return () => unsubTest();
     }, [testId, fetchQuestions]);
 
-    const handleSavePartial = async () => {
+    // --- OTOMATİK ARA KAYIT (DEBOUNCED) ---
+    const handleSavePartial = React.useCallback(async (latestMcq: McqAnswers, latestText: TextAnswers) => {
         if (!test) return;
         try {
             await updateTest(test.id, {
-                studentAnswers: test.openEnded ? undefined : mcqAnswers,
-                studentTextAnswers: test.openEnded ? textAnswers : undefined,
+                studentAnswers: test.openEnded ? undefined : latestMcq,
+                studentTextAnswers: test.openEnded ? latestText : undefined,
             });
         } catch (e) {
             console.error("Partial save error:", e);
         }
-    }
+    }, [test]);
 
+    const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    const debouncedSave = (newMcq: McqAnswers, newText: TextAnswers) => {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+            handleSavePartial(newMcq, newText);
+        }, 1000);
+    };
+
+    const handleMcqAnswerChange = (questionNumber: string, value: string) => {
+        const updated = { ...mcqAnswers, [questionNumber]: value };
+        setMcqAnswers(updated);
+        debouncedSave(updated, textAnswers);
+    };
+
+    const handleTextAnswerChange = (questionNumber: number, value: string) => {
+        const qNumStr = questionNumber.toString();
+        const updated = { ...textAnswers, [qNumStr]: value };
+        setTextAnswers(updated);
+        debouncedSave(mcqAnswers, updated);
+    };
+
+    // --- BİTİRME VE TESLİM ---
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test || !user) return;
         const isMcqTest = !test.openEnded;
         try {
             let updatedData: Partial<TestType> = { timerStatus: 'finished' };
-            const questionCount = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
+            const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
 
             if (isMcqTest) {
                 let allStudentMcqAnswers: McqAnswers = {};
@@ -266,22 +305,10 @@ export default function OpticalFormPage() {
     }, [test, mcqAnswers, textAnswers, toast, user]);
 
     const handleSubjectFinish = async (subjectId: string) => {
-        await handleSavePartial();
+        await handleSavePartial(mcqAnswers, textAnswers);
         setSubmittedSubjectIds(prev => [...new Set([...prev, subjectId])]);
         toast({ title: "Ders Kaydedildi", description: "Bu ders için sonuçları görebilirsiniz." });
     }
-
-    const handleMcqAnswerChange = (questionNumber: string, value: string) => {
-        setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
-        // Auto partial save to avoid data loss
-        setTimeout(() => handleSavePartial(), 500);
-    };
-
-    const handleTextAnswerChange = (questionNumber: number, value: string) => {
-        const qNumStr = questionNumber.toString();
-        setTextAnswers(prev => ({...prev, [qNumStr]: value}));
-        setTimeout(() => handleSavePartial(), 500);
-    };
 
     const isQuestionAnswered = (index: number): boolean => {
         const qNumStr = (index + 1).toString();
@@ -295,7 +322,7 @@ export default function OpticalFormPage() {
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const studentAnswers = test.studentAnswers || {};
         const answerKey = test.sourceType === 'json' ? test.jsonQuestions!.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {}) : test.answerKey || {};
-        const questionCount = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
+        const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
         let currentOffset = 0;
         const subjectsWithRanges = practiceExam?.subjects.map(s => {
             const range = { start: currentOffset + 1, end: currentOffset + s.questionCount };
@@ -375,7 +402,7 @@ export default function OpticalFormPage() {
         );
     }
 
-    const totalQuestions = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
+    const totalQuestions = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
     const isSingleQuestionView = test.sourceType === 'json' || test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick';
     
     // --- NAVIGASYON ---
@@ -445,13 +472,13 @@ export default function OpticalFormPage() {
                                                             return (
                                                                 <div 
                                                                     key={optIdx} 
-                                                                    onClick={() => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), opt)}
                                                                     className={cn(
                                                                         "flex items-center space-x-3 p-5 rounded-2xl border-2 transition-all cursor-pointer",
                                                                         isSelected 
                                                                             ? "bg-indigo-50 border-indigo-600 shadow-sm" 
                                                                             : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50"
                                                                     )}
+                                                                    onClick={() => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), opt)}
                                                                 >
                                                                     <RadioGroupItem value={opt} id={`q${currentQuestionIndex}-${optIdx}`} className="sr-only" />
                                                                     <div className={cn(
@@ -480,13 +507,15 @@ export default function OpticalFormPage() {
                                                 </CardHeader>
                                                 <CardContent className="p-0">
                                                     <div className="relative w-full aspect-video bg-slate-50">
-                                                        <Image 
-                                                            src={test.questions![currentQuestionIndex].imageUrl} 
-                                                            alt={`Soru ${currentQuestionIndex + 1}`} 
-                                                            fill 
-                                                            className="object-contain p-4"
-                                                            data-ai-hint="exam question"
-                                                        />
+                                                        {test.questions && test.questions[currentQuestionIndex] && (
+                                                            <Image 
+                                                                src={test.questions[currentQuestionIndex].imageUrl} 
+                                                                alt={`Soru ${currentQuestionIndex + 1}`} 
+                                                                fill 
+                                                                className="object-contain p-4"
+                                                                data-ai-hint="exam question"
+                                                            />
+                                                        )}
                                                     </div>
                                                     <div className="p-8 border-t bg-white">
                                                         <p className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-wider">Cevabınız:</p>
@@ -729,3 +758,4 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
