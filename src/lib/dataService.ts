@@ -1542,17 +1542,14 @@ export const onNotebookDetailsUpdate = (
 };
 
 
-export const addNoteToSection = async (notebookId: string, sectionId: string, noteData: Partial<Omit<Note, 'id'| 'notebookId'|'sectionId'|'familyId'|'createdAt'|'updatedAt'>>) => {
-    const familyId = await getCurrentFamilyId();
-    if (!familyId) throw new Error("User not authenticated");
-    const noteColors = [
-        { name: 'Saman', class: 'bg-[#fefce8] border-[#fde047] text-amber-900', accent: 'border-amber-300' },
-        { name: 'Gökyüzü', class: 'bg-[#f0f9ff] border-[#bae6fd] text-sky-900', accent: 'border-sky-300' },
-        { name: 'Nane', class: 'bg-[#f0fdf4] border-[#bbf7d0] text-green-900', accent: 'border-emerald-300' },
-        { name: 'Gül', class: 'bg-[#fff1f2] border-[#fecdd3] text-rose-900', accent: 'border-rose-300' },
-        { name: 'Lavanta', class: 'bg-[#f5f3ff] border-[#ddd6fe] text-violet-900', accent: 'border-violet-300' },
-        { name: 'Taş', class: 'bg-slate-100 border-slate-200 text-slate-800', accent: 'border-slate-300' },
-    ];
+export const addNoteToSection = async (
+    familyId: string, 
+    notebookId: string, 
+    sectionId: string, 
+    noteData: Partial<Omit<Note, 'id'| 'notebookId'|'sectionId'|'familyId'|'createdAt'|'updatedAt'>>
+) => {
+    if (!familyId) throw new Error("Family ID is required");
+    
     const newNote: Omit<Note, 'id'> = {
         notebookId,
         sectionId,
@@ -1561,17 +1558,19 @@ export const addNoteToSection = async (notebookId: string, sectionId: string, no
         content: noteData.content || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        tags: [],
-        color: noteData.color || noteColors[Math.floor(Math.random() * noteColors.length)].class,
+        tags: noteData.tags || [],
+        color: noteData.color || 'bg-[#FFF9C4] text-[#78600C]',
         imageUrl: noteData.imageUrl || null,
-        folder: noteData.folder,
+        folder: noteData.folder || null,
     };
-    return addDoc(collection(db, 'notes'), newNote);
+    
+    return addDoc(collection(db, 'notes'), removeUndefined(newNote));
 };
 
 export const updateNoteInSection = (notebookId: string, noteId: string, noteData: Partial<Note>) => {
   const noteRef = doc(db, 'notes', noteId);
-  return updateDoc(noteRef, { ...noteData, updatedAt: new Date().toISOString() });
+  const cleanedData = removeUndefined(noteData);
+  return updateDoc(noteRef, { ...cleanedData, updatedAt: new Date().toISOString() });
 };
 
 export const deleteNoteFromSection = (noteId: string) => {

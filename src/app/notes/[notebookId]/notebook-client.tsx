@@ -18,7 +18,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 
 // --- TASARIM SABİTLERİ (Gerçekçi Kağıt / Pastel Renkler) ---
-// Bu renkler karanlık modda bile notun kağıt rengini korumasını sağlayacak şekilde ayarlandı.
 const noteColors = [
     { id: 'yellow', class: 'bg-[#FFF9C4] text-[#78600C]', preview: 'bg-[#FFF9C4]', ring: 'ring-[#FDE047]' },
     { id: 'blue',   class: 'bg-[#E0F2FE] text-[#0C4A6E]', preview: 'bg-[#E0F2FE]', ring: 'ring-[#7DD3FC]' },
@@ -44,7 +43,7 @@ export default function NotebookClient() {
     const params = useParams();
     const router = useRouter();
     const notebookId = params.notebookId as string;
-    const { user } = useAuth();
+    const { user, familyId } = useAuth();
     const { toast } = useToast();
 
     const [details, setDetails] = useState<NotebookDetails | null>(null);
@@ -71,6 +70,11 @@ export default function NotebookClient() {
     }, [editingNote, form]);
 
     const handleSaveNote = async (data: NoteFormData) => {
+        if (!familyId || !details?.notebook) {
+            toast({ title: 'Kayıt başarısız: Veri yüklenemedi', variant: 'destructive' });
+            return;
+        }
+
         try {
             const notePayload = {
                 title: data.title.trim() || 'İsimsiz Not',
@@ -84,12 +88,15 @@ export default function NotebookClient() {
             } else {
                 // Ensure we have a section to add the note to
                 const sectionId = details?.notebook?.sections?.[0]?.id || 'default';
-                await addNoteToSection(notebookId, sectionId, notePayload);
+                await addNoteToSection(familyId, notebookId, sectionId, notePayload);
                 toast({ title: "Not oluşturuldu", className: "bg-slate-900 text-white border-none rounded-2xl" });
             }
             setIsFormOpen(false);
             setEditingNote(null);
-        } catch (error) { toast({ title: 'Kayıt başarısız oldu', variant: 'destructive' }); }
+        } catch (error) { 
+            console.error("Note save error:", error);
+            toast({ title: 'Kayıt başarısız oldu', variant: 'destructive' }); 
+        }
     };
 
     const handleDeleteNote = async (noteId: string) => {
@@ -150,8 +157,7 @@ export default function NotebookClient() {
             </div>
 
             {/* --- FLOATING ACTION BUTTON (FAB) --- */}
-            {/* FIXED: Z-index ve mobil alt menü çakışması için bottom değeri güncellendi */}
-            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8 z-30">
+            <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8 z-[60]">
                 <Button 
                     className="rounded-full w-14 h-14 md:w-16 md:h-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white active:scale-90 transition-transform flex items-center justify-center border border-white/20" 
                     size="icon" 
@@ -163,7 +169,7 @@ export default function NotebookClient() {
             
             {/* --- FULL SCREEN NATIVE EDITOR MODAL --- */}
             <Dialog open={isFormOpen} onOpenChange={(open) => {if (!open) setEditingNote(null); setIsFormOpen(open);}}>
-                <DialogContent className="w-full h-[100dvh] max-w-none m-0 p-0 border-none flex flex-col z-50 animate-in slide-in-from-bottom-full duration-300 md:rounded-none bg-transparent">
+                <DialogContent className="w-full h-[100dvh] max-w-none m-0 p-0 border-none flex flex-col z-[70] animate-in slide-in-from-bottom-full duration-300 md:rounded-none bg-transparent">
                     <DialogTitle className="sr-only">Not Düzenleyici</DialogTitle>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleSaveNote)} className={cn("flex flex-col h-full w-full transition-colors duration-500 shadow-2xl", form.watch('color') || noteColors[0].class)}>
