@@ -3,11 +3,11 @@
 
 import * as React from "react";
 import Link from 'next/link';
-import { ArrowLeft, FileJson, PlusCircle, Trash2, Edit, Send } from "lucide-react";
+import { ArrowLeft, FileJson, PlusCircle, Trash2, Edit, Send, Repeat, Loader2, MoreVertical, BookOpen, User, Calendar as CalendarLucide } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTestsUpdate, deleteTest, addTest, updateTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { Test, FamilyMember, JsonTestQuestion } from "@/lib/data";
+import { Test, FamilyMember } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -15,11 +15,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { NewJsonTestForm } from "@/components/new-json-test-form";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
-const glassColors = {
-    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
-    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
-    ICON_BOX: "bg-gradient-to-br from-purple-500 to-indigo-600 p-2.5 rounded-xl shadow-lg",
+// --- DESIGN SYSTEM: Premium Dark Theme ---
+const themeColors = {
+    HEADER_BG: "bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-40",
+    CARD_BG: "bg-slate-900/40 border border-slate-800 shadow-xl backdrop-blur-md hover:bg-slate-900/60 hover:border-slate-700 transition-all duration-300",
+    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
+    BUTTON_PRIMARY: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all active:scale-95",
 };
 
 export function JsonTestsClient() {
@@ -28,11 +31,14 @@ export function JsonTestsClient() {
   const [jsonTests, setJsonTests] = React.useState<Test[]>([]);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTest, setEditingTest] = React.useState<Test | null>(null);
+  const [reassigningTest, setReassigningTest] = React.useState<Test | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!familyId) return;
     const unsub = onTestsUpdate((allTests) => {
       setJsonTests(allTests.filter(t => t.sourceType === 'json'));
+      setLoading(false);
     });
     return () => unsub();
   }, [familyId]);
@@ -42,115 +48,195 @@ export function JsonTestsClient() {
     setIsFormOpen(true);
   };
 
+  const handleOpenReassign = (test: Test) => {
+      setReassigningTest(test);
+  };
+
   const handleFormSubmit = async (data: Omit<Test, 'id' | 'familyId'>) => {
     try {
-      if (editingTest) {
+      if (editingTest && !reassigningTest) {
+        // Mevcut olanı güncelle
         await updateTest(editingTest.id, data);
-        toast({ title: "Yazılı Test Güncellendi" });
+        toast({ title: "✅ Yazılı Test Güncellendi" });
       } else {
+        // Yeni oluştur veya Klonla (Tekrar Ata)
         await addTest(data);
-        toast({ title: "Yazılı Test Oluşturuldu" });
+        toast({ title: reassigningTest ? "✅ Test Yeni Görev Olarak Atandı" : "✅ Yazılı Test Oluşturuldu" });
       }
       setIsFormOpen(false);
       setEditingTest(null);
+      setReassigningTest(null);
     } catch (e) {
-      toast({ title: "Hata", variant: "destructive" });
+      toast({ title: "❌ Hata", description: "İşlem tamamlanamadı.", variant: "destructive" });
     }
   };
 
   const handleDeleteTest = async (testId: string) => {
     try {
       await deleteTest(testId);
-      toast({ title: "Test Silindi", variant: "destructive" });
+      toast({ title: "🗑️ Test Silindi", variant: "destructive" });
     } catch (e) {
-      toast({ title: "Hata", variant: "destructive" });
+      toast({ title: "❌ Hata", variant: "destructive" });
     }
   };
 
+  if (loading) {
+    return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-indigo-500" /></div>;
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
-        <div className={cn("sticky top-0 z-40 w-full", glassColors.HEADER_BG)}>
-            <div className="max-w-5xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative flex flex-col">
+        {/* Arka Plan Efektleri */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-900/10 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px]" />
+        </div>
+
+        {/* HEADER */}
+        <header className={themeColors.HEADER_BG}>
+            <div className="max-w-6xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
                     <Link href="/education/management">
-                      <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors -ml-2">
+                      <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
                         <ArrowLeft className="h-6 w-6" />
                       </Button>
                     </Link>
-                    <div className={cn(glassColors.ICON_BOX)}>
+                    <div className={cn(themeColors.ICON_BOX)}>
                          <FileJson className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">Yazılı Testler</h1>
-                        <p className="text-xs font-medium text-slate-400 mt-0.5">JSON ile Test Yönetimi</p>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-100 leading-none">Yazılı Testler</h1>
+                        <p className="text-xs font-medium text-slate-400 mt-1">Metin Tabanlı Test Yönetimi</p>
                     </div>
                 </div>
-                <Button onClick={() => handleOpenForm(null)} className="rounded-xl px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20">
-                    <PlusCircle className="mr-1.5 h-4 w-4" /> Yeni Test Oluştur
+                <Button onClick={() => { setReassigningTest(null); handleOpenForm(null); }} className={cn("rounded-xl h-11 px-5 font-bold", themeColors.BUTTON_PRIMARY)}>
+                    <PlusCircle className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Yeni Yazılı</span>
                 </Button>
             </div>
-        </div>
+        </header>
 
-        <div className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 relative z-10">
+        <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 relative z-10">
             {jsonTests.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {jsonTests.map(test => (
-                        <Card key={test.id} className={cn("flex flex-col h-full", glassColors.CARD_BG)}>
-                            <CardHeader>
-                                <CardTitle className="text-lg text-slate-200">{test.title}</CardTitle>
-                                <CardDescription className="text-slate-400">{test.subject}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <div className="flex flex-wrap gap-2">
-                                    <Badge variant="secondary">{test.questionCount} Soru</Badge>
-                                    {test.studentId && (
-                                        <Badge variant="outline" className="border-indigo-500/30 text-indigo-400">
-                                            Atanan: {familyMembers.find(m => m.id === test.studentId)?.name || 'Bilinmiyor'}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {jsonTests.map(test => {
+                        const student = familyMembers.find(m => m.id === test.studentId);
+                        const isCompleted = test.status === 'Sonuçlandı';
+                        return (
+                            <Card key={test.id} className={cn("flex flex-col h-full group", themeColors.CARD_BG)}>
+                                <CardHeader className="pb-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
+                                            {test.subject}
                                         </Badge>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg">
+                                                    <MoreVertical className="w-4 h-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-48 rounded-xl p-1">
+                                                <DropdownMenuItem onClick={() => { setReassigningTest(test); handleOpenForm(test); }} className="cursor-pointer hover:bg-slate-800 rounded-lg py-2.5">
+                                                    <Repeat className="mr-2 h-4 w-4 text-indigo-400" /> Tekrar Ata / Klonla
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => { setReassigningTest(null); handleOpenForm(test); }} className="cursor-pointer hover:bg-slate-800 rounded-lg py-2.5">
+                                                    <Edit className="mr-2 h-4 w-4 text-blue-400" /> Düzenle
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="bg-slate-800" />
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer focus:text-rose-400 focus:bg-rose-500/10 rounded-lg py-2.5">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Testi Sil
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Testi Sil?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-slate-400">
+                                                                "{test.title}" yazılı testi ve sonuçları kalıcı olarak silinecektir.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                    <CardTitle className="text-lg font-bold text-slate-100 group-hover:text-indigo-400 transition-colors line-clamp-2">{test.title}</CardTitle>
+                                </CardHeader>
+                                
+                                <CardContent className="flex-grow space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
+                                            <span className="text-xl font-black text-white">{test.questionCount}</span>
+                                            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Soru</span>
+                                        </div>
+                                        <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
+                                            <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", isCompleted ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400")}>
+                                                {isCompleted ? "Bitti" : "Atandı"}
+                                            </span>
+                                            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mt-1">Durum</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {student && (
+                                        <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl">
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-inner" style={{backgroundColor: student.color}}>
+                                                {student.name.charAt(0)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-none">Atanan Öğrenci</p>
+                                                <p className="text-sm font-semibold text-slate-200 truncate mt-1">{student.name}</p>
+                                            </div>
+                                        </div>
                                     )}
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex justify-end gap-2 pt-4 border-t border-white/5">
-                                <Button size="sm" variant="ghost" onClick={() => handleOpenForm(test)} className="hover:bg-white/10 text-slate-400">
-                                    <Edit className="mr-2 h-4 w-4"/> Düzenle
-                                </Button>
-                                <Link href={`/education/${test.id}`}>
-                                    <Button size="sm" variant="secondary" className="bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border-indigo-600/30">Çöz</Button>
-                                </Link>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button size="icon" variant="ghost" className="text-destructive/70 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
-                                        <AlertDialogHeader><AlertDialogTitle>Testi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" testini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10">İptal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700">Sil</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </CardFooter>
-                        </Card>
-                    ))}
+                                </CardContent>
+                                
+                                <CardFooter className="p-4 pt-0 mt-auto">
+                                    <Link href={`/education/${test.id}`} className="w-full">
+                                        <Button variant="secondary" className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-none font-bold h-10 rounded-xl">
+                                            {isCompleted ? <BookOpen className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />}
+                                            {isCompleted ? 'Sonucu İncele' : 'Testi Çöz'}
+                                        </Button>
+                                    </Link>
+                                </CardFooter>
+                            </Card>
+                        );
+                    })}
                 </div>
             ) : (
-                <div className="text-center py-20 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                    <FileJson className="mx-auto h-12 w-12 text-slate-500" />
-                    <h3 className="mt-4 text-lg font-semibold text-slate-300">Yazılı Test Yok</h3>
-                    <p className="mt-1 text-sm text-slate-500">JSON formatında yeni bir test oluşturarak başlayın.</p>
+                <div className="flex flex-col items-center justify-center py-24 text-center bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 m-auto max-w-2xl w-full animate-in fade-in duration-500">
+                    <div className="w-20 h-20 bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                        <FileJson className="h-10 w-10 text-slate-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-200">Yazılı Test Bulunamadı</h3>
+                    <p className="text-slate-400 mt-2 text-sm max-w-xs mx-auto leading-relaxed">
+                        JSON formatında metin tabanlı sorular ekleyerek yeni bir test oluşturun.
+                    </p>
+                    <Button onClick={() => handleOpenForm(null)} className="mt-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold px-8 shadow-lg shadow-indigo-500/20">
+                        <PlusCircle className="mr-2 h-5 w-5" /> İlk Testi Oluştur
+                    </Button>
                 </div>
             )}
         </div>
 
-        <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) setEditingTest(null); setIsFormOpen(open); }}>
-            <DialogContent className="max-w-2xl h-[85vh] flex flex-col bg-slate-900 border-white/10 text-slate-100 rounded-3xl p-0 overflow-hidden shadow-2xl">
-                <DialogHeader className="p-6 pb-2">
-                    <DialogTitle className="text-xl font-bold">{editingTest ? 'Yazılı Testi Düzenle' : 'Yeni Yazılı Test Oluştur'}</DialogTitle>
+        {/* Yeni/Düzenleme/Tekrar Ata Dialogu */}
+        <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) { setEditingTest(null); setReassigningTest(null); } setIsFormOpen(open); }}>
+            <DialogContent className="max-w-2xl h-[90vh] md:h-[85vh] flex flex-col bg-slate-900 border-slate-800 text-slate-100 rounded-2xl md:rounded-3xl p-0 overflow-hidden shadow-2xl">
+                <DialogHeader className="p-6 pb-2 border-b border-white/5 bg-white/5">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        {reassigningTest ? <Repeat className="w-5 h-5 text-indigo-400" /> : editingTest ? <Edit className="w-5 h-5 text-blue-400" /> : <PlusCircle className="w-5 h-5 text-emerald-400" />}
+                        {reassigningTest ? 'Testi Tekrar Ata (Yeni Görev)' : editingTest ? 'Yazılı Testi Düzenle' : 'Yeni Yazılı Test Oluştur'}
+                    </DialogTitle>
                     <DialogDescription className="text-slate-400">
-                        Test bilgilerini ve soruları güncelleyin.
+                        {reassigningTest ? 'Bu testi yeni bir öğrenciye veya farklı tarihe atamak için kopyalıyorsunuz.' : 'Soru metinlerini ve seçenekleri JSON formatında düzenleyebilirsiniz.'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-hidden p-6 pt-0">
                     <NewJsonTestForm
-                        familyMembers={familyMembers}
+                        familyMembers={familyMembers.filter(m => m.role.includes('Çocuk'))}
                         onFormSubmit={handleFormSubmit}
                         initialData={editingTest}
                     />
@@ -160,3 +246,4 @@ export function JsonTestsClient() {
     </div>
   );
 }
+
