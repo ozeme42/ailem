@@ -9,7 +9,7 @@ import {
     MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, 
     LayoutGrid, List, Filter, BookOpen, PenTool, ArrowUpDown, 
     ChevronLeft, BarChart3, GraduationCap, Repeat, Send, User,
-    MoreVertical, Loader2
+    MoreVertical, Loader2, CheckSquare
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -130,7 +130,7 @@ export default function AllTestsPage() {
     React.useEffect(() => { setSelectedSubCategory('all'); }, [activeTestType]);
     React.useEffect(() => { setSelectedTopic('all'); }, [selectedSubject]);
     
-    const { pendingTests, completedTests, allFilteredTests, sourceOptions, totalPages } = React.useMemo(() => {
+    const { pendingTests, completedTests, allFilteredTests, totalPages } = React.useMemo(() => {
         const enrichedTests = tests.map(test => {
             let sourceId = 'unknown', sourceName = 'Bilinmeyen Kaynak', topicName = null;
             let subjectName = getCategoryName(test);
@@ -163,10 +163,6 @@ export default function AllTestsPage() {
             return true;
         });
 
-        const uniqueSources = Array.from(new Set(
-            enrichedTests.filter(t => activeTestType === 'all' || t.sourceType === activeTestType).map(t => JSON.stringify({ id: t._sourceId, name: t._sourceName }))
-        )).map(s => JSON.parse(s));
-
         const sorted = filtered.sort((a, b) => {
             let valA: any = a[sortKey as keyof typeof a];
             let valB: any = b[sortKey as keyof typeof b];
@@ -183,7 +179,6 @@ export default function AllTestsPage() {
             pendingTests: pending,
             completedTests: completed,
             allFilteredTests: sorted,
-            sourceOptions: uniqueSources,
             totalPages: {
                 all: Math.ceil(sorted.length / ITEMS_PER_PAGE),
                 pending: Math.ceil(pending.length / ITEMS_PER_PAGE),
@@ -308,11 +303,23 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
                                     <td className="p-4 pl-6"><span className="font-semibold text-slate-200 block truncate max-w-[200px]">{test.title}</span><Badge variant="outline" className={cn("text-[9px] h-4.5 px-1.5 uppercase font-bold", colors.text, colors.bg, colors.border)}>{categoryName}</Badge></td>
                                     <td className="p-4 text-center hidden sm:table-cell">{student && <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-300"><div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>{student.name}</div>}</td>
                                     <td className="p-4 text-center hidden lg:table-cell text-xs text-slate-400">{(test._date as Date).toLocaleDateString('tr-TR')}</td>
-                                    <td className="p-4 text-center hidden md:table-cell"><Badge variant="outline" className={cn("text-[10px]", isCompleted ? "text-emerald-400" : "text-amber-400")}>{test.status}</Badge></td>
+                                    <td className="p-4 text-center hidden md:table-cell">
+                                        <Badge variant="outline" className={cn("text-[10px]", isCompleted ? "text-emerald-400" : test.status === 'Değerlendirme Bekliyor' ? "text-blue-400" : "text-amber-400")}>
+                                            {test.status}
+                                        </Badge>
+                                    </td>
                                     <td className="p-4 text-center font-bold text-sm">{isCompleted ? `%${(test.score || 0).toFixed(0)}` : "--"}</td>
                                     <td className="p-4 text-right pr-6">
                                         <div className="flex items-center justify-end gap-1">
-                                            <Link href={`/education/${test.id}`}><Button size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white">İncele</Button></Link>
+                                            {test.status === 'Değerlendirme Bekliyor' ? (
+                                                <Link href={`/education/${test.id}`}>
+                                                    <Button size="sm" className="h-8 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20">
+                                                        <CheckSquare className="w-3.5 h-3.5 mr-1.5"/> Değerlendir
+                                                    </Button>
+                                                </Link>
+                                            ) : (
+                                                <Link href={`/education/${test.id}`}><Button size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white">İncele</Button></Link>
+                                            )}
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-40"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100"><AlertDialogHeader><AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" kalıcı olarak silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
@@ -331,6 +338,7 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
 
 function TestCard({ test, student, onDelete, onReassign }: any) {
     const isCompleted = test.status === 'Sonuçlandı';
+    const isPendingEvaluation = test.status === 'Değerlendirme Bekliyor';
     const categoryName = getCategoryName(test);
     const colors = categoryThemeColors[categoryName] || categoryThemeColors['Diğer'];
     return (
@@ -349,9 +357,18 @@ function TestCard({ test, student, onDelete, onReassign }: any) {
                 <h3 className="text-base font-bold text-slate-100 line-clamp-2 mb-4">{test.title}</h3>
                 <div className="flex items-center gap-2 text-xs text-slate-400"><Calendar className="w-4 h-4" />{isCompleted ? `Bitti: ${test.dueDate}` : `Son Tarih: ${test.dueDate}`}</div>
                 {isCompleted && <div className="mt-4 bg-slate-950/50 p-3 rounded-xl border border-slate-800 text-center"><span className="text-lg font-black text-emerald-400">%{test.score?.toFixed(0)} Başarı</span></div>}
+                {isPendingEvaluation && <div className="mt-4 bg-blue-500/10 p-3 rounded-xl border border-blue-500/20 text-center"><span className="text-sm font-bold text-blue-400">Değerlendirme Bekliyor</span></div>}
             </CardContent>
             <CardFooter className="p-4 pt-0">
-                <Link href={`/education/${test.id}`} className="w-full"><Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-10 rounded-xl">{isCompleted ? 'İncele' : 'Ödevi Çöz'}</Button></Link>
+                {isPendingEvaluation ? (
+                    <Link href={`/education/${test.id}`} className="w-full">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-10 rounded-xl shadow-lg shadow-blue-600/20">Değerlendir</Button>
+                    </Link>
+                ) : (
+                    <Link href={`/education/${test.id}`} className="w-full">
+                        <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-10 rounded-xl">{isCompleted ? 'İncele' : 'Ödevi Çöz'}</Button>
+                    </Link>
+                )}
             </CardFooter>
         </Card>
     );
@@ -415,3 +432,4 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
         </Dialog>
     );
 }
+

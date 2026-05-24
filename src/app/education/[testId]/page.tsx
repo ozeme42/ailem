@@ -3,13 +3,13 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Test as TestType, QuickTestQuestion, PracticeExam } from "@/lib/data";
+import { Test as TestType, QuickTestQuestion, PracticeExam, EvaluationStatus } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +41,6 @@ const glassColors = {
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
-type EvaluationStatus = "correct" | "incorrect" | "unevaluated" | "empty";
 type ManualEvaluation = { [key: string]: EvaluationStatus };
 
 function formatTime(seconds: number) {
@@ -172,11 +171,12 @@ export default function OpticalFormPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
     const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
+    const [manualEvaluation, setManualEvaluation] = React.useState<ManualEvaluation>({});
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [submittedSubjectIds, setSubmittedSubjectIds] = React.useState<string[]>([]);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     
-    // Ref to ensure we only load data from DB once to avoid "stuck" state
     const isInitializedRef = React.useRef(false);
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -189,7 +189,6 @@ export default function OpticalFormPage() {
         return questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
     }, []);
 
-    // --- DATA LOADING & INITIALIZATION ---
     React.useEffect(() => {
         if (!testId) return;
         const testDocRef = doc(db, 'tests', testId);
@@ -198,12 +197,10 @@ export default function OpticalFormPage() {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
                 
-                // Fetch sub-questions if needed
                 if ((currentTest.sourceType === 'quick' || currentTest.sourceType === 'bank' || currentTest.sourceType === 'mistake') && (!currentTest.questions || currentTest.questions.length === 0)) {
                   currentTest.questions = await fetchQuestions(testId);
                 }
                 
-                // Fetch practice exam template if needed
                 if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
                     const examDoc = await getDoc(doc(db, 'practiceExams', currentTest.sourceId));
                     if (examDoc.exists()) setPracticeExam({ id: examDoc.id, ...examDoc.data() } as PracticeExam);
@@ -211,13 +208,12 @@ export default function OpticalFormPage() {
                 
                 setTest(currentTest);
                 
-                // Initialize local state from DB only ONCE per session/testId
                 if (!isInitializedRef.current) {
                     setMcqAnswers(currentTest.studentAnswers || {});
                     setTextAnswers(currentTest.studentTextAnswers || {});
+                    setManualEvaluation(currentTest.studentTextAnswersEvaluation || {});
                     isInitializedRef.current = true;
                 }
-
             } else {
                 setTest(null);
             }
@@ -227,7 +223,6 @@ export default function OpticalFormPage() {
         return () => unsubTest();
     }, [testId, fetchQuestions]);
 
-    // --- AUTO-SAVE (DEBOUNCED) ---
     const handleSavePartial = React.useCallback(async (latestMcq: McqAnswers, latestText: TextAnswers) => {
         if (!test) return;
         try {
@@ -248,10 +243,8 @@ export default function OpticalFormPage() {
     };
 
     const handleMcqAnswerChange = (questionNumber: string, value: string) => {
-        // Update local state immediately for snappy UI
         const updated = { ...mcqAnswers, [questionNumber]: value };
         setMcqAnswers(updated);
-        // Push to database with debounce
         debouncedSave(updated, textAnswers);
     };
 
@@ -262,10 +255,46 @@ export default function OpticalFormPage() {
         debouncedSave(mcqAnswers, updated);
     };
 
-    // --- FINAL SUBMISSION ---
+    const handleEvaluate = (questionNumber: number, status: EvaluationStatus) => {
+        const updated = { ...manualEvaluation, [questionNumber.toString()]: status };
+        setManualEvaluation(updated);
+    };
+
+    const handleSubmitEvaluation = async () => {
+        if (!test) return;
+        setIsSubmitting(true);
+        try {
+            const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
+            let correct = 0, incorrect = 0, empty = 0;
+            
+            for (let i = 1; i <= questionCount; i++) {
+                const status = manualEvaluation[i.toString()];
+                if (status === 'correct') correct++;
+                else if (status === 'incorrect') incorrect++;
+                else empty++;
+            }
+
+            await updateTest(test.id, {
+                studentTextAnswersEvaluation: manualEvaluation,
+                status: 'Sonuçlandı',
+                correctAnswers: correct,
+                incorrectAnswers: incorrect,
+                emptyAnswers: empty,
+                score: (correct / questionCount) * 100
+            });
+
+            toast({ title: "Değerlendirme Tamamlandı", description: "Sonuçlar kaydedildi." });
+        } catch (e) {
+            toast({ title: "Hata", variant: 'destructive' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test || !user) return;
         const isMcqTest = !test.openEnded;
+        setIsSubmitting(true);
         try {
             let updatedData: Partial<TestType> = { timerStatus: 'finished' };
             const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
@@ -295,18 +324,24 @@ export default function OpticalFormPage() {
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
                     updatedData.score = (correct / questionCount) * 100;
-                } else updatedData.status = 'Değerlendirme Bekliyor';
+                } else {
+                    updatedData.status = 'Değerlendirme Bekliyor';
+                }
             } else { 
                 updatedData.studentTextAnswers = textAnswers;
                 updatedData.status = 'Değerlendirme Bekliyor';
             }
+
             await updateTest(test.id, updatedData);
             toast({ title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!", description: "Cevapların başarıyla kaydedildi.", className: "bg-emerald-600 border-none text-white" });
+            
             if (updatedData.status === 'Sonuçlandı' && test.familyId && test.studentId) {
                 await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
             }
         } catch (error) {
             toast({ variant: "destructive", title: "❌ Hata!", description: "Test sonuçları kaydedilirken bir sorun oluştu." });
+        } finally {
+            setIsSubmitting(false);
         }
     }, [test, mcqAnswers, textAnswers, toast, user]);
 
@@ -324,7 +359,89 @@ export default function OpticalFormPage() {
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" /><p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p></div>;
     if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1><Link href="/education"><Button size="lg" className={glassColors.BUTTON_GLASS}>Geri Dön</Button></Link></div>;
 
-    // --- RESULTS SCREEN ---
+    // --- EVALUATION MODE (For Teachers/Parents) ---
+    if (test.status === 'Değerlendirme Bekliyor') {
+        const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
+        const totalEvaluated = Object.keys(manualEvaluation).length;
+
+        return (
+            <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
+                <div className="max-w-4xl mx-auto w-full space-y-8">
+                    <header className="flex justify-between items-center">
+                         <Button variant="ghost" onClick={() => router.push('/education/all-tests')} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Çıkış</Button>
+                         <Badge className="bg-blue-600 text-white border-0 font-bold uppercase tracking-widest px-4 py-1">Değerlendirme Modu</Badge>
+                    </header>
+
+                    <div className="space-y-6">
+                        {Array.from({ length: questionCount }).map((_, i) => {
+                            const qNum = i + 1;
+                            const studentAns = textAnswers[qNum.toString()] || mcqAnswers[qNum.toString()];
+                            const status = manualEvaluation[qNum.toString()];
+
+                            return (
+                                <Card key={qNum} className={cn("rounded-3xl border transition-all", status === 'correct' ? 'border-emerald-200 bg-emerald-50/30' : status === 'incorrect' ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-white')}>
+                                    <CardHeader className="pb-2 border-b flex flex-row justify-between items-center bg-slate-50/50 rounded-t-3xl">
+                                        <Badge className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center p-0 text-sm font-bold">{qNum}</Badge>
+                                        <div className="flex gap-2">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={() => handleEvaluate(qNum, 'correct')}
+                                                className={cn("h-9 rounded-xl gap-2", status === 'correct' ? "bg-emerald-600 text-white border-emerald-600" : "bg-white border-slate-200 text-slate-500")}
+                                            >
+                                                <CheckCircle2 className="w-4 h-4" /> Doğru
+                                            </Button>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={() => handleEvaluate(qNum, 'incorrect')}
+                                                className={cn("h-9 rounded-xl gap-2", status === 'incorrect' ? "bg-rose-600 text-white border-rose-600" : "bg-white border-slate-200 text-slate-500")}
+                                            >
+                                                <XCircle className="w-4 h-4" /> Yanlış
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-6">
+                                        <div className="space-y-4">
+                                            {test.jsonQuestions && test.jsonQuestions[i] && (
+                                                <p className="text-lg font-bold text-slate-700">{test.jsonQuestions[i].text}</p>
+                                            )}
+                                            {test.questions && test.questions[i] && (
+                                                <div className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden mb-4 border border-slate-200">
+                                                    <Image src={test.questions[i].imageUrl} alt="Soru" fill className="object-contain p-4" />
+                                                </div>
+                                            )}
+                                            <div className="p-4 bg-white border border-slate-200 rounded-2xl">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Öğrenci Cevabı:</p>
+                                                <p className="text-lg font-medium text-slate-700 leading-relaxed italic">{studentAns || "— Cevap verilmedi —"}</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                    </div>
+
+                    <div className="sticky bottom-8 left-0 right-0 max-w-4xl mx-auto px-4 sm:px-0">
+                         <Button 
+                            size="lg" 
+                            disabled={totalEvaluated < questionCount || isSubmitting}
+                            onClick={handleSubmitEvaluation}
+                            className="w-full h-16 rounded-[2rem] bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-black shadow-2xl shadow-indigo-500/40"
+                         >
+                            {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2 h-6 w-6"/>}
+                            Değerlendirmeyi Bitir ve Yayınla
+                         </Button>
+                         {totalEvaluated < questionCount && (
+                             <p className="text-center text-xs text-rose-500 font-bold mt-2 bg-white/50 backdrop-blur-sm py-1 rounded-full">{questionCount - totalEvaluated} soru daha değerlendirilmeli.</p>
+                         )}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // --- RESULTS SCREEN (Finalized) ---
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const studentAnswers = test.studentAnswers || {};
         const answerKey = test.sourceType === 'json' ? test.jsonQuestions!.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {}) : test.answerKey || {};
@@ -386,14 +503,17 @@ export default function OpticalFormPage() {
                                         const qNumStr = (index + 1).toString();
                                         const studentAns = studentAnswers[qNumStr];
                                         const correctAns = answerKey[qNumStr];
-                                        const evalStatus = studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty');
-                                        let statusColor = evalStatus === 'correct' ? "border-emerald-200 bg-emerald-50" : (evalStatus === 'incorrect' ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50");
+                                        
+                                        // Manual evaluation handling for text answers if finalized
+                                        const evalFromStatus = test.studentTextAnswersEvaluation?.[qNumStr] || (studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty'));
+                                        
+                                        let statusColor = evalFromStatus === 'correct' ? "border-emerald-200 bg-emerald-50" : (evalFromStatus === 'incorrect' ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50");
                                         return (
                                             <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
                                                 <span className="font-bold text-slate-400 w-8">{qNumStr}</span>
                                                 <div className="flex gap-3">
-                                                    <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
-                                                    {evalStatus === 'incorrect' && <span className="font-bold text-emerald-600">{correctAns}</span>}
+                                                    <span className={cn("font-bold", evalFromStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
+                                                    {evalFromStatus === 'incorrect' && correctAns && <span className="font-bold text-emerald-600">{correctAns}</span>}
                                                 </div>
                                             </div>
                                         )
@@ -570,8 +690,8 @@ export default function OpticalFormPage() {
                                             {currentQuestionIndex === totalQuestions - 1 ? (
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button type="button" size="lg" className="h-14 rounded-2xl px-8 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20">
-                                                            Sınavı Bitir <CheckCircle className="ml-2 h-6 w-6" />
+                                                        <Button type="button" size="lg" className="h-14 rounded-2xl px-8 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" disabled={isSubmitting}>
+                                                            {isSubmitting ? <Loader2 className="animate-spin h-6 w-6"/> : "Sınavı Bitir"} <CheckCircle className="ml-2 h-6 w-6" />
                                                         </Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
@@ -686,8 +806,8 @@ export default function OpticalFormPage() {
                                         <div className="pt-6">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 shadow-2xl rounded-2xl text-lg transition-transform active:scale-95">
-                                                        Tüm Testi Bitir ve Genel Sonucu Gör <Check className="ml-3 h-6 w-6" />
+                                                    <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 shadow-2xl rounded-2xl text-lg transition-transform active:scale-95" disabled={isSubmitting}>
+                                                        {isSubmitting ? <Loader2 className="animate-spin h-6 w-6"/> : "Tüm Testi Bitir ve Genel Sonucu Gör"} <Check className="ml-3 h-6 w-6" />
                                                     </Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
