@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Clock, CheckCircle2, ArrowRight, Calendar as CalendarIcon, 
   Layers, PieChart, GraduationCap, AlertCircle, Timer, 
-  BookOpen, ChevronDown, Check, Sparkles, TrendingUp, 
+  BookOpen, ChevronDown, ChevronRight, Check, Sparkles, TrendingUp, 
   TrendingDown, PlayCircle, CalendarClock, Target, BarChart,
   User, Settings, ScrollText
 } from "lucide-react";
